@@ -1,5 +1,39 @@
 # Migrating from Skia to vlib/gg
 
+## Solid Canvas fills on D3D11
+
+An initialized Windows Sokol D3D11 window can now host `gg.canvas`
+surfaces for solid pixel-aligned rectangles and tessellated path fills.
+The HLSL shaders use the shared Canvas instance layouts, draw batching,
+paint order, and stencil state. Each flush packs its paint and transform
+records into one vertex-stage storage buffer. A multisample pass resolves
+on the GPU and loads the existing resolve texture when a later draw needs
+to preserve it. Sokol checks depth-stencil MSAA against the typed depth
+format, which unblocks creation of 4× depth-stencil attachments.
+[D3D11 depth-stencil views](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_depth_stencil_view_desc)
+
+The Windows implementation currently accepts solid bounds and wedge
+passes, including path clips that use depth and stencil. Unsupported
+shading or geometry returns an error before opening a render pass. The
+default D3D11 browser has yet to route document draws through these shaders.
+Hardware frame timings remain unmeasured.
+
+The guarded Windows 11 QEMU smoke used V `4478fc4` and MinGW GCC 16.2.0
+with `-prod -no-prod-options`. The rectangle, premultiplied blend, convex
+curve, winding and even-odd fills, inverse fill, intersect clip, MSAA
+reload, and rejected-draw recovery checks passed. The executable SHA-256
+was `26a4e7b395ab038fe79c1df635cb9c82f0ea09332030823aa580795ec1731549`
+before and after launch. The process exited zero under the 3 GiB guard.
+Its window capture was byte-identical to the prior D3D11 projection and
+font smoke capture.
+
+The shared solid fill and gradient stroke checks passed on Metal and
+ARM64 Linux Mesa. Metal also passed the intersect clip check. Mesa left
+the pixel at `(26, 5)` green outside the clip, both with the staged D3D11
+changes and with the existing Linux production module adapter. The smoke
+runs that specific clip check on Metal and D3D11. The Windows D3D11 browser
+source check, V/Python staging parity, and both staging test suites passed.
+
 ## D3D11 texture regions for shared Canvas surfaces
 
 The staged Sokol D3D11 backend implements the same rectangular texture
@@ -7,8 +41,7 @@ upload and readback calls used by Canvas. BGRA8 and RGBA8 uploads preserve
 the destination outside the region. Readback copies the region into a
 staging texture, then copies the mapped rows into the caller's stride.
 The backend keeps one staging texture for up to 4 MiB of pixel data and
-releases it at shutdown. Larger reads use a temporary texture. The D3D11
-Canvas shaders and browser routing are still pending.
+releases it at shutdown. Larger reads use a temporary texture.
 [D3D11 uploads](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-updatesubresource)
 [D3D11 region copies](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-copysubresourceregion)
 

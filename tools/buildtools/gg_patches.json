@@ -1,6 +1,10 @@
 {
   "prepare_sokol_d3d11_transfers": [
     {
+      "old": "        info->msaa   = 0 != (rtv_dxgi_fmt_caps & D3D11_FORMAT_SUPPORT_MULTISAMPLE_RENDERTARGET);",
+      "new": "        // Depth images are bound through the typed DSV, not the color RTV format.\n        const UINT msaa_caps = depth ? dsv_dxgi_fmt_caps : rtv_dxgi_fmt_caps;\n        info->msaa   = 0 != (msaa_caps & D3D11_FORMAT_SUPPORT_MULTISAMPLE_RENDERTARGET);"
+    },
+    {
       "old": "    D3D11_SUBRESOURCE_DATA subres_data[SG_MAX_MIPMAPS * SG_MAX_TEXTUREARRAY_LAYERS];\n} _sg_d3d11_backend_t;",
       "new": "    D3D11_SUBRESOURCE_DATA subres_data[SG_MAX_MIPMAPS * SG_MAX_TEXTUREARRAY_LAYERS];\n    ID3D11Texture2D* vox_readback;\n    UINT vox_readback_width;\n    UINT vox_readback_height;\n    DXGI_FORMAT vox_readback_format;\n} _sg_d3d11_backend_t;"
     },
@@ -23,14 +27,86 @@
   ],
   "prepare_gg_windows_canvas": [
     {
+      "file": "rrect.v",
+      "old": "fn compute_min_scale(rad1 f32, rad2 f32, limit f64, current f64) f64 {\n\tsum := f64(rad1) + f64(rad2)",
+      "new": "fn compute_min_scale(first_radius f32, second_radius f32, limit f64, current f64) f64 {\n\tsum := f64(first_radius) + f64(second_radius)"
+    },
+    {
       "file": "gpu_context.v",
       "old": "\t$if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS or Linux')\n\t}",
-      "new": "\t$if windows {\n\t\tif !gfx.is_valid() {\n\t\t\treturn error('gg.canvas: GPU rendering requires a current Sokol OpenGL context on Windows')\n\t\t}\n\t} $else $if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS, Linux or Windows')\n\t}"
+      "new": "\t$if windows {\n\t\tif !gfx.is_valid() {\n\t\t\treturn error('gg.canvas: GPU rendering requires an initialized Sokol context on Windows')\n\t\t}\n\t} $else $if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS, Linux or Windows')\n\t}"
     },
     {
       "file": "gpu_context.v",
       "old": "\t} $else {\n\t\tif gfx.query_backend() != .metal_macos",
-      "new": "\t} $else $if windows {\n\t\tif gfx.query_backend() != .glcore33 || !gfx.query_features().storage_buffer\n\t\t\t|| !windows_gpu_has_storage_buffers() {\n\t\t\treturn error('gg.canvas: GPU rendering requires OpenGL 4.3 with vertex and fragment storage buffers and at least 16 storage bindings')\n\t\t}\n\t\tctx.is_gl = true\n\t} $else {\n\t\tif gfx.query_backend() != .metal_macos"
+      "new": "\t} $else $if windows {\n\t\t$if sokol_d3d11 ? {\n\t\t\tif gfx.query_backend() != .d3d11 || !gfx.query_features().storage_buffer {\n\t\t\t\treturn error('gg.canvas: D3D11 requires vertex shader storage buffers')\n\t\t\t}\n\t\t\tctx.is_d3d11 = true\n\t\t} $else {\n\t\t\tif gfx.query_backend() != .glcore33 || !gfx.query_features().storage_buffer\n\t\t\t\t|| !windows_gpu_has_storage_buffers() {\n\t\t\t\treturn error('gg.canvas: GPU rendering requires OpenGL 4.3 with vertex and fragment storage buffers and at least 16 storage bindings')\n\t\t\t}\n\t\t\tctx.is_gl = true\n\t\t}\n\t} $else {\n\t\tif gfx.query_backend() != .metal_macos"
+    }
+  ],
+  "prepare_gg_d3d11_canvas": [
+    {
+      "file": "gpu_context.v",
+      "old": "// new_gpu_context creates a context for GPU rendering using Metal on macOS\n// or OpenGL 4.3 on Linux. An initialized sokol.gfx context is borrowed;\n// otherwise the context owns an offscreen device. Use and free it on the",
+      "new": "// new_gpu_context creates a context for GPU rendering using Metal on macOS,\n// OpenGL 4.3 on Linux, or an initialized D3D11 or OpenGL 4.3 context on\n// Windows. It borrows initialized Sokol contexts and creates an offscreen\n// device on macOS or Linux when needed. Use and free it on the"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "fn (mut ctx GpuContext) shader(step RenderStep, clipped bool, shading Shading) gfx.Shader {",
+      "new": "fn (mut ctx GpuContext) shader(render_step RenderStep, clipped bool, shading Shading) gfx.Shader {\n\tmut step := render_step\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tstep = d3d11_canvas_shader_step(step)\n\t\t}\n\t}"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\tis_gl              bool\n",
+      "new": "\tis_gl              bool\n\tis_d3d11           bool\n"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\tmut vs_source, mut fs_source := solid_shader_sources(step, clipped)",
+      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tshader := d3d11_canvas_shader(step, clipped, shading)\n\t\t\tctx.shaders << GpuShaderEntry{step, clipped, shading, shader}\n\t\t\treturn shader\n\t\t}\n\t}\n\tmut vs_source, mut fs_source := solid_shader_sources(step, clipped)"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "pub fn (mut ctx GpuContext) precompile() {",
+      "new": "pub fn (mut ctx GpuContext) precompile() {\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tctx.precompile_d3d11_canvas()\n\t\t\treturn\n\t\t}\n\t}"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\t\tvs_source, fs_source = glsl_load_msaa_sources()\n\t}\n\tmut desc := gfx.ShaderDesc{}",
+      "new": "\t\tvs_source, fs_source = glsl_load_msaa_sources()\n\t}\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tvs_source, fs_source = d3d11_canvas_msaa_vertex, d3d11_canvas_msaa_fragment\n\t\t}\n\t}\n\tmut desc := gfx.ShaderDesc{}"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tmut ctx := s.ctx\n\t// A pass with a draw",
+      "new": "\tmut ctx := s.ctx\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 && s.draws.any(!d3d11_canvas_supports(it.step, it.uniforms.clipped, it.uniforms.shading)) {\n\t\t\ts.reset_draws()\n\t\t\ts.free_retired_layers()\n\t\t\treturn error('gg.canvas: D3D11 supports solid bounds and wedge fills without analytic clips')\n\t\t}\n\t}\n\td3d11 := $if windows && sokol_d3d11 ? { true } $else { false }\n\tuses_storage_buffers := d3d11 || ctx.is_gl\n\t// A pass with a draw"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif ctx.is_gl && has_uniforms(first_draw.step) {\n\t\t\t// Each shader",
+      "new": "\t\tif uses_storage_buffers && has_uniforms(first_draw.step) {\n\t\t\t// Each shader"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif ctx.is_gl && has_uniforms(first_draw.step) {\n\t\t\tstorage_uniforms",
+      "new": "\t\tif uses_storage_buffers && has_uniforms(first_draw.step) {\n\t\t\tstorage_uniforms"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif ctx.is_gl && has_uniforms(draw.step) {\n\t\t\tbindings.vs.storage_buffers[0] = paint_buffer\n\t\t\tbindings.fs.storage_buffers[0] = paint_buffer\n\t\t}",
+      "new": "\t\tif uses_storage_buffers && has_uniforms(draw.step) {\n\t\t\tbindings.vs.storage_buffers[0] = paint_buffer\n\t\t\tif !d3d11 {\n\t\t\t\tbindings.fs.storage_buffers[0] = paint_buffer\n\t\t\t}\n\t\t}"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif writes_color(draw.step) {\n\t\t\tgfx.apply_uniforms(.fs, 0, &intrinsic_range)\n\t\t}\n\t\tif !ctx.is_gl {",
+      "new": "\t\tif !d3d11 && writes_color(draw.step) {\n\t\t\tgfx.apply_uniforms(.fs, 0, &intrinsic_range)\n\t\t}\n\t\tif !uses_storage_buffers {"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tload_msaa := s.load && samples > 1\n\tif load_msaa {",
+      "new": "\tload_msaa := s.load && samples > 1\n\tload_pipeline := if load_msaa { ctx.load_msaa_pipeline() } else { gfx.Pipeline{} }\n\tif load_msaa && gfx.query_pipeline_state(load_pipeline) != .valid {\n\t\ts.reset_draws()\n\t\ts.free_retired_layers()\n\t\treturn error('gg.canvas: could not create the MSAA load pipeline')\n\t}\n\tif load_msaa {"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tgfx.apply_pipeline(ctx.load_msaa_pipeline())",
+      "new": "\t\tgfx.apply_pipeline(load_pipeline)"
     }
   ],
   "prepare_gg_shadow": [

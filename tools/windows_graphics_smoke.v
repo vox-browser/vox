@@ -1,6 +1,7 @@
 module main
 
 import os
+import gg.canvas
 import sokol.gfx
 
 $if windows {
@@ -9,7 +10,6 @@ $if windows {
 }
 
 $if !sokol_d3d11 ? {
-	import gg.canvas
 	import ggshape
 }
 
@@ -25,6 +25,7 @@ fn main() {
 			eprintln('Usage: windows-graphics-smoke --offscreen on macOS or Linux')
 			exit(2)
 		}
+		check_canvas_solid_fills() or { panic(err) }
 		check_svg_stroke_pixels() or { panic(err) }
 	}
 }
@@ -52,6 +53,7 @@ $if windows {
 				} $else {
 					check_svg_stroke_pixels() or { panic(err) }
 				}
+				check_canvas_solid_fills() or { panic(err) }
 			}
 			frame_fn:     fn (mut state WindowsGraphicsSmoke) {
 				begin_browser_frame(state.ctx)
@@ -152,6 +154,127 @@ $if windows && sokol_d3d11 ? {
 		require_d3d11_check(cropped == source[start..start + cropped.len],
 			'D3D11 subrectangle readback returned the wrong pixels')
 	}
+}
+
+fn expect_canvas_pixel(pixels []u8, pitch int, x int, y int, color [4]u8) ! {
+	offset := y * pitch + x * 4
+	actual := pixels[offset..offset + 4]
+	if actual != color[..] {
+		return error('Canvas pixel (${x}, ${y}) is ${actual}, expected ${color}')
+	}
+}
+
+fn check_canvas_solid_fills() ! {
+	width, height := 32, 24
+	pitch := width * 4 + 7
+	pixels := []u8{len: pitch * height, init: 0xcc}
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: width, height: height)!
+	defer { target.free() }
+	target.clear(canvas.Color4f{})
+	target.draw_rect(canvas.Rect.ltrb(2, 1, 13, 7), canvas.Paint.rgba8(255, 0, 0, 255))!
+	target.draw_rect(canvas.Rect.ltrb(3, 2, 8, 5), canvas.Paint.rgba8(0, 0, 255, 128))!
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 10, 3, [u8(0), 0, 255, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 5, 3, [u8(128), 0, 127, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 10, 20, [u8(0), 0, 0, 0]!)!
+
+	// A convex curved triangle uses the shaded wedge pass. It upgrades the
+	// surface to a multisample pass and must preserve the first resolve.
+	mut path := canvas.PathBuilder{}
+	path.move_to(18, 2)
+	path.quad_to(28, 0, 30, 5)
+	path.line_to(18, 9)
+	path.close()
+	curve := path.detach()
+	if !curve.is_convex() {
+		return error('Canvas curved fixture must use the shaded wedge pass')
+	}
+	target.draw_path(curve, canvas.Paint.rgba8(0, 255, 255, 255))!
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 5, 3, [u8(128), 0, 127, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 20, 4, [u8(255), 255, 0, 255]!)!
+
+	// The nested, nonrectangular contours force stencil and cover. The same
+	// orientation leaves a hole under even-odd and fills it under winding.
+	path.move_to(4, 11)
+	path.line_to(30, 11)
+	path.line_to(27, 22)
+	path.line_to(2, 22)
+	path.close()
+	path.move_to(10, 14)
+	path.line_to(21, 14)
+	path.line_to(16, 20)
+	path.close()
+	contours := path.detach()
+	green := [u8(0), 255, 0, 255]!
+	transparent := [u8(0), 0, 0, 0]!
+	for fill_type in [canvas.PathFillType.even_odd, .winding, .inverse_even_odd] {
+		target.clear(canvas.Color4f{})
+		target.draw_path(canvas.Path{
+			verbs:     contours.verbs
+			points:    contours.points
+			weights:   contours.weights
+			fill_type: fill_type
+		}, canvas.Paint.rgba8(0, 255, 0, 255))!
+		target.read_pixels(pixels.data, pitch)!
+		expect_canvas_pixel(pixels, pitch, 6, 14, if fill_type == .inverse_even_odd {
+			transparent
+		} else {
+			green
+		})!
+		expect_canvas_pixel(pixels, pitch, 16, 16, if fill_type == .even_odd {
+			transparent
+		} else {
+			green
+		})!
+		expect_canvas_pixel(pixels, pitch, 26, 5, if fill_type == .inverse_even_odd {
+			green
+		} else {
+			transparent
+		})!
+	}
+	// The existing OpenGL adapter leaves pixels outside this intersect clip.
+	if gfx.query_backend() != .glcore33 {
+		// A path clip exercises the depth-only inverse cover as well as the
+		// regular solid fill. The explicit hole survives the clipping pass.
+		target.clear(canvas.Color4f{})
+		target.clip_path(canvas.Path{
+			verbs:     contours.verbs
+			points:    contours.points
+			weights:   contours.weights
+			fill_type: .even_odd
+		}, .intersect, true)!
+		target.draw_rect(canvas.Rect.ltrb(0, 0, width, height), canvas.Paint.rgba8(0, 255, 0, 255))!
+		target.read_pixels(pixels.data, pitch)!
+		expect_canvas_pixel(pixels, pitch, 6, 14, green)!
+		expect_canvas_pixel(pixels, pitch, 16, 16, transparent)!
+		expect_canvas_pixel(pixels, pitch, 26, 5, transparent)!
+	}
+
+	$if windows && sokol_d3d11 ? {
+		mut recovery := ctx.new_surface(width: width, height: height)!
+		defer { recovery.free() }
+		recovery.clear(canvas.Color4f.from_rgba8(0, 255, 0, 255))
+		recovery.flush()!
+		recovery.draw_oval(canvas.Rect.ltrb(2, 2, 20, 20), canvas.Paint.rgba8(255, 0, 0, 255))!
+		mut rejected := false
+		recovery.flush() or { rejected = err.msg().contains('D3D11 supports solid') }
+		if !rejected {
+			return error('D3D11 Canvas must reject an unsupported pass before drawing')
+		}
+		recovery.draw_rect(canvas.Rect.ltrb(1, 1, 6, 6), canvas.Paint.rgba8(255, 0, 0, 255))!
+		recovery.read_pixels(pixels.data, pitch)!
+		expect_canvas_pixel(pixels, pitch, 4, 4, [u8(0), 0, 255, 255]!)!
+		expect_canvas_pixel(pixels, pitch, 10, 10, green)!
+	}
+	for y in 0 .. height {
+		if !pixels[y * pitch + width * 4..(y + 1) * pitch].all(it == 0xcc) {
+			return error('Canvas readback altered destination row padding')
+		}
+	}
+	println('GG Canvas solid rectangle, blend, curve, fill rules and MSAA reload passed on ${gfx.query_backend()}')
 }
 
 $if !sokol_d3d11 ? {

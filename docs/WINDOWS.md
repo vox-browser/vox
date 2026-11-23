@@ -270,13 +270,15 @@ runtime-guard.exe 180000 3072 projection.out projection.err \
 python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
 ```
 
-The D3D11 smoke test also checks Sokol texture uploads and readback for
-BGRA8 and RGBA8 render targets. It verifies subrectangles, pitched rows,
-and pixels outside the uploaded region.
+The D3D11 smoke test checks pitched BGRA8 and RGBA8 texture transfers
+and verifies Canvas pixels for solid rectangles, blended fills, curved
+paths, winding rules, path clipping, and multisample reloads. It also
+checks recovery after a rejected unsupported draw.
 
 For the OpenGL variant, prepare the current Canvas adapter before building
-the same smoke tool. This opens a GL 4.3 window, checks the shared SVG
-gradient stroke pixels, and then captures the projection and font checks.
+the same smoke tool. This opens a GL 4.3 window, checks the shared solid
+fills and SVG gradient stroke pixels, and then captures the projection
+and font checks.
 Use the staged Mesa WGL DLLs beside the executable for a software run.
 
 ```sh

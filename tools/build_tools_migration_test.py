@@ -143,6 +143,29 @@ class VBuildMigrationTest(unittest.TestCase):
         self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
         self.assertEqual(window_adapter.read_text(), 'separately staged Sokol window code')
 
+    def test_d3d11_canvas_staging_matches_python(self):
+        modules = Path(self.run_tool('prepare_ui2', self.compiler))
+        canvas = modules / 'gg/canvas'
+        expected = self.work / 'python-d3d11-canvas'
+        expected.mkdir()
+        patches = json.loads((ROOT / 'tools/buildtools/gg_patches.json').read_text())
+        windows_groups = ('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas')
+        groups = (*windows_groups, 'prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient')
+        for name in {operation['file'] for group in groups for operation in patches[group]}:
+            target = expected / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((self.vlib / 'gg/canvas' / name).read_bytes())
+        ui.stage_document_surface(expected)
+        for group in windows_groups:
+            for operation in patches[group]:
+                name = operation['file']
+                with self.subTest(group=group, file=name):
+                    self.assertIn(operation['new'], (expected / name).read_text())
+                    self.assertIn(operation['new'], (canvas / name).read_text())
+        name = 'vox_d3d11_canvas_windows.v'
+        self.assertEqual((canvas / name).read_bytes(), (expected / name).read_bytes())
+        self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
+
     def test_linux_modules_match_existing_adapters(self):
         modules = Path(self.run_tool('prepare_linux_modules', self.compiler))
         for package in ['gg', 'net/openssl', 'sokol/sapp']:
