@@ -546,7 +546,19 @@ def check_non_scaling_pattern_tiles(binary, fixture, directory):
     print("PASS: macOS shared SVG tile pixels and live vector effect")
 
 
-def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=False, shared=False):
+def check_repeated_bitmap_tile_pixels(rows, channels, scale, marker):
+    for x, y, color in (
+        (4, 4, "34b786"), (3, 12, "0000ff"), (3, 20, "ff0000"), (9, 12, "ffffff"),
+        (13, 12, "0000ff"), (13, 20, "ff0000"), (23, 12, "00ff00"), (23, 20, "00ff00"),
+        (33, 12, "0000ff"), (33, 20, "ff0000"),
+    ):
+        pos = x * scale * channels
+        actual = rows[marker + y * scale][pos:pos + 3].hex()
+        assert actual == color, (scale, x, y, actual, color)
+
+
+def check_pattern_tile_with_delayed_image(binary, fixture, directory, *,
+                                         check_pixels=check_svg_pattern_tile_image_pixels, image_lookups=None):
     with serve_delayed_svg_pattern_tile(fixture, directory / f"{fixture.stem}-site") as url:
         for scale in (1, 2):
             data, log = capture_document(binary, url, directory / f"{fixture.stem}-{scale}x", {
@@ -558,17 +570,14 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=
             })
             width, height, channels, rows = rendered_png_rows(data)
             assert (width, height) == (1024 * scale, 600 * scale)
-            if shared:
-                check_svg_shared_bitmap_tile_pixels(rows, channels, scale, 0)
+            check_pixels(rows, channels, scale, 0)
+            if image_lookups is not None:
                 lookups = re.findall(r"^VOX_SHARED_SVG_TILE image_lookups=(\d+) complete=true$", log, re.M)
-                assert set(lookups) == {"1"}, log
-            else:
-                check_svg_pattern_tile_image_pixels(rows, channels, scale, 0, nested=nested)
+                assert set(lookups) == {str(image_lookups)}, log
             misses = re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M)
             hits = re.findall(r"^VOX_SHARED_SVG_TILE cache=hit key=(\d+)$", log, re.M)
             assert misses and misses[0] == "0" and hits and hits[0] in misses[1:], log
-    tiles = "SVG bitmap tiles" if shared else ("nested SVG tiles" if nested else "SVG tiles")
-    print(f"PASS: macOS shared {tiles} preserve delayed bitmap content and stroke width")
+    print(f"PASS: macOS {fixture.stem} preserves delayed bitmap pixels and cache reuse")
 
 
 def check_pattern_tile_with_hidden_image(binary, fixture, directory):
@@ -662,7 +671,9 @@ def main():
             check_pattern = check_pattern_tile_with_delayed_image
         elif args.pattern_nested_images_only:
             pattern = fixture.with_name("svg-pattern-tile-nested-image-strokes.html")
-            check_pattern = partial(check_pattern_tile_with_delayed_image, nested=True)
+            check_pattern = partial(check_pattern_tile_with_delayed_image,
+                                    check_pixels=partial(check_svg_pattern_tile_image_pixels, nested=True),
+                                    image_lookups=1)
         elif args.pattern_standalone_only:
             pattern = fixture.with_name("svg-pattern-tile-standalone-strokes.html")
             check_pattern = partial(check_pattern_tile_variants, ready="data-standalone-pattern-ready")
@@ -700,11 +711,17 @@ def main():
             shared_tile = fixture.with_name("svg-pattern-tile-shared-fill-stroke.html")
             inputs.extend((bitmap, shared_tile))
         if args.pattern_nested_images_only:
-            shared_bitmap = fixture.with_name("svg-pattern-tile-shared-bitmap.html")
+            bitmap_checks = [
+                (fixture.with_name("svg-pattern-tile-shared-bitmap.html"),
+                 check_svg_shared_bitmap_tile_pixels, 1),
+                (fixture.with_name("svg-pattern-tile-repeated-bitmap.html"),
+                 check_repeated_bitmap_tile_pixels, 3),
+            ]
             hidden_bitmaps = [fixture.with_name(f"svg-pattern-tile-{name}.html")
                               for name in ("hidden-image", "hidden-filter-image",
                                            "hidden-pattern-paint")]
-            inputs.extend((shared_bitmap, *hidden_bitmaps))
+            inputs.extend(bitmap for bitmap, _, _ in bitmap_checks)
+            inputs.extend(hidden_bitmaps)
         offset_fixtures = []
         if args.pattern_offset_only:
             offset_fixtures = [(fixture.with_name(f"svg-pattern-tile-offset-{name}.html"), units)
@@ -738,7 +755,9 @@ def main():
         with tempfile.TemporaryDirectory(prefix="vox-svg-pattern-") as temporary:
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_nested_images_only:
-                check_pattern_tile_with_delayed_image(binary, shared_bitmap, Path(temporary), shared=True)
+                for bitmap, check_pixels, image_lookups in bitmap_checks:
+                    check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary),
+                                                          check_pixels=check_pixels, image_lookups=image_lookups)
                 for hidden_bitmap in hidden_bitmaps:
                     check_pattern_tile_with_hidden_image(binary, hidden_bitmap, Path(temporary))
             if args.pattern_standalone_only:
