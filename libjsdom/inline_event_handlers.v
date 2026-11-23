@@ -50,7 +50,21 @@ fn (mut host Host) install_inline_event_handlers() {
 // element, form owner, Document, then the relevant realm's global environment.
 fn (mut host Host) compile_inline_handler(target &dom.EventTarget, name string, source string) !&dom.CallbackType {
 	mut vm := host.vm
-	mut environment := libjs.Environment(host.realm.global_environment_record())
+	global_environment := libjs.Environment(host.realm.global_environment_record())
+	// Native dispatch can reach lazy compilation between JavaScript tasks.
+	// Enter the handler's realm without running script or checkpointing jobs.
+	enter_realm := !vm.has_running_execution_context() || voidptr(vm.realm()) != voidptr(host.realm)
+	if enter_realm {
+		mut context := libjs.ExecutionContext.create(0, [], 0)
+		context.realm = host.realm
+		context.lexical_environment = global_environment
+		context.variable_environment = global_environment
+		vm.push_execution_context(mut context)
+	}
+	defer {
+		if enter_realm { vm.pop_execution_context() }
+	}
+	mut environment := global_environment
 	if target.data.kind == .node {
 		element := unsafe { &dom.Node(target) }.as_element() or { return error('Handler target is not an element') }
 		environment = libjs.Environment(libjs.ObjectEnvironment.create(host.wrap_node(host.document.as_node()).as_object(), true, environment))

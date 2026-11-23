@@ -31,6 +31,23 @@ fn test_raw_handlers_compile_lazily_with_native_event_receiver_and_false_cancell
 	assert inline_handler_eval(mut vm, 'calls===1&&identity')!.as_bool()
 }
 
+fn test_native_click_compiles_raw_handler_while_the_vm_is_idle() {
+	mut host, mut vm := inline_handler_fixture('<a id="target" href="/discussion" onclick="this.setAttribute(\'data-clicked\', event.type)">Open discussion</a><button id="invalid" onclick="return }">Invalid handler</button>')!
+	defer { host.close() }
+	// Browser runtimes leave their realm context off the VM stack between tasks.
+	_ = vm.pop_execution_context()
+	assert !vm.has_running_execution_context()
+	target := host.document.get_element_by_id('target')?
+	event := dom.Event.create('click', dom.EventInit{bubbles: true, cancelable: true})
+	unsafe { &dom.EventTarget(target) }.dispatch_event(event)
+	assert target.get_attribute_value('data-clicked') == 'click'
+	assert !event.default_prevented()
+	assert !vm.has_running_execution_context()
+	invalid := unsafe { &dom.EventTarget(host.document.get_element_by_id('invalid')?) }
+	assert invalid.get_current_value_of_event_handler('click') == none
+	assert !vm.has_running_execution_context()
+}
+
 fn test_raw_handlers_use_element_form_document_global_scope_and_mutation_recompiles() {
 	mut host, mut vm := inline_handler_fixture('<form id="form"><button id="target" type="button" onclick="observed=scopeMarker">click</button></form>')!
 	defer { host.close() }
