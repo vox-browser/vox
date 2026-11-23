@@ -4635,6 +4635,33 @@ The startup smoke check, sixteen browser launches and guards exited
 zero. The pattern unit tests and production-mode type checks for
 macOS, Linux ARM64 and Windows D3D11 passed. Frame timing remains open.
 
+### Ignoring unused pattern paints in shared SVG tile eligibility
+
+`2cd5809f1` counts nested pattern operations and checks their filters
+only for paints that replay will visit. The regression references a
+blurred red tile from a zero-width stroke and from zero-opacity fill
+and stroke paints. Unit tests also check that positive-opacity paints
+still use the nested tile's eligibility and resource accounting.
+
+The previous production executable
+`b283127124529df60eb5d14bda6c5110d269802487292d36092cfc6d132920ec`
+drew the visible sibling and declined shared replay for the hidden
+tile. The new candidate rasterized that tile once and reused it three
+times at both 1× and 2×. Both decoded RGBA hashes matched the
+[earlier captures](#skipping-invisible-pattern-paints-in-macos-svg-tile-keys).
+The visible sibling still waited for its bitmap. The full delayed
+bitmap checks and the opacity-filter edit passed.
+[Fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-pattern-paint.html)
+
+Managed receipt `20261123-112724-f1833af6` failed writing generated C
+as the Data volume ran out of space. The private single-unit C `-prod`
+build sealed the same input fingerprint on RAM. Its executable SHA-256
+was `f0d940c047bd0a33f0fdf6435d058029f37323a3c7e8f2fe1159998054f39070`.
+The startup smoke check, sixteen fresh browser launches and their
+guards exited zero. The pattern unit tests and macOS, Linux ARM64 and
+Windows D3D11 production-mode type checks passed. Production
+publication and frame timing remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
