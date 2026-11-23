@@ -89,6 +89,7 @@ mut:
 	regexp_literal_programs []RegExpLiteralProgram
 	// Appended last: native code compiled against earlier fields keeps its offsets.
 	call_plan ?&FunctionCallPlan
+	property_hints []u32
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

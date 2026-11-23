@@ -72,7 +72,8 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			result = vm.execute_call_instruction(instruction, executable, left, right)!
 		}
 		.get_property {
-			result = vm.execute_property_read(left, right, instruction.strict)!
+			result = vm.execute_property_read_at(left, right, instruction.strict,
+				executable.property_hint(frame.program_counter))!
 		}
 		.get_binding, .typeof_binding {
 			result = vm.execute_binding_read(instruction, executable)!

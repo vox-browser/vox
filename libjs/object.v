@@ -454,6 +454,32 @@ pub fn (object &Object) internal_has_property(key PropertyName) bool {
 	return false
 }
 
+@[inline]
+fn (object &Object) reads_directly() bool {
+	return use_direct_property_reads() && object.host_properties == none
+		&& object.typed_array == none && object.string_object == none
+		&& object.arguments_object == none && object.legacy_platform_object == none
+}
+
+// [[Get]]'s direct path after the own lookup found no property.
+fn (object &Object) get_inherited(mut vm VM, key PropertyName, receiver Value) !Value {
+	if parent := object.prototype {
+		if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
+		if found := vm.indexed_prototype_property(parent, key) {
+			if found.position == -1 { return found.holder.internal_get(mut vm, key, receiver) }
+			if found.position == -2 { return js_undefined() }
+			inherited := found.holder.properties[found.position].value
+			if !inherited.is_accessor() { record_direct_property_read(); return inherited }
+			if use_direct_accessor_dispatch() {
+				vm.record_direct_accessor_dispatch(false)
+				return found.holder.get_accessor_value(mut vm, key, receiver, inherited.as_accessor())
+			}
+		}
+		return parent.internal_get(mut vm, key, receiver)
+	}
+	return js_undefined()
+}
+
 // 10.1.8 [[Get]] ( P, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-get-p-receiver
 pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value) !Value {
 	assert !receiver.is_special_empty_value()
@@ -463,39 +489,20 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	}
 	// Ordinary reads need only a value. Avoid constructing a complete optional
 	// descriptor on this path; exotic providers and accessor caching stay below.
-	if use_direct_property_reads() && object.host_properties == none
-		&& object.typed_array == none && object.string_object == none
-		&& object.arguments_object == none && object.legacy_platform_object == none {
+	if object.reads_directly() {
 		if array := object.array_object {
 			if key.is_length_property() { return Value.from_f64(f64(array.length)) }
 		}
 		index := object.find_own_property(key)
-		if index >= 0 {
-			value := object.properties[index].value
-			if !value.is_accessor() {
-				record_direct_property_read()
-				return value
-			}
-			if use_direct_accessor_dispatch() {
-				vm.record_direct_accessor_dispatch(false)
-				return object.get_accessor_value(mut vm, key, receiver, value.as_accessor())
-			}
-		} else {
-			if parent := object.prototype {
-				if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
-				if found := vm.indexed_prototype_property(parent, key) {
-					if found.position == -1 { return found.holder.internal_get(mut vm, key, receiver) }
-					if found.position == -2 { return js_undefined() }
-					inherited := found.holder.properties[found.position].value
-					if !inherited.is_accessor() { record_direct_property_read(); return inherited }
-					if use_direct_accessor_dispatch() {
-						vm.record_direct_accessor_dispatch(false)
-						return found.holder.get_accessor_value(mut vm, key, receiver, inherited.as_accessor())
-					}
-				}
-				return parent.internal_get(mut vm, key, receiver)
-			}
-			return js_undefined()
+		if index < 0 { return object.get_inherited(mut vm, key, receiver) }
+		value := object.properties[index].value
+		if !value.is_accessor() {
+			record_direct_property_read()
+			return value
+		}
+		if use_direct_accessor_dispatch() {
+			vm.record_direct_accessor_dispatch(false)
+			return object.get_accessor_value(mut vm, key, receiver, value.as_accessor())
 		}
 	}
 	descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or {

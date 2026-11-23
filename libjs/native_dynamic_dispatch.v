@@ -107,6 +107,16 @@ fn (mut vm VM) execute_property_read(left Value, right Value, strict bool) !Valu
 	return Reference.for_value(left, key, none, strict).get_value(mut vm)
 }
 
+// execute_property_read() for a get_property instruction with its position hint.
+fn (mut vm VM) execute_property_read_at(left Value, right Value, strict bool, hint &u32) !Value {
+	if left.is_object() && use_compact_reference_reads() {
+		key := right.to_property_key(mut vm)!
+		vm.record_compact_reference_read()
+		return left.as_object().hinted_get(mut vm, key, left, hint)
+	}
+	return vm.execute_property_read(left, right, strict)
+}
+
 fn (mut vm VM) execute_binding_read(instruction &Instruction, executable &Executable) !Value {
 	if use_compact_reference_reads() {
 		value, _ := vm.resolve_compact_read(executable.get_identifier(instruction.identifier), instruction.strict, false, instruction.op == .typeof_binding)!
