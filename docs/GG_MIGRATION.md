@@ -4813,6 +4813,40 @@ guards exited zero. The pinned CPU raster differential suite also passed
 with count 20,000 and seed `20261106`. Windows runner unit checks passed.
 The Windows VM still requires its host disk reserve.
 
+### Reusing interleaved vector pattern tiles
+
+`e78f33b69` retains the two most recently used completed tiles inside a
+shared raster replay. A hit updates the order and still charges the
+original subtree pixel budget. The fixture paints A, B, A, C, B, C, A.
+The published macOS control `bfdf3dd1…` rasterized all seven child tiles.
+The candidate rasterized five and reused two, with the last A testing
+eviction. [Fixture](../Tests/Browser/Native/svg-pattern-tile-interleaved-paints.html)
+
+The shared build reached the host disk limit while writing its freeze
+receipt. A private RAM-backed single-unit C `-prod` build verified all
+124 sealed inputs. Its executable SHA-256 was
+`ae9076877988a26821cf3d38651a9aabb0ead25ec59ecf6b9be7740339b35794`.
+Headless startup and 28 fresh macOS window captures passed. The full
+1024 × 600 CSS-pixel document matched the control at 1× and 2×, with
+decoded RGBA SHA-256 values
+`2d02d9fd587f5eb88c925ea21094b12cbae009f0f08e12c30b8513610b6ffac5` and
+`4d9602d8bf3719e57100b41e50137f2ae40a41dafa9930a2a716199a0d995e0e`.
+
+The Linux aarch64 build used V `5a39a4d`, Boehm, and single-unit
+Clang `-O0`. V generation and Clang ran sequentially to fit guest
+memory. The executable SHA-256 was
+`13190e89ec122ecdf456eed1634c87eb83397e0dd930dadc1605fc16be231ea0`.
+The nested, delayed-bitmap, and opacity-filter suites passed 22 Xvfb
+captures. The interleaved case had the same five rasters and two hits.
+Its 800 × 516 decoded RGBA matched with caching disabled and matched
+the corresponding 1× macOS region. The SHA-256 was
+`b9d71b4a51ff22c230c180ce71673a4f959280960bd4d2db1dc2193de2ef4520`.
+
+The final Linux and private macOS compile and runtime guards exited zero.
+Windows D3D11 and OpenGL source checks passed. Native Windows verification
+still requires the VM's host disk reserve. These checks cover pixel parity
+and the number of tile rasters per replay.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
