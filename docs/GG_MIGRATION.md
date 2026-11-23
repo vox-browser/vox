@@ -3295,6 +3295,100 @@ cohort measures synthetic replay with matched diagnostic
 builds. Optimized production and Windows runtime timings
 remain open.
 
+### Integral SVG offsets inside shared tiles
+
+In `2739aaed7`, a standalone `feOffset` on SourceGraphic can replay in the
+shared tile rasterizer when its explicit numeric user-space
+filter region and offset align with the tile's pixel grid.
+The shared adapter translates the source paint and clips the
+isolated result to the filter region. The translation requires
+no additional bitmap or pixel copy. Nested filter scopes carry
+the translation into child paints and regions. The shared tile
+key includes the projected region and offset. The native
+fallback key also includes its source bounds.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterRegion)
+
+The fixture applies an offset inside a translated SVG group used
+by a pattern fill, stroke, and alpha mask. A live edit reverses both
+offset components and moves the filter region's left edge. The
+checks include the vacated source position, the clipped edges,
+and a stripe outside the filter scope.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset.html)
+
+The macOS fixtures passed at 1× and 2×. Linux passed with the
+shared GG path, with caching enabled and disabled, and with
+and without row-banded mask rasterization. The shared macOS
+and Linux 384 × 108 RGB captures matched Brave pixel for pixel.
+The initial SHA-256 was
+`997ca262073cd79a55dc67e031a7b031b280f465cc0d5af5b67f7da4c9dd19d2`.
+The edited SHA-256 was
+`0f6ac1110e6e257aba60c67967e9e698859eb3520fd19f94857800288c6eb664`.
+The previously published macOS browser differed by 690 and
+1,590 pixels, respectively, on this fixture.
+
+The fixture and nearby matrix, transfer, and opacity fixtures
+passed on macOS and Linux. The macOS nested stroke checks, the
+focused painting tests, both Windows V source checks, and 23
+Python driver tests passed. Windows runtime validation remains
+open. The Linux executable SHA-256 was
+`0dad87e4cba9ae49f18520ce31f94a05e09d6534b2aa4675f46f79944cdcaa59`.
+The Linux diagnostic Clang `-O0` link kept the generated LibJS
+function-pointer diagnostic allowance.
+
+The first macOS capture had one miss followed by hits for all
+three uses of the tile. A fractional-offset fixture exercised
+the native fallback and matched the published macOS capture,
+with RGB SHA-256
+`0d0ebafd077c36b7232fb31b5505709589a5254228951900893d0e70caad103f`.
+
+The macOS replay diagnostic used 20 fills and 20 strokes. One
+workload reused a single tile. The other cycled through ten
+offsets, exceeding the eight-entry cache. Each trial launched a
+fresh browser with a private profile and cache, a 1024 × 600
+viewport at 1×, and a one-second settle. JavaScript and
+whole-frame raster reuse were disabled. All 48 stationary
+callbacks replayed 42 commands. Separate traces counted
+1,880 hits for the first workload and 1,880 misses for the
+second between the first and last callbacks.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 55.4975 / 2.0185 | 70.9410 / 2.9600 | 72.7110 / 3.1360 | 3 / 3 |
+| Cached 2 | 55.6505 / 1.9440 | 74.1950 / 5.1350 | 78.4920 / 5.2470 | 3 / 3 |
+| Cache pressure 1 | 55.5990 / 4.8450 | 75.6070 / 7.1060 | 88.7110 / 7.6590 | 3 / 3 |
+| Cache pressure 2 | 39.0520 / 4.3320 | 51.4760 / 5.1390 | 59.4930 / 5.4180 | 3 / 3 |
+
+Native and shared decoded documents matched throughout the
+12 trials. Cached and cache-pressure SHA-256 digests were
+`2739b260dfa7ac02e39b4d1c7460b56b1076a84f7faade6c2068826954c34121`
+and
+`7cf1fe90469507253a9a2bb4c7436c6a24d3e4a486d74a789fad1fd9ccbaf17b`.
+The respective fixture digests were
+`c944acc45eccbd4224c21bf6b99dae1d847347a14519384dd8f41bd631657d06`
+and
+`1aaaa5d2b315c36303789c32b5731d03d6c454c01c32573cd7986350423cb4e2`.
+The published control used single-unit C `-prod`, executable
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102`.
+The shared build used single-unit C `-prod -no-prod-options`
+with a Clang `-O0` override, executable
+`e76a4e3445142bfacd3c1a602397cbe49e9e4cb9b4763c41195691be859d2b7a`.
+Executable, fixture, library, and worker identities stayed
+fixed throughout each comparison. Browser and guard exits
+were zero. One-minute host load ranged from 69.41 to 88.68
+on 18 logical CPUs. Matched optimized production timing
+remains open.
+
+Two earlier diagnostics exposed cache-key bugs. The first
+stopped after the cached trace counted 1,880 misses because
+its key included placement-dependent native source bounds.
+After separating those bounds, the cached trial pairs matched
+pixels and measured 33.4185 / 1.4500 ms and 30.7880 / 1.5000 ms
+median replay. The cache-pressure trace then stopped after
+unexpected reuse collapsed ten offsets to seven keys.
+Byte-wise hashing of projected geometry fixed the cancellation
+between signed projections and the filter graph's own offsets.
+Both diagnostic guards returned 1 after the failed assertions.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
