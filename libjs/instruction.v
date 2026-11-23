@@ -176,6 +176,43 @@ fn (instruction Instruction) input_count() int {
 	}
 }
 
+// input_count() and writes_operand() per opcode, computed once from those
+// definitions: the dispatch loop asks both for every instruction, and each is
+// a long match over the opcode.
+struct OpcodeOperandFacts {
+	input_counts []u8
+	writes       []bool
+}
+
+const opcode_operand_facts = compute_opcode_operand_facts()
+
+fn compute_opcode_operand_facts() OpcodeOperandFacts {
+	count := int(OpCode.nop) + 1
+	mut input_counts := []u8{len: count}
+	mut writes := []bool{len: count}
+	for index in 0 .. count {
+		instruction := Instruction{
+			op: unsafe { OpCode(index) }
+		}
+		input_counts[index] = u8(instruction.input_count())
+		writes[index] = instruction.writes_operand()
+	}
+	return OpcodeOperandFacts{
+		input_counts: input_counts
+		writes:       writes
+	}
+}
+
+@[inline]
+fn (instruction &Instruction) dispatch_input_count() int {
+	return int(unsafe { opcode_operand_facts.input_counts[int(instruction.op)] })
+}
+
+@[inline]
+fn (instruction &Instruction) dispatch_writes_operand() bool {
+	return unsafe { opcode_operand_facts.writes[int(instruction.op)] }
+}
+
 fn (instruction Instruction) input_operand(index int) Operand {
 	return match index {
 		0 { instruction.lhs }

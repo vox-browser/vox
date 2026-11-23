@@ -45,7 +45,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 	mut left := js_undefined()
 	mut right := js_undefined()
 	mut source := js_undefined()
-	for index in 0 .. instruction.input_count() {
+	for index in 0 .. instruction.dispatch_input_count() {
 		operand := instruction.input_operand(index)
 		value := if checked_interpreter_operands {
 			frame.values[operand.slot(executable, frame.argument_count, false)!]
@@ -482,7 +482,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		}
 	}
 
-	if instruction.writes_operand() {
+	if instruction.dispatch_writes_operand() {
 		if checked_interpreter_operands {
 			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
 		} else {

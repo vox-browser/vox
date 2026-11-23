@@ -60,3 +60,16 @@ fn test_validated_operand_slots_match_checked_slots() {
 		assert operand.validated_slot(executable) == operand.slot(executable, 3, false)!
 	}
 }
+
+// The dispatch loop's per-opcode tables agree with the definitions for every
+// opcode, which run in declaration order from mov to nop.
+fn test_opcode_operand_tables_match_instruction_definitions() {
+	assert opcode_operand_facts.input_counts.len == int(OpCode.nop) + 1
+	for index in 0 .. int(OpCode.nop) + 1 {
+		instruction := Instruction{
+			op: unsafe { OpCode(index) }
+		}
+		assert instruction.dispatch_input_count() == instruction.input_count()
+		assert instruction.dispatch_writes_operand() == instruction.writes_operand()
+	}
+}
