@@ -79,3 +79,20 @@ fn test_numeric_filter_offset_preserves_user_space_numbers_and_defaults() {
 	percentage := Element{tag: 'feOffset', attributes: {'dx': '50%'}}
 	assert filter.numeric_filter_offset(&percentage, none) == none
 }
+
+fn test_numeric_source_filter_subregion_inherits_omitted_coordinates() {
+	filter := Element{tag: 'filter'}
+	primitive := Element{tag: 'feOffset', attributes: {'x': '5%', 'height': '12%'}}
+	region := Rect{4, 4, 32, 24}
+	assert filter.numeric_source_filter_subregion(&primitive, region, none, Point{400, 100})? == Rect{20, 4, 32, 12}
+	assert filter.numeric_source_filter_subregion(&primitive, region, none, none) == none
+	zero := Element{tag: 'feOffset', attributes: {'width': '0'}}
+	assert filter.numeric_source_filter_subregion(&zero, region, none, none)? == Rect{4, 4, 0, 24}
+}
+
+fn test_numeric_source_filter_subregion_uses_object_coordinates() {
+	filter := Element{tag: 'filter', attributes: {'primitiveUnits': 'objectBoundingBox'}}
+	primitive := Element{tag: 'feOffset', attributes: {'x': '25%', 'y': '.5', 'width': '.5'}}
+	region := Rect{4, 4, 32, 24}
+	assert filter.numeric_source_filter_subregion(&primitive, region, Rect{10, 30, 40, 20}, none)? == Rect{20, 40, 20, 24}
+}

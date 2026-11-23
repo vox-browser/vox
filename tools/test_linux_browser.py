@@ -2296,7 +2296,12 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
     svg_scale = 2 if filter_units == "viewport" else 1
     for left in (0, 128, 256):
         ink, stripe = (black, black) if left == 256 else (red, lime)
-        if filter_units == "viewport":
+        if filter_units == "subregion":
+            samples = ((9, 5, white), (10, 5, ink), (17, 7, ink), (18, 6, white),
+                       (10, 4, white), (10, 8, white), (8, 10, white)) if edited else (
+                           (7, 5, white), (8, 5, ink), (14, 10, ink), (15, 6, white),
+                           (8, 4, white), (8, 11, white), (17, 7, white))
+        elif filter_units == "viewport":
             samples = ((8, 7, white), (9, 7, ink), (13, 10, ink), (14, 8, white),
                        (9, 6, white), (9, 11, white), (15, 11, white)) if edited else (
                            (8, 7, white), (9, 7, ink), (15, 11, ink), (16, 8, white),
@@ -3232,7 +3237,7 @@ def main():
         if args.pattern_offset_only:
             for name, filter_units in (("offset", None), ("offset-bounds", "region"),
                                        ("offset-primitive-units", "primitive"),
-                                       ("offset-viewport", "viewport")):
+                                       ("offset-viewport", "viewport"), ("offset-subregion", "subregion")):
                 check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                        ready="data-offset-ready", check_edited=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,

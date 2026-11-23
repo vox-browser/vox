@@ -22,6 +22,11 @@ fn test_svg_pattern_offset_turns_both_crop_and_delta() {
 	assert projected.delta == Point{-5, -2}
 }
 
+fn test_svg_pattern_offset_keeps_an_empty_crop_transparent() {
+	offset := SVGPatternOffset{Point{4, -2}, Rect{3, 2, 0, 20}}
+	assert offset.transformed(Affine{b: 1})? == SVGPatternOffset{}
+}
+
 fn test_svg_pattern_offset_cache_separates_positive_and_negative_offsets() {
 	mut keys := map[u64]bool{}
 	for dx in -4 .. 6 {

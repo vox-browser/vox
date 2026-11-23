@@ -4479,7 +4479,8 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 	mut placement := transform
 	mut filter_depth := 0
 	mut offsets := []SVGPatternFilterPlacement{}
-	for operation in source {
+	for index := 0; index < source.len; index++ {
+		operation := &source[index]
 		mut operation_kind := PaintMaskOperationKind.path
 		match operation.kind {
 			.begin_filter {
@@ -4493,6 +4494,20 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 							placement[3], placement[4], placement[5]}
 						projected := offset.transformed(affine)?
 						crop := projected.region
+						if crop.is_empty() {
+							// This isolated result is transparent, including any nested filters.
+							depth := filter_depth
+							for index + 1 < source.len && filter_depth >= depth {
+								index++
+								match source[index].kind {
+									.begin_filter { filter_depth++ }
+									.end_filter { filter_depth-- }
+									else {}
+								}
+							}
+							if filter_depth >= depth { return none }
+							continue
+						}
 						delta := projected.delta
 						// Rasterize the translated source directly on the destination grid.
 						if ![crop.x, crop.y, crop.right(), crop.bottom(), delta.x, delta.y]!.all(math.floor(it) == it) {

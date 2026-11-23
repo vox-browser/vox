@@ -594,6 +594,35 @@ pub fn (element &Element) numeric_filter_region(object_bounds ?Rect, viewport_si
 	return region
 }
 
+// For a primitive with SourceGraphic as its input, unspecified coordinates
+// inherit the corresponding coordinates of the filter region.
+pub fn (element &Element) numeric_source_filter_subregion(primitive &Element, region Rect,
+	object_bounds ?Rect, viewport_size ?Point) ?Rect {
+	object_units := element.primitive_units() == .object_bounding_box
+	target := if object_units { object_bounds? } else { Rect{} }
+	if object_units && !(target.width > 0 && target.height > 0) { return none }
+	mut values := [region.x, region.y, region.width, region.height]!
+	for index, name in ['x', 'y', 'width', 'height'] {
+		value := primitive.attributes[name] or { continue }
+		number := parse_number_percentage(value)?
+		horizontal := index % 2 == 0
+		if object_units {
+			length := if horizontal { target.width } else { target.height }
+			origin := if index < 2 { if horizontal { target.x } else { target.y } } else { 0.0 }
+			values[index] = origin + number.value * length
+		} else if number.is_percentage {
+			size := viewport_size?
+			length := if horizontal { size.x } else { size.y }
+			if !(length > 0) { return none }
+			values[index] = number.resolve_relative_to(length)
+		} else {
+			values[index] = number.value
+		}
+	}
+	if !values.all(math.is_finite(it)) { return none }
+	return Rect{values[0], values[1], values[2], values[3]}
+}
+
 fn filter_interpolation_color_space(value string, inherited InterpolationColorSpace) InterpolationColorSpace {
 	return match value.to_lower() {
 		'linearrgb' { .linear_rgb }

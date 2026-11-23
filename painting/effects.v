@@ -161,6 +161,7 @@ pub:
 }
 
 pub fn (offset SVGPatternOffset) transformed(transform Affine) ?SVGPatternOffset {
+	if offset.region.is_empty() { return SVGPatternOffset{} }
 	if !((transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0)) {
 		return none
 	}

@@ -1106,8 +1106,7 @@ fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, fil
 	}
 	child := &element.children[0]
 	node := &filter.nodes[0]
-	if child.tag != 'feOffset' || node.kind != 'offset' || node.input_ids != [-1]
-		|| ['x', 'y', 'width', 'height'].any(it in child.attributes) { return none }
+	if child.tag != 'feOffset' || node.kind != 'offset' || node.input_ids != [-1] { return none }
 	object_bounds := if element.filter_units() == .object_bounding_box
 		|| element.primitive_units() == .object_bounding_box {
 		target := pattern_target?
@@ -1124,14 +1123,26 @@ fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, fil
 		?svg.Rect(none)
 	}
 	// Explicit user-space coordinates and object bounds need no viewport walk.
+	mut viewport := ?svg.Point(none)
 	region := element.numeric_filter_region(object_bounds, none) or {
 		target := pattern_target?
-		viewport := svg_pattern_filter_viewport_size(source, target.state)?
+		viewport = svg_pattern_filter_viewport_size(source, target.state)?
 		element.numeric_filter_region(object_bounds, viewport)?
 	}
 	delta := element.numeric_filter_offset(child, object_bounds)?
-	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y},
-		painting.Rect{region.x, region.y, region.width, region.height}}
+	filter_region := painting.Rect{region.x, region.y, region.width, region.height}
+	mut crop := filter_region
+	if ['x', 'y', 'width', 'height'].any(it in child.attributes) {
+		subregion := element.numeric_source_filter_subregion(child, region, object_bounds, viewport) or {
+			if viewport != none { return none }
+			target := pattern_target?
+			size := svg_pattern_filter_viewport_size(source, target.state)?
+			element.numeric_source_filter_subregion(child, region, object_bounds, size)?
+		}
+		crop = filter_region.intersection(painting.Rect{subregion.x, subregion.y,
+			subregion.width, subregion.height})
+	}
+	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y}, crop}
 }
 
 fn svg_pattern_filter_viewport_size(source &dom.Element, state &LayoutState) ?svg.Point {
