@@ -4669,7 +4669,7 @@ allocated bytes for `Vox.c` and `0-Vox.c.i`. Both files kept their declared
 SHA-256 identities at the canonical receipt paths. The startup smoke
 check and sixteen fresh browser launches passed. The unused-pattern tile
 rasterized once and was reused three times at each density, with the same
-decoded RGBA hashes as the private build. Frame timing remains open.
+decoded RGBA hashes as the private build.
 
 ### Linux runtime verification of hidden SVG patterns
 
@@ -4701,6 +4701,41 @@ kept the executable and fixture hashes fixed.
 These checks cover pixels and reuse counts. The two Windows guard-driver
 unit tests passed. Windows runtime still requires the VM's 5 GiB host
 disk reserve.
+
+### Native scroll publication with hidden SVG patterns
+
+The published single-unit C `-prod` executable `dc65068e…` above ran a
+scrollable version of the hidden-pattern fixture. Its SVG expands to
+1024 × 2304 CSS pixels. The two outer paths repeat in 32 rows of six
+columns, translated by 160 CSS pixels per column and 72 per row. The
+delayed tile uses the same two-pixel PNG inline. The generated HTML
+SHA-256 was `4b6e59b38874fe1b206721c831fd24eb98b62eb00545530fd387b6c082cda80e`.
+The first 136 × 72 CSS pixels matched the original fixture at 1× and
+2×, with 2× decoded RGBA SHA-256
+`7e9bfa6175a7599443e206e192c62179eb0adfc51192cd58e9bf35c0802be3f7`.
+
+`tools/measure_precise_scroll.py` used `--allow-fixture-navigation`,
+`--width 1024 --height 600 --inputs 120 --input-hz 60 --delta 4
+--reverse-every 60 --settle-seconds 2 --script-policy disabled` and
+required the fixture title. Each fresh launch used a private profile,
+an empty disk cache, the local file URL, and 2× backing scale. OS caches
+were retained. With `VOX_GG_SVG_DIAGNOSTICS=1` in a separate launch,
+the browser recorded two tile misses before input, then 2,904 tile hits
+and zero misses between input start and completion.
+
+| Trial PID | Input Hz | Scroll publications/s | Median / p95 / max interval, ms | Over 16.67 ms | Input / total publications / scroll changes | Leading / trailing gap, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 85065 | 59.941 | 59.438 | 16.644 / 17.692 / 20.730 | 57/118 | 120 / 123 / 118 | 20.052 / 16.280 |
+| 85279 | 59.971 | 59.467 | 16.660 / 17.739 / 23.923 | 59/118 | 120 / 123 / 118 | 19.742 / 15.755 |
+
+The timed trials ran with diagnostics off. Scroll position covered
+0–510 CSS pixels. Throughput uses the entire first-to-last input window
+and counts changes at completed native frame installation after the
+outer view paint. This is a same-build cadence baseline. Browser,
+pixel-check, driver and guard exits were zero. The 3 GiB timing guard
+sampled 412,712,960 bytes peak RSS. One-minute load before the two
+timed trials was 8.04 and 8.12 on 18 logical CPUs. The executable,
+library and fixture hashes stayed fixed.
 
 ## Sharing the portable SVG fallback with Windows
 
