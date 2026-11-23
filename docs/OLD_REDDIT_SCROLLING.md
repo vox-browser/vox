@@ -502,3 +502,54 @@ env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY -u all_proxy -u http_proxy -u http
   --settle-seconds 8 --timeout 55 \
   --network-policy 'Live HTTPS, empty private HTTP cache per process, host OS caches retained'
 ```
+
+## Live r/europe comment thread on 2026-11-23
+
+The [reported comment thread](https://old.reddit.com/r/europe/comments/1y2nf00/intimidating_vigilantes_posing_as_farright/)
+still stalled after the listing change. Two fresh macOS launches at 100% zoom
+used a 1701×948 document viewport at 2×, an empty private profile and HTTP cache,
+the automatic script policy, and retained OS caches. After eight seconds with
+the matching title, `tools/measure_precise_scroll.py` sent 480 precise six-point
+wheel events at nominal 60 Hz, reversing after 240. The endpoint measures
+scroll-changing native frame installations over the complete input window.
+
+| Trial (UTC start) | Scroll FPS | Input Hz | Scroll changes / publications | Median / p95 / max (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 03:13:08 | 23.38 | 48.27 | 232 / 236 | 21.29 / 193.08 / 329.04 | 72.41% | 203.08 / 0.33 |
+| 03:14:02 | 23.58 | 47.26 | 239 / 244 | 22.18 / 187.08 / 340.53 | 74.06% | 155.85 / 0.35 |
+
+Both completed all 480 inputs, and the browser and guards exited 0. The
+one-minute host load was 17.0–21.4 on 18 logical CPUs. The first attempted run
+completed in the browser, but its driver exited 1 because production published
+a replacement executable before it could verify the input hashes. The valid
+trials used receipt `20261123-060034-72fee019`, executable SHA-256
+`1a716874d467a366ff3eeeab46e48954c0f93e97bd4245e37a01af9db8e840da`,
+and `libVoxAVIF.dylib` SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+The separate raster and stack diagnostic completed 205 viewport-reusing
+passes after input began. It logged 379 cropped shape transfers. The tall
+comment outlines still dominated the slowest frames, despite damage largely
+following the exposed strip. A second geometry diagnostic found unblurred
+shadows with zero effective alpha and uniform strokes replaying surfaces as
+large as 2650×2120 device pixels. The geometry and sampling drivers and their
+guards exited 0.
+
+Chromium replay now returns before native raster setup when an outer box
+shadow's effective alpha is zero. Stroked rounded rectangles and visible
+unblurred shadows can use the existing cropped transfer path with their
+original tile geometry. The same-binary control sets
+`VOX_DISABLE_SCROLL_OUTLINE_REGIONS=1` and
+`VOX_REPLAY_TRANSPARENT_BOX_SHADOWS=1`, leaving the earlier listing
+optimizations active.
+
+Five isolated C-backend trials on the traced 2650×2120 shadow and border
+compared a 2650×100 repaint strip byte for byte. All pixels matched. The full
+pair took 6.1–7.7 ms. The cropped stroke took 54.5 ms on its first draw and
+0.9–3.8 ms on subsequent draws. These times describe two isolated leaves with
+the leaf cache disabled, including the cold draw.
+
+The Chromium geometry regression passed with exact pixels for the new
+outline modes, including fractional coordinates, rounded underlays, mixed
+tile sample counts and a crop spanning tile boundaries. The transparent
+shadow test also passed with no native raster context.

@@ -1228,11 +1228,13 @@ static int native_try_scroll_shape_region(CGContextRef context, VoxGraphiteShape
     const int32_t *geometry, float scale, float canvas_height, int first_x, int first_y) {
     if (!native_scroll_raster.active || !native_scroll_raster.reused
         || context != native_scroll_raster.context || !geometry[4]
-        || (shape->fill != 1 && shape->fill != 10)
         || shape->matrix[1] != 0 || shape->matrix[3] != 0
         || shape->matrix[0] <= 0 || shape->matrix[0] != shape->matrix[4]
         || geometry[2] != geometry[5] * scale || geometry[3] != geometry[6] * scale
         || getenv("VOX_DISABLE_SCROLL_SHAPE_REGIONS")) return 0;
+    if (shape->fill != 1 && shape->fill != 10
+        && ((shape->fill != 0 && shape->fill != 9) || getenv("VOX_DISABLE_SCROLL_OUTLINE_REGIONS")))
+        return 0;
     CGRect clip = CGContextGetClipBoundingBox(context);
     if (CGRectIsEmpty(clip) || CGRectIsNull(clip) || CGRectIsInfinite(clip)) return 0;
     CGRect leaf = CGRectMake(geometry[0], geometry[1], geometry[5], geometry[6]);

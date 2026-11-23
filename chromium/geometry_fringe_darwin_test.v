@@ -2,6 +2,7 @@
 module main
 
 import ggshape
+import layout
 import stbi
 
 fn test_native_leaf_fringe_preserves_the_compositor_tile_origin() {
@@ -160,7 +161,7 @@ fn test_root_filter_fringe_preserves_the_picture_origin_and_outside_pixels() {
 	}
 }
 
-fn test_scroll_shape_region_preserves_shadow_and_fill_pixels_on_the_original_grid() {
+fn test_scroll_shape_region_preserves_shadow_fill_and_border_pixels_on_the_original_grid() {
 	old := document_geometry_grid
 	defer { document_geometry_grid = old }
 	width, height := 116, 121
@@ -182,20 +183,22 @@ fn test_scroll_shape_region_preserves_shadow_and_fill_pixels_on_the_original_gri
 			cells: [i32(1), 2]
 		}
 		first_y := if tiled { 2 } else { -20 }
-		for kind in [1, 10] {
+		for kind in [0, 1, 9, 10] {
 			for radius in [f32(0), 5] {
 				shape := C.VoxGraphiteShape{
 					matrix: [f32(1), 0, .25, 0, 1, .5, 0, 0, 1]!
 					rect: [f32(12), 57, 88, 58, radius, radius, radius, radius, radius, radius, radius, radius]!
 					underlay_rect: [f32(15), 59, 82, 54, radius, radius, radius, radius, radius, radius, radius, radius]!
 					fill: i32(kind)
-					thickness: 4
+					thickness: if kind == 9 { 0 } else { 4 }
 					anti_alias: 1
 					force_msaa: 1
 					red: 51
 					green: 83
 					blue: 119
 					alpha: 109
+					has_underlay: i32(kind == 0 && radius > 0)
+					underlay_rgba: [u8(102), 104, 160, 128]!
 					has_filter_clip: i32(kind == 10)
 					filter_clip: [f32(5), 55, 108, 72]!
 				}
@@ -223,4 +226,21 @@ fn test_scroll_shape_region_preserves_shadow_and_fill_pixels_on_the_original_gri
 			}
 		}
 	}
+}
+
+fn test_transparent_outer_shadow_needs_no_native_raster_context() {
+	mut app := BrowserApp{}
+	shadow := layout.PaintCommand{
+		kind: 'paint_outer_box_shadow'
+		color: '#11223300'
+		opacity: 1
+		width: 2400
+		height: 5000
+	}
+	assert app.draw_chromium_outer_shadow(shadow, 0, 88, 0)
+	assert app.draw_chromium_outer_shadow(layout.PaintCommand{
+		...shadow
+		color: '#112233'
+		opacity: 0
+	}, 0, 88, 0)
 }

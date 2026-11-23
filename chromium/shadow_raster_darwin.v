@@ -2,6 +2,9 @@ module main
 
 import ggshape
 import layout
+import os
+
+const replay_transparent_box_shadows = os.getenv('VOX_REPLAY_TRANSPARENT_BOX_SHADOWS') != ''
 
 fn C.native_draw_document_shape(&C.VoxGraphiteShape, &f32, f32, f32, f32, f32, f32) i32
 
@@ -14,11 +17,12 @@ fn document_shadow_rect(x f64, y f64, width f64, height f64, radii layout.BoxRad
 fn (mut app BrowserApp) draw_chromium_outer_shadow(command layout.PaintCommand,
 	page_x f32, page_y f32, scroll_y f64) bool {
 	if command.kind != 'paint_outer_box_shadow' { return false }
-	box := command.box_shadow()
-	fill := app.paint_colors.color(command.color, command.opacity)
 	color := chromium_retained_paint_color(command) or {
+		fill := app.paint_colors.color(command.color, command.opacity)
 		[f32(fill.r) / 255, f32(fill.g) / 255, f32(fill.b) / 255, f32(fill.a) / 255]!
 	}
+	if color[3] == 0 && !replay_transparent_box_shadows { return true }
+	box := command.box_shadow()
 	shape := C.VoxGraphiteShape{
 		rect:            document_shadow_rect(command.x, command.y, command.width, command.height, command.corner_radii)
 		underlay_rect:   document_shadow_rect(box.content_rect.x, box.content_rect.y,
