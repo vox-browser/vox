@@ -21,7 +21,7 @@ set -eu
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
-#   VOX_BUILD_INPUT_COMPRESSOR  absolute path to afsctool for compact single-unit receipts
+#   VOX_BUILD_INPUT_COMPRESSOR  absolute path to afsctool for compact receipts and staging
 #   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
 #   VOX_V8=1                  experimental: compile with -d vox_v8, which implements the
 #                             JavaScriptCore C API on V8 (see docs/V8_ENGINE.md)
@@ -472,10 +472,13 @@ if [ ! -f "$compile_dir/Vox" ]; then
     fi
     v_tool freeze_browser_compile "$@"
 fi
-mv -f "$compile_dir/Vox" "$binary_dir/Vox"
-v_tool localize_bundle_rpaths "$binary_dir/Vox" "$build_dir"
-v_tool build_harfbuzz --check-executable "$binary_dir/Vox"
-
+executable="$compile_dir/Vox"
+if [ -z "$input_compressor" ]; then
+    mv -f "$executable" "$binary_dir/Vox"
+    executable="$binary_dir/Vox"
+fi
+v_tool localize_bundle_rpaths "$executable" "$build_dir"
+v_tool build_harfbuzz --check-executable "$executable"
 
 # JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.
 rm -f "$binary_dir/libVoxJPEGXL.dylib"
@@ -508,10 +511,14 @@ else
     rm -f "$binary_dir/libVoxJSCOnV8.dylib"
 fi
 
-if command -v codesign >/dev/null 2>&1; then
-    # Current macOS JavaScriptCore requires this entitlement for its JIT,
-    # including when the embedding app is ad-hoc signed.
-    codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$bundle_dir" >/dev/null
+# Current macOS JavaScriptCore requires this entitlement for its JIT,
+# including when the embedding app is ad-hoc signed.
+entitlements="$repo_dir/packaging/Vox.entitlements.plist"
+if [ -n "$input_compressor" ]; then
+    v_tool stage_compact_browser --input-compressor "$input_compressor" \
+        --executable "$executable" --bundle "$bundle_dir" --entitlements "$entitlements"
+elif command -v codesign >/dev/null 2>&1; then
+    codesign --force --sign - --entitlements "$entitlements" "$bundle_dir" >/dev/null
 fi
 rm -rf "$compile_dir"
 

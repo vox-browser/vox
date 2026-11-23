@@ -298,9 +298,10 @@ fn test_compact_frozen_inputs_leave_the_receipt_unchanged_on_compression_failure
 		destination := join(root, 'retained.c')
 		write_changed(source, 'x'.repeat(8 * 1024 * 1024))!
 		write_changed(destination, 'previous input')!
-		storage := FrozenInputStorage{root, '/usr/bin/true'}
 		mut rejected := false
-		storage.retain(source, destination) or { rejected = err.msg().contains('did not compress') }
+		retain_compact_file('/usr/bin/true', source, destination) or {
+			rejected = err.msg().contains('did not compress')
+		}
 		assert rejected
 		assert read(destination)! == 'previous input'
 	}
@@ -339,6 +340,51 @@ fn test_compact_frozen_compilation_retains_the_original_paths_and_hashes() ! {
 		assert inputs[preprocessed] == digest(preprocessed)!
 		assert strings(data['compiler_command'] or { json.Null{} }).contains(preprocessed)
 		assert inputs.keys().all(!it.starts_with(scratch + '/'))
+	}
+}
+
+fn test_stage_compact_browser_preserves_bundle_signature_and_entitlements() ! {
+	$if macos {
+		compressor := os.getenv_opt('VOX_TEST_BUILD_INPUT_COMPRESSOR') or { '/usr/bin/false' }
+		compact := compressor != '/usr/bin/false'
+		root := temporary(os.temp_dir(), 'vox-compact-browser-')!
+		defer { remove(root) or {} }
+		scratch := temporary(os.getenv_opt('VOX_TEST_BUILD_INPUT_SCRATCH') or { os.temp_dir() },
+			'vox-compact-browser-signing-')!
+		defer { remove(scratch) or {} }
+		bundle := join(root, 'Vox.app')
+		resource := join(bundle, 'Contents/Resources/test.txt')
+		write_changed(resource, 'sealed resource')!
+		checked(['/usr/bin/ditto', join(root_dir(), 'packaging/Info.plist'),
+			join(bundle, 'Contents/Info.plist')])!
+		binary_dir := join(bundle, 'Contents/MacOS')
+		mkdir(binary_dir)!
+		helper := join(binary_dir, 'VoxAdblockWorker')
+		write_changed(join(scratch, 'helper.c'), 'int main(void) { return 0; }\n')!
+		checked(['clang', join(scratch, 'helper.c'), '-o', helper])!
+		checked(['/usr/bin/codesign', '--force', '--sign', '-', helper])!
+		helper_digest := digest(helper)!
+		source := join(scratch, 'main.c')
+		payload_size := if compact { '8388608' } else { '1' }
+		write_changed(source, 'static const volatile unsigned char payload[${payload_size}] = { 90 };\n'
+			+ 'int main(void) { return payload[0] != 90; }\n')!
+		executable := join(scratch, 'Vox')
+		checked(['clang', source, '-o', executable])!
+		stage_compact_browser(arguments(['--executable', executable, '--bundle', bundle,
+			'--entitlements', join(root_dir(), 'packaging/Vox.entitlements.plist'),
+			'--input-compressor', compressor], []string{})!)!
+		remove(scratch)!
+		staged := join(binary_dir, 'Vox')
+		assert digest(helper)! == helper_digest
+		assert capture(['/usr/bin/codesign', '--display', '--entitlements', '-', staged])!.contains('com.apple.security.cs.allow-jit')
+		checked(['/usr/bin/codesign', '--verify', '--deep', '--strict', bundle])!
+		checked([staged])!
+		if compact {
+			assert os.file_size(staged) > 8 * 1024 * 1024
+			assert capture(['/usr/bin/stat', '-f', '%b', staged])!.trim_space().u64() * 512 < os.file_size(staged)
+		}
+		write_changed(resource, 'changed resource')!
+		assert execute(['/usr/bin/codesign', '--verify', '--strict', bundle]) != 0
 	}
 }
 

@@ -82,6 +82,39 @@ fn localize(executable string, build_directory string) ! {
 	}
 }
 
+fn stage_compact_browser(a Args) ! {
+	compressor := compact_file_compressor(a)!
+	executable := real(a.required('--executable')!)
+	bundle := real(a.required('--bundle')!)
+	entitlements := real(a.required('--entitlements')!)
+	scratch := temporary(os.dir(executable), '.bundle-signing-')!
+	defer { remove(scratch) or { eprintln('Could not remove bundle signing scratch: ${err}') } }
+	signing_bundle := join(scratch, os.file_name(bundle))
+	contents := join(bundle, 'Contents')
+	signing_contents := join(signing_bundle, 'Contents')
+	macos := join(contents, 'MacOS')
+	signing_macos := join(signing_contents, 'MacOS')
+	mkdir(signing_macos)!
+	// Seal the same resources and helpers the supervisor already fingerprinted.
+	// The previous executable and its signature are never inputs to signing.
+	for entry in os.ls(contents)! {
+		if entry in ['MacOS', '_CodeSignature'] { continue }
+		checked(['/usr/bin/ditto', join(contents, entry), join(signing_contents, entry)])!
+	}
+	for entry in os.ls(macos)! {
+		if entry == 'Vox' { continue }
+		checked(['/usr/bin/ditto', join(macos, entry), join(signing_macos, entry)])!
+	}
+	signing_executable := join(signing_macos, 'Vox')
+	os.rename(executable, signing_executable)!
+	checked(['/usr/bin/codesign', '--force', '--sign', '-', '--entitlements', entitlements,
+		signing_bundle])!
+	retain_compact_file(compressor, signing_executable, join(macos, 'Vox'))!
+	checked(['/usr/bin/ditto', join(signing_contents, '_CodeSignature'),
+		join(contents, '_CodeSignature')])!
+	checked(['/usr/bin/codesign', '--verify', '--strict', bundle])!
+}
+
 fn build_avif(a Args) ! {
 	output := absolute(a.required('--output')!)
 	mkdir(os.dir(output))!

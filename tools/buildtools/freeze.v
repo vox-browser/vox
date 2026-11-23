@@ -204,41 +204,46 @@ struct FrozenInputStorage {
 
 fn frozen_input_storage(a Args) !FrozenInputStorage {
 	if !a.has('--input-scratch') && !a.has('--input-compressor') { return FrozenInputStorage{} }
-	$if !macos {
-		return error('Compact frozen inputs require macOS')
-	}
 	scratch := real(a.required('--input-scratch')!)
-	compressor := real(a.required('--input-compressor')!)
-	if !os.is_dir(scratch) || !os.is_file(compressor) || !os.is_executable(compressor) {
-		return error('Compact frozen inputs need a scratch directory and an executable compressor')
-	}
-	return FrozenInputStorage{scratch, compressor}
+	if !os.is_dir(scratch) { return error('Compact frozen inputs need a scratch directory') }
+	return FrozenInputStorage{scratch, compact_file_compressor(a)!}
 }
 
-fn (storage FrozenInputStorage) retain(source string, destination string) ! {
+fn compact_file_compressor(a Args) !string {
+	$if !macos {
+		return error('File compression requires macOS')
+	}
+	compressor := real(a.required('--input-compressor')!)
+	if !os.is_file(compressor) || !os.is_executable(compressor) {
+		return error('File compression needs an executable compressor')
+	}
+	return compressor
+}
+
+fn retain_compact_file(compressor string, source string, destination string) ! {
 	expected := digest(source)!
-	// Large sources live on scratch until their compressed copies are ready.
+	// Large files live on scratch until their compressed copies are ready.
 	// ditto preserves the resource fork and compression flag across volumes.
 	size := os.file_size(source)
 	compact := size >= 8 * 1024 * 1024
 	if compact {
-		checked([storage.compressor, '-c', '-T', 'LZFSE', source])!
+		checked([compressor, '-c', '-T', 'LZFSE', source])!
 		if digest(source)! != expected {
-			return error('Compressor changed frozen input bytes: ${source}')
+			return error('Compressor changed file bytes: ${source}')
 		}
 		if capture(['/usr/bin/stat', '-f', '%b', source])!.trim_space().u64() * 512 >= size {
-			return error('Compiler input did not compress: ${source}')
+			return error('File did not compress: ${source}')
 		}
 	}
 	pending := temporary(os.dir(destination), '.compact-input-')!
-	defer { remove(pending) or { eprintln('Could not remove staged compiler input: ${err}') } }
+	defer { remove(pending) or { eprintln('Could not remove compact staging directory: ${err}') } }
 	staged_file := join(pending, os.file_name(destination))
 	checked(['/usr/bin/ditto', source, staged_file])!
 	if digest(staged_file)! != expected {
-		return error('Retained compiler input bytes changed: ${destination}')
+		return error('Retained file bytes changed: ${destination}')
 	}
 	if compact && capture(['/usr/bin/stat', '-f', '%b', staged_file])!.trim_space().u64() * 512 >= size {
-		return error('Receipt volume did not preserve compiler input compression: ${destination}')
+		return error('Destination volume did not preserve compression: ${destination}')
 	}
 	os.rename(staged_file, destination)!
 }
@@ -271,7 +276,8 @@ fn prepare_frozen(a Args) !Record {
 	}
 	storage := frozen_input_storage(a)!
 	if storage.scratch != '' {
-		storage.retain(join(storage.scratch, os.file_name(source_path)), source_path)!
+		retain_compact_file(storage.compressor, join(storage.scratch, os.file_name(source_path)),
+			source_path)!
 	}
 	source := real(source_path)
 	cwd := os.getwd()
@@ -307,7 +313,7 @@ fn prepare_frozen(a Args) !Record {
 		write_json(join(receipt, 'preprocess-commands.json'), json.Any(commands))!
 		checked(command)!
 		if digest(path)! != sha { return error('C source changed during preprocessing: ${path}') }
-		if storage.scratch != '' { storage.retain(preprocess_output, destination)! }
+		if storage.scratch != '' { retain_compact_file(storage.compressor, preprocess_output, destination)! }
 		preprocessed[path] = [destination, pp_languages[language]]
 	}
 	mut objects := map[string]string{}
