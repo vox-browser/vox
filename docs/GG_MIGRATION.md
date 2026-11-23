@@ -3689,6 +3689,84 @@ logical CPUs. All browser and guard exits were zero.
 Subregion replay had a comparable median and higher p95
 in both pairs. Optimized production timing remains open.
 
+### Curved source geometry for SVG tile offsets
+
+In `84c185f5b`, a standalone SVG `feOffset` in a pattern tile
+can resolve object-bounding-box coordinates from paths with
+Bézier curves, elliptical arcs, and multiple drawn contours.
+The bounds query considers segment endpoints and analytic
+extrema. The existing layout call still uses the control-point
+bounds it needs. Tile replay keeps the existing whole-pixel
+translation and clip eligibility rules.
+[SVG 2 bounding boxes](https://svgwg.org/svg2-draft/coords.html#BoundingBoxes)
+
+The regression fixture uses the same pattern as a fill, stroke,
+and alpha mask. A live edit replaces the quadratic path with a
+cubic path and changes the resolved offset and clip. macOS
+traces recorded a new tile cache key after the edit and hits
+for both keys. The Linux GG captures used the portable group
+raster with row bands.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-curves.html)
+
+The 384 × 108 RGB crops matched across macOS, Linux, and
+static Brave 158.1.100.58 captures. The initial, equivalent
+arc, and two-contour variants shared SHA-256
+`e040a713427adfd46b33fdc1a14a2baa7a266a2ef46553b9dfc95b3eed1e794b`.
+The edited crop had SHA-256
+`f2d708b58d063db5c542ea20c5cb92dae03719d64575c3f78b91f3fa7b95eb2b`.
+The published macOS baseline
+`70d03ef7a4fe9572c2397421b6922cf7b1a6bddf2b01fb5b84c4e43e9fa76bc9`
+differed by 7,560 initial and 21,600 edited pixels. Adding an
+isolated trailing moveto left the Vox crops unchanged and
+changed 720 pixels in Brave, where the filtered red source
+disappeared.
+
+All six focused offset fixtures passed on macOS at 1× and 2×
+and on Linux with the group cache enabled and disabled. The
+Bézier and filter-region unit checks, 23 Python driver tests,
+and the Windows D3D11 and OpenGL V source checks passed. The
+existing layout geometry test reached the 12 GiB memory
+guard in both normal and preallocated runs. Windows runtime
+validation remains open.
+
+The macOS diagnostic replays equivalent offsets expressed
+in numeric user-space and object-bounding-box units on one
+single-unit C build with Clang `-O0`. Each freshly launched
+process draws 20 fills and 20 strokes, with private profiles
+and caches, a 1024 × 600 document crop at 1×, and a one-second
+settle. JavaScript and whole-frame raster reuse are disabled.
+Each run has 48 stationary draw callbacks with 42 commands
+and median allocation of 3 KiB per callback. Separate traces
+each counted 1,880 tile hits and zero misses between the
+first and last callbacks. All six decoded document crops
+shared SHA-256
+`1e4df7cd380cdd1f95eae491d2167f2eed36bf5fd652cef0fb83e8f41914a99f`.
+
+| Pair | Numeric / object median replay, ms | Numeric / object p95, ms | Numeric / object maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.0720 / 1.0790 | 1.1080 / 1.1030 | 1.1180 / 1.1130 |
+| 2 | 1.0670 / 1.1075 | 1.1000 / 1.1420 | 1.1060 / 1.1470 |
+
+One-minute load was 12.74–12.86 across 18 logical CPUs. The
+object-bounding-box form had a higher median in both pairs.
+The measurement covers stationary replay after layout.
+Optimized production performance remains unverified.
+
+The macOS and aarch64 Linux executable SHA-256 values were
+`673707b0698975402c9b86cdf7ec2bddcdca9df3e9ce834056829eb2b8aab60f`
+and
+`80437a552a1b7418c46bb5d7e5a33f8f85fc8a5a002e0c74788c3a0e5d835ef6`.
+Linux used the deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance. Numeric and object-bounding-box replay fixture
+SHA-256 values were
+`95aa784d5adcde3e1dc628d3e2583c6533437d21cba4437782e6563e5207e7a8`
+and
+`46cfd24bd79188abb071bbdc200c2ffbc6585252b1a5b3cfe1727989a0070d69`.
+The executable, library, and fixture identities stayed fixed
+during each check. Final browser and replay guard exits were
+zero.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
