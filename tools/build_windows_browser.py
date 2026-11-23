@@ -69,12 +69,14 @@ def main():
         environment['VTMP'] = scratch
         # Production embedding is required when the executable leaves this
         # checkout. Keep the C optimization level unchanged for this build path.
-        flags = ['-b', 'c', '-prod', '-no-prod-options']
+        flags = ['-b', 'c', '-prod', '-no-prod-options', '-d', 'vox_gg_svg']
         if args.console:
             flags += ['-subsystem', 'console']
+        if not args.opengl:
+            flags += ['-d', 'sokol_d3d11']
         run([compiler, '-memory-limit', '10G', *flags, '-enable-globals', '-gc', 'none',
              '-os', 'windows', '-arch', 'amd64', '-cc', environment['CC'],
-             '-d', 'ui2_custom_rendering', '-d', 'vox_gg_svg' if args.opengl else 'sokol_d3d11',
+             '-d', 'ui2_custom_rendering',
              '-path', f'{repo}|{modules}|@vmodules|@vlib', '-o', output, '.'])
     if output.read_bytes()[:2] != b'MZ':
         raise SystemExit('Compiler did not produce a Windows executable')

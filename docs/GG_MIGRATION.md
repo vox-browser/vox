@@ -1,5 +1,28 @@
 # Migrating from Skia to vlib/gg
 
+## Windows D3D11 document SVG fills
+
+The standard Windows build accepts `VOX_GG_SVG=1` to render solid SVG
+path fills through `gg.canvas`. The browser reuses its existing SVG
+texture cache and submits the resolved GPU image in document order using
+the Windows GG shader and premultiplied blending. The image stays on the
+GPU through presentation. Pixel-aligned rectangles
+use the single-sample bounds shader. Paths that need curved edges or a
+hole use the shared multisample wedge renderer. Gradients and strokes
+go directly to the portable rasterizer. The option is off by default
+while hardware frame timings remain unmeasured.
+
+The Windows 11 QEMU browser used V `4478fc4` and MinGW GCC 16.2.0 with
+`-prod -no-prod-options`. Its SHA-256 was
+`43382068ea4ed340320976330b339b0f1b0c8a4b82ea96efe59d67730c71ee24`
+before and after the four launches. The portable, cached Canvas,
+texture-only cache, and uncached Canvas runs produced the same 800 × 100
+RGB document crop (`71751b2eac471adc33ce60b00348a8d94ce4423fa638df815fe4653e7017d352`).
+Diagnostics confirmed D3D11 draws for the even-odd hole, translucent
+overlap, and translated fill. Gradients and strokes used portable replay
+in all four runs. Each process exited zero under the 3 GiB guard. The
+Linux browser source check and the staging and runner checks passed.
+
 ## Solid Canvas fills on D3D11
 
 An initialized Windows Sokol D3D11 window can now host `gg.canvas`
@@ -14,8 +37,7 @@ format, which unblocks creation of 4× depth-stencil attachments.
 
 The Windows implementation currently accepts solid bounds and wedge
 passes, including path clips that use depth and stencil. Unsupported
-shading or geometry returns an error before opening a render pass. The
-default D3D11 browser has yet to route document draws through these shaders.
+shading or geometry returns an error before opening a render pass.
 Hardware frame timings remain unmeasured.
 
 The guarded Windows 11 QEMU smoke used V `4478fc4` and MinGW GCC 16.2.0

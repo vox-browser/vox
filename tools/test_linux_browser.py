@@ -602,9 +602,23 @@ window.addEventListener('wheel', function () {
     print(f"PASS: {case} web font textures preserve pixels while scrolling and after a live color edit", flush=True)
 
 
-def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=run_windowed):
+def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=run_windowed,
+                            *, backend="glcore33"):
+    labels = ("portable-svg", "gg-svg", "gg-svg-decoded-bounds", "gg-svg-uncached")
+    if backend == "glcore33":
+        labels += ("gg-svg-fallback",)
+    if backend == "d3d11":
+        # Exercise fallback while the other draws use Canvas on the same frame.
+        fallback = Path(temporary) / "svg-gg-d3d11-fallback.html"
+        fallback.write_text(fixture.read_text(encoding="utf-8").replace("</svg>", """
+  <defs><linearGradient id="fallback-fill"><stop stop-color="red"/>
+    <stop offset="1" stop-color="blue"/></linearGradient></defs>
+  <path d="M180 48H228V68H180Z" fill="url(#fallback-fill)"/>
+  <path d="M180 86H228" fill="none" stroke="#ed8a24" stroke-width="6"/>
+</svg>"""), encoding="utf-8")
+        fixture = fallback
     documents = []
-    for label in ("portable-svg", "gg-svg", "gg-svg-decoded-bounds", "gg-svg-uncached", "gg-svg-fallback"):
+    for label in labels:
         enabled = label != "portable-svg"
         uses_gpu = label in ("gg-svg", "gg-svg-decoded-bounds", "gg-svg-uncached")
         cache_control = {"gg-svg-decoded-bounds": "bounds", "gg-svg-uncached": "1"}.get(label, "0")
@@ -619,10 +633,12 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
         log = run_capture([str(binary), "--window-width=800", "--window-height=600",
                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
                           env=environment, log_path=artifacts / f"{label}.log")
+        lines = log.splitlines()
         assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
+        assert (f"VOX_GG_SVG backend={backend}" in lines) == uses_gpu, log
         if label == "gg-svg-fallback":
             assert log.count("VOX_GG_SVG unavailable:") == 1, log
-            fallback_hits = [line for line in log.splitlines()
+            fallback_hits = [line for line in lines
                              if line.startswith("VOX_CPU_SVG_FILL ") and " cache=hit " in line]
             assert fallback_hits and all(line.endswith(" bounds=hit") for line in fallback_hits), fallback_hits
         assert (" hint=hit" in log) == (label == "gg-svg"), log
@@ -645,9 +661,19 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
         assert pixel(95, top + 60) in (b"\x7f\x00\x80", b"\x80\x00\x7f"), "Incorrect premultiplied blend"
         assert pixel(145, top + 60) in (b"\x7f\x7f\xff", b"\x80\x80\xff")
         assert pixel(191, top + 20) == b"\x00\xaa\x00", "Transformed fill is missing"
+        if backend == "d3d11":
+            assert not any("stroke=1" in line or " gradient=" in line for line in lines
+                           if line.startswith("VOX_GG_SVG draw=")), log
+            assert any(" gradient=1 " in line for line in lines
+                       if line.startswith("VOX_CPU_SVG_FILL ")), log
+            assert "VOX_CPU_SVG_STROKE draw=" in log, log
+            left, right = pixel(183, top + 54), pixel(224, top + 54)
+            assert left[0] > 220 and left[2] < 35 and right[2] > 220 and right[0] < 35, (left, right)
+            assert pixel(192, top + 86) == b"\xed\x8a\x24", "Portable stroke is missing"
         documents.append(rows[top:top + 100])
     assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
-    print("PASS: cached and uncached GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
+    fallback = "GL 4.2" if backend == "glcore33" else "gradient and stroke"
+    print(f"PASS: cached and uncached {backend} Canvas SVG replay and {fallback} fallback match the portable reference", flush=True)
 
 
 def check_gg_svg_browser(binary, artifacts, temporary):

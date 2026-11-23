@@ -22,6 +22,8 @@ def main():
     checks = parser.add_mutually_exclusive_group()
     checks.add_argument("--canvas-only", action="store_true", help="check canvas and transformed media replay only")
     checks.add_argument("--gg-svg", action="store_true", help="check Canvas SVG replay and fallback using Mesa OpenGL")
+    checks.add_argument("--gg-svg-d3d11", action="store_true",
+                        help="check Canvas solid SVG replay and portable gradient and stroke fallback on D3D11")
     args = parser.parse_args()
     binary, guard = args.binary.resolve(), args.guard.resolve()
     artifacts = args.output.resolve()
@@ -30,7 +32,7 @@ def main():
     native = tools.parent / "Tests/Browser/Native"
     svg_fixture = native / "svg-gg-path-fill.html"
     fixtures = [tools / "test_linux_browser.py", tools / "test_windows_svg_pattern_tiles.py", Path(__file__).resolve()]
-    if args.gg_svg:
+    if args.gg_svg or args.gg_svg_d3d11:
         fixtures.append(svg_fixture)
     else:
         fixtures.extend(native / name for name in ("late-canvas.html", "webgl-texture-reuse.html", "affine-media.html"))
@@ -47,8 +49,9 @@ def main():
     try:
         with tempfile.TemporaryDirectory(prefix="vox-portable-replay-") as temporary:
             capture = partial(run_guarded_capture, guard)
-            if args.gg_svg:
-                check_gg_svg_solid_fills(binary, artifacts, temporary, svg_fixture, capture)
+            if args.gg_svg or args.gg_svg_d3d11:
+                backend = "d3d11" if args.gg_svg_d3d11 else "glcore33"
+                check_gg_svg_solid_fills(binary, artifacts, temporary, svg_fixture, capture, backend=backend)
                 return
             if not args.canvas_only:
                 check_gradient_browser(binary, artifacts, temporary, capture)

@@ -146,15 +146,19 @@ $if vox_gg_svg ? {
 	}
 
 	@[inline]
-	fn may_try_portable_svg_gpu() bool {
+	fn may_try_portable_svg_gpu(gradient_or_stroke bool) bool {
+		$if windows && sokol_d3d11 ? {
+			if gradient_or_stroke { return false }
+		}
 		if !portable_svg_gpu_enabled { return false }
 		state := unsafe { portable_svg_gpu }
 		return state.canvas != unsafe { nil } || !state.tried
 	}
 
-	fn (mut state PortableSVGGpu) initialize(renderer &render.Context) {
+	fn (mut state PortableSVGGpu) initialize(ctx &gg.Context) {
 		state.tried = true
-		if !gfx.is_valid() || gfx.query_backend() != .glcore33 {
+		backend := $if windows && sokol_d3d11 ? { gfx.Backend.d3d11 } $else { gfx.Backend.glcore33 }
+		if !gfx.is_valid() || gfx.query_backend() != backend {
 			return
 		}
 		persistent := platform.enter_persistent()
@@ -173,7 +177,14 @@ $if vox_gg_svg ? {
 			src_factor_rgb: .one
 			dst_factor_rgb: .one_minus_src_alpha
 		}
-		state.pipeline = renderer.make_pipeline(desc)
+		renderer := ctx.r
+		$if windows && sokol_d3d11 ? {
+			// Use the corrected browser projection for the resolved image quad.
+			shader := gfx.query_pipeline_desc(ctx.pipeline.alpha.pips[3]).shader
+			state.pipeline = renderer.make_pipeline_with_shader(desc, shader)
+		} $else {
+			state.pipeline = renderer.make_pipeline(desc)
+		}
 		state.sampler = gfx.make_sampler(&gfx.SamplerDesc{
 			min_filter: .nearest
 			mag_filter: .nearest
@@ -183,6 +194,8 @@ $if vox_gg_svg ? {
 		if gfx.query_pipeline_state(state.pipeline.pips[3]) != .valid
 			|| gfx.query_sampler_state(state.sampler) != .valid {
 			state.release(renderer)
+		} else if portable_svg_gpu_diagnostics {
+			eprintln('VOX_GG_SVG backend=${backend}')
 		}
 	}
 
@@ -283,7 +296,7 @@ $if vox_gg_svg ? {
 
 	fn (mut app BrowserApp) draw_portable_gpu_svg_stroke(command &layout.PaintCommand,
 		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
-		if !may_try_portable_svg_gpu() || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
+		if !may_try_portable_svg_gpu(true) || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
 			|| (command.stroke_color == '' && data.svg_gradient_data == none) || command.stroke_width <= 0
 			|| data.path_data.len < layout.compatibility_clip_path_segment_stride
 			|| data.stroke_pattern != none {
@@ -330,21 +343,22 @@ $if vox_gg_svg ? {
 			dash_count: dash_count
 			dash_offset_bits: if dash_count > 0 { math.f64_bits(data.stroke_dashoffset) } else { u64(0) }
 		}
-		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform, bounds),
+		return draw_portable_gpu_svg_path(app.ctx, data, portable_svg_surface_matrix(transform, bounds),
 			bounds, color, local, geometry_slot, stroke, gradient)
 	}
 
-	fn draw_portable_gpu_svg_path(renderer &render.Context, data layout.PaintSVGPathData,
+	fn draw_portable_gpu_svg_path(ctx &gg.Context, data layout.PaintSVGPathData,
 		matrix [6]f32, bounds painting.IntRect, color gg.Color, local_bounds cpuraster.Rect,
 		geometry_slot int, stroke PortableSVGStroke, gradient &PortableSVGGradientPaint) bool {
 		mut state := unsafe { portable_svg_gpu }
+		renderer := ctx.r
 		if renderer == unsafe { nil } || bounds.width > 1024 || bounds.height > 1024 {
 			return false
 		}
 		remaining_pixels := portable_svg_gpu_pixel_limit - state.pixels
 		draw_pixels := bounds.width * bounds.height
 		if !state.tried {
-			state.initialize(renderer)
+			state.initialize(ctx)
 		}
 		if state.canvas == unsafe { nil } {
 			return false
@@ -452,8 +466,8 @@ $if vox_gg_svg ? {
 			state.textures[index].used = true
 		}
 		state.pixels += image_pixels
-		// GG presents the texture in document order. Canvas uses top-down
-		// OpenGL texture coordinates and outputs premultiplied RGBA.
+		// GG presents the premultiplied Canvas texture in document order.
+		// Canvas keeps the logical top row at texture coordinate zero.
 		x := f32(bounds.x)
 		y := f32(bounds.y)
 		right := f32(bounds.x + bounds.width)

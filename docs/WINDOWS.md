@@ -144,7 +144,7 @@ native bridges and UI2, then runs the equivalent of:
 ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -b c -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
-  -d ui2_custom_rendering -d sokol_d3d11 \
+  -d ui2_custom_rendering -d sokol_d3d11 -d vox_gg_svg \
   -path "$PWD|$ui2_modules|@vmodules|@vlib" -o /tmp/Vox.exe .
 ```
 
@@ -240,7 +240,11 @@ subsequent WebGL frames, texture upload reuse, and transformed canvases and
 video posters. Pass `--canvas-only` to run those checks separately. The
 runner records captures, logs, guard receipts and input hashes.
 
-Run the same runner with `--gg-svg` against an `--opengl` browser with the
+Run the same runner with `--gg-svg-d3d11` against the standard D3D11
+browser. It enables `VOX_GG_SVG=1` for solid SVG path fills and checks
+cache hits, paint order, and the portable gradient and stroke fallback.
+
+Use `--gg-svg` against an `--opengl` browser with the
 staged Mesa WGL DLLs and `GALLIUM_DRIVER=llvmpipe`. It checks Canvas draws
 and texture cache hits, then forces Mesa GL 4.2 and compares the fallback
 pixels with the portable reference.

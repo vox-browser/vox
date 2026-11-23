@@ -65,7 +65,7 @@ $if vox_gg_svg ? {
 
 	fn (mut app BrowserApp) draw_portable_gpu_svg_gradient_fill(command &layout.PaintCommand,
 		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
-		if !may_try_portable_svg_gpu() || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
+		if !may_try_portable_svg_gpu(true) || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
 			|| data.path_data.len < layout.compatibility_clip_path_segment_stride {
 			return false
 		}
@@ -84,7 +84,7 @@ $if vox_gg_svg ? {
 		bounds := portable_pixel_bounds(portable_svg_device_bounds(local, transform,
 			app.portable_device_viewport(page_y)))
 		if bounds.is_empty() { return true }
-		return draw_portable_gpu_svg_path(app.ctx.r, data, portable_svg_surface_matrix(transform,
+		return draw_portable_gpu_svg_path(app.ctx, data, portable_svg_surface_matrix(transform,
 			bounds), bounds, gg.Color{}, local, geometry_slot, PortableSVGStroke{}, &gradient)
 	}
 

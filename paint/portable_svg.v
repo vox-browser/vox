@@ -67,7 +67,7 @@ fn (mut app BrowserApp) draw_portable_svg_raster_fill(command &layout.PaintComma
 	mut cached_bounds := cpuraster.Rect{}
 	mut geometry_slot := -1
 	$if vox_gg_svg ? {
-		try_gpu = gradient == none && may_try_portable_svg_gpu() && app.paint_effect_depth == 0
+		try_gpu = gradient == none && may_try_portable_svg_gpu(false) && app.paint_effect_depth == 0
 			&& app.paint_svg_mask_depth == 0
 		if try_gpu {
 			cached_bounds, geometry_slot = portable_gpu_svg_local_bounds(data.path_data)
@@ -98,7 +98,7 @@ fn (mut app BrowserApp) draw_portable_svg_raster_fill(command &layout.PaintComma
 			command.retained_svg_fill_color())
 		if color.a == 0 { return true }
 		$if vox_gg_svg ? {
-			if try_gpu && draw_portable_gpu_svg_path(app.ctx.r, data, matrix, bounds, color, local,
+			if try_gpu && draw_portable_gpu_svg_path(app.ctx, data, matrix, bounds, color, local,
 				geometry_slot, PortableSVGStroke{}, unsafe { nil }) {
 				return true
 			}

@@ -37,7 +37,7 @@ def build_flags(root, modules, platform):
                   '-exclude', '@vlib/time/zoneinfo.native.v', '-cflags', '-D_GNU_SOURCE=1',
                   '-o', str(root / 'Build/linux/vox')]
     elif platform == 'win32':
-        flags += ['-gc', 'none', '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11',
+        flags += ['-gc', 'none', '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11', '-d', 'vox_gg_svg',
                   '-prod', '-no-prod-options']
     return shlex.join(flags)
 

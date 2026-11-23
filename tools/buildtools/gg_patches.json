@@ -44,6 +44,11 @@
   ],
   "prepare_gg_d3d11_canvas": [
     {
+      "file": "gpu_path.v",
+      "old": "\tif path.is_a == .rrect {\n\t\t// Device::drawPath()",
+      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif s.ctx.is_d3d11 && paint.style == .fill && paint.anti_alias && paint.gradient == none && paint.layer_image == none {\n\t\t\t// Keep the single-sample bounds fast path for pixel-aligned rectangles.\n\t\t\t// Other paths can use the shared wedge pipeline until D3D11 supports\n\t\t\t// the analytic rounded-rectangle and nested-rectangle shaders.\n\t\t\tif rect, _ := path.is_rect() {\n\t\t\t\tif is_pixel_aligned(rect, s.transform) {\n\t\t\t\t\ts.device_draw_rect(rect, paint)!\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t\ts.draw_path_fill(path, paint)!\n\t\t\treturn\n\t\t}\n\t}\n\tif path.is_a == .rrect {\n\t\t// Device::drawPath()"
+    },
+    {
       "file": "gpu_context.v",
       "old": "// new_gpu_context creates a context for GPU rendering using Metal on macOS\n// or OpenGL 4.3 on Linux. An initialized sokol.gfx context is borrowed;\n// otherwise the context owns an offscreen device. Use and free it on the",
       "new": "// new_gpu_context creates a context for GPU rendering using Metal on macOS,\n// OpenGL 4.3 on Linux, or an initialized D3D11 or OpenGL 4.3 context on\n// Windows. It borrows initialized Sokol contexts and creates an offscreen\n// device on macOS or Linux when needed. Use and free it on the"
