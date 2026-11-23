@@ -2291,11 +2291,16 @@ def check_svg_color_matrix_adjustments_tile_pixels(rows, channels, scale, marker
                                         red="af4bff" if edited else "1b4900")
 
 
-def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, object_bounds=False):
+def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, object_units=None):
     white, red, lime, black = map(bytes.fromhex, ("ffffff", "ff0000", "00ff00", "000000"))
     for left in (0, 128, 256):
         ink, stripe = (black, black) if left == 256 else (red, lime)
-        if object_bounds:
+        if object_units == "primitive":
+            samples = ((5, 6, white), (6, 6, ink), (15, 13, ink), (16, 7, white),
+                       (6, 5, white), (6, 14, white), (4, 4, white)) if edited else (
+                           (8, 7, white), (9, 7, ink), (15, 11, ink), (16, 8, white),
+                           (9, 6, white), (9, 12, white), (5, 5, white))
+        elif object_units == "region":
             samples = ((12, 4, white), (13, 4, ink), (15, 11, ink), (16, 5, white),
                        (13, 3, white), (13, 12, white), (9, 7, white)) if edited else (
                            (8, 7, white), (9, 7, ink), (15, 15, ink), (16, 8, white),
@@ -3219,11 +3224,12 @@ def main():
                                        check_svg_opacity_filter_tile_pixels, transparency=102))
             return
         if args.pattern_offset_only:
-            for name, object_bounds in (("offset", False), ("offset-bounds", True)):
+            for name, object_units in (("offset", None), ("offset-bounds", "region"),
+                                       ("offset-primitive-units", "primitive")):
                 check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                        ready="data-offset-ready", check_edited=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,
-                                           object_bounds=object_bounds))
+                                           object_units=object_units))
             return
         if args.pattern_matrix_only:
             check_svg_matrix_tiles(binary, artifacts, temporary)

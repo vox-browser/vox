@@ -1096,19 +1096,19 @@ fn resolved_svg_filter(element &dom.Element, reference string,
 // before rasterization, then clip the isolated result.
 fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilter,
 	pattern_target ?&UsedValues) ?painting.SVGPatternOffset {
-	if element.children.len != 1 || element.primitive_units() != .user_space_on_use
-		|| filter.nodes.len != 1 {
+	if element.children.len != 1 || filter.nodes.len != 1 {
 		return none
 	}
 	child := &element.children[0]
 	node := &filter.nodes[0]
 	if child.tag != 'feOffset' || node.kind != 'offset' || node.input_ids != [-1]
 		|| ['x', 'y', 'width', 'height'].any(it in child.attributes) { return none }
-	object_bounds := if element.filter_units() == .object_bounding_box {
+	object_bounds := if element.filter_units() == .object_bounding_box
+		|| element.primitive_units() == .object_bounding_box {
 		target := pattern_target?
 		path := target.computed_svg_path()?
 		// Layout bounds include curve control points. A single linear contour
-		// gives the tight object bounds needed by the filter region.
+		// gives the tight object bounds needed by the filter coordinates.
 		if path.instructions.len == 0 || path.instructions[0].type_ != .move
 			|| !path.instructions[1..].all(it.type_ in [.line, .horizontal_line,
 				.vertical_line, .close_path]) {
@@ -1119,13 +1119,8 @@ fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilte
 		?svg.Rect(none)
 	}
 	region := element.numeric_filter_region(object_bounds)?
-	mut delta := [2]f64{}
-	for index, name in ['dx', 'dy'] {
-		number := svg.parse_number_percentage(child.attributes[name] or { '0' })?
-		if number.is_percentage || !math.is_finite(number.value) { return none }
-		delta[index] = number.value
-	}
-	return painting.SVGPatternOffset{painting.Point{delta[0], delta[1]},
+	delta := element.numeric_filter_offset(child, object_bounds)?
+	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y},
 		painting.Rect{region.x, region.y, region.width, region.height}}
 }
 

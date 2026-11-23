@@ -43,3 +43,26 @@ fn test_numeric_filter_region_keeps_explicit_user_space_coordinates() {
 	}
 	assert unsupported.numeric_filter_region(Rect{0, 0, 40, 40}) == none
 }
+
+fn test_numeric_filter_offset_uses_primitive_units_independently_of_region_units() {
+	filter := Element{
+		tag: 'filter'
+		attributes: {
+			'filterUnits':    'userSpaceOnUse'
+			'primitiveUnits': 'objectBoundingBox'
+		}
+	}
+	primitive := Element{tag: 'feOffset', attributes: {'dx': '0.4', 'dy': '-0.4'}}
+	assert filter.numeric_filter_offset(&primitive, Rect{10, 24, 20, 10})? == Point{8, -4}
+	assert filter.numeric_filter_offset(&primitive, Rect{4, 0, 30, 20})? == Point{12, -8}
+	assert filter.numeric_filter_offset(&primitive, none) == none
+	assert filter.numeric_filter_offset(&primitive, Rect{0, 0, 20, 0}) == none
+}
+
+fn test_numeric_filter_offset_preserves_user_space_numbers_and_defaults() {
+	filter := Element{tag: 'filter'}
+	primitive := Element{tag: 'feOffset', attributes: {'dx': '3.5'}}
+	assert filter.numeric_filter_offset(&primitive, Rect{0, 0, 20, 10})? == Point{3.5, 0}
+	percentage := Element{tag: 'feOffset', attributes: {'dx': '50%'}}
+	assert filter.numeric_filter_offset(&percentage, none) == none
+}

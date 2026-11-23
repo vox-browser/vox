@@ -542,6 +542,20 @@ pub fn (element &Element) primitive_units() Units {
 	return parse_units(element.attributes['primitiveUnits'] or { '' }) or { Units.user_space_on_use }
 }
 
+pub fn (element &Element) numeric_filter_offset(primitive &Element, object_bounds ?Rect) ?Point {
+	dx := parse_single_number(primitive.attributes['dx'] or { '0' })?
+	dy := parse_single_number(primitive.attributes['dy'] or { '0' })?
+	offset := if element.primitive_units() == .object_bounding_box {
+		bounds := object_bounds?
+		if !(bounds.width > 0 && bounds.height > 0) { return none }
+		Point{dx * bounds.width, dy * bounds.height}
+	} else {
+		Point{dx, dy}
+	}
+	if !math.is_finite(offset.x) || !math.is_finite(offset.y) { return none }
+	return offset
+}
+
 // Resolve numeric filter coordinates without a viewport length context.
 pub fn (element &Element) numeric_filter_region(object_bounds ?Rect) ?Rect {
 	object_units := element.filter_units() == .object_bounding_box
