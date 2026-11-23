@@ -47,3 +47,32 @@ fn test_clean_column_flex_items_answer_their_automatic_height_call() {
 		first_call_answer_matches_full_rebuild(mut document, step)
 	}
 }
+
+// A row flex container with an automatic height lays an item out at its
+// automatic height to size the line, and again at the line's height when a
+// descendant resolves a percentage height against it. The automatic-height
+// call of the clean item is answered while its sibling grows and shrinks the
+// line; the second call then lays it out at the changed line height, as a
+// complete rebuild does.
+fn test_clean_row_flex_items_answer_their_automatic_height_call() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0;font:16px/20px sans-serif}#row{display:flex;width:300px}#item{flex:none;width:120px;border:1px solid}#item p{margin:4px}#fill{height:50%;background:#ccc}#other{flex:1;min-width:0;border:1px solid}</style><body><div id="row"><div id="item"><p>one</p><p>two words here</p><div id="fill">fill</div></div><div id="other">other</div></div></body>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 400)
+	mut other := document.get_element_by_id('other') or { panic('other') }
+	mut other_text := other.as_node().first_child() or { panic('other text') }
+	other_text.set_node_value('other changed') or { panic(err) }
+	document.update_layout(.debugging)
+	enabled := os.getenv('VOX_DISABLE_FIRST_CALL_ANSWERS') == ''
+		&& os.getenv('VOX_DISABLE_INCREMENTAL_LAYOUT') == ''
+		&& os.getenv('VOX_DISABLE_MEASUREMENT_SUBTREE_REUSE') == ''
+	for step, text in ['other changed again, with many more words that wrap onto several further lines',
+		'short'] {
+		answered_before := first_call_answer_statistics()
+		other_text.set_node_value(text) or { panic(err) }
+		document.update_layout(.debugging)
+		if enabled {
+			assert first_call_answer_statistics() > answered_before, 'step ${step}'
+		}
+		first_call_answer_matches_full_rebuild(mut document, 'row step ${step}')
+	}
+}

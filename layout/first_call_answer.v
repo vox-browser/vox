@@ -81,10 +81,21 @@ fn answer_first_call_from_first_record(mut state LayoutState, box &Node, mut box
 // then lay the item out again.
 fn layout_first_call_of_flex_item(mut state LayoutState, item &Node, mut container_state UsedValues,
 	container_width CSSPixels, container_height ?CSSPixels, forced_width ?CSSPixels) (&UsedValues, bool) {
+	return layout_first_call_of_flex_item_with_height(mut state, item, mut container_state,
+		container_width, container_height, forced_width, none)
+}
+
+// A row flex container whose own height is automatic lays each item out at
+// its automatic height to size the flex lines, and an item whose descendants
+// need its definite height once more at the line's height
+// (run_uncached_flex_formatting_context_with_mode). That second call is the
+// committed record, as for column items above.
+fn layout_first_call_of_flex_item_with_height(mut state LayoutState, item &Node, mut container_state UsedValues,
+	container_width CSSPixels, container_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels) (&UsedValues, bool) {
 	state.first_call_answer_candidate_ = voidptr(item)
 	state.first_call_answered_box_ = unsafe { nil }
 	laid_out := layout_independent_child(mut state, item, mut container_state, container_width,
-		container_height, forced_width, none)
+		container_height, forced_width, forced_height)
 	answered := state.first_call_answered_box_ == voidptr(item)
 	state.first_call_answer_candidate_ = unsafe { nil }
 	state.first_call_answered_box_ = unsafe { nil }
