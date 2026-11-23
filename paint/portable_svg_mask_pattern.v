@@ -12,14 +12,28 @@ mut:
 	last   PortableSVGMaskTileReuse
 }
 
-// The caller owns the style throughout replay. Use its address only for identity.
 struct PortableSVGMaskTileReuse {
-	style      voidptr
+	style      &painting.SVGPatternPaintStyle = unsafe { nil }
 	pattern    cpuraster.CanvasPattern
 	metric     PortableSVGTileStrokeSpace
 	pixel_cost int
 	depth      int
 	luminance  bool
+}
+
+fn (entry &PortableSVGMaskTileReuse) matches_style(style &painting.SVGPatternPaintStyle) bool {
+	previous := entry.style
+	if voidptr(previous) == voidptr(style) { return true }
+	if previous == unsafe { nil } || style.cache_key == 0 || style.cache_key != previous.cache_key
+		|| style.native_bounds_key != previous.native_bounds_key
+		|| style.has_non_scaling_stroke != previous.has_non_scaling_stroke
+		|| style.tile_display_list_id == '' || style.tile_display_list_id != previous.tile_display_list_id {
+		return false
+	}
+	// Different retained paints can resolve the same vector tile. Image replay
+	// also depends on the paint's image placement record and decoded resource.
+	info := style.shared_tile_info() or { return false }
+	return !info.has_images
 }
 
 struct PortableSVGMaskPattern {
@@ -126,10 +140,9 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 		PortableSVGTileStrokeSpace{}
 	}
 	bounds := painting.IntRect{0, 0, int(width), int(height)}
-	if budget.last.style == voidptr(style)
-		&& budget.last.pattern.width == bounds.width && budget.last.pattern.height == bounds.height
+	if budget.last.pattern.width == bounds.width && budget.last.pattern.height == bounds.height
 		&& budget.last.depth == budget.depth && budget.last.luminance == luminance
-		&& budget.last.metric == metric {
+		&& budget.last.metric == metric && budget.last.matches_style(style) {
 		// Charge the original subtree cost, including child tiles.
 		if budget.last.pixel_cost > budget.pixels { return none }
 		budget.pixels -= budget.last.pixel_cost
@@ -180,7 +193,8 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 		// Resource responses are published between replays. A pending image
 		// anywhere in the rendered subtree leaves cacheable false.
 		budget.last = PortableSVGMaskTileReuse{
-			style: voidptr(style)
+			// The caller retains every paint style for the life of this replay.
+			style: unsafe { style }
 			pattern: pattern
 			metric: metric
 			pixel_cost: pixels_before - budget.pixels

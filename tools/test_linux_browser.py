@@ -2468,12 +2468,23 @@ def check_svg_shared_tile_pixels(rows, channels, scale, marker, edited):
         assert actual == expected, (scale, x, y, actual, expected)
 
 
+def check_svg_equivalent_pattern_pixels(rows, channels, scale, marker):
+    for x, y, expected in ((4, 4, "ff0000"), (12, 4, "00ff00"), (4, 14, "ffffff"),
+                           (4, 20, "ff0000"), (12, 20, "00ff00"), (4, 36, "0000ff"),
+                           (12, 36, "0000ff"), (68, 20, "ff0000")):
+        row = rows[marker + (8 + y) * scale]
+        start = x * scale * channels
+        actual = row[start:start + 3].hex()
+        assert actual == expected, (scale, x, y, actual, expected)
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
-                           reuse_depths=(),
-                           check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
-                                                          first_stripe=(255, 255, 0))):
+                           reuse_depths=(), check_pixels=None):
     fixture = Path(__file__).resolve().parents[1] / f"Tests/Browser/Native/svg-pattern-tile-{name}.html"
     expected_groups = groups if groups is not None else (2 if ready else 3)
+    if check_pixels is None:
+        check_pixels = (functools.partial(check_svg_tile_fill_stroke_pixels, first_stripe=(255, 255, 0))
+                        if ready else check_svg_nested_tile_device_pixels)
     documents = []
     for mode in ("cached", "uncached"):
         label = f"{fixture.stem}-{mode}"
@@ -2493,10 +2504,7 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, gr
         assert (width, height) == (800, 600)
         marker = next(y for y in range(150) if rows[y][4 * channels:4 * channels + 3]
                       == bytes.fromhex("34b786"))
-        if ready:
-            check_edited(rows, channels, 1, marker)
-        else:
-            check_svg_nested_tile_device_pixels(rows, channels, 1, marker)
+        check_pixels(rows, channels, 1, marker)
         hits = set(re.findall(r"^VOX_SVG_GROUP cache=hit start=(\d+)", log, re.M))
         assert len(hits) == (expected_groups if mode == "cached" else 0), log
         if reuse_depths:
@@ -2507,13 +2515,18 @@ def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, gr
     if ready:
         print(f"PASS: {fixture.stem} preserves fill, stroke, live edits, and cache parity", flush=True)
     else:
-        print(f"PASS: {fixture.stem} keeps device stroke width and cache parity", flush=True)
+        print(f"PASS: {fixture.stem} preserves pixels and cache parity", flush=True)
+
+
+def check_svg_equivalent_pattern_tiles(binary, artifacts, temporary):
+    check_svg_tile_browser(binary, artifacts, temporary, "equivalent-paints", groups=1,
+                           reuse_depths=(1,), check_pixels=check_svg_equivalent_pattern_pixels)
 
 
 def check_svg_matrix_tiles(binary, artifacts, temporary):
     for name, linear_rgb in (("color-matrix", False), ("color-matrix-linear", True)):
         check_svg_tile_browser(binary, artifacts, temporary, name,
-                               ready="data-color-matrix-ready", check_edited=functools.partial(
+                               ready="data-color-matrix-ready", check_pixels=functools.partial(
                                    check_svg_color_matrix_tile_pixels, edited=True, linear_rgb=linear_rgb))
     for name, check_pixels in (("color-matrix-alpha", check_svg_color_matrix_alpha_tile_pixels),
                                ("color-matrix-bias", check_svg_color_matrix_bias_tile_pixels),
@@ -2526,7 +2539,7 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
                                    check_svg_color_filter_chain_pixels, red="bb0000"))):
         check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                ready="data-color-matrix-ready",
-                               check_edited=functools.partial(check_pixels, edited=True))
+                               check_pixels=functools.partial(check_pixels, edited=True))
 
 
 def check_svg_component_transfer_tiles(binary, artifacts, temporary):
@@ -2536,7 +2549,7 @@ def check_svg_component_transfer_tiles(binary, artifacts, temporary):
     ):
         check_svg_tile_browser(binary, artifacts, temporary, name, groups=groups,
                                ready="data-component-transfer-ready",
-                               check_edited=functools.partial(check_pixels, edited=True))
+                               check_pixels=functools.partial(check_pixels, edited=True))
 
 
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
@@ -3345,6 +3358,7 @@ def main():
                 check_svg_hidden_pattern_tiles_browser(binary, artifacts, temporary)
             return
         if args.pattern_nested_only:
+            check_svg_equivalent_pattern_tiles(binary, artifacts, temporary)
             check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                    ready="data-nested-pattern-ready")
             check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")
@@ -3355,12 +3369,12 @@ def main():
                                    ready="data-standalone-pattern-ready")
             check_svg_tile_browser(binary, artifacts, temporary, "shared-fill-stroke",
                                    groups=1, ready="data-pattern-ready", reuse_depths=(0, 1),
-                                   check_edited=functools.partial(check_svg_shared_tile_pixels, edited=True))
+                                   check_pixels=functools.partial(check_svg_shared_tile_pixels, edited=True))
             check_svg_pattern_tile_image_browser(binary, artifacts, temporary)
             return
         if args.pattern_filter_only:
             check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
-                                   ready="data-opacity-filter-ready", check_edited=functools.partial(
+                                   ready="data-opacity-filter-ready", check_pixels=functools.partial(
                                        check_svg_opacity_filter_tile_pixels, transparency=102))
             return
         if args.pattern_offset_only:
@@ -3374,7 +3388,7 @@ def main():
                                        ("offset-cropped-pattern", "cropped-pattern")):
                 check_svg_tile_browser(binary, artifacts, temporary, name,
                                        groups=4 if filter_units == "source-alpha" else 3,
-                                       ready="data-offset-ready", check_edited=functools.partial(
+                                       ready="data-offset-ready", check_pixels=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,
                                            filter_units=filter_units))
             return
@@ -3423,10 +3437,11 @@ def main():
         check_svg_tile_browser(binary, artifacts, temporary, "standalone-strokes",
                                ready="data-standalone-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "opacity-filter",
-                               ready="data-opacity-filter-ready", check_edited=functools.partial(
+                               ready="data-opacity-filter-ready", check_pixels=functools.partial(
                                    check_svg_opacity_filter_tile_pixels, transparency=102))
         check_svg_matrix_tiles(binary, artifacts, temporary)
         check_svg_component_transfer_tiles(binary, artifacts, temporary)
+        check_svg_equivalent_pattern_tiles(binary, artifacts, temporary)
         check_svg_tile_browser(binary, artifacts, temporary, "nested-strokes",
                                ready="data-nested-pattern-ready")
         check_svg_tile_browser(binary, artifacts, temporary, "nested-non-scaling-strokes")
