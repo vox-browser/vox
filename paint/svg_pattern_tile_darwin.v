@@ -1,5 +1,6 @@
 module main
 
+import cpuraster
 import math
 import painting
 
@@ -16,8 +17,19 @@ mut:
 fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternDisplayList,
 	mut key SharedSVGPatternCacheKey) bool {
 	// The caller has checked the operation and depth limits for this tile.
+	mut hidden_depth := 0
 	for index in 0 .. list.operations.len {
 		operation := &list.operations[index]
+		// Shared mask replay discards the whole layer at zero byte opacity.
+		if operation.kind == .begin_opacity
+			&& (hidden_depth != 0 || cpuraster.canvas_image_opacity_byte(f32(operation.opacity)) == 0) {
+			hidden_depth++
+			continue
+		}
+		if hidden_depth != 0 {
+			if operation.kind == .end_opacity { hidden_depth-- }
+			continue
+		}
 		if operation.kind == .image && operation.opacity != 0 {
 			if !key.image_scope {
 				if app.document == unsafe { nil } { return false }
