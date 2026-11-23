@@ -137,7 +137,7 @@ fn (mut app BrowserApp) draw_raster_background(command &layout.PaintCommand, sou
 	// portable renderer's vertex buffer before subsequent content and chrome.
 	bounds := portable_pixel_bounds(painted)
 	rounded_clip := if !app.ctx.native_rendering {
-		portable_background_raster_clip(command, bounds, page_x, page_y, scale)
+		app.portable_background_clip_replay.raster_clip(command, bounds, page_x, page_y, scale)
 	} else {
 		none
 	}

@@ -268,12 +268,15 @@ def check_gradient_pixels(data):
 def check_gradient_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-gradients.html"
     documents = []
-    for label in ("gradients", "gradients-full-raster"):
+    for label in ("gradients", "gradients-full-raster", "gradients-uncached-clips"):
         screenshot = artifacts / f"portable-{label}.png"
         screenshot.unlink(missing_ok=True)
         environment = smoke_environment(Path(temporary) / label)
         environment.pop("VOX_DISABLE_PORTABLE_GRADIENT_RAMP", None)
         environment["VOX_PORTABLE_GRADIENT_RAMP_DIAGNOSTICS"] = "1"
+        environment["VOX_PORTABLE_BACKGROUND_CLIP_DIAGNOSTICS"] = "1"
+        reuses_clips = label != "gradients-uncached-clips"
+        environment["VOX_PORTABLE_BACKGROUND_CLIP_REUSE"] = str(int(reuses_clips))
         full_raster = label == "gradients-full-raster"
         if full_raster:
             environment["VOX_DISABLE_PORTABLE_GRADIENT_RAMP"] = "1"
@@ -285,9 +288,12 @@ def check_gradient_browser(binary, artifacts, temporary):
         else:
             assert "VOX_GRADIENT_RAMP texture=200x1 destination=200x96" in log, log
             assert "VOX_GRADIENT_RAMP texture=1x96 destination=200x96" in log, log
+        assert ("VOX_BACKGROUND_CLIP hit " in log) == reuses_clips, log
         documents.append(check_gradient_pixels(screenshot.read_bytes()))
-    assert documents[0] == documents[1], "Gradient ramps changed document pixels"
-    print("PASS: clipped gradient text, foreground painting and exact gradient ramps", flush=True)
+    assert all(rows == documents[0] for rows in documents[1:]), (
+        "Gradient ramp or rounded clip reuse changed document pixels"
+    )
+    print("PASS: clipped gradient text, foreground painting, ramps and rounded clip reuse", flush=True)
 
 
 def check_web_font_pixels(data):

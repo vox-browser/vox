@@ -457,6 +457,7 @@ mut:
 	portable_svg_group_recording        PortableSVGGroupRecording
 	portable_svg_group_textures         [portable_svg_raster_slots]PortableSVGGroupSlot
 	portable_background_text_clip       ?PortableBackgroundTextClip
+	portable_background_clip_replay     PortableBackgroundClipReplay
 	portable_canvas_images              []PortableCanvasImage
 	portable_canvas_image_index         int
 	draw_command_depth  int
@@ -7788,6 +7789,9 @@ fn (mut app BrowserApp) draw() {
 			mut raster_layer := -1
 			mut text_scroll_layer := false
 			mut replay_scratch := app.begin_native_replay_scratch()
+			app.portable_background_clip_replay = PortableBackgroundClipReplay{
+				active: portable_background_clip_reuse && !app.ctx.native_rendering
+			}
 			mut early_partial_headers := []int{}
 			mut early_rounded_decorations := []int{}
 			mut shared_svg_end := 0
@@ -8022,6 +8026,8 @@ fn (mut app BrowserApp) draw() {
 					C.native_end_css_filter_layer()
 				}
 			}
+			// Clip coverage allocated during replay must be released before its scratch scope.
+			app.portable_background_clip_replay = PortableBackgroundClipReplay{}
 			replay_scratch.finish()
 			mut replay_completed := true
 			$if macos {

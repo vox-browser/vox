@@ -55,6 +55,42 @@ longer in both pairs. The controls varied by 22% at the median. These
 results describe synthetic software replay. Production and hardware
 scrolling costs remain open.
 
+### Opt-in reuse of rounded gradient clips
+
+`VOX_PORTABLE_BACKGROUND_CLIP_REUSE=1` reuses up to four single rounded
+clips per portable replay. A match requires the same rectangle, corner
+radii, texture-space matrix, width and height. The cache is cleared
+before replay scratch is reset. Unclipped draws and multiple rounded
+ancestors follow their regular paths.
+
+The raster tests passed on Linux and macOS. They checked fractional
+translations, changed texture dimensions, eviction, and full coverage.
+The same tests cross-linked as a Windows x64 executable. A focused adapter
+test on macOS also matched the uncached pixels for reused clips, nested
+clips and unclipped draws.
+On Linux ARM64, a single C-backend executable exercised four clip
+requests at each of three geometries over 400 simulated replays. Reuse
+reduced rasterizations from 4,800 to 1,200 and reused 3,600 clip results.
+The executable SHA-256 was
+`850b27eb34bc84cee1126ec94afcf8ed371410e84999e3b7cb872e2d3303a14d`.
+Three alternating fresh-process pairs used the same executable, geometry
+and iteration count. The table records child user and system CPU time from
+process launch through exit. Each browser-independent harness and its
+3 GiB guard exited zero. The four-vCPU guest's one-minute load was 6.16
+to 6.53.
+
+| Pair | Rasterize each layer (CPU s) | Reuse clip (CPU s) |
+| --- | ---: | ---: |
+| 1 | 0.836 | 0.186 |
+| 2 | 0.504 | 0.133 |
+| 3 | 0.553 | 0.125 |
+
+The harness measures clip preparation with synthetic geometries.
+The Linux control build and Windows production-mode source check timed
+out. The Linux VM also lacked memory for the candidate build while
+other jobs were active. Browser pixel verification, scrolling
+measurements and Windows runtime remain open.
+
 ## Opt-in direct compositing for solid rectangular SVG masks
 
 With `VOX_SVG_MASK_SOLID_RECTS=1`, the portable group player applies a
