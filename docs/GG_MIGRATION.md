@@ -1,5 +1,30 @@
 # Migrating from Skia to vlib/gg
 
+## Solid SVG strokes on Windows D3D11
+
+The opt-in Windows Canvas route now accepts solid SVG strokes. Its HLSL
+vertex shader uses the shared stroke patches, 48-byte paint records, and
+multisample triangle strips. Line and simple shape paths use the stroke
+tessellator on D3D11. Resolved images stay on the GPU and use the same
+browser texture cache as solid fills. Gradient fills and strokes use the
+portable rasterizer. Hardware frame timings remain unmeasured.
+
+The shared smoke passed the square line cap, cubic stroke with a round
+join, rational conic stroke, and surrounding transparent pixel checks on
+Linux Mesa, macOS Metal, and Windows 11 D3D11 under QEMU. The guarded
+Windows executable (`09fa97d51100c0e44aea634c837f23fefe9d2f7edeb5f2d790cf1d8cf86f1a0b`)
+exited zero and reproduced the previous window capture byte for byte.
+
+The Windows browser build used V `4478fc4` and MinGW GCC 16.2.0 with
+`-prod -no-prod-options`. Its SHA-256 was
+`2471529b2bee3848bcc000d20e2abbad60d20a1cd21eec768e163413176178f1`
+before and after the four guarded replay launches. The portable, cached,
+texture-only cache, and uncached runs produced the same 800 × 100 RGB
+document crop (`3d8482f8435662d56deab5e940bcdd0b7c884559d68e45f86d8bf40134e817ef`).
+The replay verified D3D11 solid-stroke draws and cache hits, and portable
+gradient fills and strokes on the same page. Each process exited zero
+under the 3 GiB guard. The staging parity and replay runner checks passed.
+
 ## OpenGL multisample resolves after clipped draws
 
 Sokol's OpenGL `glBlitFramebuffer` resolve observes the last draw's
@@ -33,9 +58,9 @@ texture cache and submits the resolved GPU image in document order using
 the Windows GG shader and premultiplied blending. The image stays on the
 GPU through presentation. Pixel-aligned rectangles
 use the single-sample bounds shader. Paths that need curved edges or a
-hole use the shared multisample wedge renderer. Gradients and strokes
-go directly to the portable rasterizer. The option is off by default
-while hardware frame timings remain unmeasured.
+hole use the shared multisample wedge renderer. At this stage, gradients
+and strokes used the portable rasterizer. The option remains off by
+default while hardware frame timings are unmeasured.
 
 The Windows 11 QEMU browser used V `4478fc4` and MinGW GCC 16.2.0 with
 `-prod -no-prod-options`. Its SHA-256 was
@@ -60,7 +85,7 @@ to preserve it. Sokol checks depth-stencil MSAA against the typed depth
 format, which unblocks creation of 4× depth-stencil attachments.
 [D3D11 depth-stencil views](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_depth_stencil_view_desc)
 
-The Windows implementation currently accepts solid bounds and wedge
+The initial Windows implementation accepted solid bounds and wedge
 passes, including path clips that use depth and stencil. Unsupported
 shading or geometry returns an error before opening a render pass.
 Hardware frame timings remain unmeasured.

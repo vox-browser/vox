@@ -611,9 +611,10 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
         # Exercise fallback while the other draws use Canvas on the same frame.
         fallback = Path(temporary) / "svg-gg-d3d11-fallback.html"
         fallback.write_text(fixture.read_text(encoding="utf-8").replace("</svg>", """
-  <defs><linearGradient id="fallback-fill"><stop stop-color="red"/>
+  <defs><linearGradient id="fallback-gradient" gradientUnits="userSpaceOnUse" x1="180" y1="0" x2="228" y2="0"><stop stop-color="red"/>
     <stop offset="1" stop-color="blue"/></linearGradient></defs>
-  <path d="M180 48H228V68H180Z" fill="url(#fallback-fill)"/>
+  <path d="M180 48H228V68H180Z" fill="url(#fallback-gradient)"/>
+  <path d="M180 75H228" fill="none" stroke="url(#fallback-gradient)" stroke-width="6"/>
   <path d="M180 86H228" fill="none" stroke="#ed8a24" stroke-width="6"/>
 </svg>"""), encoding="utf-8")
         fixture = fallback
@@ -662,17 +663,23 @@ def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=
         assert pixel(145, top + 60) in (b"\x7f\x7f\xff", b"\x80\x80\xff")
         assert pixel(191, top + 20) == b"\x00\xaa\x00", "Transformed fill is missing"
         if backend == "d3d11":
-            assert not any("stroke=1" in line or " gradient=" in line for line in lines
-                           if line.startswith("VOX_GG_SVG draw=")), log
-            assert any(" gradient=1 " in line for line in lines
-                       if line.startswith("VOX_CPU_SVG_FILL ")), log
-            assert "VOX_CPU_SVG_STROKE draw=" in log, log
+            gpu_draws = [line for line in lines if line.startswith("VOX_GG_SVG draw=")]
+            strokes = [line for line in gpu_draws if "stroke=1" in line]
+            assert bool(strokes) == uses_gpu, log
+            assert any(" cache=hit " in line for line in strokes) == (
+                label in ("gg-svg", "gg-svg-decoded-bounds")), log
+            assert not any(" gradient=" in line for line in gpu_draws), log
+            for operation in ("FILL", "STROKE"):
+                assert any(" gradient=1 " in line for line in lines
+                           if line.startswith(f"VOX_CPU_SVG_{operation} ")), log
             left, right = pixel(183, top + 54), pixel(224, top + 54)
             assert left[0] > 220 and left[2] < 35 and right[2] > 220 and right[0] < 35, (left, right)
-            assert pixel(192, top + 86) == b"\xed\x8a\x24", "Portable stroke is missing"
+            left, right = pixel(183, top + 75), pixel(224, top + 75)
+            assert left[0] > 220 and left[2] < 35 and right[2] > 220 and right[0] < 35, (left, right)
+            assert pixel(192, top + 86) == b"\xed\x8a\x24", "Solid stroke is missing"
         documents.append(rows[top:top + 100])
     assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
-    fallback = "GL 4.2" if backend == "glcore33" else "gradient and stroke"
+    fallback = "GL 4.2" if backend == "glcore33" else "gradient"
     print(f"PASS: cached and uncached {backend} Canvas SVG replay and {fallback} fallback match the portable reference", flush=True)
 
 

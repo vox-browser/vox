@@ -26,6 +26,7 @@ fn main() {
 			exit(2)
 		}
 		check_canvas_solid_fills() or { panic(err) }
+		check_canvas_solid_strokes() or { panic(err) }
 		check_svg_stroke_pixels() or { panic(err) }
 	}
 }
@@ -54,6 +55,7 @@ $if windows {
 					check_svg_stroke_pixels() or { panic(err) }
 				}
 				check_canvas_solid_fills() or { panic(err) }
+				check_canvas_solid_strokes() or { panic(err) }
 			}
 			frame_fn:     fn (mut state WindowsGraphicsSmoke) {
 				begin_browser_frame(state.ctx)
@@ -273,6 +275,51 @@ fn check_canvas_solid_fills() ! {
 		}
 	}
 	println('GG Canvas solid rectangle, blend, curve, fill rules and MSAA reload passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_solid_strokes() ! {
+	width, height := 64, 32
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: width, height: height)!
+	defer { target.free() }
+	target.clear(canvas.Color4f{})
+	mut path := canvas.PathBuilder{}
+	path.move_to(5, 5)
+	path.line_to(27, 5)
+	mut paint := canvas.Paint{
+		color:        canvas.Color4f.from_rgba8(255, 0, 0, 255)
+		style:        .stroke
+		stroke_width: 4
+		anti_alias:   true
+		cap:          .square
+	}
+	target.draw_path(path.detach(), paint)!
+
+	path.move_to(6, 26)
+	path.cubic_to(6, 10, 24, 10, 24, 26)
+	path.line_to(29, 26)
+	paint.color = canvas.Color4f.from_rgba8(0, 255, 0, 255)
+	paint.cap = .round
+	paint.join = .round
+	target.draw_path(path.detach(), paint)!
+
+	path.move_to(34, 22)
+	path.conic_to(34, 7, 50, 7, 0.70710677)
+	paint.color = canvas.Color4f.from_rgba8(0, 0, 255, 255)
+	paint.cap = .butt
+	target.draw_path(path.detach(), paint)!
+
+	pitch := width * 4
+	pixels := []u8{len: pitch * height}
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 4, 5, [u8(0), 0, 255, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 1, 5, [u8(0), 0, 0, 0]!)!
+	expect_canvas_pixel(pixels, pitch, 15, 14, [u8(0), 255, 0, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 26, 26, [u8(0), 255, 0, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 38, 11, [u8(255), 0, 0, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 18, 19, [u8(0), 0, 0, 0]!)!
+	println('GG Canvas solid line caps, cubic join and conic strokes passed on ${gfx.query_backend()}')
 }
 
 $if !sokol_d3d11 ? {
