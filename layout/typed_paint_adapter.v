@@ -1111,14 +1111,7 @@ fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, fil
 		|| element.primitive_units() == .object_bounding_box {
 		target := pattern_target?
 		path := target.used.computed_svg_path()?
-		// Layout bounds include curve control points. A single linear contour
-		// gives the tight object bounds needed by the filter coordinates.
-		if path.instructions.len == 0 || path.instructions[0].type_ != .move
-			|| !path.instructions[1..].all(it.type_ in [.line, .horizontal_line,
-				.vertical_line, .close_path]) {
-			return none
-		}
-		?svg.Rect(svg_path_bounds(path)?)
+		?svg.Rect(svg_path_bounds(path, object_geometry: true)?)
 	} else {
 		?svg.Rect(none)
 	}

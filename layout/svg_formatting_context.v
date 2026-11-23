@@ -1552,9 +1552,14 @@ fn union_svg_rect(a svg.Rect, b svg.Rect) svg.Rect {
 	}
 }
 
-// Gfx::Path::bounding_box(). Skia's path bounds include the points which define
-// line and Bézier segments and the actual extrema of converted elliptical arcs.
-fn svg_path_bounds(path svg.Path) ?svg.Rect {
+@[params]
+struct SVGPathBoundsOptions {
+	object_geometry bool
+}
+
+// Layout uses Gfx::Path::bounding_box() with control points by default.
+// SVG object geometry uses the extrema of the drawn segments.
+fn svg_path_bounds(path svg.Path, options SVGPathBoundsOptions) ?svg.Rect {
 	if path.instructions.len == 0 {
 		return none
 	}
@@ -1567,6 +1572,7 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 	for instruction in path.instructions {
 		origin := current
 		mut endpoint := current
+		mut draws_segment := instruction.type_ != .move
 		match instruction.type_ {
 			.move, .line {
 				endpoint = svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
@@ -1586,10 +1592,13 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 			.curve {
 				first_control := svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
 				second_control := svg_command_point(instruction.data[2], instruction.data[3], instruction.absolute, origin)
-				points = points.including(first_control)
-				points = points.including(second_control)
-				previous_cubic_control = second_control
 				endpoint = svg_command_point(instruction.data[4], instruction.data[5], instruction.absolute, origin)
+				points = if options.object_geometry {
+					points.including_cubic(origin, first_control, second_control, endpoint)
+				} else {
+					points.including(first_control).including(second_control)
+				}
+				previous_cubic_control = second_control
 			}
 			.smooth_curve {
 				first_control := if previous_type in [.curve, .smooth_curve] {
@@ -1598,16 +1607,23 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 					origin
 				}
 				second_control := svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
-				points = points.including(first_control)
-				points = points.including(second_control)
-				previous_cubic_control = second_control
 				endpoint = svg_command_point(instruction.data[2], instruction.data[3], instruction.absolute, origin)
+				points = if options.object_geometry {
+					points.including_cubic(origin, first_control, second_control, endpoint)
+				} else {
+					points.including(first_control).including(second_control)
+				}
+				previous_cubic_control = second_control
 			}
 			.quadratic_bezier_curve {
 				control := svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
-				points = points.including(control)
-				previous_quadratic_control = control
 				endpoint = svg_command_point(instruction.data[2], instruction.data[3], instruction.absolute, origin)
+				points = if options.object_geometry {
+					points.including_quadratic(origin, control, endpoint)
+				} else {
+					points.including(control)
+				}
+				previous_quadratic_control = control
 			}
 			.smooth_quadratic_bezier_curve {
 				control := if previous_type in [.quadratic_bezier_curve,
@@ -1616,13 +1632,22 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 				} else {
 					origin
 				}
-				points = points.including(control)
-				previous_quadratic_control = control
 				endpoint = svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
+				points = if options.object_geometry {
+					points.including_quadratic(origin, control, endpoint)
+				} else {
+					points.including(control)
+				}
+				previous_quadratic_control = control
 			}
 			.elliptical_arc {
 				endpoint = svg_command_point(instruction.data[5], instruction.data[6], instruction.absolute, origin)
-				points = include_svg_arc_extrema(points, origin, endpoint, instruction.data[0], instruction.data[1], instruction.data[2], instruction.data[3] != 0, instruction.data[4] != 0)
+				draws_segment = endpoint != origin
+				if !options.object_geometry || draws_segment {
+					points = include_svg_arc_extrema(points, origin, endpoint, instruction.data[0],
+						instruction.data[1], instruction.data[2], instruction.data[3] != 0,
+						instruction.data[4] != 0, options)
+				}
 			}
 			.close_path {
 				endpoint = subpath_start
@@ -1631,7 +1656,11 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 		if instruction.type_ == .move {
 			subpath_start = endpoint
 		}
-		points = points.including(endpoint)
+		if options.object_geometry {
+			if draws_segment { points = points.including(origin).including(endpoint) }
+		} else {
+			points = points.including(endpoint)
+		}
 		current = endpoint
 		previous_type = instruction.type_
 	}
@@ -1663,7 +1692,7 @@ fn svg_angle_is_on_arc(angle f64, start f64, delta f64) bool {
 // SVG 2, implementation notes: conversion from endpoint to center
 // parameterization. The extrema angles are then tested against the selected
 // large/small clockwise/counter-clockwise sweep.
-fn include_svg_arc_extrema(bounds SVGPathBounds, start svg.Point, end svg.Point, radius_x f64, radius_y f64, rotation_degrees f64, large_arc bool, sweep bool) SVGPathBounds {
+fn include_svg_arc_extrema(bounds SVGPathBounds, start svg.Point, end svg.Point, radius_x f64, radius_y f64, rotation_degrees f64, large_arc bool, sweep bool, options SVGPathBoundsOptions) SVGPathBounds {
 	mut points := bounds
 	points = points.including(start)
 	points = points.including(end)
@@ -1723,6 +1752,7 @@ fn include_svg_arc_extrema(bounds SVGPathBounds, start svg.Point, end svg.Point,
 			y: cy + rx * sin_phi * math.cos(angle) + ry * cos_phi * math.sin(angle)
 		})
 	}
+	if options.object_geometry { return points }
 	// Skia stores SVG arcs as a sequence of rational quadratic (conic)
 	// segments of at most 90 degrees. Path::getBounds(), which backs
 	// Gfx::Path::bounding_box(), includes those conic control points rather

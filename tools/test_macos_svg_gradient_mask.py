@@ -670,7 +670,8 @@ def main():
         if args.pattern_offset_only:
             offset_fixtures = [(fixture.with_name(f"svg-pattern-tile-offset-{name}.html"), units)
                                for name, units in (("bounds", "region"), ("primitive-units", "primitive"),
-                                                   ("viewport", "viewport"), ("subregion", "subregion"))]
+                                                   ("viewport", "viewport"), ("subregion", "subregion"),
+                                                   ("curves", "curves"))]
             inputs.extend(offset_fixture for offset_fixture, _ in offset_fixtures)
         if args.pattern_transfer_only:
             transfer_chain = fixture.with_name("svg-pattern-tile-component-transfer-chain.html")

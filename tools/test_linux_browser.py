@@ -2296,7 +2296,12 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
     svg_scale = 2 if filter_units == "viewport" else 1
     for left in (0, 128, 256):
         ink, stripe = (black, black) if left == 256 else (red, lime)
-        if filter_units == "subregion":
+        if filter_units == "curves":
+            samples = ((11, 17, white), (12, 17, ink), (19, 19, ink), (12, 16, white),
+                       (8, 10, white), (8, 1, stripe), (8, 2, white)) if edited else (
+                           (7, 10, white), (8, 10, ink), (11, 11, ink), (12, 10, white),
+                           (8, 9, white), (8, 12, white), (8, 1, stripe))
+        elif filter_units == "subregion":
             samples = ((9, 5, white), (10, 5, ink), (17, 7, ink), (18, 6, white),
                        (10, 4, white), (10, 8, white), (8, 10, white)) if edited else (
                            (7, 5, white), (8, 5, ink), (14, 10, ink), (15, 6, white),
@@ -2321,7 +2326,9 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
                        (5, 2, white), (5, 6, white), (10, 8, white)) if edited else (
                            (9, 8, white), (10, 8, ink), (13, 11, ink), (14, 9, white),
                            (10, 7, white), (10, 12, white), (5, 4, white))
-        for x, y, expected in (*samples, (8, 18, stripe)):
+        if filter_units != "curves":
+            samples = (*samples, (8, 18, stripe))
+        for x, y, expected in samples:
             row = rows[marker + (8 + y * svg_scale) * scale]
             position = (left + x) * svg_scale * scale * channels
             color = row[position:position + 3]
@@ -3237,7 +3244,8 @@ def main():
         if args.pattern_offset_only:
             for name, filter_units in (("offset", None), ("offset-bounds", "region"),
                                        ("offset-primitive-units", "primitive"),
-                                       ("offset-viewport", "viewport"), ("offset-subregion", "subregion")):
+                                       ("offset-viewport", "viewport"), ("offset-subregion", "subregion"),
+                                       ("offset-curves", "curves")):
                 check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                        ready="data-offset-ready", check_edited=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,
