@@ -27,6 +27,7 @@ fn main() {
 		}
 		check_canvas_solid_fills() or { panic(err) }
 		check_canvas_solid_strokes() or { panic(err) }
+		check_canvas_linear_gradients() or { panic(err) }
 		check_svg_stroke_pixels() or { panic(err) }
 	}
 }
@@ -56,6 +57,7 @@ $if windows {
 				}
 				check_canvas_solid_fills() or { panic(err) }
 				check_canvas_solid_strokes() or { panic(err) }
+				check_canvas_linear_gradients() or { panic(err) }
 			}
 			frame_fn:     fn (mut state WindowsGraphicsSmoke) {
 				begin_browser_frame(state.ctx)
@@ -320,6 +322,65 @@ fn check_canvas_solid_strokes() ! {
 	expect_canvas_pixel(pixels, pitch, 38, 11, [u8(255), 0, 0, 255]!)!
 	expect_canvas_pixel(pixels, pitch, 18, 19, [u8(0), 0, 0, 0]!)!
 	println('GG Canvas solid line caps, cubic join and conic strokes passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_linear_gradients() ! {
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: 32, height: 24)!
+	defer { target.free() }
+	target.clear(canvas.Color4f{})
+	red := canvas.Color4f.from_rgba8(255, 0, 0, 255)
+	green := canvas.Color4f.from_rgba8(0, 255, 0, 255)
+	blue := canvas.Color4f.from_rgba8(0, 0, 255, 255)
+	target.draw_rect(canvas.Rect.ltrb(0, 0, 16, 6), canvas.Paint{
+		color:    canvas.Color4f.from_rgba8(0, 0, 0, 128)
+		dither:   true
+		gradient: canvas.Gradient{
+			p1:        canvas.Point{8, 0}
+			colors:    [red, red, red, red, green, green, blue, blue]
+			positions: [f32(0), 0.125, 0.25, 0.5, 0.5, 0.75, 0.875, 1]
+			tile_mode: .mirror
+			premul:    true
+		}
+	})!
+	mut path := canvas.PathBuilder{}
+	path.move_to(2, 20)
+	path.line_to(2, 10)
+	path.line_to(22, 20)
+	path.close()
+	gradient := canvas.Gradient{
+		p0:     canvas.Point{6, 0}
+		p1:     canvas.Point{14, 0}
+		colors: [red, blue]
+	}
+	mut paint := canvas.Paint{gradient: gradient, anti_alias: true, dither: true}
+	target.draw_path(path.detach(), paint)!
+	path.move_to(4, 8)
+	path.line_to(28, 8)
+	paint.style = .stroke
+	paint.stroke_width = 2
+	target.draw_path(path.detach(), paint)!
+
+	pitch := 32 * 4
+	pixels := []u8{len: pitch * 24}
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 3, 2, [u8(0), 0, 128, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 4, 2, [u8(0), 128, 0, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 10, 2, [u8(0), 128, 0, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 12, 2, [u8(0), 0, 128, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 7, 11, [u8(0), 0, 0, 0]!)!
+	for y in [8, 18] {
+		expect_canvas_pixel(pixels, pitch, 4, y, [u8(0), 0, 255, 255]!)!
+		expect_canvas_pixel(pixels, pitch, 16, y, [u8(255), 0, 0, 255]!)!
+		middle := y * pitch + 9 * 4
+		// The pixel center lies 7/16 of the way from red to blue.
+		if pixels[middle] !in [u8(111), 112] || pixels[middle + 1] != 0
+			|| pixels[middle + 2] !in [u8(143), 144] || pixels[middle + 3] != 255 {
+			return error('Unexpected Canvas gradient midpoint on row ${y}: ${pixels[middle..middle + 4]}')
+		}
+	}
+	println('GG Canvas linear gradient cover, wedge and stroke passed on ${gfx.query_backend()}')
 }
 
 $if !sokol_d3d11 ? {

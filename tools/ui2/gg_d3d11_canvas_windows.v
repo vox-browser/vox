@@ -8,20 +8,37 @@ $if sokol_d3d11 ? {
 	const d3d11_canvas_output = r'
 struct CanvasVertex {
     float4 position : SV_Position;
+#ifdef LINEAR_GRADIENT
+    float gradientPosition : TEXCOORD0;
+    nointerpolation uint paintBase : TEXCOORD1;
+#else
     nointerpolation float4 color : TEXCOORD0;
+#endif
 };
 '
 
 	// Sokol binds raw storage-buffer slot zero at t16 on D3D11.
+	const d3d11_canvas_paint_buffer = 'ByteAddressBuffer paintData : register(t16);\n'
+
 	const d3d11_canvas_common = r'
 cbuffer Intrinsics : register(b0) {
     float4 viewport;
     float4 dstReadBounds;
 };
-ByteAddressBuffer paintData : register(t16);
 float4 clipPosition(float2 device, float depth, float w) {
     return float4(viewport.zw * device - sign(viewport.zw) * w, depth, w);
 }
+#ifdef LINEAR_GRADIENT
+CanvasVertex gradientVertex(float4 position, uint base, float2 local) {
+    float4 affine = asfloat(paintData.Load4(base));
+    float translationX = asfloat(paintData.Load(base + 16u));
+    CanvasVertex result;
+    result.position = position;
+    result.gradientPosition = dot(local, affine.xz) + translationX;
+    result.paintBase = base;
+    return result;
+}
+#endif
 '
 
 	const d3d11_canvas_cover_vertex = r'
@@ -35,26 +52,38 @@ struct CoverInstance {
 };
 CanvasVertex vertexMain(CoverInstance input, uint vertex : SV_VertexID) {
     float2 corner = float2(vertex >> 1, vertex & 1);
+    float2 local;
     float3 device;
     if (all(input.bounds.xy <= input.bounds.zw)) {
-        float2 local = lerp(input.bounds.xy, input.bounds.zw, corner);
+        local = lerp(input.bounds.xy, input.bounds.zw, corner);
         device = local.x * input.columnX + local.y * input.columnY + input.translation;
     } else {
         // Inverse fills carry device bounds in reverse order. Only the
         // homogeneous row of the inverse matrix is needed for solid paint.
         float2 pixel = lerp(input.bounds.zw, input.bounds.xy, corner);
         float3 inverseRow = cross(input.columnX, input.columnY);
-        float w = dot(inverseRow, input.translation) / dot(inverseRow, float3(pixel, 1));
+        float3 devicePixel = float3(pixel, 1);
+        float denominator = dot(inverseRow, devicePixel);
+        float w = dot(inverseRow, input.translation) / denominator;
         device = float3(pixel * w, w);
+#ifdef LINEAR_GRADIENT
+        local = float2(dot(cross(input.columnY, input.translation), devicePixel),
+            dot(cross(input.translation, input.columnX), devicePixel)) / denominator;
+#endif
     }
+    float4 position = clipPosition(device.xy, input.depth * device.z, device.z);
+#ifdef LINEAR_GRADIENT
+    return gradientVertex(position, input.paint * PAINT_STRIDE, local);
+#else
     CanvasVertex result;
-    result.position = clipPosition(device.xy, input.depth * device.z, device.z);
+    result.position = position;
 #ifdef SHADED
     result.color = asfloat(paintData.Load4(input.paint * 16u));
 #else
     result.color = 0;
 #endif
     return result;
+#endif
 }
 '
 
@@ -138,13 +167,17 @@ float2 wedgePoint(WedgeInstance input, float2 transformX, float2 transformY) {
 }
 
 CanvasVertex vertexMain(WedgeInstance input) {
-    CanvasVertex result;
-#ifdef SHADED
+#ifdef LINEAR_GRADIENT
+    uint paintBase = input.paint * PAINT_STRIDE;
+    uint base = paintBase + GRADIENT_BYTES;
+#elif defined(SHADED)
     uint base = input.paint * 80u;
+    CanvasVertex result;
     result.color = asfloat(paintData.Load4(base));
     base += 16u;
 #else
     uint base = input.paint * 64u;
+    CanvasVertex result;
     result.color = 0;
 #endif
     float4 columnX = asfloat(paintData.Load4(base));
@@ -152,8 +185,13 @@ CanvasVertex vertexMain(WedgeInstance input) {
     float4 translation = asfloat(paintData.Load4(base + 48u));
     float2 local = wedgePoint(input, columnX.xy, columnY.xy);
     float4 device = local.x * columnX + local.y * columnY + translation;
-    result.position = clipPosition(device.xy, input.depth, device.w);
+    float4 position = clipPosition(device.xy, input.depth, device.w);
+#ifdef LINEAR_GRADIENT
+    return gradientVertex(position, paintBase, local);
+#else
+    result.position = position;
     return result;
+#endif
 }
 '
 
@@ -182,12 +220,16 @@ float2 strokeMix(float2 a, float2 b, float t) {
 }
 
 CanvasVertex vertexMain(StrokeInstance input, uint vertex : SV_VertexID) {
-    // Match stroke_uniforms: premultiplied color, 2x2 affine columns,
-    // translation and maximum scale, padded to a 48-byte record.
+#ifdef LINEAR_GRADIENT
+    uint base = input.paint * PAINT_STRIDE;
+    uint transformBase = base + GRADIENT_BYTES;
+#else
     uint base = input.paint * 48u;
-    float4 affine = asfloat(paintData.Load4(base + 16u));
-    float2 translation = asfloat(paintData.Load2(base + 32u));
-    float maxScale = asfloat(paintData.Load(base + 40u));
+    uint transformBase = base + 16u;
+#endif
+    float4 affine = asfloat(paintData.Load4(transformBase));
+    float2 translation = asfloat(paintData.Load2(transformBase + 16u));
+    float maxScale = asfloat(paintData.Load(transformBase + 24u));
     float edgeID = float(vertex >> 1);
     if ((vertex & 1u) != 0) edgeID = -edgeID;
 
@@ -367,16 +409,92 @@ CanvasVertex vertexMain(StrokeInstance input, uint vertex : SV_VertexID) {
     }
     center += float2(tangent.y, -tangent.x) * (radius * outset);
     float2 device = (hairline ? center : transformVector(center, affine.xy, affine.zw)) + translation;
+    float4 position = clipPosition(device, input.depth, 1.0);
+#ifdef LINEAR_GRADIENT
+    float2 local = center;
+    if (hairline) {
+        local = float2(strokeCross(center, affine.zw), strokeCross(affine.xy, center)) /
+            strokeCross(affine.xy, affine.zw);
+    }
+    return gradientVertex(position, base, local);
+#else
     CanvasVertex result;
-    result.position = clipPosition(device, input.depth, 1.0);
+    result.position = position;
     result.color = asfloat(paintData.Load4(base));
     return result;
+#endif
 }
 '
 
 	const d3d11_canvas_fragment = r'
 float4 fragmentMain(CanvasVertex input) : SV_Target0 {
     return input.color;
+}
+'
+
+	const d3d11_canvas_linear_fragment = r'
+Texture2D<float4> ditherLUT : register(t0);
+SamplerState ditherSampler : register(s0);
+
+// Offsets follow the colors in the shared gradient paint record. Select
+// the interval before fetching its two colors, including at duplicate stops.
+float4 gradientColor(uint colors, uint offsets, float t) {
+    float4 low = asfloat(paintData.Load4(offsets));
+    if (t <= low.x) return asfloat(paintData.Load4(colors));
+#if STOP_COUNT == 8
+    float4 high = asfloat(paintData.Load4(offsets + 16u));
+#endif
+    uint right = 1u;
+    float start = low.x;
+    float end = low.y;
+    if (t < low.w) {
+        right = t < low.y ? 1u : (t < low.z ? 2u : 3u);
+        start = low[right - 1u];
+        end = low[right];
+    }
+#if STOP_COUNT == 8
+    else if (t < high.x) {
+        right = 4u;
+        start = low.w;
+        end = high.x;
+    } else if (t < high.w) {
+        uint index = t < high.y ? 1u : (t < high.z ? 2u : 3u);
+        right = index + 4u;
+        start = high[index - 1u];
+        end = high[index];
+    }
+#endif
+    else {
+        return asfloat(paintData.Load4(colors + (STOP_COUNT - 1u) * 16u));
+    }
+    float4 a = asfloat(paintData.Load4(colors + (right - 1u) * 16u));
+    float4 b = asfloat(paintData.Load4(colors + right * 16u));
+    return lerp(a, b, (t - start) / (end - start));
+}
+
+float4 fragmentMain(CanvasVertex input) : SV_Target0 {
+    uint colors = input.paintBase + 32u;
+    uint offsets = colors + STOP_COUNT * 16u;
+    uint parameters = offsets + STOP_COUNT * 4u;
+    uint tile = paintData.Load(parameters);
+    float t = input.gradientPosition + 1e-5;
+    if (tile == 0u) t = saturate(t);
+    else if (tile == 1u) t = frac(t);
+    else if (tile == 2u) t = abs(2.0 * frac((t - 1.0) * 0.5) - 1.0);
+    else if (t < 0.0 || t > 1.0) return 0.0;
+
+    float4 color = gradientColor(colors, offsets, t);
+    // Canvas serializes sRGB colors with mode=1 for straight interpolation
+    // and mode=0 for premultiplied interpolation.
+    color.rgb *= max(color.a, 1.0 - asfloat(paintData.Load(parameters + 12u)));
+    uint range = parameters + 16u;
+#ifdef GRADIENT_ALPHA
+    color *= asfloat(paintData.Load(range + 12u));
+    range += 16u;
+#endif
+    float noise = ditherLUT.SampleLevel(ditherSampler, input.position.xy * 0.125, 0).r - 0.5;
+    color.rgb = clamp(color.rgb + noise * asfloat(paintData.Load(range)), 0.0, color.a);
+    return color;
 }
 '
 
@@ -397,8 +515,16 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		.cover_inverse_clip, .convex_wedges, .stencil_wedges_winding, .stencil_wedges_even_odd,
 		.wedges_shaded, .tessellate_strokes]!
 
+	fn d3d11_canvas_supports_path_paint(paint Paint) bool {
+		if gradient := paint.gradient {
+			return gradient.kind == .linear
+		}
+		return true
+	}
+
 	fn d3d11_canvas_supports(step RenderStep, clipped bool, shading Shading) bool {
-		return !clipped && shading == .solid && step in d3d11_canvas_steps
+		return !clipped && step in d3d11_canvas_steps
+			&& (shading == .solid || (shading.is_linear() && writes_color(step)))
 	}
 
 	fn d3d11_canvas_shader_step(step RenderStep) RenderStep {
@@ -426,14 +552,26 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		if !d3d11_canvas_supports(step, clipped, shading) {
 			return gfx.Shader{}
 		}
-		prefix := if writes_color(step) { '#define SHADED\n' } else { '' }
+		linear := shading.is_linear()
+		mut prefix := if writes_color(step) { '#define SHADED\n' } else { '' }
+		if linear {
+			prefix += '#define LINEAR_GRADIENT\n#define PAINT_STRIDE ${step_uniform_size(step, false,
+				shading)}u\n#define GRADIENT_BYTES ${gradient_uniform_size(shading)}u\n#define STOP_COUNT ${shading.stops()}\n'
+			if shading.is_translucent() {
+				prefix += '#define GRADIENT_ALPHA\n'
+			}
+		}
 		geometry := match true {
 			step == .tessellate_strokes { d3d11_canvas_curve_math + d3d11_canvas_stroke_vertex }
 			is_wedge_step(step) { d3d11_canvas_curve_math + d3d11_canvas_wedge_vertex }
 			else { d3d11_canvas_cover_vertex }
 		}
-		vertex := prefix + d3d11_canvas_output + d3d11_canvas_common + geometry
-		fragment := d3d11_canvas_output + d3d11_canvas_fragment
+		vertex := prefix + d3d11_canvas_output + d3d11_canvas_paint_buffer + d3d11_canvas_common + geometry
+		fragment := if linear {
+			prefix + d3d11_canvas_output + d3d11_canvas_paint_buffer + d3d11_canvas_linear_fragment
+		} else {
+			d3d11_canvas_output + d3d11_canvas_fragment
+		}
 		mut desc := gfx.ShaderDesc{}
 		desc.vs.source = &char(vertex.str)
 		desc.vs.entry = c'vertexMain'
@@ -442,6 +580,12 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		desc.vs.uniform_blocks[0].size = intrinsic_uniform_size
 		if has_uniforms(step) {
 			desc.vs.storage_buffers[0] = gfx.ShaderStorageBufferDesc{ used: true, readonly: true }
+		}
+		if linear {
+			desc.fs.storage_buffers[0] = gfx.ShaderStorageBufferDesc{ used: true, readonly: true }
+			desc.fs.images[0] = gfx.ShaderImageDesc{ used: true, image_type: ._2d, sample_type: .float }
+			desc.fs.samplers[0] = gfx.ShaderSamplerDesc{ used: true, sampler_type: .filtering }
+			desc.fs.image_sampler_pairs[0] = gfx.ShaderImageSamplerPairDesc{ used: true }
 		}
 		for index in 0 .. 6 {
 			desc.attrs[index].sem_name = c'TEXCOORD'

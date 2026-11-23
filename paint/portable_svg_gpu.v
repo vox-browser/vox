@@ -146,10 +146,7 @@ $if vox_gg_svg ? {
 	}
 
 	@[inline]
-	fn may_try_portable_svg_gpu(gradient bool) bool {
-		$if windows && sokol_d3d11 ? {
-			if gradient { return false }
-		}
+	fn may_try_portable_svg_gpu() bool {
 		if !portable_svg_gpu_enabled { return false }
 		state := unsafe { portable_svg_gpu }
 		return state.canvas != unsafe { nil } || !state.tried
@@ -296,7 +293,7 @@ $if vox_gg_svg ? {
 
 	fn (mut app BrowserApp) draw_portable_gpu_svg_stroke(command &layout.PaintCommand,
 		data layout.PaintSVGPathData, page_x f32, page_y f32) bool {
-		if !may_try_portable_svg_gpu(command.stroke_color == '') || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
+		if !may_try_portable_svg_gpu() || app.paint_effect_depth != 0 || app.paint_svg_mask_depth != 0
 			|| (command.stroke_color == '' && data.svg_gradient_data == none) || command.stroke_width <= 0
 			|| data.path_data.len < layout.compatibility_clip_path_segment_stride
 			|| data.stroke_pattern != none {

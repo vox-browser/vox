@@ -1,13 +1,40 @@
 # Migrating from Skia to vlib/gg
 
+## Linear Canvas gradients on Windows D3D11
+
+The opt-in Windows Canvas route renders sRGB linear SVG fills and strokes
+with up to eight effective stops through the shared Canvas bounds, wedge and
+stroke pipelines. The shaders read the existing paint buffer and dither LUT.
+The browser draws from the resolved GPU texture and reuses its texture
+cache. Each new gradient shader variant compiles on first use. Radial,
+focal and other unsupported draws use the portable rasterizer.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked an eight-stop reflected bounds fill
+with a hard stop and paint opacity, a shaded wedge and a gradient stroke.
+The Windows smoke executable SHA-256 matched before and after launch
+(`cdeca562b850d4aa672e6d14074cd4a66f4bc52cd96bc5ff66d62d94fce6cba4`). Its
+process exited zero and the projection, font and color capture reproduced
+the prior PNG byte for byte. The staging and replay-runner tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `6c324cfcf274160aba4b98fb2b583cb6c24a1b6ca820faf5f7ec17af14b891e4`
+throughout the replay. Full-cache, texture-cache-only and uncached runs
+produced the same 800 × 100 document crop. The linear ramps differed from
+the portable reference by at most one level per RGB channel, and all other
+pixels matched exactly. The logs confirmed GPU cache hits for both linear
+paints and portable rendering for both radial paints. Hardware frame
+timings remain unmeasured.
+
 ## Solid SVG strokes on Windows D3D11
 
 The opt-in Windows Canvas route now accepts solid SVG strokes. Its HLSL
 vertex shader uses the shared stroke patches, 48-byte paint records, and
 multisample triangle strips. Line and simple shape paths use the stroke
 tessellator on D3D11. Resolved images stay on the GPU and use the same
-browser texture cache as solid fills. Gradient fills and strokes use the
-portable rasterizer. Hardware frame timings remain unmeasured.
+browser texture cache as solid fills. At this stage gradient fills and strokes
+used the portable rasterizer. Hardware frame timings remained unmeasured.
 
 The shared smoke passed the square line cap, cubic stroke with a round
 join, rational conic stroke, and surrounding transparent pixel checks on
