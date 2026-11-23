@@ -83,10 +83,7 @@ fn clear_svg_pattern_outside_crop(mut layer PortableSVGMaskLayer, width int, cro
 fn apply_svg_pattern_filter(mut layer PortableSVGMaskLayer, width int, height int,
 	filter &layout.PaintSVGMaskFilter, retain_color bool) bool {
 	crop := svg_pattern_filter_crop(filter, width, height) or { return false }
-	effect := filter.effect or {
-		clear_svg_pattern_outside_crop(mut layer, width, crop)
-		return true
-	}
+	effect := filter.effect or { return false }
 	fills_clear := effect.fills_clear_pixels()
 	// Filter only the retained crop. A filter that gives transparent black
 	// coverage needs the crop applied after evaluation.

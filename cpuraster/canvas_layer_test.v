@@ -121,11 +121,20 @@ fn test_canvas_opacity_layer_band_restores_only_its_rows() {
 	assert target == seed
 }
 
-fn test_canvas_source_alpha_restore_matches_clipped_black_source() {
+fn test_canvas_clipped_restore_matches_cleared_band() {
 	width, rows, first, height := 519, 515, 13, 541
 	source_pitch := width * 4 + 8
 	pitch := width * 4 + 12
-	source := []u8{len: source_pitch * rows, init: u8(index * 17 + index / 19)}
+	mut source := []u8{len: source_pitch * rows, init: u8(index * 17 + index / 19)}
+	for y in 0 .. rows {
+		for x in 0 .. width {
+			pixel := y * source_pitch + x * 4
+			alpha := source[pixel + 3]
+			source[pixel] = alpha
+			source[pixel + 1] = alpha / 2
+			source[pixel + 2] = alpha / 4
+		}
+	}
 	band := CanvasBitmap{
 		pixels:        source
 		width:         width
@@ -134,35 +143,42 @@ fn test_canvas_source_alpha_restore_matches_clipped_black_source() {
 		premultiplied: true
 	}
 	seed := []u8{len: pitch * height, init: u8(index * 23 + index / 5)}
-	for clip in [IRect{3, -4, 20, 27}, IRect{1, 2, width + 3, rows + 1},
-		IRect{width + 1, 0, width + 5, rows}] {
-		mut black := []u8{len: source.len}
-		for y in 0 .. rows {
-			for x in 0 .. width {
-				if x >= clip.left && x < clip.right && y >= clip.top && y < clip.bottom {
-					alpha := y * source_pitch + x * 4 + 3
-					black[alpha] = source[alpha]
+	for source_alpha in [false, true] {
+		for clip in [IRect{3, -4, 20, 27}, IRect{1, 2, width + 3, rows + 1},
+			IRect{width + 1, 0, width + 5, rows}] {
+			mut cropped := []u8{len: source.len}
+			for y in 0 .. rows {
+				for x in 0 .. width {
+					if x >= clip.left && x < clip.right && y >= clip.top && y < clip.bottom {
+						pixel := y * source_pitch + x * 4
+						if source_alpha {
+							cropped[pixel + 3] = source[pixel + 3]
+						} else {
+							copy(mut cropped[pixel..pixel + 4], source[pixel..pixel + 4])
+						}
+					}
 				}
 			}
+			mut expected := seed.clone()
+			mut actual := seed.clone()
+			assert restore_canvas_opacity_layer(mut expected, pitch, height, first,
+				CanvasBitmap{...band, pixels: cropped}, 1)
+			assert restore_canvas_clipped_layer(mut actual, pitch, height, first, band, clip,
+				source_alpha)
+			matches := actual == expected
+			assert matches
 		}
-		mut expected := seed.clone()
-		mut actual := seed.clone()
-		assert restore_canvas_opacity_layer(mut expected, pitch, height, first,
-			CanvasBitmap{...band, pixels: black}, 1)
-		assert restore_canvas_source_alpha_layer(mut actual, pitch, height, first, band, clip)
-		matches := actual == expected
-		assert matches
 	}
 }
 
-fn test_canvas_source_alpha_restore_rejects_aliased_and_truncated_buffers() {
+fn test_canvas_clipped_restore_rejects_aliased_and_truncated_buffers() {
 	mut target := []u8{len: 160, init: u8(index * 17)}
 	seed := target.clone()
-	band := CanvasBitmap{pixels: target, width: 9, height: 4, pitch: 40}
+	band := CanvasBitmap{pixels: target, width: 9, height: 4, pitch: 40, premultiplied: true}
 	clip := IRect{0, 0, 9, 4}
-	assert !restore_canvas_source_alpha_layer(mut target, 40, 4, 0, band, clip)
-	assert !restore_canvas_source_alpha_layer(mut target, 40, 4, 0,
-		CanvasBitmap{...band, pixels: seed[..100]}, clip)
+	assert !restore_canvas_clipped_layer(mut target, 40, 4, 0, band, clip, false)
+	assert !restore_canvas_clipped_layer(mut target, 40, 4, 0,
+		CanvasBitmap{...band, pixels: seed[..100]}, clip, true)
 	assert target == seed
 }
 

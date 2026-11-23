@@ -113,11 +113,12 @@ pub fn restore_canvas_opacity_layer(mut pixels []u8, pitch int, target_height in
 		[f32(1), 0, 0, 1, 0, 0]!, image, rect, rect, false, opacity, .src_over, [])
 }
 
-// Restore an isolated SourceAlpha result at full opacity. The clip is local
-// to the source band and pixels outside it leave the target untouched.
-pub fn restore_canvas_source_alpha_layer(mut pixels []u8, pitch int, target_height int,
-	first_row int, image CanvasBitmap, clip IRect) bool {
-	if !untiled_device(pixels, image.width, target_height, pitch)
+// Restore a premultiplied SVG band at full opacity. The clip is local to the
+// source band. SourceAlpha uses black RGB and keeps the source coverage.
+pub fn restore_canvas_clipped_layer(mut pixels []u8, pitch int, target_height int,
+	first_row int, image CanvasBitmap, clip IRect, source_alpha bool) bool {
+	if !image.premultiplied || image.display_p3
+		|| !untiled_device(pixels, image.width, target_height, pitch)
 		|| !untiled_device(image.pixels, image.width, image.height, image.pitch)
 		|| first_row < 0 || first_row > target_height - image.height
 		|| raster_spans_overlap(u64(uint(image.pixels.data)), image.pixels.len,
@@ -133,8 +134,10 @@ pub fn restore_canvas_source_alpha_layer(mut pixels []u8, pitch int, target_heig
 		source_pitch: image.pitch
 		target_pitch: pitch
 		width:        visible.width()
+		alpha:        255
 	}
-	run_raster_scans(&scan, visible.height(), visible.width(), restore_canvas_source_alpha_rows)
+	worker := if source_alpha { restore_canvas_source_alpha_rows } else { scan_sprite_blend }
+	run_raster_scans(&scan, visible.height(), visible.width(), worker)
 	return true
 }
 
