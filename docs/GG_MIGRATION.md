@@ -4273,6 +4273,47 @@ Browser, probe and corresponding runtime guard exits were zero.
 These are raster component timings. Production frame timing and
 candidate browser runtime on macOS and Windows remain open.
 
+### Reusing an SVG tile for fill and stroke
+
+In `390d6a8dc`, layout shares one resolved pattern style when a path references
+the same URL for fill and stroke. The portable rasterizer can reuse
+its last completed vector tile within the replay. It checks the
+style identity, dimensions, luminance and device stroke metric at
+the same nesting depth. A hit pays the original subtree pixel
+budget, and tiles with image resources retain their existing
+raster path.
+
+The [fill and stroke fixture](../Tests/Browser/Native/svg-pattern-tile-shared-fill-stroke.html)
+uses one pattern for both paints in an outer path and in the
+nested tile. It then switches the nested stroke to a different
+resource. The initial Linux replay reduced two 48 × 32 rasters and
+four 8 × 8 rasters to one of each, from 3,328 to 1,600 raster
+pixels. After the edit the outer tile still reused its raster
+and the two inner patterns produced separate rasters.
+
+On Linux both modes matched exactly in the 160 × 104 RGB crop and
+passed the whole-document cache comparison. The published macOS
+control also passed the driver at 1× and 2×. Brave 158.1.100.58
+matched the macOS control at 1×. Linux differed by one channel
+level on 24 pixels along the translucent stroke edge in each state.
+
+| State | Linux RGB crop SHA-256 |
+| --- | --- |
+| Initial | `35de7a3cd3786d069cb521aad95ee3155112f731706a1297907e014029bb9ceb` |
+| Edited | `a6c707bd52b3b97441edee04986bc7ac37f23c9b72afa2f161e782e38ac5b015` |
+
+The focused layout test confirmed shared style identity at both
+levels. The 29 Linux SVG fixtures and the 23 Python driver tests
+passed, as did macOS source and Windows D3D11 and OpenGL source checks.
+The aarch64 Linux executable used a deferred single-unit Clang
+`-O0` link with the existing LibJS diagnostic allowance. Its SHA-256
+was `163027325b24ae27042893855688940bc6fbe0d20fb7a1c3f52866f7e214edcf`.
+The macOS control retained the preceding executable identity.
+Inputs stayed fixed and browser and runtime guard exits were zero.
+The production build volume ran out of space during compilation.
+Candidate browser runtime on macOS and Windows and frame timings
+remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
