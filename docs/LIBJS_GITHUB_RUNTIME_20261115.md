@@ -11902,3 +11902,30 @@ chooses ciphers in its own order.
   instructions than every Brave run. The 10% criterion needs a Vox maximum
   of at most 18.39B against this Brave minimum, about 1.44B below this
   control's maximum.
+
+**Custom property environments in full style passes, 2026-11-23.**
+- In `tools/benchmark_style_passes.v` full mode (every element of GitHub's
+  document restyled), `report_custom_property_change` took 30% of a pass.
+  The root's custom property record holds 2,140 properties, and `<head>`
+  with its ~270 children declares none, so they all share it. The strict
+  environment check that keeps an unchanged record failed at its first
+  entry, `--csstools-color-scheme--light: initial`, because `initial` and
+  failed substitutions resolve to a fresh guaranteed-invalid value on every
+  pass. The root then got a new record, and each head element compared the
+  old and new 2,140-entry maps value by value. `c82d0717d` treats two
+  guaranteed-invalid values as equivalent: a full pass drops from 941.1M to
+  583.7M instructions (insert mode unchanged).
+- A 7-pair cohort on bundle `c6d3e937` (all of today's CSS commits), host
+  load averages 9-12, 2 px in every Vox run:
+
+  | Arm | Median | Min | Max | PNG median |
+  | --- | --- | --- | --- | --- |
+  | candidate | 19.879B | 19.554B | 19.995B | 2,594 ms |
+  | `VOX_DISABLE_GUARANTEED_INVALID_ENVIRONMENT_EQUIVALENCE=1` | 19.785B | 19.283B | 20.021B | 2,726 ms |
+  | Brave | 20.719B | 20.377B | 20.865B | 2,162 ms |
+
+  The load does not restyle the root and head the way a full pass does, so
+  the fix changes nothing measurable there; the CSS parse reductions
+  (about 0.1B) are also below this spread. Every Vox run used fewer
+  instructions than every Brave run; the 10% criterion needs a Vox maximum
+  of at most 18.34B, about 1.65B below this cohort's.
