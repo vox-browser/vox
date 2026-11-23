@@ -16,6 +16,20 @@
 #include <sys/stat.h>
 #include "../platform/native_state.h"
 
+// Whether the font has variation axes, from its 'fvar' table header. This
+// is what a non-empty CTFontCopyVariationAxes() result means, but that call
+// also localizes every axis name: about 30M instructions for the system UI
+// font, against a few thousand to copy the table.
+static int cpuraster_ct_has_variation_axes(CTFontRef font) {
+    CFDataRef table = CTFontCopyTable(font, 'fvar', kCTFontTableOptionNoOptions);
+    if (!table)
+        return 0;
+    const UInt8* bytes = CFDataGetBytePtr(table);
+    int count = CFDataGetLength(table) >= 10 ? (bytes[8] << 8 | bytes[9]) : 0;
+    CFRelease(table);
+    return count > 0;
+}
+
 // SkFontMgr_Mac::onMakeFromFile() -> SkTypeface_Mac::MakeFromStream():
 // the file's bytes, CTFontManagerCreateFontDescriptorFromData() and
 // CTFontCreateWithFontDescriptor(desc, 0, nullptr). flags receives bit 0 for
@@ -56,12 +70,8 @@ static void* cpuraster_ct_font_from_file(const char* path, int* flags) {
         return NULL;
     if (CTFontGetSymbolicTraits(font) & kCTFontColorGlyphsTrait)
         *flags |= 1;
-    CFArrayRef axes = CTFontCopyVariationAxes(font);
-    if (axes) {
-        if (CFArrayGetCount(axes) > 0)
-            *flags |= 2;
-        CFRelease(axes);
-    }
+    if (cpuraster_ct_has_variation_axes(font))
+        *flags |= 2;
     return (void*)font;
 }
 
@@ -275,12 +285,8 @@ static int cpuraster_ct_register_face(const char* key, const char* path, const c
 static void cpuraster_ct_face_flags(CTFontRef font, int* flags) {
     if (CTFontGetSymbolicTraits(font) & kCTFontColorGlyphsTrait)
         *flags |= 1;
-    CFArrayRef axes = CTFontCopyVariationAxes(font);
-    if (axes) {
-        if (CFArrayGetCount(axes) > 0)
-            *flags |= 2;
-        CFRelease(axes);
-    }
+    if (cpuraster_ct_has_variation_axes(font))
+        *flags |= 2;
 }
 
 // The typeface for a retained run's face: a registered key (as
