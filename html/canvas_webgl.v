@@ -71,6 +71,7 @@ fn html_canvas_element_create_webgl_context_for_version(element &dom.HTMLCanvasE
 	context.set_size(int(width), int(height))
 	state.webgl_context = context
 	state.dirty = true
+	html_canvas_element_register_context_for_paint(element)
 	return context
 }
 

@@ -1,5 +1,37 @@
 # Migrating from Skia to vlib/gg
 
+## Painting canvases initialized after first layout
+
+The retained paint tree keeps canvas geometry before a context exists. First
+context creation invalidates the canvas paint commands, and recording resolves
+the current surface. Later draws keep the retained geometry and use the same
+texture revision mechanism. A canvas without a surface emits no draw.
+
+The published macOS build from `4319484d7` left both canvas rectangles at the
+background color after the delayed script. Its executable SHA-256 was
+`91c8d2d1d543f29affc5e8e7fe8cc83d270b02c116418115f3a361e21fe75799`.
+The 800 × 516 RGBA document crop had SHA-256
+`2d4d57e2bbe7296f401f46f619b24e88c677e55c36bf780429b631ec8418150c`.
+[Delayed Canvas 2D and WebGL fixture](../Tests/Browser/Native/late-canvas.html)
+
+The guarded ARM64 Linux candidate used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. Its executable SHA-256 was
+`4b8cda9ca3ce75b8cb7f13bb5dcfeffb83eb0c331dfaf888c126b0dd53e39f03`.
+Xvfb captured both complete painted rectangles, with one GG upload each.
+The 800 × 516 RGBA crop matched the reference colors and had SHA-256
+`5b607c45a12d4c936a1fcdc86e35fccbcac6b83bdef9c836b902aad883a1ee9f`.
+In a separate diagnostic capture, the initial layout had six paint entries.
+Context creation refreshed the two canvas entries and recorded one draw per
+canvas. The trace recorded one layout pass, before either context existed.
+The existing WebGL animation and texture reuse check produced the same crop
+with reuse enabled and disabled. It recorded one static and two animated
+uploads with reuse, and 139 of each with reuse disabled. WebGL shader and
+readback checks, video and rounded clip checks, headless startup, and all
+21 Python driver tests passed. The Linux layout regression verified that
+both contexts can appear after the initial display list and that later
+WebGL pixels use the same layout and canvas geometry. macOS and Windows
+x64 D3D11 source checks passed with V `4478fc4`. Frame timings remain unmeasured.
+
 ## Reusing unchanged WebGL canvas textures
 
 WebGL presentation updates the canvas-owned bitmap and advances its

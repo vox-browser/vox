@@ -9,7 +9,7 @@ pub:
 	border_radii    BorderRadiiData
 	border_widths   PixelBox
 	image_rendering css.ImageRendering
-	webgl_canvas    ?&dom.HTMLCanvasElement
+	element         &dom.HTMLCanvasElement = unsafe { nil }
 }
 
 pub struct CanvasPaintResult {

@@ -3953,7 +3953,6 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut replaced_image_position_y := '50%'
 	mut replaced_image_paintable := ?&painting.ImagePaintable(none)
 	mut replaced_image_bitmap := ?&dom.Bitmap_(none)
-	mut canvas_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_paintable := ?&painting.CanvasPaintable(none)
 	mut video_bitmap := ?&dom.Bitmap_(none)
 	mut video_frame_source := ?&painting.VideoFrameSource(none)
@@ -4424,31 +4423,27 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	}
 	if tag_name == 'canvas' {
 		if canvas_element := element {
-			canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
-			if bitmap := html.html_canvas_element_present_existing_surface(canvas) {
-				canvas_bitmap = bitmap
-				canvas_paintable = &painting.CanvasPaintable{
-					canvas_rect: painting.Rect{
-						x: position.x().to_double()
-						y: position.y().to_double()
-						width: used.content_width().to_double()
-						height: used.content_height().to_double()
-					}
-					border_radii: painting.BorderRadiiData{
-						top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
-						top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
-						bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
-						bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
-					}
-					border_widths: painting.PixelBox{
-						top: used.border_top.to_double()
-						right: used.border_right.to_double()
-						bottom: used.border_bottom.to_double()
-						left: used.border_left.to_double()
-					}
-					image_rendering: computed.image_rendering()
-					webgl_canvas: if html.html_canvas_element_webgl_context(canvas) != none { canvas } else { none }
+			canvas_paintable = &painting.CanvasPaintable{
+				canvas_rect: painting.Rect{
+					x: position.x().to_double()
+					y: position.y().to_double()
+					width: used.content_width().to_double()
+					height: used.content_height().to_double()
 				}
+				border_radii: painting.BorderRadiiData{
+					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+					top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+					bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+					bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+				}
+				border_widths: painting.PixelBox{
+					top: used.border_top.to_double()
+					right: used.border_right.to_double()
+					bottom: used.border_bottom.to_double()
+					left: used.border_left.to_double()
+				}
+				image_rendering: computed.image_rendering()
+				element: unsafe { &dom.HTMLCanvasElement(canvas_element) }
 			}
 		}
 	}
@@ -4766,7 +4761,6 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			replaced_image_position_y: replaced_image_position_y
 			replaced_image_paintable: replaced_image_paintable
 			replaced_image_bitmap: replaced_image_bitmap
-			canvas_bitmap: canvas_bitmap
 			canvas_paintable: canvas_paintable
 			video_bitmap: video_bitmap
 			video_frame_source: video_frame_source

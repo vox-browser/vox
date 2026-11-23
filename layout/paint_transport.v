@@ -2530,8 +2530,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				force_dark_role_set: true
 			}
 		}
-		if bitmap := box.media().canvas_bitmap {
-			if canvas_paintable := box.media().canvas_paintable {
+		if canvas_paintable := box.media().canvas_paintable {
+			bitmap := if canvas_paintable.element != unsafe { nil } {
+				html.html_canvas_element_present_existing_surface(canvas_paintable.element)
+			} else {
+				box.media().canvas_bitmap
+			}
+			if bitmap != none {
 				commands << PaintCommand{
 					kind: 'draw_canvas'
 					x: box.x

@@ -2915,8 +2915,8 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		result << *step.command
 		mut command := unsafe { &result[result.len - 1] }
 		if canvas := command.canvas_paintable {
-			if element := canvas.webgl_canvas {
-				command.canvas_bitmap = html.html_canvas_element_present_existing_surface(element)
+			if canvas.element != unsafe { nil } {
+				command.canvas_bitmap = html.html_canvas_element_present_existing_surface(canvas.element)
 			}
 		}
 		command.transform = chromium_border_replay_transform(step.command, context.transform, tree)
