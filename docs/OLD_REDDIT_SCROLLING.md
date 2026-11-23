@@ -553,3 +553,38 @@ The Chromium geometry regression passed with exact pixels for the new
 outline modes, including fractional coordinates, rounded underlays, mixed
 tile sample counts and a crop spanning tile boundaries. The transparent
 shadow test also passed with no native raster context.
+
+### Production replay
+
+Receipt `20261123-061736-d9523769` published the renderer change in executable
+`70d03ef7a4fe9572c2397421b6922cf7b1a6bddf2b01fb5b84c4e43e9fa76bc9`
+(single C unit, V `-prod`, same AVIF library hash as above). Its source manifest
+matches both committed renderer files and its guarded startup and native
+wheel smoke check exited 0.
+
+The same-binary live comparison used the protocol above. The first pair ran
+control then fixed, and the second reversed that order. All four browser runs
+completed 480 wheel events with verified input hashes. Their browser, driver
+and 12 GiB guard exits were 0. One-minute host load varied from 54.5 to 76.6
+during the cohort, including the lower-load second control.
+
+| Arm (UTC start) | Scroll FPS | Input Hz | Scroll changes / publications | Median / p95 / max (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 03:27:30 | 25.52 | 47.02 | 260 / 265 | 20.10 / 160.30 / 282.66 | 70.77% | 163.40 / 0.33 |
+| Fixed 03:27:54 | 46.26 | 55.95 | 396 / 408 | 17.08 / 55.01 / 119.68 | 57.83% | 193.92 / 17.85 |
+| Fixed 03:28:17 | 45.53 | 56.65 | 385 / 396 | 17.12 / 52.92 / 128.86 | 58.70% | 157.20 / 18.63 |
+| Control 03:28:38 | 25.20 | 48.87 | 247 / 250 | 20.01 / 169.69 / 276.86 | 74.49% | 155.33 / 0.34 |
+
+A separate eligibility run logged 442 cropped stroke transfers whose original
+surfaces exceeded 1900×1000 device pixels. The slowest frames still included
+bursts of small sidebar shadows and several nested borders. The live
+measurements continue to miss the 60 Hz frame budget.
+
+The 3402×1896 document viewport of a fixed nested-outline page matched
+pixel for pixel at final scroll offset 2910. The production diagnostic
+confirmed cropped strokes during that run. A fixture with a repeating
+gradient differed by one channel level in 27,652 pixels inside the gradient.
+Two control runs of that same gradient differed by one level in 28,024 pixels
+in the same bounds. Both screenshot guards exited 0 after correcting the
+repeat helper's string comparison of the numeric offset. The solid fixture
+was compared with zero tolerance.
