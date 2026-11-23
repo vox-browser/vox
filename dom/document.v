@@ -491,6 +491,8 @@ pub mut:
 
 	needs_layout_tree_update                           bool
 	child_needs_layout_tree_update                     bool
+	// One bit per SetNeedsLayoutTreeUpdateReason given while the flag is set.
+	layout_tree_update_reasons                         u32
 	needs_style_update_                                bool
 	child_needs_style_update_                          bool
 	entire_subtree_needs_style_update_                 bool

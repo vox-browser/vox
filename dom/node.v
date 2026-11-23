@@ -3321,6 +3321,11 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 			}
 		}
 	}
+	if value {
+		n.layout_tree_update_reasons |= u32(1) << u32(reason)
+	} else {
+		n.layout_tree_update_reasons = 0
+	}
 	if n.needs_layout_tree_update == value {
 		return
 	}
@@ -3413,6 +3418,16 @@ pub fn (n &Node) first_letter_owner_for_layout_subtree_from(inclusive_ancestor &
 
 pub fn (n &Node) needs_layout_tree_update_() bool {
 	return n.needs_layout_tree_update
+}
+
+// Whether every reason this node was flagged for speaks only of its own box
+// and its list of children: a child with a box was removed, or a child's (or
+// its own) style needs another box. Its remaining descendants were never
+// detached, replaced or given other content without flags of their own.
+pub fn (n &Node) layout_tree_update_keeps_descendants() bool {
+	keeping := (u32(1) << u32(SetNeedsLayoutTreeUpdateReason.node_remove)) | (u32(1) << u32(SetNeedsLayoutTreeUpdateReason.style_change))
+	return n.needs_layout_tree_update && n.layout_tree_update_reasons != 0
+		&& n.layout_tree_update_reasons & ~keeping == 0
 }
 
 pub fn (n &Node) child_needs_layout_tree_update_() bool {

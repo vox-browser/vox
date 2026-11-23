@@ -32,6 +32,12 @@ mut:
 	// clean_subtree_reuse.v: ancestors being built whose DOM node is flagged
 	// for a complete rebuild, and elements already found ineligible.
 	flagged_ancestor_depth   int
+	// Flagged ancestors whose flag may cover their whole subtree, whether the
+	// element whose children are being built is flagged, and the root of the
+	// tree this build replaces.
+	covering_flag_depth      int
+	flagged_parent           bool
+	previous_tree_root       voidptr
 	clean_subtree_rejections map[u64]bool
 	quote_nesting_level      u32
 	counter_sets             map[i64]css.CountersSet
@@ -266,6 +272,9 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 	mut builder_state := new_tree_builder_state()
 	defer { builder_state.finish() }
 	builder_state.allow_subtree_reuse = !document.needs_full_layout_tree_update() && document_layout_result(document) != none
+	if previous_tree := document_layout_result(document) {
+		builder_state.previous_tree_root = voidptr(previous_tree.root)
+	}
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
 		propagate_root_styles_to_viewport(root_element_box, mut viewport)
 		viewport.append_child(root_element_box)
@@ -1125,9 +1134,11 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 		root_node: root_placeholder
 	})
 	invalidate_size_queries_after_geometry_commit(previous_query_container_geometry)
-	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
+	committed_root := voidptr(root)
+	root.for_each_in_inclusive_subtree(fn [committed_root] (node &Node) dom.TraversalDecision {
 		mut mutable_node := unsafe { &Node(node) }
 		mutable_node.reset_needs_layout_update()
+		mutable_node.tree_root_ = committed_root
 		return .@continue
 	})
 	layout_timing_checkpoint('    attach_layout', timing_checkpoint)
@@ -1155,6 +1166,7 @@ fn build_layout_box_for_element(document &dom.Document, element &dom.Element, st
 			resolve_retained_flow_counters(retained, mut builder_state)
 			return retained.root
 		}
+		if clean_subtree_reuse_diagnostics { note_rebuilt_element(element, builder_state) }
 	}
 	if builder_state.in_place_replaced != unsafe { nil } {
 		if kept := in_place_kept_descendant(element, mut builder_state) {
@@ -1306,9 +1318,15 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	// clean_subtree_reuse.v: nothing below a flagged node keeps its boxes on
 	// the strength of the invalidation flags.
 	rebuilds_whole_subtree := element.as_node().needs_layout_tree_update_()
+	covers_descendants := rebuilds_whole_subtree && !element.as_node().layout_tree_update_keeps_descendants()
+	parent_was_flagged := builder_state.flagged_parent
+	builder_state.flagged_parent = rebuilds_whole_subtree
 	if rebuilds_whole_subtree { builder_state.flagged_ancestor_depth++ }
+	if covers_descendants { builder_state.covering_flag_depth++ }
 	defer {
+		builder_state.flagged_parent = parent_was_flagged
 		if rebuilds_whole_subtree { builder_state.flagged_ancestor_depth-- }
+		if covers_descendants { builder_state.covering_flag_depth-- }
 	}
 	// Collect generated ::before content, DOM children, then generated ::after
 	// content in tree order.
