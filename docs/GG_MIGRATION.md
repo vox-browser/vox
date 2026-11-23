@@ -2935,6 +2935,73 @@ zero. Different C optimization flags and one-minute load of
 43.73–46.83 on 18 logical CPUs make these timings diagnostic.
 Windows runtime pixels and display timing remain unverified.
 
+### Consecutive color matrices inside shared SVG tiles
+
+In `4392579a3`, up to four adjacent SourceGraphic color matrices
+in the same color space share one bitmap pass. Each stage clamps and
+premultiplies its result. Zero alpha clears the RGB seen by the
+next stage, and only the final result is quantized. LinearRGB
+chains decode and encode once. A positive alpha bias reserves
+the filter crop so later stages can read the new coverage.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitivesOverview)
+
+The fixture exercises translated fills and strokes and an alpha
+mask. A live edit clears alpha in the first matrix and restores
+it in the second. macOS passed at 1× and 2×. At 1×, the initial
+384 × 108 RGB crop matched the published native renderer with
+SHA-256
+`b7f3a6d3b33826cb2966ca0eb206184db01c17dd67f409cfb8a362fb6d82128e`.
+The edited macOS and Linux crops matched with SHA-256
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The published native capture differed at 12,240 pixels, including
+red retained at the sampled fill interior (`#b86666`). The shared
+renderer and Brave's CDP capture of the edited fixture both
+produced `#666666` there. [Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-chain.html)
+
+Linux Xvfb passed with caching enabled and disabled and in both
+row-band modes. Its aarch64 executable SHA-256 was
+`0a0f2d2c05b2bd3237f4547beeff68deaa8e99e79b77baa14eac59ec0f1bff45`.
+The adjacent matrix, component-transfer and macOS opacity fixtures
+passed, along with the focused CPU and painting suites, 23
+smoke-driver tests, and Windows D3D11 and OpenGL source checks.
+
+Two alternating macOS pairs per workload replayed 20 fills
+and 20 strokes. Fresh processes used a 1024 × 600 viewport at
+1×, private profiles and caches, and a one-second settle.
+JavaScript and whole-frame raster reuse were disabled. All 48
+stationary callbacks drew 42 commands. The cached workload
+repeated one pattern. The cache-pressure workload cycled ten
+patterns through the eight-entry cache. Separate diagnostics
+recorded 1,880 shared hits on the first workload and 1,880
+shared misses on the second between the first and last
+callback. The published control recorded zero shared hits
+and misses. The GG SVG cache toggle leaves the macOS pattern
+cache active, so the cache-pressure workload used distinct
+pattern keys. All 12 RGBA document captures matched with SHA-256
+`cb0e8d92447d57df070bc09ed9001801092c2f13dd30b57a32e2bcff956a935f`.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 55.165 / 1.556 | 82.006 / 2.677 | 90.493 / 3.243 | 3 / 3 |
+| Cached 2 | 54.617 / 1.528 | 82.471 / 1.804 | 84.299 / 1.859 | 3 / 3 |
+| Cache pressure 1 | 42.388 / 5.401 | 75.202 / 9.161 | 97.682 / 10.123 | 3 / 3 |
+| Cache pressure 2 | 61.960 / 6.304 | 92.470 / 9.152 | 101.526 / 9.907 | 3 / 3 |
+
+The cached and cache-pressure fixture hashes were
+`2e01650d316c4b5ddf8e57d38a9de79e1168000afc2a5e87741048925e5400ea`
+and
+`790455c66f2bb38a3191466c67ab3374588bca7c64b7ab5faec26854c633c672`.
+Both builds used single-unit C and prealloc. The published
+literal `-prod` control executable SHA-256 was
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private `-prod -no-prod-options` candidate SHA-256 was
+`99ada788d13a60b5d0da87ff08f4a09e98dec4ff627a934e2ddf1055500b2897`.
+Input hashes stayed fixed, including the native library and
+adblock worker. Final browsers and guards exited zero. The different
+optimization flags and one-minute load of 102.83–129.92 on 18
+logical CPUs limit these measurements to diagnostic replay.
+Windows runtime pixels and display timing remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
