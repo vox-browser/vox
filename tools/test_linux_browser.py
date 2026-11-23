@@ -2296,7 +2296,11 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
     svg_scale = 2 if filter_units == "viewport" else 1
     for left in (0, 128, 256):
         ink, stripe = (black, black) if left == 256 else (red, lime)
-        if filter_units == "curves":
+        if filter_units == "tile-clip":
+            band = white if edited else ink
+            samples = ((0, 3, band), (7, 5, band), (8, 5, white), (1, 2, white),
+                       (1, 6, white), (20, 3, band))
+        elif filter_units == "curves":
             samples = ((11, 17, white), (12, 17, ink), (19, 19, ink), (12, 16, white),
                        (8, 10, white), (8, 1, stripe), (8, 2, white)) if edited else (
                            (7, 10, white), (8, 10, ink), (11, 11, ink), (12, 10, white),
@@ -3245,7 +3249,7 @@ def main():
             for name, filter_units in (("offset", None), ("offset-bounds", "region"),
                                        ("offset-primitive-units", "primitive"),
                                        ("offset-viewport", "viewport"), ("offset-subregion", "subregion"),
-                                       ("offset-curves", "curves")):
+                                       ("offset-curves", "curves"), ("offset-tile-clip", "tile-clip")):
                 check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                        ready="data-offset-ready", check_edited=functools.partial(
                                            check_svg_offset_tile_pixels, edited=True,

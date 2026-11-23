@@ -134,7 +134,7 @@ fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintS
 	// Tile operations are already normalized into the cell's coordinate
 	// system. The shader maps the raster back to the exact SVG cell period.
 	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
-		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, true)?
+		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, painting.Rect{0, 0, width, height})?
 	// A filter can read RGB to compute alpha. Keep the source colors,
 	// including nested paint, even when the destination samples alpha alone.
 	retain_color := luminance || operations.any(it.filter != unsafe { nil }

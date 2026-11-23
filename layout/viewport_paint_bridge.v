@@ -2200,7 +2200,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				height: node.data.bounding_rect.height
 			}
 			operations := compatibility_lower_svg_mask_operations(node.data.operations,
-				flattened.transform, false) or { []PaintMaskOperation{} }
+				flattened.transform, none) or { []PaintMaskOperation{} }
 			mut cache_key := node.data.cache_key
 			for value in flattened.transform {
 				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
@@ -4466,7 +4466,7 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 }
 
 // Lower retained mask and pattern tile operations into the renderer's paint transport.
-// Pattern callers check that filter scopes can use the shared isolated layer.
+// The device-pixel tile bounds enable lowering of isolated pattern filters.
 struct SVGPatternFilterPlacement {
 	depth int
 	x     f64
@@ -4474,7 +4474,7 @@ struct SVGPatternFilterPlacement {
 }
 
 pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOperation,
-	transform [6]f64, lower_pattern_filters bool) ?[]PaintMaskOperation {
+	transform [6]f64, pattern_tile ?painting.Rect) ?[]PaintMaskOperation {
 	mut operations := []PaintMaskOperation{cap: source.len}
 	mut placement := transform
 	mut filter_depth := 0
@@ -4484,7 +4484,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 		mut operation_kind := PaintMaskOperationKind.path
 		match operation.kind {
 			.begin_filter {
-				if lower_pattern_filters {
+				if tile := pattern_tile {
 					filter := operation.filter?
 					filter_depth++
 					if opacity := filter.opacity_filter_amount() {
@@ -4493,7 +4493,8 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 						affine := painting.Affine{placement[0], placement[1], placement[2],
 							placement[3], placement[4], placement[5]}
 						projected := offset.transformed(affine)?
-						crop := projected.region
+						// Edges outside the tile cannot affect its raster.
+						crop := projected.region.intersection(tile)
 						if crop.is_empty() {
 							// This isolated result is transparent, including any nested filters.
 							depth := filter_depth
@@ -4539,7 +4540,7 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 				continue
 			}
 			.end_filter {
-				if lower_pattern_filters {
+				if pattern_tile != none {
 					if filter_depth == 0 { return none }
 					if offsets.len != 0 && offsets.last().depth == filter_depth {
 						saved := offsets.pop()
