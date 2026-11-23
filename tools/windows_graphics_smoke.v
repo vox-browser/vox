@@ -29,6 +29,7 @@ fn main() {
 		check_canvas_solid_strokes() or { panic(err) }
 		check_canvas_linear_gradients() or { panic(err) }
 		check_canvas_radial_gradients() or { panic(err) }
+		check_canvas_tangent_gradients() or { panic(err) }
 		check_svg_stroke_pixels() or { panic(err) }
 	}
 }
@@ -60,6 +61,7 @@ $if windows {
 				check_canvas_solid_strokes() or { panic(err) }
 				check_canvas_linear_gradients() or { panic(err) }
 				check_canvas_radial_gradients() or { panic(err) }
+				check_canvas_tangent_gradients() or { panic(err) }
 			}
 			frame_fn:     fn (mut state WindowsGraphicsSmoke) {
 				begin_browser_frame(state.ctx)
@@ -456,6 +458,59 @@ fn check_canvas_radial_gradients() ! {
 		}
 	}
 	println('GG Canvas radial fill, reflected and focal strokes passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_tangent_gradients() ! {
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: 32, height: 16)!
+	defer { target.free() }
+	target.clear(canvas.Color4f{})
+	red := canvas.Color4f{1, 0, 0, 1}
+	blue := canvas.Color4f{0, 0, 1, 1}
+	translucent_blue := canvas.Color4f{0, 0, 1, 0.5}
+	point_focus := canvas.Gradient.two_point_conical(canvas.Point{8.5, 4.5}, 0,
+		canvas.Point{24.5, 4.5}, 16, canvas.Gradient{
+			colors:    [red, red, red, red, translucent_blue, translucent_blue, translucent_blue,
+				translucent_blue]
+			positions: [f32(0), 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 1]
+			tile_mode: .repeat
+		})!
+	target.draw_rect(canvas.Rect.ltrb(0, 0, 32, 8), canvas.Paint{
+		color:    canvas.Color4f.from_rgba8(0, 0, 0, 128)
+		dither:   true
+		gradient: point_focus
+	})!
+	reflected := canvas.Gradient.two_point_conical(canvas.Point{8.5, 12.5}, 4,
+		canvas.Point{16.5, 12.5}, 12, canvas.Gradient{colors: [red, blue], tile_mode: .mirror})!
+	mut path := canvas.PathBuilder{}
+	path.move_to(1, 12.5)
+	path.line_to(31, 12.5)
+	target.draw_path(path.detach(), canvas.Paint{
+		style:        .stroke
+		stroke_width: 4
+		anti_alias:   true
+		dither:       true
+		gradient:     reflected
+	})!
+
+	pitch := 32 * 4
+	pixels := []u8{len: pitch * 16}
+	target.read_pixels(pixels.data, pitch)!
+	// The repeat's red weight is 7/16. Its half-alpha blue contributes 9/32.
+	expect_canvas_pixel(pixels, pitch, 7, 4, [u8(36), 0, 56, 92]!)!
+	expect_canvas_pixel(pixels, pitch, 16, 4, [u8(0), 0, 128, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 28, 4, [u8(64), 0, 0, 64]!)!
+	expect_canvas_pixel(pixels, pitch, 2, 12, [u8(0), 0, 0, 0]!)!
+	expect_canvas_pixel(pixels, pitch, 12, 12, [u8(0), 0, 255, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 28, 12, [u8(255), 0, 0, 255]!)!
+	// The negative parameter -1/4 reflects to 1/4 inside the focal circle.
+	offset := 12 * pitch + 8 * 4
+	if pixels[offset] !in [u8(63), 64] || pixels[offset + 1] != 0
+		|| pixels[offset + 2] !in [u8(191), 192] || pixels[offset + 3] != 255 {
+		return error('Unexpected Canvas tangent reflection ${pixels[offset..offset + 4]}')
+	}
+	println('GG Canvas tangent point average and reflected stroke passed on ${gfx.query_backend()}')
 }
 
 $if !sokol_d3d11 ? {

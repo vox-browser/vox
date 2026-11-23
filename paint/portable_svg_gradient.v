@@ -110,10 +110,9 @@ $if vox_gg_svg ? {
 				dx := f64(points[3]) - f64(points[0])
 				dy := f64(points[4]) - f64(points[1])
 				if dx != 0 || dy != 0 {
-					// D3D11 uses the shared shader for strictly nested circles.
-					// Test for tangency before building a path or allocating its texture.
+					// Reject noncontained circles before building a path or allocating its texture.
 					span := f64(points[5]) - f64(points[2])
-					if span <= 0 || dx * dx + dy * dy >= span * span {
+					if span <= 0 || dx * dx + dy * dy > span * span {
 						return none
 					}
 				}

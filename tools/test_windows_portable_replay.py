@@ -23,7 +23,7 @@ def main():
     checks.add_argument("--canvas-only", action="store_true", help="check canvas and transformed media replay only")
     checks.add_argument("--gg-svg", action="store_true", help="check Canvas SVG replay and fallback using Mesa OpenGL")
     checks.add_argument("--gg-svg-d3d11", action="store_true",
-                        help="check Canvas SVG fills, strokes, gradient ramps and tangent fallback on D3D11")
+                        help="check Canvas SVG fills, strokes and gradient ramps on D3D11")
     args = parser.parse_args()
     binary, guard = args.binary.resolve(), args.guard.resolve()
     artifacts = args.output.resolve()

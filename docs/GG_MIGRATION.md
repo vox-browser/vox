@@ -1,12 +1,41 @@
 # Migrating from Skia to vlib/gg
 
+## Tangent focal SVG gradients on Windows D3D11
+
+The opt-in Windows Canvas route renders internally tangent SVG radial fills
+and strokes. The shader reads the existing tangent paint record, blends the
+gradient with paint opacity, and dithers the result. Outside the tangent, a
+repeating point focus uses its weighted premultiplied stop average. Other
+tangent gradients are transparent there. Noncontained circles use the
+portable rasterizer. Tangent shaders compile on first use and reuse the
+same GPU texture cache as the other gradients.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked an eight-stop repeating point focus
+with stop and paint opacity, a reflected stroke with a positive focal
+radius, and transparency outside the stroke's tangent. The Windows smoke
+exited zero, reproduced the prior projection, font and color PNG byte for
+byte, and kept the same executable SHA-256 before and after launch
+(`96837fc9ca3d04a31fac6a5299f0bc9d329ceda4fa1dbacc7256a2dc5412dbce`).
+The 24 staging and replay-tool tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `f6705f20386d7129be6541bfe818052b257f6126165c8c82af280503a8b36492`
+throughout the replay. Full-cache, texture-cache-only and uncached runs
+produced identical 800 × 100 document crops. The tangent fill and stroke
+differed from portable output by at most one level per RGB channel. Other
+gradient ramps matched the preceding D3D11 capture byte for byte. The logs
+confirmed that both tangent draws used Canvas and hit its GPU texture cache.
+Hardware frame timings remain unmeasured.
+
 ## Contained focal SVG gradients on Windows D3D11
 
 The opt-in Windows Canvas route uses the existing radial shader for SVG
 fills and strokes whose off-center focal circle fits strictly inside the
 outer circle. The browser compares center distance against the difference
-in radii before allocating a texture and uses the portable rasterizer for
-tangent or noncontained circles. Eligible draws share the existing GPU
+in radii before allocating a texture. At this stage tangent and noncontained
+circles used the portable rasterizer. Eligible draws share the existing GPU
 texture cache. This uses the same shader and paint record as concentric
 radial gradients.
 

@@ -46,12 +46,12 @@
     {
       "file": "gpu_path.v",
       "old": "\t// Device::drawPath()\n\tif p0, p1 := path.is_line() {",
-      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif s.ctx.is_d3d11 && paint.style == .stroke && d3d11_canvas_supports_path_paint(paint) {\n\t\t\t// Use the stroke tessellator for lines and simple shapes as well.\n\t\t\t// Their analytic specialization requires an additional shader.\n\t\t\ts.draw_stroke(path, path_shape(path), paint)!\n\t\t\treturn\n\t\t}\n\t}\n\t// Device::drawPath()\n\tif p0, p1 := path.is_line() {"
+      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif s.ctx.is_d3d11 && paint.style == .stroke {\n\t\t\t// Use the stroke tessellator for lines and simple shapes as well.\n\t\t\t// Their analytic specialization requires an additional shader.\n\t\t\ts.draw_stroke(path, path_shape(path), paint)!\n\t\t\treturn\n\t\t}\n\t}\n\t// Device::drawPath()\n\tif p0, p1 := path.is_line() {"
     },
     {
       "file": "gpu_path.v",
       "old": "\tif path.is_a == .rrect {\n\t\t// Device::drawPath()",
-      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif s.ctx.is_d3d11 && paint.style == .fill && paint.anti_alias && d3d11_canvas_supports_path_paint(paint) && paint.layer_image == none {\n\t\t\t// Keep the single-sample bounds fast path for pixel-aligned rectangles.\n\t\t\t// Other paths can use the shared wedge pipeline until D3D11 supports\n\t\t\t// the analytic rounded-rectangle and nested-rectangle shaders.\n\t\t\tif rect, _ := path.is_rect() {\n\t\t\t\tif is_pixel_aligned(rect, s.transform) {\n\t\t\t\t\ts.device_draw_rect(rect, paint)!\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t\ts.draw_path_fill(path, paint)!\n\t\t\treturn\n\t\t}\n\t}\n\tif path.is_a == .rrect {\n\t\t// Device::drawPath()"
+      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif s.ctx.is_d3d11 && paint.style == .fill && paint.anti_alias && paint.layer_image == none {\n\t\t\t// Keep the single-sample bounds fast path for pixel-aligned rectangles.\n\t\t\t// Other paths can use the shared wedge pipeline until D3D11 supports\n\t\t\t// the analytic rounded-rectangle and nested-rectangle shaders.\n\t\t\tif rect, _ := path.is_rect() {\n\t\t\t\tif is_pixel_aligned(rect, s.transform) {\n\t\t\t\t\ts.device_draw_rect(rect, paint)!\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t\ts.draw_path_fill(path, paint)!\n\t\t\treturn\n\t\t}\n\t}\n\tif path.is_a == .rrect {\n\t\t// Device::drawPath()"
     },
     {
       "file": "gpu_context.v",
@@ -86,7 +86,7 @@
     {
       "file": "gpu_surface.v",
       "old": "\tmut ctx := s.ctx\n\t// A pass with a draw",
-      "new": "\tmut ctx := s.ctx\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 && s.draws.any(!d3d11_canvas_supports(it.step, it.uniforms.clipped, it.uniforms.shading)) {\n\t\t\ts.reset_draws()\n\t\t\ts.free_retired_layers()\n\t\t\treturn error('gg.canvas: D3D11 supports solid and non-tangent gradient bounds, wedge fills and tessellated strokes without analytic clips')\n\t\t}\n\t}\n\td3d11 := $if windows && sokol_d3d11 ? { true } $else { false }\n\tuses_storage_buffers := d3d11 || ctx.is_gl\n\t// A pass with a draw"
+      "new": "\tmut ctx := s.ctx\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 && s.draws.any(!d3d11_canvas_supports(it.step, it.uniforms.clipped, it.uniforms.shading)) {\n\t\t\ts.reset_draws()\n\t\t\ts.free_retired_layers()\n\t\t\treturn error('gg.canvas: D3D11 supports solid and gradient bounds, wedge fills and tessellated strokes without analytic clips')\n\t\t}\n\t}\n\td3d11 := $if windows && sokol_d3d11 ? { true } $else { false }\n\tuses_storage_buffers := d3d11 || ctx.is_gl\n\t// A pass with a draw"
     },
     {
       "file": "gpu_surface.v",

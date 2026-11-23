@@ -481,6 +481,12 @@ float4 gradientColor(uint colors, uint offsets, float t) {
     return lerp(a, b, (t - start) / (end - start));
 }
 
+float4 ditherGradient(float4 color, float2 pixel, uint range) {
+    float noise = ditherLUT.SampleLevel(ditherSampler, pixel * 0.125, 0).r - 0.5;
+    color.rgb = clamp(color.rgb + noise * asfloat(paintData.Load(range)), 0.0, color.a);
+    return color;
+}
+
 float4 fragmentMain(CanvasVertex input) : SV_Target0 {
     uint colors = input.paintBase + 32u;
     uint offsets = colors + STOP_COUNT * 16u;
@@ -491,7 +497,17 @@ float4 fragmentMain(CanvasVertex input) : SV_Target0 {
     float opacity = asfloat(paintData.Load(range + 12u));
     range += 16u;
 #endif
-#ifdef RADIAL_GRADIENT
+#ifdef TANGENT_GRADIENT
+    float2 focal = input.gradientPosition;
+    if (!(focal.x > 0.0)) {
+        // The shared paint record carries the premultiplied average outside a
+        // repeating point focus, and transparent black outside other tangent draws.
+        float3 outsideRGB = asfloat(paintData.Load3(range - 16u));
+        float outsideAlpha = asfloat(paintData.Load(range + 12u));
+        return ditherGradient(float4(outsideRGB, outsideAlpha) * opacity, input.position.xy, range);
+    }
+    float t = focal.x + focal.y * focal.y / focal.x + asfloat(paintData.Load(range + 4u));
+#elif defined(RADIAL_GRADIENT)
     // The shared paint record stores radial bias and focus after the dither range.
     float2 radial = asfloat(paintData.Load2(range + 4u));
     float t = length(input.gradientPosition) + (radial.x - radial.y * input.gradientPosition.x);
@@ -510,9 +526,7 @@ float4 fragmentMain(CanvasVertex input) : SV_Target0 {
 #ifdef GRADIENT_ALPHA
     color *= opacity;
 #endif
-    float noise = ditherLUT.SampleLevel(ditherSampler, input.position.xy * 0.125, 0).r - 0.5;
-    color.rgb = clamp(color.rgb + noise * asfloat(paintData.Load(range)), 0.0, color.a);
-    return color;
+    return ditherGradient(color, input.position.xy, range);
 }
 '
 
@@ -533,16 +547,9 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 		.cover_inverse_clip, .convex_wedges, .stencil_wedges_winding, .stencil_wedges_even_odd,
 		.wedges_shaded, .tessellate_strokes]!
 
-	fn d3d11_canvas_supports_path_paint(paint Paint) bool {
-		if gradient := paint.gradient {
-			return !gradient.radial_tangent
-		}
-		return true
-	}
-
 	fn d3d11_canvas_supports(step RenderStep, clipped bool, shading Shading) bool {
 		return !clipped && step in d3d11_canvas_steps
-			&& (shading == .solid || (shading.is_gradient() && !shading.is_tangent() && writes_color(step)))
+			&& (shading == .solid || (shading.is_gradient() && writes_color(step)))
 	}
 
 	fn d3d11_canvas_shader_step(step RenderStep) RenderStep {
@@ -580,6 +587,9 @@ float4 fragmentMain(float4 position : SV_Position) : SV_Target0 {
 			}
 			if shading.is_translucent() {
 				prefix += '#define GRADIENT_ALPHA\n'
+			}
+			if shading.is_tangent() {
+				prefix += '#define TANGENT_GRADIENT\n'
 			}
 		}
 		geometry := match true {
