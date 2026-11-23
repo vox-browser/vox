@@ -11867,6 +11867,25 @@ chooses ciphers in its own order.
   The absolute counts move by up to 8M with host load, so compare within
   pairs. Altogether about 70M of the 975M the main thread spends parsing
   CSS in a load.
+- Further parse costs, each measured over five interleaved rounds of the
+  same benchmark (medians):
+
+  | Commit | Change | Before | After |
+  | --- | --- | --- | --- |
+  | `497202eb3` | name code points from two bitmasks; leaf tokens copied once | 809.3M | 801.9M |
+  | `597456053` | single-character spellings share the tokenizer's literals when owned | 805.4M | 800.3M |
+  | `7dad4922a` | combinator and bracket scans skip runs of plain bytes | 806.0M | 774.0M |
+  | `cf1063031` | selector names without an escape are one slice | 772.6M | 758.7M |
+
+  The GitHub sheets now parse in about 759M against 869M at the start of
+  the day. Reading nested blocks in place in the cache's node count made no
+  difference (the compiler already avoids those copies). Re-slicing owned
+  token spellings into the cache's copy of the input was not attempted:
+  owned stylesheet strings are individually terminated, which the
+  ownership tests require. What remains is spread out: struct copies
+  (`memmove`, 10% of the parse), the code-point tokenizer (ident scanning
+  5%), component consumption 5%, owning the rule tree for the cache 13%,
+  and the cache's node count 4%.
 - The JSC tiering cohort, repeated on a quiet host (load averages 7-18) on
   bundle `86bda0b3`, same binary, 7 alternating pairs, 2 px in every Vox
   run:
