@@ -355,3 +355,44 @@ fn test_opaque_canvas_mask_rect_declines_partial_coverage_and_short_buffers() {
 	assert !fill_opaque_canvas_mask_rect(mut pixels, 8, 1, 8, 36, rect, identity, 0xff459efa)
 	assert pixels == before
 }
+
+fn test_pattern_mask_band_matches_a_cropped_full_surface() {
+	width, height, first, rows := 43, 23, 7, 12
+	pitch := (width + 3) * 4
+	seed := []u8{len: height * pitch, init: u8(index * 31 + index / 13)}
+	tile := [u8(255), 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 64, 0, 64, 128,
+		16, 16, 0, 32, 255, 255, 0, 255]
+	rect := canvas_path(packed_canvas_rect_for_test(Rect{3, 1, 30, 21}, true), false)
+	fractional := canvas_path(packed_canvas_rect_for_test(Rect{1.5, 2, 19.75, 18}, false), false)
+	for nearest in [false, true] {
+		style := CanvasPaintStyle(CanvasPattern{
+			pixels:        tile
+			width:         2
+			height:        3
+			pitch:         8
+			premultiplied: true
+			nearest:       nearest
+			transform:     [f32(1), 0, 0, 1, 2, 3]!
+		})
+		for index, matrix in [[f32(1), 0, 0, 1, 0, 0]!,
+			[f32(-1), 0, 0, 1, 31.25, 0.5]!] {
+			path := if index == 0 { rect } else { fractional }
+			for legacy in [false, true] {
+				mut full := seed.clone()
+				mut band := seed[first * pitch..(first + rows) * pitch].clone()
+				assert fill_canvas_path_surface(mut full, width, height, pitch, 2, path,
+					matrix, 0xff000000, style, 0.75, .src_over, 0, [], none, legacy)
+				assert fill_canvas_mask_path_surface(mut band, width, first, rows, pitch, path,
+					matrix, 0xff000000, style, 0.75, legacy)
+				for offset, color in band {
+					assert color == full[first * pitch + offset], '${nearest} ${index} ${legacy} ${offset / pitch + first} ${offset % pitch} ${color}'
+				}
+			}
+		}
+		mut band := seed[first * pitch..(first + rows) * pitch].clone()
+		skew := [f32(1), 0.25, 0.5, 1, 3.25, 0.5]!
+		assert !fill_canvas_mask_path_surface(mut band, width, first, rows, pitch, fractional,
+			skew, 0xff000000, style, 0.75, false)
+		assert band == seed[first * pitch..(first + rows) * pitch]
+	}
+}

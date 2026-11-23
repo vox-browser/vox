@@ -647,8 +647,9 @@ pub struct LegacyShaderBlitter {
 	state     BitmapProcState
 	row_bytes int
 mut:
-	pixels []u8
-	span   []u32
+	pixels    []u8
+	span      []u32
+	first_row int
 }
 
 fn new_legacy_shader_blitter(mut pixels []u8, row_bytes int, state BitmapProcState) LegacyShaderBlitter {
@@ -742,9 +743,14 @@ fn (mut b LegacyShaderBlitter) shade(x int, y int, count int) {
 	b.state.shade_span(x, y, mut b.span, count)
 }
 
+@[inline]
+fn (b &LegacyShaderBlitter) destination_offset(x int, y int) int {
+	return (y - b.first_row) * b.row_bytes + x * 4
+}
+
 fn (mut b LegacyShaderBlitter) blit_h(x int, y int, width int) {
 	b.shade(x, y, width)
-	blit_row_s32a(mut b.pixels, y * b.row_bytes + x * 4, b.span, width, 255)
+	blit_row_s32a(mut b.pixels, b.destination_offset(x, y), b.span, width, 255)
 }
 
 fn (mut b LegacyShaderBlitter) blit_rect(x int, y int, width int, height int) {
@@ -766,7 +772,7 @@ fn (b &LegacyShaderBlitter) blit_shader_rows(x int, y int, width int, height int
 	mut pixels := unsafe { b.pixels }
 	for row in y .. y + height {
 		b.state.shade_span(x, row, mut span, width)
-		blit_row_s32a_opaque(mut pixels, row * b.row_bytes + x * 4, span, width)
+		blit_row_s32a_opaque(mut pixels, b.destination_offset(x, row), span, width)
 	}
 }
 
@@ -774,7 +780,7 @@ fn (b &LegacyShaderBlitter) blit_disjoint_rect(x int, y int, width int, height i
 	if width > b.row_bytes / 4 {
 		return false
 	}
-	offset := y * b.row_bytes + x * 4
+	offset := b.destination_offset(x, y)
 	span := raster_row_span(b.pixels.len, offset, b.row_bytes, width * 4, height) or { return false }
 	target := u64(uint(b.pixels.data)) + u64(offset)
 	if raster_spans_overlap(u64(uint(b.state.pixels.data)), b.state.pixels.len, target, span) {
@@ -824,7 +830,7 @@ fn (mut b LegacyShaderBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut run
 		a := aa[i]
 		if a != 0 {
 			b.shade(x, y, count)
-			blit_row_s32a(mut b.pixels, y * b.row_bytes + x * 4, b.span, count, u32(a))
+			blit_row_s32a(mut b.pixels, b.destination_offset(x, y), b.span, count, u32(a))
 		}
 		i += count
 		x += count
@@ -834,7 +840,7 @@ fn (mut b LegacyShaderBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut run
 fn (mut b LegacyShaderBlitter) blit_v(x int, y int, height int, alpha u8) {
 	for row in 0 .. height {
 		b.shade(x, y + row, 1)
-		blit_row_s32a(mut b.pixels, (y + row) * b.row_bytes + x * 4, b.span, 1, u32(alpha))
+		blit_row_s32a(mut b.pixels, b.destination_offset(x, y + row), b.span, 1, u32(alpha))
 	}
 }
 
@@ -862,7 +868,7 @@ fn (mut b LegacyShaderBlitter) blit_mask(mask &Mask, clip IRect) {
 	for row in 0 .. clip.height() {
 		y := clip.top + row
 		b.shade(clip.left, y, width)
-		o := y * b.row_bytes + clip.left * 4
+		o := b.destination_offset(clip.left, y)
 		m := mask.index(clip.left, y)
 		for i in 0 .. width {
 			c := u32(mask.image[m + i])

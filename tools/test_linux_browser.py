@@ -2338,6 +2338,15 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
             samples = ((x, y, ink), (right - 1, bottom - 1, ink),
                        (x - 1, y, white), (right, y, white), (x, y - 1, white),
                        (x, bottom, white), (8, 40, white), (8, 71, stripe))
+        elif filter_units == "cropped-pattern":
+            gray, blue, green = map(bytes.fromhex, ("666666", "6666ff", "66ff66"))
+            colors = (green, green, gray, gray, blue, green, green, gray, gray) if edited else (
+                gray, blue, green, green, gray, gray)
+            x, y, right = (6, 10, 22) if edited else (8, 8, 26)
+            samples = tuple((x, y + index, gray if left == 256 else color)
+                            for index, color in enumerate(colors))
+            samples += ((x - 1, y, white), (right, y, white), (x, y - 1, white),
+                        (x, y + len(colors), white), (8, 71, stripe))
         elif filter_units == "subregion":
             samples = ((9, 5, white), (10, 5, ink), (17, 7, ink), (18, 6, white),
                        (10, 4, white), (10, 8, white), (8, 10, white)) if edited else (
@@ -2363,7 +2372,7 @@ def check_svg_offset_tile_pixels(rows, channels, scale, marker, edited, *, filte
                        (5, 2, white), (5, 6, white), (10, 8, white)) if edited else (
                            (9, 8, white), (10, 8, ink), (13, 11, ink), (14, 9, white),
                            (10, 7, white), (10, 12, white), (5, 4, white))
-        if filter_units not in ("curves", "cropped-rows"):
+        if filter_units not in ("curves", "cropped-rows", "cropped-pattern"):
             samples = (*samples, (8, 18, stripe))
         for x, y, expected in samples:
             row = rows[marker + (8 + y * svg_scale) * scale]
@@ -3285,7 +3294,8 @@ def main():
                                        ("offset-curves", "curves"), ("offset-tile-clip", "tile-clip"),
                                        ("offset-fractional-clip", "fractional-clip"),
                                        ("offset-source-alpha", "source-alpha"),
-                                       ("offset-cropped-rows", "cropped-rows")):
+                                       ("offset-cropped-rows", "cropped-rows"),
+                                       ("offset-cropped-pattern", "cropped-pattern")):
                 check_svg_tile_browser(binary, artifacts, temporary, name,
                                        groups=4 if filter_units == "source-alpha" else 3,
                                        ready="data-offset-ready", check_edited=functools.partial(

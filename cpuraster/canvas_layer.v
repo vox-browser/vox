@@ -54,7 +54,7 @@ pub fn fill_opaque_canvas_mask_rect(mut pixels []u8, width int, first_row int, h
 	return true
 }
 
-// fill_canvas_mask_path fills a solid or gradient path into a premultiplied
+// fill_canvas_mask_path fills a path into a premultiplied
 // row band. Geometry and shading both use the original device coordinates.
 pub fn fill_canvas_mask_path(mut pixels []u8, width int, first_row int, height int, pitch int, path Path,
 	transform [6]f32, color u32, style ?CanvasPaintStyle, opacity f32) bool {
@@ -69,13 +69,8 @@ fn fill_canvas_mask_path_surface(mut pixels []u8, width int, first_row int, heig
 			style, opacity, .src_over, 0, [], none, legacy)
 	}
 	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch)
-		|| first_row < 0 || first_row > max_untiled_dimension - height {
+		|| first_row < 0 || first_row > max_untiled_dimension - height || !canvas_style_installs(style) {
 		return false
-	}
-	if paint_style := style {
-		if paint_style is CanvasPattern {
-			return false
-		}
 	}
 	paint_color, _ := canvas_paint_source(color, style, 0)
 	alpha := canvas_paint_alpha(paint_color, opacity)
@@ -84,12 +79,19 @@ fn fill_canvas_mask_path_surface(mut pixels []u8, width int, first_row int, heig
 	}
 	matrix := Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}
 	device := path.transform(matrix)
+	if paint := style {
+		if paint is CanvasPattern && device.is_rect() == none {
+			return false
+		}
+	}
 	shader := canvas_paint_shader(style, matrix)
 	mut blitter := canvas_paint_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha,
 		.src_over, device.bounds() or { Rect{} }, legacy) or { return true }
 	if mut blitter is SolidBlitter {
 		blitter.first_row = first_row
 	} else if mut blitter is PipelineBlitter {
+		blitter.first_row = first_row
+	} else if mut blitter is LegacyShaderBlitter {
 		blitter.first_row = first_row
 	} else {
 		return false

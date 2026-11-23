@@ -425,7 +425,8 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 						return SVGMaskLayerRows{}
 					}
 					if !portable_svg_mask_row_bands {
-						return SVGMaskLayerRows{0, int(math.ceil(math.max(0.0, f64(bottom)))) + 1}
+						end := math.max(parent.top, int(math.ceil(f64(bottom)))) + 1
+						return SVGMaskLayerRows{parent.top, end}
 					}
 					// Keep a guard row beyond each edge. The scan converter
 					// still receives the original path and device coordinates.
@@ -443,8 +444,8 @@ fn svg_mask_opacity_layer_rows(operations []layout.PaintMaskOperation, bounds pa
 				}
 			}
 			.path {
-				// Strokes need room for caps and joins. Bitmap shaders
-				// use the parent row origin.
+				// Strokes need room for caps and joins. Bitmap paints
+				// retain the current bounds without a path scan.
 				if operation.has_stroke || operation.fill_pattern != none { return parent }
 				device := portable_device_transform(operation.transform, page_x, page_y, scale)
 				edges := svg_mask_line_path_rows(operation.path_data,
@@ -475,6 +476,31 @@ fn svg_mask_opacity_end(operations []layout.PaintMaskOperation, start int) ?int 
 	return none
 }
 
+fn svg_mask_layer_has_aligned_fills(operations []layout.PaintMaskOperation, bounds painting.IntRect,
+	page_x f32, page_y f32, scale f64) bool {
+	mut depth := 1
+	for index in 0 .. operations.len {
+		operation := &operations[index]
+		match operation.kind {
+			.begin_opacity { depth++ }
+			.end_opacity {
+				depth--
+				if depth == 0 { return true }
+			}
+			.path {
+				if operation.has_stroke { return false }
+				device := portable_device_transform(operation.transform, page_x, page_y, scale)
+				if cpuraster.canvas_pixel_aligned_rect(operation.path_data,
+					portable_svg_surface_matrix(device, bounds)) == none {
+					return false
+				}
+			}
+			.image { return false }
+		}
+	}
+	return false
+}
+
 // Paint into a cleared premultiplied RGBA surface. Its row stride can include
 // pixels outside the mask region when borrowing a native bitmap. The result
 // reports whether all image pixels were available for texture reuse.
@@ -498,11 +524,16 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				mut available := parent
 				if alpha != 0 && operation.filter != unsafe { nil } {
 					crop = svg_pattern_filter_crop(operation.filter, bounds.width, bounds.height)?
+					top := math.max(parent.top, crop.y)
 					bottom := math.min(parent.bottom, crop.bottom())
 					// Tile filters only sample source rows inside their output clip.
-					// Keep the existing row origin for bitmap and pattern paints.
-					available = if crop.is_empty() || bottom <= math.max(parent.top, crop.y) {
+					available = if crop.is_empty() || bottom <= top {
 						SVGMaskLayerRows{}
+					} else if (top - parent.top) * 4 >= bottom - parent.top
+						&& svg_mask_layer_has_aligned_fills(mask.mask_operations[index + 1..],
+							bounds, page_x, page_y, scale) {
+						// Aligned fills keep identical edge coverage at the band origin.
+						SVGMaskLayerRows{top, bottom}
 					} else {
 						SVGMaskLayerRows{parent.top, bottom}
 					}
