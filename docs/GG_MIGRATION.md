@@ -4505,6 +4505,34 @@ explicit opacity groups and opacity filters. All four captures
 matched the earlier diagnostic pixels and the executable and
 adjacent AVIF library stayed fixed.
 
+### Reusing consecutive bitmap lookups in macOS SVG tiles
+
+In `37c4805d7`, each macOS tile cache probe keeps the last resolved
+bitmap ID. When a later paint in the same probe uses the same URL,
+it reuses that ID. Every occurrence still contributes its ID in
+display-list order. The probe waits for pending images and
+resolves a new URL when the image changes.
+
+| Fixture | Completed lookups before / after | 1× decoded RGBA SHA-256 | 2× decoded RGBA SHA-256 |
+| --- | ---: | --- | --- |
+| Separate nested fill and stroke patterns | 2 / 1 | `3a6902ae5d1994b8d67a13b0dcfeaeed1803dfb7880c28bcbeab4ad402f9adc8` | `c1dc78954b6501cb145c8112e1b097082b934899f4daacec1b9d44cdd311e727` |
+| Repeated bitmap URLs | 4 / 3 | `ac1c7f44b56559ca0d5b2212827d80cc532fcaf29272cb74d4c748f4b198d31d` | `867f77c86b405a0538548d16896d4a0aa23bca8a3c52b3ee33123b8861f349f4` |
+
+Each pending probe made one lookup. The before and after
+captures matched pixel for pixel, including the different
+bitmap between repeated URLs. [Repeated bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-repeated-bitmap.html)
+
+Both private macOS builds used V `4478fc4`, prealloc, and
+single-unit Clang `-O0`. The control and candidate executable
+SHA-256 values were
+`6135c7e1b98a23577c12c0dcdc6ee872dc3c85e72598b255fd5bae4b497fdc85`
+and `97b2b9a61c185198bdafa3e307b3f3ab52eb575e46f4201ddd4de318ff8d3c2a`.
+The delayed bitmap suite, live opacity-filter checks, and
+21 driver unit tests passed. Browser and guard exits were zero
+and pinned inputs stayed fixed. The previous production attempt
+ran out of disk space compiling the browser object. Frame
+timing remains unmeasured.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
