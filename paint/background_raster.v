@@ -136,12 +136,24 @@ fn (mut app BrowserApp) draw_raster_background(command &layout.PaintCommand, sou
 	// One textured quad replaces the per-cell draw calls that could fill the
 	// portable renderer's vertex buffer before subsequent content and chrome.
 	bounds := portable_pixel_bounds(painted)
+	rounded_clip := if !app.ctx.native_rendering {
+		portable_background_raster_clip(command, bounds, page_x, page_y, scale)
+	} else {
+		none
+	}
 	if !app.ctx.native_rendering && !disable_portable_gradient_ramp && !has_text_clip
 		&& tiles.len == 1 && (command.gradient_background_layer || command.points.len == 0) {
 		if gradient := command.gradient {
 			if ramp := background_gradient_ramp(gradient, tiles[0], bounds, inverse, command.opacity) {
 				if portable_gradient_ramp_diagnostics {
 					eprintln('VOX_GRADIENT_RAMP texture=${ramp.width}x${ramp.height} destination=${bounds.width}x${bounds.height}')
+				}
+				if clip := rounded_clip {
+					mut pixels := ramp.expand(bounds.width, bounds.height)
+					clip.apply_to_straight_rgba(mut pixels, bounds.width, bounds.height)
+					app.draw_portable_raster_image(f32(f64(bounds.x) / scale), f32(f64(bounds.y) / scale),
+						bounds.width, bounds.height, pixels)
+					return
 				}
 				app.draw_portable_raster_texture(gg.Rect{f32(f64(bounds.x) / scale), f32(f64(bounds.y) / scale), f32(f64(bounds.width) / scale), f32(f64(bounds.height) / scale)}, ramp.width, ramp.height, ramp.pixels)
 				return
@@ -185,6 +197,9 @@ fn (mut app BrowserApp) draw_raster_background(command &layout.PaintCommand, sou
 			}
 		}
 	}
+	if clip := rounded_clip {
+		clip.apply_to_straight_rgba(mut pixels, bounds.width, bounds.height)
+	}
 	x := f32(f64(bounds.x) / scale)
 	y := f32(f64(bounds.y) / scale)
 	$if macos {
@@ -210,6 +225,29 @@ struct BackgroundGradientRamp {
 	width  int
 	height int
 	pixels []u8
+}
+
+// Keep sampling an axis-aligned ramp once, even when its quad needs coverage.
+fn (ramp &BackgroundGradientRamp) expand(width int, height int) []u8 {
+	mut pixels := []u8{len: width * height * 4}
+	if ramp.height == 1 {
+		stride := width * 4
+		for y in 0 .. height {
+			unsafe { vmemcpy(&u8(pixels.data) + y * stride, ramp.pixels.data, stride) }
+		}
+	} else {
+		unsafe {
+			rows := &u32(ramp.pixels.data)
+			dest := &u32(pixels.data)
+			for y in 0 .. height {
+				color := rows[y]
+				for x in 0 .. width {
+					dest[y * width + x] = color
+				}
+			}
+		}
+	}
+	return pixels
 }
 
 fn background_gradient_ramp(gradient &layout.LinearGradient, tile PortableBackgroundTile,

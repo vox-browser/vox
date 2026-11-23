@@ -29,16 +29,23 @@ header {
 .ramp { position: absolute; top: 52px; height: 96px; width: 200px; }
 .horizontal {
   left: 320px;
+  border-radius: 24px 0 0 0;
   background: linear-gradient(90deg, #f85b16cc, transparent 40%, #448de0 40%, #24af85);
 }
 .vertical {
   left: 576px;
   background: linear-gradient(0deg, #f85b16, #448de0aa 45%, #24af85);
 }
-.card {
+.card-clip {
   position: absolute;
   inset: 170px 0 auto;
   height: 360px;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+}
+.card {
+  position: absolute;
+  inset: 0;
   background: radial-gradient(ellipse at 25% 20%, #b6446040, transparent 60%),
               radial-gradient(ellipse at 75% 80%, #4444bf40, transparent 50%),
               radial-gradient(ellipse at center, #60bf4460, transparent 70%),
@@ -61,4 +68,4 @@ header {
 <div class="version"><span>0.5</span></div>
 <div class="ramp horizontal"></div>
 <div class="ramp vertical"></div>
-<div class="card"><div class="marker"></div></div>
+<div class="card-clip"><div class="card"><div class="marker"></div></div></div>

@@ -244,7 +244,13 @@ def check_gradient_pixels(data):
     assert page_top is not None, "Positioned header vanished after gradient replay"
     assert pixel(310, page_top + 260) == b"\x45\xef\x97", "Gradient covered or dropped the card's foreground"
     assert pixel(64, page_top + 330) != pixel(928, page_top + 330), "Large card gradient is flat"
+    paper_color = b"\x10\x18\x20"
+    assert pixel(2, page_top + 172) == pixel(1021, page_top + 172) == paper_color, (
+        "Descendant gradient escaped the rounded overflow clip"
+    )
+    assert pixel(2, page_top + 524) != paper_color, "The rounded overflow clip cut a square corner"
     assert pixel(330, page_top + 60) != pixel(510, page_top + 60), "Horizontal gradient is flat"
+    assert pixel(322, page_top + 54) == paper_color, "Gradient painted outside its own rounded box"
     assert pixel(585, page_top + 60) != pixel(585, page_top + 140), "Vertical gradient is flat"
     assert pixel(218, page_top + 16) == b"\xee\xc0\x54", "SVG contour was misplaced"
     assert pixel(234, page_top + 32) == b"\x10\x18\x20", "SVG fill covered its interior hole"

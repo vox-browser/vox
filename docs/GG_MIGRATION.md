@@ -1,5 +1,60 @@
 # Migrating from Skia to vlib/gg
 
+## Rounded clips on portable CSS gradients
+
+The portable gradient painter applies the CSS background's rounded box and
+rounded overflow ancestors in texture coordinates. The shared rasterizer
+keeps the antialiasing in run-length coverage and leaves opaque runs alone.
+Rectangular gradients keep the one-row or one-column texture path. A ramp
+that crosses a rounded corner still samples colors once along the gradient axis,
+then expands into a texture that can carry the corner coverage.
+
+The [window fixture](../Tests/Browser/Native/portable-gradients.html)
+checks the background's own corner, two rounded ancestor corners, the
+square bottom corners, and unchanged foreground and gradient text. The
+ramp and full-raster captures matched pixel for pixel. The focused raster
+test checks partial alpha against the Canvas clip coverage and passed on
+Linux and macOS. The Linux GG SVG window suite passed all 18 checks.
+The Windows D3D11 production-mode source check passed, and the focused
+raster test cross-linked as an x64 PE executable. The full MinGW build
+reached C compilation before its 350-second guard deadline.
+
+Fresh Linux ARM64 X11 captures of live vlang.io showed the header, gradient
+version text, social icons and compilation card at both widths. The
+desktop navigation and mascot appeared at 1280 px, following the site's
+responsive styles. The corrected browser changed exactly 84 visible
+document pixels at 1024 × 768 and 83 at 1280 × 800, all within the card's
+top corners. The document loaded with JavaScript enabled and reached
+complete readiness in each run. The macOS reference
+`bfdf3dd1c71bd43f1817a9b4feca9b95cb5216231823ec3f1b406c558dbcf423`
+also decoded the compilation video. The Linux media adapter still returns
+no video frame.
+
+The Linux controls and candidate used V `5a39a4d`, matching single-unit
+Clang `-O0` flags and Mesa software OpenGL. The executable SHA-256 values
+were `81ad57ac817e1600d2426c84902e81cddd87b1f3ae06b8c8b126d401a23a5577`
+and `6c55a9afb3eeacd821b400065f8632b606727e1aa9253008e8ec544787bd259e`.
+Two alternating pairs per fixture used fresh processes, profiles and caches
+at 1024 × 600 with one second to settle and OS caches available. The
+[rectangular fixture](../Tests/Browser/Native/scroll-gradient-ramps.html)
+used 48 synthetic 42 px callbacks. The rounded fixture used 32 callbacks
+over twelve 256 px cards with 24 px top radii and radial and diagonal
+gradients. Input hashes, paint-command counts and scroll positions matched
+within each cohort. All browser, driver and 3 GiB guard exits were zero.
+One-minute guest load ranged from 1.30 to 2.50 on four vCPUs.
+
+| Fixture and pair | Median replay, before / after (ms) | p95, before / after (ms) | Max, before / after (ms) | Median allocation, before / after (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| Rectangular 1 | 3.620 / 3.655 | 4.800 / 4.738 | 7.313 / 8.452 | 576.5 / 575.0 |
+| Rectangular 2 | 3.464 / 3.236 | 4.742 / 3.809 | 8.440 / 7.366 | 578.0 / 577.0 |
+| Rounded 1 | 311.328 / 377.340 | 425.239 / 430.769 | 427.588 / 444.475 | 4785.0 / 4947.5 |
+| Rounded 2 | 379.236 / 392.711 | 411.462 / 426.015 | 427.093 / 427.741 | 4785.0 / 4947.5 |
+
+The rounded draws allocated another 162.5 KiB per callback, and replay took
+longer in both pairs. The controls varied by 22% at the median. These
+results describe synthetic software replay. Production and hardware
+scrolling costs remain open.
+
 ## Opt-in direct compositing for solid rectangular SVG masks
 
 With `VOX_SVG_MASK_SOLID_RECTS=1`, the portable group player applies a
