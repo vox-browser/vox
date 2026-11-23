@@ -4,7 +4,8 @@ import math
 import runtime
 
 #include "@DIR/scan_workers.h"
-#flag windows -lpthread
+// Use MinGW's static pthread runtime, which V also selects for its own helpers.
+#flag windows -l:libpthread.a
 
 fn C.vox_scan_workers_run(voidptr, i32, i32, fn (voidptr, i32, i32))
 fn C.vox_scan_workers_disabled() bool

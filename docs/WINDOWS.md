@@ -263,6 +263,11 @@ python tools/check_windows_graphics_smoke.py C:/path/to/opengl.png
 
 The PNG checker uses Pillow and can run on the host after copying the PNG out
 of the VM. It checks rectangle positions, full areas, colors and text coverage.
+The Windows CI workflow runs both GG modes with the same job-object guard and
+uploads the screenshots, compiler logs, and guard receipts. The OpenGL run uses
+the pinned Mesa WGL runtime with llvmpipe and also checks the Canvas SVG stroke.
+[Windows workflow](../.github/workflows/windows-build.yml)
+
 The browser fixture
 `Tests/Browser/Windows/smoke.html` separately checks page rendering, a script
 mutation and a clickable DOM event target.
@@ -432,7 +437,7 @@ sh tools/run_v_tool.sh prepare_windows_mesa
 mkdir -p Build/windows-webgl
 runtime-guard.exe 300000 12288 compile.out compile.err \
   "$(cygpath -w "${V_BIN:-$(command -v v)}")" \
-  -new-compiler -b c -memory-limit 10G -subsystem console \
+  -b c -memory-limit 10G -subsystem console \
   -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v
 export PATH="$MINGW_PREFIX/bin:$PWD/Build/deps/windows/mesa/release-mingw/x64:$PATH"
 export GALLIUM_DRIVER=llvmpipe
