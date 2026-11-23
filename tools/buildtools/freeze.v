@@ -228,6 +228,12 @@ fn prepare_frozen(a Args) !Record {
 	parts := parse_flags(shell_split(read(flags_path)!)!, cwd)!
 	frozen := join(receipt, 'frozen-compiler-inputs')
 	os.mkdir(frozen)!
+	mut sealed := false
+	defer {
+		if !sealed {
+			prune_remove(frozen) or { eprintln('Could not remove incomplete compiler inputs: ${err}') }
+		}
+	}
 	mut pp_options := []string{}
 	for part in parts {
 		if part.kind == 'option' && part.values[0] != '-x' { pp_options << part.values }
@@ -329,6 +335,7 @@ fn prepare_frozen(a Args) !Record {
 	}
 	if inventory.len > 0 { result['source_inventory'] = json.Any(inventory) }
 	write_json(join(receipt, 'frozen-compile.json'), json.Any(result))!
+	sealed = true
 	return result
 }
 

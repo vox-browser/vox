@@ -256,6 +256,40 @@ fn test_frozen_clang_compilation_uses_sealed_sources_and_headers() ! {
 	}
 }
 
+fn test_frozen_preprocessing_failure_releases_partial_outputs() ! {
+	$if macos {
+		root := fixture_repository()!
+		defer { remove(root) or {} }
+		stage := join(root, 'Build/stage')
+		receipt := join(root, 'Build/receipt')
+		write_changed(join(stage, 'Vox.app/Contents/Resources/resource'), 'resource')!
+		write_changed(join(root, 'packaging/Vox.entitlements.plist'), 'entitlements')!
+		write_changed(join(root, 'tools/localize_bundle_rpaths.vsh'), '// packaging helper')!
+		source := join(receipt, 'main.c')
+		extra := join(receipt, 'extra.c')
+		flags := join(receipt, 'flags')
+		write_changed(source, 'int main(void) { return 0; }\n')!
+		write_changed(extra, '#error deliberate preprocessing failure\n')!
+		write_changed(flags, shell_join(['-x', 'c', extra, '-x', 'none']))!
+		write_json(join(receipt, 'inputs-before.json'), json.Any(repository_state(root)!))!
+		a := arguments(['--root', root, '--stage', stage, '--receipt', receipt, '--source', source,
+			'--flags', flags, '--output', join(stage, 'probe')], []string{})!
+		mut failure := ''
+		prepare_frozen(a) or { failure = err.msg() }
+		assert failure.contains('Command failed') && failure.contains('1-extra.c.i')
+		assert read(join(receipt, 'preprocess-commands.json'))!.contains('0-main.c.i')
+		assert !exists(join(receipt, 'frozen-compile.json'))
+		assert !exists(join(receipt, 'frozen-compiler-inputs'))
+		assert exists(source)
+
+		write_changed(extra, 'int extra_value(void) { return 1; }\n')!
+		prepare_frozen(a)!
+		assert exists(join(receipt, 'frozen-compiler-inputs/0-main.c.i'))
+		assert exists(join(receipt, 'frozen-compiler-inputs/1-extra.c.i'))
+		validate_frozen(receipt, repository_state(root)!, false)!
+	}
+}
+
 fn test_process_identity_preserves_ps_date_spacing() {
 	assert process_start_identity('  31  20  31  1024 S  Thu Nov  5 12:34:56 2026') == 'Thu Nov  5 12:34:56 2026'
 }
