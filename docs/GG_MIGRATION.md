@@ -1,5 +1,32 @@
 # Migrating from Skia to vlib/gg
 
+## Analytic Canvas clips on Windows D3D11
+
+D3D11 Canvas bounds, wedge fills and tessellated strokes now apply
+Graphite's analytic coverage for fractional rectangular clips and supported
+rounded clips. Intersect and difference clips use the shared clip record
+after the paint data. A clipped fragment reads from the same paint buffer
+as its vertex shader. Clip coverage compiles only into clipped shader
+variants, which are created on first use.
+
+The guarded smoke passed on macOS Metal, Linux Mesa OpenGL and Windows 11
+D3D11 under QEMU. It checked quarter-pixel coverage around a rectangular
+cutout, a rounded corner over a gradient wedge fill and a fractional
+intersect clip on a tessellated stroke. The Windows executable kept its
+SHA-256 before and after launch
+(`5daaaa8e17259262ffba6e93bd42865d3962a77c869d8de6839ee73dce982876`). It
+exited zero and reproduced the prior window PNG byte for byte. The 24
+staging and replay-tool tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `8540d9eb3dcb07097bfae32649dfd89d9b4a28dde5a81a067ee78f9a0f4cea68`
+throughout replay. The portable, full-cache, texture-cache-only and
+uncached modes each reproduced the corresponding 800 × 100 document
+crop from the preceding D3D11 browser byte for byte. The replay checked
+existing SVG paint and cache behavior. The smoke exercised the analytic
+clip shaders directly. Hardware frame timings remain unmeasured.
+
 ## Tangent focal SVG gradients on Windows D3D11
 
 The opt-in Windows Canvas route renders internally tangent SVG radial fills

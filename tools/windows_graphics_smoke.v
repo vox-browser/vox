@@ -26,6 +26,7 @@ fn main() {
 			exit(2)
 		}
 		check_canvas_solid_fills() or { panic(err) }
+		check_canvas_analytic_clips() or { panic(err) }
 		check_canvas_solid_strokes() or { panic(err) }
 		check_canvas_linear_gradients() or { panic(err) }
 		check_canvas_radial_gradients() or { panic(err) }
@@ -58,6 +59,7 @@ $if windows {
 					check_svg_stroke_pixels() or { panic(err) }
 				}
 				check_canvas_solid_fills() or { panic(err) }
+				check_canvas_analytic_clips() or { panic(err) }
 				check_canvas_solid_strokes() or { panic(err) }
 				check_canvas_linear_gradients() or { panic(err) }
 				check_canvas_radial_gradients() or { panic(err) }
@@ -281,6 +283,80 @@ fn check_canvas_solid_fills() ! {
 		}
 	}
 	println('GG Canvas solid rectangle, blend, curve, fill rules and MSAA reload passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_analytic_clips() ! {
+	width, height := 32, 24
+	pitch := width * 4
+	pixels := []u8{len: pitch * height}
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: width, height: height)!
+	defer { target.free() }
+	transparent := [u8(0), 0, 0, 0]!
+	red := [u8(0), 0, 255, 255]!
+	green := [u8(0), 255, 0, 255]!
+	blue := [u8(255), 0, 0, 255]!
+	target.clear(canvas.Color4f{})
+	target.save()
+	target.clip_rect(canvas.Rect.ltrb(7.25, 4, 13.75, 10), .difference, true)!
+	target.draw_rect(canvas.Rect.ltrb(1, 1, 10, 15), canvas.Paint.rgba8(255, 0, 0, 255))!
+	target.draw_rect(canvas.Rect.ltrb(10, 1, 19, 15), canvas.Paint.rgba8(0, 255, 0, 255))!
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 6, 5, red)!
+	expect_canvas_pixel(pixels, pitch, 7, 5, [u8(0), 0, 64, 64]!)!
+	expect_canvas_pixel(pixels, pitch, 8, 5, transparent)!
+	expect_canvas_pixel(pixels, pitch, 13, 5, [u8(0), 64, 0, 64]!)!
+	expect_canvas_pixel(pixels, pitch, 14, 5, green)!
+
+	target.clear(canvas.Color4f{})
+	target.save()
+	radius := canvas.Point{4, 4}
+	clip := canvas.RRect.rect_radii(canvas.Rect.ltrb(2, 2, 21, 15), [radius, radius, radius, radius]!)
+	target.clip_rrect(clip, .intersect, true)!
+	target.set_matrix(canvas.Matrix.translate(1, 1))
+	mut path := canvas.PathBuilder{}
+	path.move_to(0, 0)
+	path.line_to(30, 0)
+	path.line_to(0, 24)
+	path.close()
+	target.draw_path(path.detach(), canvas.Paint{
+		anti_alias: true
+		dither:     true
+		gradient:   canvas.Gradient{
+			p0:     canvas.Point{6, 0}
+			p1:     canvas.Point{14, 0}
+			colors: [canvas.Color4f{1, 0, 0, 1}, canvas.Color4f{0, 0, 1, 1}]
+		}
+	})!
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 2, 2, transparent)!
+	expect_canvas_pixel(pixels, pitch, 3, 2, [u8(0), 0, 51, 51]!)!
+	expect_canvas_pixel(pixels, pitch, 4, 6, red)!
+	expect_canvas_pixel(pixels, pitch, 16, 6, blue)!
+
+	target.clear(canvas.Color4f{})
+	target.save()
+	target.clip_rect(canvas.Rect.ltrb(4.25, 2, 16.75, 14), .intersect, true)!
+	path.move_to(1, 6)
+	path.line_to(25, 6)
+	path.line_to(25, 15)
+	target.draw_path(path.detach(), canvas.Paint{
+		color:        canvas.Color4f{1, 1, 0, 1}
+		style:        .stroke
+		stroke_width: 4
+		anti_alias:   true
+	})!
+	target.restore()
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 3, 6, transparent)!
+	expect_canvas_pixel(pixels, pitch, 4, 6, [u8(0), 191, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 5, 6, [u8(0), 255, 255, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 16, 6, [u8(0), 191, 191, 191]!)!
+	expect_canvas_pixel(pixels, pitch, 17, 6, transparent)!
+	println('GG Canvas analytic rectangle and rounded clips passed on ${gfx.query_backend()}')
 }
 
 fn check_canvas_solid_strokes() ! {
