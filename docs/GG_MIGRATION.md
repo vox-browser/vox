@@ -7089,6 +7089,14 @@ references passed unchanged. These checks ran with the C backend and
 `-gc none` under 3 GiB memory guards, with compiler revisions `eeee53a`
 on macOS and `5a39a4d` on Linux. Browser-level timing remains to be measured.
 
+The Windows graphics smoke test also exposes its stroke probe as an offscreen
+check on macOS and Linux. It verifies the same gradient samples, transparent
+background, and BGRA row padding in all three modes. Both the full SVG path
+pixel suite and the stroke probe passed on Apple Silicon Metal and ARM64 Linux
+Mesa software OpenGL. Current Windows x64 D3D11 and OpenGL smoke binaries
+cross-compiled successfully. Native Windows execution remains pending.
+[Smoke commands](WINDOWS.md#focused-native-checks)
+
 ## Shared CSS background replay
 
 The portable painter and the macOS gradient fallback use the same V raster

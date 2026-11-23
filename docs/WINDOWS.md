@@ -268,6 +268,17 @@ uploads the screenshots, compiler logs, and guard receipts. The OpenGL run uses
 the pinned Mesa WGL runtime with llvmpipe and also checks the Canvas SVG stroke.
 [Windows workflow](../.github/workflows/windows-build.yml)
 
+Run the same Canvas SVG probe offscreen on macOS or Linux to compare Metal
+or EGL with Windows WGL. It checks the gradient endpoints and midpoint,
+the transparent pixels outside the stroke, and padding in the BGRA readback.
+
+```sh
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
+v -b c -memory-limit 10G -enable-globals -gc none \
+  -path "$PWD|$ui2_modules|@vmodules|@vlib" \
+  run tools/windows_graphics_smoke.v --offscreen
+```
+
 The browser fixture
 `Tests/Browser/Windows/smoke.html` separately checks page rendering, a script
 mutation and a clickable DOM event target.
