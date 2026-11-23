@@ -1,5 +1,49 @@
 # Migrating from Skia to vlib/gg
 
+## Slanted edge coverage in portable GG replay
+
+Portable affine draws of full textures use a narrow coverage ramp along
+slanted image, canvas and video edges. The same texture and sampler draw
+the interior and edges in one batch. A shear with two slanted edges adds
+two quads, and another affine transform may add up to four. The extra
+geometry shares the existing 32,768-vertex coverage limit with rounded
+image clips. Very thin geometry and source crops use the single-quad draw.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The ARM64 Linux build used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable
+(`887d88ac27d3164e6501a052600bf7810d9bca6a67647b47739f8f3fe9c6ed21`)
+passed the edge, texture reuse, rounded-image, WebGL, video and headless
+checks under the 3 GiB guard. Reuse enabled and disabled produced the same
+800 × 516 RGBA document at SHA-256
+`0a2cb834d96e1965bd596ac7afb6039dee953d5c61ae788ccc9ce45ef7b11a87`.
+The previous Linux capture failed the edge coverage assertion. All 160
+changed pixels were within the three shear regions. A second Xvfb capture
+checked all four diagonal edges on both a rotated and a reflected image.
+
+The fresh macOS reference capture from the published executable
+(`db82b90a1b7126ccae3db563483114a7aef51e820c342089e5ee56d3eff81e2f`)
+passed the new coverage assertions. Both the capture and guard exited zero.
+The Linux sum of absolute RGB differences from that reference fell from
+11,181 to 7,131 in the sheared decoded image and from 6,984 to 5,022 in
+the sheared two-color filter control. In the sheared canvas, the two edge
+columns improved from 7,020 to 6,071. The whole canvas crop rose from
+8,040 to 12,191 because the new triangles changed which texel wins at some
+exact nearest-neighbor boundaries. The macOS source check and all 21
+Python runner tests passed.
+
+The Windows 11 QEMU capture used the x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. The
+executable SHA-256 was
+`84ce05365501769daa22974dcc5a2ee23b34c18c76ebf3624b202c61c0233ee4`
+before and after the capture. The coverage and filtering assertions passed,
+with one upload per canvas and poster. The 3 GiB guard reported a zero
+browser exit. The 800 × 516 RGBA document had SHA-256
+`370a91c136ae095cf87ef01a7e6bc38b1df6a7067235c803ff56e56a114522ff`.
+All 144 changed Windows pixels were within the three shear regions. The
+Windows sheared decoded image's absolute RGB error against macOS fell from
+7,356 to 4,092. Hardware frame timings remain unmeasured.
+
 ## CSS image sampling in portable GG replay
 
 Portable replaced images select nearest-neighbor sampling for `pixelated`

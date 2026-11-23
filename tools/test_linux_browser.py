@@ -3353,6 +3353,13 @@ def check_affine_media_pixels(data):
             for local_x, expected in ((-2, "101820"), (8, first), (28, second), (42, "101820")):
                 x = left + offset + local_x
                 assert row[x * channels:x * channels + 3] == bytes.fromhex(expected), (x, top + offset, "Incorrect shear")
+        # Both slanted edges bisect pixels on every row of this shear.
+        row = document[top + 4]
+        left_edge, right_edge = left + 4, left + 44
+        r, g, b = row[left_edge * channels:left_edge * channels + 3]
+        assert 16 < r < 255 and 0 < g < 24 and 0 < b < 32, (left_edge, "Missing left edge coverage")
+        r, g, b = row[right_edge * channels:right_edge * channels + 3]
+        assert 0 < r < 16 and 24 < g < 255 and 0 < b < 32, (right_edge, "Missing right edge coverage")
 
     def sampling_pixel(x, y):
         return document[y][x * channels:x * channels + 3]

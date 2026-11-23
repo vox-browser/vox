@@ -130,7 +130,7 @@ fn (mut app BrowserApp) draw_portable_image_clip_spans(image_config gg.DrawImage
 	if renderer == unsafe { nil } || (stream == none && !image_config.img.simg_ok) { return false }
 	// Limit the extra geometry in GG's shared frame queue. Large clips can use
 	// the viewport-sized raster fallback without exhausting the vertex buffer.
-	limit := math.min(2048, (32768 - renderer.num_vertices()) / 6)
+	limit := math.min(2048, (portable_image_coverage_vertex_limit - renderer.num_vertices()) / 6)
 	spans := app.portable_image_clip_spans(PortableRoundedImageClipKey{shape, bounds.width, bounds.height},
 		limit) or { return false }
 	if spans.len == 0 { return true }
