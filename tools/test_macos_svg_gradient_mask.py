@@ -673,7 +673,8 @@ def main():
                                                    ("viewport", "viewport"), ("subregion", "subregion"),
                                                    ("curves", "curves"), ("tile-clip", "tile-clip"),
                                                    ("fractional-clip", "fractional-clip"),
-                                                   ("source-alpha", "source-alpha"))]
+                                                   ("source-alpha", "source-alpha"),
+                                                   ("cropped-rows", "cropped-rows"))]
             inputs.extend(offset_fixture for offset_fixture, _ in offset_fixtures)
         if args.pattern_transfer_only:
             transfer_chain = fixture.with_name("svg-pattern-tile-component-transfer-chain.html")

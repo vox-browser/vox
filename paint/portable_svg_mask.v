@@ -99,10 +99,11 @@ fn portable_svg_mask_gradient(operation &layout.PaintMaskOperation, luminance bo
 
 struct PortableSVGMaskLayer {
 mut:
-	pixels  []u8
-	rows    SVGMaskLayerRows
-	opacity f32
-	filter &layout.PaintSVGMaskFilter = unsafe { nil }
+	pixels      []u8
+	rows        SVGMaskLayerRows
+	opacity     f32
+	filter      &layout.PaintSVGMaskFilter = unsafe { nil }
+	filter_crop painting.IntRect
 }
 
 struct SVGMaskLayerRows {
@@ -493,15 +494,28 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				parent := layers[depth].rows
 				opacity := f32(operation.opacity)
 				alpha := cpuraster.canvas_image_opacity_byte(opacity)
-				rows := if alpha == 0 {
+				mut crop := painting.IntRect{}
+				mut available := parent
+				if alpha != 0 && operation.filter != unsafe { nil } {
+					crop = svg_pattern_filter_crop(operation.filter, bounds.width, bounds.height)?
+					bottom := math.min(parent.bottom, crop.bottom())
+					// Tile filters only sample source rows inside their output clip.
+					// Keep the existing row origin for bitmap and pattern paints.
+					available = if crop.is_empty() || bottom <= math.max(parent.top, crop.y) {
+						SVGMaskLayerRows{}
+					} else {
+						SVGMaskLayerRows{parent.top, bottom}
+					}
+				}
+				rows := if alpha == 0 || available.height() == 0 {
 					SVGMaskLayerRows{}
 				} else if operation.filter != unsafe { nil }
 					&& operation.filter.fills_clear_pixels() {
 					// This filter can paint rows outside the source geometry.
-					parent
+					available
 				} else {
 					svg_mask_opacity_layer_rows(mask.mask_operations[index + 1..],
-						bounds, parent, page_x, page_y, scale)
+						bounds, available, page_x, page_y, scale)
 				}
 				if rows.height() == 0 {
 					index = svg_mask_opacity_end(mask.mask_operations, index)?
@@ -514,6 +528,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				layers[depth].rows = rows
 				layers[depth].opacity = opacity
 				layers[depth].filter = operation.filter
+				layers[depth].filter_crop = crop
 				byte_count := layer_pitch * rows.height()
 				if layers[depth].pixels.len < byte_count {
 					layers[depth].pixels = []u8{len: byte_count}
@@ -541,7 +556,7 @@ fn (mut app BrowserApp) raster_svg_mask_layers(mut pixels []u8, pitch int, bound
 				if layer.filter != unsafe { nil } {
 					// A pattern filter is isolated at full opacity before any outer blend.
 					if layer.opacity != 1 { return none }
-					crop := svg_pattern_filter_crop(layer.filter, bounds.width, bounds.height)?
+					crop := layer.filter_crop
 					top := math.max(crop.y, layer.rows.top) - layer.rows.top
 					bottom := math.min(crop.bottom(), layer.rows.bottom) - layer.rows.top
 					if crop.width == 0 || top >= bottom { continue }
