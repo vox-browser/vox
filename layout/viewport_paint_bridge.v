@@ -4488,6 +4488,11 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 					filter := operation.filter?
 					filter_depth++
 					if opacity := filter.opacity_filter_amount() {
+						if painting.svg_pattern_opacity_is_transparent(opacity) {
+							index = painting.svg_pattern_scope_end(source, index)?
+							filter_depth--
+							continue
+						}
 						operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
 					} else if offset := filter.source_pattern_offset() {
 						affine := painting.Affine{placement[0], placement[1], placement[2],
@@ -4560,7 +4565,13 @@ pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOpe
 				}
 				continue
 			}
-			.begin_opacity { operation_kind = .begin_opacity }
+			.begin_opacity {
+				if pattern_tile != none && painting.svg_pattern_opacity_is_transparent(operation.opacity) {
+					index = painting.svg_pattern_scope_end(source, index)?
+					continue
+				}
+				operation_kind = .begin_opacity
+			}
 			.end_opacity { operation_kind = .end_opacity }
 			.image { operation_kind = .image }
 			.path { operation_kind = .path }

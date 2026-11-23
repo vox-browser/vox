@@ -16,7 +16,10 @@ svg { display: block; }
           <g opacity=".5">
             <g opacity=".5">
               <g opacity=".5">
-                <image href="missing-tile.png" width="16" height="16"/>
+                <g style="filter: blur(1px)">
+                  <image href="missing-tile.png" width="16" height="16"/>
+                  <path d="M0 0H16V16H0Z" fill="red"/>
+                </g>
               </g>
             </g>
           </g>

@@ -1,6 +1,5 @@
 module main
 
-import cpuraster
 import math
 import painting
 
@@ -25,17 +24,8 @@ mut:
 fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternDisplayList,
 	mut key SharedSVGPatternCacheKey) bool {
 	// The caller has checked the operation and depth limits for this tile.
-	mut hidden_depth := 0
-	for index in 0 .. list.operations.len {
+	for index := 0; index < list.operations.len; index++ {
 		operation := &list.operations[index]
-		if hidden_depth != 0 {
-			match operation.kind {
-				.begin_opacity, .begin_filter { hidden_depth++ }
-				.end_opacity, .end_filter { hidden_depth-- }
-				else {}
-			}
-			continue
-		}
 		if operation.kind == .begin_opacity || operation.kind == .begin_filter {
 			opacity := if operation.kind == .begin_opacity {
 				operation.opacity
@@ -44,7 +34,9 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 				filter.opacity_filter_amount() or { continue }
 			}
 			// Tile lowering replays pure opacity filters as the same isolated layers.
-			if cpuraster.canvas_image_opacity_byte(f32(opacity)) == 0 { hidden_depth = 1 }
+			if painting.svg_pattern_opacity_is_transparent(opacity) {
+				index = painting.svg_pattern_scope_end(list.operations, index) or { return false }
+			}
 			continue
 		}
 		if operation.kind == .image && operation.opacity != 0 {
