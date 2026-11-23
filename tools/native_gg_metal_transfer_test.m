@@ -199,6 +199,7 @@ static void exercise_large_transfer(id<MTLDevice> device, int padding) {
     assert(sg_v_write_image(image, 0, 0, width, height, input, pitch));
     memset(input, 0x11, size);
     assert(sg_v_read_image(image, 0, 0, width, height, output, pitch));
+    assert(!objc_getAssociatedObject(_sg.mtl.cmd_queue, &vox_gg_metal_readback_buffer_key));
     for (int y = 0; y < height; ++y) {
         size_t start = (size_t)y * pitch;
         for (int x = 0; x < row_bytes; ++x)
@@ -211,6 +212,33 @@ static void exercise_large_transfer(id<MTLDevice> device, int padding) {
     sg_shutdown();
 }
 
+static void exercise_readback_buffer(id<MTLDevice> device) {
+    sg_setup(&(sg_desc){.environment.metal.device = (__bridge const void*)device});
+    assert(sg_isvalid());
+    const int width = 35, height = 19, pitch = width * 4;
+    sg_image image = sg_make_image(&(sg_image_desc){
+        .render_target = true, .width = width, .height = height,
+        .pixel_format = SG_PIXELFORMAT_BGRA8, .sample_count = 1,
+    });
+    assert(sg_query_image_state(image) == SG_RESOURCESTATE_VALID);
+    uint8_t pixels[pitch * height];
+    id<MTLCommandQueue> queue = _sg.mtl.cmd_queue;
+    assert(!objc_getAssociatedObject(queue, &vox_gg_metal_readback_buffer_key));
+    assert(sg_v_read_image(image, 0, 0, width / 2, height, pixels, pitch));
+    id<MTLBuffer> small = objc_getAssociatedObject(queue, &vox_gg_metal_readback_buffer_key);
+    assert(small && small.length >= (width / 2) * 4 * height);
+    assert(sg_v_read_image(image, 0, 0, width, height, pixels, pitch));
+    id<MTLBuffer> large = objc_getAssociatedObject(queue, &vox_gg_metal_readback_buffer_key);
+    assert(large && large != small && large.length >= sizeof(pixels));
+    assert(sg_v_read_image(image, 2, 3, width - 2, height - 3, pixels, pitch));
+    assert(objc_getAssociatedObject(queue, &vox_gg_metal_readback_buffer_key) == large);
+    setenv("VOX_GG_FRESH_READBACK_BUFFER", "1", 1);
+    assert(sg_v_read_image(image, 0, 0, width, height, pixels, pitch));
+    unsetenv("VOX_GG_FRESH_READBACK_BUFFER");
+    assert(objc_getAssociatedObject(queue, &vox_gg_metal_readback_buffer_key) == large);
+    sg_shutdown();
+}
+
 int main(void) { @autoreleasepool {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice(); assert(device);
     exercise(device, false); exercise(device, true);
@@ -220,4 +248,6 @@ int main(void) { @autoreleasepool {
     exercise_large_transfer(device, 0);
     exercise_large_transfer(device, 28);
     puts("Large packed and padded uploads and readbacks match byte for byte");
+    exercise_readback_buffer(device);
+    puts("Readback buffers grow, reuse capacity, and stay with their command queue");
 } }
