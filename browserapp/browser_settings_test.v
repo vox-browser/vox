@@ -13,10 +13,12 @@ $if vox_ui2 ? {
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
 	fn C.native_test_address_insert(field voidptr, bytes &u8, length int)
+	fn C.native_test_address_submit(field voidptr)
 	fn C.native_test_chrome_click(control voidptr)
 	fn C.native_test_address_shortcut(field voidptr, owner voidptr, callback fn (voidptr, int), key u16, shift int) int
 	fn C.native_test_chrome_enabled(control voidptr) int
 	fn C.native_test_settings_select_tab(control voidptr) int
+	fn C.native_test_settings_close_panel(control voidptr)
 	fn C.native_test_settings_cycle_tab(control voidptr, reverse int) int
 
 	fn click_settings_section(section BrowserSettingsSection) {
@@ -34,7 +36,7 @@ fn test_settings_shortcut_uses_the_platform_command_modifier() {
 	assert !is_browser_settings_shortcut(.period, command)
 }
 
-fn test_ui2_settings_apply_cancel_validation_and_toolbar_reconciliation() {
+fn test_ui2_settings_save_automatically_and_keep_the_last_valid_proxy() {
 	$if vox_ui2 ? {
 		directory := os.join_path(os.temp_dir(), 'vox-ui2-settings-${os.getpid()}-${time.sys_mono_now()}')
 		path := os.join_path(directory, 'settings.json')
@@ -53,82 +55,81 @@ fn test_ui2_settings_apply_cancel_validation_and_toolbar_reconciliation() {
 		assert ui2.embedded_browser_control('settings-allow-any-site') == unsafe { nil }
 		assert ui2.embedded_browser_control('settings-host') == unsafe { nil }
 		assert ui2.embedded_browser_control('settings-gpu-canvas') == unsafe { nil }
-		assert !ui2.control_checked('settings-tab-coloring')
-		assert !ui2.control_checked('settings-custom-tab-titles')
+		assert ui2.embedded_browser_control('settings-apply') == unsafe { nil }
+		assert ui2.embedded_browser_control('settings-cancel') == unsafe { nil }
+		C.native_test_settings_close_panel(ui2.embedded_browser_control('settings-heading'))
+		assert !browser_settings_visible()
+		assert !os.exists(path)
+		show_browser_settings()
+
+		app.snapshot_cached = true
+		app.snapshot_hold = true
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-tab-coloring'))
+		assert browsersettings.current().enable_tab_coloring
+		assert !app.snapshot_cached && !app.snapshot_hold
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-custom-tab-titles'))
-		assert C.native_test_settings_cycle_tab(ui2.embedded_browser_control('settings-apply'), 1) != 0
+		assert browsersettings.current().enable_custom_tab_titles
+		assert C.native_test_settings_cycle_tab(ui2.embedded_browser_control('settings-heading'), 1) != 0
 		assert ui2.text('settings-heading') == 'Advanced'
-		// GPU-accelerated scrolling is on until the user turns it off.
 		assert ui2.control_checked('settings-gpu-canvas')
 		assert !ui2.control_checked('settings-libjs')
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-gpu-canvas'))
+		assert browsersettings.current().disable_gpu_canvas
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-libjs'))
-		assert C.native_test_settings_cycle_tab(ui2.embedded_browser_control('settings-apply'), 0) != 0
+		assert browsersettings.current().javascript_engine == 'libjs'
+		assert C.native_test_settings_cycle_tab(ui2.embedded_browser_control('settings-heading'), 0) != 0
 		assert ui2.text('settings-heading') == 'Tabs'
-		assert ui2.control_checked('settings-tab-coloring')
-		assert ui2.control_checked('settings-custom-tab-titles')
+
 		click_settings_section(.proxy)
 		host := ui2.embedded_browser_control('settings-host')
 		assert C.native_test_chrome_enabled(host) == 0
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-enabled'))
 		assert C.native_test_chrome_enabled(host) != 0
+		assert browsersettings.current().enabled
 		ui2.set_text('settings-host', 'localhost')
-		ui2.set_text('settings-port', 'bad')
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-apply'))
-		assert browser_settings_visible()
-		assert ui2.text('settings-error').contains('65535')
-		assert !os.exists(path)
+		ui2.set_text('settings-port', '9050')
 		app.update_browser_chrome(900, 600)
 		assert ui2.embedded_browser_control('settings-host') == host
-		show_browser_settings()
-		assert ui2.text('settings-port') == 'bad'
-		ui2.set_text('settings-port', '9050')
+		assert browsersettings.current().port == '1080'
+		click_settings_section(.tabs)
+		assert browsersettings.current().host == 'localhost'
+		assert browsersettings.current().port == '9050'
+
+		click_settings_section(.proxy)
 		ui2.select_embedded_textbox('settings-sites')
 		bad_site := 'https://example.com'
 		C.native_test_address_insert(ui2.embedded_browser_control('settings-sites'), bad_site.str, bad_site.len)
-		click_settings_section(.advanced)
-		assert !ui2.control_checked('settings-gpu-canvas')
-		assert ui2.control_checked('settings-libjs')
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-apply'))
-		assert ui2.text('settings-heading') == 'Proxy'
 		assert ui2.text('settings-error').contains('hostnames')
-		assert ui2.text('settings-port') == '9050'
+		click_settings_section(.advanced)
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-libjs'))
+		assert browsersettings.current().javascript_engine == 'javascriptcore'
+		assert browsersettings.current().sites == ''
+		click_settings_section(.proxy)
+		assert ui2.text('settings-sites') == bad_site
+		assert ui2.text('settings-error').contains('hostnames')
 		ui2.set_text('settings-sites', 'Example.com, another.org')
-		click_settings_section(.tabs)
-		app.snapshot_cached = true
-		app.snapshot_hold = true
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-apply'))
+		C.native_test_settings_close_panel(ui2.embedded_browser_control('settings-heading'))
 		assert !browser_settings_visible()
-		assert browsersettings.current().host == 'localhost'
-		assert browsersettings.current().port == '9050'
 		assert browsersettings.current().sites == 'example.com, another.org'
-		assert browsersettings.current().enable_tab_coloring
+		assert browsersettings.current().javascript_engine == 'javascriptcore'
 		assert browsersettings.current().enable_custom_tab_titles
 		assert browsersettings.current().disable_gpu_canvas
-		assert browsersettings.current().javascript_engine == 'libjs'
-		assert !app.snapshot_cached && !app.snapshot_hold
+
 		show_browser_settings()
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-tab-coloring'))
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-custom-tab-titles'))
-		click_settings_section(.advanced)
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-gpu-canvas'))
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-libjs'))
-		click_settings_section(.proxy)
-		ui2.set_text('settings-sites', 'discarded.example')
-		C.native_test_chrome_click(ui2.embedded_browser_control('settings-cancel'))
-		show_browser_settings()
-		assert ui2.control_checked('settings-tab-coloring')
-		assert ui2.control_checked('settings-custom-tab-titles')
-		click_settings_section(.advanced)
-		assert !ui2.control_checked('settings-gpu-canvas')
-		assert ui2.control_checked('settings-libjs')
-		assert browsersettings.current().disable_gpu_canvas
 		click_settings_section(.proxy)
 		assert ui2.text('settings-sites') == 'example.com, another.org'
 		assert ui2.text('settings-error') == ''
-		assert C.native_test_address_shortcut(ui2.embedded_browser_control('settings-port'), app, address_bar_shortcut, 53, 0) != 0
+		port := ui2.embedded_browser_control('settings-port')
+		ui2.select_embedded_textbox('settings-port')
+		new_port := '9150'
+		C.native_test_address_insert(port, new_port.str, new_port.len)
+		C.native_test_address_submit(port)
+		assert browsersettings.current().port == new_port
+		assert browser_settings_visible()
+		ui2.set_text('settings-port', 'bad')
+		assert C.native_test_address_shortcut(port, app, address_bar_shortcut, 53, 0) != 0
 		assert !browser_settings_visible()
+		assert browsersettings.current().port == new_port
 	}
 }
 

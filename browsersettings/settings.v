@@ -166,7 +166,7 @@ pub fn initialize(path string) ! {
 	if configured { state.file_version = version }
 }
 
-// Windows and detached tabs have independent processes. Settings Apply uses
+// Windows and detached tabs have independent processes. Saving settings uses
 // atomic replacement, so the inode also detects equal-size saves in the same
 // second. Unchanged requests need only stat the file, without parsing JSON.
 // Keep the last valid route if a replacement cannot yet be read or validated.
@@ -237,7 +237,7 @@ pub fn save(input Proxy) ! {
 	}
 	file.close()
 	platform.atomic_replace_file(temporary, state.path)!
-	// Publish only after persistence succeeds. Failed Apply keeps the old route.
+	// Publish only after persistence succeeds so a failed save keeps the old route.
 	state.proxy = Proxy{ ...proxy, javascript_engine: proxy.javascript_engine.clone(), host: proxy.host.clone(), port: proxy.port.clone(), sites: proxy.sites.clone() }
 	state.configured = true
 	// Read the persisted identity on the next access rather than caching a stat

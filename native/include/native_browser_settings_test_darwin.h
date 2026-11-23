@@ -9,6 +9,10 @@ static int native_test_settings_select_tab(void *control) {
     return [(__bridge NSView *)control accessibilityPerformPress];
 }
 
+static void native_test_settings_close_panel(void *control) {
+    [[(__bridge NSView *)control window] performClose:nil];
+}
+
 static int native_test_settings_cycle_tab(void *control, int reverse) {
     NSWindow *window = [(__bridge NSView *)control window];
     NSEventModifierFlags modifiers = NSEventModifierFlagControl;

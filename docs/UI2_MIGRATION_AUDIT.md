@@ -11,7 +11,7 @@ The [repository UI rule](../AGENTS.md#ui-implementation) applies to future work.
 | Toolbar skin, navigation controls, address field, status labels | [browserapp/browser_chrome.v](../browserapp/browser_chrome.v) | Cocoa toolbar background/icon painting and native styling overrides, separate GG toolbar |
 | Link context menu | [browserapp/link_context_menu.v](../browserapp/link_context_menu.v), [browserui/popup.v](../browserui/popup.v) | `native_link_context_menu_darwin.{m,h}` |
 | HTML select popup | [browserapp/select_picker.v](../browserapp/select_picker.v), shared UI2 popup | `native_select_picker_darwin.{m,h}` and its JSON-to-NSMenu layer |
-| Settings, validation, enabled states, Apply/Cancel | [browserapp/browser_settings.v](../browserapp/browser_settings.v) | `native_browser_settings_darwin.{m,h}` and platform-only V form owner |
+| Settings, validation, enabled states, automatic saving | [browserapp/browser_settings.v](../browserapp/browser_settings.v) | `native_browser_settings_darwin.{m,h}` and platform-only V form owner |
 | Browser shortcut policy | [browserui/shortcuts.v](../browserui/shortcuts.v), [browserapp/browser_ui.v](../browserapp/browser_ui.v) | `native_address_bar_darwin.{m,h}` shortcut table |
 | RAM formatting, sampling schedule, worker accounting and label updates | [memorymgmt/memory_status.v](../memorymgmt/memory_status.v), [processmetrics](../processmetrics) | `native_browser_chrome_darwin.{m,h}`, `native_memory_status_darwin.m` and its separate painted layer |
 | History gesture classification, capture generations, cancellation and commit thresholds | [browserui/swipe.v](../browserui/swipe.v), [browserapp/history_swipe.v](../browserapp/history_swipe.v) | Native gesture policy fields and decisions |
