@@ -699,8 +699,9 @@ def main():
             inputs.extend((bitmap, shared_tile))
         if args.pattern_nested_images_only:
             shared_bitmap = fixture.with_name("svg-pattern-tile-shared-bitmap.html")
-            hidden_bitmap = fixture.with_name("svg-pattern-tile-hidden-image.html")
-            inputs.extend((shared_bitmap, hidden_bitmap))
+            hidden_bitmaps = [fixture.with_name(f"svg-pattern-tile-{name}.html")
+                              for name in ("hidden-image", "hidden-filter-image")]
+            inputs.extend((shared_bitmap, *hidden_bitmaps))
         offset_fixtures = []
         if args.pattern_offset_only:
             offset_fixtures = [(fixture.with_name(f"svg-pattern-tile-offset-{name}.html"), units)
@@ -735,7 +736,8 @@ def main():
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_nested_images_only:
                 check_pattern_tile_with_delayed_image(binary, shared_bitmap, Path(temporary), shared=True)
-                check_pattern_tile_with_hidden_image(binary, hidden_bitmap, Path(temporary))
+                for hidden_bitmap in hidden_bitmaps:
+                    check_pattern_tile_with_hidden_image(binary, hidden_bitmap, Path(temporary))
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
                 check_pattern_tile_variants(binary, shared_tile, Path(temporary),

@@ -20,14 +20,23 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 	mut hidden_depth := 0
 	for index in 0 .. list.operations.len {
 		operation := &list.operations[index]
-		// Shared mask replay discards the whole layer at zero byte opacity.
-		if operation.kind == .begin_opacity
-			&& (hidden_depth != 0 || cpuraster.canvas_image_opacity_byte(f32(operation.opacity)) == 0) {
-			hidden_depth++
+		if hidden_depth != 0 {
+			match operation.kind {
+				.begin_opacity, .begin_filter { hidden_depth++ }
+				.end_opacity, .end_filter { hidden_depth-- }
+				else {}
+			}
 			continue
 		}
-		if hidden_depth != 0 {
-			if operation.kind == .end_opacity { hidden_depth-- }
+		if operation.kind == .begin_opacity || operation.kind == .begin_filter {
+			opacity := if operation.kind == .begin_opacity {
+				operation.opacity
+			} else {
+				filter := operation.filter or { return false }
+				filter.opacity_filter_amount() or { continue }
+			}
+			// Tile lowering replays pure opacity filters as the same isolated layers.
+			if cpuraster.canvas_image_opacity_byte(f32(opacity)) == 0 { hidden_depth = 1 }
 			continue
 		}
 		if operation.kind == .image && operation.opacity != 0 {
