@@ -2914,6 +2914,11 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		// Nothing else is appended before the next step, so the slot is stable.
 		result << *step.command
 		mut command := unsafe { &result[result.len - 1] }
+		if canvas := command.canvas_paintable {
+			if element := canvas.webgl_canvas {
+				command.canvas_bitmap = html.html_canvas_element_present_existing_surface(element)
+			}
+		}
 		command.transform = chromium_border_replay_transform(step.command, context.transform, tree)
 		command.fixed_to_viewport = step.box.fixed_to_viewport
 		if recording_clip := command.recording_clip {

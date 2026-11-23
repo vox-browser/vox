@@ -3256,6 +3256,45 @@ def check_webgl_browser(binary, artifacts, temporary):
     print('PASS: native GLES WebGL1/WebGL2 shaders, readback and canvas presentation', flush=True)
 
 
+def check_webgl_texture_reuse(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/webgl-texture-reuse.html"
+    documents = []
+    for disabled in (False, True):
+        name = "webgl-textures-uncached" if disabled else "webgl-textures"
+        screenshot = artifacts / f"{name}.png"
+        audit = artifacts / f"{name}.json"
+        screenshot.unlink(missing_ok=True)
+        audit.unlink(missing_ok=True)
+        env = smoke_environment(Path(temporary) / name)
+        env.update(SCREENSHOT_SETTLE_SECONDS="3", VOX_CAPTURE_AUDIT_PATH=str(audit),
+                   VOX_DISABLE_PORTABLE_CANVAS_UPLOAD_REUSE=str(int(disabled)),
+                   VOX_PORTABLE_BITMAP_UPLOAD_DIAGNOSTICS="1")
+        log = run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                            "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                           env=env, log_path=screenshot.with_suffix(".log"), timeout=90)
+        result = json.loads(audit.read_text())
+        assert result["title"] == "WebGL texture reuse" and result["ready"] == "complete", result
+        assert result["native_reported_error_count"] == 0, result
+
+        width, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
+        assert width == 800 and len(rows) >= top + 516, "Missing WebGL document viewport"
+        for left, width, height, color in ((16, 64, 40, b"\x00\xff\x00"), (96, 48, 32, b"\xff\xff\x00")):
+            pixel = color + (b"\xff" if channels == 4 else b"")
+            assert all(row[left * channels:(left + width) * channels] == pixel * width
+                       for row in rows[top + 16:top + 16 + height]), (name, left, "Incorrect WebGL canvas pixels")
+        documents.append(rows[top:top + 516])
+
+        static_uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=64x40")
+        edited_uploads = log.splitlines().count("VOX_PORTABLE_BITMAP upload=48x32")
+        if disabled:
+            assert static_uploads > 1 and edited_uploads > 2, (static_uploads, edited_uploads)
+        else:
+            assert (static_uploads, edited_uploads) == (1, 2), (static_uploads, edited_uploads)
+    assert documents[0] == documents[1], "WebGL texture reuse changed document pixels"
+    print("PASS: unchanged WebGL textures are reused and later frames reach the window", flush=True)
+
+
 def window_wait_seconds():
     value = os.environ.get("VOX_LINUX_TEST_WAIT_SECONDS", "20")
     try:
@@ -3606,6 +3645,7 @@ def main():
         assert "Linux JavaScript rendered" in output, output
         print("PASS: local HTML and scripted layout")
         check_webgl_browser(binary, artifacts, temporary)
+        check_webgl_texture_reuse(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
         check_rounded_image_browser(binary, artifacts, temporary)
         check_web_font_browser(binary, artifacts, temporary)

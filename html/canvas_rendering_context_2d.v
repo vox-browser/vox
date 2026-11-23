@@ -340,9 +340,7 @@ pub fn html_canvas_element_present(element &dom.HTMLCanvasElement) {
 			if !state.dirty && !context.needs_to_present() { return }
 			mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
 			if !mutable_context.prepare_for_compositing() { return }
-			frame := context.native.painting_surface() or { return }
-			mut surface := state.surface
-			surface.bitmap_ = webgl_frame_bitmap(frame)
+			if !mutable_state.publish_webgl_bitmap(context) { return }
 		}
 		if source := state.external_content_source {
 			mut mutable_source := unsafe { &CanvasExternalContentSource(source) }

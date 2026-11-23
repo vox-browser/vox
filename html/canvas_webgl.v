@@ -103,7 +103,29 @@ pub fn html_canvas_element_webgl_context(element &dom.HTMLCanvasElement) ?&webgl
 }
 
 fn webgl_frame_bitmap(frame webgl.WebGLPaintingSurface) &dom.Bitmap_ {
-	return &dom.Bitmap_{ width: frame.width, height: frame.height, pitch: frame.width * 4, format: 0, alpha_type: 2, data: frame.pixels.clone(), native_rows_are_top_down: true }
+	// Both readback entry points return owned pixels. Adopt that storage here.
+	return &dom.Bitmap_{ width: frame.width, height: frame.height, pitch: frame.width * 4, format: 0, alpha_type: 2, data: frame.pixels, native_rows_are_top_down: true }
+}
+
+fn (mut state HTMLCanvasElementState) publish_webgl_bitmap(context &webgl.WebGLRenderingContext) bool {
+	mut surface := state.surface
+	width, height := context.native.size()
+	if mut bitmap := surface.bitmap() {
+		// Keep the canvas-owned storage for same-size presentations. Retained
+		// paint commands can refer to it across scene and paint-tree lifetimes.
+		if bitmap.width == width && bitmap.height == height && bitmap.pitch == width * 4
+			&& context.native.copy_painting_surface_pixels(mut bitmap.data) {
+			bitmap.alpha_type = 2
+			bitmap.native_rows_are_top_down = true
+			bitmap.canvas_pixels_changed()
+			return true
+		}
+	}
+	frame := context.native.painting_surface() or { return false }
+	mut bitmap := webgl_frame_bitmap(frame)
+	bitmap.canvas_pixels_changed()
+	surface.bitmap_ = bitmap
+	return true
 }
 
 fn html_webgl_canvas_content_changed(owner voidptr) {

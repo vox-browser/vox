@@ -4447,6 +4447,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 						left: used.border_left.to_double()
 					}
 					image_rendering: computed.image_rendering()
+					webgl_canvas: if html.html_canvas_element_webgl_context(canvas) != none { canvas } else { none }
 				}
 			}
 		}

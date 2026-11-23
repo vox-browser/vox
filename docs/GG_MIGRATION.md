@@ -1,5 +1,40 @@
 # Migrating from Skia to vlib/gg
 
+## Reusing unchanged WebGL canvas textures
+
+WebGL presentation updates the canvas-owned bitmap and advances its
+upload revision when new pixels arrive. Retained paint commands resolve
+the current canvas surface when they are recorded. Same-size updates
+reuse the bitmap storage, and JavaScript readbacks and published decoded
+frames keep their own pixels.
+
+Linux WebGL now restores the EGL context and surfaces used by Sokol
+after each GLES call. Before this change, a `requestAnimationFrame`
+draw on the second canvas left the offscreen context current. The next
+window pass hit `GL_INVALID_FRAMEBUFFER_OPERATION` and aborted. With
+context restoration alone, the window survived but displayed the first
+frame. Refreshing the retained canvas draw brought the later frame to GG.
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. Its executable SHA-256 was
+`a1ebb4acb30366c161e9933ef46caf1884b455abf4ea1e5b4db5062b38ec021f`.
+Fresh Xvfb runs of that executable rendered the same 800 × 516 RGBA
+document with reuse enabled and disabled. Both crops had SHA-256
+`5b607c45a12d4c936a1fcdc86e35fccbcac6b83bdef9c836b902aad883a1ee9f`.
+The static 64 × 40 canvas went from 127 uploads to one. The 48 × 32
+canvas went from 127 uploads to two, one for each displayed color.
+[WebGL fixture](../Tests/Browser/Native/webgl-texture-reuse.html)
+
+Linux headless startup, the native WebGL1 and WebGL2 shader and
+readback smoke, and portable video and canvas captures passed. The focused
+HTML tests covered revision stability, retained-frame ownership, resizing
+and repaint callbacks. The optimized and ASan/UBSan GLES tests passed
+headless and with a GLX host. The macOS and Windows x64 D3D11
+production-mode source checks passed with V `4478fc4`. All 21 Python
+driver tests passed.
+The compiler, browser processes and guards exited zero. Hardware frame
+timings remain unmeasured.
+
 ## Reusing unchanged Canvas 2D textures
 
 Canvas 2D pixel writes mark the bitmap dirty, including writes to a

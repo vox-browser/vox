@@ -1,6 +1,7 @@
 module painting
 
 import css
+import dom
 
 pub struct CanvasPaintable {
 pub:
@@ -8,6 +9,7 @@ pub:
 	border_radii    BorderRadiiData
 	border_widths   PixelBox
 	image_rendering css.ImageRendering
+	webgl_canvas    ?&dom.HTMLCanvasElement
 }
 
 pub struct CanvasPaintResult {
