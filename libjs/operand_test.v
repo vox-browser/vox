@@ -39,3 +39,24 @@ fn test_operand_slot_preserves_offsets_and_validation() {
 		assert err.msg() == 'Local out of range'
 	}
 }
+
+// The dispatch loop resolves operands of a validated executable without the
+// checks: every valid operand of each kind maps to the same frame slot.
+fn test_validated_operand_slots_match_checked_slots() {
+	executable := &Executable{
+		registers_and_locals_count: 7
+		local_index_base:           5
+		local_variable_names:       [utf16_string('a'), utf16_string('b')]
+		constants:                  [Value.from_i32(41), Value.from_i32(42)]
+	}
+	mut operands := []Operand{}
+	for index in u32(0) .. 7 { operands << Operand.register(index) }
+	for index in u32(0) .. 2 {
+		operands << Operand.local(index)
+		operands << Operand.constant(index)
+	}
+	for index in u32(0) .. 3 { operands << Operand.argument(index) }
+	for operand in operands {
+		assert operand.validated_slot(executable) == operand.slot(executable, 3, false)!
+	}
+}

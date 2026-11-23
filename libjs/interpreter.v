@@ -1,6 +1,7 @@
 module libjs
 
 import math.big
+import os
 
 pub struct ExecutionLimits {
 pub:
@@ -46,7 +47,12 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 	mut source := js_undefined()
 	for index in 0 .. instruction.input_count() {
 		operand := instruction.input_operand(index)
-		value := frame.values[operand.slot(executable, frame.argument_count, false)!]
+		value := if checked_interpreter_operands {
+			frame.values[operand.slot(executable, frame.argument_count, false)!]
+		} else {
+			// run_executable() checked frame.values.len against the layout.
+			unsafe { (&Value(frame.values.data))[operand.validated_slot(executable)] }
+		}
 		if value.is_special_empty_value() {
 			return vm.throw_error(.internal_error, 'Bytecode read an uninitialized operand')
 		}
@@ -477,10 +483,20 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 	}
 
 	if instruction.writes_operand() {
-		frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
+		if checked_interpreter_operands {
+			frame.values[instruction.dst.slot(executable, frame.argument_count, true)!] = result
+		} else {
+			unsafe {
+				mut values := &Value(frame.values.data)
+				values[instruction.dst.validated_slot(executable)] = result
+			}
+		}
 	}
 	return next
 }
+
+// Same-binary control: check every operand slot again while dispatching.
+const checked_interpreter_operands = os.getenv('VOX_LIBJS_CHECKED_OPERANDS') != ''
 
 // Interpreter/Interpreter.cpp::VM::run_executable, with a V dispatch loop in
 // place of the generated assembly interpreter. Ordinary calls allocate their

@@ -47,6 +47,21 @@ pub fn (operand Operand) operand_type() !OperandType {
 	return unsafe { OperandType(tag) }
 }
 
+// The frame slot of an operand that Executable.validate() has already
+// checked for this frame's argument count: run_executable() validates before
+// dispatching any instruction, so the dispatch loop resolves slots without
+// re-checking them or building an error result for every read and write.
+@[inline]
+fn (operand Operand) validated_slot(executable &Executable) u32 {
+	index := operand.raw & 0x1fffffff
+	return match operand.raw >> 29 {
+		0 { index }
+		1 { executable.local_index_base + index }
+		2 { executable.registers_and_locals_count + index }
+		else { executable.registers_and_locals_count + u32(executable.constants.len) + index }
+	}
+}
+
 @[inline]
 fn (operand Operand) slot(executable &Executable, arguments_count u32, writing bool) !u32 {
 	index := operand.index()
