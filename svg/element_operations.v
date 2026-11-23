@@ -542,6 +542,38 @@ pub fn (element &Element) primitive_units() Units {
 	return parse_units(element.attributes['primitiveUnits'] or { '' }) or { Units.user_space_on_use }
 }
 
+// Resolve numeric filter coordinates without a viewport length context.
+pub fn (element &Element) numeric_filter_region(object_bounds ?Rect) ?Rect {
+	object_units := element.filter_units() == .object_bounding_box
+	mut target := Rect{}
+	if object_units {
+		target = object_bounds?
+		if !(target.width > 0 && target.height > 0) { return none }
+	}
+	mut values := [4]f64{}
+	for index, name in ['x', 'y', 'width', 'height'] {
+		fallback := if index < 2 { '-10%' } else { '120%' }
+		number := parse_number_percentage(element.attributes[name] or { fallback })?
+		if number.is_percentage && !object_units { return none }
+		values[index] = number.value
+	}
+	region := if object_units {
+		Rect{
+			x: target.x + values[0] * target.width
+			y: target.y + values[1] * target.height
+			width: values[2] * target.width
+			height: values[3] * target.height
+		}
+	} else {
+		Rect{values[0], values[1], values[2], values[3]}
+	}
+	if region.width <= 0 || region.height <= 0
+		|| ![region.x, region.y, region.width, region.height]!.all(math.is_finite(it)) {
+		return none
+	}
+	return region
+}
+
 fn filter_interpolation_color_space(value string, inherited InterpolationColorSpace) InterpolationColorSpace {
 	return match value.to_lower() {
 		'linearrgb' { .linear_rgb }

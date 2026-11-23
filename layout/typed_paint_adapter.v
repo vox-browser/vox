@@ -1071,7 +1071,8 @@ fn painting_filter_from_svg_graph(graph svg.FilterGraph) ?painting.GfxFilter {
 	}
 }
 
-fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilter {
+fn resolved_svg_filter(element &dom.Element, reference string,
+	pattern_target ?&UsedValues) ?painting.GfxFilter {
 	// PaintableBox.cpp accepts same-document fragments only; external URL
 	// filter resources are intentionally ignored by the upstream algorithm.
 	if reference.len < 2 || reference[0] != `#` {
@@ -1087,36 +1088,45 @@ fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilt
 	mutable_filter.register_svg_paint_resource_referencing_element(element)
 	model := svg_element_model(filter_element)
 	filter := painting_filter_from_svg_graph(model.gfx_filter())?
-	offset := svg_pattern_offset_from_filter(&model, filter) or { return filter }
+	offset := svg_pattern_offset_from_filter(&model, filter, pattern_target) or { return filter }
 	return painting.GfxFilter{...filter, pattern_offset: &painting.SVGPatternOffset{...offset}}
 }
 
-// A single offset with an explicit numeric user-space region can translate
-// the source paints before rasterization, then clip the isolated result.
-fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilter) ?painting.SVGPatternOffset {
-	if element.children.len != 1 || element.filter_units() != .user_space_on_use
-		|| element.primitive_units() != .user_space_on_use || filter.nodes.len != 1 {
+// A single offset with a resolved region can translate the source paint
+// before rasterization, then clip the isolated result.
+fn svg_pattern_offset_from_filter(element &svg.Element, filter painting.GfxFilter,
+	pattern_target ?&UsedValues) ?painting.SVGPatternOffset {
+	if element.children.len != 1 || element.primitive_units() != .user_space_on_use
+		|| filter.nodes.len != 1 {
 		return none
 	}
 	child := &element.children[0]
 	node := &filter.nodes[0]
 	if child.tag != 'feOffset' || node.kind != 'offset' || node.input_ids != [-1]
 		|| ['x', 'y', 'width', 'height'].any(it in child.attributes) { return none }
-	mut region_values := [4]f64{}
-	for index, name in ['x', 'y', 'width', 'height'] {
-		number := svg.parse_number_percentage(element.attributes[name] or { return none })?
-		if number.is_percentage || !math.is_finite(number.value) { return none }
-		region_values[index] = number.value
+	object_bounds := if element.filter_units() == .object_bounding_box {
+		target := pattern_target?
+		path := target.computed_svg_path()?
+		// Layout bounds include curve control points. A single linear contour
+		// gives the tight object bounds needed by the filter region.
+		if path.instructions.len == 0 || path.instructions[0].type_ != .move
+			|| !path.instructions[1..].all(it.type_ in [.line, .horizontal_line,
+				.vertical_line, .close_path]) {
+			return none
+		}
+		?svg.Rect(svg_path_bounds(path)?)
+	} else {
+		?svg.Rect(none)
 	}
-	region := painting.Rect{region_values[0], region_values[1], region_values[2], region_values[3]}
-	if region.is_empty() { return none }
+	region := element.numeric_filter_region(object_bounds)?
 	mut delta := [2]f64{}
 	for index, name in ['dx', 'dy'] {
 		number := svg.parse_number_percentage(child.attributes[name] or { '0' })?
 		if number.is_percentage || !math.is_finite(number.value) { return none }
 		delta[index] = number.value
 	}
-	return painting.SVGPatternOffset{painting.Point{delta[0], delta[1]}, region}
+	return painting.SVGPatternOffset{painting.Point{delta[0], delta[1]},
+		painting.Rect{region.x, region.y, region.width, region.height}}
 }
 
 fn transform_svg_pattern_offset(offset ?&painting.SVGPatternOffset,
@@ -1128,7 +1138,7 @@ fn transform_svg_pattern_offset(offset ?&painting.SVGPatternOffset,
 
 fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 	color_context css.ColorResolutionContext,
-	element ?&dom.Element, bounds ?painting.Rect) painting.ResolvedCSSFilter {
+	element ?&dom.Element, bounds ?painting.Rect, pattern_target ?&UsedValues) painting.ResolvedCSSFilter {
 	if !computed_filter.has_filters() {
 		return painting.ResolvedCSSFilter{}
 	}
@@ -1173,7 +1183,7 @@ fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 			}
 			css.URL {
 				if painted_element := element {
-					if resolved := resolved_svg_filter(painted_element, filter_operation.url()) {
+					if resolved := resolved_svg_filter(painted_element, filter_operation.url(), pattern_target) {
 						svg_filter = resolved
 						svg_filter_bounds = bounds
 					}
@@ -1184,10 +1194,16 @@ fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 	return painting.ResolvedCSSFilter.with_svg_filter(operations, svg_filter, svg_filter_bounds)
 }
 
+@[params]
+struct CSSFilterResolutionOptions {
+	pattern_target ?&UsedValues
+}
+
 fn resolved_css_filter_for_element(computed &css.ComputedValues,
 	color_context css.ColorResolutionContext, element ?&dom.Element,
-	bounds ?painting.Rect) painting.ResolvedCSSFilter {
-	return resolve_css_filter(computed.filter(), computed, color_context, element, bounds)
+	bounds ?painting.Rect, options CSSFilterResolutionOptions) painting.ResolvedCSSFilter {
+	return resolve_css_filter(computed.filter(), computed, color_context, element, bounds,
+		options.pattern_target)
 }
 
 $if test {
@@ -3537,7 +3553,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				}
 				color_context := color_resolution_context_for_typed_node(node, computed.color())
 				resolved := resolved_css_filter_for_element(computed, color_context, paint_element,
-					bounds)
+					bounds, pattern_target: used)
 				retained_filter = resolved.to_gfx_filter(1)
 				if filter := retained_filter {
 					if filter.pattern_offset != none {
@@ -3959,7 +3975,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	// The backdrop belongs to the box's own painting, even when a visible
 	// descendant still records commands inside this box's effect node.
 	backdrop_filter := if computed.visibility() == .visible {
-		resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds)
+		resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds, none)
 	} else {
 		painting.ResolvedCSSFilter{}
 	}

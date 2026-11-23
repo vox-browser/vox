@@ -666,6 +666,9 @@ def main():
         if args.pattern_standalone_only:
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
             inputs.append(bitmap)
+        if args.pattern_offset_only:
+            offset_bounds = fixture.with_name("svg-pattern-tile-offset-bounds.html")
+            inputs.append(offset_bounds)
         if args.pattern_transfer_only:
             transfer_chain = fixture.with_name("svg-pattern-tile-component-transfer-chain.html")
             inputs.append(transfer_chain)
@@ -689,6 +692,12 @@ def main():
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
+            if args.pattern_offset_only:
+                check_pattern_tile_variants(binary, offset_bounds, Path(temporary),
+                                            ready="data-offset-ready",
+                                            check_pixels=partial(check_svg_offset_tile_pixels,
+                                                                 object_bounds=True),
+                                            original_sample=False, edited_sample=True)
             if args.pattern_transfer_only:
                 check_pattern_tile_variants(binary, transfer_chain, Path(temporary),
                                             ready="data-component-transfer-ready",
