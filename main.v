@@ -458,6 +458,7 @@ mut:
 	portable_svg_group_textures         [portable_svg_raster_slots]PortableSVGGroupSlot
 	portable_background_text_clip       ?PortableBackgroundTextClip
 	portable_background_clip_replay     PortableBackgroundClipReplay
+	portable_rounded_image_clip_cache   &PortableRoundedImageClipCache = unsafe { nil }
 	portable_canvas_images              []PortableCanvasImage
 	portable_canvas_image_index         int
 	draw_command_depth  int
@@ -6832,8 +6833,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					return
 				}
 			}
-			// The portable renderer has no rounded image clip, but preserve the
-			// source rectangle produced by clipping cover/none destinations.
+			// Preserve the source rectangle produced by clipping cover/none destinations.
 			left := math.max(f64(destination.x), f64(clip.x))
 			top := math.max(f64(destination.y), f64(clip.y))
 			right := math.min(f64(destination.right()), f64(clip.right()))
@@ -6847,12 +6847,17 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			source_height := f32((bottom - top) * f64(image.height) / f64(destination.height))
 			screen_left, screen_top := paint_screen_point(*command, left, top, page_x, page_y, scroll_y)
 			screen_right, screen_bottom := paint_screen_point(*command, right, bottom, page_x, page_y, scroll_y)
-			app.ctx.draw_image_with_config(
+			image_config := gg.DrawImageConfig{
 				img: image
 				img_rect: gg.Rect{math.min(screen_left, screen_right), math.min(screen_top, screen_bottom), math.abs(screen_right - screen_left), math.abs(screen_bottom - screen_top)}
 				part_rect: gg.Rect{source_x, source_y, source_width, source_height}
 				color: gg.rgba(255, 255, 255, u8(clamp(command.opacity * 255.0, 0.0, 255.0)))
-			)
+			}
+			if paintable.border_radii.has_any_radius()
+				&& app.draw_portable_rounded_image(command, image_config, result, page_x, page_y, scroll_y) {
+				return
+			}
+			app.ctx.draw_image_with_config(image_config)
 		}
 		'draw_canvas' {
 			bitmap := command.canvas_bitmap or { return }

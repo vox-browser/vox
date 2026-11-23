@@ -296,6 +296,83 @@ def check_gradient_browser(binary, artifacts, temporary):
     print("PASS: clipped gradient text, foreground painting, ramps and rounded clip reuse", flush=True)
 
 
+def check_rounded_image_browser(binary, artifacts, temporary):
+    def chunk(name, data):
+        return struct.pack(">I", len(data)) + name + data + struct.pack(">I", zlib.crc32(name + data))
+
+    def image_url(width, height, scanlines):
+        png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+               + chunk(b"IDAT", zlib.compress(scanlines)) + chunk(b"IEND", b""))
+        return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+
+    paper, green, blue = bytes.fromhex("101820"), bytes.fromhex("208040"), bytes.fromhex("2868b0")
+    colors = (bytes.fromhex("c83838"), green, blue, bytes.fromhex("c8c038"))
+    scanline = b"\0" + b"".join((color + b"\xff") * 12 for color in colors)
+    src = image_url(48, 24, scanline * 24)
+    mip_scanlines = b"".join(b"\0" + b"".join(bytes(((x * 11 + y * 7) % 256,
+                                                    (x * 9 + y * 23) % 256,
+                                                    (x * 21 + y * 13) % 256, 255))
+                                               for x in range(128)) for y in range(128))
+    mip_src = image_url(128, 128, mip_scanlines)
+    page = Path(temporary) / "portable-rounded-images.html"
+    page.write_text(f'''<!doctype html><title>Portable rounded raster images</title>
+<style>
+body {{ margin: 0; background: #101820 }}
+#marker {{ width: 8px; height: 8px; background: #ea70b5 }}
+img {{ position: absolute; top: 16px; display: block; width: 24px; height: 24px; object-fit: cover }}
+.circle {{ border-radius: 50% }}
+</style>
+<div id="marker"></div>
+<img class="circle" style="left:16px" src="{src}">
+<img style="left:56px" src="{src}">
+<img style="left:96px;border-radius:12px 0 0 0" src="{src}">
+<img class="circle" style="left:136px;object-fit:contain" src="{src}">
+<img class="circle" style="left:176px" src="{mip_src}">
+<img style="left:216px" src="{mip_src}">
+<img class="circle" style="left:256px" src="{src}">
+<img class="circle" style="left:296px;transform:translate(.25px,.5px)" src="{src}">
+''')
+    squares = []
+    clipped_documents = []
+    for mode in ("0", "uncached", "1"):
+        disabled = int(mode == "1")
+        screenshot = artifacts / f"portable-rounded-images-{mode}.png"
+        env = smoke_environment(Path(temporary) / screenshot.stem)
+        env["VOX_DISABLE_PORTABLE_ROUNDED_IMAGE_CLIP"] = str(disabled)
+        env["VOX_DISABLE_PORTABLE_IMAGE_CLIP_CACHE"] = str(int(mode == "uncached"))
+        run_windowed([str(binary), "--window-width=800", "--window-height=600",
+                      "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(page)],
+                     env=env, log_path=screenshot.with_suffix(".log"))
+        _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        doc_top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
+
+        def pixel(x, y):
+            return rows[doc_top + y][x * channels:x * channels + 3]
+
+        for x in (16, 56, 96):
+            assert pixel(x + 6, 28) == green and pixel(x + 18, 28) == blue
+        assert pixel(56, 16) == green and pixel(79, 39) == blue
+        assert pixel(16, 16) == (green if disabled else paper)
+        assert pixel(39, 39) == (blue if disabled else paper)
+        assert pixel(96, 16) == (green if disabled else paper)
+        assert pixel(119, 16) == blue and pixel(96, 39) == green
+        assert pixel(142, 28) == green and pixel(154, 28) == colors[3]
+        assert pixel(147, 16) == paper
+        # Fully covered pixels must sample the same mipmap as the square image.
+        for y in range(23, 33):
+            for x in range(7, 17):
+                rounded = pixel(176 + x, y)
+                square = pixel(216 + x, y)
+                assert all(abs(a - b) <= 1 for a, b in zip(rounded, square)), (x, y, rounded, square)
+        if not disabled:
+            assert any(pixel(x, y) not in (green, paper) for x in range(16, 26) for y in range(16, 24))
+            clipped_documents.append(rows[doc_top:doc_top + 516])
+        squares.append([pixel(x, y) for y in range(16, 40) for x in (*range(56, 80), *range(216, 240))])
+    assert all(square == squares[0] for square in squares[1:]), "Rounded clipping changed the rectangular image"
+    assert clipped_documents[0] == clipped_documents[1], "Cached coverage changed rounded image pixels"
+    print("PASS: rounded raster images, antialiasing, object-fit crops and mipmaps", flush=True)
+
+
 def check_web_font_pixels(data):
     _, _, channels, rows = rendered_png_rows(data)
 
@@ -3451,6 +3528,7 @@ def main():
         print("PASS: local HTML and scripted layout")
         check_webgl_browser(binary, artifacts, temporary)
         check_gradient_browser(binary, artifacts, temporary)
+        check_rounded_image_browser(binary, artifacts, temporary)
         check_web_font_browser(binary, artifacts, temporary)
         check_web_font_texture_cache(binary, artifacts, temporary)
         check_web_font_scroll_reuse(binary, artifacts, temporary)

@@ -1,5 +1,85 @@
 # Migrating from Skia to vlib/gg
 
+## Rounded raster images in portable replay
+
+The portable replaced-image draw now carries the image element's own
+`border-radius` into replay. This fixes the square Veery portrait on
+Linux. The draw retains the source crop computed from `object-fit`.
+For axis-aligned images, the shared antialiased raster clip supplies
+disjoint coverage rectangles. GG batches those rectangles in document
+order against the original texture and sampler, preserving its mipmaps.
+The vertex budget and other affine transforms can use a viewport-bounded
+raster fallback. Images with square corners keep their single GG quad.
+Each tab can retain one set of up to 128 coverage rectangles. The key
+includes the clip geometry in local device coordinates and the visible
+dimensions, so whole-pixel movement and matching images can share it.
+Fractional offsets and changed visible crops use their own coverage.
+
+The first implementation resampled every rounded image. A live
+[vlang.io](https://vlang.io/) capture showed the intended corner but
+changed the center of the portrait from RGB `167,96,58` to `138,85,44`.
+The controlled downsampling fixture reproduced that sampling change.
+The raster coverage test matched the disjoint spans to every reference
+alpha, including an opaque run longer than 255 pixels and the span limit.
+
+The Linux ARM64 diagnostic builds used V `5a39a4d`, a single Clang
+18.1.3 `-O0` unit and the canonical checkout with working changes present.
+The final cached build at HEAD `644ce78e` had executable SHA-256
+`2cb95bd842e6ccd5f8666f15b927e3f2d8677bcba7e86460bf7738a4834dc691`.
+Under Xvfb and Mesa software OpenGL, headless startup and the portable
+gradient and rounded-image window tests passed. The image test verified
+asymmetric corners, antialiasing, `cover` cropping, `contain` letterboxing
+and bit-exact square controls. The centered 128 × 128 → 24 × 24 samples
+agreed with the square draw within one channel level. Cached and uncached
+document pixels matched exactly, including a fractional translation.
+The executable, test driver and loaded library hashes held through the
+checks. Browser and 3 GiB guard exits were zero. The Windows x64 D3D11
+production-mode C-backend source check of the cached change passed in
+37.1 seconds. Its guard recorded 5,169,037,312 bytes of peak sampled
+process-tree RSS. Windows runtime remains unverified.
+
+The timing workload displayed two 24 × 24 badges every 84 CSS pixels
+for 32 rows. Its fixture SHA-256 was
+`003399a6ab40289551bda5a4158da7f5e01ae7e96c0d798992cdc2327b82caf4`.
+Each run launched a fresh process and profile, retained OS caches, used
+an 800 × 516 document viewport at 1×, settled for one second and completed
+32 synthetic 42 px callbacks. Scroll offsets and paint-command counts
+matched. The first CPU-resampling build and the uncached span build each
+ran four paired modes. Their rounded replay medians with clipping off/on
+were 0.937/2.672, 0.881/2.443, 0.989/2.015 and 4.452/2.086 ms for CPU
+resampling, then 2.771/3.288, 1.343/3.200, 2.813/2.033 and 1.548/2.837 ms
+for spans. The software controls varied substantially between builds.
+
+Four alternating triplets on the final executable compared clipping
+disabled, uncached spans and cached spans. Browser, driver and 3 GiB
+guard exits were zero. Guest one-minute load at trial starts was
+0.46–1.50. Host one-minute load was 11.26 before and 10.44 after the
+cohort on 18 logical CPUs.
+
+| Triplet | Median replay (ms) | p95 (ms) | Max (ms) | Median allocation (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.898 / 1.565 / 1.333 | 1.160 / 3.725 / 3.606 | 2.815 / 3.897 / 4.035 | 528.5 / 954.0 / 590.0 |
+| 2 | 1.382 / 2.408 / 1.482 | 1.699 / 5.888 / 3.563 | 4.655 / 6.263 / 4.097 | 527.5 / 952.5 / 590.5 |
+| 3 | 1.298 / 2.033 / 1.149 | 3.775 / 4.930 / 3.352 | 4.638 / 5.013 / 3.354 | 528.0 / 953.5 / 590.5 |
+| 4 | 0.940 / 2.308 / 1.210 | 1.110 / 5.552 / 3.103 | 3.032 / 5.669 / 3.646 | 528.0 / 952.5 / 591.0 |
+
+The cache saved 361.5–364.0 KiB per callback and reduced median replay
+by 15–48% against uncached spans. Compared with clipping disabled,
+median replay rose by 0.10–0.44 ms in three triplets and fell by
+0.15 ms in one. These observations cover synthetic software callbacks.
+Optimized hardware performance remains open.
+
+The first live span-only attempt reached its 65-second capture deadline.
+Two fresh 1280 × 800 live Linux runs of the cached executable used a
+110-second per-browser deadline and reached complete readiness with
+JavaScript enabled. The Veery portrait's top-left pixel matched the
+adjacent background at RGB `9,11,15` when clipped. With clipping
+disabled it was `254,254,254`. The center was `167,96,58` in both runs.
+The window PNG SHA-256 values with clipping enabled and disabled were
+`df1e6d226aea9d64feb6300f1d560b7d248ee90188ab3128f5781f0ee4a663cb`
+and `545a75c98caea00f63c75a64556bcf732eca48bf1ce178db13fafeb3ba92edce`.
+Both browser processes and the 3 GiB guard exited zero.
+
 ## Rounded clips on portable CSS gradients
 
 The portable gradient painter applies the CSS background's rounded box and
