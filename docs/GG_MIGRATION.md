@@ -4355,8 +4355,41 @@ The private macOS build used the prepared prealloc compiler and
 checkout adblock assets. Its executable SHA-256 was
 `dc04484c3c8465886f896f398e87ff01e879c6415d3f4e6bd2202fad3b58751a`.
 The published macOS control was `9717e8165`. Inputs stayed fixed and
-browser and runtime guard exits were zero. Windows runtime and
-production frame timing remain open.
+browser and runtime guard exits were zero.
+
+The guarded Windows amd64 D3D11 console build started from
+`a0de1675b` with concurrent edits elsewhere in the checkout. It used
+V `4478fc4`, MinGW GCC 16.2.0, and single-unit C
+`-prod -no-prod-options`. Its executable SHA-256 was
+`935aec3a810e645eff5084fc3f32a21f5cf6b30f25852f5dd3bcc9661c1d27bc`.
+The build and its 12 GiB guard exited zero at a sampled process-tree
+RSS peak of 9,909,534,720 bytes. All 23 driver unit tests passed.
+The first Windows guest attempt reached its 25-minute host timeout
+during setup. The retry used multithreaded QEMU TCG and pre-extracted
+inputs on a virtual USB disk. The Windows 11 desktop ran the same
+`--nested` runner with CPython 3.12.10. [Python release](https://www.python.org/downloads/release/python-31210/)
+
+| Windows D3D11 fixture | Cache | Browser PID | Peak job committed bytes |
+| --- | --- | ---: | ---: |
+| Nested image and stroke | Enabled | 820 | 599,527,424 |
+| Nested image and stroke | Disabled | 2548 | 579,547,136 |
+| Shared delayed bitmap | Enabled | 2264 | 581,050,368 |
+| Shared delayed bitmap | Disabled | 604 | 578,461,696 |
+
+All four browser and 3 GiB guard exits were zero. Each fixture's
+800 × 516 document RGBA was identical with and without caching.
+The nested document and the shared fixture's 1× RGB crop matched
+their Linux references. The shared document SHA-256 was
+`068ee5dd2afeb5ae3f40162bfe2eeb5bca31cef031e9d9e593ebfb92ff78fd0b`.
+Windows traces showed the same 4,224 to 1,856 tile-pixel reduction
+in the first complete replay. The executable, DLLs, guard, fixtures,
+and runners retained their pinned identities. [Nested bitmap capture](#bitmap-content-in-nested-svg-pattern-tiles)
+
+The retry VM shut down normally under the 12 GiB host guard with a
+sampled peak RSS of 9,355,296,768 bytes. The installed Windows disk
+and UEFI variables retained their original hashes. These captures
+verify D3D11 rendering in the emulated guest. Hardware frame timings
+remain open.
 
 ## Sharing the portable SVG fallback with Windows
 

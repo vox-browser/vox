@@ -218,7 +218,8 @@ The check serves a delayed PNG from loopback, launches fresh guarded
 windows with the portable SVG group cache enabled and disabled, and
 compares the captured document pixels. It records both child exits, the
 browser and adjacent DLL hashes, and the SVG cache diagnostics. Pass
-`--nested` to check the delayed bitmap when it paints a nested fill and stroke.
+`--nested` to run both nested bitmap fixtures, including the case that
+checks tile reuse after the bitmap arrives.
 
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:
