@@ -4,12 +4,22 @@
 <style>
 body { margin: 0; background: #101820 }
 #marker { width: 8px; height: 8px; background: #ea70b5 }
-video { position: absolute; left: 16px; top: 16px; display: block }
+video, canvas { position: absolute; top: 16px; display: block; border-radius: 24px }
+video { left: 16px }
+#canvas { left: 144px }
+#rotated { left: 224px; transform: rotate(15deg) }
 </style>
 <body>
 <div id="marker"></div>
 <video id="clip" autoplay muted playsinline width="96" height="64" src="portable-video.mp4"></video>
+<canvas id="canvas" width="48" height="48"></canvas>
+<canvas id="rotated" width="48" height="48"></canvas>
 <script>
+for (const id of ['canvas', 'rotated']) {
+    const context = document.getElementById(id).getContext('2d');
+    context.fillStyle = 'rgba(0, 240, 144, 0.5)';
+    context.fillRect(0, 0, 48, 48);
+}
 const clip = document.getElementById('clip');
 let seekingToSecondScene = false;
 clip.addEventListener('timeupdate', () => {

@@ -62,12 +62,32 @@ $if linux || windows {
 		image := app.ctx.get_cached_image_by_idx(slot.image_id)
 		x1, y1 := paint_screen_point(*command, left, top, page_x, page_y, scroll_y)
 		x2, y2 := paint_screen_point(*command, right, bottom, page_x, page_y, scroll_y)
-		app.ctx.draw_image_with_config(
+		config := gg.DrawImageConfig{
 			img: image
 			img_rect: gg.Rect{math.min(x1,x2),math.min(y1,y2),math.abs(x2-x1),math.abs(y2-y1)}
 			part_rect: gg.Rect{f32((left-f64(destination.x))*f64(bitmap.width)/f64(destination.width)),f32((top-f64(destination.y))*f64(bitmap.height)/f64(destination.height)),f32((right-left)*f64(bitmap.width)/f64(destination.width)),f32((bottom-top)*f64(bitmap.height)/f64(destination.height))}
 			color: gg.rgba(255,255,255,u8(clamp(command.opacity*255,0,255)))
-		)
+		}
+		if !disable_portable_rounded_image_clip {
+			rounded := if canvas := command.canvas_paintable {
+				canvas.border_radii.has_any_radius()
+			} else if video := command.video_paintable {
+				video.border_radii.has_any_radius()
+			} else {
+				false
+			}
+			if rounded {
+				data := replaced_image_gpu_clip_data(command, clip, painting.CornerRadii{}, -1)
+				geometry := painting.DrawScaledDecodedImageFrame{
+					destination: destination
+					clip_rect: clip
+					scaling: scaling
+				}
+				if app.draw_portable_rounded_bitmap(command, config, geometry, data, bitmap,
+					page_x, page_y, scroll_y) { return }
+			}
+		}
+		app.ctx.draw_image_with_config(config)
 	}
 
 	fn (mut app BrowserApp) finish_portable_canvas_frame() {

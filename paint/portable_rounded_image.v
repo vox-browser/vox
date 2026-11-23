@@ -1,6 +1,7 @@
 module main
 
 import cpuraster
+import dom
 import gg
 import layout
 import math
@@ -50,12 +51,18 @@ fn (mut app BrowserApp) portable_image_clip_spans(key PortableRoundedImageClipKe
 fn (mut app BrowserApp) draw_portable_rounded_image(command &layout.PaintCommand, config gg.DrawImageConfig,
 	result painting.ImagePaintResult, page_x f32, page_y f32, scroll_y f64) bool {
 	if disable_portable_rounded_image_clip { return false }
+	data := replaced_image_gpu_clip_data(command, result.bitmap.clip_rect, result.clip_radii, -1)
+	return app.draw_portable_rounded_bitmap(command, config, result.bitmap, data, none,
+		page_x, page_y, scroll_y)
+}
+
+fn (mut app BrowserApp) draw_portable_rounded_bitmap(command &layout.PaintCommand, config gg.DrawImageConfig,
+	geometry painting.DrawScaledDecodedImageFrame, data [12]f32, bitmap ?&dom.Bitmap_,
+	page_x f32, page_y f32, scroll_y f64) bool {
 	image := config.img
-	clip := result.bitmap.clip_rect
-	data := replaced_image_gpu_clip_data(command, clip, result.clip_radii, -1)
 	radii := [data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11]]!
 	if radii[..].all(it <= 0) { return false }
-	replay := replaced_image_replay_rects(result.bitmap.destination, clip, image.width,
+	replay := replaced_image_replay_rects(geometry.destination, geometry.clip_rect, image.width,
 		image.height, true) or { return true }
 	draw := replay.destination
 	scale := f64(app.ctx.scale)
@@ -78,25 +85,35 @@ fn (mut app BrowserApp) draw_portable_rounded_image(command &layout.PaintCommand
 		}
 		if app.draw_portable_image_clip_spans(config, bounds, shape) { return true }
 	}
-	// When the affine transform or span count requires rasterizing the image,
-	// the portable cache can supply packed straight RGBA bytes.
-	if image.data == unsafe { nil } || image.nr_channels != 4 { return false }
+	// Streaming textures keep their source pixels in the retained bitmap.
+	// Read them only when the transform or clip exceeds the quad path's limits.
+	source := if retained := bitmap {
+		cpuraster.CanvasBitmap{
+			pixels: retained.data
+			width: retained.width
+			height: retained.height
+			pitch: retained.pitch
+			premultiplied: retained.alpha_type in [u8(0), 2]
+		}
+	} else {
+		if image.data == unsafe { nil } || image.nr_channels != 4 { return false }
+		pitch := image.width * 4
+		cpuraster.CanvasBitmap{
+			pixels: unsafe { (&u8(image.data)).vbytes(pitch * image.height) }
+			width: image.width
+			height: image.height
+			pitch: pitch
+		}
+	}
 	matrix := portable_svg_surface_matrix(transform, bounds)
 	path := cpuraster.rounded_rect(cpuraster.Rect{data[0], data[1], data[0] + data[2],
 		data[1] + data[3]}, radii).clip_path(cpuraster.Matrix{matrix[0], matrix[1],
 		matrix[2], matrix[3], matrix[4], matrix[5]})
-	pitch := image.width * 4
-	source := cpuraster.CanvasBitmap{
-		pixels: unsafe { (&u8(image.data)).vbytes(pitch * image.height) }
-		width: image.width
-		height: image.height
-		pitch: pitch
-	}
 	mut pixels := []u8{len: bounds.width * bounds.height * 4}
 	if !cpuraster.draw_canvas_image(mut pixels, bounds.width, bounds.height, bounds.width * 4, 2,
 		matrix, source, replay.source,
 		[f32(draw.x), f32(draw.y), f32(draw.width), f32(draw.height)]!,
-		result.bitmap.scaling != .nearest_neighbor, 1, .src_over, [path]) {
+		geometry.scaling != .nearest_neighbor, 1, .src_over, [path]) {
 		return false
 	}
 	cpuraster.unpremultiply_rgba_in_place(mut pixels)

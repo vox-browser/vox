@@ -59,7 +59,7 @@ fn replaced_image_gpu_ancestor_clip_index(command &layout.PaintCommand) int {
 	return rectangle_index
 }
 
-// Images, video frames and posters share the same GPU clip representation.
+// Images, video frames, posters and canvases share the same GPU clip representation.
 // The caller retains the replaced element's rectangular clip when transferring
 // one ancestor, so object-fit cropping remains independent of overflow rounding.
 fn replaced_image_gpu_clip_data(command &layout.PaintCommand, rect painting.IntRect,
@@ -83,6 +83,13 @@ fn replaced_image_gpu_clip_data(command &layout.PaintCommand, rect painting.IntR
 		}
 	} else if command.kind == 'draw_video' {
 		if paintable := command.video_paintable {
+			mut own := paintable.border_radii
+			borders := paintable.border_widths
+			own.shrink(borders.top, borders.right, borders.bottom, borders.left)
+			return replaced_image_gpu_fractional_clip(rect, own)
+		}
+	} else if command.kind == 'draw_canvas' {
+		if paintable := command.canvas_paintable {
 			mut own := paintable.border_radii
 			borders := paintable.border_widths
 			own.shrink(borders.top, borders.right, borders.bottom, borders.left)

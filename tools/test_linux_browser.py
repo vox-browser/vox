@@ -332,6 +332,7 @@ img, video {{ position: absolute; top: 16px; display: block; width: 24px; height
 <img class="circle" style="left:256px" src="{src}">
 <img class="circle" style="left:296px;transform:translate(.25px,.5px)" src="{src}">
 <video style="left:336px" preload="none" poster="{src}"></video>
+<video class="circle" style="left:376px" preload="none" poster="{src}"></video>
 ''')
     squares = []
     clipped_documents = []
@@ -353,7 +354,11 @@ img, video {{ position: absolute; top: 16px; display: block; width: 24px; height
 
         for x in (16, 56, 96):
             assert pixel(x + 6, 28) == green and pixel(x + 18, 28) == blue
-        assert pixel(342, 28) == green and pixel(354, 28) == blue, "Missing video poster crop"
+        for x in (336, 376):
+            assert pixel(x + 6, 28) == green and pixel(x + 18, 28) == blue, "Missing video poster crop"
+        assert pixel(336, 16) == green and pixel(359, 39) == blue
+        assert pixel(376, 16) == (green if disabled else paper)
+        assert pixel(399, 39) == (blue if disabled else paper)
         assert pixel(56, 16) == green and pixel(79, 39) == blue
         assert pixel(16, 16) == (green if disabled else paper)
         assert pixel(39, 39) == (blue if disabled else paper)
@@ -399,30 +404,52 @@ def check_web_font_pixels(data):
 
 def check_portable_video_browser(binary, artifacts, temporary):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-video.html"
-    screenshot = artifacts / "portable-video.png"
-    audit = artifacts / "portable-video.json"
     config = artifacts / "portable-video-selectors.json"
     config.write_text(json.dumps({"selectors": [{"name": "clip", "selector": "#clip", "limit": 1}]}))
-    env = smoke_environment(Path(temporary) / "portable-video")
-    env.update(VOX_CAPTURE_READY_SELECTOR="body[data-video-ready]",
-               VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_CAPTURE_AUDIT_PATH=str(audit))
-    run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
-                  "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
-                 env=env, log_path=screenshot.with_suffix(".log"), timeout=45)
-    document = json.loads(audit.read_text())
-    assert document["title"] == "Portable video playback" and document["ready"] == "complete"
-    selections = {item["name"]: item["elements"] for item in document["selections"]}
-    media = selections["clip"][0]["media"]
-    assert media["error_message"] == "" and media["current_src"].endswith("/portable-video.mp4")
-    assert media["paused"] and 1.5 <= media["current_time"] <= 1.7, media
-    assert (media["frame_width"], media["frame_height"]) == (48, 32) and media["frame_sha256"], media
-    _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
-    top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
-    red = rows[top + 29][64 * channels:64 * channels + 3]
-    green = rows[top + 65][64 * channels:64 * channels + 3]
-    assert red[0] >= 235 and max(red[1:]) <= 16, red
-    assert green[1] >= 235 and max(green[0], green[2]) <= 16, green
-    print("PASS: portable video autoplay, paused seek and rendered H.264 frame", flush=True)
+    captures = []
+    for disabled in (False, True):
+        name = "portable-video-square" if disabled else "portable-video"
+        screenshot = artifacts / f"{name}.png"
+        audit = artifacts / f"{name}.json"
+        screenshot.unlink(missing_ok=True)
+        audit.unlink(missing_ok=True)
+        env = smoke_environment(Path(temporary) / name)
+        env.update(VOX_CAPTURE_READY_SELECTOR="body[data-video-ready]",
+                   VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_CAPTURE_AUDIT_PATH=str(audit),
+                   VOX_DISABLE_PORTABLE_ROUNDED_IMAGE_CLIP=str(int(disabled)))
+        run_windowed([str(binary), "--enable-javascript", "--window-width=800", "--window-height=600",
+                      "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(fixture)],
+                     env=env, log_path=screenshot.with_suffix(".log"), timeout=45)
+        document = json.loads(audit.read_text())
+        assert document["title"] == "Portable video playback" and document["ready"] == "complete"
+        selections = {item["name"]: item["elements"] for item in document["selections"]}
+        media = selections["clip"][0]["media"]
+        assert media["error_message"] == "" and media["current_src"].endswith("/portable-video.mp4")
+        assert media["paused"] and 1.5 <= media["current_time"] <= 1.7, media
+        assert (media["frame_width"], media["frame_height"]) == (48, 32) and media["frame_sha256"], media
+        _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
+        top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
+
+        def pixel(x, y):
+            return rows[top + y][x * channels:x * channels + 3]
+
+        red, green = pixel(64, 29), pixel(64, 65)
+        assert red[0] >= 235 and max(red[1:]) <= 16, red
+        assert green[1] >= 235 and max(green[0], green[2]) <= 16, green
+        canvas = pixel(168, 40)
+        assert all(abs(value - expected) <= 1 for value, expected in zip(canvas, (8, 132, 88))), canvas
+        rotated = pixel(248, 40)
+        assert all(abs(a - b) <= 1 for a, b in zip(canvas, rotated)), (canvas, rotated)
+        paper = b"\x10\x18\x20"
+        assert pixel(16, 16) == (red if disabled else paper)
+        assert pixel(111, 79) == (green if disabled else paper)
+        assert pixel(144, 16) == (canvas if disabled else paper)
+        assert pixel(234, 16) == (rotated if disabled else paper)
+        if not disabled:
+            assert paper[1] < pixel(237, 17)[1] < rotated[1], "Missing antialiasing on the rotated canvas edge"
+        captures.append((media["frame_sha256"], red, green, canvas))
+    assert captures[0] == captures[1], "Rounded clips changed the decoded frame or interior sampling"
+    print("PASS: portable video playback and rounded clipping of video frames and canvas", flush=True)
 
 
 def check_web_font_browser(binary, artifacts, temporary):

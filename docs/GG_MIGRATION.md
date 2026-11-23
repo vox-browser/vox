@@ -1,5 +1,31 @@
 # Migrating from Skia to vlib/gg
 
+## Rounded clips on streaming textures
+
+Portable GG replay now applies `border-radius` to video frames, posters
+and canvas elements. Axis-aligned draws use the same cached antialiased
+coverage as ordinary images. They keep the original texture, sampler
+and object-fit crop. Square draws still submit one quad and a paused
+video can keep its uploaded frame. Rotated draws and clips that exceed
+the quad budget use the viewport-bounded raster fallback. The fallback
+reads the retained bitmap with its original alpha representation.
+
+A fresh ARM64 Linux browser used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`, with executable SHA-256
+`3085ceff1add70723350e349c78a92386b4cb12a48c1c278d4066ed47929733d`.
+Headless startup and eight guarded Xvfb captures passed. The video fixture
+paused and sought to the same decoded H.264 frame in both modes, and
+sampled interior colors matched. Its translucent canvas checks covered
+the axis-aligned path and the rotated fallback, including exterior and
+partially covered pixels. The poster kept the `object-fit: cover` crop.
+The rounded-image and gradient comparisons still passed. The compiler,
+linker, browser processes and 3 GiB runtime guard exited zero.
+[Video and canvas fixture](../Tests/Browser/Native/portable-video.html)
+
+The macOS and Windows x64 D3D11 production-mode source checks passed
+with V `4478fc4`. All 21 Python driver tests passed. This change's
+window captures ran on Linux. Hardware frame timings remain open.
+
 ## Portable gradient, rounded image and poster checks
 
 The Linux and Windows window checks share the same gradient and image
