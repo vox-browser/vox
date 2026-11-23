@@ -3002,6 +3002,77 @@ optimization flags and one-minute load of 102.83–129.92 on 18
 logical CPUs limit these measurements to diagnostic replay.
 Windows runtime pixels and display timing remain unverified.
 
+### Mixed color matrices and component transfers inside shared SVG tiles
+
+In `c1e423923`, the shared rasterizer replays up to four adjacent SourceGraphic
+matrix and component-transfer stages in one color space. The
+stage order is preserved and the layer is scanned once. Matrices
+clamp each result, transfer tables round lookup indices, and
+identity channels retain their precision. A zero-alpha result
+becomes transparent black before the next stage. LinearRGB
+replay decodes and encodes once.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitivesOverview)
+
+The live fixture edits a matrix to clear alpha and a transfer
+table to restore it inside the retained crop. macOS at 1× and
+2× and aarch64 Linux under Xvfb passed the fill, translated stroke,
+and alpha mask checks. At 1× the initial 384 × 108 RGB crop
+matched the published macOS renderer with SHA-256
+`6a0bf463b7496d63b17f06966934becbd7a32d8cf19e255c0d554abbb1cb3e2a`.
+The edited shared crops matched with SHA-256
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The published renderer extended gray coverage into 9,840 pixels
+outside the crop in its shifted stroke and mask. Brave's CDP
+reference matched the sampled fill and stroke interiors in both
+states. [Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-transfer.html)
+
+The Linux executable had SHA-256
+`e2f155fa6c67fb41a0b503007563d04566d5473a5efacf1bdd2c94d45e3f597e`.
+Captures covered the portable path with caching enabled and disabled
+in both row-band modes and a separate run with GG SVG enabled.
+The diagnostic Linux link used Clang `-O0` and downgraded a generated
+function-pointer type error in concurrent LibJS code. The fixture
+ran through JavaScriptCore. Focused raster and graph tests, 23
+smoke-driver tests, and Windows D3D11 and OpenGL source checks passed.
+
+Each of two macOS workloads drew 20 fills and 20 strokes with
+the same sRGB matrix and transfer chain. Two alternating pairs
+per workload used fresh processes and private profiles and
+caches, a 1024 × 600 viewport at 1×, and a one-second settle.
+All 48 stationary callbacks drew 42 commands. JavaScript and
+whole-frame raster reuse were disabled. One workload repeated a
+pattern. The other cycled ten patterns through the eight-entry
+cache. Separate diagnostics counted 1,880 shared hits in the
+first workload and 1,880 shared misses in the second between the
+first and last callbacks. The control recorded zero shared hits
+and misses. All 12 RGBA document captures matched with SHA-256
+`2134c5029954da21f391aa27e8c73a07d4ae6daf038085113e7c2263ea147cb6`.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 42.486 / 1.704 | 59.477 / 2.380 | 70.422 / 3.198 | 3 / 3 |
+| Cached 2 | 50.581 / 1.587 | 76.037 / 1.923 | 92.671 / 3.153 | 3 / 3 |
+| Cache pressure 1 | 38.025 / 6.377 | 72.277 / 8.916 | 75.077 / 11.266 | 3 / 3 |
+| Cache pressure 2 | 54.050 / 6.498 | 69.076 / 9.852 | 114.574 / 13.755 | 3 / 3 |
+
+The cached and cache-pressure fixture hashes were
+`f646b75c89981abc71bc2f20c8596655cebfc74b1998db72ced7056fb35459f0`
+and
+`476c975294a5102ea090ac79e56db0e74a930457a6271a6187377db020b2a88d`.
+The pixel control had SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+A new production bundle published before timing started. Its
+literal `-prod` single-C executable had SHA-256
+`c4a8468c151de7e25ec8949497d8d2e9fad7a228a92350ef8231827fbbcd3224`.
+The private single-C candidate used `-prod -no-prod-options`
+with a Clang `-O0` override and had SHA-256
+`c1659787e8e2c50d45fe0ac9c53bf894db2e348524391955bf2171ae83874d65`.
+The timed inputs stayed fixed, including the native library
+and adblock worker. The browsers and guards exited zero.
+Different compiler flags and one-minute load of 108.43–112.06
+on 18 logical CPUs limit the timings to diagnostic replay.
+Windows runtime and display timing remain unverified.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
