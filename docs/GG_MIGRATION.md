@@ -4445,6 +4445,33 @@ edit and 21 driver tests passed. Browser and guard exits were
 zero and pinned inputs stayed fixed. The latest production build
 attempt ran out of space generating its object file.
 
+### Skipping invisible pattern paints in macOS SVG tile keys
+
+In `b0b3b6c9f`, the tile cache follows the shared replay's fill
+and stroke checks before visiting a nested pattern. A missing
+bitmap under a zero-opacity fill, a zero-opacity stroke, or a
+zero-width stroke no longer keeps the outer tile uncacheable.
+
+The `9717e8165` control rasterized each fixture tile four times.
+At both densities, the candidate rasterized the tile with only
+hidden patterns once and reused it three times. The other tile
+still waited for its visible bitmap and reused the first complete
+raster. Total tile rasters fell from eight to four per capture.
+Decoded document RGBA matched pixel for pixel, with 1× SHA-256
+`34a707f63786d68eab2740808f4beb5e178104adaac9889e9712e5b74332c5c6`
+and 2× SHA-256
+`303db1259c8bd9b4ddf8daf7d759765af3466969c200dd31aecffb5e3a41e4ea`.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-pattern-paint.html)
+
+The private macOS build used V `4478fc4` with prealloc and
+single-unit Clang `-O0`. The executable SHA-256 was
+`3d47833b3697c99b8b9a80215b695a520931e391552eca7aae29310eb2c68aa6`.
+Peak sampled build RSS was 11,608,276,992 bytes under the 12 GiB
+guard. The delayed bitmap suite, live opacity-filter edit and
+21 driver unit tests passed. Browser and guard exits were zero
+and pinned inputs stayed fixed. The overlapping production
+build stopped when the source inputs changed before preprocessing.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
