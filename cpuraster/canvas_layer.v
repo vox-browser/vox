@@ -113,6 +113,46 @@ pub fn restore_canvas_opacity_layer(mut pixels []u8, pitch int, target_height in
 		[f32(1), 0, 0, 1, 0, 0]!, image, rect, rect, false, opacity, .src_over, [])
 }
 
+// Restore an isolated SourceAlpha result at full opacity. The clip is local
+// to the source band and pixels outside it leave the target untouched.
+pub fn restore_canvas_source_alpha_layer(mut pixels []u8, pitch int, target_height int,
+	first_row int, image CanvasBitmap, clip IRect) bool {
+	if !untiled_device(pixels, image.width, target_height, pitch)
+		|| !untiled_device(image.pixels, image.width, image.height, image.pitch)
+		|| first_row < 0 || first_row > target_height - image.height
+		|| raster_spans_overlap(u64(uint(image.pixels.data)), image.pixels.len,
+			u64(uint(pixels.data)), pixels.len) {
+		return false
+	}
+	visible := clip.intersect(IRect{0, 0, image.width, image.height}) or { return true }
+	source_start := visible.top * image.pitch + visible.left * 4
+	target_start := (first_row + visible.top) * pitch + visible.left * 4
+	scan := SpriteBlendScan{
+		source:       image.pixels[source_start..]
+		target:       pixels[target_start..]
+		source_pitch: image.pitch
+		target_pitch: pitch
+		width:        visible.width()
+	}
+	run_raster_scans(&scan, visible.height(), visible.width(), restore_canvas_source_alpha_rows)
+	return true
+}
+
+@[direct_array_access]
+fn restore_canvas_source_alpha_rows(context voidptr, first i32, end i32) {
+	scan := unsafe { &SpriteBlendScan(context) }
+	mut target := unsafe { scan.target }
+	for y in int(first) .. int(end) {
+		source_row := y * scan.source_pitch
+		target_row := y * scan.target_pitch
+		for x in 0 .. scan.width {
+			offset := x * 4
+			black := u32(scan.source[source_row + offset + 3]) << 24
+			blit_s32a_opaque_pixel(mut target, target_row + offset, black)
+		}
+	}
+}
+
 fn restore_lowp_canvas_layer(mut pixels []u8, pitch int, image CanvasBitmap, opacity f32) bool {
 	width, height := image.width, image.height
 	if !image.premultiplied || image.display_p3 || !(opacity >= 0 && opacity <= 1)
