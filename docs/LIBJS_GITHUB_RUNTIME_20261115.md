@@ -11831,3 +11831,17 @@ chooses ciphers in its own order.
   entries on first read: matching read it about 80 times per check through a
   proxy trap while a page loads only about 190 of its 7,499 entries. A warm
   check drops from 282K to 142K instructions; worker median 528M to 502M.
+- Where JavaScript time goes (`VOX_JSC_SAMPLING_PROFILE`, 939 samples on
+  one load): host functions, that is the V bridge and the DOM work behind
+  it, 53% of self time; GitHub's own scripts about 27% (react-dom 67,
+  react-core 23, code-view 22, pb 21, core 19); the rest is Vox's injected
+  facade code and builtins (`JSON.parse` 17, `JSON.stringify` 8). In the
+  process sample the heaviest bridge entry is MutationObserver delivery
+  (121 samples), almost all of it GitHub's own observer callbacks (105); the
+  bridge's JSON marshalling is about 12% of the time under JavaScript calls,
+  spread across many actions, with first-time element states the only JSON
+  replies (later replies are identity references).
+- A same-binary JSC tiering cohort (`JSC_useFTLJIT=false`,
+  `JSC_numberOfGCMarkers=1`) gave no usable result: host load averages were
+  100-120, and every arm spread from 19.9B to 23.6B with load times of 4.2 s
+  to 5.4 s. Repeat it on a quiet host.
