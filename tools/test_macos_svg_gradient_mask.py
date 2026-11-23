@@ -13,7 +13,8 @@ import tempfile
 from test_linux_browser import (check_svg_color_matrix_alpha_tile_pixels,
                                 check_svg_color_matrix_bias_tile_pixels,
                                 check_svg_color_matrix_tile_pixels,
-                                check_svg_component_transfer_tile_pixels, check_svg_mask_gradient_pixels,
+                                check_svg_component_transfer_chain_pixels, check_svg_component_transfer_tile_pixels,
+                                check_svg_mask_gradient_pixels,
                                 check_svg_nested_tile_device_pixels,
                                 check_svg_opacity_filter_tile_pixels, check_svg_pattern_tile_image_pixels,
                                 check_svg_tile_fill_stroke_pixels, rendered_png_rows,
@@ -657,6 +658,9 @@ def main():
         if args.pattern_standalone_only:
             bitmap = fixture.with_name("svg-pattern-tile-image-strokes.html")
             inputs.append(bitmap)
+        if args.pattern_transfer_only:
+            transfer_chain = fixture.with_name("svg-pattern-tile-component-transfer-chain.html")
+            inputs.append(transfer_chain)
         matrix_fixtures = []
         if args.pattern_matrix_only:
             matrix_fixtures = [
@@ -673,6 +677,11 @@ def main():
             check_pattern(binary, pattern, Path(temporary))
             if args.pattern_standalone_only:
                 check_pattern_tile_with_delayed_image(binary, bitmap, Path(temporary))
+            if args.pattern_transfer_only:
+                check_pattern_tile_variants(binary, transfer_chain, Path(temporary),
+                                            ready="data-component-transfer-ready",
+                                            check_pixels=check_svg_component_transfer_chain_pixels,
+                                            original_sample=False, edited_sample=True)
             for matrix, check_pixels in matrix_fixtures:
                 check_pattern_tile_variants(binary, matrix, Path(temporary),
                                             ready="data-color-matrix-ready",

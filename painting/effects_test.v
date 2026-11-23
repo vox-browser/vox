@@ -116,11 +116,31 @@ fn test_source_color_table_retains_missing_channels_and_alpha_coverage() {
 	assert effect.fills_clear_pixels()
 	assert !effect.preserves_alpha()
 	if effect is SVGSourceColorTable {
-		assert effect.channels[0].len == 0
-		assert effect.channels[3][0] == 153
+		assert effect.stages.len == 1
+		assert effect.stages[0][0].len == 0
+		assert effect.stages[0][3][0] == 153
 	} else {
 		assert false
 	}
+}
+
+fn test_source_color_filter_follows_only_adjacent_component_transfers() {
+	source := GfxFilterNode{kind: 'color-table', input_ids: [-1]}
+	second := GfxFilterNode{id: 1, kind: 'color-table', input_ids: [0]}
+	chain := GfxFilter{nodes: [source, second], root_id: 1}
+	effect := chain.source_color_filter() or { panic('expected a color table chain') }
+	assert effect.preserves_alpha()
+	assert !effect.fills_clear_pixels()
+	if effect is SVGSourceColorTable {
+		assert effect.stages.len == 2
+	} else {
+		assert false
+	}
+
+	branch := GfxFilter{nodes: [source, GfxFilterNode{...second, input_ids: [-1]}], root_id: 1}
+	assert !branch.supports_source_color_filter()
+	earlier_root := GfxFilter{nodes: chain.nodes, root_id: 0}
+	assert !earlier_root.supports_source_color_filter()
 }
 
 fn test_transition_hints_expand_to_five_sampled_stops() {

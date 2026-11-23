@@ -70,8 +70,8 @@ fn portable_svg_mask_pattern_info(style &painting.SVGPatternPaintStyle, limit in
 		operation := &list.operations[index]
 		if operation.kind == .begin_filter {
 			filter := operation.filter?
-			if filter.opacity_filter_amount() == none {
-				filter.source_color_node()?
+			if filter.opacity_filter_amount() == none && !filter.supports_source_color_filter() {
+				return none
 			}
 		}
 		has_images = has_images || (operation.kind == .image && operation.opacity != 0)
@@ -141,8 +141,8 @@ fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, width int, hei
 					effect.linear_rgb)
 			}
 			painting.SVGSourceColorTable {
-				cpuraster.apply_canvas_color_table_in_place(mut layer.pixels, width,
-					layer.rows.height(), effect.channels, effect.linear_rgb)
+				cpuraster.apply_canvas_color_tables_in_place(mut layer.pixels, width,
+					layer.rows.height(), effect.stages, effect.linear_rgb)
 			}
 		}
 		if !applied { return false }

@@ -180,7 +180,7 @@ pub:
 
 pub struct SVGSourceColorTable {
 pub:
-	channels   [4][]u8
+	stages     [][4][]u8
 	linear_rgb bool
 }
 
@@ -189,7 +189,7 @@ pub type SVGSourceColorFilter = SVGSourceColorMatrix | SVGSourceColorTable
 pub fn (filter SVGSourceColorFilter) fills_clear_pixels() bool {
 	return match filter {
 		SVGSourceColorMatrix { filter.values[19] > 0 }
-		SVGSourceColorTable { filter.channels[3].len > 0 && filter.channels[3][0] > 0 }
+		SVGSourceColorTable { filter.map_alpha(0) > 0 }
 	}
 }
 
@@ -197,12 +197,28 @@ pub fn (filter SVGSourceColorFilter) preserves_alpha() bool {
 	return match filter {
 		SVGSourceColorMatrix { filter.preserves_alpha }
 		SVGSourceColorTable {
-			for index, value in filter.channels[3] {
-				if index != int(value) { return false }
+			if filter.stages.len == 1 {
+				for index, value in filter.stages[0][3] {
+					if index != int(value) { return false }
+				}
+				return true
+			}
+			for index in 0 .. 256 {
+				if filter.map_alpha(u8(index)) != u8(index) { return false }
 			}
 			true
 		}
 	}
+}
+
+fn (table &SVGSourceColorTable) map_alpha(input u8) u8 {
+	mut value := input
+	for channels in table.stages {
+		if channels[3].len > 0 {
+			value = channels[3][value]
+		}
+	}
+	return value
 }
 
 fn (node &GfxFilterNode) converts_color_space(input int, source string, destination string) bool {
@@ -211,58 +227,86 @@ fn (node &GfxFilterNode) converts_color_space(input int, source string, destinat
 		&& node.string_parameters['destination'] == destination
 }
 
-// Test the retained graph before looking up a cached tile. Preparing a
-// matrix or an RGBA lookup table only happens on a cache miss.
-pub fn (filter GfxFilter) source_color_node() ?&GfxFilterNode {
-	if filter.operations.len != 0 || filter.nodes.len !in [1, 3] { return none }
+struct SVGSourceColorSpan {
+	start      int
+	end        int
+	linear_rgb bool
+}
+
+const svg_source_color_max_tables = 4
+
+// Limit the shared graph to a single matrix or a short sequence of tables
+// in one color space. The hot path only walks the graph descriptors.
+pub fn (filter GfxFilter) supports_source_color_filter() bool {
+	return filter.source_color_span() != none
+}
+
+fn (filter GfxFilter) source_color_span() ?SVGSourceColorSpan {
+	if filter.operations.len != 0 || filter.nodes.len == 0
+		|| filter.nodes.len > svg_source_color_max_tables + 2 { return none }
 	root := filter.root_id?
-	linear_rgb := filter.nodes.len == 3
-	node := &filter.nodes[if linear_rgb { 1 } else { 0 }]
+	linear_rgb := filter.nodes[0].kind == 'color-space-conversion'
+	start := if linear_rgb { 1 } else { 0 }
+	end := filter.nodes.len - start
+	count := end - start
+	if count <= 0 || count > svg_source_color_max_tables
+		|| root != filter.nodes[filter.nodes.len - 1].id {
+		return none
+	}
+	mut expected_input := -1
 	if linear_rgb {
 		decode := &filter.nodes[0]
-		encode := &filter.nodes[2]
-		if decode.id != 0 || node.id != 1 || encode.id != 2 || root != encode.id
+		encode := &filter.nodes[end]
+		if decode.id != 0 || encode.id != end
 			|| !decode.converts_color_space(-1, 'srgb', 'linear-rgb')
-			|| !encode.converts_color_space(node.id, 'linear-rgb', 'srgb') {
+			|| !encode.converts_color_space(end - 1, 'linear-rgb', 'srgb') {
 			return none
 		}
-	} else if node.id != root {
-		return none
+		expected_input = decode.id
 	}
-	expected_input := if linear_rgb { filter.nodes[0].id } else { -1 }
-	if node.input_ids.len != 1 || node.input_ids[0] != expected_input {
-		return none
-	}
-	match node.kind {
-		'color-matrix' {
-			if node.matrix.len != 20 || !node.matrix.all(math.is_finite(f64(f32(it)))) { return none }
+	for index in start .. end {
+		node := &filter.nodes[index]
+		if node.input_ids.len != 1 || node.input_ids[0] != expected_input
+			|| ((linear_rgb || count > 1) && node.id != index) {
+			return none
 		}
-		'color-table' {
-			if node.color_tables.len > 4
-				|| !node.color_tables.all(it.values.len == 256 && it.channel in ['red', 'green', 'blue', 'alpha']) {
-				return none
+		match node.kind {
+			'color-matrix' {
+				if count != 1 || node.matrix.len != 20
+					|| !node.matrix.all(math.is_finite(f64(f32(it)))) { return none }
 			}
+			'color-table' {
+				if node.color_tables.len > 4
+					|| !node.color_tables.all(it.values.len == 256 && it.channel in ['red', 'green', 'blue', 'alpha']) {
+					return none
+				}
+			}
+			else { return none }
 		}
-		else { return none }
+		expected_input = node.id
 	}
-	return node
+	return SVGSourceColorSpan{start, end, linear_rgb}
 }
 
 pub fn (filter GfxFilter) source_color_filter() ?SVGSourceColorFilter {
-	node := filter.source_color_node()?
-	linear_rgb := filter.nodes.len == 3
+	span := filter.source_color_span()?
+	node := &filter.nodes[span.start]
 	if node.kind == 'color-table' {
-		mut channels := [4][]u8{}
-		for table in node.color_tables {
-			index := match table.channel {
-				'red' { 0 }
-				'green' { 1 }
-				'blue' { 2 }
-				else { 3 }
+		mut stages := [][4][]u8{cap: span.end - span.start}
+		for index in span.start .. span.end {
+			mut channels := [4][]u8{}
+			for table in filter.nodes[index].color_tables {
+				channel := match table.channel {
+					'red' { 0 }
+					'green' { 1 }
+					'blue' { 2 }
+					else { 3 }
+				}
+				channels[channel] = table.values
 			}
-			channels[index] = table.values
+			stages << channels
 		}
-		return SVGSourceColorTable{channels, linear_rgb}
+		return SVGSourceColorTable{stages, span.linear_rgb}
 	}
 	mut matrix := [20]f32{}
 	for i, value in node.matrix {
@@ -270,7 +314,7 @@ pub fn (filter GfxFilter) source_color_filter() ?SVGSourceColorFilter {
 	}
 	return SVGSourceColorMatrix{
 		values: matrix
-		linear_rgb: linear_rgb
+		linear_rgb: span.linear_rgb
 		preserves_alpha: node.matrix[15] == 0 && node.matrix[16] == 0 && node.matrix[17] == 0
 			&& node.matrix[18] == 1 && node.matrix[19] == 0
 	}

@@ -2288,6 +2288,25 @@ def check_svg_component_transfer_tile_pixels(rows, channels, scale, marker, edit
                 assert actual == expected, (scale, left + x, top + y, actual.hex(), expected.hex())
 
 
+def check_svg_component_transfer_chain_pixels(rows, channels, scale, marker, edited):
+    white, red, lime, black, gray = (bytes.fromhex(color) for color in
+                                    ("ffffff", "e70000", "00ff00", "000000", "666666"))
+    gap = gray if edited else white
+    for left in (0, 128, 256):
+        ink, stripe = (black, black) if left == 256 else (red, lime)
+        if edited:
+            ink = gray
+        for x, y, expected in (
+            (2, 1, white), (1, 2, white), (2, 2, ink), (6, 4, ink),
+            (15, 12, gap), (16, 12, white), (8, 15, gap), (8, 16, white),
+            (8, 18, stripe), (8, 24, ink), (8, 35, gap),
+        ):
+            row = rows[marker + (8 + y) * scale]
+            pos = (left + x) * scale * channels
+            actual = row[pos:pos + 3]
+            assert actual == expected, (scale, left + x, y, actual.hex(), expected.hex())
+
+
 def check_svg_tile_browser(binary, artifacts, temporary, name, *, ready=None, groups=None,
                            check_edited=functools.partial(check_svg_tile_fill_stroke_pixels,
                                                           first_stripe=(255, 255, 0))):
@@ -2339,9 +2358,13 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
 
 
 def check_svg_component_transfer_tiles(binary, artifacts, temporary):
-    check_svg_tile_browser(binary, artifacts, temporary, "component-transfer", groups=6,
-                           ready="data-component-transfer-ready", check_edited=functools.partial(
-                               check_svg_component_transfer_tile_pixels, edited=True))
+    for name, groups, check_pixels in (
+        ("component-transfer", 6, check_svg_component_transfer_tile_pixels),
+        ("component-transfer-chain", 3, check_svg_component_transfer_chain_pixels),
+    ):
+        check_svg_tile_browser(binary, artifacts, temporary, name, groups=groups,
+                               ready="data-component-transfer-ready",
+                               check_edited=functools.partial(check_pixels, edited=True))
 
 
 def check_svg_mask_gradient_strokes_browser(binary, artifacts, temporary):
