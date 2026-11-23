@@ -4671,6 +4671,37 @@ check and sixteen fresh browser launches passed. The unused-pattern tile
 rasterized once and was reused three times at each density, with the same
 decoded RGBA hashes as the private build. Frame timing remains open.
 
+### Linux runtime verification of hidden SVG patterns
+
+The Linux smoke suite and Windows `--nested` driver now check three
+fixtures with invisible pattern paints or scopes. Each checks exact
+pixels with the tile cache enabled and disabled. The 32 × 32 tile with
+hidden content is complete on its first replay, while the 24 × 24
+sibling must wait for its visible bitmap. The cached Linux runs each
+rasterized the two completed tiles once and reused both. Later frames
+reused the GG textures.
+
+The aarch64 Linux diagnostic build used the canonical working tree
+at `994d0ab74`, V `5a39a4d`, UI2 `f18e784`, single-unit Clang
+`-O0`, and Boehm. Its executable SHA-256 was
+`9a1d62221f296aacacabb42213fa950210f2dee4d348581bd23da1ea153cd7d8`.
+The five delayed-bitmap cases passed in ten fresh 800 × 600 Xvfb captures
+with Mesa software OpenGL. Cached and uncached document pixels matched
+in every case. The 136 × 72 fixture crop for hidden pattern paints
+matched the published macOS executable above byte for byte at 1×,
+with decoded RGBA SHA-256
+`1bd5d5c57ce8a0c35c222da1121b53c0c2a7756bd5dabd956eed54c6d78d4c1b`.
+The builds and focused runtime guards exited zero. The full Linux smoke
+run passed 60 checks through the X11 screenshot, then exited 1 after
+timing out on Ctrl+L navigation. A fresh, isolated lifecycle run on the
+same executable passed keyboard navigation, resize, process-tab
+switching and retirement, and native shutdown with exit 0. Both runs
+kept the executable and fixture hashes fixed.
+
+These checks cover pixels and reuse counts. The two Windows guard-driver
+unit tests passed. Windows runtime still requires the VM's 5 GiB host
+disk reserve.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
