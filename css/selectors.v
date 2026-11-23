@@ -2,6 +2,7 @@ module css
 
 import dom
 import strconv
+import os
 import strings
 
 // This file ports the LibWeb/CSS selector data model and selector-engine logic.
@@ -3007,12 +3008,27 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 	return false
 }
 
+// Bytes that are neither quotes, brackets, escapes, combinators nor white
+// space. Outside a string each of them only continues a compound selector.
+const selector_plain_bytes = selector_plain_byte_table()
+const disable_selector_plain_byte_runs = os.getenv('VOX_DISABLE_SELECTOR_PLAIN_BYTE_RUNS') != ''
+
+fn selector_plain_byte_table() [256]bool {
+	mut table := [256]bool{}
+	for index in 0 .. 256 {
+		table[index] = u8(index) !in [u8(`"`), `'`, `(`, `)`, `[`, `]`, `\\`, `>`, `+`, `~`, `|`,
+			` `, `\t`, `\n`, `\r`, `\f`]
+	}
+	return table
+}
+
 fn selector_text_has_bad_top_level_combinators(text string, relative bool) bool {
 	mut quote := u8(0)
 	mut parens := 0
 	mut squares := 0
 	mut saw_compound_token := false
 	mut expecting_compound_after_combinator := false
+	plain_runs := !disable_selector_plain_byte_runs
 	mut i := 0
 	for i < text.len {
 		ch := text[i]
@@ -3025,6 +3041,14 @@ fn selector_text_has_bad_top_level_combinators(text string, relative bool) bool 
 				quote = 0
 			}
 			i++
+			continue
+		}
+		if plain_runs && selector_plain_bytes[ch] {
+			// Names, classes, ids, pseudo-classes and attribute operators.
+			i++
+			for i < text.len && selector_plain_bytes[text[i]] { i++ }
+			saw_compound_token = true
+			expecting_compound_after_combinator = false
 			continue
 		}
 		match ch {

@@ -3409,6 +3409,7 @@ fn parser_balanced_selector_text(text string) bool {
 	mut parens := 0
 	mut squares := 0
 	mut quote := u8(0)
+	plain_runs := !disable_selector_plain_byte_runs
 	mut i := 0
 	for i < text.len {
 		ch := text[i]
@@ -3421,6 +3422,12 @@ fn parser_balanced_selector_text(text string) bool {
 				quote = 0
 			}
 			i++
+			continue
+		}
+		if plain_runs && selector_plain_bytes[ch] {
+			// No quote, bracket or escape starts in a run of plain bytes.
+			i++
+			for i < text.len && selector_plain_bytes[text[i]] { i++ }
 			continue
 		}
 		if ch == `\\` && i + 1 < text.len {
