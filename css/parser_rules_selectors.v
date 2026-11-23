@@ -75,7 +75,7 @@ pub mut:
 mut:
 	raw_rules_transient bool
 	component_input_transient bool
-	parsed_rule_selectors map[string]Selector
+	parsed_rule_selectors map[string]RuleSelectorMemoEntry
 	parsed_rule_selector_bytes int
 }
 
