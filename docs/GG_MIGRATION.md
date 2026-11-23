@@ -4111,6 +4111,67 @@ The restore probe executable SHA-256 was
 The input identities stayed fixed and the browser, probe, and
 runtime guard exits were zero.
 
+### Filtering SVG tile colors inside the restore clip
+
+In `fdcda9290`, matrices, component-transfer tables, and
+mixed color chains run on the intersection of the filter
+clip and the retained row band. The raster workers use the
+band pitch to walk the visible pixels. The restore blends
+the same rectangle into the parent. An alpha bias can
+still create coverage inside the clip from transparent
+input.
+
+The four focused raster suites passed on macOS, and the
+strided color-filter suite also passed on Linux. The new
+case compares packed and padded rows for matrices, tables,
+and a mixed chain, including transparent input and invalid
+pitch. All 20 Linux offset, opacity, matrix, and transfer
+fixtures passed with cache parity. The 23 Python driver
+tests and the macOS and both Windows V source checks passed.
+The host volume ran out of space during validation. The
+macOS candidate still needs a browser runtime check. Windows
+runtime validation remains open.
+
+Linux candidate captures with row bands enabled matched
+the installed macOS control in the 384 × 108 RGB crops
+before and after script edits.
+
+| Fixture | Initial SHA-256 | Edited SHA-256 |
+| --- | --- | --- |
+| Matrix bias | `e5e95c337e703821f7106a54a2ac691ea78e38c3dbadf6c7b011255a3b4d6b69` | `c6fb1f939060e72464b0d0025499ad4240189914eb1ef35bd6c42dde95628320` |
+| Matrix chain | `b7f3a6d3b33826cb2966ca0eb206184db01c17dd67f409cfb8a362fb6d82128e` | `d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83` |
+| Component-transfer chain | `111b21bebf2e41124579b4374af21268569982ebfd3713f0dd93721ea17002e4` | `d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83` |
+
+The macOS control was from `9717e8165`, with executable
+SHA-256
+`90bbd3acf2fa7f917058f45ee2de73e3e4a924e46e18d88ee4e058504c04734c`.
+The aarch64 Linux candidate SHA-256 was
+`0285f04a996562c963319c1dc768673a4094f79b8d243d03c3809b8d874f8651`.
+Linux used a deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance.
+
+A same-executable Clang `-O2` diagnostic compared applying
+an alpha-bias matrix to a 40 × 40 band, clearing outside
+the clip, and restoring the band with the clipped filter
+and restore. It reset the source pixels in both forms.
+The buffers matched after one iteration and after all
+12,000-iteration trials. Timings are means per iteration.
+
+| Clip | Pair | Full-band / clipped, µs |
+| --- | ---: | ---: |
+| 13 × 8 | 1 | 21.619 / 1.353 |
+| 13 × 8 | 2 | 21.423 / 1.351 |
+| 40 × 40 | 1 | 23.346 / 19.950 |
+| 40 × 40 | 2 | 23.064 / 19.627 |
+
+One-minute load was 7.09 on 18 logical CPUs. The diagnostic
+executable SHA-256 was
+`9a42ccb52f2042a4805f0346b2d05df3d72e3a269da62598722f4d8b4325666f`.
+Executable and fixture identities stayed fixed. Browser,
+probe, and runtime guard exits were zero. Production frame
+timing remains open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
