@@ -12082,3 +12082,21 @@ chooses ciphers in its own order.
   of 160), −0.05B, −0.17B, −0.14B, −0.02B and −0.12B: about 0.05B, below
   the 0.14B the call counts suggested, presumably because new element names
   keep arriving during hydration and clear the recorded facts.
+
+**Style passes after the reuse caches, 2026-11-23 evening.**
+- `tools/benchmark_style_passes.v` on the archived page: an insert pass styles
+  2,506 elements in 515M instructions (205K each), a full restyle 216K per
+  element. With `-d vox_css_diagnostics`: rule collection about 30% (bucket
+  gathering and the ancestor bloom check over large candidate lists, then
+  about 7 candidates per collection), computed properties about 28%, the
+  cascade (already replayed for 87% of elements) small.
+- Of about 3,900 longhand reuse lookups in a first pass plus one insert pass,
+  3,207 hit; 1,038 elements never look up because a cascaded value has an
+  unsupported type (SVG `d` paths 390, `clip-path` shapes 192, calc() margins
+  106, transforms 60), and 432 are pseudo-elements. Supporting `path()` and
+  absolute or percentage `inset()` values in the reuse snapshot (tried, not
+  kept): those elements then filled the 256-entry batch cache with unique
+  paths and hits fell to 2,192; remembering path keys only when repeated
+  restored 3,241 hits, but the extra key work made the longhand loop slower
+  (638M against 601M per two passes). The icon paths are mostly unique within
+  a style batch.
