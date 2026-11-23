@@ -12045,3 +12045,40 @@ chooses ciphers in its own order.
   (the flex containers above the change measure their items again: about
   a quarter of the pass in intrinsic sizing, and restoring the committed
   records of clean siblings 16%), projection 23%, style 5%.
+
+**Selector queries for unseen element names, 2026-11-23.**
+- A page-world probe (a content script wrapping `querySelector` and
+  `matches`) counted about 90,000 selector calls in the first 3.2 s of a
+  load. Nearly all come from GitHub's lazy custom element loader and selector
+  observers: `matches(name)` and `querySelector(name)` for each added node
+  and each of about 400 pending element names (24,440 each, none matching),
+  `querySelector('react-partial[partial-name="…"]')` for about 165 partial
+  names (17,060, none matching), and `matches()` against observer attribute
+  selectors (about 23,600, nearly all false). The JSON query transport itself
+  is now small (8,899 calls, 88 ms in one load).
+- A JavaScriptCore microbenchmark (2,700 elements, 104 roots) costs a
+  `querySelector` of an unseen name about 8.3K instructions: JSC drops and
+  retakes its locks around every C-API callback (~19% of a call), both
+  argument strings are converted (~20%), and the native side settles
+  reactions and consults the parse cache before the existing name-history
+  check answers.
+- `8e229e269` lets the facade answer those queries: the native state query
+  reports whether the document's local name history rules a selector out
+  (every subject names an element the document has never seen) and whether
+  the root is connected, and the facade keeps both facts until the history
+  gains a name or the tree version changes. Microbenchmark: 8.3K -> 2.6K
+  instructions per call (8.7K -> 2.8K with a tree change before each root);
+  the react-partial queries are unchanged. Control
+  `VOX_DISABLE_SELECTOR_ABSENCE_CACHE=1`.
+- 7 alternating pairs on bundle `9b6345db`, host load averages 9-10, every
+  capture 2 px:
+
+  | Arm | Median | Min | Max | PNG median |
+  | --- | --- | --- | --- | --- |
+  | candidate | 19.102B | 19.040B | 19.442B | 3,075 ms |
+  | control | 19.149B | 19.012B | 19.318B | 3,048 ms |
+
+  Pair deltas were +0.05B, +0.43B (that load replayed 164 requests instead
+  of 160), −0.05B, −0.17B, −0.14B, −0.02B and −0.12B: about 0.05B, below
+  the 0.14B the call counts suggested, presumably because new element names
+  keep arriving during hydration and clear the recorded facts.
