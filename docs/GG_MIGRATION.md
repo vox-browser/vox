@@ -1,5 +1,58 @@
 # Migrating from Skia to vlib/gg
 
+## Portable gradient, rounded image and poster checks
+
+The Linux and Windows window checks share the same gradient and image
+fixtures. They compare the gradient ramp against full raster output
+and check that clip reuse preserves the captured document. The image
+fixture also samples a video poster cropped with `object-fit: cover`.
+The Windows runner uses the existing 3 GiB job-object guard.
+[Windows test command](WINDOWS.md#focused-native-checks)
+
+The Linux ARM64 window checks passed twice under Xvfb, using V `5a39a4d`
+and a single Clang `-O0` unit. The executable SHA-256 was
+`da154d5672309d96ec568116ccf609513948a2b86b0fbb207356c516a63985c0`.
+All six final browser captures and their 3 GiB guard exited zero. The
+executable, linked libraries and fixtures retained their hashes.
+The three gradient modes yielded the same 1024 × 530 RGBA crop,
+`fc11369cc40f7256accaf9c645557a2d71ebd2ceab9f45009a1630c8d9c444de`.
+The cached and uncached rounded image modes yielded the same 800 × 516
+RGBA crop, `c96ec9b866b2791366d17651607e3800de587a5962d6df498f64341b35d01f82`.
+
+The published macOS bundle from `3834bb4c6` passed the same gradient
+pixel assertions in a fresh 1× capture. Its executable SHA-256 was
+`7376efe6624d0ad95293e82f9d269df8c69c9acf1b9561e09d03151315f529f3`.
+The browser and 3 GiB guard exited zero. Its 1024 × 530 RGBA crop
+SHA-256 was `e133187bf20eb3be0535419e81ca6a3736f6e8d2c80a0bb53e3a1e29ef3be082`.
+
+The Windows x64 D3D11 console build started from `1c5940cd4` with
+concurrent checkout edits. It used V `4478fc4`, MinGW GCC 16.2.0 and
+single-unit C `-prod -no-prod-options`. The executable imports
+`D3D11CreateDeviceAndSwapChain` and has SHA-256
+`d8b24e6339dfdbf3261b646171b99f0afb14aa1cebbf449bd5a326c071235e2e`.
+The 12 GiB compile guard exited zero at a sampled peak of 10,180,132,864
+bytes. All 21 Python smoke-driver unit tests passed.
+
+The first Windows guest reached sign-in and stalled during desktop
+setup. It shut down normally. The retry used multithreaded QEMU TCG,
+a RAM-backed overlay and the interactive Windows 11 x64 desktop. The
+runner and all six guarded browser processes exited zero. Peak committed
+job memory ranged from 317,186,048 to 336,044,032 bytes. The executable,
+guard, 36 adjacent DLLs and fixture inputs retained their hashes.
+The runner used the embeddable Python 3.12.10 distribution.
+[Python release](https://www.python.org/downloads/release/python-31210/)
+
+The three Windows gradient modes yielded the same 1024 × 530 RGBA
+crop, `1f8eb02bc8bf08ea20020e078be0abcc813eafb1a74f87e96022786758d35947`.
+The rounded image modes with clipping enabled yielded the same
+800 × 516 RGBA crop,
+`3da9d4038a4839ea521c230f72e87a815f108669c52211666004e2d0cb80484b`.
+The RAM disk filled after the runner exited. The capture files and
+guard receipts were recovered and the document comparisons rechecked
+on the host. The disposable overlay was stopped after it filled again.
+QEMU and its 12 GiB guard exited zero at a sampled peak of 8,328,658,944
+bytes. Hardware frame timings remain unmeasured.
+
 ## Linux video playback through GG
 
 The compilation demo loads a silent H.264 MP4. Linux now uses

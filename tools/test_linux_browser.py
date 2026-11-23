@@ -265,7 +265,7 @@ def check_gradient_pixels(data):
     return rows[page_top:page_top + 530]
 
 
-def check_gradient_browser(binary, artifacts, temporary):
+def check_gradient_browser(binary, artifacts, temporary, run_capture=run_windowed):
     fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/portable-gradients.html"
     documents = []
     for label in ("gradients", "gradients-full-raster", "gradients-uncached-clips"):
@@ -280,9 +280,9 @@ def check_gradient_browser(binary, artifacts, temporary):
         full_raster = label == "gradients-full-raster"
         if full_raster:
             environment["VOX_DISABLE_PORTABLE_GRADIENT_RAMP"] = "1"
-        log = run_windowed([str(binary), "--window-width=1024", "--window-height=640",
-                            "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
-                           env=environment, log_path=artifacts / f"portable-{label}.log")
+        log = run_capture([str(binary), "--window-width=1024", "--window-height=640",
+                           "--screenshot-viewport-height=640", f"--screenshot={screenshot}", str(fixture)],
+                          env=environment, log_path=artifacts / f"portable-{label}.log")
         if full_raster:
             assert "VOX_GRADIENT_RAMP" not in log, log
         else:
@@ -296,7 +296,7 @@ def check_gradient_browser(binary, artifacts, temporary):
     print("PASS: clipped gradient text, foreground painting, ramps and rounded clip reuse", flush=True)
 
 
-def check_rounded_image_browser(binary, artifacts, temporary):
+def check_rounded_image_browser(binary, artifacts, temporary, run_capture=run_windowed):
     def chunk(name, data):
         return struct.pack(">I", len(data)) + name + data + struct.pack(">I", zlib.crc32(name + data))
 
@@ -319,7 +319,7 @@ def check_rounded_image_browser(binary, artifacts, temporary):
 <style>
 body {{ margin: 0; background: #101820 }}
 #marker {{ width: 8px; height: 8px; background: #ea70b5 }}
-img {{ position: absolute; top: 16px; display: block; width: 24px; height: 24px; object-fit: cover }}
+img, video {{ position: absolute; top: 16px; display: block; width: 24px; height: 24px; object-fit: cover }}
 .circle {{ border-radius: 50% }}
 </style>
 <div id="marker"></div>
@@ -331,18 +331,20 @@ img {{ position: absolute; top: 16px; display: block; width: 24px; height: 24px;
 <img style="left:216px" src="{mip_src}">
 <img class="circle" style="left:256px" src="{src}">
 <img class="circle" style="left:296px;transform:translate(.25px,.5px)" src="{src}">
+<video style="left:336px" preload="none" poster="{src}"></video>
 ''')
     squares = []
     clipped_documents = []
     for mode in ("0", "uncached", "1"):
         disabled = int(mode == "1")
         screenshot = artifacts / f"portable-rounded-images-{mode}.png"
+        screenshot.unlink(missing_ok=True)
         env = smoke_environment(Path(temporary) / screenshot.stem)
         env["VOX_DISABLE_PORTABLE_ROUNDED_IMAGE_CLIP"] = str(disabled)
         env["VOX_DISABLE_PORTABLE_IMAGE_CLIP_CACHE"] = str(int(mode == "uncached"))
-        run_windowed([str(binary), "--window-width=800", "--window-height=600",
-                      "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(page)],
-                     env=env, log_path=screenshot.with_suffix(".log"))
+        run_capture([str(binary), "--window-width=800", "--window-height=600",
+                     "--screenshot-viewport-height=516", f"--screenshot={screenshot}", str(page)],
+                    env=env, log_path=screenshot.with_suffix(".log"))
         _, _, channels, rows = rendered_png_rows(screenshot.read_bytes())
         doc_top = next(y for y, row in enumerate(rows[:150]) if row[4 * channels:4 * channels + 3] == b"\xea\x70\xb5")
 
@@ -351,6 +353,7 @@ img {{ position: absolute; top: 16px; display: block; width: 24px; height: 24px;
 
         for x in (16, 56, 96):
             assert pixel(x + 6, 28) == green and pixel(x + 18, 28) == blue
+        assert pixel(342, 28) == green and pixel(354, 28) == blue, "Missing video poster crop"
         assert pixel(56, 16) == green and pixel(79, 39) == blue
         assert pixel(16, 16) == (green if disabled else paper)
         assert pixel(39, 39) == (blue if disabled else paper)
@@ -370,7 +373,7 @@ img {{ position: absolute; top: 16px; display: block; width: 24px; height: 24px;
         squares.append([pixel(x, y) for y in range(16, 40) for x in (*range(56, 80), *range(216, 240))])
     assert all(square == squares[0] for square in squares[1:]), "Rounded clipping changed the rectangular image"
     assert clipped_documents[0] == clipped_documents[1], "Cached coverage changed rounded image pixels"
-    print("PASS: rounded raster images, antialiasing, object-fit crops and mipmaps", flush=True)
+    print("PASS: rounded raster images, antialiasing, object-fit crops, mipmaps and video poster", flush=True)
 
 
 def check_web_font_pixels(data):
