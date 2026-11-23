@@ -2353,7 +2353,9 @@ def check_svg_matrix_tiles(binary, artifacts, temporary):
     for name, check_pixels in (("color-matrix-alpha", check_svg_color_matrix_alpha_tile_pixels),
                                ("color-matrix-bias", check_svg_color_matrix_bias_tile_pixels),
                                ("color-matrix-chain", functools.partial(
-                                   check_svg_color_filter_chain_pixels, red="890000"))):
+                                   check_svg_color_filter_chain_pixels, red="890000")),
+                               ("color-matrix-transfer", functools.partial(
+                                   check_svg_color_filter_chain_pixels, red="bb0000"))):
         check_svg_tile_browser(binary, artifacts, temporary, name, groups=3,
                                ready="data-color-matrix-ready",
                                check_edited=functools.partial(check_pixels, edited=True))

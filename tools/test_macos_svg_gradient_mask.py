@@ -670,6 +670,7 @@ def main():
                     ("alpha", check_svg_color_matrix_alpha_tile_pixels),
                     ("bias", check_svg_color_matrix_bias_tile_pixels),
                     ("chain", partial(check_svg_color_filter_chain_pixels, red="890000")),
+                    ("transfer", partial(check_svg_color_filter_chain_pixels, red="bb0000")),
                 )
             ]
             inputs.extend(matrix for matrix, _ in matrix_fixtures)
