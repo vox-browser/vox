@@ -3461,6 +3461,78 @@ both pairs. One-minute host load was 104.24–115.66 on 18
 logical CPUs. The synthetic replay results leave optimized
 production timing unresolved.
 
+### SVG tile offsets in object bounding box primitive units
+
+In `6806a43aa`, the shared SVG tile renderer resolves a standalone `feOffset`
+with `primitiveUnits="objectBoundingBox"` by scaling `dx`
+and `dy` by the source's tight geometry width and height.
+The filter region and the offset use their own coordinate
+systems. The existing whole-pixel replay applies once both
+project onto the tile's pixel grid. Object-relative offsets
+use the single-linear-contour geometry supported by the
+bounding-box region resolver.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#feOffsetElement)
+
+The fixture sets a fixed user-space filter region and uses
+one pattern as a fill, stroke, and alpha mask. A live edit
+changes the source from 20 × 10 to 30 × 20. The same two
+`.4` values resolve first to (8, 4) and then to (12, 8).
+The fixture samples both offset axes, the clipped edge, and
+the stripe after the isolated layer.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-primitive-units.html)
+
+The 384 × 108 RGB captures from macOS and Linux matched
+the static Brave reference for both states. Initial and edited
+SHA-256 digests were
+`528012f60e70bdbfc901f7b8551b3d6dba6599f34699f6c738422ef3ff3a5259`
+and
+`9c46f1f8965533bcb8d0ed87abfdb3ca836d90f4e07aaf282abec9399cb0b088`.
+The previously published macOS executable
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102`
+differed by 4,410 and 10,980 pixels, respectively.
+
+All three offset fixtures passed on macOS at 1× and 2× and
+on Linux with group caching enabled and disabled. The Linux
+GG run used row bands. The macOS trace showed one key shared
+by the fill, stroke, and mask, and a new key after resizing.
+The focused SVG unit tests, 23 Python driver tests, and both
+Windows V source checks passed. Windows runtime validation
+remains open. The aarch64 Linux executable SHA-256 was
+`afee0184531438ad05bfeb2033f22c1a142a02618d68c34cfa4869b53ab05a4f`.
+Its Clang `-O0` build used the existing generated LibJS
+function-pointer diagnostic allowance.
+
+The macOS replay diagnostic compares user-space offsets (8, 4)
+with the equivalent object-relative pair (.4, .4) on the
+same executable. Both scenes drew 20 fills and 20 strokes.
+Fresh processes used private profiles and caches, a 1024 × 600
+viewport at 1×, and a one-second settle. JavaScript and
+whole-frame raster reuse were disabled. Each of 48 stationary
+callbacks replayed 42 commands. In separate diagnostics, both
+forms recorded 1,880 hits on a single tile key and zero misses
+between the first and last callbacks.
+
+| Pair | User-space / object median replay, ms | User-space / object p95, ms | User-space / object maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 0.7370 / 0.7235 | 0.7890 / 0.7870 | 0.7940 / 0.8130 |
+| 2 | 0.7340 / 0.7355 | 0.9090 / 0.7830 | 0.9160 / 0.8400 |
+
+The median allocated amount was 3 KiB per callback in all
+runs. The six decoded RGBA captures matched with SHA-256
+`cb4c0ff01ae7a7f1d29d8dd80ef8243f25274e441c68975b4778ad67f3c9394f`.
+The input HTML hashes in user-space and object order were
+`e4afca5d18c3c5028dcb7e8dbf8fc74c65551b120739021254c2c7c122d743bb`
+and
+`57b9301d7e195624b7b8c70a47f4067e4529c8acd4a6f9a49b79ed12adf136a2`.
+The macOS executable SHA-256 was
+`21951d491c60e60bf89e28bcd32e07b43256e0fdc0b4751dbf16a6e7b331afbd`.
+It used single-unit C `-prod -no-prod-options` with Clang `-O0`.
+Executable, library, worker, and fixture hashes stayed fixed.
+One-minute host load was 16.39–17.75 on 18 logical CPUs.
+All browser and guard exits were zero. This measures
+stationary replay after layout. Optimized production timing
+remains open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
