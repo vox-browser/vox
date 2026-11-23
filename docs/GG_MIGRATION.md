@@ -3389,6 +3389,78 @@ Byte-wise hashing of projected geometry fixed the cancellation
 between signed projections and the filter graph's own offsets.
 Both diagnostic guards returned 1 after the failed assertions.
 
+### SVG offset regions relative to the source bounds
+
+In `47dc73150`, standalone tile offsets can resolve the default
+`objectBoundingBox` filter region for sources with a single
+linear path contour. The region uses the tight geometry bounds
+before paint transforms and applies the default −10% origin
+and 120% size when the corresponding attributes are omitted.
+Explicit fractions and percentages use the same bounds.
+The offset still uses user-space primitive units. The shared
+renderer takes the existing whole-pixel translation path when
+both the region and offset align with the tile raster.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterRegion)
+
+The fixture paints the same tile as an SVG fill, a stroke, and
+an alpha mask. It starts with the default region. A live edit
+moves the source path, reverses the offsets, and sets the region
+using a mix of fractions and percentages.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-bounds.html)
+
+The 384 × 108 RGB captures matched between macOS, Linux, and
+the static Brave reference for both states. The initial SHA-256
+was `4d0c1336d566c6e79b741a30f2e8f93c762119cbb8d2e460b3a0a209f051cf49`.
+The edited SHA-256 was
+`e2bee04210d760ecdc0fe8dc6cd87b2d14f15b70f637fa819adccf1e18e31867`.
+The previously published macOS control differed by 3,330 and
+6,840 pixels, respectively. The command-line Brave capture
+timed out. A fresh DevTools capture passed for each reference.
+
+Linux passed with GG enabled and row bands, and with group
+caching enabled and disabled. macOS passed at 1× and 2×.
+The existing explicit-region fixture passed on both systems.
+The focused SVG unit tests, 23 Python driver tests and both
+Windows V source checks passed. Windows runtime validation
+remains open. The Linux executable SHA-256 was
+`960e0609e4de709c3d3df006ba00298c4bbb7b897a62c1c698ba81e003706364`.
+The Linux Clang `-O0` build used the existing generated
+LibJS function-pointer diagnostic allowance.
+
+The macOS trace showed one tile miss followed by two hits
+in the initial frame and a new key after the live edit.
+The replay comparison used the same executable with two
+equivalent filter regions, one explicit in user-space
+coordinates and one derived from the default object bounds.
+Each scene drew 20 fills and 20 strokes with private profiles
+and caches, a 1024 × 600 viewport at 1×, and a one-second settle.
+JavaScript and whole-frame raster reuse were disabled. Each run
+replayed 42 commands in all 48 stationary callbacks. Separate
+traces logged 1,880 hits for the same tile key and zero misses
+between the first and last callbacks in both forms.
+
+| Pair | Explicit / object median replay, ms | Explicit / object p95, ms | Explicit / object maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.5815 / 1.6150 | 1.8120 / 1.8260 | 1.8260 / 1.8840 |
+| 2 | 1.6150 / 1.7100 | 1.8270 / 2.2310 | 1.8480 / 2.4690 |
+
+Median allocation was 3 KiB per callback in both forms.
+All six fresh browsers and the guard exited zero. Outputs
+matched with decoded RGBA SHA-256
+`4ad8183110967ed596ec8c31ea6178513c25fd1cb068fe5d9eebdf109a22df67`.
+The explicit and object input HTML hashes were
+`0ae119495253bd7ed6450509cc30986f7802f392dea61f18fee5652daa510111`
+and
+`e3d5088663f4255ecff7d87ec946eed7985239dfc2914aa1ca64124b0797c814`.
+The macOS executable SHA-256 was
+`d68c18c38cee9e2117da8eb35297d3c6c67db14bc949edc85f2fed82a9b587a1`.
+It used single-unit C `-prod -no-prod-options` with Clang
+`-O0`. The executable, fixture, library, and worker inputs
+stayed fixed. The object form's replay median was higher in
+both pairs. One-minute host load was 104.24–115.66 on 18
+logical CPUs. The synthetic replay results leave optimized
+production timing unresolved.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
