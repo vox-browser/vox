@@ -4218,6 +4218,61 @@ The production build volume ran out of space while writing generated
 C. macOS candidate runtime, Windows runtime and production frame
 timing remain open.
 
+### Trimming leading rows in aligned SVG filter tiles
+
+In `7603e4279`, the shared rasterizer can start an isolated layer at
+the top of the filter clip when the scope contains pixel-aligned fills and the
+leading rows account for at least a quarter of the band. Pattern
+shaders keep their absolute sample coordinates while the legacy and
+pipeline blitters address the shortened buffer. Skewed geometry
+keeps the existing origin because changing its analytic clip can
+change edge rounding.
+
+The [nested pattern fixture](../Tests/Browser/Native/svg-pattern-tile-offset-cropped-pattern.html)
+checks the repeated stripe phase through a live clip mutation in a
+fill, stroke and alpha mask. At both isolation depths, the Linux
+candidate logged 6 rows starting at 8 initially and 9 starting at 10
+after the edit. The preceding Linux diagnostics used 14 and 19 rows
+per layer for the solid fixture. Its before and after pixels still
+matched the recorded hashes above.
+
+The 384 × 108 RGB crop of the nested pattern matched the macOS
+control and Brave 158.1.100.58 in both 1× states.
+
+| State | SHA-256 |
+| --- | --- |
+| Initial | `86108aad4292fc64d597ab8700a4ab9503492af697906100d8c08d3cbb73e2b7` |
+| Edited | `ef80c06355be80ebcbb2dc8b3b8d77a17f472e180aa088d8a75d5de70ebcfc2f` |
+
+The 23 Linux browser fixtures passed, including cache parity for
+offsets, matrices, component transfer, opacity and a delayed nested
+bitmap. Mask-band raster tests passed on macOS and Linux. They
+compare nearest and bilinear pattern sampling against a cropped full
+surface with padded strides and both blend implementations. The
+macOS raster suite also passed with ASan and UBSan. The 23 Python
+driver tests, macOS source check, and Windows D3D11 and OpenGL source
+checks passed.
+
+A same-executable macOS Clang `-O2` diagnostic timed clearing two
+40-pixel-wide layers, pattern fill and both restores. The narrower
+variant included the packed rectangle check. The root buffers matched
+after one replay and after every 12,000-replay trial.
+
+| Original / trimmed band heights | Pair 1, µs | Pair 2, µs |
+| --- | ---: | ---: |
+| 14 / 6 rows | 6.263 / 5.644 | 6.341 / 5.403 |
+| 19 / 9 rows | 9.628 / 7.463 | 9.789 / 7.352 |
+
+The one-minute load was 4.29 on 18 logical CPUs. The probe SHA-256
+was `05e62c95ab9327fd18dd43c2299e1a75169c4d00924e05492ebeb080eb71f753`.
+The Linux browser used single-unit Clang `-O0` with the existing
+LibJS function-pointer diagnostic allowance and executable SHA-256
+`65536545d2460dc02618feeac4fdc7c53b0470853313b11753b08af9810fd5cd`.
+The macOS control identity was the same as the previous comparison.
+Browser, probe and corresponding runtime guard exits were zero.
+These are raster component timings. Production frame timing and
+candidate browser runtime on macOS and Windows remain open.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
