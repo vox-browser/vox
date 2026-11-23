@@ -12122,3 +12122,34 @@ chooses ciphers in its own order.
   handshake before creating its profile. Every new Brave process is affected
   until that directory is repaired, so no matched Brave comparison was
   possible.
+
+**LibJS operand slots, 2026-11-23 night.**
+- The grouped native cache from 11-20 no longer matches current builds
+  (LibJS changes since then, and native-cache ABI files such as `operand.v`,
+  `instruction.v` and `object.v`), so `libjs-native` loads are invalid
+  ("cache_misses must be zero") until it is rebuilt with
+  `tools/prepare_github_grouped_cache.py`. Interpreted LibJS (`--engines
+  libjs`) needs no cache: 35.6-35.7B per load against 18.4-18.6B with
+  JavaScriptCore on the same bundle.
+- A sampled interpreted load spent 39% of busy main-thread samples in
+  LibJS: the dispatch loop 211, `Operand.slot()` 82 (a checked call that
+  returns a result type, for every operand of every instruction, although
+  `run_executable()` has validated the executable for the frame), result
+  stores through `array__set` 38, frame allocation 75, linear property and
+  binding scans 75.
+- `b54cc7e01` resolves operands of the running executable directly in the
+  dispatch loop; `0bb03a786` reads per-opcode input counts and result flags
+  from tables; `53f7ef0f9` does the same for call arguments and
+  `get_callee_and_this`. Control `VOX_LIBJS_CHECKED_OPERANDS=1`. A
+  standalone interpreter benchmark (private `/tmp` driver over `libjs`,
+  constructor/method/closure calls, object and array literals, strings)
+  goes from 2.187B to 1.895B instructions (−13%).
+- 5 alternating pairs of interpreted LibJS loads on bundle `7d9b3101`
+  (`b54cc7e01` only), host load averages 6-8, every capture 2 px:
+
+  | Arm | Median | Min | Max | PNG median |
+  | --- | --- | --- | --- | --- |
+  | candidate | 33.309B | 33.244B | 33.328B | 3,311 ms |
+  | `VOX_LIBJS_CHECKED_OPERANDS=1` | 35.778B | 35.681B | 35.811B | 3,490 ms |
+
+  Every pair differs by 2.44B-2.51B (−6.9%).
