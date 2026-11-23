@@ -4202,7 +4202,14 @@ fn skip_selector_escaped_code_point(text string, start int) int {
 
 fn parse_identifier(text string, start int) (string, int) {
 	mut i := start
-	mut builder := strings.new_builder(16)
+	for i < text.len && is_ident_byte(text[i]) { i++ }
+	if i >= text.len || text[i] != `\\` || i + 1 >= text.len {
+		// A name without an escape is one span of the selector text.
+		name := if i > start { text[start..i] } else { '' }
+		return name, i
+	}
+	mut builder := strings.new_builder(i - start + 16)
+	unsafe { builder.write_ptr(text.str + start, i - start) }
 	for i < text.len {
 		ch := text[i]
 		if is_ident_byte(ch) {
