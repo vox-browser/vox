@@ -3147,6 +3147,87 @@ flags and one-minute load of 37.55–52.13 on 18 logical CPUs
 limit the timings to diagnostic replay. Windows runtime and
 display timing remain unverified.
 
+### Color-space changes inside shared SVG tiles
+
+In `f66fce146`, a shared SourceGraphic chain can switch between sRGB and linearRGB
+across up to four matrix or component-transfer stages. The rasterizer
+converts straight RGB at the requested boundaries in the same bitmap
+scan and quantizes the premultiplied result when it writes the tile.
+Color-space conversions preserve alpha. Transfer stages round their
+lookup indices. Chains whose stages all use
+one space can use the specialized matrix and table scans.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#propdef-color-interpolation-filters)
+
+The fixture uses an sRGB matrix, a linearRGB matrix, and another
+sRGB matrix. It checks a fill, a translated stroke, and an alpha
+mask. The live edit clears alpha in the first matrix and restores
+coverage in the last, inside an explicit filter region. The
+published macOS painter restores gray in the interior and
+extends it outside the edited stroke and mask crops. The
+shared clips match Brave's static reference states.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-spaces.html)
+
+macOS passed at 1× and 2×. Linux Xvfb passed with and without
+caching, with and without row bands, and with GG SVG enabled.
+At 1×, the 384 × 108 RGB crops matched between macOS, Linux,
+and Brave in both states. The initial crop matched the published
+macOS painter with SHA-256
+`b02fa5a2c2345aeec9d4decca4bac0a67fef32e4dd7d1f2758aa4ff8a9b5a2a6`.
+The edited crop SHA-256 was
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The published control differed in 9,840 edited pixels across
+the translated stroke and alpha mask.
+
+The aarch64 Linux executable SHA-256 was
+`62ed2da61f927fc534bfe40bfab3187c2940e7f20306a0df5f232b2686c3a4ca`.
+The diagnostic Clang `-O0` link retained the generated LibJS
+function-pointer diagnostic allowance. The first Linux capture
+job overlapped the fixture's explicit-region edit and failed
+input verification. The final replay pinned the updated fixture
+throughout. Focused raster and painting suites, 23 smoke-driver
+tests, and both Windows source checks passed.
+
+Each of three macOS workloads drew 20 fills and 20 strokes
+in two alternating pairs. Fresh processes used private profiles
+and caches, a 1024 × 600 viewport at 1×, and a one-second settle.
+JavaScript and whole-frame raster reuse were disabled. Each of
+48 stationary callbacks drew 42 commands. The second workload
+cycled ten mixed-space tiles through the eight-entry cache.
+The third workload used one sRGB matrix to exercise the
+existing shared single-space path.
+
+Separate diagnostics counted 1,880 hits with cached mixed-space
+tiles and 1,880 misses under cache pressure. The published control
+recorded zero shared hits and misses on these two workloads. Both
+builds recorded 1,880 hits on the single-space workload. All 18 RGBA
+document captures matched with SHA-256
+`9c4a99ea7be5b74b74377c3bf94f63bd7bdcbadd534bbea5b3d71eca10f6a979`.
+
+| Workload and pair | Published / candidate median replay, ms | Published / candidate p95, ms | Published / candidate maximum, ms | Published / candidate median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached mixed-space 1 | 16.202 / 0.920 | 16.805 / 0.982 | 16.986 / 0.991 | 3 / 3 |
+| Cached mixed-space 2 | 20.160 / 1.095 | 21.643 / 1.284 | 21.842 / 1.456 | 3 / 3 |
+| Cache pressure 1 | 18.547 / 6.014 | 19.872 / 6.258 | 20.509 / 6.273 | 3 / 3 |
+| Cache pressure 2 | 22.005 / 4.641 | 22.883 / 4.900 | 23.111 / 4.947 | 3 / 3 |
+| Cached single-space 1 | 0.659 / 0.765 | 0.700 / 0.833 | 0.718 / 0.877 | 3 / 3 |
+| Cached single-space 2 | 0.529 / 0.837 | 0.576 / 0.899 | 0.590 / 0.971 | 3 / 3 |
+
+The workload input hashes in order were
+`30f148b12b7bd2b3ddfadd33a8436eea5d7ad7df428c1ac43063c0571e9f4438`,
+`1b1432b2d4d4d75b83b139fce5875c9e65c8fb2cb436fc016b0ec1e260967ebb`,
+and `3289bece34abf898473cdb4ba37ca00d47ff067ceed9c6285babb8258b64f6d1`.
+The published single-C `-prod` executable had SHA-256
+`c4a8468c151de7e25ec8949497d8d2e9fad7a228a92350ef8231827fbbcd3224`.
+The private single-C `-prod -no-prod-options` candidate with
+Clang `-O0` had SHA-256
+`666eb27e00666e9101afc8e51c64fb6a60c05755599c733d4241114562c2871c`.
+Inputs stayed fixed, including the native library and adblock
+worker. Browsers and guards exited zero. One-minute host load
+was 9.77–11.28 on 18 logical CPUs. The single-space diagnostic
+median increased by 0.106 and 0.308 ms. Production timing with
+matching compiler flags remains open, as do Windows runtime
+and display measurements.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
