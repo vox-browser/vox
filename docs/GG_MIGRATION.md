@@ -1,13 +1,42 @@
 # Migrating from Skia to vlib/gg
 
+## Concentric radial SVG gradients on Windows D3D11
+
+The opt-in Windows Canvas route renders concentric radial SVG fills and
+strokes with up to eight effective stops through the shared paint records and
+texture cache. Radial shaders use both transformed coordinates, the existing
+radial parameters and the shared dither lookup. Linear shaders retain a
+single gradient coordinate. The browser uses the portable rasterizer for
+off-center focal gradients.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked both axes of the radial ramp, an
+eight-stop reflected stroke with paint opacity, and a strictly contained
+off-center focal circle through the Canvas API. The Windows smoke exited
+zero and reproduced the prior projection, font and color PNG byte for byte.
+Its executable SHA-256 matched before and after launch
+(`fe4f11471b3148feb6d481a33f37e248b51c84b7837be3c8713de1ff7019a11e`).
+The staging parity and replay-runner tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `e086016afec0fc4a246d5598afa58c076693dace3181b7f76b18ae14064cf3bc`
+throughout the replay. The full-cache, texture-cache-only and uncached
+runs produced identical 800 × 100 document crops. The concentric radial
+ramps differed from portable output by at most one level per RGB channel.
+Linear ramps matched the preceding D3D11 capture byte for byte, and the
+off-center focal fills and strokes matched portable output exactly. The
+logs confirmed cache hits for both concentric radial paints and portable
+rendering of the off-center paths. Hardware frame timings remain unmeasured.
+
 ## Linear Canvas gradients on Windows D3D11
 
 The opt-in Windows Canvas route renders sRGB linear SVG fills and strokes
 with up to eight effective stops through the shared Canvas bounds, wedge and
 stroke pipelines. The shaders read the existing paint buffer and dither LUT.
 The browser draws from the resolved GPU texture and reuses its texture
-cache. Each new gradient shader variant compiles on first use. Radial,
-focal and other unsupported draws use the portable rasterizer.
+cache. Each new gradient shader variant compiles on first use. At this
+stage radial and focal gradients used the portable rasterizer.
 
 The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
 Windows 11 D3D11 under QEMU. It checked an eight-stop reflected bounds fill

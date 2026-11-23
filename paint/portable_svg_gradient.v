@@ -99,9 +99,6 @@ $if vox_gg_svg ? {
 			points = [f32(linear.start_point.x), f32(linear.start_point.y),
 				f32(linear.end_point.x), f32(linear.end_point.y), 0, 0]!
 		} else {
-			$if windows && sokol_d3d11 ? {
-				return none
-			}
 			radial_style := if stroke { command.stroke_radial_gradient() } else { command.fill_radial_gradient() }
 			radial := radial_style or { return none }
 			kind = 2
@@ -109,6 +106,11 @@ $if vox_gg_svg ? {
 			points = [f32(radial.start_center.x), f32(radial.start_center.y),
 				f32(radial.start_radius), f32(radial.end_center.x), f32(radial.end_center.y),
 				f32(radial.end_radius)]!
+			$if windows && sokol_d3d11 ? {
+				if points[0] != points[3] || points[1] != points[4] {
+					return none
+				}
+			}
 		}
 		if style.color_space != .srgb || !points.all(math.is_finite(f64(it))) { return none }
 		affine := style.gradient_transform or { painting.Affine{} }

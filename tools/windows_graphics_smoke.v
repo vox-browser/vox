@@ -28,6 +28,7 @@ fn main() {
 		check_canvas_solid_fills() or { panic(err) }
 		check_canvas_solid_strokes() or { panic(err) }
 		check_canvas_linear_gradients() or { panic(err) }
+		check_canvas_radial_gradients() or { panic(err) }
 		check_svg_stroke_pixels() or { panic(err) }
 	}
 }
@@ -58,6 +59,7 @@ $if windows {
 				check_canvas_solid_fills() or { panic(err) }
 				check_canvas_solid_strokes() or { panic(err) }
 				check_canvas_linear_gradients() or { panic(err) }
+				check_canvas_radial_gradients() or { panic(err) }
 			}
 			frame_fn:     fn (mut state WindowsGraphicsSmoke) {
 				begin_browser_frame(state.ctx)
@@ -381,6 +383,79 @@ fn check_canvas_linear_gradients() ! {
 		}
 	}
 	println('GG Canvas linear gradient cover, wedge and stroke passed on ${gfx.query_backend()}')
+}
+
+fn check_canvas_radial_gradients() ! {
+	mut ctx := canvas.new_gpu_context()!
+	defer { ctx.free() }
+	mut target := ctx.new_surface(width: 32, height: 24)!
+	defer { target.free() }
+	target.clear(canvas.Color4f{})
+	red := canvas.Color4f.from_rgba8(255, 0, 0, 255)
+	blue := canvas.Color4f.from_rgba8(0, 0, 255, 255)
+	target.draw_rect(canvas.Rect.ltrb(0, 0, 32, 8), canvas.Paint{
+		dither:   true
+		gradient: canvas.Gradient{
+			kind:   .radial
+			p0:     canvas.Point{8.5, 4.5}
+			radius: 8
+			colors: [red, blue]
+		}
+	})!
+	center := canvas.Point{8.5, 12.5}
+	reflected := canvas.Gradient.two_point_conical(center, 4, center, 12, canvas.Gradient{
+		colors:    [red, red, red, red, blue, blue, blue, blue]
+		positions: [f32(0), 0.125, 0.25, 0.375, 0.625, 0.75, 0.875, 1]
+		tile_mode: .mirror
+	})!
+	mut path := canvas.PathBuilder{}
+	path.move_to(1, 12.5)
+	path.line_to(30, 12.5)
+	target.draw_path(path.detach(), canvas.Paint{
+		color:        canvas.Color4f.from_rgba8(0, 0, 0, 128)
+		style:        .stroke
+		stroke_width: 4
+		anti_alias:   true
+		dither:       true
+		gradient:     reflected
+	})!
+	// A strictly contained off-center focus shifts the two half-radius samples.
+	focal := canvas.Gradient.two_point_conical(canvas.Point{8.5, 20.5}, 0,
+		canvas.Point{12.5, 20.5}, 12, canvas.Gradient{colors: [red, blue]})!
+	path.move_to(1, 20.5)
+	path.line_to(30, 20.5)
+	target.draw_path(path.detach(), canvas.Paint{
+		style:        .stroke
+		stroke_width: 4
+		anti_alias:   true
+		dither:       true
+		gradient:     focal
+	})!
+
+	pitch := 32 * 4
+	pixels := []u8{len: pitch * 24}
+	target.read_pixels(pixels.data, pitch)!
+	expect_canvas_pixel(pixels, pitch, 8, 4, [u8(0), 0, 255, 255]!)!
+	expect_canvas_pixel(pixels, pitch, 16, 4, [u8(255), 0, 0, 255]!)!
+	// Both axes contribute to radial distance. These pixels are half a radius from center.
+	for offset in [8 * 4, 4 * pitch + 12 * 4, 20 * pitch + 4 * 4, 20 * pitch + 16 * 4] {
+		if pixels[offset] !in [u8(127), 128] || pixels[offset + 1] != 0
+			|| pixels[offset + 2] !in [u8(127), 128] || pixels[offset + 3] != 255 {
+			return error('Unexpected Canvas radial midpoint ${pixels[offset..offset + 4]}')
+		}
+	}
+	expect_canvas_pixel(pixels, pitch, 12, 12, [u8(0), 0, 128, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 20, 12, [u8(128), 0, 0, 128]!)!
+	expect_canvas_pixel(pixels, pitch, 16, 16, [u8(0), 0, 0, 0]!)!
+	for x in [8, 16, 24] {
+		// These pixel centers hit the midpoint on three different reflected intervals.
+		offset := 12 * pitch + x * 4
+		if pixels[offset] !in [u8(63), 64] || pixels[offset + 1] != 0
+			|| pixels[offset + 2] !in [u8(63), 64] || pixels[offset + 3] != 128 {
+			return error('Unexpected Canvas reflected radial midpoint at ${x}: ${pixels[offset..offset + 4]}')
+		}
+	}
+	println('GG Canvas radial fill, reflected and focal strokes passed on ${gfx.query_backend()}')
 }
 
 $if !sokol_d3d11 ? {

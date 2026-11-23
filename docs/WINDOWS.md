@@ -241,9 +241,9 @@ video posters. Pass `--canvas-only` to run those checks separately. The
 runner records captures, logs, guard receipts and input hashes.
 
 Run the same runner with `--gg-svg-d3d11` against the standard D3D11
-browser. It enables `VOX_GG_SVG=1` for solid and linear-gradient SVG fills
-and strokes. It checks cache hits, paint order, gradient ramps and portable
-radial-gradient fallback.
+browser. It enables `VOX_GG_SVG=1` for solid, linear-gradient and concentric
+radial SVG fills and strokes. It checks cache hits, paint order, gradient
+ramps and portable fallback for off-center focal gradients.
 
 Use `--gg-svg` against an `--opengl` browser with the
 staged Mesa WGL DLLs and `GALLIUM_DRIVER=llvmpipe`. It checks Canvas draws
@@ -278,8 +278,9 @@ python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
 The D3D11 smoke test checks pitched BGRA8 and RGBA8 texture transfers
 and verifies Canvas pixels for solid rectangles, blended fills, curved
 paths, winding rules, path clipping, multisample reloads and solid strokes.
-The linear-gradient checks cover bounds, wedges and strokes, including
-reflected tiling, a hard stop and paint opacity.
+The gradient checks cover linear bounds, wedges and strokes, and radial
+fills and strokes. They exercise reflected tiling, a hard stop, paint
+opacity and a contained focal circle in the Canvas API.
 It also checks recovery after a rejected unsupported draw.
 
 For the OpenGL variant, prepare the current Canvas adapter before building
