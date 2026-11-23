@@ -12010,6 +12010,19 @@ chooses ciphers in its own order.
   frames are such quiet releases. This is a scheduling change, not a
   cheaper frame: Chromium renders more frames during hydration, each much
   cheaper than Vox's.
+- 7-pair cohort on the published bundle `c1bdcf86` (head `be0bad757`,
+  includes `a0c53a321`), the old cadence as a same-binary control arm, host
+  load averages 12-84 rising through the run:
+
+  | Arm | Median | Min | Max | PNG median | Regenerated | Valid |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 8x, 1.5 s (default) | 19.626B | 19.463B | 22.499B | 5,400 ms | 1 of 7 (load 81) | 7 |
+  | 3x, 500 ms | 22.544B | 19.748B | 23.081B | 5,789 ms | 6 of 7 | 7 |
+  | Brave | 21.200B | 20.716B | 21.381B | 3,183 ms | | 5 (2 abnormal exits) |
+
+  Vox captures were 2 px from the reference except one control capture at
+  4 px. At host load 81 the new cadence also lost the race, so the throttle
+  narrows it without removing it; faster hydration is the remedy.
 - Paint tree projection: 12 complete projections per load at about 45M
   each (36 in all, 612M on the main thread). Five of the twelve are
   replaced by another layout before any paint reads them (two at document
