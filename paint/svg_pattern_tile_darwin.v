@@ -10,8 +10,9 @@ fn C.native_install_shared_svg_pattern_tile(u64, &u8, u64, i32, i32) i32
 
 struct SharedSVGPatternCacheKey {
 mut:
-	value       u64
-	image_scope bool
+	value         u64
+	image_scope   bool
+	image_lookups int
 }
 
 fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternDisplayList,
@@ -46,20 +47,26 @@ fn (mut app BrowserApp) add_shared_svg_pattern_images(list &painting.SVGPatternD
 				key.value = (key.value ^ u64(voidptr(app.ctx))) * u64(1099511628211)
 				key.image_scope = true
 			}
+			if portable_svg_raster_diagnostics { key.image_lookups++ }
 			image := app.background_image(operation.image_url) or { return false }
 			key.value = (key.value ^ u64(image.id)) * u64(1099511628211)
 		}
 		// A retained style can be present even when mask replay skips the paint.
+		mut fill_list := voidptr(0)
 		if pattern := operation.fill_pattern {
 			if operation.has_fill && operation.fill_opacity > 0 {
 				child := pattern.tile_display_list or { return false }
 				if !app.add_shared_svg_pattern_images(child, mut key) { return false }
+				fill_list = voidptr(child)
 			}
 		}
 		if pattern := operation.stroke_pattern {
 			if operation.has_stroke && f32(operation.stroke_opacity) > 0 {
 				child := pattern.tile_display_list or { return false }
-				if !app.add_shared_svg_pattern_images(child, mut key) { return false }
+				// A shared display list has already contributed its image slots.
+				if voidptr(child) != fill_list && !app.add_shared_svg_pattern_images(child, mut key) {
+					return false
+				}
 			}
 		}
 	}
@@ -89,7 +96,11 @@ fn (mut app BrowserApp) prepare_shared_svg_pattern_tile(style &painting.SVGPatte
 		// slots so a resource update cannot reuse a tile's earlier pixels.
 		if info.has_images {
 			mut image_key := SharedSVGPatternCacheKey{value: key}
-			key = if app.add_shared_svg_pattern_images(list, mut image_key) { image_key.value } else { 0 }
+			complete := app.add_shared_svg_pattern_images(list, mut image_key)
+			if portable_svg_raster_diagnostics && image_key.image_scope {
+				eprintln('VOX_SHARED_SVG_TILE image_lookups=${image_key.image_lookups} complete=${complete}')
+			}
+			key = if complete { image_key.value } else { 0 }
 		}
 		if key != 0 && C.native_reuse_shared_svg_pattern_tile(key) != 0 {
 			if portable_svg_raster_diagnostics { eprintln('VOX_SHARED_SVG_TILE cache=hit key=${key}') }

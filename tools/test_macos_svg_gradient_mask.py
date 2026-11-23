@@ -560,6 +560,8 @@ def check_pattern_tile_with_delayed_image(binary, fixture, directory, *, nested=
             assert (width, height) == (1024 * scale, 600 * scale)
             if shared:
                 check_svg_shared_bitmap_tile_pixels(rows, channels, scale, 0)
+                lookups = re.findall(r"^VOX_SHARED_SVG_TILE image_lookups=(\d+) complete=true$", log, re.M)
+                assert set(lookups) == {"1"}, log
             else:
                 check_svg_pattern_tile_image_pixels(rows, channels, scale, 0, nested=nested)
             misses = re.findall(r"^VOX_SHARED_SVG_TILE cache=miss key=(\d+) ", log, re.M)
