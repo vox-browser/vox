@@ -4737,6 +4737,56 @@ sampled 412,712,960 bytes peak RSS. One-minute load before the two
 timed trials was 8.04 and 8.12 on 18 logical CPUs. The executable,
 library and fixture hashes stayed fixed.
 
+### Reusing a raster across equivalent vector pattern paints
+
+`69858bdea` extends the portable raster's last-tile reuse to separate
+styles that resolve the same image-free pattern. It compares the retained
+resource and visual keys, dimensions, depth, luminance and stroke metric,
+and charges the original subtree pixel cost on a hit. Bitmap patterns
+retain the style-identity check. The fixture paints two stripes from the
+same resource, then an equally sized blue pattern. Complete child rasters
+fell from three to two, with one reuse and identical decoded document
+RGBA `26bc958ffd8acb7c2718c06ec7496e3b9f145ef20aecb1f560c646d70473d5fd`.
+[Fixture](../Tests/Browser/Native/svg-pattern-tile-equivalent-paints.html)
+
+The aarch64 Linux builds used V `5a39a4d`, UI2 `f18e784`, Boehm and
+single-unit Clang `-O0`. Control and candidate executable SHA-256 values were
+`432096ce1d997afeb9bccffd666b18dd29856172b277dab89c09541722a9ee99` and
+`62080d4cfb312a556efe0c3d0fe66b167fc6577fc7ee7d9873d2f9b7c6145c35`.
+Twenty Linux browser cases passed for nested tiles, delayed bitmaps and
+filter offsets. Production-mode source checks passed on macOS and
+Windows D3D11. The Windows VM still requires its host disk reserve.
+
+For the synthetic benchmark, the two inner pattern cells were expanded
+to 64 × 64 and the outer path repeated in a 1024 × 2880 SVG with 40 rows
+of six columns at 160 × 72 spacing. The HTML SHA-256 was
+`d1c3c190940d43f4bbd021edda2dfe0465f3ff13a3d71175c73db0bdc0adc058`.
+The initial capture was rejected for including window chrome. After
+cropping the 1024 × 684 window at rows 60–659, both builds matched
+document RGBA at 0 and 42 CSS pixels of scroll, with SHA-256 values
+`e610dbcdd25c3ea283364563ef6dcda532e7a90bf1fe5f49338f10f32d74a6fc` and
+`c18bb335598457eb8c097d076c09885f165c544848d80f7f4288725a7611c737`.
+A separate diagnostic counted 576 nested tile hits and 1,152 completed
+misses between its first and last callback completions.
+
+Two control/candidate pairs used `tools/measure_browser_scroll.py`
+with 48 self-paced 42-pixel steps per trial, a one-second settle,
+Mesa software OpenGL and a 1024 × 600 document viewport in Xvfb. Each
+trial started with a fresh process, profile and cache on the local
+script-free page. Diagnostics were off during timing. Scroll positions
+and command counts matched and all inputs kept their hashes. Each
+browser, driver and the 3 GiB guard exited zero. Guest one-minute load
+was 0.52–0.73 on four vCPUs.
+
+| Pair | Median replay, ms | p95 / max replay, ms | Median allocated KiB |
+| ---: | ---: | ---: | ---: |
+| 1 control / candidate | 184.982 / 156.209 | 225.613, 234.036 / 195.456, 209.615 | 7972.5 / 6802 |
+| 2 control / candidate | 156.192 / 147.277 | 199.306, 205.192 / 158.025, 160.835 | 7976.5 / 6805 |
+
+The candidate allocated about 1,171 KiB less per callback. Replay medians
+fell 5.7–15.6% within the pairs, with substantial variation between the
+two controls. These results cover synthetic software-rendered replay.
+
 ## Sharing the portable SVG fallback with Windows
 
 The standard Windows D3D11 window now uses the same CPU raster and GG texture
