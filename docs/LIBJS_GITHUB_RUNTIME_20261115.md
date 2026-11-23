@@ -11979,3 +11979,56 @@ chooses ciphers in its own order.
   +0.21B, −0.29B, −0.75B, −0.05B, −0.05B and −0.74B. Every Vox run used
   fewer instructions than every Brave run; the 10% criterion needs a Vox
   maximum of at most 18.73B against this Brave minimum.
+
+**Load frames and the hydration race, 2026-11-23.**
+- Frames are the largest cost that varies between loads. On bundle
+  `bfdf3dd1` (host load averages 35-97), four rounds of the same binary:
+  the default throttle rendered 8-10 frames per load (19.56-20.86B),
+  `VOX_DISABLE_LOAD_RENDER_THROTTLE=1` rendered 30-39 (28.28-30.60B), so
+  each additional loading frame costs about 0.4B. A stage-logged load puts
+  an intermediate frame's main-thread work at roughly 190-250M of layout,
+  30-370M of style, 45-85M of paint tree projection and 30-45M of paint
+  recording, even when scripts changed little.
+- The expensive outliers are the hydration race described above: frames of
+  60-550 ms between the first paint and the end of hydration let the
+  page's branch/tag and latest-commit responses arrive before React reached
+  those buttons, and React regenerated the overview. Such loads replay 172
+  requests (the five README badges twice) instead of 158-160 and use about
+  3B more instructions. Six alternating rounds, host load averages 14-78,
+  every capture 2 px from the Brave reference:
+
+  | Throttle | Median | Min | Max | PNG median | Frames | Regenerated |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 3x cost, at most 500 ms (old default) | 22.869B | 19.746B | 23.302B | 7,344 ms | 7-10 | 4 of 6 |
+  | 6x, at most 1 s | 19.788B | 19.447B | 23.270B | 6,358 ms | 7-8 | 1 of 6 |
+  | 8x, at most 1.5 s | 19.686B | 19.299B | 19.815B | 6,189 ms | 7-8 | 0 of 6 |
+
+  `a0c53a321` makes eight times the frame cost, at most 1.5 s, the default
+  (`VOX_LOAD_RENDER_THROTTLE_RATIO=3 VOX_LOAD_RENDER_THROTTLE_MAX_GAP_MS=500`
+  restores the old cadence). Deferred frames still render once the page has
+  been quiet for a display frame; with the new gap most later loading
+  frames are such quiet releases. This is a scheduling change, not a
+  cheaper frame: Chromium renders more frames during hydration, each much
+  cheaper than Vox's.
+- Paint tree projection: 12 complete projections per load at about 45M
+  each (36 in all, 612M on the main thread). Five of the twelve are
+  replaced by another layout before any paint reads them (two at document
+  install, one of two layouts within a frame, a timer and a script-forced
+  layout: about 0.26B). Deferring the projection would also mean deferring
+  the visual contexts and scroll state that `Document::update_layout`
+  assigns from it after every pass, as upstream does. In the scale-2
+  layout benchmark (text mode, 2,663 elements) a projection costs 34M, and
+  a census of its nodes finds no reuse at all: both the ordinary-box and
+  the retained-block projection templates require an identity ancestor
+  transform, and at device scale 2 every box inherits the layout-to-CSS
+  scale. At scale 1, 670 of about 2,000 boxes reuse a template and the
+  projection costs 30M; the other boxes are flex, grid and other
+  non-flow containers (420), anonymous boxes (226), positioned boxes
+  (200), generated content (129) and list items (106).
+- Each paint recording that first reaches a README badge lays out its SVG
+  document and the badge's embedded logo document (five badges, 0.3-10 ms
+  each); these are first layouts, not repeated work.
+- A text change in the layout benchmark costs 175M per pass: geometry 62%
+  (the flex containers above the change measure their items again: about
+  a quarter of the pass in intrinsic sizing, and restoring the committed
+  records of clean siblings 16%), projection 23%, style 5%.
