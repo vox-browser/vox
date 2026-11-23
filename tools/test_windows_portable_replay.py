@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import tempfile
 
-from test_linux_browser import (check_gradient_browser, check_late_canvas_draw,
+from test_linux_browser import (check_gg_svg_solid_fills, check_gradient_browser, check_late_canvas_draw,
                                 check_portable_affine_media, check_rounded_image_browser,
                                 check_webgl_texture_reuse)
 from test_windows_svg_pattern_tiles import input_hashes, run_guarded_capture
@@ -19,18 +19,23 @@ def main():
     parser.add_argument("binary", type=Path, help="Windows Vox executable")
     parser.add_argument("--guard", type=Path, required=True, help="Windows job-object guard")
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--canvas-only", action="store_true", help="check canvas and transformed media replay only")
+    checks = parser.add_mutually_exclusive_group()
+    checks.add_argument("--canvas-only", action="store_true", help="check canvas and transformed media replay only")
+    checks.add_argument("--gg-svg", action="store_true", help="check Canvas SVG replay and fallback using Mesa OpenGL")
     args = parser.parse_args()
     binary, guard = args.binary.resolve(), args.guard.resolve()
     artifacts = args.output.resolve()
     artifacts.mkdir(parents=True, exist_ok=True)
     tools = Path(__file__).resolve().parent
     native = tools.parent / "Tests/Browser/Native"
-    fixtures = [tools / "test_linux_browser.py", tools / "test_windows_svg_pattern_tiles.py",
-                Path(__file__).resolve(), native / "late-canvas.html", native / "webgl-texture-reuse.html",
-                native / "affine-media.html"]
-    if not args.canvas_only:
-        fixtures.append(native / "portable-gradients.html")
+    svg_fixture = native / "svg-gg-path-fill.html"
+    fixtures = [tools / "test_linux_browser.py", tools / "test_windows_svg_pattern_tiles.py", Path(__file__).resolve()]
+    if args.gg_svg:
+        fixtures.append(svg_fixture)
+    else:
+        fixtures.extend(native / name for name in ("late-canvas.html", "webgl-texture-reuse.html", "affine-media.html"))
+        if not args.canvas_only:
+            fixtures.append(native / "portable-gradients.html")
 
     def hashes():
         return input_hashes(binary, guard) | {
@@ -42,6 +47,9 @@ def main():
     try:
         with tempfile.TemporaryDirectory(prefix="vox-portable-replay-") as temporary:
             capture = partial(run_guarded_capture, guard)
+            if args.gg_svg:
+                check_gg_svg_solid_fills(binary, artifacts, temporary, svg_fixture, capture)
+                return
             if not args.canvas_only:
                 check_gradient_browser(binary, artifacts, temporary, capture)
                 check_rounded_image_browser(binary, artifacts, temporary, capture)

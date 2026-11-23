@@ -1,5 +1,37 @@
 # Migrating from Skia to vlib/gg
 
+## Canvas SVG capability detection in Windows OpenGL windows
+
+The Windows OpenGL browser uses its normal window context when
+`VOX_GG_SVG=1`. The Canvas renderer checks that context for OpenGL 4.3
+and shader storage buffers before recording SVG draws. A context below
+that capability can open the window and use the shared portable SVG
+rasterizer. The Windows runner's `--gg-svg` option shares the Linux
+checks for paint order, the even-odd hole, orientation, texture reuse,
+and the GL 4.2 fallback.
+[SVG fill fixture](../Tests/Browser/Native/svg-gg-path-fill.html)
+
+The ARM64 Linux Xvfb run used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable SHA-256 was
+`650a975fd096d03eccaacb802083b681e7f14efccf564ffed4aaf19c43cd7c25`.
+All five captures matched, including all cache modes and the forced
+GL 4.2 fallback. The 800 × 100 RGB crop SHA-256 was
+`105829155fd05a83a582525ad18782d3930c96c78eb0b2dbdcc5e77b0d0ee79a`.
+The browser processes, 3 GiB guard and 21 Python runner tests passed.
+
+The Windows 11 QEMU run used Mesa WGL with llvmpipe. The x64 browser
+used V `4478fc4` and MinGW GCC 16.2.0 in one C unit with
+`-prod -no-prod-options`. Its executable SHA-256 was
+`fdb4b1378838024580c39244bd2ed252974ec4727a90e37e66b18778679fce89`
+before and after the captures. The same five cases passed and produced
+the same 800 × 100 RGB crop as Linux. Diagnostics confirmed Canvas cache
+hits when enabled, and one capability rejection followed by CPU texture
+and bounds cache hits on forced GL 4.2. All five browser exits and 3 GiB
+guards were zero. A separate graphics probe that explicitly requested GL
+4.3 on the forced 4.2 driver failed at WGL context creation with child exit
+3221226505. The standard Windows D3D11 source check passed. Hardware
+frame timings remain unmeasured.
+
 ## Slanted edge coverage in portable GG replay
 
 Portable affine draws of full textures use a narrow coverage ramp along

@@ -602,8 +602,7 @@ window.addEventListener('wheel', function () {
     print(f"PASS: {case} web font textures preserve pixels while scrolling and after a live color edit", flush=True)
 
 
-def check_gg_svg_browser(binary, artifacts, temporary):
-    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
+def check_gg_svg_solid_fills(binary, artifacts, temporary, fixture, run_capture=run_windowed):
     documents = []
     for label in ("portable-svg", "gg-svg", "gg-svg-decoded-bounds", "gg-svg-uncached", "gg-svg-fallback"):
         enabled = label != "portable-svg"
@@ -617,9 +616,9 @@ def check_gg_svg_browser(binary, artifacts, temporary):
         environment.pop("MESA_GL_VERSION_OVERRIDE", None)
         if label == "gg-svg-fallback":
             environment["MESA_GL_VERSION_OVERRIDE"] = "4.2"
-        log = run_windowed([str(binary), "--window-width=800", "--window-height=600",
-                            "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
-                           env=environment, log_path=artifacts / f"{label}.log")
+        log = run_capture([str(binary), "--window-width=800", "--window-height=600",
+                           "--screenshot-viewport-height=600", f"--screenshot={screenshot}", str(fixture)],
+                          env=environment, log_path=artifacts / f"{label}.log")
         assert ("VOX_GG_SVG unavailable:" in log) == (label == "gg-svg-fallback"), log
         if label == "gg-svg-fallback":
             assert log.count("VOX_GG_SVG unavailable:") == 1, log
@@ -649,6 +648,11 @@ def check_gg_svg_browser(binary, artifacts, temporary):
         documents.append(rows[top:top + 100])
     assert all(document == documents[0] for document in documents[1:]), "GG changed the SVG document pixels"
     print("PASS: cached and uncached GG SVG replay and GL 4.2 fallback match the portable reference", flush=True)
+
+
+def check_gg_svg_browser(binary, artifacts, temporary):
+    fixture = Path(__file__).resolve().parents[1] / "Tests/Browser/Native/svg-gg-path-fill.html"
+    check_gg_svg_solid_fills(binary, artifacts, temporary, fixture)
     check_gg_svg_ellipses(binary, artifacts, temporary)
     check_gg_svg_mutations(binary, artifacts, temporary, fixture)
     check_gg_svg_viewport(binary, artifacts, temporary, fixture)

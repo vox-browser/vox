@@ -156,12 +156,15 @@ point otherwise reopens stdout and stderr on a console or `NUL`.
 
 Use `--opengl` to build the experimental Sokol OpenGL window and set
 `VOX_GG_SVG=1` at launch to exercise the shared `gg.canvas` SVG path renderer.
-The window requests OpenGL 4.3. Canvas uses the window's current context and
-requires shader storage buffers in both shader stages. The standard build
-uses the D3D11 window with its WARP fallback. Both window backends can replay
-supported SVG fills and strokes through the same CPU rasterizer and texture
-cache that Linux uses. The OpenGL build tries the GG Canvas GPU renderer first
-when enabled.
+Canvas checks the window's current context for OpenGL 4.3 and shader storage
+buffers in both shader stages. A window below that capability uses portable
+SVG rasterization. WGL drivers can return the requested version or a
+compatible newer one. [WGL context creation](https://registry.khronos.org/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+
+The standard build uses the D3D11 window with its WARP fallback. Both window
+backends can replay supported SVG fills and strokes through the same CPU
+rasterizer and texture cache that Linux uses. The OpenGL build tries the GG
+Canvas GPU renderer first when enabled.
 
 The Windows build uses `-gc none`; scoped `-prealloc` remains unavailable.
 Process tab grouping uses the existing in-process fallback. Dedicated script
@@ -236,6 +239,11 @@ replay. The canvas checks cover delayed Canvas 2D and WebGL initialization,
 subsequent WebGL frames, texture upload reuse, and transformed canvases and
 video posters. Pass `--canvas-only` to run those checks separately. The
 runner records captures, logs, guard receipts and input hashes.
+
+Run the same runner with `--gg-svg` against an `--opengl` browser with the
+staged Mesa WGL DLLs and `GALLIUM_DRIVER=llvmpipe`. It checks Canvas draws
+and texture cache hits, then forces Mesa GL 4.2 and compares the fallback
+pixels with the portable reference.
 
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:
