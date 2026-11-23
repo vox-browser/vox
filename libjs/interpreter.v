@@ -93,7 +93,11 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 					name, left.str())
 			}
 			key := right.to_property_key(mut vm)!
-			Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
+			hint := executable.property_hint(frame.program_counter)
+			if !left.is_object() || unsafe { *hint } == property_hint_adding
+				|| !left.as_object().hinted_set(key, source, hint) {
+				Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
+			}
 		}
 		.get_callee_and_this {
 			value, this_value := vm.execute_callee_read(instruction, executable)!
