@@ -90,6 +90,7 @@ mut:
 	// Appended last: native code compiled against earlier fields keeps its offsets.
 	call_plan ?&FunctionCallPlan
 	property_hints []u32
+	binding_hints  []u32
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

@@ -38,6 +38,7 @@ fn (mut generator BytecodeGenerator) call_reference_retained(mut vm VM, expressi
 			op:         .get_callee_and_this
 			dst:        value
 			rhs:        receiver
+			target:     static_binding_target(expression)
 			identifier: generator.identifier(identifier_name(expression)!)
 			strict:     generator.strict
 		})

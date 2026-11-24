@@ -118,6 +118,28 @@ fn (mut vm VM) execute_property_read_at(left Value, right Value, strict bool, hi
 }
 
 fn (mut vm VM) execute_binding_read(instruction &Instruction, executable &Executable) !Value {
+	if instruction.op == .get_binding && instruction.target == static_binding_scope
+		&& use_compact_reference_reads() && use_fast_binding_reads() {
+		// Executable.validate() bounds every binding identifier.
+		name := unsafe { &executable.identifier_table[instruction.identifier] }
+		coordinate := executable.binding_hint(vm.current_context().program_counter)
+		if mut environment := vm.hinted_binding_environment(unsafe { *coordinate }) {
+			index := int(unsafe { *coordinate } & binding_hint_index_mask)
+			if mut environment is FunctionEnvironment {
+				if environment.DeclarativeEnvironment.hinted_binding_matches(index, name) {
+					vm.record_compact_reference_read()
+					return environment.get_binding_value_direct(mut vm, index)
+				}
+			} else if mut environment is DeclarativeEnvironment {
+				if environment.hinted_binding_matches(index, name) {
+					vm.record_compact_reference_read()
+					return environment.get_binding_value_direct(mut vm, index)
+				}
+			}
+		}
+		value, _ := vm.resolve_compact_read_recording(*name, instruction.strict, false, false, coordinate)!
+		return value
+	}
 	if use_compact_reference_reads() {
 		value, _ := vm.resolve_compact_read(executable.get_identifier(instruction.identifier), instruction.strict, false, instruction.op == .typeof_binding)!
 		return if instruction.op == .typeof_binding { Value.from_string(vm.create_string_from_str(typeof_value(value))) } else { value }
@@ -140,8 +162,16 @@ fn (mut vm VM) execute_binding_read(instruction &Instruction, executable &Execut
 // a retained Reference. Keep HasBinding/GetBindingValue/WithBaseObject order;
 // the environment remains live across arbitrary proxy and accessor callbacks.
 fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, allow_missing bool) !(Value, Value) {
+	return vm.resolve_compact_read_recording(name, strict, callee, allow_missing, unsafe { nil })
+}
+
+// `coordinate`, when given, receives the declarative environment hops and
+// binding index of a binding found without passing a non-declarative one.
+fn (mut vm VM) resolve_compact_read_recording(name Utf16String, strict bool, callee bool, allow_missing bool, coordinate &u32) !(Value, Value) {
 	initial := vm.current_context().lexical_environment or { panic('ResolveBinding: the running execution context has no lexical environment') }
 	mut environment := ?Environment(initial)
+	mut hops := u32(0)
+	mut declarative_path := true
 	for {
 		mut current := environment or { break }
 		if use_fast_binding_reads() {
@@ -149,6 +179,7 @@ fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, 
 				if current.bindings.len == 0 {
 					if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.empty_binding_environments_skipped++ } }
 					environment = current.outer_environment()
+					hops++
 					continue
 				}
 				if use_direct_declarative_reads() {
@@ -157,15 +188,18 @@ fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, 
 						value := current.get_binding_value_direct(mut vm, index)!
 						vm.record_direct_declarative_binding_read()
 						vm.record_compact_reference_read()
+						record_binding_coordinate(coordinate, declarative_path, hops, index)
 						return value, js_undefined()
 					}
 					environment = current.outer_environment()
+					hops++
 					continue
 				}
 			} else if mut current is DeclarativeEnvironment {
 				if current.bindings.len == 0 {
 					if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.empty_binding_environments_skipped++ } }
 					environment = current.outer_environment()
+					hops++
 					continue
 				}
 				if use_direct_declarative_reads() {
@@ -174,9 +208,11 @@ fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, 
 						value := current.get_binding_value_direct(mut vm, index)!
 						vm.record_direct_declarative_binding_read()
 						vm.record_compact_reference_read()
+						record_binding_coordinate(coordinate, declarative_path, hops, index)
 						return value, js_undefined()
 					}
 					environment = current.outer_environment()
+					hops++
 					continue
 				}
 			} else if mut current is GlobalEnvironment {
@@ -194,13 +230,37 @@ fn (mut vm VM) resolve_compact_read(name Utf16String, strict bool, callee bool, 
 			vm.record_compact_reference_read()
 			return value, receiver
 		}
+		// Object, global and other environments do not keep fixed positions.
+		declarative_path = false
 		environment = current.outer_environment()
+		hops++
 	}
 	if allow_missing { return js_undefined(), js_undefined() }
 	return vm.throw_error_type(.reference_error, .unknown_identifier, name.str())
 }
 
 fn (mut vm VM) execute_callee_read(instruction &Instruction, executable &Executable) !(Value, Value) {
+	if instruction.target == static_binding_scope && use_compact_reference_reads()
+		&& use_fast_binding_reads() {
+		// A declarative binding has no with-base receiver.
+		name := unsafe { &executable.identifier_table[instruction.identifier] }
+		coordinate := executable.binding_hint(vm.current_context().program_counter)
+		if mut environment := vm.hinted_binding_environment(unsafe { *coordinate }) {
+			index := int(unsafe { *coordinate } & binding_hint_index_mask)
+			if mut environment is FunctionEnvironment {
+				if environment.DeclarativeEnvironment.hinted_binding_matches(index, name) {
+					vm.record_compact_reference_read()
+					return environment.get_binding_value_direct(mut vm, index)!, js_undefined()
+				}
+			} else if mut environment is DeclarativeEnvironment {
+				if environment.hinted_binding_matches(index, name) {
+					vm.record_compact_reference_read()
+					return environment.get_binding_value_direct(mut vm, index)!, js_undefined()
+				}
+			}
+		}
+		return vm.resolve_compact_read_recording(*name, instruction.strict, true, false, coordinate)
+	}
 	name := executable.get_identifier(instruction.identifier)
 	if use_compact_reference_reads() { return vm.resolve_compact_read(name, instruction.strict, true, false) }
 	reference := vm.resolve_binding(name, instruction.strict, none)!
