@@ -685,8 +685,10 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		executable.operand_slots_for(executable.operand_bases())
 	}
 	for frame.program_counter < executable.bytecode_length {
-		// consume_execution_budget(), with its call only for active budgets.
-		if vm.instruction_budget_active { vm.consume_execution_budget()! }
+		// consume_execution_budget(), with its call only for an exhausted budget.
+		if vm.instruction_budget_active {
+			if vm.instruction_budget != 0 { vm.instruction_budget-- } else { vm.consume_execution_budget()! }
+		}
 		// The loop condition and the check above bound the index.
 		instruction := unsafe { &instructions[frame.program_counter] }
 		// AsmInterpreter handlers for operations that cannot throw or call out.
