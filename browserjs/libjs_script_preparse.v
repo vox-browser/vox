@@ -4,16 +4,12 @@ import libjs
 import os
 import platform
 
-// The document's external scripts were parsed on the main thread when they
-// ran; only modules fetched through the module loader used the parse workers.
-// Start a worker parse as soon as a script body arrives instead. Execution
-// reuses the result only when it is ready, error-free and parsed from the
-// same text (prepare_libjs_frontend_with checks this); otherwise the main
-// thread parses as before. VOX_LIBJS_SCRIPT_PREPARSE=0 is the same-binary
-// control.
+// Only the module loader consumes these background parse results. It reuses a
+// result when it is ready, error-free and parsed from the same text. Classic
+// script execution goes through a different frontend entry point.
 const libjs_script_preparse_disabled = os.getenv('VOX_LIBJS_SCRIPT_PREPARSE') == '0'
 
-pub fn (runtime &Runtime) preparse_libjs_document_script(url string, body string) {
+pub fn (runtime &Runtime) preparse_libjs_document_module(url string, body string) {
 	if libjs_script_preparse_disabled || runtime == unsafe { nil } || runtime.engine != .libjs
 		|| runtime.closed || url == '' || body.len == 0 {
 		return
@@ -33,7 +29,7 @@ pub fn (runtime &Runtime) preparse_libjs_document_script(url string, body string
 		host.libjs_preparsing.delete(key)
 		if host.closed { return }
 		runtime := unsafe { &Runtime(host.runtime) }
-		// The script already ran and was parsed on this thread.
+		// The module already ran and was parsed on this thread.
 		if key in runtime.libjs_modules_ { return }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }

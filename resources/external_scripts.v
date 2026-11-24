@@ -68,7 +68,7 @@ fn (loader &BrowserScriptRequestLoader) parser_fetch_hook() html.ScriptElementAs
 // calling this hook. This adapter supplies bytes only; HTML owns parser pauses,
 // deferred/async execution, load-event delays and each element's load/error event.
 fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTMLScriptElementModel,
-	address dom.URL, _ html.ScriptElementType) ! {
+	address dom.URL, kind html.ScriptElementType) ! {
 	if loader.cancelled { return error('Script loader is closed') }
 	scope := loader.request_scope
 	scope.retain()
@@ -81,8 +81,10 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 	resource_url := address.serialize()
 	if resource := loader.resources[resource_url] {
 		filtered := filter_preloaded_resource_with_scope(resource, loader.document.url.serialize(), 'script', scope)!
-		if host := loader.parser_host {
-			host.runtime.preparse_libjs_document_script(resource_url, filtered.body)
+		if kind == .module {
+			if host := loader.parser_host {
+				host.runtime.preparse_libjs_document_module(resource_url, filtered.body)
+			}
 		}
 		mut prepared := unsafe { &html.HTMLScriptElementModel(model) }
 		prepared.complete_external_fetch(filtered.body)
@@ -228,10 +230,6 @@ fn (mut loader BrowserScriptRequestLoader) poll(runtime &browserjs.Runtime, mut 
 			resource := <-loader.results {
 				loader.active_fetches--
 				loader.fetching.delete(resource.url)
-				// Parse on a worker while earlier scripts run or the parser continues.
-				if resource.error == '' {
-					runtime.preparse_libjs_document_script(resource.url, resource.body)
-				}
 				for mut request in loader.requests {
 					if request.url == resource.url && !request.ready {
 						request.resource = resource
@@ -282,6 +280,9 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 		}
 		if mut model := request.parser_model {
 			if resource := filter_preloaded_resource_with_scope(request.resource, loader.document.url.serialize(), 'script', scope) {
+				if model.script_type() == .module {
+					runtime.preparse_libjs_document_module(request.url, resource.body)
+				}
 				model.complete_external_fetch(resource.body)
 			} else {
 				messages << 'Script ${request.url}: ${err.msg()}'
