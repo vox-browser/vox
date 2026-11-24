@@ -45,7 +45,10 @@ pub const large_numeric_string_cache_size = 1024
 pub const string_to_atom_cache_size = 2
 
 pub fn utf16_string(text string) Utf16String {
-	return Utf16String.from_slice(utf16(text))
+	// utf16() returns new storage; it needs no further copy.
+	return Utf16String{
+		data: utf16(text)
+	}
 }
 
 fn has_short_ascii_storage(text Utf16String) bool {

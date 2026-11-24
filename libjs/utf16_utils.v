@@ -144,7 +144,59 @@ fn utf16_equals_ascii(units []u16, spelling string) bool {
 }
 
 // Source offsets remain UTF-16 code-unit offsets, including supplementary text.
+// One pass into storage of the byte length (no UTF-8 sequence yields more code
+// units than bytes): ASCII bytes directly and well-formed multi-byte sequences
+// decoded in place. Any other byte sequence converts through runes(), which
+// defines the result for malformed input.
+@[direct_array_access]
 pub fn utf16(s string) []u16 {
+	mut units := []u16{len: s.len}
+	mut count := 0
+	mut i := 0
+	for i < s.len {
+		b := s[i]
+		if b < 0x80 {
+			units[count] = u16(b)
+			count++
+			i++
+			continue
+		}
+		if b >= 0xc2 && b <= 0xdf && i + 1 < s.len && s[i + 1] & 0xc0 == 0x80 {
+			units[count] = (u16(b & 0x1f) << 6) | u16(s[i + 1] & 0x3f)
+			count++
+			i += 2
+			continue
+		}
+		if b >= 0xe0 && b <= 0xef && i + 2 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80 {
+			code_point := (u32(b & 0x0f) << 12) | (u32(s[i + 1] & 0x3f) << 6) | u32(s[i + 2] & 0x3f)
+			if code_point >= 0x800 && (code_point < 0xd800 || code_point > 0xdfff) {
+				units[count] = u16(code_point)
+				count++
+				i += 3
+				continue
+			}
+		}
+		if b >= 0xf0 && b <= 0xf4 && i + 3 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80
+			&& s[i + 3] & 0xc0 == 0x80 {
+			code_point := (u32(b & 0x07) << 18) | (u32(s[i + 1] & 0x3f) << 12) | (u32(s[i + 2] & 0x3f) << 6) | u32(s[i + 3] & 0x3f)
+			if code_point >= 0x10000 && code_point <= 0x10ffff {
+				value := code_point - 0x10000
+				units[count] = u16(0xD800 + (value >> 10))
+				units[count + 1] = u16(0xDC00 + (value & 0x3FF))
+				count += 2
+				i += 4
+				continue
+			}
+		}
+		return utf16_from_runes(s)
+	}
+	unsafe {
+		units.len = count
+	}
+	return units
+}
+
+fn utf16_from_runes(s string) []u16 {
 	mut result := []u16{cap: s.len}
 	for character in s.runes() {
 		code_point := u32(character)
