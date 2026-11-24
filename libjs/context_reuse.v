@@ -107,8 +107,14 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 	if new_top > stack.limit { return none }
 	index := stack.find_recycled_context(count)
 	if index >= 0 {
-		mut context := stack.recycled[index]
-		stack.recycled.delete(index)
+		// The newest record is the usual match; take it without array.delete().
+		mut context := if index == stack.recycled.len - 1 {
+			pop_last(mut stack.recycled, 'empty context pool')
+		} else {
+			taken := stack.recycled[index]
+			stack.recycled.delete(index)
+			taken
+		}
 		stack.recycled_bytes -= context.recycled_context_bytes()
 		// Pool entries start with an exact-sized allocation. Recycling clears
 		// the used prefix, and private execution never writes into its spare tail.
@@ -145,6 +151,7 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 	return context
 }
 
+@[direct_array_access]
 fn (stack &InterpreterStack) find_recycled_context(count u64) int {
 	mut best := -1
 	// Allow up to 25% spare capacity so small calls leave larger frames available.
