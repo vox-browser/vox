@@ -1267,7 +1267,9 @@ fn (mut l Lexer) save_state() {
 		line_number:        l.line_number
 		line_column:        l.line_column
 		current_token_type: l.current_token_type
-		template_states:    l.template_states.clone()
+		// Lookahead saves state constantly; only a template literal in progress
+		// has entries to protect from in-place updates.
+		template_states:    if l.template_states.len == 0 { []TemplateState{} } else { l.template_states.clone() }
 	}
 }
 

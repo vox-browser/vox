@@ -1120,7 +1120,8 @@ fn (mut p Parser) parse_object_property(obj_start Position) ObjectProperty {
 	mut is_generator := false
 
 	if p.match_identifier_name() {
-		value := p.token_original_value(p.current_token).clone()
+		// A view of the source, which parsing never modifies.
+		value := p.token_original_value(p.current_token)
 		if utf16_equals_ascii(value, 'get') && p.match_property_key_ahead() {
 			is_getter = true
 			p.consume()

@@ -158,18 +158,21 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 
 		target := if p.match_identifier() {
 			token := p.consume()
-			value := p.token_value(token).clone()
+			// One copy of the name, shared by the identifier and the scope
+			// records; names are never modified after parsing.
+			name := Utf16String.from_slice(p.token_value(token))
+			value := name.data
 			p.check_identifier_name_for_assignment_validity(value, false)
 			if kind != .var_kind && utf16_equals_ascii(value, 'let') {
 				p.syntax_error("Lexical binding may not be called 'let'")
 			}
-			id := p.make_identifier(declaration_start, Utf16String.from_slice(value.clone()))
+			id := p.make_identifier(declaration_start, name)
 
 			if kind == .var_kind {
-				p.scope_collector.add_var_declaration(value.clone(), id, declaration_line,
+				p.scope_collector.add_var_declaration(value, id, declaration_line,
 					declaration_column, true)
 			} else {
-				p.scope_collector.add_lexical_declaration(value.clone(), declaration_line,
+				p.scope_collector.add_lexical_declaration(value, declaration_line,
 					declaration_column)
 				p.scope_collector.register_identifier(id, value, int(kind))
 			}
@@ -284,16 +287,18 @@ fn (mut p Parser) parse_using_declaration(is_for_loop bool) Statement {
 			break
 		}
 		token := p.consume()
-		name := p.token_value(token).clone()
+		// One copy of the name, shared by the identifier and the scope records.
+		owned_name := Utf16String.from_slice(p.token_value(token))
+		name := owned_name.data
 
 		p.check_identifier_name_for_assignment_validity(name, false)
 		if utf16_equals_ascii(name, 'let') {
 			p.syntax_error("Lexical binding may not be called 'let'")
 		}
 
-		id := p.make_identifier(declaration_start, Utf16String.from_slice(name.clone()))
+		id := p.make_identifier(declaration_start, owned_name)
 
-		p.scope_collector.add_lexical_declaration(name.clone(), declaration_line,
+		p.scope_collector.add_lexical_declaration(name, declaration_line,
 			declaration_column)
 		p.scope_collector.register_identifier(id, name, none)
 
@@ -1137,7 +1142,8 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			value := Utf16String.from_slice(p.token_value(token))
 			p.check_identifier_name_for_assignment_validity(value.data, false)
 
-			id := Identifier.new(p.range_from(formal_parameters_start), value.clone())
+			// The parameter's name and its identifier share one copy.
+			id := Identifier.new(p.range_from(formal_parameters_start), value)
 			parameter_info << ParamInfo{
 				name:            value
 				is_rest:         rest
