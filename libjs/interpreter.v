@@ -537,6 +537,8 @@ enum InlineHandler as u8 {
 	binding_read
 	property_write
 	callee_read
+	strict_equality
+	logical_not
 }
 
 const inline_handlers_by_opcode = compute_inline_handlers()
@@ -559,8 +561,9 @@ fn compute_inline_handlers() []u8 {
 			.mov { InlineHandler.mov }
 			.jump { InlineHandler.jump }
 			.jump_if_false, .jump_if_true { InlineHandler.branch }
-			.add, .sub, .mul, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
-			.strict_equals, .strict_inequals { InlineHandler.number_binary }
+			.add, .sub, .mul, .less_than, .less_than_equals, .greater_than, .greater_than_equals { InlineHandler.number_binary }
+			.strict_equals, .strict_inequals { InlineHandler.strict_equality }
+			.not_op { InlineHandler.logical_not }
 			.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift,
 			.unsigned_right_shift { InlineHandler.number_bitwise }
 			.increment, .decrement { InlineHandler.increment }
@@ -573,7 +576,8 @@ fn compute_inline_handlers() []u8 {
 			.get_callee_and_this { InlineHandler.callee_read }
 			else { InlineHandler.slow }
 		})
-		if slow_calling_dispatch && handlers[index] >= u8(InlineHandler.property_read) {
+		if slow_calling_dispatch && handlers[index] >= u8(InlineHandler.property_read)
+			&& handlers[index] < u8(InlineHandler.strict_equality) {
 			handlers[index] = u8(InlineHandler.slow)
 		}
 	}
@@ -722,8 +726,24 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 				}
 				.branch {
 					value := unsafe { values[slot.lhs] }
+					// 7.1.2 ToBoolean, except for an uninitialized operand and BigInts.
+					mut truthy := false
+					mut known := true
 					if value.tag == .boolean {
-						if (value.number != 0.0) == (instruction.op == .jump_if_true) {
+						truthy = value.number != 0.0
+					} else if value.tag == .object || value.tag == .symbol {
+						truthy = true
+					} else if value.tag == .undefined || value.tag == .null {
+						truthy = false
+					} else if value.is_number() {
+						truthy = value.number != 0.0 && value.number == value.number
+					} else if value.tag == .string {
+						truthy = value.as_string().utf16.data.len != 0
+					} else {
+						known = false
+					}
+					if known {
+						if truthy == (instruction.op == .jump_if_true) {
 							frame.program_counter = instruction.target
 						} else {
 							frame.program_counter++
@@ -743,15 +763,79 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 							.less_than { Value.from_bool(x < y) }
 							.less_than_equals { Value.from_bool(x <= y) }
 							.greater_than { Value.from_bool(x > y) }
-							.greater_than_equals { Value.from_bool(x >= y) }
-							.strict_equals { Value.from_bool(x == y) }
-							else { Value.from_bool(x != y) }
+							else { Value.from_bool(x >= y) }
 						}
 						unsafe {
 							values[slot.dst] = result
 						}
 						frame.program_counter++
 						continue
+					}
+				}
+				.logical_not {
+					// ToBoolean as in .branch.
+					value := unsafe { values[slot.lhs] }
+					mut truthy := false
+					mut known := true
+					if value.tag == .boolean {
+						truthy = value.number != 0.0
+					} else if value.tag == .object || value.tag == .symbol {
+						truthy = true
+					} else if value.tag == .undefined || value.tag == .null {
+						truthy = false
+					} else if value.is_number() {
+						truthy = value.number != 0.0 && value.number == value.number
+					} else if value.tag == .string {
+						truthy = value.as_string().utf16.data.len != 0
+					} else {
+						known = false
+					}
+					if known {
+						unsafe {
+							values[slot.dst] = Value.from_bool(!truthy)
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.strict_equality {
+					// 7.2.15 IsStrictlyEqual: Numbers by value, different types
+					// unequal, and undefined, null, Booleans, Symbols and Objects
+					// by payload. Strings of equal length at different addresses
+					// and BigInts compare their contents in execute_instruction().
+					left := unsafe { values[slot.lhs] }
+					right := unsafe { values[slot.rhs] }
+					if !left.is_special_empty_value() && !right.is_special_empty_value() {
+						mut known := true
+						mut equal := false
+						if left.is_number() && right.is_number() {
+							equal = left.number == right.number
+						} else if left.tag != right.tag {
+							equal = false
+						} else if left.tag == .undefined || left.tag == .null {
+							equal = true
+						} else if left.tag == .boolean {
+							equal = left.number == right.number
+						} else if left.tag == .object || left.tag == .symbol {
+							equal = left.cell == right.cell
+						} else if left.tag == .string {
+							if left.cell == right.cell {
+								equal = true
+							} else if left.as_string().utf16.data.len != right.as_string().utf16.data.len {
+								equal = false
+							} else {
+								known = false
+							}
+						} else {
+							known = false
+						}
+						if known {
+							unsafe {
+								values[slot.dst] = Value.from_bool(equal == (instruction.op == .strict_equals))
+							}
+							frame.program_counter++
+							continue
+						}
 					}
 				}
 				.number_bitwise {
