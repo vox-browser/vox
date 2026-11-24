@@ -74,6 +74,12 @@ pub fn (object &Object) ordinary_to_primitive(mut vm VM, preferred_type Preferre
 
 // Runtime/Value.cpp::ToPropertyKey.
 pub fn (value Value) to_property_key(mut vm VM) !PropertyName {
+	// ToString of an integral Number in [0, 2^32 - 2] is its canonical array
+	// index (-0 prints as "0"); skip formatting and reparsing it.
+	if value.is_number() && value.number >= 0 && value.number <= 4294967294.0 {
+		index := u32(value.number)
+		if f64(index) == value.number { return PropertyName.from_number(index) }
+	}
 	if use_primitive_property_keys() {
 		if value.is_string() {
 			$if test { if primitive_property_keys_diagnostic { primitive_property_keys_strings++ } }
