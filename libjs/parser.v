@@ -214,6 +214,12 @@ mut:
 	function_table                 FunctionTable
 	// parser_names.v: identifier names shared by their occurrences.
 	names ParserNames
+	// parser_lists.v: elements of the lists being built.
+	statement_scratch  []Statement
+	argument_scratch   []CallArgument
+	expression_scratch []Expression
+	property_scratch   []ObjectProperty
+	element_scratch    []?Expression
 }
 
 fn Parser.new(source []u16, program_type ProgramType) Parser {
@@ -985,16 +991,25 @@ fn (mut p Parser) parse_directive() (bool, []Statement) {
 }
 
 fn (mut p Parser) parse_statement_list(mut statements []Statement, allow_labelled_functions bool) {
+	mark := p.statement_scratch.len
 	for !p.done() {
 		if p.match_export_or_import() {
 			break
 		}
 		if p.match_declaration() {
-			statements << p.parse_declaration()
+			p.statement_scratch << p.parse_declaration()
 		} else if p.match_statement() {
-			statements << p.parse_statement(allow_labelled_functions)
+			p.statement_scratch << p.parse_statement(allow_labelled_functions)
 		} else {
 			break
+		}
+	}
+	if statements.len == 0 {
+		statements = take_scratch_list(mut p.statement_scratch, mark)
+	} else {
+		statements << p.statement_scratch[mark..]
+		unsafe {
+			p.statement_scratch.len = mark
 		}
 	}
 }

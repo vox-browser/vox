@@ -175,11 +175,13 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 
 fn (mut p Parser) parse_comma_expression(start Position, expression Expression, min_precedence int, forbidden ForbiddenTokens) Expression {
 	if min_precedence <= 1 && p.match_token(.comma) && forbidden.allows(.comma) {
-		mut expressions := [expression]
+		mark := p.expression_scratch.len
+		p.expression_scratch << expression
 		for p.match_token(.comma) {
 			p.consume()
-			expressions << p.parse_assignment_expression()
+			p.expression_scratch << p.parse_assignment_expression()
 		}
+		expressions := take_scratch_list(mut p.expression_scratch, mark)
 		return p.expression(start, ExpressionKind{
 			tag:   .sequence
 			lists: &ExpressionLists{
@@ -890,12 +892,12 @@ fn (mut p Parser) parse_call_expression(callee Expression) Expression {
 
 fn (mut p Parser) parse_arguments() []CallArgument {
 	p.consume_token(.paren_open)
-	mut call_arguments := []CallArgument{}
+	mark := p.argument_scratch.len
 
 	for !p.match_token(.paren_close) && !p.done() {
 		is_spread := p.eat(.triple_dot)
 		value := p.parse_assignment_expression()
-		call_arguments << CallArgument{
+		p.argument_scratch << CallArgument{
 			value:     value
 			is_spread: is_spread
 		}
@@ -906,7 +908,7 @@ fn (mut p Parser) parse_arguments() []CallArgument {
 	}
 
 	p.consume_token(.paren_close)
-	return call_arguments
+	return take_scratch_list(mut p.argument_scratch, mark)
 }
 
 // Parse an optional chaining expression (`a?.b`, `a?.[x]`, `a?.()`).
@@ -1076,13 +1078,13 @@ fn (mut p Parser) parse_object_expression() Expression {
 	start := p.position()
 	p.consume_token(.curly_open)
 
-	mut properties := []ObjectProperty{}
+	mark := p.property_scratch.len
 	mut has_proto_setter := false
 	for !p.match_token(.curly_close) && !p.done() {
 		if p.match_token(.triple_dot) {
 			p.consume()
 			expression := p.parse_assignment_expression()
-			properties << ObjectProperty{
+			p.property_scratch << ObjectProperty{
 				range:         p.range_from(start)
 				property_type: .spread
 				key:           expression
@@ -1096,7 +1098,7 @@ fn (mut p Parser) parse_object_expression() Expression {
 				}
 				has_proto_setter = true
 			}
-			properties << property
+			p.property_scratch << property
 		}
 
 		if !p.match_token(.comma) {
@@ -1106,6 +1108,7 @@ fn (mut p Parser) parse_object_expression() Expression {
 	}
 
 	p.consume_token(.curly_close)
+	properties := take_scratch_list(mut p.property_scratch, mark)
 	return p.expression(start, ExpressionKind{
 		tag:   .object_expr
 		lists: &ExpressionLists{
@@ -1417,10 +1420,10 @@ fn (mut p Parser) parse_array_expression() Expression {
 	start := p.position()
 	p.consume_token(.bracket_open)
 
-	mut elements := []?Expression{}
+	mark := p.element_scratch.len
 	for !p.match_token(.bracket_close) && !p.done() {
 		if p.match_token(.comma) {
-			elements << ?Expression(none)
+			p.element_scratch << ?Expression(none)
 			p.consume()
 			continue
 		}
@@ -1428,12 +1431,12 @@ fn (mut p Parser) parse_array_expression() Expression {
 			p.consume()
 			expression := p.parse_assignment_expression()
 			// C++ uses the array's rule_start ([ position) for SpreadExpression.
-			elements << ?Expression(p.expression(start, ExpressionKind{
+			p.element_scratch << ?Expression(p.expression(start, ExpressionKind{
 				tag:     .spread
 				operand: &expression
 			}))
 		} else {
-			elements << ?Expression(p.parse_assignment_expression())
+			p.element_scratch << ?Expression(p.parse_assignment_expression())
 		}
 		if !p.match_token(.comma) {
 			break
@@ -1442,6 +1445,7 @@ fn (mut p Parser) parse_array_expression() Expression {
 	}
 
 	p.consume_token(.bracket_close)
+	elements := take_scratch_list(mut p.element_scratch, mark)
 	return p.expression(start, ExpressionKind{
 		tag:   .array_expr
 		lists: &ExpressionLists{
