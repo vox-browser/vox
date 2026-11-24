@@ -952,7 +952,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 				.property_read {
 					left := unsafe { values[slot.lhs] }
 					right := unsafe { values[slot.rhs] }
-					if left.is_object() && !right.is_special_empty_value() {
+					if (left.is_object() || left.is_string()) && !right.is_special_empty_value() {
 						result := vm.execute_property_read_at(left, right, instruction.rhs, executable, instruction.strict,
 							executable.property_hint(frame.program_counter)) or {
 							if !is_throw_completion(err) { return err }

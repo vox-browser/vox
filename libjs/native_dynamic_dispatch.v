@@ -114,6 +114,21 @@ fn (mut vm VM) execute_property_read_at(left Value, right Value, key_operand Ope
 		vm.record_compact_reference_read()
 		return left.as_object().hinted_get(mut vm, key, left, hint)
 	}
+	// A primitive string's own properties are its length and indices; any
+	// other key is String.prototype.[[Get]] with the string as receiver, as
+	// GetValue on ToObject(string) does.
+	if left.is_string() && use_compact_reference_reads() {
+		key := vm.operand_property_key(executable, key_operand, right)!
+		if own := left.as_string().get_own_property(mut vm, key) { return own }
+		if direct_primitive_read() {
+			if prototype := vm.realm().string_prototype {
+				vm.record_compact_reference_read()
+				return prototype.hinted_get(mut vm, key, left, hint)
+			}
+		}
+		// The key is already converted; do not run its coercion hooks again.
+		return Reference.for_value(left, key, none, strict).get_value(mut vm)
+	}
 	return vm.execute_property_read(left, right, strict)
 }
 
