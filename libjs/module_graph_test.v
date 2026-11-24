@@ -216,3 +216,23 @@ fn test_module_requests_deduplicate_attribute_sets_without_requiring_key_order()
     module_record := SourceTextModule.parse('import "./a.js" with {type:"json",mode:"x"};import "./a.js" with {mode:"x",type:"json"};',vm.realm(),'/main.js',unsafe { nil })!
     assert module_record.requested_module_requests().len==1
 }
+
+// Hinted module reads see live import bindings, namespace imports, local
+// lexical bindings and their TDZ, and imports of re-exports, on every call.
+fn test_module_binding_hints_follow_live_imports_and_locals() {
+	mut fixture := new_module_graph_fixture({
+		'/a.js':'export let n=1;export function inc(){n++}export const k=10;'
+		'/re.js':'export {n as m} from "./a.js";'
+		'/main.js':'import {n,inc,k} from "./a.js";import * as ns from "./a.js";import {m} from "./re.js";' +
+			'const base=100;let late;function read(){return n+k+base+ns.n+m}' +
+			'function readLate(){try{return early}catch(e){return e.name}}' +
+			'export function run(){var s=[];for(var i=0;i<3;i++){s.push(read());inc()}return s.join()+":"+readLate()}' +
+			'export const first=readLate();const early=5;'
+	})!
+	mut entry := fixture.load_and_link('/main.js')!
+	assert entry.evaluate(mut fixture.vm)!.promise.state==.fulfilled
+	assert entry.export_value(mut fixture.vm,utf16_string('first'))!.as_string().str()=='ReferenceError'
+	run := entry.export_value(mut fixture.vm,utf16_string('run'))!
+	assert call(mut fixture.vm,run,js_undefined(),[])!.as_string().str()=='113,116,119:5'
+	assert call(mut fixture.vm,run,js_undefined(),[])!.as_string().str()=='122,125,128:5'
+}

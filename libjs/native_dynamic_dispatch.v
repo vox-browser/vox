@@ -145,6 +145,11 @@ fn (mut vm VM) execute_binding_read(instruction &Instruction, executable &Execut
 					vm.record_compact_reference_read()
 					return environment.get_binding_value_direct(mut vm, index)
 				}
+			} else if mut environment is ModuleEnvironment {
+				if environment.hinted_binding_matches(u32(index), name) {
+					vm.record_compact_reference_read()
+					return environment.hinted_binding_value(mut vm, u32(index))
+				}
 			}
 		}
 		value, _ := vm.resolve_compact_read_recording(*name, instruction.strict, false, false, coordinate)!
@@ -225,6 +230,30 @@ fn (mut vm VM) resolve_compact_read_recording(name Utf16String, strict bool, cal
 					hops++
 					continue
 				}
+			} else if mut current is ModuleEnvironment {
+				if use_direct_declarative_reads() {
+					index := current.DeclarativeEnvironment.find_binding_index(name)
+					if index >= 0 {
+						value := current.DeclarativeEnvironment.get_binding_value_direct(mut vm, index)!
+						vm.record_compact_reference_read()
+						if u32(index) < module_import_hint {
+							record_binding_coordinate(coordinate, declarative_path, hops, index)
+						}
+						return value, js_undefined()
+					}
+					for position, binding in current.imports {
+						if binding.name != name { continue }
+						value := current.import_value(mut vm, position)!
+						vm.record_compact_reference_read()
+						if u32(position) < module_import_hint {
+							record_binding_coordinate(coordinate, declarative_path, hops, int(u32(position) | module_import_hint))
+						}
+						return value, js_undefined()
+					}
+					environment = current.outer_environment()
+					hops++
+					continue
+				}
 			} else if mut current is GlobalEnvironment {
 				if value := vm.own_global_data_binding(current, name) {
 					vm.record_compact_reference_read()
@@ -277,6 +306,11 @@ fn (mut vm VM) execute_callee_read(instruction &Instruction, executable &Executa
 				if environment.hinted_binding_matches(index, name) {
 					vm.record_compact_reference_read()
 					return environment.get_binding_value_direct(mut vm, index)!, js_undefined()
+				}
+			} else if mut environment is ModuleEnvironment {
+				if environment.hinted_binding_matches(u32(index), name) {
+					vm.record_compact_reference_read()
+					return environment.hinted_binding_value(mut vm, u32(index))!, js_undefined()
 				}
 			}
 		}
