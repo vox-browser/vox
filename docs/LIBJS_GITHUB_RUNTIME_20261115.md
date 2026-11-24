@@ -12323,3 +12323,10 @@ chooses ciphers in its own order.
   Same-binary arms remain the reliable comparison: `ec764119a` adds
   `VOX_LIBJS_SLOW_CALLING_DISPATCH=1`, which routes the calling arms back
   to `execute_instruction()` (their code stays in the loop).
+- Same-binary cohort on `84060b5d` (through `ec764119a`), five alternating
+  pairs, host load 7-11, every capture 2 px: candidate median 29.095B
+  (28.860B-29.239B) against 29.665B (29.356B-29.924B) with
+  `VOX_LIBJS_SLOW_CALLING_DISPATCH=1`; every pair −0.26B to −0.69B
+  (median −0.57B, −1.9%). The calling arms' dynamic effect is a gain; the
+  loop-body cost they add to other instructions is not part of this
+  comparison (about +1% on the standalone arithmetic loop).
