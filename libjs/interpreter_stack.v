@@ -21,6 +21,9 @@ mut:
 	next_frame_id u64   = 1
 	native_calls  []&NativeInvocation
 	native_depth  int
+	// native_call_frames.v: one argument-only frame per native nesting depth.
+	native_frames      []&ExecutionContext
+	native_frame_depth int
 }
 
 pub fn InterpreterStack.new() InterpreterStack {

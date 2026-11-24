@@ -157,11 +157,32 @@ pub fn (mut function NativeFunction) internal_call(mut vm VM, this_value Value, 
 // Internal callers may discard the result of a branded builtin. Keep its
 // original function identity, realm, native frame and error/stack checks.
 fn (mut function NativeFunction) call_in_frame(mut vm VM, this_value Value, arguments []Value, internal_behaviour NativeFunctionPointer) !Value {
+	if use_native_frame_slots() {
+		return function.call_in_native_frame(mut vm, this_value, arguments, internal_behaviour)
+	}
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	defer { stack.deallocate(mark) }
 	function.push_call_frame(mut vm, mut stack, this_value, arguments)!
 	defer { vm.pop_current_context() }
+	return function.invoke_behaviour(mut vm, internal_behaviour)
+}
+
+// call_in_frame() in the depth's native frame (native_call_frames.v).
+fn (mut function NativeFunction) call_in_native_frame(mut vm VM, this_value Value, arguments []Value, internal_behaviour NativeFunctionPointer) !Value {
+	mut stack := vm.interpreter_stack()
+	mark := stack.top()
+	mut callee := stack.allocate_native_frame(u32(arguments.len)) or {
+		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
+	}
+	defer { stack.release_native_frame(mut callee, mark) }
+	function.enter_call_frame(mut vm, mut callee, this_value, arguments)!
+	defer { vm.pop_current_context() }
+	return function.invoke_behaviour(mut vm, internal_behaviour)
+}
+
+@[inline]
+fn (mut function NativeFunction) invoke_behaviour(mut vm VM, internal_behaviour NativeFunctionPointer) !Value {
 	behaviour := if internal_behaviour != unsafe { nil } { internal_behaviour } else if index := function.raw_function_index {
 		vm.native_function(index, .raw_native_function)
 	} else {
@@ -174,10 +195,15 @@ fn (mut function NativeFunction) call_in_frame(mut vm VM, this_value Value, argu
 }
 
 fn (mut function NativeFunction) push_call_frame(mut vm VM, mut stack InterpreterStack, this_value Value, arguments []Value) ! {
-	caller := vm.current_context()
 	mut callee := stack.allocate_reusable(0, []Value{}, u32(arguments.len)) or {
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
+	function.enter_call_frame(mut vm, mut callee, this_value, arguments)!
+}
+
+// NativeFunction::internal_call steps 1-9 for an allocated callee frame.
+fn (mut function NativeFunction) enter_call_frame(mut vm VM, mut callee ExecutionContext, this_value Value, arguments []Value) ! {
+	caller := vm.current_context()
 	callee.copy_call_arguments(arguments)
 	callee.passed_argument_count = u32(arguments.len)
 	callee.function = FunctionObject(&function)
@@ -203,6 +229,10 @@ pub fn call(mut vm VM, function Value, this_value Value, arguments []Value) !Val
 		if callable.data.kind == .normal {
 			return callable.call_body(mut vm, this_value, arguments, js_undefined(), none, none)
 		}
+	}
+	// NativeFunction.internal_call() is call_in_frame(); skip the interface dispatch.
+	if mut callable is NativeFunction {
+		return callable.call_in_frame(mut vm, this_value, arguments, unsafe { nil })
 	}
 	return callable.internal_call(mut vm, this_value, arguments)
 }
