@@ -74,9 +74,9 @@ fn test_binding_lookup_collisions_bounds_name_edits_and_hint_limit_take_live_fal
 		assert env.find_binding_index(utf16_string('binding${index}')) == index
 	}
 	mut hints := env.binding_lookup_hints or { panic('Expected bounded hints') }
-	assert hints.positions.len <= binding_lookup_hint_limit
+	assert hints.positions.count <= binding_lookup_hint_limit
 	key := utf16_string('binding80')
-	hints.positions[binding_lookup_hash(key)] = 4
+	hints.positions.set(binding_lookup_hash(key), 4)
 	assert env.find_binding_index(key) == 80
 	env.bindings[80].name = utf16_string('renamed')
 	assert env.find_binding_index(key) == -1

@@ -9,7 +9,7 @@ import platform
 @[heap]
 struct IndexedProperties {
 mut:
-	positions map[u64]int
+	positions PositionTable
 	count     int
 	data      voidptr
 	revision  u64
@@ -67,12 +67,12 @@ fn (mut index IndexedProperties) insert(object &Object, position int) {
 	key := object.properties[position].key
 	mut hash := property_lookup_hash(key)
 	for {
-		if previous := index.positions[hash] {
+		if previous := index.positions.get(hash) {
 			if object.properties[previous].key.equals(key) { return }
 			hash++
 			continue
 		}
-		index.positions[hash] = position
+		index.positions.set(hash, position)
 		return
 	}
 }
@@ -96,7 +96,7 @@ fn (object &Object) find_indexed_property(key PropertyName) int {
 	}
 	mut hash := property_lookup_hash(key)
 	for {
-		position := index.positions[hash] or {
+		position := index.positions.get(hash) or {
 			$if test {
 				if indexed_properties_diagnostics { indexed_property_misses++ }
 			}

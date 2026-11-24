@@ -28,7 +28,7 @@ $if test {
 @[heap]
 struct PropertyLookupHints {
 mut:
-	positions map[u64]int
+	positions PositionTable
 }
 
 pub struct PropertyLookupActivity {
@@ -105,7 +105,7 @@ fn (object &Object) find_own_property_with_hints(key PropertyName) int {
 	}
 	hash := property_lookup_hash(key)
 	if hints := object.property_lookup_hints {
-		if index := hints.positions[hash] {
+		if index := hints.positions.get(hash) {
 			// Deletions, compaction or key replacement can invalidate positions.
 			// Hash collisions also take the ordered fallback; no negative cache
 			// can hide additions or a property on the prototype chain.
@@ -134,7 +134,7 @@ fn (object &Object) find_own_property_with_hints(key PropertyName) int {
 		owner.property_lookup_hints = created
 		created
 	}
-	if hints.positions.len >= property_lookup_hint_limit { hints.positions.clear() }
-	hints.positions[hash] = index
+	if hints.positions.count >= property_lookup_hint_limit { hints.positions.clear() }
+	hints.positions.set(hash, index)
 	return index
 }

@@ -79,7 +79,7 @@ fn native_index_position(object &Object, key PropertyName) int {
 	// of allocating a hint table in this nonthrowing native operation.
 	$if test { if property_lookup_hints_disabled_for_test { return -1 } }
 	if hints := object.property_lookup_hints {
-		if position := hints.positions[property_lookup_hash(key)] {
+		if position := hints.positions.get(property_lookup_hash(key)) {
 			if position >= 0 && position < object.properties.len && object.properties[position].key.equals(key) {
 				$if test { if property_lookup_hints_diagnostic_for_test { property_lookup_hint_hits_for_test++ } }
 				return position

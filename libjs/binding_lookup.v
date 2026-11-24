@@ -15,7 +15,7 @@ const binding_lookup_hint_limit = 4096
 @[heap]
 struct BindingLookupHints {
 mut:
-	positions map[u64]int
+	positions PositionTable
 }
 
 pub struct BindingLookupActivity {
@@ -60,7 +60,7 @@ fn binding_lookup_hash(name Utf16String) u64 {
 fn (environment &DeclarativeEnvironment) find_binding_index_with_hints(name Utf16String) int {
 	hash := binding_lookup_hash(name)
 	if hints := environment.binding_lookup_hints {
-		if index := hints.positions[hash] {
+		if index := hints.positions.get(hash) {
 			if index >= 0 && index < environment.bindings.len {
 				binding := &environment.bindings[index]
 				if !binding.deleted && binding.name == name {
@@ -88,7 +88,7 @@ fn (environment &DeclarativeEnvironment) find_binding_index_with_hints(name Utf1
 		owner.binding_lookup_hints = created
 		created
 	}
-	if hints.positions.len >= binding_lookup_limit() { hints.positions.clear() }
-	hints.positions[hash] = index
+	if hints.positions.count >= binding_lookup_limit() { hints.positions.clear() }
+	hints.positions.set(hash, index)
 	return index
 }

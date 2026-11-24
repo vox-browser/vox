@@ -34,7 +34,7 @@ fn test_property_hints_validate_collisions_and_live_public_storage() {
 	key := PropertyName.from_str('field30')
 	assert object.get(mut vm, key)!.number == 30
 	mut hints := object.property_lookup_hints or { panic('No hints') }
-	hints.positions[property_lookup_hash(key)] = 2
+	hints.positions.set(property_lookup_hash(key), 2)
 	assert object.get(mut vm, key)!.number == 30
 	// Same-size external replacement/reordering cannot return stale values.
 	object.properties.reverse_in_place()
@@ -80,7 +80,7 @@ fn test_property_hints_keep_misses_prototypes_accessors_and_bounded_storage_live
 		assert object.internal_delete(name)
 	}
 	hints := object.property_lookup_hints or { panic('No hints') }
-	assert hints.positions.len <= property_lookup_hint_limit
+	assert hints.positions.count <= property_lookup_hint_limit
 	mut small := Object.create(vm.realm(), none)
 	small.define_direct_property(key, Value.from_i32(1), 7)
 	assert small.get(mut vm, key)!.number == 1
