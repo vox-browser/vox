@@ -744,11 +744,13 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	if kind.tag in [.program, .block, .function_body] {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
-		for child in scope.children {
+		child_items := scope.children
+		for child_index in 0 .. child_items.len {
+			child := unsafe { &child_items[child_index] }
 			if kind.tag == .block && child.function_declaration_for_labelled_item() != none {
 				continue
 			}
-			generator.collect_vars(&child)!
+			generator.collect_vars(child)!
 		}
 		if kind.tag in [.program, .function_body] && !generator.strict {
 			generator.annex_b_function_names = scope.annexb_function_names.clone()
@@ -771,8 +773,10 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	} else if kind.tag == .switch_stmt {
 		data := kind.switch_data or { return error('Missing switch statement') }
 		for clause in data.cases {
-			for child in clause.scope.children {
-				if child.function_declaration_for_labelled_item() == none { generator.collect_vars(&child)! }
+			child_items := clause.scope.children
+			for child_index in 0 .. child_items.len {
+				child := unsafe { &child_items[child_index] }
+				if child.function_declaration_for_labelled_item() == none { generator.collect_vars(child)! }
 			}
 		}
 	} else if kind.tag==.try_stmt {
@@ -786,7 +790,9 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 }
 
 fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, global bool) ! {
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
 		if child.kind.tag == .class_declaration {
 			data := child.kind.class_data or { return error('Missing class declaration') }
 			name := data.name or { return error('Missing class name') }
@@ -832,7 +838,9 @@ fn (mut generator BytecodeGenerator) clear_completion() {
 }
 
 fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) {
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
 		declaration := child.function_declaration_for_labelled_item() or { continue }
 		generator.initialized_functions.set(u64(declaration.kind.function_id.id), 0)
 		name := declaration.kind.func_name or { continue }
@@ -893,7 +901,11 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 				// Keep budgeted boundary operations, without allocating an empty
 				// environment or changing the actual lexical-depth metadata.
 				generator.emit(Instruction{op: .nop})
-				for child in scope.children { generator.statement(mut vm, &child)! }
+				child_items := scope.children
+				for child_index in 0 .. child_items.len {
+					child := unsafe { &child_items[child_index] }
+					generator.statement(mut vm, child)!
+				}
 				generator.emit(Instruction{op: .nop})
 				return
 			}
@@ -901,8 +913,10 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			generator.scope_depth++
 			generator.lexical_declarations(scope.children, false)!
 			generator.initialize_lexical_functions(scope.children)!
-			for child in scope.children {
-				generator.statement(mut vm, &child)!
+			child_items := scope.children
+			for child_index in 0 .. child_items.len {
+				child := unsafe { &child_items[child_index] }
+				generator.statement(mut vm, child)!
 			}
 			generator.scope_depth--
 			generator.emit(Instruction{ op: .leave_scope })

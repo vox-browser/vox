@@ -1118,14 +1118,18 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 	// function declarations wrapped in one or more labels.
 	mut functions_to_initialize := []FunctionToInit{}
 	mut seen_function_names := map[string]int{}
-	for i, child in scope_data.children {
+	child_items := scope_data.children
+	for i in 0 .. child_items.len {
+		child := unsafe { &child_items[i] }
 		if function := child.function_declaration_for_labelled_item() {
 			if name := function.kind.func_name {
 				seen_function_names[name.name.str()] = i
 			}
 		}
 	}
-	for i, child in scope_data.children {
+	child_items_next := scope_data.children
+	for i in 0 .. child_items_next.len {
+		child := unsafe { &child_items_next[i] }
 		if function := child.function_declaration_for_labelled_item() {
 			if name := function.kind.func_name {
 				if seen_function_names[name.name.str()] == i {

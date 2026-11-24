@@ -14,7 +14,9 @@ fn (mut generator BytecodeGenerator) copy_annex_b_function(declaration &Statemen
 // var scope. Function objects are recreated whenever that environment is entered.
 fn (mut generator BytecodeGenerator) initialize_lexical_functions(children []Statement) ! {
 	mut names := []Utf16String{}
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
 		declaration := child.function_declaration_for_labelled_item() or { continue }
 		name := declaration.kind.func_name or { return error('Missing block function name') }
 		if names.any(it == name.name) { continue }

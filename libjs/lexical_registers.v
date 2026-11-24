@@ -80,7 +80,11 @@ fn collect_lexical_register_candidates(statement &Statement, mut candidates []Le
 	match kind.tag {
 		.block, .function_body {
 			scope := kind.scope or { return }
-			for child in scope.children { collect_lexical_register_candidates(&child, mut candidates) }
+			child_items := scope.children
+			for child_index in 0 .. child_items.len {
+				child := unsafe { &child_items[child_index] }
+				collect_lexical_register_candidates(child, mut candidates)
+			}
 		}
 		.variable_declaration {
 			if kind.decl_kind == .var_kind { return }
@@ -110,8 +114,10 @@ fn collect_lexical_register_candidates(statement &Statement, mut candidates []Le
 		.switch_stmt {
 			data := kind.switch_data or { return }
 			for clause in data.cases {
-				for child in clause.scope.children {
-					if child.kind.tag != .variable_declaration { collect_lexical_register_candidates(&child, mut candidates) }
+				child_items := clause.scope.children
+				for child_index in 0 .. child_items.len {
+					child := unsafe { &child_items[child_index] }
+					if child.kind.tag != .variable_declaration { collect_lexical_register_candidates(child, mut candidates) }
 				}
 			}
 		}
@@ -178,9 +184,11 @@ fn (generator &BytecodeGenerator) declaration_in_registers(declaration &Statemen
 // Whether a block's let/const declarations all live in registers. Class and
 // function declarations are checked separately by elide_empty_block.
 fn (generator &BytecodeGenerator) lexicals_in_registers(children []Statement) bool {
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
 		if child.kind.tag == .variable_declaration && child.kind.decl_kind != .var_kind
-			&& !generator.declaration_in_registers(&child) {
+			&& !generator.declaration_in_registers(child) {
 			return false
 		}
 	}

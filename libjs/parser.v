@@ -873,7 +873,9 @@ fn (mut p Parser) parse_module() ([]Statement, bool) {
 
 fn (mut p Parser) check_undeclared_exports(children []Statement) {
 	mut declared_names := map[string]bool{}
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
 		match child.kind.tag {
 			.variable_declaration {
 				for decl in child.kind.declarations {
@@ -931,7 +933,9 @@ fn (mut p Parser) check_undeclared_exports(children []Statement) {
 	}
 
 	// Check each export's local bindings
-	for child in children {
+	child_items_next := children
+	for child_index in 0 .. child_items_next.len {
+		child := unsafe { &child_items_next[child_index] }
 		if child.kind.tag == .export_stmt {
 			if ed := child.kind.export_data {
 				if ed.statement != none {
