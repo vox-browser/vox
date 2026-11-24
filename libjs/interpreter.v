@@ -548,6 +548,11 @@ fn compute_inline_handlers() []u8 {
 	// Their code remains in the loop, so this measures their dynamic effect.
 	slow_calling_dispatch := os.getenv('VOX_LIBJS_SLOW_CALLING_DISPATCH') != ''
 	mut handlers := []u8{len: int(OpCode.nop) + 1}
+	// VOX_LIBJS_SLOW_DISPATCH and checked operands (inline_interpreter_dispatch)
+	// send every instruction to execute_instruction(): leave the table all slow.
+	if os.getenv('VOX_LIBJS_SLOW_DISPATCH') != '' || os.getenv('VOX_LIBJS_CHECKED_OPERANDS') != '' {
+		return handlers
+	}
 	for index in 0 .. handlers.len {
 		op := unsafe { OpCode(index) }
 		handlers[index] = u8(match op {
@@ -695,11 +700,8 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		// execute_instruction() still handles every other case, including an
 		// uninitialized operand, so its prologue and long opcode chain are
 		// skipped only for these steps.
-		handler := if inline_interpreter_dispatch {
-			unsafe { InlineHandler(inline_handlers_by_opcode[int(instruction.op)]) }
-		} else {
-			InlineHandler.slow
-		}
+		// All slow unless inline_interpreter_dispatch (compute_inline_handlers()).
+		handler := unsafe { InlineHandler(inline_handlers_by_opcode[int(instruction.op)]) }
 		if handler != .slow {
 			values := unsafe { &Value(frame.values.data) }
 			slot := unsafe { &slots[frame.program_counter] }
