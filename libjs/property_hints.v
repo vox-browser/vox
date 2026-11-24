@@ -153,6 +153,38 @@ fn (object &Object) hinted_set(key PropertyName, value Value, hint &u32) bool {
 
 // internal_set()'s direct-path holders: no exotic [[Set]] or [[DefineOwnProperty]].
 @[inline]
+// [[Set]] at a site that adds its key, for a plain ordinary receiver: the
+// same OrdinarySet steps as internal_set()'s direct path (no setter or
+// read-only property on the prototype chain, an extensible receiver), without
+// the Reference. A present key refreshes the hint; it and rejected or
+// unhandled sets return false for the complete path, which reports them.
+fn (object &Object) hinted_add(key PropertyName, value Value, hint &u32) bool {
+	if !use_hinted_adds() || !use_direct_accessor_dispatch() || !object.is_plain_ordinary_storage()
+		|| object.prototype == none {
+		return false
+	}
+	index := if object.properties.len == 0 { -1 } else { object.find_own_property(key) }
+	if index >= 0 {
+		if index < int(property_hint_adding) {
+			unsafe {
+				*hint = u32(index)
+			}
+		}
+		return false
+	}
+	mut owner := unsafe { &Object(object) }
+	return owner.set_absent_own_data_property(key, value) == absent_own_set_added
+}
+
+// Same-binary control: adds take the complete Reference/[[Set]] path.
+const complete_property_adds = os.getenv('VOX_LIBJS_COMPLETE_PROPERTY_ADDS') != ''
+
+@[inline]
+fn use_hinted_adds() bool {
+	$if test { if hinted_adds_disabled_for_test { return false } }
+	return !complete_property_adds
+}
+
 fn (object &Object) writes_directly() bool {
 	return object.proxy_object == none && object.array_object == none
 		&& object.indexed_properties == none && object.typed_array == none
@@ -175,4 +207,6 @@ $if test {
 	}
 	pub fn inherited_property_hint_hits_for_testing() u64 { return inherited_property_hint_hits }
 	pub fn set_wide_property_hints_for_testing(enabled bool) { narrow_property_hints_for_test = !enabled }
+	__global hinted_adds_disabled_for_test bool
+	pub fn set_hinted_adds_for_testing(enabled bool) { hinted_adds_disabled_for_test = !enabled }
 }

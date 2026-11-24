@@ -39,10 +39,7 @@ fn (object &Object) find_own_string_property(key &Utf16String) int {
 			continue
 		}
 		if candidate.data.len != units.len { continue }
-		if units.len == 0 || candidate.data.data == units.data
-			|| unsafe { vmemcmp(candidate.data.data, units.data, units.len * int(sizeof(u16))) } == 0 {
-			return index
-		}
+		if utf16_key_units_equal(candidate.data, units) { return index }
 	}
 	return -1
 }

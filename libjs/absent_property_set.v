@@ -50,6 +50,10 @@ fn (mut object Object) set_absent_own_data_property(key PropertyName, value Valu
 		holder = current.prototype
 	}
 	if !object.extensible { return absent_own_set_rejected }
+	// Objects built by adding properties usually get several. Start with
+	// room for four instead of growing through two (with the prealloc arena,
+	// which keeps outgrown buffers, this is also smaller from three on).
+	if object.properties.cap == 0 && use_hinted_adds() { object.properties = []OwnProperty{cap: 4} }
 	object.properties << OwnProperty{key: key, value: value, writable: true, enumerable: true,
 		configurable: true}
 	if object.indexed_properties != none { object.index_appended_property() }

@@ -589,10 +589,15 @@ fn compute_inline_handlers() []u8 {
 fn (mut vm VM) execute_property_write(instruction &Instruction, executable &Executable, left Value, right Value, source Value) ! {
 	key := vm.operand_property_key(executable, instruction.rhs, right)!
 	hint := executable.property_hint(vm.current_context().program_counter)
-	if !left.is_object() || unsafe { *hint } == property_hint_adding
-		|| !left.as_object().hinted_set(key, source, hint) {
-		Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
+	if left.is_object() {
+		object := left.as_object()
+		if unsafe { *hint } == property_hint_adding {
+			if object.hinted_add(key, source, hint) { return }
+		} else if object.hinted_set(key, source, hint) {
+			return
+		}
 	}
+	Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
 }
 
 // Same-binary control: check every operand slot again while dispatching.
