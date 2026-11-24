@@ -598,7 +598,7 @@ const inline_interpreter_dispatch = os.getenv('VOX_LIBJS_SLOW_DISPATCH') == ''
 // place of the generated assembly interpreter. Ordinary calls allocate their
 // own checked frames; upstream inline-call frames remain untranslated.
 pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Executable, entry_point u32, limits ExecutionLimits) !Value {
-	vm.validate_execution(executable, frame.argument_count)!
+	layout_vouched := vm.validate_execution(executable, frame.argument_count)!
 	$if test { vm.profile_executable_for_testing(executable, &frame) }
 	if entry_point >= executable.bytecode_length { return error('Entry point out of range') }
 	required := u64(executable.registers_and_locals_count) + u64(executable.constants.len) +
@@ -673,14 +673,17 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 			return vm.invoke_native_entry(entry, executable, fast_steps)
 		}
 	}
-	// Operand.validated_slot()'s per-type bases, indexed by the operand tag.
-	operand_bases := [u32(0), executable.local_index_base, executable.registers_and_locals_count,
-		executable.registers_and_locals_count + u32(executable.constants.len)]!
-	bases := unsafe { &u32(&operand_bases[0]) }
 	if executable.bytecode_length > u32(executable.instructions.len) {
 		return error('Bytecode length exceeds the instruction stream')
 	}
 	instructions := unsafe { &Instruction(executable.instructions.data) }
+	slots := if !inline_interpreter_dispatch {
+		unsafe { &OperandSlots(nil) }
+	} else if layout_vouched && executable.operand_slots.len == executable.instructions.len {
+		unsafe { &OperandSlots(executable.operand_slots.data) }
+	} else {
+		executable.operand_slots_for(executable.operand_bases())
+	}
 	for frame.program_counter < executable.bytecode_length {
 		// consume_execution_budget(), with its call only for active budgets.
 		if vm.instruction_budget_active { vm.consume_execution_budget()! }
@@ -697,12 +700,13 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 		}
 		if handler != .slow {
 			values := unsafe { &Value(frame.values.data) }
+			slot := unsafe { &slots[frame.program_counter] }
 			match handler {
 				.mov {
-					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					value := unsafe { values[slot.lhs] }
 					if !value.is_special_empty_value() {
 						unsafe {
-							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = value
+							values[slot.dst] = value
 						}
 						frame.program_counter++
 						continue
@@ -713,7 +717,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					continue
 				}
 				.branch {
-					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					value := unsafe { values[slot.lhs] }
 					if value.tag == .boolean {
 						if (value.number != 0.0) == (instruction.op == .jump_if_true) {
 							frame.program_counter = instruction.target
@@ -724,8 +728,8 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					}
 				}
 				.number_binary {
-					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
-					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					left := unsafe { values[slot.lhs] }
+					right := unsafe { values[slot.rhs] }
 					if left.is_number() && right.is_number() {
 						x, y := left.number, right.number
 						result := match instruction.op {
@@ -740,15 +744,15 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 							else { Value.from_bool(x != y) }
 						}
 						unsafe {
-							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+							values[slot.dst] = result
 						}
 						frame.program_counter++
 						continue
 					}
 				}
 				.number_bitwise {
-					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
-					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					left := unsafe { values[slot.lhs] }
+					right := unsafe { values[slot.rhs] }
 					if left.is_number() && right.is_number() {
 						bits := number_bitwise_operation(number_to_i32(left.number),
 							number_to_i32(right.number), instruction.op)
@@ -758,28 +762,28 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 							Value.from_i32(bits)
 						}
 						unsafe {
-							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+							values[slot.dst] = result
 						}
 						frame.program_counter++
 						continue
 					}
 				}
 				.increment {
-					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					value := unsafe { values[slot.lhs] }
 					if value.is_number() {
 						step := if instruction.op == .increment { 1.0 } else { -1.0 }
 						unsafe {
-							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = Value.from_f64(value.number + step)
+							values[slot.dst] = Value.from_f64(value.number + step)
 						}
 						frame.program_counter++
 						continue
 					}
 				}
 				.to_numeric {
-					value := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					value := unsafe { values[slot.lhs] }
 					if value.is_number() {
 						unsafe {
-							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = value
+							values[slot.dst] = value
 						}
 						frame.program_counter++
 						continue
@@ -790,8 +794,8 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					continue
 				}
 				.call {
-					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
-					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					left := unsafe { values[slot.lhs] }
+					right := unsafe { values[slot.rhs] }
 					if !left.is_special_empty_value() && !right.is_special_empty_value() {
 						result := vm.execute_call_instruction(instruction, executable, left, right) or {
 							if !is_throw_completion(err) { return err }
@@ -802,7 +806,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 						}
 						current := unsafe { &Value(frame.values.data) }
 						unsafe {
-							current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+							current[slot.dst] = result
 						}
 						frame.program_counter++
 						continue
@@ -818,7 +822,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					}
 					current := unsafe { &Value(frame.values.data) }
 					unsafe {
-						current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+						current[slot.dst] = result
 					}
 					frame.program_counter++
 					continue
@@ -833,16 +837,16 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					}
 					current := unsafe { &Value(frame.values.data) }
 					unsafe {
-						current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = callee
-						current[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] = receiver
+						current[slot.dst] = callee
+						current[slot.rhs] = receiver
 					}
 					frame.program_counter++
 					continue
 				}
 				.property_write {
-					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
-					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
-					source := unsafe { values[bases[instruction.src.raw >> 29] + (instruction.src.raw & 0x1fffffff)] }
+					left := unsafe { values[slot.lhs] }
+					right := unsafe { values[slot.rhs] }
+					source := unsafe { values[slot.src] }
 					// Nullish bases, uninitialized operands and non-object bases keep
 					// execute_instruction()'s messages and coercions.
 					if left.is_object() && !right.is_special_empty_value() && !source.is_special_empty_value() {
@@ -858,8 +862,8 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					}
 				}
 				.property_read {
-					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
-					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					left := unsafe { values[slot.lhs] }
+					right := unsafe { values[slot.rhs] }
 					if left.is_object() && !right.is_special_empty_value() {
 						result := vm.execute_property_read_at(left, right, instruction.rhs, executable, instruction.strict,
 							executable.property_hint(frame.program_counter)) or {
@@ -872,7 +876,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 						// A getter may have replaced this frame's value storage.
 						current := unsafe { &Value(frame.values.data) }
 						unsafe {
-							current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+							current[slot.dst] = result
 						}
 						frame.program_counter++
 						continue

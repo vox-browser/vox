@@ -93,6 +93,10 @@ mut:
 	binding_hints  []u32
 	// PropertyName of each string constant (constant_keys.v).
 	constant_keys []PropertyName
+	// Frame slots of each instruction's operands (operand_slots.v).
+	operand_slots             []OperandSlots
+	operand_slot_instructions voidptr
+	operand_slot_bases        [4]u32
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

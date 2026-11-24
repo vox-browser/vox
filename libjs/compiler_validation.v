@@ -54,9 +54,13 @@ fn (vm &VM) remember_compiler_validation(executable &Executable) {
 		instructions: executable.instructions.data
 		handlers:     executable.exception_handlers.data
 	}
+	// The shape covers every layout field the operand bases depend on.
+	executable.operand_slots_for(executable.operand_bases())
 }
 
-fn (mut vm VM) validate_execution(executable &Executable, arguments u32) ! {
+// Returns whether the compiler's record vouched for the executable's layout,
+// including the operand slots built with it.
+fn (mut vm VM) validate_execution(executable &Executable, arguments u32) !bool {
 	if use_compiler_validation() {
 		if owner := vm.compiler_validation_owner {
 			if validation := executable.compiler_validation {
@@ -71,10 +75,11 @@ fn (mut vm VM) validate_execution(executable &Executable, arguments u32) ! {
 					if mut tier := vm.native_tier {
 						if tier.diagnostics { tier.activity.compiler_validation_hits++ }
 					}
-					return
+					return true
 				}
 			}
 		}
 	}
 	executable.validate(arguments)!
+	return false
 }
