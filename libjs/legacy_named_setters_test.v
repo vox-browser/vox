@@ -30,7 +30,7 @@ fn (fixture &LegacyNamedFixture) delete_named_property(mut vm VM, name Utf16Stri
 fn writable_named_fixture(mut vm VM, overrides bool) &LegacyNamedFixture {
 	mut object, fixture := named_protocol_fixture(mut vm, overrides)
 	metadata := object.legacy_platform_object or { panic('Missing metadata') }
-	object.legacy_platform_object = LegacyPlatformObject{
+	object.legacy_platform_object = &LegacyPlatformObject{
 		...metadata
 		named_setter:                         LegacyNamedPropertySetter(fixture)
 		named_deleter:                        LegacyNamedPropertyDeleter(fixture)

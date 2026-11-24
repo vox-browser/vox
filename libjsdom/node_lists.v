@@ -69,7 +69,7 @@ fn (mut host Host) wrap_node_list_with_radio(native &dom.NodeList, prototype &li
 	object.class_name = class_name
 	provider := &NodeListCollection{host: &host, native: native, radio: radio}
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
 	host.node_list_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
 }

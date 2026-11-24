@@ -64,5 +64,5 @@ fn (properties &FormElementProperties) supported_property_names() []libjs.Utf16S
 fn (host &Host) attach_form_properties(mut object libjs.Object, element &dom.Element) {
 	provider := &FormElementProperties{host: host, element: element}
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), named_properties: libjs.LegacyNamedProperties(provider), legacy_override_builtins: true, legacy_unenumerable_named_properties: true}
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), named_properties: libjs.LegacyNamedProperties(provider), legacy_override_builtins: true, legacy_unenumerable_named_properties: true}
 }

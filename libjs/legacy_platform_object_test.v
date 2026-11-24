@@ -33,7 +33,7 @@ fn legacy_indexed_fixture(mut vm VM, writable bool) (&Object, &LegacyIndexedFixt
 	mut object := Object.create(vm.realm(), vm.realm().object_prototype)
 	owner := &LegacyIndexedFixture{values: [Value.from_i32(10)]}
 	object.host_properties = HostProperties(owner)
-	object.legacy_platform_object = LegacyPlatformObject{
+	object.legacy_platform_object = &LegacyPlatformObject{
 		indexed_properties: LegacyIndexedProperties(owner)
 		indexed_setter: if writable { ?LegacyIndexedPropertySetter(LegacyIndexedPropertySetter(owner)) } else { none }
 	}

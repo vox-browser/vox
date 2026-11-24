@@ -203,7 +203,7 @@ fn test_function_to_string_uses_source_text_or_initial_native_name_without_prope
 	bound := BoundFunction.create(vm.realm(), object, js_null(), []Value{})
 	assert invoke_function_method(mut vm, prototype.object, 'toString',
 		Value.from_object(bound.object), []Value{})!.as_string().str() == 'function () { [native code] }'
-	object.function_source_text = utf16_string('function source() { return 42; }')
+	object.function_source_text = &Utf16String{...utf16_string('function source() { return 42; }')}
 	assert invoke_function_method(mut vm, prototype.object, 'toString', Value.from_object(object),
 		[]Value{})!.as_string().str() == 'function source() { return 42; }'
 }

@@ -227,7 +227,7 @@ fn (mut context PrintContext) print_value(value Value) ! {
 			context.print_type(utf16_string(object.class_name))
 			if object.native_callable {
 				context.out(' ')
-				context.out_utf16(object.native_initial_name or { Utf16String.new() })
+				context.out_utf16(if name := object.native_initial_name { *name } else { Utf16String.new() })
 			}
 			return
 		}

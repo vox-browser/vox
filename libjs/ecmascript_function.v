@@ -80,7 +80,7 @@ fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data
 	}
 	// The callable retains the immutable SourceCode through its executable.
 	// Function.prototype.toString creates an owned primitive from this view.
-	object.function_source_text = Utf16String{data: units[int(data.source_text_start)..int(data.source_text_end)]}
+	object.function_source_text = &Utf16String{data: units[int(data.source_text_start)..int(data.source_text_end)]}
 	if scope := named {
 		mut binding := scope
 		binding.initialize_binding(mut vm, data.name or { panic('missing function name') }.name, Value.from_object(object), .normal)!

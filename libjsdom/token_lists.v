@@ -57,7 +57,7 @@ fn (mut host Host) wrap_token_list(native &dom.DOMTokenList) libjs.Value {
 	object.class_name = 'DOMTokenList'
 	provider := &TokenListCollection{host: &host, native: native}
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider)}
 	host.token_list_wrappers[voidptr(native)] = object
 	return libjs.Value.from_object(object)
 }

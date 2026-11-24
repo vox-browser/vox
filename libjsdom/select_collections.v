@@ -69,8 +69,8 @@ fn (mut host Host) wrap_select_collection(native &html.HTMLOptionsCollection, se
 	else {
 		host.options_collections[voidptr(value.as_object())] = native
 		mut object := value.as_object()
-		legacy := object.legacy_platform_object or { libjs.LegacyPlatformObject{} }
-		object.legacy_platform_object = libjs.LegacyPlatformObject{...legacy, indexed_setter: libjs.LegacyIndexedPropertySetter(&OptionIndexedSetter{host: &host, native: native})}
+		legacy := if existing := object.legacy_platform_object { *existing } else { libjs.LegacyPlatformObject{} }
+		object.legacy_platform_object = &libjs.LegacyPlatformObject{...legacy, indexed_setter: libjs.LegacyIndexedPropertySetter(&OptionIndexedSetter{host: &host, native: native})}
 	}
 	return value
 }

@@ -129,7 +129,7 @@ fn (mut host Host) install_session_storage() {
 		mut object := libjs.Object.create(owner.realm, prototype)
 		object.class_name = 'Storage'
 		binding := &SessionStorageBinding{host: owner, native: native, object: object}
-		object.legacy_platform_object = libjs.LegacyPlatformObject{
+		object.legacy_platform_object = &libjs.LegacyPlatformObject{
 			named_properties: libjs.LegacyNamedProperties(binding)
 			named_setter: libjs.LegacyNamedPropertySetter(binding)
 			named_deleter: libjs.LegacyNamedPropertyDeleter(binding)

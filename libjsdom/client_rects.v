@@ -79,7 +79,7 @@ fn (mut host Host) wrap_client_rect_list(rects []&geometry.DOMRect) libjs.Value 
 	object.class_name = 'DOMRectList'
 	provider := &ClientRectList{ host: &host, native: geometry.DOMRectList.create(rects) }
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{ indexed_properties: libjs.LegacyIndexedProperties(provider) }
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{ indexed_properties: libjs.LegacyIndexedProperties(provider) }
 	return libjs.Value.from_object(object)
 }
 

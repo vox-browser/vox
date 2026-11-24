@@ -165,7 +165,7 @@ fn create_base_class(mut vm VM, executable &Executable, index u32, body Value, n
 	code := executable.source_code or { return error('Class executable has no source') }
 	units := code.code.as_slice()
 	if span.start > span.end || span.end > u32(units.len) { return error('Class source range is out of bounds') }
-	object.function_source_text = utf16_string_from_code_units(units[int(span.start)..int(span.end)])
+	object.function_source_text = &Utf16String{...utf16_string_from_code_units(units[int(span.start)..int(span.end)])}
 	mut prototype := Object.create(vm.realm(), prototype_parent)
 	prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
 	object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), 0)

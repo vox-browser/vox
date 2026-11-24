@@ -68,7 +68,7 @@ fn (mut host Host) wrap_attribute_map(native &dom.NamedNodeMap, prototype &libjs
 	object.class_name = 'NamedNodeMap'
 	view := &AttributeMapView{host: &host, native: native}
 	object.host_properties = libjs.HostProperties(view)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{
 		indexed_properties: libjs.LegacyIndexedProperties(view)
 		named_properties: libjs.LegacyNamedProperties(view)
 		legacy_unenumerable_named_properties: true

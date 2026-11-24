@@ -61,7 +61,7 @@ fn (mut host Host) wrap_dataset(element &dom.Element) libjs.Value {
 	mut object := libjs.Object.create(host.realm, host.dataset_prototype)
 	object.class_name = 'DOMStringMap'
 	properties := &DatasetProperties{ host: &host, native: html.DOMStringMap.create(element) }
-	object.legacy_platform_object = libjs.LegacyPlatformObject{
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{
 		named_properties:         libjs.LegacyNamedProperties(properties)
 		named_setter:             libjs.LegacyNamedPropertySetter(properties)
 		named_deleter:            libjs.LegacyNamedPropertyDeleter(properties)

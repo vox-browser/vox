@@ -32,7 +32,7 @@ fn (_ &LegacyNamedFixture) own_property_keys() []PropertyName { return [Property
 fn named_protocol_fixture(mut vm VM, overrides bool) (&Object, &LegacyNamedFixture) {
 	mut object := Object.create(vm.realm(), none)
 	fixture := &LegacyNamedFixture{names: [utf16_string('field')], values: [Value.from_i32(42)]}
-	object.legacy_platform_object = LegacyPlatformObject{named_properties: LegacyNamedProperties(fixture), legacy_override_builtins: overrides, legacy_unenumerable_named_properties: true}
+	object.legacy_platform_object = &LegacyPlatformObject{named_properties: LegacyNamedProperties(fixture), legacy_override_builtins: overrides, legacy_unenumerable_named_properties: true}
 	mut global := vm.global_object()
 	global.define_direct_property(PropertyName.from_str('target'), Value.from_object(object), attribute_writable | attribute_configurable)
 	return object, fixture
@@ -109,7 +109,7 @@ fn test_legacy_named_utf16_identity_symbols_and_missing_indices_remain_distinct(
 	assert fixture.checks == checks
 	metadata := object.legacy_platform_object or { panic('Missing metadata') }
 	object.host_properties = HostProperties(fixture)
-	object.legacy_platform_object = LegacyPlatformObject{...metadata, indexed_properties: LegacyIndexedProperties(fixture)}
+	object.legacy_platform_object = &LegacyPlatformObject{...*metadata, indexed_properties: LegacyIndexedProperties(fixture)}
 	assert object.get(mut vm, PropertyName.from_number(0))!.number == 100
 	assert object.get(mut vm, PropertyName.from_number(1))!.is_undefined()
 }
@@ -128,7 +128,7 @@ fn test_legacy_named_properties_object_is_skipped_during_prototype_visibility() 
 	mut object, _ := named_protocol_fixture(mut vm, false)
 	mut prototype := Object.create(vm.realm(), none)
 	prototype.define_direct_property(PropertyName.from_str('field'), Value.from_i32(7), attribute_configurable)
-	prototype.legacy_platform_object = LegacyPlatformObject{is_named_properties_object: true}
+	prototype.legacy_platform_object = &LegacyPlatformObject{is_named_properties_object: true}
 	assert object.internal_set_prototype_of(prototype)
 	assert object.get(mut vm, PropertyName.from_str('field'))!.number == 42
 	prototype.legacy_platform_object = none

@@ -72,5 +72,5 @@ fn (indices &SelectElementIndices) set_indexed_property(mut vm libjs.VM, index u
 fn (host &Host) attach_select_indices(mut object libjs.Object, element &dom.Element) {
 	provider := &SelectElementIndices{host: host, element: element}
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), indexed_setter: libjs.LegacyIndexedPropertySetter(provider)}
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), indexed_setter: libjs.LegacyIndexedPropertySetter(provider)}
 }

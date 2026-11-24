@@ -174,7 +174,7 @@ pub mut:
 	callable             ?FunctionObject
 	constructor          ?ConstructorFunction
 	native_callable      bool
-	native_initial_name  ?Utf16String
+	native_initial_name  ?&Utf16String
 	intl_list_format ?&IntlListFormat
 	intl_number_format ?&IntlNumberFormat
 	intl_relative_time_format ?&IntlRelativeTimeFormat
@@ -183,11 +183,13 @@ pub mut:
 	intl_locale          ?&IntlLocaleObject
 	proxy_object         ?&ProxyObject
 	bound_function       ?&BoundFunction
-	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
+	function_source_text ?&Utf16String // [[SourceText]] on ECMAScript callables
 	regexp_object ?&RegExpObject
 	regexp_string_iterator ?&RegExpStringIterator
 	host_properties ?HostProperties
-	legacy_platform_object ?LegacyPlatformObject
+	// Pointer options: a by-value LegacyPlatformObject or Utf16String option
+	// would add 120 or 48 bytes to every object record.
+	legacy_platform_object ?&LegacyPlatformObject
 	array_object         ?&ArrayObject
 	arguments_object     ?&ArgumentsObject
 	is_arguments_object  bool // Also brands ordinary strict/unmapped arguments.

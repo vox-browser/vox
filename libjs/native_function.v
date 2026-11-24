@@ -70,7 +70,7 @@ pub fn (mut object Object) set_function_name(mut vm VM, name FunctionName, prefi
 
 fn (mut object Object) set_function_name_text(mut vm VM, text Utf16String) {
 	assert object.extensible && !object.has_own_property(function_name_key)
-	if object.native_callable { object.native_initial_name = text }
+	if object.native_callable { object.native_initial_name = &Utf16String{...text} }
 	object.define_direct_property(function_name_key,
 		Value.from_string(vm.create_string(text)), attribute_configurable)
 }
@@ -114,7 +114,7 @@ fn create_native_function(mut vm VM, realm &Realm, prototype ?&Object, behaviour
 		object.set_function_length(length)
 		object.set_function_name_text(mut vm, text)
 	} else {
-		object.native_initial_name = text
+		object.native_initial_name = &Utf16String{...text}
 	}
 	function := &NativeFunction{
 		object:             object

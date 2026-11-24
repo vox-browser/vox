@@ -395,7 +395,7 @@ fn (mut host Host) wrap_collection_view(identity voidptr, collection NativeHTMLC
 	object.class_name = class_name
 	provider := &Collection{host: host, collection: collection, object: object}
 	object.host_properties = libjs.HostProperties(provider)
-	object.legacy_platform_object = libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), named_properties: libjs.LegacyNamedProperties(provider), legacy_unenumerable_named_properties: true}
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), named_properties: libjs.LegacyNamedProperties(provider), legacy_unenumerable_named_properties: true}
 	host.collection_wrappers[identity] = object
 	return libjs.Value.from_object(object)
 }
