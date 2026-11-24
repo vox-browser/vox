@@ -1,9 +1,39 @@
 module libjs
 
+import os
+
 // Only private synchronous-call allocations enter this pool. Public frame and
 // value-view APIs mark their frames exposed, preserving their existing lifetime.
 const reusable_context_count_limit = 64
 const reusable_context_bytes_limit = uint(1024 * 1024)
+
+// call_body() frames are parked by body: a direct-mapped table of one cleared
+// frame per slot, keyed by the executable. A same-body hit needs no pool scan
+// and finds the body's constants still in place.
+const parked_frame_slots = 256
+const parked_frame_bytes_limit = uint(64 * 1024)
+
+// Same-binary control: every frame goes through the general pool.
+const pooled_frames_only = os.getenv('VOX_LIBJS_POOLED_FRAMES_ONLY') != ''
+
+@[inline]
+fn use_parked_frames() bool {
+	$if test { if parked_frames_disabled_for_test { return false } }
+	return !pooled_frames_only && use_context_reuse()
+}
+
+@[heap]
+struct ParkedFrames {
+mut:
+	frames [parked_frame_slots]voidptr
+	owners [parked_frame_slots]voidptr
+}
+
+@[inline]
+fn parked_frame_slot(executable voidptr) int {
+	key := u64(executable)
+	return int(((key >> 4) ^ (key >> 12)) & u64(parked_frame_slots - 1))
+}
 
 pub struct ContextReuseActivity {
 pub:
@@ -22,6 +52,14 @@ $if test {
 	__global contexts_exposed_for_test u64
 	__global direct_context_initialization_disabled bool
 	__global contexts_initialized_directly_for_test u64
+	__global parked_frames_disabled_for_test bool
+	__global parked_frame_hits_for_test u64
+	pub fn set_parked_frames_for_testing(enabled bool) { parked_frames_disabled_for_test = !enabled }
+	pub fn parked_frame_hits_for_testing() u64 {
+		hits := parked_frame_hits_for_test
+		parked_frame_hits_for_test = 0
+		return hits
+	}
 	pub fn set_direct_context_initialization_for_testing(enabled bool) {
 		direct_context_initialization_disabled = !enabled
 	}
@@ -161,8 +199,6 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 			taken
 		}
 		stack.recycled_bytes -= context.recycled_context_bytes()
-		// Pool entries start with an exact-sized allocation. Recycling clears
-		// the used prefix, and private execution never writes into its spare tail.
 		unsafe { context.values.len = int(count) }
 		context.argument_count = arguments
 		if constants.len == 0 { context.release_held_constants() }
@@ -198,6 +234,59 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 	return context
 }
 
+// call_body()'s frame: the body's parked frame when it fits, else the pool.
+// Calling the same functions again and again is the common case, and a pool
+// holding many layouts made every call scan it for a fit.
+fn (mut stack InterpreterStack) allocate_body_frame(executable &Executable, arguments u32) ?&ExecutionContext {
+	registers := executable.registers_and_locals_count
+	if use_parked_frames() && stack.parked != unsafe { nil } {
+		mut parked := stack.parked
+		parked_slot := parked_frame_slot(executable)
+		if parked.owners[parked_slot] == voidptr(executable) {
+			mut context := unsafe { &ExecutionContext(parked.frames[parked_slot]) }
+			count := u64(registers) + u64(executable.constants.len) + arguments
+			capacity := u64(context.values.cap)
+			new_top := stack.top_ + frame_size_in_bytes(count)
+			// The pool's best-fit bound: at most a quarter spare.
+			if capacity >= count && capacity < count + count / 4 + 1 && new_top <= stack.limit {
+				parked.frames[parked_slot] = unsafe { nil }
+				parked.owners[parked_slot] = unsafe { nil }
+				$if test { parked_frame_hits_for_test++ }
+				// allocate_reusable()'s reuse of a cleared record. The body's
+				// constants are normally still held in place from its last call.
+				constants := executable.constants
+				unsafe { context.values.len = int(count) }
+				context.argument_count = arguments
+				if constants.len == 0 { context.release_held_constants() }
+				if use_direct_context_initialization() && context.initialize_reused_values(registers, constants) {
+					$if test { if context_reuse_diagnostic_for_test { contexts_initialized_directly_for_test++ } }
+				} else {
+					context.release_held_constants()
+					for slot in 0 .. int(if registers < reserved_register_count {
+						registers
+					} else {
+						reserved_register_count
+					}) {
+						context.values[slot] = js_special_empty_value()
+					}
+					for slot, value in constants { context.values[int(registers) + slot] = value }
+				}
+				context.frame_id = stack.next_frame_id
+				stack.next_frame_id++
+				context.stack_offset = stack.top_
+				context.stack_allocated = true
+				push_within_capacity(mut stack.contexts, context)
+				stack.top_ = new_top
+				$if test {
+					if context_reuse_diagnostic_for_test { contexts_reused_for_test++ }
+				}
+				return context
+			}
+		}
+	}
+	return stack.allocate_reusable(registers, executable.constants, arguments)
+}
+
 @[direct_array_access]
 fn (stack &InterpreterStack) find_recycled_context(count u64) int {
 	mut best := -1
@@ -229,8 +318,24 @@ fn (mut stack InterpreterStack) recycle_context(mut context ExecutionContext) {
 	}
 	size := frame_size_in_bytes(u64(context.values.cap)) + if context.can_recycle_call_environment() { uint(sizeof(FunctionEnvironment)) } else { uint(0) }
 	if size > reusable_context_bytes_limit { return }
-	// Admit new layouts when the pool is full instead of keeping a permanent
-	// set of cold layouts. Every evicted record is already cleared/unexposed.
+	if use_parked_frames() && size <= parked_frame_bytes_limit && stack.parked != unsafe { nil } {
+		if owner := context.executable {
+			// Park it for the body's next call; a different body's frame in
+			// the slot moves to the pool.
+			mut parked := stack.parked
+			slot := parked_frame_slot(owner)
+			displaced := parked.frames[slot]
+			context.clear_for_reuse()
+			parked.frames[slot] = voidptr(&context)
+			parked.owners[slot] = voidptr(owner)
+			if displaced != unsafe { nil } {
+				mut previous := unsafe { &ExecutionContext(displaced) }
+				stack.pool_cleared_context(mut previous, previous.recycled_context_bytes())
+			}
+			return
+		}
+	}
+	// pool_cleared_context(), kept inline on the pool's path.
 	for stack.recycled.len >= reusable_context_count_limit
 		|| stack.recycled_bytes + size > reusable_context_bytes_limit {
 		oldest := stack.recycled[0]
@@ -240,4 +345,28 @@ fn (mut stack InterpreterStack) recycle_context(mut context ExecutionContext) {
 	context.clear_for_reuse()
 	push_within_capacity(mut stack.recycled, &context)
 	stack.recycled_bytes += size
+}
+
+// Admit new layouts when the pool is full instead of keeping a permanent set
+// of cold layouts. Every evicted record is already cleared/unexposed.
+fn (mut stack InterpreterStack) pool_cleared_context(mut context ExecutionContext, size uint) {
+	for stack.recycled.len >= reusable_context_count_limit
+		|| stack.recycled_bytes + size > reusable_context_bytes_limit {
+		oldest := stack.recycled[0]
+		stack.recycled_bytes -= oldest.recycled_context_bytes()
+		stack.recycled.delete(0)
+	}
+	push_within_capacity(mut stack.recycled, &context)
+	stack.recycled_bytes += size
+}
+
+// The parked frames (allocate_body_frame()), for root walks.
+fn (stack &InterpreterStack) parked_contexts() []&ExecutionContext {
+	mut contexts := []&ExecutionContext{}
+	if stack.parked == unsafe { nil } { return contexts }
+	for slot in 0 .. parked_frame_slots {
+		frame := stack.parked.frames[slot]
+		if frame != unsafe { nil } { contexts << unsafe { &ExecutionContext(frame) } }
+	}
+	return contexts
 }

@@ -192,7 +192,7 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	mut frame := (if function.data.kind == .normal && async_execution == none {
-		stack.allocate_reusable(executable.registers_and_locals_count, executable.constants, u32(arguments.len))
+		stack.allocate_body_frame(executable, u32(arguments.len))
 	} else { stack.allocate(executable.registers_and_locals_count, executable.constants, u32(arguments.len)) }) or {
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}

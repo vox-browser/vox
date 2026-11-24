@@ -16,6 +16,9 @@ mut:
 	contexts      []&ExecutionContext // Owned by this stack and never sliced.
 	recycled      []&ExecutionContext
 	recycled_bytes uint
+	// context_reuse.v: parked call_body() frames. A separate record keeps the
+	// VM's later fields within short load offsets.
+	parked &ParkedFrames = unsafe { nil }
 	top_          uint
 	limit         uint = interpreter_stack_size
 	next_frame_id u64   = 1
@@ -27,7 +30,9 @@ mut:
 }
 
 pub fn InterpreterStack.new() InterpreterStack {
-	return InterpreterStack{}
+	return InterpreterStack{
+		parked: &ParkedFrames{}
+	}
 }
 
 // top returns the current allocation mark.

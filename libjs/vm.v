@@ -1329,6 +1329,9 @@ pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 	for context in vm.interpreter_stack_.recycled {
 		if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
 	}
+	for context in vm.interpreter_stack_.parked_contexts() {
+		if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
+	}
 	for saved_stack in vm.saved_execution_context_stacks {
 		for context in collect_execution_contexts_top_to_bottom(saved_stack.stack, saved_stack.previous_running_contexts,
 			saved_stack.running_execution_context)
