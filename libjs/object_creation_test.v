@@ -45,3 +45,16 @@ fn test_literals_reserve_property_storage_without_changing_semantics() {
 		assert object_creation_eval(source)! == expected, source
 	}
 }
+
+// Constructors reserve their last instance's property count; instances with
+// fewer, more or different properties keep ordinary semantics.
+fn test_constructors_reserve_their_instances_property_storage() {
+	for source, expected in {
+		'function P(n){this.a=n;if(n>1){this.b=n;this.c=n}}var r=[];for(var i=0;i<4;i++){r.push(Object.keys(new P(i)).join(""))}r.join()': 'a,a,abc,abc'
+		'class C{x=1;constructor(v){this.v=v}}var o=[new C(1),new C(2)];o.map(c=>c.x+c.v+Object.keys(c).join("")).join()':               '2xv,3xv'
+		'function R(){return {r:1}}var a=new R,b=new R;(a.r+b.r)+":"+Object.keys(a).join()':                                             '2:r'
+		'class B{constructor(){this.p=1}}class D extends B{constructor(){super();this.q=2}}var d=new D;Object.keys(d).join()+new D().q':   'p,q2'
+	} {
+		assert object_creation_eval(source)! == expected, source
+	}
+}

@@ -126,11 +126,15 @@ fn (mut function BaseClassFunction) internal_construct(mut vm VM, arguments []Va
 	}
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.object_prototype_record() })!
 	mut object := Object.create(function.realm_, prototype)
-	function.initialize_empty_instance_fields(mut vm, mut object)!
-	if function.body.is_undefined() { return object }
 	mut body := function.body.as_function()
 	if mut body is ECMAScriptFunction {
+		object.reserve_properties(body.constructed_properties)
+	}
+	function.initialize_empty_instance_fields(mut vm, mut object)!
+	if function.body.is_undefined() { return object }
+	if mut body is ECMAScriptFunction {
 		returned := body.call_with_new_target(mut vm, Value.from_object(object), arguments, Value.from_object(new_target), &function)!
+		body.constructed_properties = u32(object.properties.len)
 		return if returned.is_object() { returned.as_object() } else { object }
 	}
 	return error('Invalid class constructor body')

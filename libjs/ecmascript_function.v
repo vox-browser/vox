@@ -22,6 +22,9 @@ mut:
 	register_bindings []FunctionRegisterBinding
 	executable ?&Executable
 	field_initializer_name ?PropertyName
+	// Own properties of the last object this function constructed, reserved
+	// in the next one (internal_construct, BaseClassFunction.internal_construct).
+	constructed_properties u32
 }
 
 fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
@@ -289,7 +292,10 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 
 fn (mut function ECMAScriptFunction) internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object {
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.object_prototype_record() })!
-	object := Object.create(function.realm_, prototype)
+	mut object := Object.create(function.realm_, prototype)
+	// A constructor's instances usually end with the same properties.
+	object.reserve_properties(function.constructed_properties)
 	value := function.call_with_new_target(mut vm, Value.from_object(object), arguments, Value.from_object(new_target), none)!
+	function.constructed_properties = u32(object.properties.len)
 	return if value.is_object() { value.as_object() } else { object }
 }
