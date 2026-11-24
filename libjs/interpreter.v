@@ -533,6 +533,7 @@ enum InlineHandler as u8 {
 	jump
 	branch
 	number_binary
+	number_bitwise
 	increment
 	to_numeric
 	nop
@@ -550,6 +551,8 @@ fn compute_inline_handlers() []u8 {
 			.jump_if_false, .jump_if_true { InlineHandler.branch }
 			.add, .sub, .mul, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
 			.strict_equals, .strict_inequals { InlineHandler.number_binary }
+			.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift,
+			.unsigned_right_shift { InlineHandler.number_bitwise }
 			.increment, .decrement { InlineHandler.increment }
 			.to_numeric { InlineHandler.to_numeric }
 			.nop { InlineHandler.nop }
@@ -711,6 +714,24 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 							.greater_than_equals { Value.from_bool(x >= y) }
 							.strict_equals { Value.from_bool(x == y) }
 							else { Value.from_bool(x != y) }
+						}
+						unsafe {
+							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.number_bitwise {
+					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					if left.is_number() && right.is_number() {
+						bits := number_bitwise_operation(number_to_i32(left.number),
+							number_to_i32(right.number), instruction.op)
+						result := if instruction.op == .unsigned_right_shift {
+							Value.from_f64(f64(u32(bits)))
+						} else {
+							Value.from_i32(bits)
 						}
 						unsafe {
 							values[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result

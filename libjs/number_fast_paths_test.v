@@ -66,3 +66,18 @@ fn test_inline_dispatch_keeps_uninitialized_and_type_errors() {
 	assert number_fast_eval('(function(){var a=1n;try{return a+1}catch(e){return e instanceof TypeError}})()')!.as_bool()
 	assert number_fast_eval('(function(){var t="";if(t)return false;return !""})()')!.as_bool()
 }
+
+fn test_inline_bitwise_handlers_match_slow_paths() {
+	for source, expected in {
+		'(function(){var a=-7,b=2,r=[];r.push(a&b,a|b,a^b,a<<b,a>>b,a>>>b);return r.join()})()':                 '0,-5,-5,-28,-2,1073741822'
+		'(function(){var a=4294967297.5,b=33;return [a|0,a<<b,a>>>0,-1>>>0].join()})()':                          '1,2,1,4294967295'
+		'(function(){var a=NaN,b=Infinity;return [a|0,b&1,~~a].join()})()':                                      '0,0,0'
+		'(function(){var a="12",b=3;return [a&b,a|b,typeof (a>>>b)].join()})()':                                 '0,15,number'
+		'(function(){var a=12n,b=5n;return String(a&b)+String(a|b)})()':                                       '413'
+		'(function(){var o={valueOf(){return 6}},b=3;return [o&b,o<<b].join()})()':                              '2,48'
+	} {
+		value := number_fast_eval(source)!
+		assert value.is_string(), source
+		assert value.as_string().str() == expected, source
+	}
+}
