@@ -172,8 +172,10 @@ fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value 
 
 fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction, async_execution ?&AsyncExecution) !Value {
 	if function.data.kind == .async_generator { return error('LibJS async generator execution is not translated yet') }
-	simple_parameters := function.data.simple_parameters()
-	executable := function.compile(mut vm)!
+	// compile() returns an existing body before considering a new compilation.
+	executable := function.executable or { function.compile(mut vm)! }
+	call_plan := function.call_plan(executable)
+	simple_parameters := call_plan.simple_parameters
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	mut frame := (if function.data.kind == .normal && async_execution == none {
@@ -214,7 +216,6 @@ fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, argu
 		environment.bind_this_value(mut vm, bound_this)!
 		frame.this_value = bound_this
 	}
-	call_plan := function.call_plan(executable)
 	for index, parameter in function.data.parameters {
 		if use_register_call_metadata() {
 			// call_plan() matched parameter_slots.len to this parameter list.

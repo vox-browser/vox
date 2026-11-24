@@ -14,6 +14,8 @@ struct FunctionCallPlan {
 	count            int
 	parameter_slots  []i64
 	environment_vars []Utf16String
+	// JsFunctionData.simple_parameters() of the shared function data.
+	simple_parameters bool
 }
 
 @[inline]
@@ -45,6 +47,7 @@ fn (function &ECMAScriptFunction) build_call_plan(executable &Executable) &Funct
 		count:            function.register_bindings.len
 		parameter_slots:  slots
 		environment_vars: variables
+		simple_parameters: function.data.simple_parameters()
 	}
 	platform.leave_persistent(persistent)
 	mut owner := unsafe { &Executable(executable) }
