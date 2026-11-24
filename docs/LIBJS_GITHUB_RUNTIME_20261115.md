@@ -12378,3 +12378,30 @@ chooses ciphers in its own order.
   compiled body for the inline dispatch handlers (a local loop −4.8%,
   a bitwise loop −7.2%, calls −1.2% on the standalone driver); not yet
   measured on the page.
+- Later the same morning: `b6cc131de` binding hints for module
+  environments (locals by index, named imports by position with a cached
+  target index; module-scope reads −38% on the standalone driver),
+  `97a52260c` string concatenation with one copy and a length-first
+  short-string test (`has_short_ascii_storage()` scanned whole strings:
+  a 509K-character `+=` build 191.4B → 20.2B instructions), `b7c6b58d8`
+  hinted bindings share the identifier's storage after one comparison
+  (closure reads −15%), `51a624246` pooled frames keep their body's
+  constants (`HeldConstants`; a frame reused by another body first clears
+  them), `79b9ad0b3` the instruction budget is decremented inline (browser
+  callbacks run with one: −7% to −19% on loops), `94250b5d0` the
+  slow-dispatch control lives in the handler table, and `a7c3ac324`
+  handles strict equality, ToBoolean branches and `!` inline.
+- Same-binary page cohort on bundle `fc67c379` (sources of `94250b5d0`),
+  five alternating pairs, host load 7-10, every capture 2 px: candidate
+  median 27.526B (27.506B-27.610B) against 29.025B (28.936B-30.579B) with
+  `VOX_LIBJS_SLOW_DISPATCH=1`; every pair −1.3B to −3.1B. The candidate is
+  0.68B below `053e30f0`'s (28.210B, at load 4-6), a cross-bundle step
+  with the ±0.4B uncertainty above. Peak footprint 4,076 MiB.
+- A 1 ms `sample` of one load (`gh-ljp2`, 2,602 busy main-thread samples)
+  put LibJS at 32.5%; `memmove` 5.5%, frame allocation and release about
+  5% (the 64-entry pool scan dominates when many frame sizes rotate), V
+  maps 3% (property and binding lookup positions), linear own-property
+  scans 2%. Tried and not kept: exact-size frame-pool buckets (lost the
+  25% best-fit reuse: +42% on 80 rotating frame sizes) and a per-object
+  key filter for own-property misses (−3% to −6.5% on prototype reads,
+  +1.5% to +5% on constructors and literals).
