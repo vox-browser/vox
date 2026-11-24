@@ -49,8 +49,19 @@ fn (environment &DeclarativeEnvironment) hinted_binding_matches(index int, name 
 	// Deleted bindings keep their slots (declarative_environment.v).
 	if environment.bindings[index].deleted { return false }
 	binding_name := unsafe { &environment.bindings[index].name }
-	return binding_name.data.len == name.data.len
-		&& (binding_name.data.data == name.data.data || utf16_equals(binding_name.data, name.data))
+	if binding_name.data.len != name.data.len { return false }
+	if binding_name.data.data == name.data.data { return true }
+	if !utf16_equals(binding_name.data, name.data) { return false }
+	// Equal code units: let the binding share the identifier's storage so the
+	// next check from this site matches by pointer. Plain code-unit strings
+	// only; the name's value is unchanged.
+	if binding_name.storage_ == unsafe { nil } && name.storage_ == unsafe { nil } {
+		unsafe {
+			mut owner := &DeclarativeEnvironment(environment)
+			owner.bindings[index].name = *name
+		}
+	}
+	return true
 }
 
 // The running realm's global environment, which ends every scope chain.

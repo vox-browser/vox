@@ -261,7 +261,7 @@ pub fn (mut environment DeclarativeEnvironment) get_binding_value(mut vm VM, nam
 }
 
 pub fn (environment &DeclarativeEnvironment) get_binding_value_direct(mut vm VM, index int) !Value {
-	binding := environment.bindings[index]
+	binding := unsafe { &environment.bindings[index] }
 	// 2. If the binding for N in envRec is an uninitialized binding, throw a ReferenceError exception.
 	if !binding.initialized {
 		return vm.throw_error_type(.reference_error, .binding_not_initialized, binding.name.str())
