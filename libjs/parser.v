@@ -521,7 +521,7 @@ fn (mut p Parser) parse_private_identifier(range_start Position) &PrivateIdentif
 
 fn (mut p Parser) expected(what string) {
 	msg := if m := p.current_token.message {
-		m
+		m.text
 	} else {
 		'Unexpected token ${p.current_token.token_type.name()}. Expected ${what}'
 	}

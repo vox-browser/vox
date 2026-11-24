@@ -332,8 +332,15 @@ mut:
 	line_column                u32
 	offset                     u32
 	trivia_has_line_terminator bool
-	identifier_value           ?Utf16String
-	message                    ?string
+	// Rare payloads out of line: only identifiers with escapes have a decoded
+	// value and only invalid tokens a message. Inline, they made every token
+	// 136 bytes, and tokens are copied several times each.
+	identifier_value ?&Utf16String
+	message          ?&TokenMessage
+}
+
+struct TokenMessage {
+	text string
 }
 
 fn Token.new(tt TokenType) Token {

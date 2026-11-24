@@ -917,7 +917,7 @@ fn (mut l Lexer) next() Token {
 	mut token_type := TokenType.invalid
 	did_consume_whitespace_or_comments := trivia_start != value_start
 
-	mut identifier_value := ?Utf16String(none)
+	mut identifier_value := ?&Utf16String(none)
 
 	if l.current_token_type == .regex_literal && !l.is_eof()
 		&& (l.current_code_unit < 128 && lex_is_ascii_alpha(u32(l.current_code_unit)))
@@ -980,7 +980,7 @@ fn (mut l Lexer) next() Token {
 		if start_cp >= 0 {
 			has_escape := l.scan_identifier_body(start_len)
 			if has_escape {
-				identifier_value = l.build_identifier_value(value_start)
+				identifier_value = ast_text(l.build_identifier_value(value_start))
 			}
 			token_type = .private_identifier
 		} else {
@@ -999,7 +999,7 @@ fn (mut l Lexer) next() Token {
 				} else {
 					token_type = .identifier
 				}
-				identifier_value = decoded
+				identifier_value = ast_text(decoded)
 			} else {
 				if kw := keyword_from_str(l.source[value_start - 1..l.position - 1]) {
 					token_type = kw
@@ -1205,7 +1205,7 @@ fn (mut l Lexer) next() Token {
 		offset:                     vs
 		trivia_has_line_terminator: trivia_has_line_terminator
 		identifier_value:           identifier_value
-		message:                    token_message
+		message:                    if text := token_message { &TokenMessage{text: text} } else { none }
 	}
 }
 

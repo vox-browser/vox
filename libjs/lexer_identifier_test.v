@@ -8,7 +8,7 @@ fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
 	first := lexer.next()
 	assert first.token_type == .identifier
 	assert first.value_len == u32(utf16(first_source).len)
-	assert (first.identifier_value or { panic('Missing decoded identifier') }).str() == 'alpha0_$𐐀moreabc'
+	assert (first.identifier_value or { panic('Missing decoded identifier') }).data == utf16('alpha0_$𐐀moreabc')
 
 	private_token := lexer.next()
 	assert private_token.token_type == .private_identifier

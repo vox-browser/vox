@@ -6,11 +6,11 @@ fn test_lexer_keyword_lookup_preserves_keyword_and_identifier_tokens() {
 	assert lexer.next().token_type == .const_kw
 	escaped_keyword := lexer.next()
 	assert escaped_keyword.token_type == .escaped_keyword
-	assert (escaped_keyword.identifier_value or { panic('Missing decoded keyword') }).str() == 'const'
+	assert (escaped_keyword.identifier_value or { panic('Missing decoded keyword') }).data == utf16('const')
 	assert lexer.next().token_type == .identifier
 	escaped_identifier := lexer.next()
 	assert escaped_identifier.token_type == .identifier
-	assert (escaped_identifier.identifier_value or { panic('Missing decoded identifier') }).str() == 'cůnst'
+	assert (escaped_identifier.identifier_value or { panic('Missing decoded identifier') }).data == utf16('cůnst')
 	assert lexer.next().token_type == .identifier
 	assert lexer.next().token_type == .bool_literal
 	assert lexer.next().token_type == .bool_literal
