@@ -873,7 +873,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 		}
 		key_expression := p.expression(class_start, ExpressionKind{
 			tag:          .string_literal
-			string_value: Utf16String.from_slice(modifier_name)
+			string_value: ast_text(Utf16String.from_slice(modifier_name))
 		})
 		key = PropertyKey{
 			expression:    key_expression

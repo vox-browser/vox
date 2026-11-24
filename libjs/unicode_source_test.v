@@ -86,20 +86,20 @@ fn test_literals_own_their_decoded_utf16() {
 	}
 
 	plain := data.scope.children[0].kind.expression or { panic('Missing string') }
-	assert plain.kind.string_value.str() == 'café𐐀'
+	assert plain.kind.literal_string().str() == 'café𐐀'
 	escaped := data.scope.children[1].kind.expression or { panic('Missing escaped string') }
-	assert escaped.kind.string_value.data[..6] == utf16('prefix')
-	assert escaped.kind.string_value.data[6..] == [u16(0xD800), 10]
+	assert escaped.kind.literal_string().data[..6] == utf16('prefix')
+	assert escaped.kind.literal_string().data[6..] == [u16(0xD800), 10]
 
 	template := data.scope.children[2].kind.expression or { panic('Missing template') }
 	template_data := template.kind.template_data() or { panic('Missing template data') }
-	assert template_data.expressions[0].kind.string_value.str() == 'first\nsecond'
+	assert template_data.expressions[0].kind.literal_string().str() == 'first\nsecond'
 
 	tagged := data.scope.children[3].kind.expression or { panic('Missing tagged template') }
 	tagged_template := tagged.kind.template_literal_expr() or { panic('Missing template') }
 	tagged_data := tagged_template.kind.template_data() or { panic('Missing template data') }
 	assert tagged_data.raw_strings[0].str() == r'raw\n𐐀'
-	assert tagged_data.expressions[0].kind.string_value.str() == 'raw\n𐐀'
+	assert tagged_data.expressions[0].kind.literal_string().str() == 'raw\n𐐀'
 
 	invalid := data.scope.children[4].kind.expression or { panic('Missing tagged template') }
 	invalid_template := invalid.kind.template_literal_expr() or { panic('Missing template') }

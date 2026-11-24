@@ -1268,7 +1268,9 @@ mut:
 	tag ExprKindTag
 	// Literal data
 	numeric_value f64
-	string_value  Utf16String
+	// String literal text, out of line: only literal nodes use it, and an
+	// inline Utf16String made every expression node 48 bytes larger.
+	string_value &Utf16String = unsafe { nil }
 	bool_value    bool
 	// Identifier data
 	identifier         ?&Identifier
@@ -1502,11 +1504,11 @@ mut:
 	switch_data ?&SwitchStatementData
 	// With
 	object ?&Expression
-	// Labelled
-	label         Utf16String
+	// Labelled (out of line: rare, and inline it cost every statement 48 bytes)
+	label         &Utf16String = unsafe { nil }
 	labelled_item ?&Statement
 	// Break/Continue
-	target_label ?Utf16String
+	target_label ?&Utf16String
 	// Return
 	return_arg ?&Expression
 	// Throw
@@ -1527,8 +1529,6 @@ mut:
 	// Only import/export statements carry these 352 bytes; keep them out of line.
 	import_data ?&ImportStatementData
 	export_data ?&ExportStatementData
-	// Class field initializer
-	field_name Utf16String
 }
 
 fn StatementKind.empty() StatementKind {
@@ -1567,4 +1567,21 @@ mut:
 	program_type        ProgramType
 	is_strict_mode      bool
 	has_top_level_await bool
+}
+
+// A string literal's text (empty for other nodes).
+fn (kind &ExpressionKind) literal_string() Utf16String {
+	if kind.string_value == unsafe { nil } { return Utf16String{} }
+	return *kind.string_value
+}
+
+// A labelled statement's label (empty for other statements).
+fn (kind &StatementKind) label_text() Utf16String {
+	if kind.label == unsafe { nil } { return Utf16String{} }
+	return *kind.label
+}
+
+// AST text stored out of line.
+fn ast_text(text Utf16String) &Utf16String {
+	return &Utf16String{...text}
 }

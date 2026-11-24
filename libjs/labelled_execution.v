@@ -23,7 +23,7 @@ struct LoopAbruptExit {
 // errors; Annex B labelled function initialization is a separate runtime slice.
 fn (mut generator BytecodeGenerator) labelled_statement(mut vm VM, statement &Statement) ! {
 	iteration := generator.labelled_item_is_iteration(statement.kind.labelled_item or { return error('Missing labelled statement') })
-	generator.labels << BytecodeLabel{name: statement.kind.label.clone(), scope_depth: generator.scope_depth, loop_depth: generator.loops.len, loop_index: if iteration { ?int(generator.loops.len) } else { none }}
+	generator.labels << BytecodeLabel{name: statement.kind.label_text().clone(), scope_depth: generator.scope_depth, loop_depth: generator.loops.len, loop_index: if iteration { ?int(generator.loops.len) } else { none }}
 	generator.statement(mut vm, statement.kind.labelled_item or { return error('Missing labelled statement') })!
 	label := generator.labels.pop()
 	for jump in label.breaks { generator.patch(jump) }
@@ -50,7 +50,8 @@ fn (generator &BytecodeGenerator) labelled_item_is_iteration(item &Statement) bo
 
 fn (mut generator BytecodeGenerator) loop_control_statement(statement &Statement) ! {
 	is_continue := statement.kind.tag == .continue_stmt
-	if name := statement.kind.target_label {
+	if target := statement.kind.target_label {
+		name := *target
 		for index := generator.labels.len - 1; index >= 0; index-- {
 			label := generator.labels[index]
 			if label.name != name { continue }

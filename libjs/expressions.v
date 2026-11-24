@@ -307,7 +307,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			}
 			return p.expression(after_string, ExpressionKind{
 				tag:          .string_literal
-				string_value: str_value
+				string_value: ast_text(str_value)
 			}), true
 		}
 		.null_literal {
@@ -1318,7 +1318,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			is_proto := utf16_equals(str_value.data, proto_name)
 			expression := p.expression(after_string, ExpressionKind{
 				tag:          .string_literal
-				string_value: str_value.clone()
+				string_value: ast_text(str_value.clone())
 			})
 			return PropertyKey{
 				expression: expression
@@ -1386,7 +1386,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 				key_start := start
 				expression := p.expression(key_start, ExpressionKind{
 					tag:          .string_literal
-					string_value: value.clone()
+					string_value: ast_text(value.clone())
 				})
 				return PropertyKey{
 					expression:    expression
@@ -1399,7 +1399,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 				p.consume_property_key_token()
 				expression := p.expression(start, ExpressionKind{
 					tag:          .string_literal
-					string_value: Utf16String.new()
+					string_value: unsafe { nil }
 				})
 				return PropertyKey{
 					expression: expression
@@ -1480,7 +1480,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 		}
 		expressions << p.expression(start, ExpressionKind{
 			tag:          .string_literal
-			string_value: Utf16String.new()
+			string_value: unsafe { nil }
 		})
 	}
 
@@ -1500,7 +1500,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 				if cooked_val := cooked {
 					expressions << p.expression(string_pos, ExpressionKind{
 						tag:          .string_literal
-						string_value: cooked_val
+						string_value: ast_text(cooked_val)
 					})
 				} else {
 					// C++ uses rule_start (template literal start) for NullLiteral.
@@ -1515,7 +1515,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 				}
 				expressions << p.expression(string_pos, ExpressionKind{
 					tag:          .string_literal
-					string_value: value
+					string_value: ast_text(value)
 				})
 			}
 		} else if p.match_token(.template_literal_expr_start) {
@@ -1527,7 +1527,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 			if !p.match_token(.template_literal_string) {
 				expressions << p.expression(start, ExpressionKind{
 					tag:          .string_literal
-					string_value: Utf16String.new()
+					string_value: unsafe { nil }
 				})
 				if is_tagged {
 					raw_strings << Utf16String.new()

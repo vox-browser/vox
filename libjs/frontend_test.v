@@ -140,7 +140,7 @@ fn test_parse_string_literal() {
 
 	expr := stmt.kind.expression or { panic('no expression') }
 	assert expr.kind.tag == .string_literal
-	assert expr.kind.string_value.str() == 'hello'
+	assert expr.kind.literal_string().str() == 'hello'
 }
 
 fn test_parse_boolean_true() {

@@ -434,7 +434,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return generator.constant(Value.from_bigint(integer))
 		}
 		.string_literal {
-			return generator.constant(Value.from_string(vm.create_string(kind.string_value)))
+			return generator.constant(Value.from_string(vm.create_string(kind.literal_string())))
 		}
 		.boolean_literal {
 			return generator.constant(Value.from_bool(kind.bool_value))

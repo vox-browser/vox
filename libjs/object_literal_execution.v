@@ -73,7 +73,7 @@ fn literal_property_name(property &ObjectProperty) ?Utf16String {
 	name := if property.key.kind.tag == .identifier_expr {
 		identifier_name(&property.key) or { return none }
 	} else if property.key.kind.tag == .string_literal {
-		property.key.kind.string_value
+		property.key.kind.literal_string()
 	} else {
 		return none
 	}

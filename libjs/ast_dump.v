@@ -500,7 +500,7 @@ fn dump_statement(statement &Statement, state DumpState) {
 		}
 		.labelled {
 			dump_node_with(state, 'LabelledStatement', statement.range, color_string_utf16(state,
-				statement.kind.label))
+				statement.kind.label_text()))
 			if item := statement.kind.labelled_item {
 				dump_statement(item, child_state(state, true))
 			}
@@ -652,7 +652,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.string_literal {
 			dump_node_with(state, 'StringLiteral', expression.range, color_string_utf16(state,
-				expression.kind.string_value))
+				expression.kind.literal_string()))
 		}
 		.boolean_literal {
 			dump_node_with(state, 'BooleanLiteral', expression.range, color_number_bool(state,

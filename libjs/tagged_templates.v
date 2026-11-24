@@ -19,7 +19,7 @@ fn (mut generator BytecodeGenerator) tagged_template(mut vm VM, expression &Expr
 	mut strings := []Operand{}
 	for index := 0; index < data.expressions.len; index += 2 {
 		part := data.expressions[index]
-		value := if part.kind.tag == .null_literal { js_undefined() } else { Value.from_string(vm.create_string(part.kind.string_value)) }
+		value := if part.kind.tag == .null_literal { js_undefined() } else { Value.from_string(vm.create_string(part.kind.literal_string())) }
 		strings << generator.constant(value)
 	}
 	for raw in data.raw_strings { strings << generator.constant(Value.from_string(vm.create_string(raw))) }

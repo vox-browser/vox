@@ -230,7 +230,7 @@ fn (mut p Parser) parse_break_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:          .break_stmt
-		target_label: label
+		target_label: if text := label { ast_text(text) } else { none }
 	})
 }
 
@@ -271,7 +271,7 @@ fn (mut p Parser) parse_continue_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:          .continue_stmt
-		target_label: label
+		target_label: if text := label { ast_text(text) } else { none }
 	})
 }
 
@@ -904,7 +904,7 @@ fn (mut p Parser) try_parse_labelled_statement(allow_labelled_function bool) ?St
 
 	return p.statement(start, StatementKind{
 		tag:           .labelled
-		label:         label
+		label:         ast_text(label)
 		labelled_item: &body
 	})
 }

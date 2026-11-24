@@ -32,6 +32,6 @@ fn test_label_lookahead_preserves_expression_statements_and_trivia() {
 	assert program.scope.children[0].kind.tag == .expression_stmt
 	labelled := program.scope.children[1]
 	assert labelled.kind.tag == .labelled
-	assert labelled.kind.label.str() == 'outer'
+	assert labelled.kind.label_text().str() == 'outer'
 	assert program.scope.children[2].kind.tag == .expression_stmt
 }
