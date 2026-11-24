@@ -12337,3 +12337,44 @@ chooses ciphers in its own order.
   of it the 1,112-byte `Object` record; moving its rare exotic slots out
   of line (about 30 fields, a type-aware rewrite of several hundred
   access sites) is the next memory lever.
+
+**LibJS object layout, creation paths and constant keys, 2026-11-24 morning.**
+- `46e18666f` stores the by-value optional slots that V laid out inline
+  (`LegacyPlatformObject`, the native initial name, the function source
+  view) behind pointers: `Object` 1,112 → 896 bytes. `dbb7997e6` moves 26
+  rare internal slots (Intl, RegExp, Map/Set, WeakMap/WeakSet/WeakRef,
+  wrapper data, bound function, error data, iterators, DataView, binding
+  and super references, private elements) into an `ObjectSlots` record
+  that objects share read-only until one is first written
+  (`mut_slots()`): `Object` → 456 bytes. `8775b47ae` creates functions
+  without key lookups (reserved length/name/prototype storage,
+  `define_absent_property()`) and forms `[[SourceText]]` on demand
+  (closure creation 1,510 → 716 instructions). `63901e486` keeps one
+  `PropertyName` per string constant (`Executable.constant_keys`; control
+  `VOX_LIBJS_CONVERT_CONSTANT_KEYS=1`). `989774d6d` appends array literal
+  elements without `[[DefineOwnProperty]]`.
+
+  | Standalone driver (instructions) | `d8b1547c4` | `989774d6d` |
+  | --- | --- | --- |
+  | 300,000 `{}` | 390M | 262M |
+  | 300,000 closures | 1,449M | 906M |
+  | 300,000 six-property literals | 1,066M | 869M |
+  | 300,000 five-element array literals | 1,808M | 832M |
+  | 300,000 `new P(i)` with three fields | 2,281M | 2,105M |
+  | mixed script | 1,304M | 1,206M |
+
+  Peak RSS: `{}` loop 396 → 199 MB, closures 962 → 516 MB.
+- Same-binary page cohort on bundle `053e30f0` (through `989774d6d`), five
+  alternating pairs, host load 4-6, every capture 2 px: candidate median
+  28.210B (28.115B-28.505B) against 28.394B (28.250B-28.592B) with
+  `VOX_LIBJS_CONVERT_CONSTANT_KEYS=1`; every pair −0.09B to −0.28B. The
+  candidate arm is 0.89B below the `84060b5d` candidate (29.095B); that
+  cross-bundle step carries the ±0.4B uncertainty noted above. Peak
+  physical footprint 4,083 MiB against 4,624 MiB on `17307dab`.
+- Pre-existing failures at `d8b1547c4` and after: `intl_date_time_format_test`
+  (CLDR pattern expectation) and `native_call_execution_test` (spread calls
+  are translated now), besides the class static-block expectation.
+- `159a9d4c6` resolves each instruction's operand frame slots once per
+  compiled body for the inline dispatch handlers (a local loop −4.8%,
+  a bitwise loop −7.2%, calls −1.2% on the standalone driver); not yet
+  measured on the page.
