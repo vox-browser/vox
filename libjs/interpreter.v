@@ -92,7 +92,12 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
 					name, left.str())
 			}
-			vm.execute_property_write(instruction, executable, left, right, source)!
+			key := right.to_property_key(mut vm)!
+			hint := executable.property_hint(frame.program_counter)
+			if !left.is_object() || unsafe { *hint } == property_hint_adding
+				|| !left.as_object().hinted_set(key, source, hint) {
+				Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
+			}
 		}
 		.get_callee_and_this {
 			value, this_value := vm.execute_callee_read(instruction, executable)!
@@ -534,8 +539,6 @@ enum InlineHandler as u8 {
 	nop
 	property_read
 	call
-	binding_read
-	property_write
 }
 
 const inline_handlers_by_opcode = compute_inline_handlers()
@@ -557,23 +560,10 @@ fn compute_inline_handlers() []u8 {
 			.nop { InlineHandler.nop }
 			.get_property { InlineHandler.property_read }
 			.call { InlineHandler.call }
-			.get_binding { InlineHandler.binding_read }
-			.put_property { InlineHandler.property_write }
 			else { InlineHandler.slow }
 		})
 	}
 	return handlers
-}
-
-// put_property after the nullish-base check: ToPropertyKey, then the hinted
-// store or Reference/[[Set]].
-fn (mut vm VM) execute_property_write(instruction &Instruction, executable &Executable, left Value, right Value, source Value) ! {
-	key := right.to_property_key(mut vm)!
-	hint := executable.property_hint(vm.current_context().program_counter)
-	if !left.is_object() || unsafe { *hint } == property_hint_adding
-		|| !left.as_object().hinted_set(key, source, hint) {
-		Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
-	}
 }
 
 // Same-binary control: check every operand slot again while dispatching.
@@ -793,39 +783,6 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 						current := unsafe { &Value(frame.values.data) }
 						unsafe {
 							current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
-						}
-						frame.program_counter++
-						continue
-					}
-				}
-				.binding_read {
-					result := vm.execute_binding_read(instruction, executable) or {
-						if !is_throw_completion(err) { return err }
-						if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable {
-							continue
-						}
-						return err
-					}
-					current := unsafe { &Value(frame.values.data) }
-					unsafe {
-						current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
-					}
-					frame.program_counter++
-					continue
-				}
-				.property_write {
-					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
-					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
-					source := unsafe { values[bases[instruction.src.raw >> 29] + (instruction.src.raw & 0x1fffffff)] }
-					// Nullish bases, uninitialized operands and non-object bases keep
-					// execute_instruction()'s messages and coercions.
-					if left.is_object() && !right.is_special_empty_value() && !source.is_special_empty_value() {
-						vm.execute_property_write(instruction, executable, left, right, source) or {
-							if !is_throw_completion(err) { return err }
-							if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable {
-								continue
-							}
-							return err
 						}
 						frame.program_counter++
 						continue
