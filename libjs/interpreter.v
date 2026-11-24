@@ -542,6 +542,11 @@ enum InlineHandler as u8 {
 const inline_handlers_by_opcode = compute_inline_handlers()
 
 fn compute_inline_handlers() []u8 {
+	// Same-binary control `VOX_LIBJS_SLOW_CALLING_DISPATCH`: the operations
+	// that call out (property reads and writes, calls, binding and callee
+	// reads) take execute_instruction() while the other inline handlers stay.
+	// Their code remains in the loop, so this measures their dynamic effect.
+	slow_calling_dispatch := os.getenv('VOX_LIBJS_SLOW_CALLING_DISPATCH') != ''
 	mut handlers := []u8{len: int(OpCode.nop) + 1}
 	for index in 0 .. handlers.len {
 		op := unsafe { OpCode(index) }
@@ -563,6 +568,9 @@ fn compute_inline_handlers() []u8 {
 			.get_callee_and_this { InlineHandler.callee_read }
 			else { InlineHandler.slow }
 		})
+		if slow_calling_dispatch && handlers[index] >= u8(InlineHandler.property_read) {
+			handlers[index] = u8(InlineHandler.slow)
+		}
 	}
 	return handlers
 }
