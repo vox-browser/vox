@@ -12216,3 +12216,66 @@ chooses ciphers in its own order.
   handling `get_property`/`call`/`get_binding` in the inline dispatch loop
   (−4.5% mixed, but +7% on the arithmetic loop from the larger loop body;
   moving those handlers out of the loop lost the gain).
+
+**LibJS property, binding and call paths, 2026-11-24.**
+- Landed: `26e6ef45a`/`762c2a1e3` per-instruction own-property position
+  hints for `get_property` and `put_property` (a hit reads or stores the
+  own data property directly; misses, accessors and exotic objects keep
+  [[Get]]/[[Set]]); `64259ed6e` complete key indexes for `Object.prototype`
+  and `Function.prototype` (the positive-only lookup hints could not prove
+  absence, so every inherited miss and every property addition scanned all
+  of `Object.prototype`'s keys); `cb92bce43` keeps calls off V's generic
+  array helpers (register accessors, context-stack pushes and pops, frame
+  pool pushes, parameter stores); `08d4503b5` enters ordinary functions'
+  bodies directly from `call()`; `fc438920e` picks inline handlers from a
+  per-opcode table and fetches instructions without a bounds-checked call;
+  `6b10e382e` remembers each `get_binding`/`get_callee_and_this`
+  instruction's environment hops and binding index when no direct eval can
+  shadow the identifier.
+
+  | Benchmark (instructions) | `9d56adb5d` | `6b10e382e` |
+  | --- | --- | --- |
+  | 3,000,000 calls to a 1-argument function | 9.66B | 7.85B |
+  | 400,000 calls to one small function | 1.17B | 0.92B |
+  | 300,000 prototype method calls | 1.21B | 1.01B |
+  | 1,000,000 iterations reading two own properties | 1.71B | 1.36B |
+  | 1,000,000 iterations writing two own properties | 1.91B | 1.22B |
+  | mixed script | 1.59B | 1.43B |
+
+  One JS-to-JS call fell from 2,341 to about 1,750 instructions.
+- Interpreted page loads, five alternating pairs each, both controls in
+  the control arm, every capture 2 px:
+
+  | Bundle | Arm | Median | Min | Max | PNG median | Host load |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | `a51d0d0c` (through `64259ed6e`) | candidate | 30.302B | 30.249B | 30.347B | 3,817 ms | 9-10 |
+  | `a51d0d0c` | control | 32.134B | 32.026B | 32.233B | 3,849 ms | 9-10 |
+  | `5b8b9c92` (through `cb92bce43`) | candidate | 29.899B | 29.842B | 29.991B | 2,709 ms | 7-8 |
+  | `5b8b9c92` | control | 31.764B | 31.657B | 31.828B | 2,811 ms | 7-8 |
+
+  Cross-bundle differences are small (−0.17B for the hints, −0.40B for the
+  call path) and depend on host load: a partial cohort on `643f27b4` under
+  load averages of 110-180 measured 31.5B-31.6B candidates and a 33.6B
+  control, so it was discarded. Same-binary arms stay comparable.
+- On `5b8b9c92` the JavaScriptCore engine loads the same page in 18.39B
+  (2 px) with a 1.72 GB peak footprint; interpreted LibJS peaks at 4.52 GB.
+- Where the rest goes, measured on the standalone driver: an empty object
+  literal costs about 1,270 instructions, 452 of them in user space (mostly
+  copying and clearing the 1,112-byte `Object` record; V lowers each of its
+  ~38 pointer options to a 16-byte `{ok, value}` pair, and `?Utf16String`
+  and `?LegacyPlatformObject` options are 64 and 136 bytes), the rest in
+  page faults; a closure about 5,500 and 3 KB. Parsing the 87 archived
+  GitHub scripts (5.2 MB) alone peaks at 1.3 GB and retires 4.1B
+  instructions (`Expression` 312 bytes, `Statement` 704, by-value node
+  copies and growth of node arrays), though on the page it runs on four
+  background threads (about 500 sampled milliseconds against about 2,100
+  busy on the main thread). A hinted binding read still costs about 240
+  instructions, mostly in sum-type environment traversal.
+- Tried and not kept: dispatching `get_property`/`call`/`get_binding`
+  inside the inline loop (+7% on arithmetic loops from the larger loop
+  body), a shared tuple-returning [[Get]] helper (+5% on inherited reads),
+  a shared helper for hinted binding reads (lost most of the gain).
+- Pre-existing failures seen while testing (also at `53314a15b`):
+  `promise_job_limits_test`, `global_value_bindings_test` (stale global
+  order list), `class_execution_test` (static blocks now compile), and
+  `legacy_named_setters_test` needs another test file's fixture.
