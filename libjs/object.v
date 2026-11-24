@@ -231,6 +231,19 @@ pub fn Object.create(realm &Realm, prototype ?&Object) &Object {
 	return object
 }
 
+// An object or array literal knows how many properties it defines. Growing
+// the property list one definition at a time reallocates it repeatedly, and
+// the arena keeps every outgrown buffer.
+const literal_property_reservation_limit = u32(1024)
+
+fn (mut object Object) reserve_properties(count u32) {
+	if count == 0 || count > literal_property_reservation_limit || object.properties.len != 0
+		|| object.properties.cap >= int(count) {
+		return
+	}
+	object.properties = []OwnProperty{cap: int(count)}
+}
+
 fn (object &Object) find_own_property(key PropertyName) int {
 	if use_indexed_properties() && object.indexed_properties != none { return object.find_indexed_property(key) }
 	$if test {

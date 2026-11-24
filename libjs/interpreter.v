@@ -135,12 +135,23 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			vm.do_return(left)
 			return executable.bytecode_length
 		}
-		.new_object { result = Value.from_object(Object.create(vm.realm(), vm.realm().object_prototype)) }
+		.new_object {
+			mut object := Object.create(vm.realm(), vm.realm().object_prototype)
+			object.reserve_properties(instruction.identifier)
+			result = Value.from_object(object)
+		}
 		.define_property {
 			mut object := left.as_object()
 			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source, instruction.annex_b)!
 		}
-		.new_array { result = Value.from_object(ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!.object) }
+		.new_array {
+			mut array := ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!
+			// An array literal defines one element per entry after this instruction.
+			if left.number >= 0 && left.number <= f64(literal_property_reservation_limit) {
+				array.object.reserve_properties(u32(left.number))
+			}
+			result = Value.from_object(array.object)
+		}
 		.set_binding, .set_variable, .initialize_binding {
 			name := executable.get_identifier(instruction.identifier)
 			if instruction.op == .set_variable {

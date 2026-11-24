@@ -6,7 +6,8 @@ module libjs
 // converted before evaluating the value, including its observable hooks.
 fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []ObjectProperty) !Operand {
 	dst := generator.temporary()
-	generator.emit(Instruction{ op: .new_object, dst: dst })
+	// `identifier` reserves storage for the literal's properties (object_create.v).
+	generator.emit(Instruction{ op: .new_object, dst: dst, identifier: u32(properties.len) })
 	// Constant names defined so far. A spread or computed key may define any
 	// name, so later definitions keep the runtime duplicate check after one.
 	mut defined_names := []Utf16String{}
