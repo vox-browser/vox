@@ -322,119 +322,65 @@ fn single_char_token(c u16) TokenType {
 	}
 }
 
+// Dispatch on the first code unit, so a punctuator compares only the
+// candidates that start with it instead of every two- or three-unit form.
 fn parse_two_char_token(ch0 u16, ch1 u16) TokenType {
 	if ch0 >= 128 || ch1 >= 128 {
 		return .invalid
 	}
-	c0 := u8(ch0)
 	c1 := u8(ch1)
-	if c0 == `=` && c1 == `>` {
-		return .arrow
+	return match u8(ch0) {
+		`=` { if c1 == `>` { TokenType.arrow } else if c1 == `=` { TokenType.equals_equals } else { TokenType.invalid } }
+		`+` { if c1 == `=` { TokenType.plus_equals } else if c1 == `+` { TokenType.plus_plus } else { TokenType.invalid } }
+		`-` { if c1 == `=` { TokenType.minus_equals } else if c1 == `-` { TokenType.minus_minus } else { TokenType.invalid } }
+		`*` { if c1 == `=` { TokenType.asterisk_equals } else if c1 == `*` { TokenType.double_asterisk } else { TokenType.invalid } }
+		`/` { if c1 == `=` { TokenType.slash_equals } else { TokenType.invalid } }
+		`%` { if c1 == `=` { TokenType.percent_equals } else { TokenType.invalid } }
+		`&` { if c1 == `=` { TokenType.ampersand_equals } else if c1 == `&` { TokenType.double_ampersand } else { TokenType.invalid } }
+		`|` { if c1 == `=` { TokenType.pipe_equals } else if c1 == `|` { TokenType.double_pipe } else { TokenType.invalid } }
+		`^` { if c1 == `=` { TokenType.caret_equals } else { TokenType.invalid } }
+		`<` { if c1 == `=` { TokenType.less_than_equals } else if c1 == `<` { TokenType.shift_left } else { TokenType.invalid } }
+		`>` { if c1 == `=` { TokenType.greater_than_equals } else if c1 == `>` { TokenType.shift_right } else { TokenType.invalid } }
+		`?` { if c1 == `?` { TokenType.double_question_mark } else if c1 == `.` { TokenType.question_mark_period } else { TokenType.invalid } }
+		`!` { if c1 == `=` { TokenType.exclamation_mark_equals } else { TokenType.invalid } }
+		else { TokenType.invalid }
 	}
-	if c0 == `=` && c1 == `=` {
-		return .equals_equals
-	}
-	if c0 == `+` && c1 == `=` {
-		return .plus_equals
-	}
-	if c0 == `+` && c1 == `+` {
-		return .plus_plus
-	}
-	if c0 == `-` && c1 == `=` {
-		return .minus_equals
-	}
-	if c0 == `-` && c1 == `-` {
-		return .minus_minus
-	}
-	if c0 == `*` && c1 == `=` {
-		return .asterisk_equals
-	}
-	if c0 == `*` && c1 == `*` {
-		return .double_asterisk
-	}
-	if c0 == `/` && c1 == `=` {
-		return .slash_equals
-	}
-	if c0 == `%` && c1 == `=` {
-		return .percent_equals
-	}
-	if c0 == `&` && c1 == `=` {
-		return .ampersand_equals
-	}
-	if c0 == `&` && c1 == `&` {
-		return .double_ampersand
-	}
-	if c0 == `|` && c1 == `=` {
-		return .pipe_equals
-	}
-	if c0 == `|` && c1 == `|` {
-		return .double_pipe
-	}
-	if c0 == `^` && c1 == `=` {
-		return .caret_equals
-	}
-	if c0 == `<` && c1 == `=` {
-		return .less_than_equals
-	}
-	if c0 == `<` && c1 == `<` {
-		return .shift_left
-	}
-	if c0 == `>` && c1 == `=` {
-		return .greater_than_equals
-	}
-	if c0 == `>` && c1 == `>` {
-		return .shift_right
-	}
-	if c0 == `?` && c1 == `?` {
-		return .double_question_mark
-	}
-	if c0 == `?` && c1 == `.` {
-		return .question_mark_period
-	}
-	if c0 == `!` && c1 == `=` {
-		return .exclamation_mark_equals
-	}
-	return .invalid
 }
 
 fn parse_three_char_token(ch0 u16, ch1 u16, ch2 u16) TokenType {
 	if ch0 >= 128 || ch1 >= 128 || ch2 >= 128 {
 		return .invalid
 	}
-	c0 := u8(ch0)
 	c1 := u8(ch1)
 	c2 := u8(ch2)
-	if c0 == `<` && c1 == `<` && c2 == `=` {
-		return .shift_left_equals
+	return match u8(ch0) {
+		`<` { if c1 == `<` && c2 == `=` { TokenType.shift_left_equals } else { TokenType.invalid } }
+		`>` {
+			if c1 == `>` && c2 == `=` {
+				TokenType.shift_right_equals
+			} else if c1 == `>` && c2 == `>` {
+				TokenType.unsigned_shift_right
+			} else {
+				TokenType.invalid
+			}
+		}
+		`=` { if c1 == `=` && c2 == `=` { TokenType.equals_equals_equals } else { TokenType.invalid } }
+		`!` { if c1 == `=` && c2 == `=` { TokenType.exclamation_mark_equals_equals } else { TokenType.invalid } }
+		`.` { if c1 == `.` && c2 == `.` { TokenType.triple_dot } else { TokenType.invalid } }
+		`*` { if c1 == `*` && c2 == `=` { TokenType.double_asterisk_equals } else { TokenType.invalid } }
+		`&` { if c1 == `&` && c2 == `=` { TokenType.double_ampersand_equals } else { TokenType.invalid } }
+		`|` { if c1 == `|` && c2 == `=` { TokenType.double_pipe_equals } else { TokenType.invalid } }
+		`?` { if c1 == `?` && c2 == `=` { TokenType.double_question_mark_equals } else { TokenType.invalid } }
+		else { TokenType.invalid }
 	}
-	if c0 == `>` && c1 == `>` && c2 == `=` {
-		return .shift_right_equals
-	}
-	if c0 == `>` && c1 == `>` && c2 == `>` {
-		return .unsigned_shift_right
-	}
-	if c0 == `=` && c1 == `=` && c2 == `=` {
-		return .equals_equals_equals
-	}
-	if c0 == `!` && c1 == `=` && c2 == `=` {
-		return .exclamation_mark_equals_equals
-	}
-	if c0 == `.` && c1 == `.` && c2 == `.` {
-		return .triple_dot
-	}
-	if c0 == `*` && c1 == `*` && c2 == `=` {
-		return .double_asterisk_equals
-	}
-	if c0 == `&` && c1 == `&` && c2 == `=` {
-		return .double_ampersand_equals
-	}
-	if c0 == `|` && c1 == `|` && c2 == `=` {
-		return .double_pipe_equals
-	}
-	if c0 == `?` && c1 == `?` && c2 == `=` {
-		return .double_question_mark_equals
-	}
-	return .invalid
+}
+
+// Punctuators that never begin a longer one (parentheses, braces, brackets,
+// comma, semicolon, colon, tilde) are most punctuators in real code.
+@[inline]
+fn lex_single_only_punctuator(c u16) bool {
+	return c == u16(`(`) || c == u16(`)`) || c == u16(`,`) || c == u16(`;`) || c == u16(`{`)
+		|| c == u16(`}`) || c == u16(`[`) || c == u16(`]`) || c == u16(`:`) || c == u16(`~`)
 }
 
 // === Lexer constructor and methods ===
@@ -1158,7 +1104,13 @@ fn (mut l Lexer) next() Token {
 		} else {
 			mut found_token := false
 
-			if l.match4(ch(u8(`>`)), ch(u8(`>`)), ch(u8(`>`)), ch(u8(`=`))) {
+			if lex_single_only_punctuator(l.current_code_unit) {
+				found_token = true
+				token_type = single_char_token(l.current_code_unit)
+				l.consume()
+			}
+
+			if !found_token && l.match4(ch(u8(`>`)), ch(u8(`>`)), ch(u8(`>`)), ch(u8(`=`))) {
 				found_token = true
 				token_type = .unsigned_shift_right_equals
 				l.consume()
