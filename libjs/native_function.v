@@ -58,7 +58,7 @@ fn make_function_name(name FunctionName, prefix ?string) Utf16String {
 pub fn (mut object Object) set_function_length(length f64) {
 	assert length >= 0 && (math.trunc(length) == length || math.is_inf(length, 1))
 	assert object.extensible && !object.has_own_property(function_length_key)
-	object.define_direct_property(function_length_key, Value.from_f64(length),
+	object.define_absent_property(function_length_key, Value.from_f64(length),
 		attribute_configurable)
 }
 
@@ -71,7 +71,7 @@ pub fn (mut object Object) set_function_name(mut vm VM, name FunctionName, prefi
 fn (mut object Object) set_function_name_text(mut vm VM, text Utf16String) {
 	assert object.extensible && !object.has_own_property(function_name_key)
 	if object.native_callable { object.native_initial_name = &Utf16String{...text} }
-	object.define_direct_property(function_name_key,
+	object.define_absent_property(function_name_key,
 		Value.from_string(vm.create_string(text)), attribute_configurable)
 }
 
@@ -111,6 +111,7 @@ fn create_native_function(mut vm VM, realm &Realm, prototype ?&Object, behaviour
 	object.native_callable = true
 	text := make_function_name(name, prefix)
 	if initialize_metadata {
+		object.reserve_properties(2)
 		object.set_function_length(length)
 		object.set_function_name_text(mut vm, text)
 	} else {

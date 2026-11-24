@@ -192,6 +192,15 @@ const empty_object_slots = &ObjectSlots{}
 
 // The object's own slots record, allocated on first write. A record created
 // while a transient arena is entered must outlive it, like the object.
+// A callable's [[SourceText]], when it has one.
+fn (object &Object) source_text() ?Utf16String {
+	if source := object.function_source_text { return *source }
+	if callable := object.callable {
+		if callable is ECMAScriptFunction { return callable.source_text() }
+	}
+	return none
+}
+
 pub fn (mut object Object) mut_slots() &ObjectSlots {
 	if voidptr(object.slots) == voidptr(empty_object_slots) {
 		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
@@ -221,7 +230,9 @@ pub mut:
 	native_callable      bool
 	native_initial_name  ?&Utf16String
 	proxy_object         ?&ProxyObject
-	function_source_text ?&Utf16String // [[SourceText]] on ECMAScript callables
+	// [[SourceText]] recorded for class constructors; other ECMAScript
+	// callables form theirs from the defining source (source_text()).
+	function_source_text ?&Utf16String
 	host_properties ?HostProperties
 	// Pointer options: a by-value LegacyPlatformObject or Utf16String option
 	// would add 120 or 48 bytes to every object record.
@@ -818,6 +829,26 @@ pub fn (mut object Object) delete_property_or_throw(mut vm VM, key PropertyName)
 }
 
 // Object::define_direct_property: installs a data property without validation.
+// define_direct_property() for a key the caller has just created the object
+// without, such as a new function's length, name and prototype: skip the
+// lookup that would only confirm it is absent.
+fn (mut object Object) define_absent_property(key PropertyName, value Value, attributes u8) {
+	$if test {
+		assert object.find_own_property(key) < 0
+	}
+	if object.array_object != none || object.indexed_properties != none {
+		object.define_direct_property(key, value, attributes)
+		return
+	}
+	push_within_capacity(mut object.properties, OwnProperty{
+		key:          key
+		value:        value
+		writable:     attributes & attribute_writable != 0
+		enumerable:   attributes & attribute_enumerable != 0
+		configurable: attributes & attribute_configurable != 0
+	})
+}
+
 pub fn (mut object Object) define_direct_property(key PropertyName, value Value, attributes u8) {
 	// Look the key up before growing an array's length: an index at or above
 	// the length is known to be absent without scanning the property vector.

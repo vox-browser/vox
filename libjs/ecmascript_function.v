@@ -49,6 +49,10 @@ fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data
 	}
 	mut object := Object.create(realm, function_prototype)
 	object.class_name = 'Function'
+	// length, name and, for constructors and generators, prototype.
+	has_prototype := (ordinary && !data.is_arrow_function && data.kind == .normal)
+		|| data.kind in [.generator, .async_generator]
+	object.reserve_properties(if has_prototype { 3 } else { 2 })
 	mut environment := defining_environment
 	// Named function expressions have a private immutable self binding.
 	mut named := ?&DeclarativeEnvironment(none)
@@ -74,27 +78,33 @@ fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data
 	object.set_function_length(f64(data.function_length))
 	object.set_function_name_text(mut vm, function.name_for_call_stack())
 	code := source.source_code or { return error('Function executable is missing its source code') }
-	units := code.code.as_slice()
-	if data.source_text_start > data.source_text_end || data.source_text_end > u32(units.len) {
+	if data.source_text_start > data.source_text_end || data.source_text_end > u32(code.code.as_slice().len) {
 		return error('Function source range is out of bounds')
 	}
-	// The callable retains the immutable SourceCode through its executable.
-	// Function.prototype.toString creates an owned primitive from this view.
-	object.function_source_text = &Utf16String{data: units[int(data.source_text_start)..int(data.source_text_end)]}
+	// [[SourceText]] is a view of the immutable SourceCode the callable retains
+	// through its executable; source_text() forms it when it is read.
 	if scope := named {
 		mut binding := scope
 		binding.initialize_binding(mut vm, data.name or { panic('missing function name') }.name, Value.from_object(object), .normal)!
 	}
 	if ordinary && !data.is_arrow_function && data.kind == .normal {
 		mut prototype := Object.create(realm, realm.object_prototype)
-		prototype.define_direct_property(function_constructor_key, Value.from_object(object), attribute_writable | attribute_configurable)
-		object.define_direct_property(function_prototype_key, Value.from_object(prototype), attribute_writable)
+		prototype.reserve_properties(1)
+		prototype.define_absent_property(function_constructor_key, Value.from_object(object), attribute_writable | attribute_configurable)
+		object.define_absent_property(function_prototype_key, Value.from_object(prototype), attribute_writable)
 	} else if data.kind in [.generator, .async_generator] {
 		// Generator methods also own a prototype, but have no [[Construct]].
 		parent := if data.kind == .generator { realm.generator_prototype } else { realm.async_generator_prototype }
-		object.define_direct_property(function_prototype_key, Value.from_object(Object.create(realm, parent)), attribute_writable)
+		object.define_absent_property(function_prototype_key, Value.from_object(Object.create(realm, parent)), attribute_writable)
 	}
 	return object
+}
+
+// [[SourceText]]: a view of the defining SourceCode, checked at creation.
+fn (function &ECMAScriptFunction) source_text() ?Utf16String {
+	code := function.source.source_code or { return none }
+	units := code.code.as_slice()
+	return Utf16String{data: units[int(function.data.source_text_start)..int(function.data.source_text_end)]}
 }
 
 fn (function &ECMAScriptFunction) name_for_call_stack() Utf16String {

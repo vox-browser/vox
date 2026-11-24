@@ -105,3 +105,20 @@ fn test_rare_internal_slots_are_allocated_per_object() {
 		assert voidptr(value.as_object().slots) == voidptr(empty_object_slots), name
 	}
 }
+
+// New functions append length, name and prototype into reserved storage
+// without lookups; their order, attributes and later additions are unchanged.
+fn test_function_creation_appends_its_own_properties_in_order() {
+	for source, expected in {
+		'Reflect.ownKeys(function f(){}).join()+"|"+Reflect.ownKeys(()=>1).join()':                                       'length,name,prototype|length,name'
+		'Reflect.ownKeys(function*(){}).join()+"|"+Reflect.ownKeys(async function(){}).join()':                            'length,name,prototype|length,name'
+		'Reflect.ownKeys(async function*(){}).join()+"|"+Reflect.ownKeys(({m(){}}).m).join()':                              'length,name,prototype|length,name'
+		'class C{static s(){}}Reflect.ownKeys(C).join()+"|"+Reflect.ownKeys(Math.max).join()':                             'length,name,prototype,s|length,name'
+		'function f(a,b){}var d=Object.getOwnPropertyDescriptor;[f.length,d(f,"length").writable,d(f,"name").configurable,d(f,"prototype").writable,d(f,"prototype").configurable].join()': '2,false,true,true,false'
+		'function f(){}f.x=1;f.y=2;delete f.name;f.name2=3;Reflect.ownKeys(f).join()+":"+(f.prototype.constructor===f)': 'length,prototype,x,y,name2:true'
+		'function f(){}var p=f.prototype;p.a=1;p.b=2;Reflect.ownKeys(p).join()+":"+Object.keys(new f).length':            'constructor,a,b:0'
+		'var fs=[];for(var i=0;i<3;i++)fs.push(function(){return i});fs.map(g=>g.name+g.length).join()+fs[0]()':          '0,0,03'
+	} {
+		assert object_creation_eval(source)! == expected, source
+	}
+}

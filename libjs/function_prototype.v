@@ -130,8 +130,8 @@ fn function_prototype_to_string(mut vm VM) !Value {
 		return vm.throw_error_type(.type_error, .not_an_object_of_type, 'Function')
 	}
 	object := value.as_object()
-	if source := object.function_source_text {
-		return Value.from_string(vm.create_string(*source))
+	if source := object.source_text() {
+		return Value.from_string(vm.create_string(source))
 	}
 	if object.native_callable {
 		name := if initial := object.native_initial_name { *initial } else { value.as_function().name_for_call_stack() }
