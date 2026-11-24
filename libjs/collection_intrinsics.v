@@ -190,12 +190,39 @@ fn array_prototype_push(mut vm VM) !Value {
 
 fn array_prototype_pop(mut vm VM) !Value {
 	mut object, length := array_receiver(mut vm)!
+	if value := object.pop_dense_array_element(length) { return value }
 	if length == 0 { object.set(mut vm, vm.length_key(), Value.from_i32(0), .yes)!; return js_undefined() }
 	key := array_index_key(length - 1)
 	value := object.get(mut vm, key)!
 	object.delete_property_or_throw(mut vm, key)!
 	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length - 1)), .yes)!
 	return value
+}
+
+// Array.prototype.pop on an array whose own keys are exactly 0 .. length-1
+// (no other keys, as many properties as the length) and whose last element
+// is a configurable data property, with a writable length: Get reads it,
+// DeletePropertyOrThrow removes it, and ArraySetLength then has nothing above
+// the new length to remove. Each step's observable result is unchanged;
+// the general path rescans every property on every pop.
+fn (mut object Object) pop_dense_array_element(length u64) ?Value {
+	mut array := object.array_object or { return none }
+	if length == 0 || length != u64(array.length) || !array.length_writable || array.named_properties != 0
+		|| u64(object.properties.len) != length || object.indexed_properties != none {
+		return none
+	}
+	last := object.properties.len - 1
+	property := object.properties[last]
+	if !property.key.is_number() || u64(property.key.number) != length - 1 || !property.configurable
+		|| property.value.is_accessor() {
+		return none
+	}
+	object.properties[last] = OwnProperty{}
+	unsafe {
+		object.properties.len = last
+	}
+	array.length = u32(last)
+	return property.value
 }
 
 fn array_prototype_unshift(mut vm VM) !Value {

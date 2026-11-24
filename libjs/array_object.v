@@ -100,31 +100,49 @@ pub fn (mut array ArrayObject) set_length(mut vm VM, descriptor PropertyDescript
 // IndexedProperties.cpp::GenericIndexedPropertyStorage::set_array_like_size:
 // retain the highest non-configurable index, delete only the configurable
 // entries above that boundary, and publish the resulting length on failure.
+@[direct_array_access]
 fn (mut array ArrayObject) set_array_like_size(new_length u32) bool {
 	if new_length >= array.length {
 		array.length = new_length
 		return true
 	}
+	mut object := array.object
 	mut highest_non_configurable := ?u32(none)
-	for property in array.object.properties {
-		if property.key.is_number() && property.key.number >= new_length && !property.configurable {
-			if highest := highest_non_configurable {
-				if property.key.number > highest { highest_non_configurable = property.key.number }
+	mut removable := false
+	for index in 0 .. object.properties.len {
+		property := unsafe { &object.properties[index] }
+		if property.key.is_number() && property.key.number >= new_length {
+			if !property.configurable {
+				if highest := highest_non_configurable {
+					if property.key.number > highest { highest_non_configurable = property.key.number }
+				} else {
+					highest_non_configurable = property.key.number
+				}
 			} else {
-				highest_non_configurable = property.key.number
+				removable = true
 			}
 		}
 	}
 	boundary := if highest := highest_non_configurable { highest + 1 } else { new_length }
-	mut kept := []OwnProperty{cap: array.object.properties.len}
-	for property in array.object.properties {
-		if property.key.is_number() && property.key.number >= boundary && property.configurable {
-			continue
+	// Compact in place, keeping order. Rebuilding the list on every shrink
+	// made each pop() allocate and copy the whole array (and the arena kept
+	// every copy).
+	if removable {
+		mut write := 0
+		for read in 0 .. object.properties.len {
+			property := object.properties[read]
+			if property.key.is_number() && property.key.number >= boundary && property.configurable {
+				continue
+			}
+			if write != read { object.properties[write] = property }
+			write++
 		}
-		kept << property
+		// A conservative collector also scans the unused capacity.
+		for index in write .. object.properties.len { object.properties[index] = OwnProperty{} }
+		unsafe {
+			object.properties.len = write
+		}
 	}
-	mut object := array.object
-	object.properties = kept
 	array.length = boundary
 	return highest_non_configurable == none
 }
