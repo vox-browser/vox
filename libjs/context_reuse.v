@@ -56,7 +56,14 @@ fn (mut context ExecutionContext) initialize_reused_values(registers u32, consta
 	unsafe {
 		mut values := &Value(context.values.data)
 		for slot in 0 .. int(reserved) { values[slot] = js_special_empty_value() }
-		if constants.len > 0 {
+		if constants.len > 0 && !context.held.holds(constants, registers, context.values.data) {
+			context.release_held_constants()
+			context.held = HeldConstants{
+				constants: constants.data
+				start:     registers
+				count:     u32(constants.len)
+				storage:   context.values.data
+			}
 			mut target := &values[registers]
 			source := &Value(constants.data)
 			bytes := uint(constants.len) * uint(sizeof(Value))
@@ -89,14 +96,52 @@ fn expose_execution_context(context &ExecutionContext) {
 	}
 }
 
+// Constant operands are never written (Operand.slot() rejects them as
+// destinations), and the executable keeps its constants alive, so a pooled
+// frame may keep them in place for its next call of the same body.
+struct HeldConstants {
+	constants voidptr
+	start     u32
+	count     u32
+	storage   voidptr
+}
+
+@[inline]
+fn (held HeldConstants) holds(constants []Value, start u32, storage voidptr) bool {
+	return held.constants == constants.data && held.start == start && held.count == u32(constants.len)
+		&& held.storage == storage
+}
+
+// A frame reused by another body (or without constants) must not show the
+// previous body's constants in its registers or arguments.
+fn (mut context ExecutionContext) release_held_constants() {
+	held := context.held
+	if held.count != 0 && held.storage == context.values.data
+		&& u64(held.start) + u64(held.count) <= u64(context.values.cap) {
+		values := unsafe { &Value(context.values.data) }
+		for index in held.start .. held.start + held.count {
+			unsafe { values[index] = js_undefined() }
+		}
+	}
+	context.held = HeldConstants{}
+}
+
 @[direct_array_access]
 fn (mut context ExecutionContext) clear_for_reuse() {
 	// The loop is bounded by this array's own length; no user code runs here.
-	if use_direct_frame_clears() { context.clear_reused_values() }
-	else { for index in 0 .. context.values.len { context.values[index] = js_undefined() } }
+	mut held := context.held
+	if held.storage != context.values.data || u64(held.start) + u64(held.count) > u64(context.values.len) {
+		held = HeldConstants{}
+	}
+	if use_direct_frame_clears() {
+		context.clear_reused_values_around(held)
+	} else {
+		for index in 0 .. context.values.len { context.values[index] = js_undefined() }
+		held = HeldConstants{}
+	}
 	values := context.values
 	environment := context.recycle_call_environment()
-	unsafe { *context = ExecutionContext{ values: values, reusable: true, cached_call_environment: environment } }
+	unsafe { *context = ExecutionContext{ values: values, reusable: true, cached_call_environment: environment, held: held } }
 }
 
 fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Value, arguments u32) ?&ExecutionContext {
@@ -120,9 +165,11 @@ fn (mut stack InterpreterStack) allocate_reusable(registers u32, constants []Val
 		// the used prefix, and private execution never writes into its spare tail.
 		unsafe { context.values.len = int(count) }
 		context.argument_count = arguments
+		if constants.len == 0 { context.release_held_constants() }
 		if use_direct_context_initialization() && context.initialize_reused_values(registers, constants) {
 			$if test { if context_reuse_diagnostic_for_test { contexts_initialized_directly_for_test++ } }
 		} else {
+			context.release_held_constants()
 			for slot in 0 .. int(if registers < reserved_register_count {
 				registers
 			} else {

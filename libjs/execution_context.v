@@ -111,6 +111,10 @@ mut:
 	call_environment ?&FunctionEnvironment
 	reusable bool
 	exposed bool
+	// HeldConstants (context_reuse.v): the executable constants still in this
+	// frame's value storage and where, so a pooled frame reused by the same
+	// body neither clears nor copies them again.
+	held HeldConstants
 }
 
 fn (mut context ExecutionContext) leave_lexical_scope() ! {
@@ -147,6 +151,12 @@ pub fn ExecutionContext.create(registers_and_locals_count u32, constants []Value
 	return &ExecutionContext{
 		values:         values
 		argument_count: arguments_count
+		held:           HeldConstants{
+			constants: constants.data
+			start:     registers_and_locals_count
+			count:     u32(constants.len)
+			storage:   values.data
+		}
 	}
 }
 

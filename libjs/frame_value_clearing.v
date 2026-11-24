@@ -22,6 +22,24 @@ fn use_direct_frame_clears() bool {
 	return true
 }
 
+// clear_reused_values() except the constants the frame keeps.
+fn (mut context ExecutionContext) clear_reused_values_around(held HeldConstants) {
+	if held.count == 0 {
+		context.clear_reused_values()
+		return
+	}
+	values := unsafe { &Value(context.values.data) }
+	for index in 0 .. int(held.start) {
+		unsafe { values[index] = js_undefined() }
+	}
+	for index in int(held.start + held.count) .. context.values.len {
+		unsafe { values[index] = js_undefined() }
+	}
+	$if test {
+		if direct_frame_clears_diagnostics { direct_frame_clears++ }
+	}
+}
+
 fn (mut context ExecutionContext) clear_reused_values() {
 	if context.values.len == 0 { return }
 	// Retain the ordinary first write, including V's storage uniqueness check.
