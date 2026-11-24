@@ -212,6 +212,8 @@ mut:
 	scope_collector                ScopeCollector
 	exported_names                 map[string]bool
 	function_table                 FunctionTable
+	// parser_names.v: identifier names shared by their occurrences.
+	names ParserNames
 }
 
 fn Parser.new(source []u16, program_type ProgramType) Parser {

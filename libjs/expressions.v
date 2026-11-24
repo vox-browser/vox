@@ -463,8 +463,10 @@ fn (mut p Parser) parse_primary_expression_identifier(start Position, forbidden 
 		return p.expression(start, ExpressionKind.error()), true
 	}
 	id_token := p.consume_and_check_identifier()
-	id := p.make_identifier(start, Utf16String.from_slice(p.token_value(id_token)))
-	p.scope_collector.register_identifier(id, id.name.data, none)
+	// One shared copy and key per distinct name (parser_names.v).
+	name := p.names.intern(p.token_value(id_token))
+	id := p.make_identifier(start, name.text)
+	p.scope_collector.register_identifier_key(id, name.key, none)
 	return p.expression(start, ExpressionKind.identifier_kind(id)), true
 }
 
@@ -630,7 +632,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 			} else if p.match_identifier_name() {
 				mem_token := p.consume()
 				property := p.expression(property_start, ExpressionKind.identifier_kind(p.make_identifier(property_start,
-					Utf16String.from_slice(p.token_value(mem_token)))))
+					p.names.intern(p.token_value(mem_token)).text)))
 				return p.expression(start, ExpressionKind{
 					tag:      .member
 					object:   &lhs
@@ -949,7 +951,7 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 						mem_token := p.consume()
 						references << OptionalChainMemberRef{
 							identifier: p.make_identifier(property_start,
-								Utf16String.from_slice(p.token_value(mem_token)))
+								p.names.intern(p.token_value(mem_token)).text)
 							mode:       .optional
 						}
 					} else {
@@ -977,7 +979,7 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 				property_start := p.position()
 				mem_token := p.consume()
 				references << OptionalChainMemberRef{
-					identifier: p.make_identifier(property_start, Utf16String.from_slice(p.token_value(mem_token)))
+					identifier: p.make_identifier(property_start, p.names.intern(p.token_value(mem_token)).text)
 					mode:       .not_optional
 				}
 			} else {
@@ -1382,12 +1384,13 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			if p.match_identifier_name() {
 				is_ident := p.match_identifier()
 				id_token := p.consume_property_key_token()
-				value := Utf16String.from_slice(p.token_value(id_token))
+				// Object keys repeat as often as identifiers; share one copy per name.
+				value := p.names.intern(p.token_value(id_token)).text
 				is_proto := utf16_equals(value.data, proto_name)
 				key_start := start
 				expression := p.expression(key_start, ExpressionKind{
 					tag:          .string_literal
-					string_value: ast_text(value.clone())
+					string_value: ast_text(value)
 				})
 				return PropertyKey{
 					expression:    expression

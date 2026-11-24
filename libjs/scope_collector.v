@@ -548,11 +548,18 @@ fn (mut sc ScopeCollector) check_labelled_function_declaration(name []u16, line 
 }
 
 fn (mut sc ScopeCollector) register_identifier(id &Identifier, name []u16, declaration_kind ?int) {
+	if sc.current < 0 {
+		return
+	}
+	sc.register_identifier_key(id, string_from_utf16_lossy(name), declaration_kind)
+}
+
+// register_identifier() with the name's UTF-8 key already formed (ParserNames).
+fn (mut sc ScopeCollector) register_identifier_key(id &Identifier, key string, declaration_kind ?int) {
 	index := sc.current
 	if index < 0 {
 		return
 	}
-	key := string_from_utf16_lossy(name)
 	dk_int := if dk := declaration_kind { dk } else { 0 }
 	if key in sc.records[index].identifier_groups {
 		unsafe {
