@@ -111,11 +111,34 @@ pub fn (a PropertyName) equals(b PropertyName) bool {
 			if voidptr(a.string_value) == voidptr(b.string_value) { true }
 			else if a.string_value == unsafe { nil } { b.string_value.data.len == 0 }
 			else if b.string_value == unsafe { nil } { a.string_value.data.len == 0 }
-			else { utf16_equals(a.string_value.data, b.string_value.data) }
+			else { utf16_key_units_equal(a.string_value.data, b.string_value.data) }
 		}
 		.number_key { a.number == b.number }
 		.symbol_key { voidptr(a.as_symbol()) == voidptr(b.as_symbol()) }
 	}
+}
+
+// Property keys are short. Compare their code units eight bytes at a time
+// (unaligned loads), without utf16_equals()' and memcmp's call overhead.
+@[direct_array_access; inline]
+fn utf16_key_units_equal(a []u16, b []u16) bool {
+	if a.len != b.len { return false }
+	if a.data == b.data { return true }
+	bytes := a.len * 2
+	unsafe {
+		left := &u8(a.data)
+		right := &u8(b.data)
+		mut offset := 0
+		for offset + 8 <= bytes {
+			if *(&u64(left + offset)) != *(&u64(right + offset)) { return false }
+			offset += 8
+		}
+		for offset < bytes {
+			if *(&u16(left + offset)) != *(&u16(right + offset)) { return false }
+			offset += 2
+		}
+	}
+	return true
 }
 
 pub fn (name PropertyName) str() string {
@@ -517,6 +540,18 @@ fn (object &Object) reads_directly() bool {
 		&& object.arguments_object == none && object.legacy_platform_object == none
 }
 
+// reads_directly() for one key. A String object's virtual characters have
+// array-index (number) keys; its length and every other key are ordinary own
+// properties, so String.prototype's methods read directly.
+@[inline]
+fn (object &Object) reads_key_directly(key PropertyName) bool {
+	if !use_wide_property_hints() { return object.reads_directly() }
+	return use_direct_property_reads() && object.host_properties == none
+		&& object.typed_array == none && object.arguments_object == none
+		&& object.legacy_platform_object == none
+		&& (object.string_object == none || key.kind != .number_key)
+}
+
 // [[Get]]'s direct path after the own lookup found no property.
 fn (object &Object) get_inherited(mut vm VM, key PropertyName, receiver Value) !Value {
 	if parent := object.prototype {
@@ -545,7 +580,7 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	}
 	// Ordinary reads need only a value. Avoid constructing a complete optional
 	// descriptor on this path; exotic providers and accessor caching stay below.
-	if object.reads_directly() {
+	if object.reads_key_directly(key) {
 		if array := object.array_object {
 			if key.is_length_property() { return Value.from_f64(f64(array.length)) }
 		}
