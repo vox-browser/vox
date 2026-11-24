@@ -12300,3 +12300,26 @@ chooses ciphers in its own order.
 
   Every capture 2 px. Against the 33.31B of the first operand-slot cohort,
   interpreted loads are 13% lower.
+- `c57a15542` starts global identifier reads at the global environment
+  (global variable and builtin reads −16%). Then the inline dispatch loop
+  gained arms for binding reads, object property writes and callee reads
+  (`9f0dfab87`, `0a855c0c3`), which were reverted and reapplied after the
+  page measurement turned out to be noise:
+
+  | Bundle | Sources | Arm | Median | Min | Max | Host load |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | `17307dab` | through `c57a15542` | candidate | 28.545B | 28.486B | 28.683B | 3 |
+  | `17307dab` | | control | 30.925B | 30.868B | 31.131B | 3 |
+  | `7885c5d8` | through `9f0dfab87` | candidate | 28.753B | 28.626B | 28.830B | 2-3 |
+  | `7885c5d8` | | control | 31.322B | 31.272B | 31.354B | 2-3 |
+  | `e905c413` | same inputs as `17307dab` | candidate | 28.925B | 28.817B | 29.105B | 2-3 |
+  | `e905c413` | | control | 31.330B | 31.266B | 31.398B | 2-3 |
+
+  `e905c413` and `17307dab` were built from identical inputs (the same
+  `build_inputs_sha256` and source manifests) yet differ by 0.38B-0.40B in
+  both arms at the same low host load, so cohorts of different bundles
+  taken at different times are only comparable to about ±0.4B; earlier
+  cross-bundle steps of 0.2B-0.5B in this file carry that uncertainty.
+  Same-binary arms remain the reliable comparison: `ec764119a` adds
+  `VOX_LIBJS_SLOW_CALLING_DISPATCH=1`, which routes the calling arms back
+  to `execute_instruction()` (their code stays in the loop).
