@@ -108,9 +108,9 @@ fn (mut vm VM) execute_property_read(left Value, right Value, strict bool) !Valu
 }
 
 // execute_property_read() for a get_property instruction with its position hint.
-fn (mut vm VM) execute_property_read_at(left Value, right Value, strict bool, hint &u32) !Value {
+fn (mut vm VM) execute_property_read_at(left Value, right Value, key_operand Operand, executable &Executable, strict bool, hint &u32) !Value {
 	if left.is_object() && use_compact_reference_reads() {
-		key := right.to_property_key(mut vm)!
+		key := vm.operand_property_key(executable, key_operand, right)!
 		vm.record_compact_reference_read()
 		return left.as_object().hinted_get(mut vm, key, left, hint)
 	}

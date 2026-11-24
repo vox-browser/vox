@@ -72,7 +72,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			result = vm.execute_call_instruction(instruction, executable, left, right)!
 		}
 		.get_property {
-			result = vm.execute_property_read_at(left, right, instruction.strict,
+			result = vm.execute_property_read_at(left, right, instruction.rhs, executable, instruction.strict,
 				executable.property_hint(frame.program_counter))!
 		}
 		.get_binding, .typeof_binding {
@@ -137,7 +137,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		}
 		.define_property {
 			mut object := left.as_object()
-			define_literal_property(mut vm, mut object, right.to_property_key(mut vm)!, source, instruction.annex_b)!
+			define_literal_property(mut vm, mut object, vm.operand_property_key(executable, instruction.rhs, right)!, source, instruction.annex_b)!
 		}
 		.new_array {
 			mut array := ArrayObject.create(mut vm, vm.realm(), u64(left.number), vm.realm().array_prototype_record())!
@@ -578,7 +578,7 @@ fn compute_inline_handlers() []u8 {
 // put_property after the nullish-base check: ToPropertyKey, then the hinted
 // store or Reference/[[Set]].
 fn (mut vm VM) execute_property_write(instruction &Instruction, executable &Executable, left Value, right Value, source Value) ! {
-	key := right.to_property_key(mut vm)!
+	key := vm.operand_property_key(executable, instruction.rhs, right)!
 	hint := executable.property_hint(vm.current_context().program_counter)
 	if !left.is_object() || unsafe { *hint } == property_hint_adding
 		|| !left.as_object().hinted_set(key, source, hint) {
@@ -861,7 +861,7 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
 					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
 					if left.is_object() && !right.is_special_empty_value() {
-						result := vm.execute_property_read_at(left, right, instruction.strict,
+						result := vm.execute_property_read_at(left, right, instruction.rhs, executable, instruction.strict,
 							executable.property_hint(frame.program_counter)) or {
 							if !is_throw_completion(err) { return err }
 							if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable {

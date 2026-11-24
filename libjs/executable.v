@@ -91,6 +91,8 @@ mut:
 	call_plan ?&FunctionCallPlan
 	property_hints []u32
 	binding_hints  []u32
+	// PropertyName of each string constant (constant_keys.v).
+	constant_keys []PropertyName
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {
