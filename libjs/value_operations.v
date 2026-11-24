@@ -187,9 +187,7 @@ pub fn add(mut vm VM, lhs Value, rhs Value) !Value {
 	if left.is_string() || right.is_string() {
 		left_string := left.to_primitive_string(mut vm)!
 		right_string := right.to_primitive_string(mut vm)!
-		mut units := left_string.utf16.data.clone()
-		units << right_string.utf16.data
-		return Value.from_string(vm.create_string(Utf16String{ data: units }))
+		return Value.from_string(vm.concatenate_strings(left_string, right_string))
 	}
 	return numeric_binary_operation(mut vm, left, right, .add)
 }

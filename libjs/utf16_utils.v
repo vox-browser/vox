@@ -66,7 +66,8 @@ pub fn (text Utf16String) has_ascii_storage() bool {
 pub fn (text Utf16String) has_short_ascii_storage() bool {
 	// AK/StringData.h::MAX_SHORT_STRING_BYTE_COUNT and Utf16String.h's
 	// actual ASCII inline-storage predicate, including IPC storage metadata.
-	return text.has_ascii_storage() && text.data.len <= int(sizeof(voidptr)) - int(sizeof(u8))
+	// Test the length first: has_ascii_storage() scans every code unit.
+	return text.data.len <= int(sizeof(voidptr)) - int(sizeof(u8)) && text.has_ascii_storage()
 }
 
 fn (u Utf16String) len() int {

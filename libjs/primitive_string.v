@@ -84,6 +84,30 @@ pub fn (mut vm VM) create_string(text Utf16String) &PrimitiveString {
 	}
 }
 
+// The string-concatenation step of ApplyStringOrNumericBinaryOperator. An
+// empty side leaves the other string's value; otherwise the code units are
+// copied once into exactly sized storage that the new string owns.
+fn (mut vm VM) concatenate_strings(left &PrimitiveString, right &PrimitiveString) &PrimitiveString {
+	a := left.utf16.data
+	b := right.utf16.data
+	if b.len == 0 && left.utf16.storage_ == unsafe { nil } { return left }
+	if a.len == 0 && right.utf16.storage_ == unsafe { nil } { return right }
+	count := a.len + b.len
+	mut units := []u16{cap: count}
+	unsafe {
+		vmemcpy(units.data, a.data, a.len * int(sizeof(u16)))
+		vmemcpy(&u16(units.data) + a.len, b.data, b.len * int(sizeof(u16)))
+		units.len = count
+	}
+	text := Utf16String{
+		data: units
+	}
+	if count <= 1 || has_short_ascii_storage(text) { return vm.create_string(text) }
+	return &PrimitiveString{
+		utf16: text
+	}
+}
+
 pub fn (mut vm VM) create_string_from_str(text string) &PrimitiveString {
 	return vm.create_cached_utf8_string(text)
 }
