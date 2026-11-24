@@ -12330,3 +12330,10 @@ chooses ciphers in its own order.
   (median −0.57B, −1.9%). The calling arms' dynamic effect is a gain; the
   loop-body cost they add to other instructions is not part of this
   comparison (about +1% on the standalone arithmetic loop).
+- `d0ef49f12` reserves a constructor's instances' property storage from
+  its previous instance (plain constructors −3.5% instructions and −7%
+  peak memory on the standalone driver; classes −2.8% and −5.5%). Not yet
+  measured on the page. A constructed object still costs about 2 KB, most
+  of it the 1,112-byte `Object` record; moving its rare exotic slots out
+  of line (about 30 fields, a type-aware rewrite of several hundred
+  access sites) is the next memory lever.
