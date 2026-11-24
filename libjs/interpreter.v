@@ -536,6 +536,7 @@ enum InlineHandler as u8 {
 	call
 	binding_read
 	property_write
+	callee_read
 }
 
 const inline_handlers_by_opcode = compute_inline_handlers()
@@ -559,6 +560,7 @@ fn compute_inline_handlers() []u8 {
 			.call { InlineHandler.call }
 			.get_binding { InlineHandler.binding_read }
 			.put_property { InlineHandler.property_write }
+			.get_callee_and_this { InlineHandler.callee_read }
 			else { InlineHandler.slow }
 		})
 	}
@@ -809,6 +811,22 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 					current := unsafe { &Value(frame.values.data) }
 					unsafe {
 						current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+					}
+					frame.program_counter++
+					continue
+				}
+				.callee_read {
+					callee, receiver := vm.execute_callee_read(instruction, executable) or {
+						if !is_throw_completion(err) { return err }
+						if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable {
+							continue
+						}
+						return err
+					}
+					current := unsafe { &Value(frame.values.data) }
+					unsafe {
+						current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = callee
+						current[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] = receiver
 					}
 					frame.program_counter++
 					continue
