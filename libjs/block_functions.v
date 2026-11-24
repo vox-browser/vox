@@ -24,7 +24,7 @@ fn (mut generator BytecodeGenerator) initialize_lexical_functions(children []Sta
 	mut initialized := []Utf16String{}
 	for index := children.len - 1; index >= 0; index-- {
 		declaration := children[index].function_declaration_for_labelled_item() or { continue }
-		generator.initialized_functions << declaration.kind.function_id.id
+		generator.initialized_functions.set(u64(declaration.kind.function_id.id), 0)
 		name := declaration.kind.func_name or { return error('Missing block function name') }
 		if initialized.any(it == name.name) { continue }
 		initialized << name.name

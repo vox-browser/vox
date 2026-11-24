@@ -18,6 +18,9 @@ mut:
 
 struct BytecodeGenerator {
 mut:
+	// Identifier-table positions by name hash once the table is large
+	// (identifier()); every identifier use looked its name up.
+	identifier_positions PositionTable
 	register_bindings []FunctionRegisterBinding
 	// Per register binding: a lexical binding's initialization has been emitted.
 	lexical_initialized []bool
@@ -34,7 +37,11 @@ mut:
 	finalizers    []BytecodeFinally
 	function_body bool
 	generator_function bool
-	initialized_functions []u32
+	// Function-table ids whose declarations were instantiated (any position).
+	initialized_functions PositionTable
+	// Non-lexical global_bindings names by hash, for the first entries indexed.
+	var_binding_names   PositionTable
+	var_binding_indexed int
 	annex_b_function_names []Utf16String
 	compile_stack_ ?StackInfo
 }
@@ -77,13 +84,68 @@ fn (mut generator BytecodeGenerator) constant(value Value) Operand {
 	return Operand.constant(index)
 }
 
-fn (mut generator BytecodeGenerator) identifier(name Utf16String) u32 {
-	for index, existing in generator.executable.identifier_table {
-		if existing == name { return u32(index) }
+const identifier_index_minimum = 16
+
+// Whether global_bindings has a non-lexical entry named `name`. The list
+// only grows, so entries are indexed once, after the first sixteen.
+fn (mut generator BytecodeGenerator) has_var_binding(name Utf16String) bool {
+	bindings := generator.executable.global_bindings
+	if bindings.len < identifier_index_minimum {
+		return bindings.any(it.name == name && !it.is_lexical)
 	}
-	index := u32(generator.executable.identifier_table.len)
+	if generator.var_binding_indexed > bindings.len {
+		generator.var_binding_names.clear()
+		generator.var_binding_indexed = 0
+	}
+	for generator.var_binding_indexed < bindings.len {
+		entry := bindings[generator.var_binding_indexed]
+		if !entry.is_lexical {
+			mut slot := binding_lookup_hash(entry.name)
+			for generator.var_binding_names.get(slot) != none { slot++ }
+			generator.var_binding_names.set(slot, generator.var_binding_indexed)
+		}
+		generator.var_binding_indexed++
+	}
+	mut hash := binding_lookup_hash(name)
+	for {
+		position := generator.var_binding_names.get(hash) or { return false }
+		if bindings[position].name == name { return true }
+		hash++
+	}
+	return false
+}
+
+fn (mut generator BytecodeGenerator) identifier(name Utf16String) u32 {
+	table := generator.executable.identifier_table
+	if table.len < identifier_index_minimum {
+		for index, existing in table {
+			if existing == name { return u32(index) }
+		}
+	} else {
+		if generator.identifier_positions.count != table.len {
+			// The first lookup past the minimum (or after a direct table edit)
+			// indexes every entry.
+			generator.identifier_positions.clear()
+			for index, existing in table { generator.index_identifier(existing, index) }
+		}
+		mut hash := binding_lookup_hash(name)
+		for {
+			position := generator.identifier_positions.get(hash) or { break }
+			if table[position] == name { return u32(position) }
+			hash++
+		}
+	}
+	index := u32(table.len)
 	generator.executable.identifier_table << name.clone()
+	if table.len >= identifier_index_minimum { generator.index_identifier(name, int(index)) }
 	return index
+}
+
+// Equal-hash names take the following free hash, as IndexedProperties does.
+fn (mut generator BytecodeGenerator) index_identifier(name Utf16String, position int) {
+	mut hash := binding_lookup_hash(name)
+	for generator.identifier_positions.get(hash) != none { hash++ }
+	generator.identifier_positions.set(hash, position)
 }
 
 fn (generator &BytecodeGenerator) unsupported(description string) IError {
@@ -665,7 +727,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	kind := statement.kind
 	if kind.tag == .function_declaration {
 		name := kind.func_name or { return error('Missing function declaration name') }
-		if !generator.executable.global_bindings.any(it.name == name.name && !it.is_lexical) {
+		if !generator.has_var_binding(name.name) {
 			generator.executable.global_bindings << GlobalBinding{name: name.name.clone()}
 		}
 		return
@@ -673,7 +735,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	if kind.tag == .variable_declaration && kind.decl_kind == .var_kind {
         for declaration in kind.declarations {
             for name in declaration_bound_names(declaration) {
-                if !generator.executable.global_bindings.any(it.name==name && !it.is_lexical) {
+                if !generator.has_var_binding(name) {
                     generator.executable.global_bindings << GlobalBinding{name:name.clone()}
                 }
             }
@@ -691,7 +753,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 		if kind.tag in [.program, .function_body] && !generator.strict {
 			generator.annex_b_function_names = scope.annexb_function_names.clone()
 			for name in scope.annexb_function_names {
-				if !generator.executable.global_bindings.any(it.name == name && !it.is_lexical) {
+				if !generator.has_var_binding(name) {
 					generator.executable.global_bindings << GlobalBinding{name: name.clone(), is_annex_b: true}
 				}
 			}
@@ -772,7 +834,7 @@ fn (mut generator BytecodeGenerator) clear_completion() {
 fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) {
 	for child in children {
 		declaration := child.function_declaration_for_labelled_item() or { continue }
-		generator.initialized_functions << declaration.kind.function_id.id
+		generator.initialized_functions.set(u64(declaration.kind.function_id.id), 0)
 		name := declaration.kind.func_name or { continue }
 		dst := generator.temporary()
 		generator.emit(Instruction{op: .new_function, dst: dst, identifier: declaration.kind.function_id.id})
@@ -798,7 +860,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
 		.labelled { generator.labelled_statement(mut vm, statement)! }
 		.function_declaration {
-			if kind.function_id.id !in generator.initialized_functions {
+			if generator.initialized_functions.get(u64(kind.function_id.id)) == none {
 				return generator.unsupported('conditional function declarations')
 			}
 			if kind.is_hoisted && !generator.strict {
