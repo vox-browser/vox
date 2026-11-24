@@ -203,10 +203,12 @@ fn (mut generator BytecodeGenerator) load_identifier(expression &Expression, dst
 	}
 }
 
-// binding_hints.v: `target` marks identifiers that no direct eval can shadow.
+// binding_hints.v: `target` marks identifiers that no direct eval can shadow,
+// and those that scope analysis resolves to the global environment.
 fn static_binding_target(expression &Expression) u32 {
 	identifier := expression.kind.identifier or { return 0 }
-	return if identifier.is_inside_scope_with_eval || identifier.is_global { 0 } else { static_binding_scope }
+	if identifier.is_inside_scope_with_eval { return 0 }
+	return if identifier.is_global { global_binding_scope } else { static_binding_scope }
 }
 
 fn (mut generator BytecodeGenerator) store_identifier(expression &Expression, value Operand) ! {

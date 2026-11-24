@@ -11,6 +11,10 @@ import platform
 // at that index; a `with` object, the global environment or a mismatch take
 // the ordinary lookup, which only records chains of declarative environments.
 const static_binding_scope = u32(1)
+// An identifier declared in no enclosing scope (and no eval) resolves in the
+// realm's global environment: its lexical declarations, then the global
+// object. Such reads start there instead of walking every environment.
+const global_binding_scope = u32(2)
 const no_binding_hint = u32(0xffffffff)
 const binding_hint_index_mask = u32(0xffffff)
 
@@ -47,6 +51,13 @@ fn (environment &DeclarativeEnvironment) hinted_binding_matches(index int, name 
 	binding_name := unsafe { &environment.bindings[index].name }
 	return binding_name.data.len == name.data.len
 		&& (binding_name.data.data == name.data.data || utf16_equals(binding_name.data, name.data))
+}
+
+// The running realm's global environment, which ends every scope chain.
+fn (vm &VM) running_global_environment() ?Environment {
+	realm := vm.current_context().realm or { return none }
+	global := realm.global_environment or { return none }
+	return Environment(global)
 }
 
 // The environment `hops` outer links above the running lexical environment.

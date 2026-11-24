@@ -118,6 +118,16 @@ fn (mut vm VM) execute_property_read_at(left Value, right Value, strict bool, hi
 }
 
 fn (mut vm VM) execute_binding_read(instruction &Instruction, executable &Executable) !Value {
+	if instruction.op == .get_binding && instruction.target == global_binding_scope
+		&& use_compact_reference_reads() && use_fast_binding_reads() {
+		name := unsafe { &executable.identifier_table[instruction.identifier] }
+		if global := vm.running_global_environment() {
+			if value := vm.own_global_data_binding(global, *name) {
+				vm.record_compact_reference_read()
+				return value
+			}
+		}
+	}
 	if instruction.op == .get_binding && instruction.target == static_binding_scope
 		&& use_compact_reference_reads() && use_fast_binding_reads() {
 		// Executable.validate() bounds every binding identifier.
@@ -240,6 +250,17 @@ fn (mut vm VM) resolve_compact_read_recording(name Utf16String, strict bool, cal
 }
 
 fn (mut vm VM) execute_callee_read(instruction &Instruction, executable &Executable) !(Value, Value) {
+	if instruction.target == global_binding_scope && use_compact_reference_reads()
+		&& use_fast_binding_reads() {
+		// An object environment's data binding: the global object is not a with base.
+		name := unsafe { &executable.identifier_table[instruction.identifier] }
+		if global := vm.running_global_environment() {
+			if value := vm.own_global_data_binding(global, *name) {
+				vm.record_compact_reference_read()
+				return value, js_undefined()
+			}
+		}
+	}
 	if instruction.target == static_binding_scope && use_compact_reference_reads()
 		&& use_fast_binding_reads() {
 		// A declarative binding has no with-base receiver.

@@ -23,7 +23,9 @@ fn test_fast_global_binding_reads_observe_replacement_accessors_and_lexical_shad
 		activity := vm.diagnose_native_code(false)!
 		assert activity.entries > 0
 		assert (activity.own_global_binding_reads > 0) == enabled
-		assert (activity.empty_binding_environments_skipped > 0) == enabled
+		// A global identifier's read starts at the global environment
+		// (binding_hints.v), so no empty function environment is walked.
+		assert activity.empty_binding_environments_skipped == 0
 		assert binding_read_eval(mut vm, 'var seen=0;Object.defineProperty(globalThis,"liveBinding",{get(){seen++;return 43},configurable:true});read()===43&&seen===1')!.as_bool()
 		assert binding_read_eval(mut vm, 'delete globalThis.liveBinding;var missing=false;try{read()}catch(e){missing=e instanceof ReferenceError}missing')!.as_bool()
 		assert binding_read_eval(mut vm, 'let liveBinding=44;read()')!.number == 44
