@@ -537,6 +537,8 @@ enum InlineHandler as u8 {
 	increment
 	to_numeric
 	nop
+	property_read
+	call
 }
 
 const inline_handlers_by_opcode = compute_inline_handlers()
@@ -556,6 +558,8 @@ fn compute_inline_handlers() []u8 {
 			.increment, .decrement { InlineHandler.increment }
 			.to_numeric { InlineHandler.to_numeric }
 			.nop { InlineHandler.nop }
+			.get_property { InlineHandler.property_read }
+			.call { InlineHandler.call }
 			else { InlineHandler.slow }
 		})
 	}
@@ -764,6 +768,46 @@ pub fn (mut vm VM) run_executable(mut frame ExecutionContext, executable &Execut
 				.nop {
 					frame.program_counter++
 					continue
+				}
+				.call {
+					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					if !left.is_special_empty_value() && !right.is_special_empty_value() {
+						result := vm.execute_call_instruction(instruction, executable, left, right) or {
+							if !is_throw_completion(err) { return err }
+							if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable {
+								continue
+							}
+							return err
+						}
+						current := unsafe { &Value(frame.values.data) }
+						unsafe {
+							current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+						}
+						frame.program_counter++
+						continue
+					}
+				}
+				.property_read {
+					left := unsafe { values[bases[instruction.lhs.raw >> 29] + (instruction.lhs.raw & 0x1fffffff)] }
+					right := unsafe { values[bases[instruction.rhs.raw >> 29] + (instruction.rhs.raw & 0x1fffffff)] }
+					if left.is_object() && !right.is_special_empty_value() {
+						result := vm.execute_property_read_at(left, right, instruction.strict,
+							executable.property_hint(frame.program_counter)) or {
+							if !is_throw_completion(err) { return err }
+							if vm.handle_exception(frame.program_counter, thrown_value(err)) == .continue_in_this_executable {
+								continue
+							}
+							return err
+						}
+						// A getter may have replaced this frame's value storage.
+						current := unsafe { &Value(frame.values.data) }
+						unsafe {
+							current[bases[instruction.dst.raw >> 29] + (instruction.dst.raw & 0x1fffffff)] = result
+						}
+						frame.program_counter++
+						continue
+					}
 				}
 				else {}
 			}
