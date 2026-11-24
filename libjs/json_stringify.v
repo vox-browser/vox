@@ -32,7 +32,7 @@ fn json_stringify(mut vm VM) !Value {
 			if !value.is_string() && !value.is_number() {
 				if !value.is_object() { continue }
 				boxed := value.as_object()
-				if boxed.number_object == none && boxed.string_object == none { continue }
+				if boxed.slots.number_object == none && boxed.string_object == none { continue }
 			}
 			key := PropertyName.from_utf16(value.to_primitive_string(mut vm)!.utf16)
 			identity := property_name_identity(key)
@@ -44,7 +44,7 @@ fn json_stringify(mut vm VM) !Value {
 	mut space := vm.argument(2)
 	if space.is_object() {
 		boxed := space.as_object()
-		if boxed.number_object != none { space = space.to_number(mut vm)! }
+		if boxed.slots.number_object != none { space = space.to_number(mut vm)! }
 		else if boxed.string_object != none { space = Value.from_string(space.to_primitive_string(mut vm)!) }
 	}
 	if space.is_number() {
@@ -74,10 +74,10 @@ fn (mut state JSONStringifyState) prepare_property(mut vm VM, holder &Object, ke
 	}
 	if value.is_object() {
 		object := value.as_object()
-		if object.number_object != none { value = value.to_number(mut vm)! }
+		if object.slots.number_object != none { value = value.to_number(mut vm)! }
 		else if object.string_object != none { value = Value.from_string(value.to_primitive_string(mut vm)!) }
-		else if boolean := object.boolean_object { value = Value.from_bool(boolean.value) }
-		else if bigint := object.bigint_object { value = Value.from_bigint(bigint.bigint) }
+		else if boolean := object.slots.boolean_object { value = Value.from_bool(boolean.value) }
+		else if bigint := object.slots.bigint_object { value = Value.from_bigint(bigint.bigint) }
 	}
 	if value.is_bigint() { return vm.throw_error_type(.type_error, .json_big_int) }
 	return value

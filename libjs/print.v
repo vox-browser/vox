@@ -245,15 +245,15 @@ fn (mut context PrintContext) print_value(value Value) ! {
 			}
 			return
 		}
-		if view := object.data_view { return context.print_data_view(view) }
+		if view := object.slots.data_view { return context.print_data_view(view) }
 		if buffer := object.array_buffer { return context.print_array_buffer(buffer) }
 		if array := object.typed_array { return context.print_typed_array(array) }
-		if wrapper := object.boolean_object {
+		if wrapper := object.slots.boolean_object {
 			context.print_type(utf16_string('Boolean'))
 			context.out(' ')
 			return context.print_value(Value.from_bool(wrapper.value))
 		}
-		if wrapper := object.number_object {
+		if wrapper := object.slots.number_object {
 			context.print_type(utf16_string('Number'))
 			context.out(' ')
 			return context.print_value(Value.from_f64(wrapper.value))

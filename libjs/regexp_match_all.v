@@ -40,7 +40,7 @@ fn regexp_symbol_match_all(mut vm VM) !Value {
 	mut writable := matcher
 	writable.set(mut vm, PropertyName.from_str('lastIndex'), Value.from_f64(f64(last_index)), .yes)!
 	mut iterator := Object.create(vm.realm(), vm.realm().regexp_string_iterator_prototype)
-	iterator.regexp_string_iterator = &RegExpStringIterator{
+	iterator.mut_slots().regexp_string_iterator = &RegExpStringIterator{
 		regexp: matcher
 		text: text
 		global: flags.utf16.data.contains(u16(`g`))
@@ -58,7 +58,7 @@ fn regexp_string_iterator_next(mut vm VM) !Value {
 fn regexp_string_iterator_step(mut vm VM) !IteratorStepValue {
 	value := vm.this_value()
 	if !value.is_object() { return vm.throw_error(.type_error, 'RegExp String Iterator next requires its internal slots') }
-	mut iterator := value.as_object().regexp_string_iterator or { return vm.throw_error(.type_error, 'RegExp String Iterator next requires its internal slots') }
+	mut iterator := value.as_object().slots.regexp_string_iterator or { return vm.throw_error(.type_error, 'RegExp String Iterator next requires its internal slots') }
 	vm.consume_execution_budget()!
 	if iterator.done { return IteratorStepValue{done: true, value: js_undefined()} }
 	match_ := regexp_exec(mut vm, iterator.regexp, iterator.text)!

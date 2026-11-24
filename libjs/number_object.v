@@ -16,6 +16,6 @@ pub fn NumberObject.create(realm &Realm, value f64, prototype &Object) &NumberOb
 		object: object
 		value:  value
 	}
-	object.number_object = wrapper
+	object.mut_slots().number_object = wrapper
 	return wrapper
 }

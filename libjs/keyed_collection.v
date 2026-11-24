@@ -120,7 +120,7 @@ fn (mut collection KeyedCollection) clear() {
 fn keyed_collection_receiver(mut vm VM, is_map bool) !&KeyedCollection {
 	value := vm.this_value()
 	if value.is_object() {
-		if collection := value.as_object().keyed_collection {
+		if collection := value.as_object().slots.keyed_collection {
 			if collection.is_map == is_map { return collection }
 		}
 	}
@@ -145,7 +145,7 @@ fn keyed_collection_for_each(mut vm VM, is_map bool) !Value {
 fn create_keyed_iterator(mut vm VM, is_map bool, kind PropertyKind, prototype &Object) !Value {
 	collection := keyed_collection_receiver(mut vm, is_map)!
 	mut object := Object.create(vm.realm(), prototype)
-	object.keyed_iterator = &KeyedCollectionIterator{ object: object, collection: collection, kind: kind }
+	object.mut_slots().keyed_iterator = &KeyedCollectionIterator{ object: object, collection: collection, kind: kind }
 	return Value.from_object(object)
 }
 
@@ -167,7 +167,7 @@ fn install_keyed_iterator_next(mut vm VM, realm &Realm, mut prototype Object, is
 fn keyed_iterator_step(mut vm VM, is_map bool) !IteratorStepValue {
 	value := vm.this_value()
 	if !value.is_object() { return vm.throw_error(.type_error, 'Incompatible collection iterator receiver') }
-	mut iterator := value.as_object().keyed_iterator or { return vm.throw_error(.type_error, 'Incompatible collection iterator receiver') }
+	mut iterator := value.as_object().slots.keyed_iterator or { return vm.throw_error(.type_error, 'Incompatible collection iterator receiver') }
 	if iterator.collection.is_map != is_map { return vm.throw_error(.type_error, 'Incompatible collection iterator receiver') }
 	if !iterator.done {
 		for iterator.index < iterator.collection.entries.len {

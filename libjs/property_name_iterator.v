@@ -22,7 +22,7 @@ fn create_property_name_iterator(mut vm VM, value Value) !&Object {
 	target := value.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 	mut object := Object.create(vm.realm(), none)
 	object.class_name = 'PropertyNameIterator'
-	object.property_name_iterator = &PropertyNameIterator{object: object, target: target, current: target}
+	object.mut_slots().property_name_iterator = &PropertyNameIterator{object: object, target: target, current: target}
 	return object
 }
 

@@ -12,7 +12,7 @@ fn test_boolean_prototype_retains_false_data_and_native_method_descriptors() {
 	object_prototype := Object.create(realm, none)
 	prototype := BooleanPrototype.create(mut vm, realm, object_prototype)
 	assert prototype.object.internal_get_prototype_of()? == object_prototype
-	assert !prototype.object.boolean_object?.value
+	assert !prototype.object.slots.boolean_object?.value
 	assert !Value.from_object(prototype.object).is_function()
 	assert prototype.object.own_property_keys().map(it.str()) == ['toString', 'valueOf']
 	for name in ['toString', 'valueOf'] {
@@ -37,7 +37,7 @@ fn test_boolean_methods_accept_primitives_and_boxed_values_and_preserve_conversi
 	for boolean in [false, true] {
 		boxed := BooleanObject.create(realm, boolean)
 		assert boxed.object.internal_get_prototype_of()? == prototype
-		assert boxed.object.boolean_object? == boxed
+		assert boxed.object.slots.boolean_object? == boxed
 		assert boxed.object.own_property_keys().len == 0
 		for receiver in [Value.from_bool(boolean), Value.from_object(boxed.object)] {
 			assert boolean_test_method(mut vm, prototype, 'valueOf', receiver)!.as_bool() == boolean

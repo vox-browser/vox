@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // Translated from the parts of LibJS/Runtime/Object.{h,cpp} and PropertyKey.h that
 // the VM, environments, and error records depend on. Ordinary and array exotic
 // properties plus String/Boolean/Symbol internal slots are translated; shapes, proxies,
@@ -154,38 +156,72 @@ pub interface HostProperties {
 	own_property_keys() []PropertyName
 }
 
-@[heap]
-pub struct Object {
+// Internal slots that most objects never have. Each `?&T` is 16 bytes, so
+// keeping them inline more than doubled every object record.
+pub struct ObjectSlots {
 pub mut:
-	prototype  ?&Object
-	properties []OwnProperty
 	private_elements []PrivateElement // [[PrivateElements]], separate from own properties
-	extensible bool   = true
-	class_name string = 'Object'
-	home_object ?&Object // Function [[HomeObject]], retained independently of .prototype.
 	super_property_base ?&SuperPropertyBase // Internal bytecode record, never author-visible.
 	binding_reference ?&Reference // Retained ResolveBinding result for assignment evaluation.
-	// ObjectPrototype's immutable-prototype exotic [[SetPrototypeOf]] override.
-	// The intrinsic record that selects this override remains a separate slice.
-	immutable_prototype bool
-	// [[ErrorData]] for Error instances created through create_error().
 	error_data ?&ErrorData
-	// FunctionObject inheritance is represented by a callable implementation.
-	callable             ?FunctionObject
-	constructor          ?ConstructorFunction
-	native_callable      bool
-	native_initial_name  ?&Utf16String
 	intl_list_format ?&IntlListFormat
 	intl_number_format ?&IntlNumberFormat
 	intl_relative_time_format ?&IntlRelativeTimeFormat
 	intl_collator ?&IntlCollator
 	intl_date_time_format ?&IntlDateTimeFormat
 	intl_locale          ?&IntlLocaleObject
-	proxy_object         ?&ProxyObject
 	bound_function       ?&BoundFunction
-	function_source_text ?&Utf16String // [[SourceText]] on ECMAScript callables
 	regexp_object ?&RegExpObject
 	regexp_string_iterator ?&RegExpStringIterator
+	keyed_collection     ?&KeyedCollection
+	keyed_iterator       ?&KeyedCollectionIterator
+	weak_map             ?&WeakMapObject
+	weak_set             ?&WeakSetObject
+	weak_ref             ?&WeakRefObject
+	boolean_object       ?&BooleanObject // [[BooleanData]]
+	date_object          ?&DateObject // [[DateValue]]
+	number_object        ?&NumberObject  // [[NumberData]]
+	bigint_object        ?&BigIntObject  // [[BigIntData]]
+	symbol_object        ?&SymbolObject // [[SymbolData]]
+	string_iterator      ?&StringIterator
+	property_name_iterator ?&PropertyNameIterator
+	data_view            ?&DataView
+}
+
+const empty_object_slots = &ObjectSlots{}
+
+// The object's own slots record, allocated on first write. A record created
+// while a transient arena is entered must outlive it, like the object.
+pub fn (mut object Object) mut_slots() &ObjectSlots {
+	if voidptr(object.slots) == voidptr(empty_object_slots) {
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		object.slots = &ObjectSlots{}
+		platform.leave_persistent(persistent)
+	}
+	return object.slots
+}
+
+@[heap]
+pub struct Object {
+pub mut:
+	// Rare internal slots, shared read-only while empty; write them through mut_slots().
+	slots &ObjectSlots = empty_object_slots
+	prototype  ?&Object
+	properties []OwnProperty
+	extensible bool   = true
+	class_name string = 'Object'
+	home_object ?&Object // Function [[HomeObject]], retained independently of .prototype.
+	// ObjectPrototype's immutable-prototype exotic [[SetPrototypeOf]] override.
+	// The intrinsic record that selects this override remains a separate slice.
+	immutable_prototype bool
+	// [[ErrorData]] for Error instances created through create_error().
+	// FunctionObject inheritance is represented by a callable implementation.
+	callable             ?FunctionObject
+	constructor          ?ConstructorFunction
+	native_callable      bool
+	native_initial_name  ?&Utf16String
+	proxy_object         ?&ProxyObject
+	function_source_text ?&Utf16String // [[SourceText]] on ECMAScript callables
 	host_properties ?HostProperties
 	// Pointer options: a by-value LegacyPlatformObject or Utf16String option
 	// would add 120 or 48 bytes to every object record.
@@ -193,25 +229,12 @@ pub mut:
 	array_object         ?&ArrayObject
 	arguments_object     ?&ArgumentsObject
 	is_arguments_object  bool // Also brands ordinary strict/unmapped arguments.
-	keyed_collection     ?&KeyedCollection
-	keyed_iterator       ?&KeyedCollectionIterator
-	weak_map             ?&WeakMapObject
-	weak_set             ?&WeakSetObject
-	weak_ref             ?&WeakRefObject
 	generator_execution  ?&GeneratorExecution
-	boolean_object       ?&BooleanObject // [[BooleanData]]
-	date_object          ?&DateObject // [[DateValue]]
-	number_object        ?&NumberObject  // [[NumberData]]
-	bigint_object        ?&BigIntObject  // [[BigIntData]]
-	symbol_object        ?&SymbolObject // [[SymbolData]]
 	string_object        ?&StringObject // [[StringData]] and virtual indexed properties
-	string_iterator      ?&StringIterator
 	array_iterator       ?&ArrayIterator
-	property_name_iterator ?&PropertyNameIterator
 	iterator_record      ?&IteratorRecord // Inaccessible bytecode record wrapper
 	promise_record ?&Promise
 	array_buffer         ?&ArrayBufferObject
-	data_view            ?&DataView
 	typed_array          ?&TypedArray
 mut:
 	property_lookup_hints ?&PropertyLookupHints
@@ -228,8 +251,8 @@ pub fn Object.create(realm &Realm, prototype ?&Object) &Object {
 	object.prototype = prototype
 	object.extensible = true
 	object.class_name = 'Object'
+	object.slots = empty_object_slots
 	object.properties = []OwnProperty{}
-	object.private_elements = []PrivateElement{}
 	return object
 }
 
@@ -353,7 +376,7 @@ pub fn (object &Object) test_integrity_level(level IntegrityLevel) bool {
 }
 
 pub fn (object &Object) is_error_object() bool {
-	return object.error_data != none
+	return object.slots.error_data != none
 }
 
 pub fn (object &Object) own_property_keys() []PropertyName {

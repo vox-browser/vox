@@ -26,7 +26,7 @@ mut:
 
 fn intl_date_time_format_this(mut vm VM) !&IntlDateTimeFormat {
 	value := vm.this_value()
-	if value.is_object() { if formatter := value.as_object().intl_date_time_format { return formatter } }
+	if value.is_object() { if formatter := value.as_object().slots.intl_date_time_format { return formatter } }
 	return vm.throw_error(.type_error, 'Intl.DateTimeFormat member called on incompatible receiver')
 }
 
@@ -173,7 +173,7 @@ fn create_intl_date_time_format(mut vm VM, prototype &Object, locales Value, opt
 	resolved_id.keywords = retained
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = 'Intl.DateTimeFormat'
-	object.intl_date_time_format = &IntlDateTimeFormat{object: object, locale: resolved_id.tag(), data_locale: data_locale, calendar: calendar, numbering_system: numbering_system, time_zone: zone, hour_cycle: hour_cycle, date_style: date_style, time_style: time_style, pattern: pattern, fields: fields}
+	object.mut_slots().intl_date_time_format = &IntlDateTimeFormat{object: object, locale: resolved_id.tag(), data_locale: data_locale, calendar: calendar, numbering_system: numbering_system, time_zone: zone, hour_cycle: hour_cycle, date_style: date_style, time_style: time_style, pattern: pattern, fields: fields}
 	return object
 }
 

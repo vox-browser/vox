@@ -17,7 +17,7 @@ pub fn StringIterator.create(realm &Realm, text Utf16String, prototype &Object) 
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'StringIterator'
 	iterator := &StringIterator{object: object, text: text.clone()}
-	object.string_iterator = iterator
+	object.mut_slots().string_iterator = iterator
 	return iterator
 }
 

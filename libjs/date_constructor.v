@@ -57,8 +57,8 @@ fn date_constructor_construct(mut vm VM, new_target &Object) !&Object {
 		value = vm.current_time_milliseconds()
 	} else if vm.argument_count() == 1 {
 		argument := vm.argument(0)
-		if argument.is_object() && argument.as_object().date_object != none {
-			value = argument.as_object().date_object or { panic('Missing Date slot') }.date_value
+		if argument.is_object() && argument.as_object().slots.date_object != none {
+			value = argument.as_object().slots.date_object or { panic('Missing Date slot') }.date_value
 		} else {
 			primitive := argument.to_primitive(mut vm)!
 			value = if primitive.is_string() {

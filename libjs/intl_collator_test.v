@@ -63,7 +63,7 @@ fn test_intl_collator_bound_compare_and_cached_default_survive_temporary_arena_r
 	intl_collator_eval(mut vm, 'var collator=new Intl.Collator("en-US",{numeric:true}),compare=collator.compare;"a".localeCompare("b")')!
 	arena.leave(entry)
 	object := vm.global_object().get(mut vm, PropertyName.from_str('collator'))!.as_object()
-	assert !arena.contains(object) && !arena.contains(object.intl_collator?)
+	assert !arena.contains(object) && !arena.contains(object.slots.intl_collator?)
 	assert !arena.contains(vm.realm().intl_default_collator?)
 	bound := vm.global_object().get(mut vm, PropertyName.from_str('compare'))!.as_object()
 	assert !arena.contains(bound)

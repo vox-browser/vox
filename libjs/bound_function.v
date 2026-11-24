@@ -27,7 +27,7 @@ fn bound_function_with_prototype(realm &Realm, target &Object, bound_this Value,
 		bound_arguments:       arguments.clone()
 	}
 	object.callable = FunctionObject(function)
-	object.bound_function = function
+	object.mut_slots().bound_function = function
 	if Value.from_object(target).is_constructor() { object.constructor = ConstructorFunction(function) }
 	return function
 }

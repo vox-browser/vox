@@ -29,7 +29,7 @@ fn crypto_require_fixed_buffer(mut vm libjs.VM, buffer &libjs.ArrayBufferObject)
 fn (mut host Host) crypto_random_values(mut vm libjs.VM, value libjs.Value) !libjs.Value {
 	if !value.is_object() { return vm.throw_error(.type_error, 'Expected an ArrayBufferView') }
 	object := value.as_object()
-	if view := object.data_view {
+	if view := object.slots.data_view {
 		buffer := view.viewed_buffer or { return vm.throw_error(.type_error, 'DataView has no ArrayBuffer') }
 		crypto_require_fixed_buffer(mut vm, buffer)!
 		native := host.native_crypto(mut vm)!

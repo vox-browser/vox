@@ -105,7 +105,7 @@ fn regexp_exec_for_replace(mut vm VM, object &Object, text &PrimitiveString) !Re
 		}
 		return ordinary_replace_result(result)
 	}
-	mut regex := object.regexp_object or { return vm.throw_error(.type_error, 'RegExp exec requires RegExp internal slots') }
+	mut regex := object.slots.regexp_object or { return vm.throw_error(.type_error, 'RegExp exec requires RegExp internal slots') }
 	return regex.builtin_replace_result(mut vm, text)
 }
 

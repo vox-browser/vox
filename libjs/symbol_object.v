@@ -13,6 +13,6 @@ pub fn SymbolObject.create(realm &Realm, symbol &Symbol) &SymbolObject {
 	mut object := Object.create(realm, realm.symbol_prototype_record())
 	object.class_name = 'Symbol'
 	wrapper := &SymbolObject{object: object, symbol: symbol}
-	object.symbol_object = wrapper
+	object.mut_slots().symbol_object = wrapper
 	return wrapper
 }

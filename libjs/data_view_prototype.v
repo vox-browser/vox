@@ -54,7 +54,7 @@ pub fn DataViewPrototype.create(mut vm VM, realm &Realm, object_prototype ?&Obje
 fn this_data_view(mut vm VM) !&DataView {
 	value := vm.this_value()
 	if value.is_object() {
-		if view := value.as_object().data_view { return view }
+		if view := value.as_object().slots.data_view { return view }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'DataView')
 }

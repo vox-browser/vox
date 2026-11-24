@@ -111,7 +111,7 @@ fn test_runtime_errors_preserve_tdz_const_strictness_tracebacks_and_stack_cleanu
 		} else {
 			object := thrown_value(err).as_object()
 			assert object.error_kind()? == kind, source
-			assert object.error_data?.stack_string(false).contains('execution.js')
+			assert object.slots.error_data?.stack_string(false).contains('execution.js')
 		}
 		assert vm.running_execution_context() == base
 		assert vm.execution_context_stack().len == 1

@@ -66,7 +66,7 @@ fn test_intl_date_time_format_cached_data_and_bound_functions_survive_temporary_
 	intl_date_eval(mut vm, 'var formatter=new Intl.DateTimeFormat("en-US",{year:"numeric",month:"short",day:"numeric",timeZone:"UTC"}),bound=formatter.format')!
 	arena.leave(entry)
 	value := vm.global_object().get(mut vm, PropertyName.from_str('formatter'))!
-	assert !arena.contains(value.as_object()) && !arena.contains(value.as_object().intl_date_time_format?)
+	assert !arena.contains(value.as_object()) && !arena.contains(value.as_object().slots.intl_date_time_format?)
 	arena.reset(); arena.release()
 	assert intl_date_eval(mut vm, 'bound(0)==="Jan 1, 1970"&&formatter.format===bound')!.as_bool()
 }

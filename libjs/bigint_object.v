@@ -20,6 +20,6 @@ pub fn BigIntObject.create(realm &Realm, bigint &BigInt, prototype &Object) &Big
 		object: object
 		bigint: bigint
 	}
-	object.bigint_object = wrapper
+	object.mut_slots().bigint_object = wrapper
 	return wrapper
 }

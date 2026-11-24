@@ -31,7 +31,7 @@ fn (host &Host) stream_controller_receiver(mut vm libjs.VM, byte bool) !streams.
 }
 
 fn (mut host Host) enqueue_stream_bytes(mut vm libjs.VM, mut controller streams.ReadableByteStreamController, chunk libjs.Value) ! {
-	if !chunk.is_object() || (chunk.as_object().typed_array == none && chunk.as_object().data_view == none) {
+	if !chunk.is_object() || (chunk.as_object().typed_array == none && chunk.as_object().slots.data_view == none) {
 		return vm.throw_error(.type_error, 'Byte stream enqueue requires an ArrayBufferView')
 	}
 	object := native_buffer_source(mut vm, chunk, false)!
@@ -39,7 +39,7 @@ fn (mut host Host) enqueue_stream_bytes(mut vm libjs.VM, mut controller streams.
 	if bytes.len == 0 { return vm.throw_error(.type_error, 'Byte stream chunk is empty or detached') }
 	if controller.close_requested() || !controller.stream().is_readable() { return vm.throw_error(.type_error, 'Byte stream is not readable') }
 	mut buffer := if array := object.typed_array { array.viewed_buffer }
-		else { object.data_view or { return vm.throw_error(.type_error, 'Expected an ArrayBufferView') }.viewed_buffer or { return vm.throw_error(.type_error, 'Uninitialized DataView') } }
+		else { object.slots.data_view or { return vm.throw_error(.type_error, 'Expected an ArrayBufferView') }.viewed_buffer or { return vm.throw_error(.type_error, 'Uninitialized DataView') } }
 	// Transfer before native enqueue can synchronously complete a pending read.
 	libjs.detach_array_buffer(mut vm, mut buffer, none)!
 	streams.readable_byte_stream_controller_enqueue_native_bytes(mut controller, bytes) or { return libjs.throw_completion(host.fetch_error_value(mut vm, err)) }

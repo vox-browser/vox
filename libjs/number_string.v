@@ -8,7 +8,7 @@ import math.big
 fn this_number_value(mut vm VM, value Value) !Value {
 	if value.is_number() { return value }
 	if value.is_object() {
-		if wrapper := value.as_object().number_object { return Value.from_f64(wrapper.value) }
+		if wrapper := value.as_object().slots.number_object { return Value.from_f64(wrapper.value) }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'Number')
 }

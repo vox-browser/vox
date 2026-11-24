@@ -28,7 +28,7 @@ struct IntlNumberPart { type_ string; value string; unit string }
 
 fn intl_number_format_this(mut vm VM) !&IntlNumberFormat {
 	value := vm.this_value()
-	if value.is_object() { if formatter := value.as_object().intl_number_format { return formatter } }
+	if value.is_object() { if formatter := value.as_object().slots.intl_number_format { return formatter } }
 	return vm.throw_error(.type_error, 'Intl.NumberFormat member called on incompatible receiver')
 }
 
@@ -106,7 +106,7 @@ fn intl_number_format_construct(mut vm VM, new_target &Object) !&Object {
 	sign_display := intl_option_text(mut vm, options, 'signDisplay', ['auto', 'never', 'always', 'exceptZero', 'negative'], 'auto')!
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = 'Intl.NumberFormat'
-	object.intl_number_format = &IntlNumberFormat{object: object, locale: locale, data_locale: data_locale, numbering_system: system, style: style, currency: currency, currency_display: currency_display, currency_sign: currency_sign, unit: unit, unit_display: unit_display, notation: notation, compact_display: compact_display, grouping: grouping, sign_display: sign_display, digits: digits}
+	object.mut_slots().intl_number_format = &IntlNumberFormat{object: object, locale: locale, data_locale: data_locale, numbering_system: system, style: style, currency: currency, currency_display: currency_display, currency_sign: currency_sign, unit: unit, unit_display: unit_display, notation: notation, compact_display: compact_display, grouping: grouping, sign_display: sign_display, digits: digits}
 	return object
 }
 

@@ -11,11 +11,10 @@ fn test_object_create_matches_struct_literal_defaults() {
 		prototype: prototype
 	}
 	assert created.extensible == reference.extensible && created.class_name == reference.class_name
-	assert created.properties.len == 0 && created.private_elements.len == 0
+	assert created.properties.len == 0 && voidptr(created.slots) == voidptr(empty_object_slots)
 	mut copy := *created
 	// Equal but separately allocated: compare every other byte.
 	copy.properties = reference.properties
-	copy.private_elements = reference.private_elements
 	copy.class_name = reference.class_name
 	assert unsafe { vmemcmp(&copy, &reference, int(sizeof(Object))) } == 0
 	mut object := Object.create(vm.realm(), none)
@@ -56,5 +55,53 @@ fn test_constructors_reserve_their_instances_property_storage() {
 		'class B{constructor(){this.p=1}}class D extends B{constructor(){super();this.q=2}}var d=new D;Object.keys(d).join()+new D().q':   'p,q2'
 	} {
 		assert object_creation_eval(source)! == expected, source
+	}
+}
+
+fn assert_empty_slots_unchanged() {
+	empty := empty_object_slots
+	assert empty.private_elements.len == 0 && empty.error_data == none && empty.regexp_object == none
+	assert empty.keyed_collection == none && empty.keyed_iterator == none && empty.weak_map == none
+	assert empty.weak_set == none && empty.weak_ref == none && empty.date_object == none
+	assert empty.boolean_object == none && empty.number_object == none && empty.bigint_object == none
+	assert empty.symbol_object == none && empty.string_iterator == none && empty.property_name_iterator == none
+	assert empty.bound_function == none && empty.data_view == none && empty.binding_reference == none
+	assert empty.super_property_base == none && empty.regexp_string_iterator == none
+	assert empty.intl_locale == none && empty.intl_collator == none && empty.intl_number_format == none
+}
+
+// Ordinary objects and functions share the empty slots record; an object that
+// gains a rare internal slot gets its own record and leaves the shared one empty.
+fn test_rare_internal_slots_are_allocated_per_object() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut first := Object.create(vm.realm(), none)
+	second := Object.create(vm.realm(), none)
+	assert voidptr(first.slots) == voidptr(second.slots)
+	first.mut_slots().private_elements << PrivateElement{ kind: .field, value: Value.from_i32(1) }
+	assert voidptr(first.slots) != voidptr(empty_object_slots) && first.slots.private_elements.len == 1
+	assert voidptr(second.slots) == voidptr(empty_object_slots)
+	slots := first.slots
+	first.mut_slots().private_elements[0].value = Value.from_i32(2)
+	assert voidptr(first.slots) == voidptr(slots) && first.slots.private_elements[0].value.number == 2
+	assert_empty_slots_unchanged()
+	for source, expected in {
+		'var o={a:1},f=function(){};[typeof o,typeof f].join()':                                                       'object,function'
+		'var d=new Date(0),r=/a(b)/g,m=new Map([[1,2]]),s=new Set([3]);[d.getTime(),r.exec("ab")[1],m.get(1),s.has(3)].join()': '0,b,2,true'
+		'var w=new WeakMap,k={};w.set(k,5);var ws=new WeakSet;ws.add(k);[w.get(k),ws.has(k),new WeakRef(k).deref()===k].join()': '5,true,true'
+		'var e=new TypeError("x"),b=Object(true),n=Object(4),i=Object(5n),y=Object(Symbol("q"));[e.message,b.valueOf(),n+1,i+1n,y.description].join()': 'x,true,5,6,q'
+		'class C{#p=1;get p(){return this.#p}set p(v){this.#p=v}}var c=new C;c.p=7;var it="ab"[Symbol.iterator]();it.next();[c.p,it.next().value].join()': '7,b'
+		'function t(){return this.v}var g=t.bind({v:8});var x;[x]=[9];var out=[];for(var key in {u:1})out.push(key);[g(),x,out].join()': '8,9,u'
+		'var dv=new DataView(new ArrayBuffer(4));dv.setInt8(1,3);class A{m(){return 1}}class B extends A{m(){return super.m()+1}}[dv.getInt8(1),new B().m()].join()': '3,2'
+	} {
+		assert object_creation_eval(source)! == expected, source
+	}
+	assert_empty_slots_unchanged()
+	mut script := Script.parse('var plain={a:1};function fn(){}', vm.realm(), 'slots.js', unsafe { nil })!
+	vm.run(mut script)!
+	global := script.realm.global_object or { panic('Missing global') }
+	for name in ['plain', 'fn'] {
+		value := global.internal_get(mut vm, PropertyName.from_str(name), Value.from_object(global))!
+		assert voidptr(value.as_object().slots) == voidptr(empty_object_slots), name
 	}
 }

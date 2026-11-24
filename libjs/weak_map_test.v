@@ -74,7 +74,7 @@ fn test_weak_map_uses_persisted_native_code_in_fresh_realms() {
 @[noinline]
 fn allocate_unrooted_weak_map(mut vm VM) !WeakCellReference {
 	object := create_weak_map(mut vm, vm.realm().weak_map_prototype or { panic('Missing WeakMap prototype') })!
-	return WeakCellReference.create(voidptr(object.weak_map or { panic('Missing WeakMap data') }))
+	return WeakCellReference.create(voidptr(object.slots.weak_map or { panic('Missing WeakMap data') }))
 }
 
 fn test_weak_map_dead_keys_and_unreachable_containers_are_not_strong_registry_roots() {
@@ -82,7 +82,7 @@ fn test_weak_map_dead_keys_and_unreachable_containers_are_not_strong_registry_ro
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		object := create_weak_map(mut vm, vm.realm().weak_map_prototype or { panic('Missing WeakMap prototype') })!
-		mut collection := object.weak_map or { panic('Missing WeakMap data') }
+		mut collection := object.slots.weak_map or { panic('Missing WeakMap data') }
 		state := C.vox_libjs_weak_test_key(sizeof(Object))
 		encoded := C.vox_libjs_weak_test_encoded(state)
 		collection.entries[encoded] = WeakMapEntry{ key: WeakCellReference{ encoded: encoded, slot: C.vox_libjs_weak_test_slot(state) }, value: Value.from_i32(42) }
@@ -108,7 +108,7 @@ fn test_weak_map_keeps_live_keys_and_values_through_collection() {
 @[noinline]
 fn watch_weak_map_value(mut vm VM) !WeakCellReference {
 	object := vm.global_object().get(mut vm, PropertyName.from_str('w'))!.as_object()
-	collection := object.weak_map or { panic('Missing WeakMap data') }
+	collection := object.slots.weak_map or { panic('Missing WeakMap data') }
 	for _, entry in collection.entries { return WeakCellReference.create(entry.value.cell) }
 	return error('Missing WeakMap entry')
 }
@@ -120,7 +120,7 @@ fn test_weak_map_releases_completed_script_keys_and_then_their_values() {
 		weak_map_eval(mut vm, 'var w=new WeakMap();function make(){var k={};w.set(k,{answer:42})};make()')!
 		watcher := watch_weak_map_value(mut vm)!
 		object := vm.global_object().get(mut vm, PropertyName.from_str('w'))!.as_object()
-		collection := object.weak_map or { panic('Missing WeakMap data') }
+		collection := object.slots.weak_map or { panic('Missing WeakMap data') }
 		assert collection.entries.len == 1
 		for _ in 0 .. 5 { C.vox_libjs_weak_test_collect() }
 		vm.finish_execution_generation()

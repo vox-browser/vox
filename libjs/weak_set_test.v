@@ -63,7 +63,7 @@ fn test_weak_set_uses_persisted_native_entries_in_a_fresh_vm_without_compiler() 
 @[noinline]
 fn allocate_unrooted_weak_set(mut vm VM) !WeakCellReference {
 	object := create_weak_set(mut vm, vm.realm().weak_set_prototype or { panic('Missing WeakSet prototype') })!
-	return WeakCellReference.create(voidptr(object.weak_set or { panic('Missing WeakSet data') }))
+	return WeakCellReference.create(voidptr(object.slots.weak_set or { panic('Missing WeakSet data') }))
 }
 
 fn test_weak_set_drops_collected_members_and_does_not_root_unreachable_sets() {
@@ -71,7 +71,7 @@ fn test_weak_set_drops_collected_members_and_does_not_root_unreachable_sets() {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		object := create_weak_set(mut vm, vm.realm().weak_set_prototype or { panic('Missing WeakSet prototype') })!
-		mut collection := object.weak_set or { panic('Missing WeakSet data') }
+		mut collection := object.slots.weak_set or { panic('Missing WeakSet data') }
 		state := C.vox_libjs_weak_test_key(sizeof(Object))
 		encoded := C.vox_libjs_weak_test_encoded(state)
 		collection.values[encoded] = WeakCellReference{encoded: encoded, slot: C.vox_libjs_weak_test_slot(state)}

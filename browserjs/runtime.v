@@ -410,7 +410,7 @@ fn libjs_exception_message(err IError) string {
 		object := value.as_object()
 		if kind := object.error_kind() {
 			message := object.error_message() or { '' }
-			trace := if data := object.error_data { data.stack_string(false) } else { '' }
+			trace := if data := object.slots.error_data { data.stack_string(false) } else { '' }
 			return '${kind.name()}: ${message}' + if trace == '' {
 				''
 			} else {

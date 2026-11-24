@@ -30,7 +30,7 @@ fn test_for_in_keeps_distinct_names_with_the_same_hash() {
 	mut object := Object.create(vm.realm(), prototype)
 	object.define_direct_property(key, Value.from_i32(2), attribute_enumerable)
 	iterator_object := create_property_name_iterator(mut vm, Value.from_object(object))!
-	mut iterator := iterator_object.property_name_iterator or { panic('Missing property iterator') }
+	mut iterator := iterator_object.slots.property_name_iterator or { panic('Missing property iterator') }
 	// Seed a different name in the bucket to exercise both the collision and
 	// the duplicate check when the iterator reaches the prototype.
 	iterator.visited_names[property_lookup_hash(key)] = PropertyName.from_str('distinct')

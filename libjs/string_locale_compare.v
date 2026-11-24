@@ -19,7 +19,7 @@ pub fn string_prototype_locale_compare(mut vm VM) !Value {
 	}
 	constructor := realm.intl_collator_constructor or { return vm.throw_error(.internal_error, 'Missing Intl.Collator') }
 	object := construct(mut vm, Value.from_object(constructor), [locales, options], none)!
-	collator := object.intl_collator or { return vm.throw_error(.internal_error, 'Missing Intl.Collator slots') }
+	collator := object.slots.intl_collator or { return vm.throw_error(.internal_error, 'Missing Intl.Collator slots') }
 	if default_options {
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }

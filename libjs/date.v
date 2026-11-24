@@ -18,7 +18,7 @@ pub mut:
 fn create_date_object(realm &Realm, prototype &Object, value f64) &Object {
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'Date'
-	object.date_object = &DateObject{ object: object, date_value: value }
+	object.mut_slots().date_object = &DateObject{ object: object, date_value: value }
 	return object
 }
 
@@ -89,7 +89,7 @@ fn date_utc_time(value f64) f64 {
 fn this_date_object(mut vm VM) !&DateObject {
 	value := vm.this_value()
 	if value.is_object() {
-		if date := value.as_object().date_object { return date }
+		if date := value.as_object().slots.date_object { return date }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'Date')
 }

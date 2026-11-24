@@ -29,7 +29,7 @@ fn weak_ref_construct(mut vm VM, new_target &Object) !&Object {
 	if !can_be_held_weakly(value) { return vm.throw_error_type(.type_error, .cannot_be_held_weakly, value.str()) }
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.weak_ref_prototype or { panic('Missing WeakRef prototype') } })!
 	mut object := Object.create(vm.realm(), prototype)
-	object.weak_ref = &WeakRefObject{target: WeakCellReference.create(value.cell)!, target_tag: value.tag}
+	object.mut_slots().weak_ref = &WeakRefObject{target: WeakCellReference.create(value.cell)!, target_tag: value.tag}
 	vm.add_to_kept_objects(value)
 	return object
 }
@@ -37,7 +37,7 @@ fn weak_ref_construct(mut vm VM, new_target &Object) !&Object {
 fn weak_ref_deref(mut vm VM) !Value {
 	value := vm.this_value()
 	if value.is_object() {
-		if reference := value.as_object().weak_ref {
+		if reference := value.as_object().slots.weak_ref {
 			cell := reference.target.cell()
 			if cell == unsafe { nil } { return js_undefined() }
 			target := Value{tag: reference.target_tag, cell: cell}

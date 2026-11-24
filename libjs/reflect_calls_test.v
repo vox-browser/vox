@@ -127,7 +127,7 @@ fn test_reflect_construct_validates_target_then_present_new_target_before_array_
 	assert log.events.len == 0
 	result := reflect_call_body(mut vm, true, [Value.from_object(constructor),
 		Value.from_object(list)])!.as_object()
-	assert !result.boolean_object?.value
+	assert !result.slots.boolean_object?.value
 	assert voidptr(result.prototype?) == voidptr(vm.realm().boolean_prototype_record())
 	assert log.events == ['length']
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
@@ -169,7 +169,7 @@ fn test_reflect_construct_preserves_explicit_new_target_and_nested_bound_constru
 	list.define_direct_property(PropertyName.from_number(0), Value.from_i32(3), 7)
 	result := reflect_call_body(mut vm, true, [Value.from_object(nested.object),
 		Value.from_object(list), Value.from_object(new_object)])!.as_object()
-	assert result.boolean_object?.value && voidptr(result.prototype?) == voidptr(prototype)
+	assert result.slots.boolean_object?.value && voidptr(result.prototype?) == voidptr(prototype)
 	assert log.events == ['construct']
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 }

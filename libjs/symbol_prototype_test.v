@@ -12,7 +12,7 @@ fn test_symbol_prototype_has_no_symbol_data_and_defines_methods_getter_and_symbo
 	parent := Object.create(realm, none)
 	prototype := SymbolPrototype.create(mut vm, realm, parent).object
 	assert prototype.internal_get_prototype_of()? == parent
-	assert prototype.symbol_object == none
+	assert prototype.slots.symbol_object == none
 	assert prototype.own_property_keys().map(it.str()) == ['toString', 'valueOf', 'description',
 		'Symbol(Symbol.toPrimitive)', 'Symbol(Symbol.toStringTag)']
 	for name in ['toString', 'valueOf'] {
@@ -48,7 +48,7 @@ fn test_symbol_methods_preserve_identity_and_description_utf16_including_absent_
 		?Utf16String(Utf16String.from_slice([u16(0xd800), 0, 0xdc00]))] {
 		symbol := Symbol.create(description, .unique)
 		wrapper := SymbolObject.create(realm, symbol)
-		assert wrapper.object.symbol_object? == wrapper
+		assert wrapper.object.slots.symbol_object? == wrapper
 		assert wrapper.object.internal_get_prototype_of()? == prototype
 		assert wrapper.object.own_property_keys().len == 0
 		for receiver in [Value.from_symbol(symbol), Value.from_object(wrapper.object)] {

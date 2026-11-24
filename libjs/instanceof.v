@@ -5,7 +5,7 @@ module libjs
 pub fn ordinary_has_instance(mut vm VM, value Value, constructor Value) !Value {
 	if !constructor.is_function() { return Value.from_bool(false) }
 	object := constructor.as_object()
-	if bound := object.bound_function {
+	if bound := object.slots.bound_function {
 		return instance_of(mut vm, value, Value.from_object(bound.bound_target_function))
 	}
 	if !value.is_object() { return Value.from_bool(false) }

@@ -54,13 +54,13 @@ fn (mut clone HistoryClone) project(mut vm libjs.VM, value libjs.Value, depth in
 	if depth >= 128 { return error('DataCloneError: History state nesting limit exceeded') }
 	if clone.host.history_platform_object(object) || object.callable != none || object.constructor != none
 		|| object.host_properties != none || object.is_arguments_object
-		|| object.regexp_object != none || object.regexp_string_iterator != none || object.keyed_collection != none || object.keyed_iterator != none
-		|| object.intl_collator != none || object.intl_relative_time_format != none || object.intl_number_format != none || object.intl_list_format != none || object.intl_date_time_format != none || object.intl_locale != none || object.proxy_object != none || object.weak_map != none || object.weak_set != none || object.weak_ref != none || object.boolean_object != none
-		|| object.date_object != none || object.number_object != none || object.bigint_object != none
-		|| object.symbol_object != none || object.string_object != none || object.string_iterator != none
-		|| object.array_iterator != none || object.property_name_iterator != none || object.iterator_record != none
-		|| object.promise_record != none || object.generator_execution != none || object.array_buffer != none || object.data_view != none
-		|| object.typed_array != none || object.error_data != none
+		|| object.slots.regexp_object != none || object.slots.regexp_string_iterator != none || object.slots.keyed_collection != none || object.slots.keyed_iterator != none
+		|| object.slots.intl_collator != none || object.slots.intl_relative_time_format != none || object.slots.intl_number_format != none || object.slots.intl_list_format != none || object.slots.intl_date_time_format != none || object.slots.intl_locale != none || object.proxy_object != none || object.slots.weak_map != none || object.slots.weak_set != none || object.slots.weak_ref != none || object.slots.boolean_object != none
+		|| object.slots.date_object != none || object.slots.number_object != none || object.slots.bigint_object != none
+		|| object.slots.symbol_object != none || object.string_object != none || object.slots.string_iterator != none
+		|| object.array_iterator != none || object.slots.property_name_iterator != none || object.iterator_record != none
+		|| object.promise_record != none || object.generator_execution != none || object.array_buffer != none || object.slots.data_view != none
+		|| object.typed_array != none || object.slots.error_data != none
 		|| (object.array_object == none && object.class_name != 'Object') {
 		return error('DataCloneError: unsupported History state object')
 	}

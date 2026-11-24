@@ -49,7 +49,7 @@ fn (host &Host) fetch_body_init(mut vm libjs.VM, value libjs.Value) !FetchBodyVa
 		if blob := host.blobs[voidptr(object)] { return FetchBodyValue{blob: blob} }
 		if form := host.form_data[voidptr(object)] { return FetchBodyValue{form: form} }
 		if query := host.queries[voidptr(object)] { return FetchBodyValue{query: query} }
-		if object.array_buffer != none || object.typed_array != none || object.data_view != none {
+		if object.array_buffer != none || object.typed_array != none || object.slots.data_view != none {
 			return FetchBodyValue{buffer: native_buffer_source(mut vm, value, false)!}
 		}
 	}

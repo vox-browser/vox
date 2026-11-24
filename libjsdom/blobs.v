@@ -18,7 +18,7 @@ fn (host &Host) blob_part(mut vm libjs.VM, value libjs.Value) !BlobBindingPart {
 	if value.is_object() {
 		object := value.as_object()
 		if blob := host.blobs[voidptr(object)] { return BlobBindingPart{blob: blob} }
-		if object.array_buffer != none || object.typed_array != none || object.data_view != none {
+		if object.array_buffer != none || object.typed_array != none || object.slots.data_view != none {
 			return BlobBindingPart{buffer: native_buffer_source(mut vm, value, false)!}
 		}
 	}

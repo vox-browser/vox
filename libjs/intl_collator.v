@@ -40,7 +40,7 @@ fn intl_collator_resolve_locale(mut vm VM, requested []string) !(string, IntlLoc
 
 fn intl_collator_this(mut vm VM) !&IntlCollator {
 	value := vm.this_value()
-	if value.is_object() { if collator := value.as_object().intl_collator { return collator } }
+	if value.is_object() { if collator := value.as_object().slots.intl_collator { return collator } }
 	return vm.throw_error(.type_error, 'Intl.Collator member called on incompatible receiver')
 }
 
@@ -80,7 +80,7 @@ fn intl_collator_construct(mut vm VM, new_target &Object) !&Object {
 	resolved.keywords = extensions
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = 'Intl.Collator'
-	object.intl_collator = &IntlCollator{object: object, locale: resolved.tag(), usage: usage, settings: IntlCollationSettings{sensitivity: sensitivity, case_first: case_first, numeric: numeric, ignore_punctuation: !punctuation.is_undefined() && punctuation.to_boolean()}}
+	object.mut_slots().intl_collator = &IntlCollator{object: object, locale: resolved.tag(), usage: usage, settings: IntlCollationSettings{sensitivity: sensitivity, case_first: case_first, numeric: numeric, ignore_punctuation: !punctuation.is_undefined() && punctuation.to_boolean()}}
 	return object
 }
 

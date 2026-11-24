@@ -14,7 +14,7 @@ pub fn StringIteratorPrototype.create(mut vm VM, realm &Realm, iterator_prototyp
 	step := fn (mut vm VM) !IteratorStepValue {
 		receiver := vm.this_value()
 		if receiver.is_object() {
-			if mut iterator := receiver.as_object().string_iterator {
+			if mut iterator := receiver.as_object().slots.string_iterator {
 				return iterator.next(mut vm)
 			}
 		}

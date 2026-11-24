@@ -44,7 +44,7 @@ fn test_intl_relative_time_formatter_retention_across_temporary_arena_reset() {
 	intl_relative_eval(mut vm, 'var relative=new Intl.RelativeTimeFormat("en-US",{numeric:"auto"})')!
 	arena.leave(entry)
 	value := vm.global_object().get(mut vm, PropertyName.from_str('relative'))!
-	assert !arena.contains(value.as_object()) && !arena.contains(value.as_object().intl_relative_time_format?)
+	assert !arena.contains(value.as_object()) && !arena.contains(value.as_object().slots.intl_relative_time_format?)
 	arena.reset(); arena.release()
 	assert intl_relative_eval(mut vm, 'relative.format(-1,"day")==="yesterday"&&relative.format(-2,"day")==="2 days ago"')!.as_bool()
 }

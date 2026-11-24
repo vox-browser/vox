@@ -25,14 +25,14 @@ fn intl_options_object(mut vm VM, value Value) !&Object {
 
 fn intl_locale_identifier_value(mut vm VM, value Value) !IntlLocaleIdentifier {
 	if value.is_object() {
-		if locale := value.as_object().intl_locale { return locale.identifier }
+		if locale := value.as_object().slots.intl_locale { return locale.identifier }
 	} else if !value.is_string() { return vm.throw_error(.type_error, 'Locale identifier must be a string or object') }
 	return intl_canonicalize_language_tag(mut vm, value.to_primitive_string(mut vm)!.utf16)
 }
 
 fn intl_canonicalize_locale_list(mut vm VM, value Value) ![]string {
 	if value.is_undefined() { return []string{} }
-	if value.is_string() || (value.is_object() && value.as_object().intl_locale != none) {
+	if value.is_string() || (value.is_object() && value.as_object().slots.intl_locale != none) {
 		return [intl_locale_identifier_value(mut vm, value)!.tag()]
 	}
 	object := value.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
@@ -58,13 +58,13 @@ fn intl_string_array(mut vm VM, strings []string) !Value {
 fn intl_locale_create(mut vm VM, identifier IntlLocaleIdentifier, prototype &Object) &Object {
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = 'Intl.Locale'
-	object.intl_locale = &IntlLocaleObject{object: object, identifier: identifier}
+	object.mut_slots().intl_locale = &IntlLocaleObject{object: object, identifier: identifier}
 	return object
 }
 
 fn intl_locale_this(mut vm VM) !&IntlLocaleObject {
 	value := vm.this_value()
-	if value.is_object() { if locale := value.as_object().intl_locale { return locale } }
+	if value.is_object() { if locale := value.as_object().slots.intl_locale { return locale } }
 	return vm.throw_error(.type_error, 'Intl.Locale member called on incompatible receiver')
 }
 

@@ -49,7 +49,7 @@ fn regexp_exec_for_test(mut vm VM, object &Object, text &PrimitiveString) !Value
 		}
 		return result
 	}
-	mut regex := object.regexp_object or { return vm.throw_error(.type_error, 'RegExp exec requires RegExp internal slots') }
+	mut regex := object.slots.regexp_object or { return vm.throw_error(.type_error, 'RegExp exec requires RegExp internal slots') }
 	$if test {
 		if regexp_test_results_diagnostics { regexp_test_results++ }
 	}

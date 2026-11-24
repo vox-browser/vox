@@ -23,7 +23,7 @@ fn date_prototype_locale_string(mut vm VM, name string) !Value {
 		IntlDateDefaults.all
 	}
 	object := create_intl_date_time_format(mut vm, vm.realm().intl_date_time_format_prototype or { return error('Missing intrinsic date formatter') }, vm.argument(0), vm.argument(1), required, defaults)!
-	formatter := object.intl_date_time_format or { return error('Missing date formatter slots') }
+	formatter := object.slots.intl_date_time_format or { return error('Missing date formatter slots') }
 	parts := intl_format_date_parts(mut vm, formatter, Value.from_f64(value))!
 	mut text := ''
 	for part in parts { text += part.value }

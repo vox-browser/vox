@@ -38,7 +38,7 @@ fn make_regexp_flag_spellings() [256]string {
 fn (mut vm VM) intrinsic_regexp_flag_value(getter Value, receiver Value) ?Value {
 	if !use_intrinsic_regexp_flags() || !receiver.is_object() { return none }
 	object := receiver.as_object()
-	regex := object.regexp_object or { return none }
+	regex := object.slots.regexp_object or { return none }
 	if !getter.is_function() { return none }
 	function := getter.as_function()
 	if function is NativeFunction {

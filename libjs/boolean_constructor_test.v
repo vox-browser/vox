@@ -47,13 +47,13 @@ fn test_boolean_call_and_construction_use_to_boolean_without_primitive_conversio
 		Value.from_symbol(Symbol.create(none, .unique)), Value.from_object(trap)] {
 		assert call(mut vm, function, Value.from_i32(99), [value])!.as_bool() == value.to_boolean()
 		boxed := construct(mut vm, function, [value], none)!
-		assert boxed.boolean_object?.value == value.to_boolean()
+		assert boxed.slots.boolean_object?.value == value.to_boolean()
 		assert boxed.internal_get_prototype_of()? == realm.boolean_prototype_record()
 		assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 	}
 	assert !call(mut vm, function, js_null(), []Value{})!.as_bool()
 	no_argument := construct(mut vm, function, []Value{}, none)!
-	assert !no_argument.boolean_object?.value
+	assert !no_argument.slots.boolean_object?.value
 }
 
 fn test_boolean_construction_preserves_new_target_prototype_and_foreign_fallback() {
@@ -70,7 +70,7 @@ fn test_boolean_construction_preserves_new_target_prototype_and_foreign_fallback
 		mut object := new_target.object
 		object.define_direct_property(PropertyName.from_str('prototype'), prototype_value, 7)
 		boxed := construct(mut vm, function, [Value.from_bool(true)], object)!
-		assert boxed.boolean_object?.value
+		assert boxed.slots.boolean_object?.value
 		assert boxed.internal_get_prototype_of()? == if prototype_value.is_object() { custom } else { foreign.boolean_prototype_record() }
 	}
 	new_target := NativeFunction.create_constructor(mut vm, foreign, foreign.function_prototype,

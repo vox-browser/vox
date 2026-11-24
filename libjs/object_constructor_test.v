@@ -61,16 +61,16 @@ fn test_object_call_and_construction_box_values_and_honor_new_target() {
 		} else {
 			assert voidptr(called) != voidptr(created)
 			if value.is_number() {
-				assert called.number_object?.value == 42 && created.number_object?.value == 42
+				assert called.slots.number_object?.value == 42 && created.slots.number_object?.value == 42
 			}
 			if value.is_string() {
 				assert called.string_object?.value.str() == 'abc'
 			}
 			if value.is_boolean() {
-				assert called.boolean_object?.value
+				assert called.slots.boolean_object?.value
 			}
 			if value.is_symbol() {
-				assert voidptr(called.symbol_object?.symbol) == voidptr(value.as_symbol())
+				assert voidptr(called.slots.symbol_object?.symbol) == voidptr(value.as_symbol())
 			}
 		}
 	}

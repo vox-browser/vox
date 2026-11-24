@@ -7,7 +7,7 @@ pub fn (value Value) is_regexp(mut vm VM) !bool {
 	object := value.as_object()
 	matcher := object.get(mut vm, PropertyName.from_symbol(vm.well_known_symbol_match()))!
 	if !matcher.is_undefined() { return matcher.to_boolean() }
-	return object.regexp_object != none
+	return object.slots.regexp_object != none
 }
 
 // RegExpConstructor.cpp::call / construct_impl. Check @@match once, read
@@ -37,7 +37,7 @@ fn regexp_constructor_create(mut vm VM, new_target &Object, is_regexp bool) !&Ob
 	mut flags_value := flags
 	mut branded := false
 	if pattern.is_object() {
-		if record := pattern.as_object().regexp_object {
+		if record := pattern.as_object().slots.regexp_object {
 			branded = true
 			pattern_value = Value.from_string(vm.create_string(record.pattern))
 			if flags.is_undefined() { flags_value = Value.from_string(vm.create_string(record.flags_text)) }

@@ -10,7 +10,7 @@ fn fail(err IError) {
 			object := value.as_object()
 			if kind := object.error_kind() {
 				eprintln('${kind.name()}: ${object.error_message() or { '' }}')
-				if data := object.error_data { eprint(data.stack_string(false)) }
+				if data := object.slots.error_data { eprint(data.stack_string(false)) }
 				exit(1)
 			}
 		}

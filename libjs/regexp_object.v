@@ -44,7 +44,7 @@ fn create_regexp_object(mut vm VM, pattern Utf16String, text Utf16String) !&Obje
 fn create_regexp_object_with_engine(mut vm VM, pattern Utf16String, text Utf16String, engine &RegexEngine) &Object {
 	mut object := Object.create(vm.realm(), vm.realm().regexp_prototype)
 	object.class_name = 'RegExp'
-	object.regexp_object = &RegExpObject{object: object, pattern: pattern, flags_text: text, flags: regexp_to_flag_bits(text), engine: engine}
+	object.mut_slots().regexp_object = &RegExpObject{object: object, pattern: pattern, flags_text: text, flags: regexp_to_flag_bits(text), engine: engine}
 	object.define_direct_property(PropertyName.from_str('lastIndex'), Value.from_i32(0), attribute_writable)
 	return object
 }
@@ -139,7 +139,7 @@ fn initialize_regexp_intrinsics(mut vm VM, mut realm Realm) {
 
 fn regexp_receiver(mut vm VM) !&RegExpObject {
 	if vm.this_value().is_object() {
-		if regex := vm.this_value().as_object().regexp_object { return regex }
+		if regex := vm.this_value().as_object().slots.regexp_object { return regex }
 	}
 	return vm.throw_error(.type_error, 'RegExp method called on incompatible receiver')
 }
@@ -157,7 +157,7 @@ fn regexp_exec(mut vm VM, object &Object, text &PrimitiveString) !Value {
 		if !result.is_object() && !result.is_null() { return vm.throw_error(.type_error, 'RegExp exec must return an object or null') }
 		return result
 	}
-	mut regex := object.regexp_object or { return vm.throw_error(.type_error, 'RegExp exec requires RegExp internal slots') }
+	mut regex := object.slots.regexp_object or { return vm.throw_error(.type_error, 'RegExp exec requires RegExp internal slots') }
 	return regex.builtin_exec(mut vm, text)
 }
 

@@ -18,7 +18,7 @@ struct IntlListEmission { prefix int; element int = -1; literal ?Utf16String }
 
 fn intl_list_format_this(mut vm VM) !&IntlListFormat {
 	value := vm.this_value()
-	if value.is_object() { if formatter := value.as_object().intl_list_format { return formatter } }
+	if value.is_object() { if formatter := value.as_object().slots.intl_list_format { return formatter } }
 	return vm.throw_error(.type_error, 'Intl.ListFormat member called on incompatible receiver')
 }
 
@@ -41,7 +41,7 @@ fn intl_list_format_construct(mut vm VM, new_target &Object) !&Object {
 	templates := (data.list_patterns[key] or { return vm.throw_error(.internal_error, 'Missing CLDR list patterns') }).clone()
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = 'Intl.ListFormat'
-	object.intl_list_format = &IntlListFormat{object: object, locale: locale, type_: type_, style: style, templates: templates}
+	object.mut_slots().intl_list_format = &IntlListFormat{object: object, locale: locale, type_: type_, style: style, templates: templates}
 	return object
 }
 

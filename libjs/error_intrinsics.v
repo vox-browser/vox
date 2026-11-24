@@ -37,7 +37,7 @@ fn initialize_error_intrinsics(mut vm VM, mut realm Realm) {
 		if kind == .error {
 			install_intrinsic_method(mut vm, &realm, mut constructor, 'isError', 1, fn (mut vm VM) !Value {
 				value := vm.argument(0)
-				return Value.from_bool(value.is_object() && value.as_object().error_data != none)
+				return Value.from_bool(value.is_object() && value.as_object().slots.error_data != none)
 			})
 		}
 		prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(constructor), attribute_writable | attribute_configurable)
@@ -59,7 +59,7 @@ fn error_constructor_construct(mut vm VM, target &Object, kind ErrorKind) !&Obje
 	})!
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = kind.name()
-	object.error_data = &ErrorData{ kind: kind, realm: vm.realm(), traceback: populate_stack(vm) }
+	object.mut_slots().error_data = &ErrorData{ kind: kind, realm: vm.realm(), traceback: populate_stack(vm) }
 	message := vm.argument(0)
 	if !message.is_undefined() {
 		object.set_error_message(mut vm, message.to_primitive_string(mut vm)!.utf16)
@@ -103,7 +103,7 @@ fn error_prototype_stack_getter(mut vm VM) !Value {
 	value := vm.this_value()
 	if !value.is_object() { return vm.throw_error_type(.type_error, .not_an_object, value.str()) }
 	object := value.as_object()
-	mut data := object.error_data or { return js_undefined() }
+	mut data := object.slots.error_data or { return js_undefined() }
 	if cached := data.cached_string { return Value.from_string(cached) }
 	name_value := object.get(mut vm, PropertyName.from_str('name'))!
 	name := if name_value.is_undefined() {

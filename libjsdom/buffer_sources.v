@@ -10,7 +10,7 @@ fn native_buffer_source(mut vm libjs.VM, value libjs.Value, allow_shared bool) !
 	object := value.as_object()
 	buffer := if actual := object.array_buffer { actual }
 		else if array := object.typed_array { array.viewed_buffer }
-		else if view := object.data_view { view.viewed_buffer or { return vm.throw_error(.type_error, 'Uninitialized DataView') } }
+		else if view := object.slots.data_view { view.viewed_buffer or { return vm.throw_error(.type_error, 'Uninitialized DataView') } }
 		else { return vm.throw_error(.type_error, 'Expected a BufferSource') }
 	if !allow_shared && buffer.is_shared_array_buffer() { return vm.throw_error(.type_error, 'Shared BufferSource is not allowed') }
 	if !buffer.is_fixed_length() { return vm.throw_error(.type_error, 'Expected a fixed-length BufferSource') }
@@ -33,7 +33,7 @@ fn copy_native_buffer_source(mut vm libjs.VM, object &libjs.Object) ![]u8 {
 		record := libjs.make_typed_array_with_buffer_witness_record(array, .seq_cst)
 		if libjs.is_typed_array_out_of_bounds(record) { return []u8{} }
 		buffer = array.viewed_buffer; offset = uint(array.byte_offset); length = uint(libjs.typed_array_byte_length(record))
-	} else if view := object.data_view {
+	} else if view := object.slots.data_view {
 		record := libjs.make_data_view_with_buffer_witness_record(view, .seq_cst)
 		if libjs.is_view_out_of_bounds(record) { return []u8{} }
 		buffer = view.viewed_buffer or { return vm.throw_error(.type_error, 'Uninitialized DataView') }

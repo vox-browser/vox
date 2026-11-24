@@ -10,7 +10,7 @@ pub fn get_function_realm(mut vm VM, function &Object) !&Realm {
 		defer { vm.proxy_operation_depth-- }
 		return get_function_realm(mut vm, proxy.operands(mut vm)!.target)
 	}
-	if bound := function.bound_function { return get_function_realm(mut vm, bound.bound_target_function) }
+	if bound := function.slots.bound_function { return get_function_realm(mut vm, bound.bound_target_function) }
 	return vm.realm()
 }
 

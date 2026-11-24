@@ -63,7 +63,7 @@ fn (mut collection WeakMapObject) remove(key Value) bool {
 fn create_weak_map(mut vm VM, prototype &Object) !&Object {
 	mut object := Object.create(vm.realm(), prototype)
 	collection := &WeakMapObject{ object: object, epoch: weak_cell_epoch() }
-	object.weak_map = collection
+	object.mut_slots().weak_map = collection
 	if vm.weak_collection_registry == none { vm.weak_collection_registry = &WeakCollectionRegistry{ epoch: weak_cell_epoch() } }
 	mut registry := vm.weak_collection_registry or { return error('Missing weak container registry') }
 	registry.collections << WeakCellReference.create(voidptr(collection))!
@@ -73,7 +73,7 @@ fn create_weak_map(mut vm VM, prototype &Object) !&Object {
 fn weak_map_receiver(mut vm VM) !&WeakMapObject {
 	value := vm.this_value()
 	if value.is_object() {
-		if collection := value.as_object().weak_map { return collection }
+		if collection := value.as_object().slots.weak_map { return collection }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'WeakMap')
 }

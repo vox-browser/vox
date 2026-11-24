@@ -21,6 +21,6 @@ pub fn BooleanObject.create_with_prototype(realm &Realm, value bool, prototype ?
 		object: object
 		value: value
 	}
-	object.boolean_object = boolean
+	object.mut_slots().boolean_object = boolean
 	return boolean
 }

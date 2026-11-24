@@ -56,7 +56,7 @@ fn initialize_map_intrinsics(mut vm VM, mut realm Realm) {
 fn map_constructor_construct(mut vm VM, new_target &Object) !&Object {
 	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.map_prototype or { panic('Missing Map prototype') } })!
 	mut object := Object.create(vm.realm(), prototype)
-	object.keyed_collection = &KeyedCollection{ object: object, is_map: true }
+	object.mut_slots().keyed_collection = &KeyedCollection{ object: object, is_map: true }
 	iterable := vm.argument(0)
 	if iterable.is_nullish() { return object }
 	adder := object.get(mut vm, PropertyName.from_str('set'))!

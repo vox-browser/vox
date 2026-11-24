@@ -17,7 +17,7 @@ pub struct IntlRelativeTimeFormat {
 
 fn intl_relative_time_this(mut vm VM) !&IntlRelativeTimeFormat {
 	value := vm.this_value()
-	if value.is_object() { if formatter := value.as_object().intl_relative_time_format { return formatter } }
+	if value.is_object() { if formatter := value.as_object().slots.intl_relative_time_format { return formatter } }
 	return vm.throw_error(.type_error, 'Intl.RelativeTimeFormat member called on incompatible receiver')
 }
 
@@ -36,10 +36,10 @@ fn intl_relative_time_construct(mut vm VM, new_target &Object) !&Object {
 	number_options.create_data_property_or_throw(mut vm, PropertyName.from_str('numberingSystem'), Value.from_string(vm.create_string_from_str(system)))!
 	constructor := vm.realm().intl_number_format_constructor or { return vm.throw_error(.internal_error, 'Missing Intl.NumberFormat') }
 	number := construct(mut vm, Value.from_object(constructor), [Value.from_string(vm.create_string_from_str(locale)), Value.from_object(number_options)], none)!
-	number_format := number.intl_number_format or { return vm.throw_error(.internal_error, 'Missing Intl.NumberFormat slots') }
+	number_format := number.slots.intl_number_format or { return vm.throw_error(.internal_error, 'Missing Intl.NumberFormat slots') }
 	mut object := Object.create(vm.realm(), prototype)
 	object.class_name = 'Intl.RelativeTimeFormat'
-	object.intl_relative_time_format = &IntlRelativeTimeFormat{object: object, locale: locale, data_locale: data_locale, numbering_system: system, style: style, numeric: numeric, number_format: number_format}
+	object.mut_slots().intl_relative_time_format = &IntlRelativeTimeFormat{object: object, locale: locale, data_locale: data_locale, numbering_system: system, style: style, numeric: numeric, number_format: number_format}
 	return object
 }
 

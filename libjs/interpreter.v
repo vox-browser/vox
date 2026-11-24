@@ -317,7 +317,7 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 		.get_object_property_iterator { result = Value.from_object(create_property_name_iterator(mut vm, left)!) }
 		.property_name_iterator_next {
 			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid property-name iterator') }
-			mut iterator := left.as_object().property_name_iterator or { return vm.throw_error(.internal_error, 'Invalid property-name iterator') }
+			mut iterator := left.as_object().slots.property_name_iterator or { return vm.throw_error(.internal_error, 'Invalid property-name iterator') }
 			step := iterator.next(mut vm)!
 			if step.done { return instruction.target }
 			result = step.value
@@ -468,12 +468,12 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 				instruction.strict, none)!
 			mut holder := Object.create(vm.realm(), none)
 			holder.class_name = '#BindingReference'
-			holder.binding_reference = &Reference{ ...reference }
+			holder.mut_slots().binding_reference = &Reference{ ...reference }
 			result = Value.from_object(holder)
 		}
 		.put_binding_reference {
 			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid binding reference') }
-			reference := left.as_object().binding_reference or {
+			reference := left.as_object().slots.binding_reference or {
 				return vm.throw_error(.internal_error, 'Missing binding reference')
 			}
 			reference.put_value(mut vm, right)!
