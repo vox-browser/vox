@@ -218,10 +218,17 @@ mut:
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
 // The realm is reserved for intrinsic-backed shapes, which are not translated yet.
+// `&Object{}` builds the 1 KB record on the stack and copies it to the heap.
+// Allocate it zeroed (every option is none, every flag false) and set the
+// fields with non-zero defaults; object_creation_test.v compares the two.
 pub fn Object.create(realm &Realm, prototype ?&Object) &Object {
-	return &Object{
-		prototype: prototype
-	}
+	mut object := unsafe { &Object(vcalloc(int(sizeof(Object)))) }
+	object.prototype = prototype
+	object.extensible = true
+	object.class_name = 'Object'
+	object.properties = []OwnProperty{}
+	object.private_elements = []PrivateElement{}
+	return object
 }
 
 fn (object &Object) find_own_property(key PropertyName) int {
