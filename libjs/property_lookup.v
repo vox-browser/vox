@@ -11,6 +11,19 @@ const property_lookup_hint_minimum = 8
 // keys (global objects, prototypes, bundle registries) reach the bound; a
 // 64-entry table was cleared on nearly every insertion for them.
 const property_lookup_hint_limit = 4096
+// The position hints cache only keys that were found, so every miss on a large
+// object (adding a key, reading through to a prototype) scanned all of its
+// properties: building a dictionary or parsing a wide JSON object was
+// quadratic. An ordinary object this large switches to the complete key index
+// (indexed_properties.v), which also proves absence.
+const automatic_property_index_minimum = 64
+
+$if test {
+	__global automatic_property_index_disabled bool
+	pub fn set_automatic_property_index_for_testing(enabled bool) {
+		automatic_property_index_disabled = !enabled
+	}
+}
 
 @[heap]
 struct PropertyLookupHints {
@@ -56,6 +69,12 @@ $if test {
 }
 
 @[inline]
+fn use_automatic_property_index() bool {
+	$if test { if automatic_property_index_disabled { return false } }
+	return true
+}
+
+@[inline]
 fn property_lookup_minimum() int {
 	$if test { if small_property_hints_disabled { return 16 } }
 	return property_lookup_hint_minimum
@@ -76,6 +95,10 @@ fn property_lookup_hash(key PropertyName) u64 {
 }
 
 fn (object &Object) find_own_property_with_hints(key PropertyName) int {
+	if object.properties.len >= automatic_property_index_minimum && use_automatic_property_index() {
+		mut owner := unsafe { &Object(object) }
+		if owner.enable_indexed_properties() { return object.find_indexed_property(key) }
+	}
 	if object.array_object != none {
 		position := object.array_index_position(key)
 		if position != array_index_position_unknown { return position }

@@ -35,6 +35,7 @@ fn define_literal_property(mut vm VM, mut object Object, key PropertyName, value
 	if object.is_ordinary_for_data_definition() && (fresh || object.find_own_property(key) < 0) {
 		object.properties << OwnProperty{key: key, value: value, writable: true, enumerable: true,
 			configurable: true}
+		if object.indexed_properties != none { object.index_appended_property() }
 		return
 	}
 	// An array literal's elements, on the array new_array created with their

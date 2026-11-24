@@ -52,5 +52,6 @@ fn (mut object Object) set_absent_own_data_property(key PropertyName, value Valu
 	if !object.extensible { return absent_own_set_rejected }
 	object.properties << OwnProperty{key: key, value: value, writable: true, enumerable: true,
 		configurable: true}
+	if object.indexed_properties != none { object.index_appended_property() }
 	return absent_own_set_added
 }
