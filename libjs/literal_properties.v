@@ -37,6 +37,19 @@ fn define_literal_property(mut vm VM, mut object Object, key PropertyName, value
 			configurable: true}
 		return
 	}
+	// An array literal's elements, on the array new_array created with their
+	// count: ArrayObject [[DefineOwnProperty]] of an absent index on an
+	// extensible array with a writable length appends it and extends the length.
+	if fresh && key.kind == .number_key && object.extensible && object.indexed_properties == none {
+		if mut array := object.array_object {
+			if array.length_writable {
+				push_within_capacity(mut object.properties, OwnProperty{key: key, value: value, writable: true,
+					enumerable: true, configurable: true})
+				if key.number >= array.length { array.length = key.number + 1 }
+				return
+			}
+		}
+	}
 	object.create_data_property_or_throw(mut vm, key, value)!
 }
 

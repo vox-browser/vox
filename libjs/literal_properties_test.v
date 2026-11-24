@@ -83,3 +83,24 @@ fn test_fresh_literal_names_skip_only_provably_new_keys() {
 		assert false
 	}
 }
+
+// Array literal elements append to the array new_array created; holes, the
+// length, element attributes and later growth keep the generic results.
+fn test_array_literal_elements_append_in_order() {
+	defer { set_literal_property_fast_path_for_testing(true) }
+	for enabled in [false, true] {
+		set_literal_property_fast_path_for_testing(enabled)
+		for source in [
+			'var a=[1,2,3];a.length===3&&a.join()==="1,2,3"&&Object.keys(a).join()==="0,1,2"',
+			'var a=[1,,3,,];a.length===4&&!(1 in a)&&!(3 in a)&&a[2]===3&&Object.keys(a).join()==="0,2"',
+			'var a=[,];a.length===1&&!(0 in a)',
+			'var d=Object.getOwnPropertyDescriptor([7],"0");d.value===7&&d.writable&&d.enumerable&&d.configurable',
+			'var a=[1,2];a.push(3);a[5]=6;a.x=1;a.length===6&&a.join()==="1,2,3,,,6"&&Object.keys(a).join()==="0,1,2,5,x"',
+			'var log=[];var a=[(log.push(1),"a"),(log.push(2),"b")];log.join()==="1,2"&&a[1]==="b"',
+			'var a=[[1,[2]],{k:[3]}];JSON.stringify(a)==="[[1,[2]],{\\"k\\":[3]}]"',
+			'Object.defineProperty(Array.prototype,"0",{set(v){throw 1},configurable:true});var a=[5];delete Array.prototype[0];a[0]===5',
+		] {
+			assert literal_eval(source)!.as_bool(), '${enabled}: ${source}'
+		}
+	}
+}

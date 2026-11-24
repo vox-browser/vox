@@ -342,7 +342,8 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			for index, element in kind.array_elements() {
 				if value := element {
 					item := generator.expression(mut vm, &value)!
-					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item})
+					// Each element index is distinct, so every definition is fresh.
+					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item, annex_b: true})
 				}
 			}
 			return dst
