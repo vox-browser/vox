@@ -12279,3 +12279,24 @@ chooses ciphers in its own order.
   `promise_job_limits_test`, `global_value_bindings_test` (stale global
   order list), `class_execution_test` (static blocks now compile), and
   `legacy_named_setters_test` needs another test file's fixture.
+- Later the same night: `a331838b2` pops the newest pooled frame,
+  `e250aaa64` skips the `compile()` layers and the parameter scan on every
+  call, `e12577663` allocates objects zeroed instead of copying a stack
+  literal of the 1,112-byte record (empty object literals −15%),
+  `0fb1b15e0` reserves literal property storage (six-property literals
+  −13% instructions, −19% peak memory), `c5ed33b47` turns integral Number
+  keys into index keys without ToString and reparsing (indexed array reads
+  −52%, five-element array literals −50%), `f52262730` dispatches Number
+  bitwise operators inline, and `74611d8bb` dispatches object property
+  reads and calls inline (own reads −18%, method calls −10%, mixed −2.2%,
+  at about +7% for tight arithmetic loops from the larger loop body).
+
+  | Bundle | Arm | Median | Min | Max | PNG median | Host load |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | `a4b1e556` (through `e12577663`) | candidate | 29.415B | 29.249B | 29.475B | 2,653 ms | 5-6 |
+  | `a4b1e556` | control | 31.332B | 31.240B | 31.444B | 2,711 ms | 5-6 |
+  | `03bc233e` (through `c5ed33b47`) | candidate | 28.967B | 28.915B | 29.338B | 2,698 ms | 6 |
+  | `03bc233e` | control | 31.036B | 30.879B | 31.342B | 2,754 ms | 6 |
+
+  Every capture 2 px. Against the 33.31B of the first operand-slot cohort,
+  interpreted loads are 13% lower.
