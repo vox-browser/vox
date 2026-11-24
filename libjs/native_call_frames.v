@@ -27,6 +27,7 @@ fn use_native_frame_slots() bool {
 	return use_context_reuse()
 }
 
+@[inline]
 fn (mut stack InterpreterStack) allocate_native_frame(arguments u32) ?&ExecutionContext {
 	new_top := stack.top_ + frame_size_in_bytes(u64(arguments))
 	if new_top > stack.limit { return none }
@@ -64,6 +65,7 @@ fn (mut stack InterpreterStack) allocate_native_frame(arguments u32) ?&Execution
 // Pops the native frame at `mark` (and anything a failed callee left above
 // it), then clears it for the next call at this depth unless something still
 // holds it.
+@[inline]
 fn (mut stack InterpreterStack) release_native_frame(mut context ExecutionContext, mark uint) {
 	last := stack.contexts.len - 1
 	if last >= 0 && voidptr(stack.contexts[last]) == voidptr(context) && context.stack_offset == mark {

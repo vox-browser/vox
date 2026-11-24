@@ -202,6 +202,7 @@ fn (mut function NativeFunction) push_call_frame(mut vm VM, mut stack Interprete
 }
 
 // NativeFunction::internal_call steps 1-9 for an allocated callee frame.
+@[inline]
 fn (mut function NativeFunction) enter_call_frame(mut vm VM, mut callee ExecutionContext, this_value Value, arguments []Value) ! {
 	caller := vm.current_context()
 	callee.copy_call_arguments(arguments)

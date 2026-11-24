@@ -134,10 +134,24 @@ fn use_native_iterator_steps() bool {
 
 // Internal consumers keep the original native frame for getters and errors.
 fn (mut function NativeFunction) step_iterator(mut vm VM, receiver Value) !IteratorStepValue {
+	if use_native_frame_slots() { return function.step_iterator_in_native_frame(mut vm, receiver) }
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
 	defer { stack.deallocate(mark) }
 	function.push_call_frame(mut vm, mut stack, receiver, []Value{})!
+	defer { vm.pop_current_context() }
+	return function.iterator_step(mut vm)
+}
+
+// step_iterator() in the depth's native frame (native_call_frames.v).
+fn (mut function NativeFunction) step_iterator_in_native_frame(mut vm VM, receiver Value) !IteratorStepValue {
+	mut stack := vm.interpreter_stack()
+	mark := stack.top()
+	mut callee := stack.allocate_native_frame(0) or {
+		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
+	}
+	defer { stack.release_native_frame(mut callee, mark) }
+	function.enter_call_frame(mut vm, mut callee, receiver, []Value{})!
 	defer { vm.pop_current_context() }
 	return function.iterator_step(mut vm)
 }
