@@ -12,7 +12,9 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 	// name, so later definitions keep the runtime duplicate check after one.
 	mut defined_names := []Utf16String{}
 	mut dynamic_names := false
-	for property in properties {
+	// Index the properties: a `for x in` loop copies each ~650-byte ObjectProperty.
+	for property_index in 0 .. properties.len {
+		property := unsafe { &properties[property_index] }
 		if property.property_type == .proto_setter {
 			value := generator.expression(mut vm, &(property.value or { return error('Missing prototype value') }))!
 			generator.emit(Instruction{ op: .set_object_literal_prototype, lhs: dst, rhs: value })
@@ -66,7 +68,7 @@ fn (mut generator BytecodeGenerator) object_literal(mut vm VM, properties []Obje
 
 // The property name of an identifier or string key that cannot be an array
 // index; numeric spellings keep the runtime check.
-fn literal_property_name(property ObjectProperty) ?Utf16String {
+fn literal_property_name(property &ObjectProperty) ?Utf16String {
 	if property.is_computed { return none }
 	name := if property.key.kind.tag == .identifier_expr {
 		identifier_name(&property.key) or { return none }

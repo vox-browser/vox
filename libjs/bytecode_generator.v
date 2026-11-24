@@ -313,7 +313,8 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	previous_range := generator.range
 	generator.range = expression.range
 	defer { generator.range = previous_range }
-	kind := expression.kind
+	// ExpressionKind is large and its accessors take references; do not copy it.
+	kind := &expression.kind
 	match kind.tag {
 		.yield_expr { return generator.yield_expression(mut vm, expression) }
 		.import_call {
@@ -330,8 +331,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			// codegen.rs::generate_template_literal: evaluate each substitution
 			// and ToString it before evaluating the next one. Addition itself
 			// uses the default primitive hint and cannot perform this conversion.
-			for part in data.expressions {
-				value := generator.expression(mut vm, &part)!
+			// Index the AST lists: a `for x in` loop copies each 312-byte Expression.
+			for part_index in 0 .. data.expressions.len {
+				part := unsafe { &data.expressions[part_index] }
+				value := generator.expression(mut vm, part)!
 				mut segment := value
 				if part.kind.tag != .string_literal {
 					segment = generator.temporary()
@@ -361,8 +364,8 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			}
 			mut arguments := []Operand{}
 			if !data.is_synthetic {
-				for argument in data.arguments {
-					arguments << generator.expression(mut vm, &argument.value)!
+				for argument_index in 0 .. data.arguments.len {
+					arguments << generator.expression(mut vm, unsafe { &data.arguments[argument_index].value })!
 				}
 			}
 			result := generator.temporary()
@@ -525,8 +528,9 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.sequence {
 			mut last := generator.constant(js_undefined())
-			for part in kind.expressions() {
-				last = generator.expression(mut vm, &part)!
+			parts := kind.expressions()
+			for part_index in 0 .. parts.len {
+				last = generator.expression(mut vm, unsafe { &parts[part_index] })!
 			}
 			return last
 		}

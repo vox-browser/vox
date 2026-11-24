@@ -39,7 +39,8 @@ fn (mut generator BytecodeGenerator) arguments_array(mut vm VM, arguments []Call
 	index := generator.temporary()
 	generator.emit(Instruction{op: .new_array, dst: array, lhs: zero})
 	generator.emit(Instruction{op: .mov, dst: index, lhs: zero})
-	for argument in arguments {
+	for argument_index in 0 .. arguments.len {
+		argument := unsafe { &arguments[argument_index] }
 		generator.append_array_expression(mut vm, array, index, one, &argument.value, argument.is_spread)!
 	}
 	return array
