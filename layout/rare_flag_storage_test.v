@@ -121,3 +121,67 @@ fn test_committed_layout_replay_owns_svg_and_grid_geometry() {
 	coordinates[0] = 99
 	assert original.computed_svg_path()?.instructions[0].data[0] == 7
 }
+
+fn test_relayout_scalar_snapshot_detaches_on_later_geometry_writes() {
+	mut values := UsedValues{}
+	values.set_relative_inset_basis(CSSPixels.new(20), CSSPixels.new(30))
+	mut before := layout_record_snapshot(&values, true)
+	assert before.rare_is_shared_ && values.rare_is_shared_
+	assert voidptr(before.rare_?) == voidptr(values.rare_?)
+	assert before.line_boxes.len == 0
+
+	values.set_relative_inset_basis(CSSPixels.new(40), CSSPixels.new(50))
+	assert values.rare_?.relative_inset_basis_width_? == CSSPixels.new(40)
+	assert before.rare_?.relative_inset_basis_width_? == CSSPixels.new(20)
+	assert voidptr(before.rare_?) != voidptr(values.rare_?)
+
+	mut after := layout_record_snapshot(&values, true)
+	after.set_relative_inset_basis(CSSPixels.new(60), CSSPixels.new(70))
+	assert values.rare_?.relative_inset_basis_width_? == CSSPixels.new(40)
+	assert after.rare_?.relative_inset_basis_width_? == CSSPixels.new(60)
+	before.set_has_line_clamp_point(true)
+	assert !values.has_line_clamp_point()
+}
+
+fn test_relayout_snapshot_keeps_its_grid_and_svg_records_independent() {
+	mut values := UsedValues{}
+	values.set_grid_template_columns([CSSPixels.new(10)])
+	values.set_computed_svg_path(svg.Path{
+		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
+	})
+	snapshot := layout_record_snapshot(&values, true)
+	assert !values.rare_is_shared_ && !snapshot.rare_is_shared_
+	assert voidptr(snapshot.rare_?) != voidptr(values.rare_?)
+	values.set_grid_template_columns([CSSPixels.new(20)])
+	values.set_computed_svg_path(svg.Path{
+		instructions: [svg.PathInstruction{type_: .move, data: [f64(9), 10]}]
+	})
+	assert snapshot.grid_template_columns()[0] == CSSPixels.new(10)
+	assert snapshot.computed_svg_path()?.instructions[0].data[0] == 7
+}
+
+fn test_relayout_scalar_snapshots_reuse_storage() {
+	$if !prealloc { return }
+	mut values := UsedValues{}
+	values.set_relative_inset_basis(CSSPixels.new(20), CSSPixels.new(30))
+	mut record := empty_relayout_record
+	for share in [false, true] {
+		mut storage := platform.new_arena('relayout scalar snapshot fixture')
+		entry := storage.enter()
+		start := storage.usage().used
+		for _ in 0 .. 1024 {
+			record.before = layout_record_snapshot(&values, share)
+			assert record.before.rare_?.relative_inset_basis_width_? == CSSPixels.new(20)
+			assert (voidptr(record.before.rare_?) == voidptr(values.rare_?)) == share
+		}
+		used := storage.usage().used - start
+		storage.leave(entry)
+		storage.release()
+		println('relayout scalar snapshot fixture sharing=${share}: ${used} B')
+		if share {
+			assert used == 0
+		} else {
+			assert used >= 1024 * i64(sizeof(UsedValuesRareData))
+		}
+	}
+}

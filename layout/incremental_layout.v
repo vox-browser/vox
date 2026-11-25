@@ -94,13 +94,30 @@ fn relayout_root_candidate(box &Node) bool {
 
 const empty_relayout_record = RelayoutRecord{}
 
-fn layout_record_snapshot(values &UsedValues) UsedValues {
+__global relayout_shared_scalar_snapshots u64
+
+fn layout_record_snapshot(values &UsedValues, share_scalar_geometry bool) UsedValues {
+	mut snapshot_rare := values.rare_
+	mut shared := false
+	if rare := values.rare_ {
+		if share_scalar_geometry && rare.grid_geometry_ == none && rare.svg_geometry_ == none {
+			// The source and this snapshot both belong to the document.
+			// A later geometry setter detaches the source before writing.
+			mut source := unsafe { &UsedValues(values) }
+			source.rare_is_shared_ = true
+			shared = true
+			if incremental_layout_diagnostics { relayout_shared_scalar_snapshots++ }
+		} else {
+			snapshot_rare = rare.clone()
+		}
+	}
+	// Construct the final value directly. A mutable UsedValues temporary is boxed.
 	return UsedValues{
 		...*values
 		line_boxes: empty_relayout_record.before.line_boxes
 		line_boxes_are_shared_: false
-		rare_: if rare := values.rare_ { rare.clone() } else { none }
-		rare_is_shared_: false
+		rare_: snapshot_rare
+		rare_is_shared_: shared
 	}
 }
 
@@ -369,7 +386,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			if parent := committed_geometry_parent(unsafe { &Node(node) }, values) {
 				containing = state.get(parent)
 			}
-			_ = state.restore_retained_values(node, values, containing)
+			_ = state.restore_layout_values(node, values, containing, true)
 		}
 	}
 	state.enable_measurement_chunk_pool()
@@ -662,7 +679,7 @@ fn report_incremental_layout_pass(same_tree bool) {
 	report_automatic_height_answers()
 	report_inline_layout_outcomes()
 	if !incremental_layout_diagnostics { return }
-	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]}')
+	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]} shared_scalar_snapshots=${relayout_shared_scalar_snapshots}')
 }
 
 // Reused subtree roots in this process (tests and diagnostics).

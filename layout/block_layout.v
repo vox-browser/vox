@@ -471,11 +471,11 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 	}
 	mut relayout_record := empty_relayout_record
 	if records_relayout_root {
-		relayout_record.before = layout_record_snapshot(box_state)
+		relayout_record.before = layout_record_snapshot(box_state, true)
 	}
 	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state, box, mut box_state, layout_mode, available_space)
 	if records_relayout_root {
-		relayout_record.after = layout_record_snapshot(box_state)
+		relayout_record.after = layout_record_snapshot(box_state, true)
 	}
 	if box.has_size_containment() {
 		// Every formatting context reports the sizes produced by its contents

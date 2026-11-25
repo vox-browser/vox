@@ -82,7 +82,7 @@ fn record_text_control_inner_layout(mut state LayoutState, box &Node, before &Us
 	if disable_text_control_relayout || state.subtree_root != none || !text_control_host(box) { return }
 	styled := box.as_node_with_style() or { return }
 	snapshot := TextControlInnerLayout{
-		before: layout_record_snapshot(before)
+		before: layout_record_snapshot(before, false)
 		space: space
 		result: result
 	}
@@ -233,7 +233,7 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 			if parent := values.containing_block_used_values_ {
 				containing = state.get(parent.node_)
 			}
-			_ = state.restore_retained_values(node, values, containing)
+			_ = state.restore_layout_values(node, values, containing, true)
 		}
 	}
 	state.enable_measurement_chunk_pool()
