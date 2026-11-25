@@ -21,6 +21,12 @@ fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.Layo
 
 fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, index int,
 	mut triggers []ChromiumMSAATrigger) {
+	mut jobs := []ChromiumMSAAPathJob{}
+	collect_chromium_svg_background_msaa_triggers(command, index, false, mut jobs, mut triggers)
+}
+
+fn collect_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, index int,
+	batch_paths bool, mut jobs []ChromiumMSAAPathJob, mut triggers []ChromiumMSAATrigger) {
 	if command.image_data == unsafe { nil } || command.opacity <= 0 { return }
 	// Rounded SVG backgrounds are image shaders on the parent pass. Their
 	// vector paths belong to the shader's image, not the parent's MSAA tile.
@@ -61,18 +67,47 @@ fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, in
 		commands := svg_background_paint_commands_for_replay(image, replay) or { continue }
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			replay.content_width(), replay.content_height())
+		// Only resource-owned scenes stay valid through preparation of later
+		// tiles. A document's recorded list can be retired on relayout.
+		retained := if batch_paths {
+			if resource := image.background_static_svg_resource {
+				layout.retained_static_svg_background_commands(resource, replay.content_width(),
+					replay.content_height()) != none
+			} else { false }
+		} else { false }
 		for nested_index in 0 .. commands.len {
-			bounds := chromium_nested_svg_msaa_trigger_rect(unsafe { &commands[nested_index] }, replay.transform,
-				offset) or { continue }
-			top := math.max(bounds.y, viewport_bounds.y)
-			bottom := math.min(bounds.y + bounds.height, viewport_bounds.y + viewport_bounds.height)
-			left := math.max(bounds.x, viewport_bounds.x)
-			right := math.min(bounds.x + bounds.width, viewport_bounds.x + viewport_bounds.width)
-			if bottom > top && right > left {
-				triggers << ChromiumMSAATrigger{index, top, bottom, left, right}
+			path := unsafe { &commands[nested_index] }
+			// CSS border diagnostics and other paint kinds can reach mutable
+			// renderer state. Only ordinary SVG path bounds run on workers.
+			if retained && path.kind == 'draw_svg_path' && path.force_dark_role != .border {
+				jobs << ChromiumMSAAPathJob{
+					path: path
+					transform: replay.transform
+					origin: offset
+					viewport: viewport_bounds
+					slot: triggers.len
+				}
+				triggers << ChromiumMSAATrigger{command_index: index}
+				if jobs.len == chromium_msaa_max_path_jobs {
+					finish_chromium_msaa_path_jobs(mut jobs, mut triggers)
+				}
+			} else if trigger := chromium_svg_background_path_trigger(path, replay.transform,
+				offset, viewport_bounds, index) {
+				triggers << trigger
 			}
 		}
 	}
+}
+
+fn chromium_svg_background_path_trigger(command &layout.PaintCommand, transform [6]f64,
+	origin painting.IntPoint, viewport layout.LayoutRect, index int) ?ChromiumMSAATrigger {
+	bounds := chromium_nested_svg_msaa_trigger_rect(command, transform, origin)?
+	top := math.max(bounds.y, viewport.y)
+	bottom := math.min(bounds.y + bounds.height, viewport.y + viewport.height)
+	left := math.max(bounds.x, viewport.x)
+	right := math.min(bounds.x + bounds.width, viewport.x + viewport.width)
+	if bottom > top && right > left { return ChromiumMSAATrigger{index, top, bottom, left, right} }
+	return none
 }
 
 // Trigger bounds read only path geometry and its cumulative transform. A full

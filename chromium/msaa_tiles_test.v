@@ -425,6 +425,51 @@ fn test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer() {
  assert image.cached_display_list()!=none
 }
 
+fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
+	$if !prealloc {
+		return
+	}
+	mut document := html.parse_document('<style>div {width:20px;height:20px;background:no-repeat url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22%3E%3Cpath fill-opacity=%220%22 d=%22M1 1L19 1L19 19Z%22/%3E%3Cpath d=%22M1 1L19 1L19 19Z%22/%3E%3C/svg%3E")}</style><div></div>')
+	defer { document.finalize() }
+	document.enable_native_storage()
+	layout.enable_native_paint_tree_storage(document)
+	layout.enable_native_static_svg_backgrounds(document)
+	mut scope := document.enter_native_storage()
+	_ = layout.layout_document_typed_in_viewport(document, 800, 600)
+	recording := layout.display_list_commands(document.record_display_list() or { panic('missing recording') })
+	scope.finish()
+	mut background := layout.PaintCommand{}
+	for command in recording {
+		if command.kind == 'draw_background_image' && command.image_data != unsafe { nil }
+			&& command.image_data.background_static_svg_resource != none {
+			background = command
+			break
+		}
+	}
+	assert background.kind == 'draw_background_image'
+	mut commands := []layout.PaintCommand{}
+	for index in 0 .. 160 {
+		commands << layout.PaintCommand{
+			...background
+			transform: [f64(1), 0, 0, 1, 0, f64(index * 15)]!
+		}
+		commands << msaa_test_underline(f64(index * 15), 2)
+	}
+	mut storage := ChromiumMSAAStorage{}
+	viewport := ChromiumMSAAViewport{scroll_y: 85, height: 2100, fringe: 7}
+	expected := chromium_msaa_triggers_for_viewport(commands, viewport)
+	assert expected.len > 288 && expected.len < 320
+	for _ in 0 .. 3 {
+		storage.collect_triggers(commands, viewport, true)
+		assert storage.path_jobs.cap >= chromium_msaa_max_path_jobs
+		assert storage.path_jobs.len == 0
+		assert storage.triggers.len == expected.len
+		for index, trigger in storage.triggers {
+			assert trigger == expected[index]
+		}
+	}
+}
+
 fn test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it() {
 	command, mut image := msaa_test_svg_background(242)
 	defer { image.finalize() }

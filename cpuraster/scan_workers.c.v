@@ -34,13 +34,24 @@ pub fn run_raster_scans(context voidptr, lines int, pixels_per_line int, scan fn
 	}
 	work := i64(lines) * pixels_per_line
 	mut lanes := 1
-	if lines >= 2 && work >= 2 * scan_pixels_per_worker && !C.vox_scan_workers_disabled() {
+	if lines >= 2 && work >= 2 * scan_pixels_per_worker {
 		lanes = int(math.min(work / scan_pixels_per_worker, i64(C.VOX_SCAN_WORKERS_MAX)))
-		lanes = math.min(lanes, math.min(lines, runtime.nr_cpus()))
+	}
+	run_raster_ranges(context, lines, lanes, scan)
+}
+
+// Same worker contract as run_raster_scans, with a caller-supplied lane budget
+// for non-pixel work. Return the number of scheduled ranges for diagnostics.
+pub fn run_raster_ranges(context voidptr, lines int, requested_lanes int, scan fn (voidptr, i32, i32)) int {
+	if lines <= 0 { return 0 }
+	mut lanes := 1
+	if requested_lanes > 1 && lines <= max_i32 && !C.vox_scan_workers_disabled() {
+		lanes = math.min(requested_lanes, math.min(int(C.VOX_SCAN_WORKERS_MAX), math.min(lines, runtime.nr_cpus())))
 	}
 	if lanes <= 1 {
 		scan(context, 0, i32(lines))
-		return
+		return 1
 	}
 	C.vox_scan_workers_run(context, i32(lines), i32(lanes), scan)
+	return lanes
 }

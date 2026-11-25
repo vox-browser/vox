@@ -61,13 +61,16 @@ fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport 
 
 fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
 	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+	mut jobs := []ChromiumMSAAPathJob{}
 	for index in 0 .. commands.len {
-		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, mut triggers)
+		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, false,
+			mut jobs, mut triggers)
 	}
 }
 
 fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
-	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+	viewport ?ChromiumMSAAViewport, batch_paths bool, mut jobs []ChromiumMSAAPathJob,
+	mut triggers []ChromiumMSAATrigger) {
 	// Native replay discards empty clips before drawing. Culled geometry must
 	// not select multisampling for the other draws in its document tile.
 	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0
@@ -80,7 +83,8 @@ fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 		if visible := viewport {
 			if !chromium_svg_background_intersects_raster_viewport(command, visible) { return }
 		}
-		append_chromium_svg_background_msaa_triggers(command, index, mut triggers)
+		collect_chromium_svg_background_msaa_triggers(command, index, batch_paths,
+			mut jobs, mut triggers)
 	} else if command.kind == 'paint_nested_display_list' {
 		paintable := command.nested_viewport_paintable or { return }
 		converter := painting.new_device_pixel_converter(1) or { return }
@@ -93,7 +97,8 @@ fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 		for path in command.nested_viewport_commands {
 			transformed := layout.paint_command_for_nested_viewport(path, command.transform,
 				painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
-			append_chromium_msaa_trigger(unsafe { &transformed }, index, viewport, mut nested_triggers)
+			append_chromium_msaa_trigger(unsafe { &transformed }, index, viewport, false,
+				mut jobs, mut nested_triggers)
 		}
 		scratch.leave()
 		triggers << nested_triggers
@@ -451,6 +456,7 @@ $if test {
 struct ChromiumMSAAStorage {
 mut:
 	triggers []ChromiumMSAATrigger
+	path_jobs []ChromiumMSAAPathJob
 	by_layer [][]ChromiumMSAATrigger
 	legacy_tiles []i32
 	tiles [][]i32
@@ -470,12 +476,11 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	device_viewport_width int, device_viewport_height int, scroll_y f64, scale f64,
 	root_extent ?layout.LayoutRect) {
 	tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(viewport_height) * scale)))
-	storage.triggers.clear()
-	append_chromium_msaa_triggers(commands, ChromiumMSAAViewport{
+	storage.collect_triggers(commands, ChromiumMSAAViewport{
 		scroll_y: scroll_y
 		height: f64(viewport_height)
 		fringe: f64(tile_rows) / scale
-	}, mut storage.triggers)
+	}, !chromium_serial_msaa_paths)
 	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
 	for storage.by_layer.len < plan.layers.len {
 		storage.by_layer << []ChromiumMSAATrigger{}
