@@ -11,7 +11,8 @@ struct InvalidationPublication {
 // work. Publish only the final dependency graph into the calling style owner.
 fn build_owned_selector_invalidation(mut destination StyleInvalidationData, selector Selector,
 	boundary bool, options InvalidationMergeOptions) {
-	mut scratch := platform.begin_thread_scratch('selector invalidation')
+	scratch := platform.begin_thread_scratch('selector invalidation')
+	defer { scratch.finish() }
 	mut temporary := StyleInvalidationData{}
 	root := if boundary {
 		make_invalidate_whole_subtree_invalidation()
@@ -19,6 +20,14 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 		make_invalidate_self_invalidation()
 	}
 	_ = build_invalidation_sets_for_selector_impl(mut temporary, selector, .no, root)
+	publish_owned_selector_invalidation(mut destination, &temporary, scratch, options)
+}
+
+// Copy the final union from an unpublished graph. The source can belong to
+// this workspace (one selector) or to an arena that owns a batch of selectors.
+fn publish_owned_selector_invalidation(mut destination StyleInvalidationData,
+	temporary &StyleInvalidationData, scratch platform.ThreadScratchScope,
+	options InvalidationMergeOptions) {
 	mut working_copy := InvalidationGraphCopy{}
 	mut publications := []InvalidationPublication{}
 	for key, plan in temporary.invalidation_plans {
@@ -84,7 +93,6 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 	}
 	destination.has_selectors_sensitive_to_featureless_subtree_changes = destination.has_selectors_sensitive_to_featureless_subtree_changes
 		|| temporary.has_selectors_sensitive_to_featureless_subtree_changes
-	scratch.finish()
 }
 
 // Check a union before allocating its owned graph. In particular, adding

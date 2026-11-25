@@ -2,6 +2,7 @@ module css
 
 import dom
 import os
+import platform
 
 // Adding a style sheet used to rebuild every rule cache of the document: each
 // selector of every author, user and user-agent sheet was indexed and its
@@ -174,6 +175,32 @@ fn (scope &StyleScope) extension_sheets(saved &ExtendableRuleCache) !RuleCacheEx
 	}
 }
 
+fn (mut scope StyleScope) extend_author_rule_cache(insights &SelectorInsights,
+	sheets []&CSSStyleSheet, indexes []uint) {
+	$if prealloc {
+		if sheets.len > 0 {
+			if mut destination := scope.style_invalidation_data {
+				// Keep the published plans readable while the appended selectors
+				// accumulate in place. Rule buckets and selector insights still
+				// belong to the scope, so only invalidation construction enters
+				// this arena.
+				mut storage := platform.new_arena('appended selector invalidation')
+				defer { storage.release() }
+				entry := storage.enter()
+				staged := StyleInvalidationData.new()
+				storage.leave(entry)
+				scope.cache_rules_of_sheets(.author, insights, sheets, indexes,
+					unpublished: true, staged_data: staged, storage: storage)
+				scratch := platform.begin_thread_scratch('appended invalidation publication')
+				defer { scratch.finish() }
+				publish_owned_selector_invalidation(mut destination, staged, scratch)
+				return
+			}
+		}
+	}
+	scope.cache_rules_of_sheets(.author, insights, sheets, indexes)
+}
+
 // Restores the cache kept by invalidate_rule_cache_for_appended_sheet() and
 // adds the sheets appended since. False when a complete build is needed.
 fn (mut scope StyleScope) extend_rule_cache() bool {
@@ -199,7 +226,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	scope.has_size_container_queries = previous.has_size_container_queries
 	scope.build_user_style_sheet_if_needed()
 	scope.rule_cache_duplicate_groups_ = saved.duplicate_groups
-	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, extension.added_indexes, false)
+	scope.extend_author_rule_cache(previous.selector_insights, appended, extension.added_indexes)
 	scope.build_qualified_layer_names_cache()
 	mut cache := &StyleCache{
 		function_rules_by_name:         previous.function_rules_by_name.clone()

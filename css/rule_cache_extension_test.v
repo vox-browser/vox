@@ -180,6 +180,45 @@ fn test_appended_sheets_extend_the_rule_cache_like_a_complete_build() {
 	assert extended.contains('size_queries=true')
 }
 
+fn test_appended_invalidation_batch_preserves_published_match_sets() {
+	mut document, head := extension_document()
+	defer { document.finalize() }
+	extension_add_sheet(document, head, '.owner > .before {color:red} .owner + .neighbor {color:red}')
+	mut scope := css_style_scope_for_document(document)
+	scope.build_rule_cache_if_needed()
+	property := InvalidationProperty.class('owner')
+	data := scope.style_invalidation_data or { panic('missing initial data') }
+	old_plan := data.plan_for_property(property) or { panic('missing initial plan') }
+	// Published results can retain value copies of these arrays and sets.
+	prior := *old_plan
+	mut descendants := []string{}
+	mut siblings := []string{}
+	for index in 0 .. 64 {
+		descendants << '.owner > .child-${index} {color:blue}'
+		siblings << '.owner + .next-${index} {color:blue}'
+	}
+	before := rule_cache_extension_count()
+	extension_add_sheet(document, head, descendants.join('\n'))
+	extension_add_sheet(document, head, siblings.join('\n'))
+	scope.build_rule_cache_if_needed()
+	assert rule_cache_extension_count() == before + 1
+	updated := data.plan_for_property(property) or { panic('missing extended plan') }
+	assert prior.descendant_rules[0].match_set.property_count() == 1
+	assert prior.sibling_rules[0].match_set.property_count() == 1
+	assert updated.descendant_rules[0].match_set.property_count() == 65
+	assert updated.sibling_rules[0].match_set.property_count() == 65
+	scope.invalidate_rule_cache()
+	scope.build_rule_cache_if_needed()
+	rebuilt := scope.style_invalidation_data or { panic('missing rebuilt data') }
+	assert data.invalidation_plans.len == rebuilt.invalidation_plans.len
+	for key, plan in data.invalidation_plans {
+		expected := rebuilt.invalidation_plans[key] or { panic('missing rebuilt plan ${key}') }
+		assert invalidation_plans_equal(plan, expected), key
+		assert data.invalidation_plan_properties[key] == rebuilt.invalidation_plan_properties[key], key
+	}
+	assert data.class_names_used_in_has_selectors == rebuilt.class_names_used_in_has_selectors
+}
+
 fn test_layered_and_inserted_sheets_extend_and_other_invalidations_build_completely() {
 	mut document, head := extension_document()
 	defer { document.finalize() }
