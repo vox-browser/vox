@@ -62,8 +62,8 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 			} else {
 				settle_compact_dom_mutation_reactions(document, callback_runtime)!
 			}
-		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !string {
-			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state)
+		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !browserjs.HostFunctionReply {
+			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state, true)
 		})!
 	}
 	install_compact_mutation_observer_binding(mut binding, mut runtime)!

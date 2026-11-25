@@ -114,8 +114,10 @@ fn (mut binding CompactElementQueryBinding) native_attribute_state(attribute &do
 fn (mut binding CompactElementQueryBinding) native_attribute_query(key string, source string) !string {
 	query := compact_decode_query[CompactNativeAttributeQuery](source)!
 	if query.op == 'set' {
-		return binding.set_trusted_attribute(key, query.namespace, query.name, query.value,
-			query.namespaced, json2.encode(query.state))
+		reply := binding.set_trusted_attribute(key, query.namespace, query.name, query.value,
+			query.namespaced, json2.encode(query.state), binding.temporary_reply_enabled)!
+		binding.reply_workspace = reply.workspace
+		return reply.value
 	}
 	if query.op in ['attribute', 'setValue'] {
 		handle := binding.attribute_handles[query.attribute] or { return error('TypeError: Invalid Attr receiver') }

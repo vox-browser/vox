@@ -12,7 +12,7 @@ import webidl
 // write. `full` is false when the facade reported nothing to publish; the
 // callback then only settles pending custom element reactions.
 pub type TrustedTypesReplay = fn (&Runtime, bool) !
-pub type TrustedTypesAttributeSetter = fn (string, ?string, string, trustedtypes.TrustedTypeOrString, bool, string) !string
+pub type TrustedTypesAttributeSetter = fn (string, ?string, string, trustedtypes.TrustedTypeOrString, bool, string) !HostFunctionReply
 
 @[heap]
 struct TrustedTypesPolicyBinding {
@@ -159,8 +159,9 @@ fn (binding &TrustedTypesPolicyBinding) set_trusted_attribute(args []voidptr) !v
 	full := retain_trusted_attribute_replays || args.len < 8 || C.JSValueToBoolean(runtime.context, args[7])
 	work.leave()
 	binding.replay(runtime, full)!
-	result := binding.set_attribute(key, namespace, name, input, namespaced, state)!
-	return runtime.binding_string(result)
+	reply := binding.set_attribute(key, namespace, name, input, namespaced, state)!
+	defer { reply.finish() }
+	return runtime.binding_string(reply.value)
 }
 
 fn (binding &TrustedTypesPolicyBinding) create_policy(args []voidptr) !voidptr {
