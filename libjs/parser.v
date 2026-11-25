@@ -445,10 +445,7 @@ fn (mut p Parser) consume_or_insert_semicolon() {
 // === Lookahead ===
 
 fn (mut p Parser) next_token() Token {
-	p.lexer.save_state()
-	token := p.lexer.next()
-	p.lexer.load_state()
-	return token
+	return p.lexer.peek()
 }
 
 // === Position ===

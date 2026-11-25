@@ -33,10 +33,12 @@ mut:
 	line_number                 u32
 	line_column                 u32
 	current_token_type          TokenType
-	regex_is_in_character_class bool
 	allow_html_comments         bool
 	template_states             []TemplateState
 	saved_states                []SavedLexerState
+	has_lookahead               bool
+	lookahead                   Token
+	lookahead_state             SavedLexerState
 }
 
 // Unicode constants
@@ -419,6 +421,7 @@ fn (l &Lexer) current_template_state() &TemplateState {
 
 fn (mut l Lexer) disallow_html_comments() {
 	l.allow_html_comments = false
+	l.has_lookahead = false
 }
 
 fn (l &Lexer) source_len() int {
@@ -818,22 +821,22 @@ fn (mut l Lexer) consume_binary_number() bool {
 }
 
 fn (mut l Lexer) consume_regex_literal() TokenType {
-	l.regex_is_in_character_class = false
+	mut in_character_class := false
 	for !l.is_eof() {
 		if l.is_line_terminator()
-			|| (!l.regex_is_in_character_class && l.current_code_unit == ch(u8(`/`))) {
+			|| (!in_character_class && l.current_code_unit == ch(u8(`/`))) {
 			break
 		}
 
 		if l.current_code_unit == ch(u8(`[`)) {
-			l.regex_is_in_character_class = true
+			in_character_class = true
 		} else if l.current_code_unit == ch(u8(`]`)) {
-			l.regex_is_in_character_class = false
+			in_character_class = false
 		}
 
 		if l.match2(ch(u8(`\\`)), ch(u8(`/`))) || l.match2(ch(u8(`\\`)), ch(u8(`[`)))
 			|| l.match2(ch(u8(`\\`)), ch(u8(`\\`)))
-			|| (l.regex_is_in_character_class && l.match2(ch(u8(`\\`)), ch(u8(`]`)))) {
+			|| (in_character_class && l.match2(ch(u8(`\\`)), ch(u8(`]`)))) {
 			l.consume()
 		}
 		l.consume()
@@ -849,6 +852,31 @@ fn (mut l Lexer) consume_regex_literal() TokenType {
 // === Main tokenization ===
 
 fn (mut l Lexer) next() Token {
+	if l.has_lookahead {
+		l.has_lookahead = false
+		l.restore_state(l.lookahead_state)
+		return l.lookahead
+	}
+	return l.lex_token()
+}
+
+fn (mut l Lexer) peek() Token {
+	if l.has_lookahead {
+		return l.lookahead
+	}
+	before := l.snapshot()
+	token := l.lex_token()
+	// Template tokens mutate a stack. Keep those peeks on the snapshot path.
+	if before.template_states.len == 0 && l.template_states.len == 0 {
+		l.lookahead = token
+		l.lookahead_state = l.snapshot()
+		l.has_lookahead = true
+	}
+	l.restore_state(before)
+	return token
+}
+
+fn (mut l Lexer) lex_token() Token {
 	trivia_start := l.position
 	in_template := l.template_states.len > 0
 	mut line_has_token_yet := l.line_column > 1
@@ -1211,25 +1239,32 @@ fn (mut l Lexer) next() Token {
 
 // === State save/restore ===
 
-fn (mut l Lexer) save_state() {
-	l.saved_states << SavedLexerState{
+fn (l &Lexer) snapshot() SavedLexerState {
+	return SavedLexerState{
 		position:           l.position
 		current_code_unit:  l.current_code_unit
 		eof:                l.eof
 		line_number:        l.line_number
 		line_column:        l.line_column
 		current_token_type: l.current_token_type
-		// Lookahead saves state constantly; only a template literal in progress
-		// has entries to protect from in-place updates.
+		// Only an active template has entries to protect from in-place updates.
 		template_states:    if l.template_states.len == 0 { []TemplateState{} } else { l.template_states.clone() }
 	}
+}
+
+fn (mut l Lexer) save_state() {
+	l.saved_states << l.snapshot()
 }
 
 fn (mut l Lexer) load_state() {
 	if l.saved_states.len == 0 {
 		panic('No saved lexer state')
 	}
-	state := l.saved_states.pop()
+	l.has_lookahead = false
+	l.restore_state(l.saved_states.pop())
+}
+
+fn (mut l Lexer) restore_state(state SavedLexerState) {
 	l.position = state.position
 	l.current_code_unit = state.current_code_unit
 	l.eof = state.eof
@@ -1245,6 +1280,7 @@ fn (mut l Lexer) discard_saved_state() {
 
 // Re-lex the current Slash or SlashEquals token as a regex literal.
 fn (mut l Lexer) force_slash_as_regex() Token {
+	l.has_lookahead = false
 	has_equals := l.current_token_type == .slash_equals
 
 	mut value_start := l.position - 1
