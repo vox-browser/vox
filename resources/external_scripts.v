@@ -343,25 +343,27 @@ fn (mut app BrowserApp) poll_browser_script_requests() {
 	if voidptr(app.document) == voidptr(loader.document) { loader.discover() }
 }
 
-// The frame throttle reserves the main thread for loading. A buffered script
-// response must reach the HTML event loop even when that frame skips drawing.
-fn (mut app BrowserApp) poll_blocking_script_responses_on_deferred_frame() {
+fn (app &BrowserApp) can_deliver_blocking_script_responses() bool {
 	if defer_script_responses_until_rendering || app.document == unsafe { nil }
 		|| !app.document.has_pending_parsing_blocking_script() {
-		return
+		return false
 	}
-	loader := app.script_request_loader or { return }
+	loader := app.script_request_loader or { return false }
 	if loader.results.len == 0 || loader.cancelled || loader.polling
 		|| voidptr(loader.document) != voidptr(app.document) {
-		return
+		return false
 	}
 	// The regular frame gives a replacing navigation priority over script
 	// completion on the outgoing document.
-	if app.has_navigation_fetch_in_flight() || app.pending_page_preload != none
-		|| app.pending_navigation != none || app.pending_native_navigation != none
-		|| app.deferred_navigation_input != none {
-		return
-	}
+	return !app.has_navigation_fetch_in_flight() && app.pending_page_preload == none
+		&& app.pending_navigation == none && app.pending_native_navigation == none
+		&& app.deferred_navigation_input == none
+}
+
+// Buffered script responses reach HTML's task queue even when this frame
+// skips drawing.
+fn (mut app BrowserApp) poll_blocking_script_responses_on_deferred_frame() {
+	if !app.can_deliver_blocking_script_responses() { return }
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())

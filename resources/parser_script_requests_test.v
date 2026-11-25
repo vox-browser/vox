@@ -117,6 +117,42 @@ fn test_throttled_frame_delivers_blocking_script_only_for_the_current_navigation
 	assert document.get_element_by_id('later') != none
 }
 
+fn test_unthrottled_frame_yields_stale_layout_to_a_buffered_blocking_script() {
+	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+		'<!doctype html><p>Before</p><script src="blocking.js"></script><p id="later">After</p>', {})
+	document.set_cached_navigable(&dom.Navigable{active_document_: document})
+	mut app := &BrowserApp{document: document, script_request_loader: loader, document_presented: true}
+	defer {
+		if app.load_frames.timer != unsafe { nil } { app.load_frames.timer.stop() }
+		loader.cancel()
+		document.finalize()
+	}
+	parser.run()
+	assert parser.paused() && !document.layout_is_up_to_date()
+	now := time.sys_mono_now()
+	app.load_frames.generation = app.navigation_generation
+	app.load_frames.presented_ns = now
+	assert app.load_frames.deadline(now, app.navigation_generation) == 0
+	assert !app.defer_loading_frame(now)
+	parser_script_request_response(loader, 'blocking.js', 'blocking', '')
+	app.load_frames.last_input_ns = now
+	assert !app.defer_loading_frame(now)
+	app.load_frames.last_input_ns = 0
+	app.pending_native_navigation = 'https://parser-requests.test/replacement'
+	assert !app.defer_loading_frame(now)
+	app.pending_native_navigation = none
+
+	app.draw()
+	assert app.load_frames.deferred_frames == 1
+	assert loader.results.len == 0 && loader.requests.len == 0
+	assert observed.sources.len == 0
+	assert !app.defer_loading_frame(time.sys_mono_now())
+	parser_script_request_drain_tasks()
+	assert observed.sources == ['blocking']
+	assert observed.later_visible == [false]
+	assert document.get_element_by_id('later') != none
+}
+
 fn test_parser_async_requests_share_transport_but_complete_each_element_once() {
 	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
 		'<!doctype html><html><head><script id="one" async src="shared.js"></script><script id="two" async src="shared.js"></script><script>inline</script></head><body><p id="later">Ready</p></body></html>', {})

@@ -8,6 +8,7 @@ import time
 
 const disable_load_frame_throttle = os.getenv('VOX_DISABLE_LOAD_RENDER_THROTTLE') != ''
 const load_frame_throttle_diagnostics = os.getenv('VOX_LOAD_RENDER_THROTTLE_DIAGNOSTICS') != ''
+const disable_blocking_script_frame_yield = os.getenv('VOX_DISABLE_BLOCKING_SCRIPT_FRAME_YIELD') == '1'
 // While a page hydrates, scripts change the DOM between nearly every frame and
 // each frame relays out and repaints it. A frame below this cost is not
 // throttled; one above it waits until the main thread has had several times
@@ -59,13 +60,14 @@ mut:
 	quiet_releases int
 }
 
+fn (state &LoadFrameThrottle) can_defer(now i64, generation int) bool {
+	return state.generation == generation && now - state.presented_ns <= load_frame_throttle_window_ns
+		&& (state.last_input_ns == 0 || now - state.last_input_ns >= load_frame_throttle_input_quiet_ns)
+}
+
 // The deadline for this document's next frame, or 0 when it may render now.
 fn (state &LoadFrameThrottle) deadline(now i64, generation int) i64 {
-	if state.generation != generation || state.last_end_ns == 0 { return 0 }
-	if now - state.presented_ns > load_frame_throttle_window_ns { return 0 }
-	if state.last_input_ns != 0 && now - state.last_input_ns < load_frame_throttle_input_quiet_ns {
-		return 0
-	}
+	if state.last_end_ns == 0 || !state.can_defer(now, generation) { return 0 }
 	if state.last_cost_ns < load_frame_throttle_min_cost_ns { return 0 }
 	mut gap := state.last_cost_ns * load_frame_throttle_cost_ratio
 	if gap > load_frame_throttle_max_gap_ns { gap = load_frame_throttle_max_gap_ns }
@@ -120,12 +122,28 @@ fn (mut app BrowserApp) defer_loading_frame(now i64) bool {
 		return false
 	}
 	due := app.load_frames.deadline(now, app.navigation_generation)
-	if due == 0 { return false }
 	mut state := &app.load_frames
-	if state.quiet(now, platform.thread_cpu_time_ns(), load_transfers_in_flight()) {
-		state.quiet_releases++
+	if due != 0 && !state.quiet(now, platform.thread_cpu_time_ns(), load_transfers_in_flight()) {
+		state.defer_frame(state.wait(now, due))
+		return true
+	}
+	// A frame with stale geometry can otherwise run layout between delivery
+	// of a response and execution of its parser task. Yield this frame once
+	// so that the event loop can run the script before layout starts.
+	if disable_blocking_script_frame_yield || !state.can_defer(now, app.navigation_generation)
+		|| !app.can_deliver_blocking_script_responses() || app.document.has_a_style_sheet_that_is_blocking_scripts()
+		|| (app.document.layout_is_up_to_date() && !app.document.needs_style_update_after_layout()) {
+		if due != 0 { state.quiet_releases++ }
 		return false
 	}
+	if load_frame_throttle_diagnostics {
+		eprintln('VOX_LOAD_RENDER_THROTTLE yielding layout to a buffered script response')
+	}
+	state.defer_frame(time.millisecond)
+	return true
+}
+
+fn (mut state LoadFrameThrottle) defer_frame(delay i64) {
 	if state.timer == unsafe { nil } {
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
@@ -133,10 +151,9 @@ fn (mut app BrowserApp) defer_loading_frame(now i64) bool {
 			request_browser_frame()
 		})
 	}
-	interval := int((state.wait(now, due) + time.millisecond - 1) / time.millisecond)
-	state.timer.restart_with_interval(if interval < 1 { 1 } else { interval })
+	interval := int((delay + time.millisecond - 1) / time.millisecond)
+	state.timer.restart_with_interval(interval)
 	state.deferred_frames++
-	return true
 }
 
 // Records a rendered frame's cost. The first presented frame of a navigation
