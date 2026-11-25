@@ -126,20 +126,35 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 }
 
 fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expression, min_precedence int, associativity Associativity, forbidden_ ForbiddenTokens) Expression {
+	first_precedence := p.next_secondary_precedence(min_precedence, associativity)
+	if first_precedence == 0 {
+		p.last_primary_was_parenthesized = false
+		return p.parse_comma_expression(lhs_start, expression_, min_precedence)
+	}
+	return p.parse_secondary_operators(lhs_start, expression_, min_precedence, associativity,
+		forbidden_, first_precedence)
+}
+
+fn (p &Parser) next_secondary_precedence(min_precedence int, associativity Associativity) int {
+	precedence := int(unsafe { secondary_operator_precedences[int(p.current_token_type())] })
+	if precedence < min_precedence || (precedence == min_precedence && associativity == .left) {
+		return 0
+	}
+	return precedence
+}
+
+// Keep the larger operator parser's stack frame off the path for primaries
+// followed by delimiters or by operators belonging to an outer expression.
+@[noinline]
+fn (mut p Parser) parse_secondary_operators(lhs_start Position, expression_ Expression, min_precedence int, associativity Associativity, forbidden_ ForbiddenTokens, first_precedence int) Expression {
 	original_forbidden := forbidden_
 	mut forbidden := forbidden_
 	mut expression := expression_
 	mut lhs_is_parenthesized := p.last_primary_was_parenthesized
 	p.last_primary_was_parenthesized = false
-	for {
+	mut new_precedence := first_precedence
+	for new_precedence != 0 {
 		token := p.current_token_type()
-		new_precedence := int(unsafe { secondary_operator_precedences[int(token)] })
-		if new_precedence == 0 || new_precedence < min_precedence {
-			break
-		}
-		if new_precedence == min_precedence && associativity == .left {
-			break
-		}
 		if !forbidden.allows(token)
 			|| (p.current_token.trivia_has_line_terminator && token in [.plus_plus, .minus_minus]) {
 			break
@@ -155,6 +170,7 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 		if p.match_token(.template_literal_start) && !is_update_expression(expression) {
 			expression = p.parse_tagged_template_literals(lhs_start, expression)
 		}
+		new_precedence = p.next_secondary_precedence(min_precedence, associativity)
 	}
 
 	return p.parse_comma_expression(lhs_start, expression, min_precedence)
