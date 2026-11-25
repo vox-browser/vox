@@ -1753,6 +1753,23 @@ fn process_escape_sequences_impl(input []u16, mode EscapeMode) EscapeResult {
 	}
 }
 
+// The opening parenthesis has been consumed. Reject prefixes that cannot
+// enter the formal parameter grammar before opening a speculative scope.
+fn (mut p Parser) can_start_parenthesized_arrow_parameters() bool {
+	kind := p.current_token_type()
+	if kind == .paren_close {
+		next := p.next_token()
+		return next.token_type == .arrow && !next.trivia_has_line_terminator
+	}
+	if kind in [.curly_open, .bracket_open, .triple_dot] {
+		return true
+	}
+	if p.match_identifier() || kind in [.await_kw, .yield_kw] {
+		return p.next_token().token_type in [.equals, .comma, .paren_close]
+	}
+	return false
+}
+
 // Try to parse an arrow function expression. Returns none on failure.
 fn (mut p Parser) try_parse_arrow_function_expression(expect_parens bool, is_async bool, forbidden ForbiddenTokens) ?Expression {
 	return p.try_parse_arrow_function_expression_impl(expect_parens, is_async, p.position(),
@@ -1761,6 +1778,10 @@ fn (mut p Parser) try_parse_arrow_function_expression(expect_parens bool, is_asy
 
 fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, is_async bool, source_start_override Position, forbidden ForbiddenTokens) ?Expression {
 	start := source_start_override
+
+	if expect_parens && !is_async && !p.can_start_parenthesized_arrow_parameters() {
+		return none
+	}
 
 	if !expect_parens && !is_async {
 		if !p.match_identifier() && !p.match_token(.await_kw) && !p.match_token(.yield_kw) {
@@ -1789,6 +1810,11 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 		}
 		if expect_parens {
 			p.consume_token(.paren_open)
+			if !p.can_start_parenthesized_arrow_parameters() {
+				p.pattern_bound_names = saved_pattern_bound_names
+				p.load_state()
+				return none
+			}
 		}
 	}
 
