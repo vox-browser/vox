@@ -154,6 +154,23 @@ fn test_consume_body_collects_multiple_network_deliveries_and_eof() {
 	assert params.request.done
 }
 
+fn test_stream_delivery_keeps_the_owned_chunk_while_the_receiver_accepts_more_bytes() {
+	body := Body.streaming()
+	mut stream := body.stream()
+	mut receiver := FetchedDataReceiver.create_for_stream(stream)
+	chunk := 'owned chunk'.bytes()
+	receiver.enqueue_owned_bytes_into_stream(chunk)
+	receiver.handle_network_data(NetworkResponseData.from_bytes('next'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+
+	mut reader := stream.get_default_reader()!
+	first := reader.read().result().value.bytes_
+	assert first == chunk
+	assert voidptr(first.data) == voidptr(chunk.data)
+	assert reader.read().result().value.bytes_ == 'next'.bytes()
+	assert reader.read().result().done
+}
+
 fn test_consume_body_collects_network_bytes_and_eof_buffered_before_handover() {
 	state := &ResponseHandoverObservation{}
 	mut params := handover_test_params(state)

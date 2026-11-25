@@ -288,7 +288,8 @@ fn curl_data_received(buffer voidptr, size uint, count uint, owner voidptr) uint
 	mut request := unsafe { &CurlRequest(owner) }
 	if !request.transfer_headers_to_client_if_needed() { return 0 }
 	length := size * count
-	bytes := unsafe { (&u8(buffer)).vbytes(int(length)).clone() }
+	// NetworkResponseData copies the callback's borrowed buffer.
+	bytes := unsafe { (&u8(buffer)).vbytes(int(length)) }
 	request.receiver_.handle_network_data(fetch.NetworkResponseData.from_bytes(bytes), .ongoing)
 	return length
 }

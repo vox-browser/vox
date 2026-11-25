@@ -355,7 +355,7 @@ fn (mut receiver FetchedDataReceiver) deliver_pending_bytes() {
 	bytes := receiver.pending_bytes_.clone()
 	receiver.pending_bytes_.clear()
 	if bytes.len > 0 {
-		receiver.enqueue_into_stream(bytes)
+		receiver.enqueue_owned_bytes_into_stream(bytes)
 	}
 	if receiver.paused_network_delivery_ {
 		receiver.paused_network_delivery_ = false
@@ -372,7 +372,7 @@ fn (mut receiver FetchedDataReceiver) deliver_pending_bytes() {
 	}
 }
 
-fn (mut receiver FetchedDataReceiver) enqueue_into_stream(bytes []u8) {
+fn (mut receiver FetchedDataReceiver) enqueue_owned_bytes_into_stream(bytes []u8) {
 	if !receiver.stream_.is_readable() {
 		return
 	}
@@ -384,7 +384,7 @@ fn (mut receiver FetchedDataReceiver) enqueue_into_stream(bytes []u8) {
 		}
 		return
 	}
-	streams.readable_byte_stream_controller_enqueue_native_bytes(mut controller, bytes.clone()) or {
+	streams.readable_byte_stream_controller_enqueue_native_bytes(mut controller, bytes) or {
 		controller.error(err.msg())
 		if params := receiver.fetch_params_ {
 			mut fetch_controller := params.controller
