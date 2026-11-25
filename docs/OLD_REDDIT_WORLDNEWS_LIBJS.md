@@ -1,13 +1,14 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **51.31% fewer median observed CPU instructions**
-than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
-their respective screenshot references. Median launch-to-PNG time was
-**1.999 s for Vox and 2.013 s for Brave**. Vox won three pairs and the
-median paired difference was 0.07 ms in Brave's favor. The rebuilt
-bundle used the restored script delivery path. A fresh live Vox visit
-reached Reddit's login page.
-[Current comparison](#production-comparison-with-the-rebuilt-script-delivery-path)
+In the latest qualifying cohort, production Vox with LibJS used **51.64%
+fewer median observed CPU instructions** than Brave on the frozen
+`/r/worldnews/` listing. All seven pairs matched their fixed references.
+Median launch-to-PNG time was **1.975 s for Vox and 1.988 s for Brave**,
+with Vox ahead in four pairs. The later LibJS punctuator change reduced
+median parser instructions by 0.96% across the five archived scripts.
+Its browser cohort failed the fixed Brave pixel check. A fresh live
+Vox visit reached Reddit's login page.
+[Qualifying comparison](#published-comparison-before-the-punctuator-change)
 
 ## Workload and execution
 
@@ -2387,3 +2388,161 @@ load ranged from 3.84 to 7.10 on 18 cores from 11:02:10 to 11:02:48 UTC+03.
 A fresh direct launch of the same executable completed at Reddit's login
 page with zero posts and two script diagnostics. The browser and guard
 exited zero. The elapsed comparison covers the archived listing.
+
+## Advance across ASCII punctuators in one step
+
+Commit `0e50754b0` advances the LibJS lexer cursor and column by the
+width of a recognized ASCII punctuator, replacing per-unit Unicode
+handling. The focused cases cover all four token widths at EOF and a
+four-unit operator between CRLF and a non-ASCII identifier.
+
+The standalone single-unit C `-prod -prealloc -gc none` probe read the
+five pinned author scripts before timing. Each fresh process parsed
+eight sets with the browser's recursion bound and checked every result
+for syntax errors. Instructions cover all eight sets and elapsed time
+is reported per set. The archive manifest SHA-256 was
+`b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+Control and candidate executable SHA-256 values were
+`32e3386ae875e288d0377b3ceb8203086efc56a8df540dbc47ba7dbe3a76b69f`
+and `5d03f9fdd98d26ea7940c50d9b2d74acb48b4f133f6b5b621c7128a80eeb1d7f`.
+
+| Pair | Control instructions | Candidate instructions | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,330,066,502 | 6,271,533,157 | 65.961 | 64.261 |
+| 2 | 6,310,382,521 | 6,245,029,694 | 65.597 | 66.161 |
+| 3 | 6,333,248,483 | 6,255,811,728 | 64.357 | 63.709 |
+| 4 | 6,307,385,194 | 6,259,045,747 | 62.544 | 63.992 |
+| 5 | 6,319,708,847 | 6,245,251,213 | 64.108 | 62.623 |
+| 6 | 6,317,813,525 | 6,286,839,144 | 66.512 | 65.715 |
+| 7 | 6,332,835,212 | 6,281,660,572 | 67.421 | 67.924 |
+| Median | 6,319,708,847 | 6,259,045,747 | 65.597 | 64.261 |
+
+The candidate retired **0.96% fewer median instructions**, or 7.58
+million fewer per set, and retired fewer instructions in every pair.
+Median parse time fell by **1.34 ms** and the candidate finished sooner
+in four pairs. All runs and the guard exited zero. Peak sampled
+aggregate RSS was 2,214,936,576 bytes under the 3 GiB guard. One-minute
+host load was 5.69–6.27 on 18 cores from 11:08:17 to 11:08:27 UTC+03.
+
+A separate LLDB visit to the archived main script stopped on the
+three-unit column increment in the optimized lexer during lookahead.
+The executable and guard exited zero. The initial absolute-address
+breakpoint missed the instruction and the debugger command exited 1.
+The symbol-relative breakpoint reached the intended instruction.
+The focused position, frontend, lookahead, identifier and HTML comment
+tests passed in C with both Boehm and `-gc none`. All 100 upstream AST
+fixtures matched in each mode.
+
+Both full-package FastC attempts stopped at the existing generated C
+error `expression expected before '?'` for `absent_property_set_test.v`.
+That test executed successfully with the C backend in both heap modes.
+
+### Published comparison before the punctuator change
+
+The last completed shared bundle while the lexer candidate was building
+was `20261125-110428-557f50e0`. It used single-unit `-prod` C and its
+generated source preceded `0e50754b0`. Its sealed C SHA-256 was
+`def91d11a28952f65053ec7fa766767f331eb25aa858f9234ecae6da8e366b67` and
+the executable SHA-256 was
+`0c03a94fe7cf6a81d3cfef9db4b732f86e1810cb37ce51e22fe1817ba3f65299`.
+The seven alternating pairs kept the clock-pinned archive, viewport,
+capture boundary, cache settings and fixed screenshot references.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,740,335,964 | 11,782,972,683 | 1986.097 | 2021.003 |
+| 2 | 5,653,435,419 | 11,632,433,183 | 1961.859 | 1973.522 |
+| 3 | 5,675,427,972 | 11,895,993,679 | 1967.887 | 1987.687 |
+| 4 | 5,650,620,135 | 11,706,382,029 | 1964.163 | 1960.027 |
+| 5 | 5,655,955,910 | 11,734,841,479 | 1975.156 | 1967.568 |
+| 6 | 5,714,577,007 | 11,773,472,511 | 2002.139 | 2007.335 |
+| 7 | 5,722,466,428 | 11,712,554,492 | 2021.188 | 1987.535 |
+| Median | 5,675,427,972 | 11,734,841,479 | 1975.156 | 1987.535 |
+
+Vox finished **12.38 ms sooner** between medians and won four pairs.
+The median paired lead was 5.20 ms. Vox used **51.64% fewer median
+observed instructions**, and its highest count was 49.35% of Brave's
+lowest. All fixed reference comparisons passed and every visit
+completed with the five scripts and 25 posts in order. Vox ran LibJS
+with JavaScriptCore uninitialized. The 12 GiB guard adopted all 14
+roots and sampled 805,208,064 bytes at peak. The roots, observer and
+guard exited zero.
+
+The process-tree totals remain lower bounds. Last complete samples
+preceded capture by 7.25–7.62 ms for Vox and 1.50–7.90 ms for Brave.
+Vox reported no missing final samples. Brave reported 1, 2, 2, 2, 2,
+1 and 2. One-minute load ranged from 4.02 to 7.79 on 18 cores from
+11:13:06 to 11:13:44 UTC+03. A shared build ran concurrently.
+
+### Production comparison with the ASCII punctuator cursor
+
+The shared worker stopped `20261125-111033-7f721a11` when repository
+inputs changed before preprocessing. Its successor
+`20261125-111304-0ff2a011` published single-unit `-prod` C. The source
+receipt identified `87d566731`, and the generated C contained the cursor
+change. The sealed C and executable SHA-256 values were
+`56d6a5154a1395cf76e8321059dfd9be57a68fc3ef2b640c9084703bb62ad661`
+and `1554fdfd9008cf7cc017f0b1eb60e5ad9f1ef1a239aadc11fe9d54a006e399ac`.
+The LibJS headless smoke and 118 guarded observer tests passed.
+
+Seven alternating pairs used the unchanged clock-pinned archive,
+1024×768 scale-1 document PNG, 1.4 s settle interval, fresh private
+profiles and empty HTTP caches. Both code caches stayed disabled in
+LibJS. Every Vox PNG matched its fixed reference with all five
+scripts and 25 posts. Vox's LibJS execution generations were
+157, 153, 157, 157, 155, 153 and 155. JavaScriptCore stayed
+uninitialized. An additional sampled visit reached the LibJS parser
+in the published executable and completed the archived page.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,725,319,982 | 11,650,872,514 | 2037.118 | 2064.356 | Exact |
+| 2 | 5,727,701,144 | 11,581,695,681 | 2046.020 | 2010.587 | Alternate thumbnails |
+| 3 | 5,803,482,346 | 11,599,112,911 | 1996.003 | 2001.851 | Alternate thumbnails |
+| 4 | 5,660,621,766 | 11,523,508,432 | 2022.029 | 1996.217 | Alternate thumbnails |
+| 5 | 5,714,019,083 | 11,626,119,924 | 1995.214 | 1981.839 | Exact |
+| 6 | 5,724,815,004 | 11,716,871,251 | 1988.026 | 1967.351 | Alternate thumbnails |
+| 7 | 5,681,979,119 | 11,542,852,389 | 1984.893 | 1984.409 | Alternate thumbnails |
+| Median | 5,724,815,004 | 11,599,112,911 | 1996.003 | 1996.217 | Five failures |
+
+The five Brave failures reproduced the earlier alternate thumbnail PNG
+with SHA-256 `b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`.
+It differs from the reference in 13,902 RGB pixels inside x=83–153
+and y=400–762, with maximum channel error 83. All Brave visits reached
+`complete` with the 25 ordered posts. Their completed replay URL and
+body-hash sets matched pair 1. The pixel failures invalidate the cohort
+for a speed claim. The raw counts and all attempts remain recorded here.
+
+All 14 roots exited zero. The driver and 12 GiB guard exited 1 on the
+reference check. The guard adopted all 14 roots and sampled a peak
+aggregate RSS of 854,360,064 bytes. Vox had no missing final samples.
+Brave reported 3, 3, 2, 2, 2, 3 and 2. Final complete samples preceded
+capture by 5.63–7.63 ms for Vox and 1.84–8.74 ms for Brave. The
+process-tree totals are lower bounds and exclude GPU and external
+services. One-minute host load was 4.76–6.10 on 18 cores from 11:18:42
+to 11:19:20 UTC+03.
+
+### Repeated Brave captures of the thumbnail variant
+
+Four separate Brave visits captured the document at the usual point,
+then 0.5 and 2 seconds after the first response. This diagnostic
+captured extra PNGs and supplies no timed comparison.
+
+| Visit | First PNG | 0.5 s later | 2 s later |
+| --- | --- | --- | --- |
+| 1 | Reference | Alternate | Alternate |
+| 2 | Reference | Reference | Alternate |
+| 3 | Alternate | Alternate | Alternate |
+| 4 | Reference | Alternate | Alternate |
+
+All visible thumbnails reported complete images with matching source
+URLs, natural dimensions and element rectangles in every capture. The
+viewport, device scale and zero scroll offset were identical. The
+alternate screenshots reproduced the same 13,902-pixel difference.
+The four roots exited zero. The driver and guard exited 1 because the
+third first capture differed from the fixed Brave reference.
+
+The separate live check used the candidate executable and a fresh
+profile. Reddit redirected to its login page, which completed with
+zero listing posts and two script diagnostics. The browser and guard
+exited zero.
