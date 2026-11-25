@@ -15,6 +15,7 @@ $if !cpuraster_freetype ? {
 	const glyph_batch_max_context_pixels = 64 * 1024
 	const serial_glyph_masks = os.getenv('VOX_SERIAL_GLYPH_MASKS') == '1'
 	const single_glyph_mask_batch = os.getenv('VOX_SINGLE_GLYPH_MASK_BATCH') == '1'
+	const glyph_mask_batch_min_four = os.getenv('VOX_GLYPH_MASK_BATCH_MIN_FOUR') == '1'
 	const glyph_batch_diagnostics = os.getenv('VOX_GLYPH_BATCH_DIAGNOSTICS') == '1'
 
 	struct GlyphImageJob {
@@ -112,9 +113,9 @@ $if !cpuraster_freetype ? {
 
 	fn (entry &CachedGlyphStrike) glyph_image_batch(mut strike GlyphStrike,
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, start int,
-		rounding SkAffine, mut window GlyphMaskWindow) ?GlyphImageBatch {
+		rounding SkAffine, minimum_jobs int, mut window GlyphMaskWindow) ?GlyphImageBatch {
 		window.next = run.glyphs.len
-		if entry.empty || run.glyphs.len - start < glyph_batch_min || serial_glyph_masks
+		if entry.empty || run.glyphs.len - start < minimum_jobs || serial_glyph_masks
 			|| C.vox_scan_workers_disabled() {
 			return none
 		}
@@ -131,7 +132,7 @@ $if !cpuraster_freetype ? {
 			if count == keys.len { break }
 		}
 		if !single_glyph_mask_batch { window.next = next }
-		if count < glyph_batch_min { return none }
+		if count < minimum_jobs { return none }
 		if runtime.nr_cpus() < 2 || !strike.ensure_font(mut lazy) {
 			window.next = run.glyphs.len
 			return none
@@ -177,12 +178,21 @@ $if !cpuraster_freetype ? {
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, start int,
 		rounding SkAffine, followup bool) int {
 		mut window := GlyphMaskWindow{}
+		minimum_jobs := if glyph_mask_batch_min_four { glyph_batch_min } else { 2 }
 		mut batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, start, rounding,
-			mut window) or { return window.next }
+			minimum_jobs, mut window) or { return window.next }
 		batch.followup = followup
-		// Give each lane at least two keys to amortize its dispatch.
-		lanes := math.min(batch.jobs.len / 2, math.min(runtime.nr_cpus(), int(C.VOX_SCAN_WORKERS_MAX)))
-		C.vox_scan_workers_run(&batch, i32(batch.jobs.len), i32(lanes), draw_glyph_image_jobs)
+		if batch.jobs.len < glyph_batch_min {
+			// Two lanes suffice for short batches. Submit one explicitly so
+			// the caller can draw the remaining masks in parallel.
+			if run_raster_ranges_with_caller(&batch, batch.jobs.len, 2, draw_glyph_image_jobs) == 0 {
+				return window.next
+			}
+		} else {
+			// Give each lane at least two keys to amortize its dispatch.
+			lanes := math.min(batch.jobs.len / 2, math.min(runtime.nr_cpus(), int(C.VOX_SCAN_WORKERS_MAX)))
+			C.vox_scan_workers_run(&batch, i32(batch.jobs.len), i32(lanes), draw_glyph_image_jobs)
+		}
 		entry.publish_glyph_image_batch(&batch)
 		return window.next
 	}
@@ -196,7 +206,8 @@ $if !cpuraster_freetype ? {
 			return unsafe { nil }
 		}
 		mut window := GlyphMaskWindow{}
-		batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, 0, rounding, mut window) or {
+		batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, 0, rounding,
+			glyph_batch_min, mut window) or {
 			return unsafe { nil }
 		}
 		mut pending := &PendingGlyphBackdropBatch{

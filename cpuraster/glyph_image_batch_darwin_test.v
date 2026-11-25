@@ -249,6 +249,39 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 	}
 }
 
+fn test_short_retained_glyph_mask_batches_match_serial_masks() {
+	$if !cpuraster_freetype ? {
+		if runtime.nr_cpus() < 2 || serial_glyph_masks || C.vox_scan_workers_disabled() { return }
+		for count in [2, 3] {
+			run := CanvasGlyphRun{
+				font_path:         '/System/Library/Fonts/Supplemental/Verdana Bold.ttf'
+				font_size:         24
+				glyphs:            [u16(43), 68, 70][..count]
+				positions:         [f32(4.25), 28, 11.5, 28, 20.75, 28][..2 * count]
+				retained:          true
+				chromium_coverage: true
+				baseline_snap:     true
+			}
+			mut strike := glyph_strike_template(run.font_size, SkAffine{}, 0) or { panic('invalid strike') }
+			defer { strike.release() }
+			strike.snap_y = true
+			strike.table = identity_mask_gamma_table
+			mut lazy := LazyGlyphFace{path: run.font_path}
+			defer { lazy.release() }
+			mut entry := CachedGlyphStrike{}
+			rounding := SkAffine{tx: glyph_subpixel_round, ty: 0.5}
+			next := entry.prepare_glyph_masks(mut strike, mut lazy, run,
+				[]GlyphRoute{len: count}, 0, rounding, false)
+			assert next == count
+			assert entry.glyphs.len == if glyph_mask_batch_min_four { 0 } else { count }
+			for key, glyph in entry.glyphs {
+				assert glyph.image.len > 0
+				assert glyph == strike.make_glyph(u16(key >> 4), int((key >> 2) & 3), int(key & 3))
+			}
+		}
+	}
+}
+
 fn test_later_glyph_mask_windows_use_workers_and_match_serial_pixels() {
 	$if !cpuraster_freetype ? {
 		if runtime.nr_cpus() < 2 || serial_glyph_masks || C.vox_scan_workers_disabled() { return }
