@@ -5724,3 +5724,124 @@ readiness, viewport and all 30 ordered story IDs. The executable,
 helper, library, archive and harness stayed pinned. All browser,
 driver and guard exits were zero. Peak sampled RSS was
 433,455,104 bytes.
+
+### Submit selected cold text shapes in document order
+
+Commit `6cd88156c` records the position of each shaping request during
+the initial layout tree walk. The browser selects eligible long runs
+first and fills spare slots with short runs after cache and duplicate
+checks. It restores the chosen requests' document order before assigning
+worker ranges. The same font/text keys fit in the same 64-job budget.
+Set `VOX_ASCII_SHAPING_DOCUMENT_ORDER=1` to select the order when short-run
+preparation is enabled.
+
+The focused tests passed with arena poisoning and ThreadSanitizer. The
+selection test includes a duplicate long run and an earlier short run
+excluded by the job cap. It checks the queued order, selected keys,
+glyphs and trailing whitespace. The worker dispatch suite also passed.
+
+Two preliminary launches on receipt `20261125-231123-8745b241`
+confirmed that the first matching request was job 28 and waited for
+its range. Both matched the reference PNG and all 30 ordered stories.
+The executable SHA-256 was
+`62a038841ae78ebfe515f47d2d4b514866aab1de87ed917bc8373563ff025513`.
+Four shared build attempts stopped after checkout inputs changed.
+The matched runs followed the successful managed build.
+
+#### Matched production captures
+
+Receipt `20261125-232916-2c643a96` verified `2456dfcb0` and
+passed startup smoke in single-C-unit V `-prod` mode. All captures
+used the same executable. Both sides in the isolated comparison
+enabled the 64-job batch and per-range waits.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `130dfc955e7acca1feccacdced2695561a7765069c9684b437a986ad4ae4ab9f` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+The four path diagnostics all shaped and decoded 64 jobs on workers
+and consumed every shape.
+
+| Diagnostic | First requested job index | Job indices that waited | Worker threads |
+| --- | --- | --- | ---: |
+| Long runs first 1 | 28, pending | 28 | 4 |
+| Document order 1 | 0, pending | 0 | 4 |
+| Long runs first 2 | 28, pending | 28 | 4 |
+| Document order 2 | 0, pending | 0 | 4 |
+
+Document order moved the first request from job 28 to job 0. Both
+orders still waited for the first requested range, and all later
+requests found their ranges ready.
+
+Separate counter diagnostics measured inclusive browser-thread scopes.
+
+| Scope | Long first 1 | Document 1 | Long first 2 | Document 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Shaping job preparation | 661,666 | 697,356 | 591,944 | 697,893 |
+| Flow layout | 144,122,277 | 143,856,095 | 143,843,964 | 143,797,500 |
+| Layout geometry | 166,803,409 | 166,642,169 | 166,443,867 | 166,583,887 |
+
+Each unprofiled comparison used two alternating seven-pair cohorts
+with opposite starting modes. The timer spans fresh launch through
+the completed document PNG at a 1024×768 CSS-pixel viewport and 2×
+scale. Captures used JavaScriptCore, empty private profiles and
+HTTP caches, retained OS filesystem and shader caches, `tr.athing`
+readiness and a 60 ms replay delay per logo response.
+
+#### Document order with 64 jobs and range waits
+
+| Pair | Long first, ms | Document order, ms | Reversed long first, ms | Reversed document order, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 282.097 | 299.341 | 310.281 | 303.812 |
+| 2 | 299.318 | 288.116 | 294.406 | 290.728 |
+| 3 | 304.137 | 306.898 | 300.109 | 301.461 |
+| 4 | 304.501 | 286.693 | 288.386 | 282.404 |
+| 5 | 301.916 | 288.671 | 304.028 | 302.428 |
+| 6 | 284.046 | 280.769 | 300.037 | 298.697 |
+| 7 | 284.428 | 290.890 | 308.091 | 318.520 |
+| Median | 299.318 | 288.671 | 300.109 | 301.461 |
+
+Median paired changes were −3.278 and −1.600 ms, with four and five
+document-order wins.
+Sampled main-thread CPU medians went from 147.259 to
+148.582 ms and from 151.205 to 149.386 ms.
+One-minute load ranged from 2.73 to 3.04
+and from 2.67 to 2.79 on 18 CPUs.
+
+#### Default settings and all three shaping changes
+
+Default settings used 28 jobs with a single join. The combined
+schedule used 64 jobs with document ordering and range waits.
+
+| Pair | Default, ms | Combined, ms | Reversed default, ms | Reversed combined, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 300.030 | 314.924 | 290.479 | 324.892 |
+| 2 | 301.011 | 310.674 | 309.798 | 292.949 |
+| 3 | 298.029 | 301.722 | 333.760 | 313.238 |
+| 4 | 302.325 | 295.447 | 289.109 | 287.515 |
+| 5 | 304.821 | 287.268 | 305.457 | 305.160 |
+| 6 | 312.764 | 302.605 | 303.285 | 315.079 |
+| 7 | 302.937 | 316.414 | 298.001 | 306.030 |
+| Median | 302.325 | 302.605 | 303.285 | 306.030 |
+
+Median paired changes were +3.693 and −0.297 ms, with three and four
+combined wins.
+Sampled main-thread CPU medians went from 148.425 to
+149.516 ms and from 149.001 to 149.380 ms.
+One-minute load ranged from 2.73 to 2.83
+and from 2.83 to 3.16 on 18 CPUs.
+
+Document ordering reduced both paired medians within the 64-job
+schedule. The combined comparison with the default gave mixed
+results, so all three settings remain opt-in.
+
+All 64 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+The eight diagnostic launches verified the document URL, completion,
+viewport and all 30 ordered story IDs. Executable, helper, library,
+archive and harness hashes stayed pinned. Browser, driver and guard
+exits were zero. Peak sampled RSS was 434,077,696 bytes.
