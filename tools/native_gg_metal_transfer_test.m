@@ -58,6 +58,12 @@ static sg_pipeline make_pipeline(void) {
     sg_pipeline invalid = sg_make_pipeline(&desc);
     if (batched) {
         assert(sg_query_pipeline_state(invalid) == SG_RESOURCESTATE_ALLOC);
+        vox_gg_metal_close_pipeline_submissions();
+        desc.colors[0].pixel_format = SG_PIXELFORMAT_BGRA8;
+        sg_pipeline independent = sg_make_pipeline(&desc);
+        assert(sg_query_pipeline_state(independent) == SG_RESOURCESTATE_VALID);
+        assert(sg_query_pipeline_state(pipeline) == SG_RESOURCESTATE_ALLOC);
+        sg_destroy_pipeline(independent);
         vox_gg_metal_end_pipeline_batch();
     }
     assert(sg_query_pipeline_state(invalid) == SG_RESOURCESTATE_FAILED);

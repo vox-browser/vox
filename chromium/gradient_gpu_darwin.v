@@ -1,7 +1,38 @@
 module main
 
 import ggshape
+import layout
 import math
+import os
+import processmetrics
+
+const gg_pipeline_preparation_diagnostics = os.getenv('VOX_GG_METAL_PIPELINE_DIAGNOSTICS') != ''
+
+fn (app &BrowserApp) submit_first_gradient_pipelines(page_y f32, width int, height int) bool {
+	if !ggshape.document_pipelines_need_preparation() || app.page_zoom != 1
+		|| app.scroll_raster_keys.valid || width <= 0 || height <= 0 {
+		return false
+	}
+	for index in 0 .. math.min(16, app.paint_commands.len) {
+		command := unsafe { &app.paint_commands[index] }
+		if index < app.chromium_raster_plan.command_layers.len
+			&& app.chromium_raster_plan.command_layers[index] < 0 {
+			continue
+		}
+		if !chromium_compositor_css_gradient_supported(command)
+			|| layout.paint_leaf_is_outside_canvas(command, 0, f64(page_y), f64(width), f64(height)) {
+			continue
+		}
+		stage := processmetrics.begin_thread_instruction_substage('gg_pipeline_submission')
+		submitted := ggshape.submit_document_pipelines()
+		stage.finish()
+		if submitted && gg_pipeline_preparation_diagnostics {
+			eprintln('VOX_GG_METAL_PIPELINE_EARLY_SUBMIT command=${index}')
+		}
+		return submitted
+	}
+	return false
+}
 
 // A background-text gradient is recorded into its own clipped layer. Dither
 // coordinates start at that layer's device origin, rather than the page tile.

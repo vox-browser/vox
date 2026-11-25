@@ -51,6 +51,10 @@ import webvtt
 import xpath
 import x.json2
 
+$if macos {
+	import ggshape
+}
+
 const frame_part_diagnostics_enabled = os.getenv('VOX_DIAGNOSTIC_FRAME_PARTS') != ''
 
 // Mark on the initiating thread by default; GC_MARKERS can override this.
@@ -7789,10 +7793,15 @@ fn (mut app BrowserApp) draw() {
 				}
 			}
 			mut scroll_damage := ScrollRasterDamage{}
+			mut submitted_gg_pipelines := false
 			$if macos {
 				if app.ctx.native_rendering && app.document != unsafe { nil }
 					&& app.document.font_rendering_policy() == .chromium {
 					app.update_chromium_viewport_raster_plan()
+					if replay_attempt == 0 {
+						submitted_gg_pipelines = app.submit_first_gradient_pipelines(page_y, window.width,
+							window.height)
+					}
 					C.native_set_chromium_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
 					C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
 					app.set_chromium_msaa_tiles()
@@ -8073,6 +8082,11 @@ fn (mut app BrowserApp) draw() {
 			}
 			$if macos && !cpuraster_freetype ? {
 				discard_document_glyph_prefetch(frame_glyph_prefetch)
+			}
+			$if macos {
+				// Replay can skip the visible gradient after setup. Close its
+				// batch before the frame leaves the drawing thread either way.
+				if submitted_gg_pipelines { ggshape.finish_document_pipelines() }
 			}
 			command_instructions.finish()
 			gpu_instructions := processmetrics.begin_instruction_stage('gpu_frame_finalization')

@@ -20,6 +20,7 @@ typedef struct {
     dispatch_group_t group;
     size_t count;
     pthread_t owner;
+    bool collecting;
     VoxGGMetalPipelineCompile jobs[VOX_GG_METAL_PIPELINE_BATCH_CAPACITY];
 } VoxGGMetalPipelineBatch;
 
@@ -33,9 +34,14 @@ bool vox_gg_metal_begin_pipeline_batch(void) {
     if (vox_gg_metal_pipeline_batch.group || !_sg.valid
         || !enabled || strcmp(enabled, "1") != 0) return false;
     vox_gg_metal_pipeline_batch.group = dispatch_group_create();
+    vox_gg_metal_pipeline_batch.collecting = true;
     vox_gg_metal_pipeline_batch.owner = getenv("VOX_GG_METAL_PIPELINE_DIAGNOSTICS")
         ? pthread_self() : NULL;
     return true;
+}
+
+void vox_gg_metal_close_pipeline_submissions(void) {
+    vox_gg_metal_pipeline_batch.collecting = false;
 }
 
 static sg_resource_state vox_gg_metal_publish_pipeline(_sg_pipeline_t *pipeline,
@@ -58,7 +64,8 @@ static sg_resource_state vox_gg_metal_create_pipeline_states(_sg_pipeline_t *pip
     MTLRenderPipelineDescriptor *render, MTLDepthStencilDescriptor *depth) {
     id<MTLDevice> device = _sg.mtl.device;
     dispatch_group_t group = vox_gg_metal_pipeline_batch.group;
-    if (group && vox_gg_metal_pipeline_batch.count < VOX_GG_METAL_PIPELINE_BATCH_CAPACITY) {
+    if (vox_gg_metal_pipeline_batch.collecting
+        && vox_gg_metal_pipeline_batch.count < VOX_GG_METAL_PIPELINE_BATCH_CAPACITY) {
         VoxGGMetalPipelineCompile *job =
             &vox_gg_metal_pipeline_batch.jobs[vox_gg_metal_pipeline_batch.count++];
         job->pipeline = pipeline;
@@ -94,6 +101,7 @@ static sg_resource_state vox_gg_metal_create_pipeline_states(_sg_pipeline_t *pip
 void vox_gg_metal_end_pipeline_batch(void) {
     dispatch_group_t group = vox_gg_metal_pipeline_batch.group;
     if (!group) return;
+    vox_gg_metal_close_pipeline_submissions();
     bool diagnostics = vox_gg_metal_pipeline_batch.owner != NULL;
     bool ready = diagnostics && dispatch_group_wait(group, DISPATCH_TIME_NOW) == 0;
     if (!ready) dispatch_group_wait(group, DISPATCH_TIME_FOREVER);

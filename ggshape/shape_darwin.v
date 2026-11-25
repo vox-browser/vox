@@ -13,12 +13,15 @@ import platform
 // diagnostics (VOX_GG_DIAGNOSTICS=1) prints one line per descriptor offered
 // to gg.canvas with whether it was drawn, for coverage counts from captures.
 const diagnostics = os.getenv('VOX_GG_DIAGNOSTICS') == '1'
+const prepare_document_pipelines_early = os.getenv('VOX_EARLY_GG_METAL_PIPELINES') == '1'
+	&& os.getenv('VOX_PARALLEL_GG_METAL_PIPELINES') == '1'
 
 #include <pthread.h>
 #include "@DIR/../native/include/native_graphite_bridge.h"
 
 fn C.pthread_main_np() i32
 fn C.vox_gg_metal_begin_pipeline_batch() bool
+fn C.vox_gg_metal_close_pipeline_submissions()
 fn C.vox_gg_metal_end_pipeline_batch()
 
 @[typedef]
@@ -56,30 +59,56 @@ pub mut:
 struct GpuState {
 mut:
 	ctx &canvas.GpuContext = unsafe { nil }
+	pipelines_pending bool
 }
 
 const gpu = &GpuState{}
 
-// context returns the shared gg.canvas context. The context, sokol.gfx's
-// pools (allocated through V's allocator) and every pipeline outlive the
-// paint scope of the first draw, so they are created in Vox's persistent
-// arena; draws themselves allocate in the caller's scope.
+// The shared context, Sokol pools and pipelines outlive the paint scope of
+// the first draw. Allocate them in the persistent arena.
+fn (mut state GpuState) initialize() ! {
+	persistent := platform.enter_persistent()
+	defer {
+		platform.leave_persistent(persistent)
+	}
+	canvas.prepare_document_shader_resources()
+	mut ctx := canvas.new_gpu_context()!
+	state.pipelines_pending = C.vox_gg_metal_begin_pipeline_batch()
+	ctx.precompile()
+	if state.pipelines_pending {
+		C.vox_gg_metal_close_pipeline_submissions()
+	}
+	state.ctx = ctx
+}
+
+// The browser calls these on the drawing thread while preparing a frame
+// with a visible GPU gradient. Jobs hold native pipeline descriptors only.
+pub fn document_pipelines_need_preparation() bool {
+	return prepare_document_pipelines_early && gpu.ctx == unsafe { nil }
+}
+
+pub fn submit_document_pipelines() bool {
+	if !document_pipelines_need_preparation() || C.pthread_main_np() == 0 { return false }
+	mut state := unsafe { gpu }
+	state.initialize() or { return false }
+	return state.pipelines_pending
+}
+
+@[inline]
+pub fn finish_document_pipelines() {
+	mut state := unsafe { gpu }
+	if state.pipelines_pending {
+		C.vox_gg_metal_end_pipeline_batch()
+		state.pipelines_pending = false
+	}
+}
+
 fn context() !&canvas.GpuContext {
 	mut state := unsafe { gpu }
 	if state.ctx == unsafe { nil } {
-		persistent := platform.enter_persistent()
-		defer {
-			platform.leave_persistent(persistent)
-		}
-		canvas.prepare_document_shader_resources()
-		mut ctx := canvas.new_gpu_context()!
-		batched := C.vox_gg_metal_begin_pipeline_batch()
-		ctx.precompile()
-		if batched {
-			C.vox_gg_metal_end_pipeline_batch()
-		}
-		state.ctx = ctx
+		state.initialize()!
 	}
+	finish_document_pipelines()
 	return state.ctx
 }
 
