@@ -153,6 +153,36 @@ fn test_unthrottled_frame_yields_stale_layout_to_a_buffered_blocking_script() {
 	assert document.get_element_by_id('later') != none
 }
 
+fn test_deferred_script_delivery_coalesces_pending_libjs_layout_until_the_next_frame() {
+	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+		'<!doctype html><div id="before" style="width:30px">Before</div><script src="blocking.js"></script><p id="later">After</p>', {})
+	document.set_cached_navigable(&dom.Navigable{active_document_: document})
+	mut runtime := browserjs.Runtime.create_with_engine(.libjs)
+	mut app := &BrowserApp{document: document, script_request_loader: loader, js_runtime: runtime, js_engine: .libjs}
+	defer { loader.cancel(); runtime.close(); document.finalize() }
+	parser.run()
+	assert parser.paused()
+	app.relayout(320, 232)
+	assert document.layout_is_up_to_date()
+	mut before := document.get_element_by_id('before') or { panic('Missing partial document content') }
+	assert before.get_bounding_client_rect().width == 30
+	generation := document.layout_pass_generation
+	before.set_attribute_value('style', 'width:70px')
+	runtime.mark_document_state_dirty()
+	parser_script_request_response(loader, 'blocking.js', 'blocking', '')
+	app.poll_blocking_script_responses_on_deferred_frame()
+	assert !runtime.has_pending_document_state()
+	assert app.frame_preparation_depth == 0 && app.paint_commands_pending
+	assert document.layout_pass_generation == generation
+	assert observed.sources.len == 0
+	parser_script_request_drain_tasks()
+	assert observed.sources == ['blocking']
+	app.begin_frame_preparation()
+	app.finish_frame_preparation()
+	assert document.layout_is_up_to_date()
+	assert before.get_bounding_client_rect().width == 70
+}
+
 fn test_parser_async_requests_share_transport_but_complete_each_element_once() {
 	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
 		'<!doctype html><html><head><script id="one" async src="shared.js"></script><script id="two" async src="shared.js"></script><script>inline</script></head><body><p id="later">Ready</p></body></html>', {})
