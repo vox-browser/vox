@@ -3002,3 +3002,100 @@ The eight replay request and response records, executable, library,
 helper, archive and driver hashes matched throughout. All browser and
 driver exits were zero. The 3 GiB guard exited zero at a peak aggregate
 RSS of 385,990,656 bytes.
+
+### Dispatch retained glyph stripes explicitly
+
+Commit `5a713c162` dispatches every stripe except the last to raster
+workers and draws the last stripe on the caller. The dispatch group
+joins before the caller releases the masks or uses the next paint
+command. Each stripe blends its pixels in the original glyph order.
+`VOX_GLYPH_BLEND_DISPATCH_APPLY=1` selects the previous scheduler,
+which could execute an entire batch on one thread.
+
+The focused 4,820-pixel test checked the caller and worker identities
+and all output bytes. Ten arena-poisoned tests, the legacy scheduling
+control, ThreadSanitizer and the production browser type check passed.
+The pinned glyph differential returned 1,963 exact cases and 37 declines
+under the 3 GiB guard.
+
+#### Hacker News retained text replay
+
+Production executable `dcbf80bcd447…ce382f` captured 332 retained draws
+from the archived homepage and matched the document reference. The
+captured input log SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The same single-C-unit V `-prod` replay executable in both modes had
+SHA-256 `000fbf75d6ab29f55f9d2773dc90067158d94d2dcbc4220a8cb4c5f74cbe39e3`.
+Each replay used fresh processes, a fresh strike cache and arena poisoning.
+
+In two diagnostics per mode, all 25 eligible batches used two to four
+threads with either scheduler. Each replay processed the same 974 masks
+and 277,052 clipped mask pixels in those batches. All 32 replays matched
+reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+
+| Pair | Previous, ms | Explicit, ms | Reversed previous, ms | Reversed explicit, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 8.752 | 8.362 | 8.331 | 8.283 |
+| 2 | 8.183 | 8.234 | 8.173 | 8.543 |
+| 3 | 8.355 | 8.303 | 8.247 | 8.264 |
+| 4 | 8.165 | 8.604 | 8.044 | 8.364 |
+| 5 | 8.448 | 8.261 | 8.385 | 8.358 |
+| 6 | 8.275 | 8.651 | 8.421 | 8.388 |
+| 7 | 8.378 | 8.445 | 8.310 | 8.434 |
+| Median | 8.356 | 8.362 | 8.310 | 8.364 |
+
+Median paired changes were +0.051 and +0.017 ms. Explicit submission
+finished first in three pairs per cohort. One-minute host load was
+5.96 on 18 CPUs. Executable, fixture, font and driver hashes stayed
+fixed. Every replay and the 3 GiB guard exited zero. Peak aggregate
+RSS was 58,261,504 bytes.
+
+#### Matched production captures
+
+Receipt `20261125-134515-75117d77` sealed `5a713c162`, passed startup
+smoke and published single-C-unit V `-prod` executable SHA-256
+`e6de499528e972179c46e586aed7c1269ce07a7436bac4fc4e428a9b35fe7405`.
+Four fresh diagnostic captures per mode verified the URL, ready state,
+viewport and all 30 ordered story IDs. Both modes used two to four
+threads in all 100 scheduled batches, including the 4,822-pixel batch
+that had used one thread in an earlier production diagnostic.
+
+| Diagnostic pair | Previous text instructions | Explicit text instructions | Previous native raster instructions | Explicit native raster instructions |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 138,410,727 | 138,460,594 | 287,553,815 | 288,174,083 |
+| 2 | 138,738,228 | 137,742,493 | 285,950,138 | 284,609,600 |
+| 3 | 138,464,229 | 137,767,986 | 288,128,661 | 283,795,477 |
+| 4 | 137,709,021 | 137,407,964 | 285,742,630 | 279,844,503 |
+
+Text and inclusive native raster instructions come from the browser
+thread in separately instrumented runs. The unprofiled cohorts alternated
+both schedulers. The reversed cohort started with the previous scheduler.
+Each fresh process used JavaScriptCore, a private empty profile and HTTP
+cache, retained OS filesystem caches and a 60 ms delay per replayed logo
+response. Timing spans launch through the completed 1024×768 CSS-pixel
+document PNG at 2× scale.
+
+| Pair | Previous, ms | Explicit, ms | Reversed previous, ms | Reversed explicit, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 320.891 | 307.869 | 326.208 | 324.124 |
+| 2 | 327.580 | 302.195 | 321.603 | 326.062 |
+| 3 | 306.555 | 308.739 | 326.002 | 310.421 |
+| 4 | 311.969 | 301.092 | 324.631 | 312.407 |
+| 5 | 332.253 | 300.185 | 316.099 | 351.904 |
+| 6 | 340.280 | 354.685 | 370.773 | 386.424 |
+| 7 | 317.163 | 352.316 | 370.446 | 357.222 |
+| Median | 320.891 | 307.869 | 326.002 | 326.062 |
+
+Median paired changes were −10.878 and −2.085 ms, with four wins in
+each cohort. Sampled browser-thread CPU medians were 177.08 → 173.66 ms
+and 187.67 → 200.03 ms. Host load was 6.73–7.23 and 7.05–7.85 on 18
+CPUs. The pair ranges and isolated replay timings leave the effect on
+elapsed time uncertain.
+
+All 28 timed and eight diagnostic captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+Every trial reproduced eight request and response records, including the
+favicon miss. Executable, native library, helper, archive and driver
+hashes stayed fixed. Browser, driver and 3 GiB guard exits were zero.
+Peak aggregate RSS was 398,606,336 bytes.

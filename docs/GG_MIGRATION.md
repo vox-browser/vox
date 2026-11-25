@@ -14688,6 +14688,12 @@ fractional paint and a padded target under ThreadSanitizer. The pinned
 glyph differential returned 1,963 exact cases and 37 declines.
 [Hacker News measurements](LOAD_PARALLELISM.md#schedule-short-retained-text-runs-by-clipped-pixel-workload)
 
+Eligible glyph blends explicitly submit background stripes and draw one
+stripe on the caller before joining. The focused checks verified distinct
+thread identities and exact ordered blending. ThreadSanitizer and the
+pinned 2,000-case glyph differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#dispatch-retained-glyph-stripes-explicitly)
+
 Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
 tests matched serial glyphs and preserved masks added before the join. The
 pinned V `-prod` glyph differential check returned 1,962 exact draws and 38
