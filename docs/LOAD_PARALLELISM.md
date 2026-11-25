@@ -6203,3 +6203,106 @@ all 3,145,728 pixels with the unchanged reference. Executable,
 library, helper, font, archive and driver hashes stayed pinned.
 All browser, driver and 3 GiB guard exits were zero. Peak sampled
 RSS was 435,552,256 bytes.
+
+### Overlap display-list projection with command slot reservation
+
+Commit `8ba6d0e6d` adds an opt-in macOS display-list schedule.
+`VOX_PIPELINE_DISPLAY_LIST_REPLAY=1` submits the first 128 eligible
+leaves as soon as their output slots are assigned. A worker fills
+those slots while the browser thread assigns later slots and emits
+transitions. The remaining leaves use the existing caller-assisted
+scheduler with up to three lanes. All work joins before effect
+bounds or publication. The plan and flattened contexts are complete,
+and all output slots have capacity, before the worker starts. The worker
+callback makes no V heap allocations in the generated C.
+
+The shared raster worker tests passed under ThreadSanitizer and arena
+poisoning. Standalone fused-replay compilation exceeded the 12 GiB
+process-tree guard with instrumentation and again without it.
+The standalone type check reached V's 10 GiB compiler limit. The
+new layout test stays alongside the implementation. Production
+validation below exercises the real recording path.
+
+#### Matched production captures
+
+Receipt `20261126-002902-8ebd329a` verified the feature commit and
+published a single-C-unit V `-prod` bundle after headless startup smoke.
+Both schedules used that executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `68d9c5dd1474bdd62c697e89ce40ed7296535f26cfd1995755e191e0424caed3` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Each path diagnostic recorded two 443-command lists with 441 eligible
+leaves apiece. Both schedules used four lanes including the browser
+thread. The whole-batch schedule projected 332 leaves on workers.
+Early dispatch projected 338 on workers, including all 128 leaves in
+the first submission. The first submission still had work pending
+when slot reservation ended in all eight recordings. It was ready
+at the join in every recording. Each of the eight launches reproduced
+both ordered display-list fingerprints, `cc3aa647602aa712` and
+`43e3df229bb3162f`.
+
+The calling-thread counters are from separate instrumented launches.
+Three pairs each recorded two adopted display lists and four calls
+to command recording. The second batch-mode diagnostic had another
+recording, so its summed counts cannot establish a relative saving.
+
+| Pair | Batch command recording | Early command recording | Batch display-list recording | Early display-list recording | Batch and early command calls |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | 1,192,942 | 1,147,324 | 30,456,976 | 30,189,433 | 4 and 4 |
+| 2 | 1,784,041 | 1,143,796 | 39,462,302 | 30,719,627 | 5 and 4 |
+| 3 | 1,151,367 | 1,174,814 | 30,466,408 | 30,108,390 | 4 and 4 |
+| 4 | 1,165,515 | 1,165,784 | 30,336,694 | 30,540,308 | 4 and 4 |
+
+Four unprofiled cohorts alternated seven fresh-launch pairs each,
+with early dispatch going first in the second and fourth cohorts.
+The timer ran through the completed PNG at a 1024×768 CSS-pixel
+viewport at 2× scale. Trials used JavaScriptCore, private empty
+profiles and HTTP caches, retained OS filesystem and shader caches,
+`tr.athing` readiness and a 60 ms delay per replayed logo response.
+
+| Pair | Batch 1, ms | Early 1, ms | Batch 2, ms | Early 2, ms | Batch 3, ms | Early 3, ms | Batch 4, ms | Early 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 320.576 | 322.019 | 330.933 | 337.221 | 305.026 | 344.498 | 320.150 | 335.428 |
+| 2 | 296.908 | 321.254 | 325.915 | 305.999 | 319.289 | 324.712 | 316.900 | 332.998 |
+| 3 | 313.610 | 321.723 | 324.692 | 320.808 | 312.198 | 304.500 | 324.049 | 335.740 |
+| 4 | 293.719 | 295.411 | 313.827 | 332.755 | 299.645 | 306.914 | 321.157 | 315.132 |
+| 5 | 303.046 | 306.981 | 315.653 | 338.800 | 330.542 | 317.404 | 297.729 | 311.832 |
+| 6 | 305.786 | 327.582 | 333.895 | 288.651 | 329.446 | 317.282 | 324.851 | 315.689 |
+| 7 | 304.119 | 308.974 | 324.577 | 297.366 | 334.133 | 354.798 | 340.810 | 324.136 |
+| Median | 304.119 | 321.254 | 324.692 | 320.808 | 319.289 | 317.404 | 321.157 | 324.136 |
+
+Median paired changes were +4.855, −3.883, +5.423 and +11.691 ms.
+Early dispatch finished first in zero, four, three and three pairs.
+Sampled main-thread CPU medians were 158.702 → 159.372,
+160.024 → 156.919, 163.778 → 162.591 and 160.239 → 160.344 ms.
+One-minute host load ranged from 3.95–4.28, 3.91–4.17, 3.69–3.74
+and 3.54–3.74 on 18 CPUs. Early dispatch remains opt-in.
+
+All 72 homepage launches reproduced the eight replay records,
+including the favicon miss, and matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The 16 diagnostic captures verified the URL, ready state, viewport
+and 30 ordered story IDs. The eight path captures also checked
+all 3,145,728 pixels directly against the reference. Executable,
+library, helper, fonts, archive and benchmark inputs stayed pinned.
+Browser, driver and guard exits were zero. The 3 GiB guards observed
+peak RSS of 435,666,944 bytes.
+
+The separate fixture combined 30 rows of six painted text cells
+with a fixed translucent header, clipped transformed opacity group
+and live Canvas2D content. The control and early dispatch each
+recorded two 372-command lists. Early dispatch projected 288 of 362
+eligible leaves on workers, including the first 128, compared with
+276 in whole-batch mode. Serial projection and disabled raster
+workers also completed. All four modes matched the 30 ordered row
+IDs, both display-list fingerprints `8f0640d8da2343da` and PNG
+SHA-256 `77813e9d154325e3512ce3f12e3f49f8d423b9c139042f8138b5201dc25a1cf5`.
+The fixture input SHA-256 was
+`3a5b2c16fc8f1783d5b8ace1eafbe772935829e93db509421092375610a2e338`.
+The four browsers, direct pixel comparisons and 3 GiB guard
+exited zero. Peak sampled RSS was 302,628,864 bytes.
