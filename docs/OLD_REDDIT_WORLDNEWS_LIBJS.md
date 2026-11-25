@@ -1,10 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **50.15% fewer median observed CPU instructions**
+Production Vox with LibJS used **50.50% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
 their respective screenshot references. Median launch-to-PNG time was
-**2.049 s for Vox and 1.976 s for Brave**. A fresh live Vox visit reached
-Reddit's login page. [Current comparison](#production-comparison-with-trivia-and-operator-dispatch)
+**2.063 s for Vox and 2.002 s for Brave**. A fresh live Vox visit reached
+Reddit's login page. [Current comparison](#production-comparison-with-both-expression-changes)
 
 ## Workload and execution
 
@@ -1419,3 +1419,203 @@ aggregate RSS of 820,101,120 bytes.
 A fresh direct visit in the measured build reached Reddit's login page
 with zero posts and two script diagnostics. The browser and guard exited
 zero. The archived capture remains the listing measurement.
+
+## Packed restrictions and the expression tail
+
+A separate instrumented visit on `bce49bde` recorded 142.94 ms across
+JavaScript execution and bindings. The largest style pass visited 1,449
+elements in 73.09 ms. The one layout recomputation forced by an
+`offsetWidth` read took 5.28 ms. A separate parser sample identified
+`continue_parse_expression` as the most frequent active frontend leaf.
+These diagnostics include sampling or instrumentation overhead.
+
+`cf32affec` stores operator restrictions in a byte and combines them with
+bitwise OR. This removes temporary token lists from the logical and
+constructor parse paths. `b9aaa22d0` only enters the larger secondary-operator
+parser stack frame when the next token meets the current precedence
+requirement. Delimiters and the operators of an outer expression take
+the ordinary comma-tail path directly. Separate debugger visits reached
+the nonzero restriction mask and both expression paths in the archived
+main bundle.
+
+The isolated parser probe uses the five pinned external script bodies and
+the browser's recursion setting. It parses each set of five eight times
+per fresh process. Instruction counts cover all eight sets and use
+cumulative process readings. Elapsed time is divided by eight. The three
+executables use single-unit `-prod` C with `-prealloc -gc none`. Their
+SHA-256 values, in the order original, packed restrictions, and both
+changes, are
+`c6b3af900dec6af65662b9469930279a5866ae78a6d145aee9c863d4d44b8637`,
+`19b38bc1aa51e3fbf4de453e893244dbf6a9f37069d8bada920e2e73c320d42f`, and
+`cb450f97d75f959503b649645699da08180ef09379b77b8166961e1813c78881`.
+Every timed process, driver and guard exited zero.
+
+### Packed restrictions vs original
+
+Instructions fell 1.31% at the median and fell in every pair. Elapsed time
+fell in four of seven pairs. Host one-minute load was 4.63–4.74 on 18 cores.
+The 3 GiB guard observed a peak aggregate RSS of 2,222,194,688 bytes.
+
+| Pair | Control instructions | Candidate instructions | Control ms per set | Candidate ms per set |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,420,442,564 | 6,326,006,891 | 57.960 | 56.136 |
+| 2 | 6,410,145,180 | 6,325,686,254 | 57.163 | 56.080 |
+| 3 | 6,419,525,519 | 6,325,350,298 | 56.633 | 56.264 |
+| 4 | 6,409,884,736 | 6,325,625,331 | 56.473 | 56.474 |
+| 5 | 6,409,164,999 | 6,335,634,576 | 56.110 | 56.743 |
+| 6 | 6,410,120,679 | 6,326,371,997 | 56.283 | 56.943 |
+| 7 | 6,409,752,474 | 6,326,379,392 | 57.285 | 57.209 |
+| Median | 6,410,120,679 | 6,326,006,891 | 56.633 | 56.474 |
+
+### Smaller expression tail vs packed restrictions alone
+
+Instructions fell 0.99% and elapsed time fell 1.63% at the median. Both
+fell in every pair. Host one-minute load was 4.93–5.18. The 3 GiB guard
+observed a peak aggregate RSS of 2,132,213,760 bytes.
+
+| Pair | Control instructions | Candidate instructions | Control ms per set | Candidate ms per set |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,323,127,556 | 6,261,862,052 | 55.994 | 55.664 |
+| 2 | 6,323,679,356 | 6,261,318,142 | 56.394 | 55.313 |
+| 3 | 6,332,408,443 | 6,260,730,529 | 56.553 | 56.382 |
+| 4 | 6,323,559,527 | 6,260,808,961 | 56.411 | 55.352 |
+| 5 | 6,333,114,357 | 6,261,021,523 | 57.319 | 55.499 |
+| 6 | 6,321,910,954 | 6,260,494,673 | 55.923 | 55.265 |
+| 7 | 6,321,421,015 | 6,269,144,763 | 55.821 | 55.476 |
+| Median | 6,323,559,527 | 6,261,021,523 | 56.394 | 55.476 |
+
+### Both expression changes vs original
+
+Instructions fell 2.28% at the median and fell in every pair. Elapsed time
+fell 1.99% at the median and fell in five pairs. Host one-minute load was
+5.68–6.11. The 3 GiB guard observed a peak aggregate RSS of 2,141,487,104 bytes.
+
+| Pair | Control instructions | Candidate instructions | Control ms per set | Candidate ms per set |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,412,288,968 | 6,267,753,246 | 58.008 | 59.997 |
+| 2 | 6,413,406,380 | 6,264,762,366 | 62.901 | 63.567 |
+| 3 | 6,414,325,424 | 6,266,926,890 | 65.452 | 61.246 |
+| 4 | 6,412,551,541 | 6,271,659,060 | 63.290 | 62.662 |
+| 5 | 6,413,233,806 | 6,266,348,457 | 63.726 | 62.458 |
+| 6 | 6,413,596,401 | 6,266,049,860 | 65.686 | 63.274 |
+| 7 | 6,413,472,145 | 6,268,603,219 | 65.271 | 61.548 |
+| Median | 6,413,406,380 | 6,266,926,890 | 63.726 | 62.458 |
+
+Four focused test files and the exact 100-fixture upstream AST corpus
+passed after each change with Boehm and `-gc none`. An initial focused
+run launched multiple V compilers and reached the 3 GiB guard. The serial
+runs exited zero. The default package suite hit the existing FastC
+`absent_property_set_test.v` code-generation error. That file passed
+separately with the C backend in both heap modes. The 0.5.2 compiler
+also passed the expression-tail tests with the C backend in both modes.
+Its default FastC run stopped at a generated C syntax error.
+
+### Production control before packed restrictions
+
+Managed build `20261125-090125-60aad3a1` used single-unit `-prod` C and
+executable SHA-256
+`0efa4e71b11e86ec0cda19c0d4eff19096b22ad38423ea1cb8854d3291c16e64`.
+The fixed-clock, seven-pair launch-to-PNG protocol kept the original
+references and all 25 posts. All 14 processes used fresh profiles and
+empty browser caches. Each Vox visit recorded LibJS generation 145 with
+JavaScriptCore uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,920,099,359 | 11,724,549,672 | 2102.532 | 1996.044 |
+| 2 | 5,899,439,917 | 11,798,787,665 | 2106.066 | 2005.099 |
+| 3 | 5,894,409,496 | 11,823,881,876 | 2101.122 | 2020.563 |
+| 4 | 5,898,491,188 | 11,627,607,715 | 2106.164 | 2013.644 |
+| 5 | 5,828,160,756 | 11,808,960,882 | 2092.457 | 2010.774 |
+| 6 | 5,817,963,476 | 11,734,299,628 | 2093.232 | 2014.322 |
+| 7 | 5,831,176,687 | 11,733,390,447 | 2118.639 | 2035.193 |
+| Median | 5,894,409,496 | 11,734,299,628 | 2102.532 | 2013.644 |
+
+The highest Vox observed count was 50.91% of Brave's lowest. Brave led by
+88.89 ms at the median and won all seven pairs. Vox's final complete samples
+preceded capture by 6.11–7.70 ms. Brave's preceded capture by 1.80–8.36 ms.
+Vox had zero missing final samples and Brave had 1, 2, 2, 2, 2, 1 and 1.
+Browser roots, the driver and the 12 GiB guard exited zero. The guard
+adopted 14 roots and observed a peak aggregate RSS of 868,220,928 bytes.
+Host one-minute load was 5.49–7.10 from 09:11:44 to 09:12:22 UTC+03.
+
+### Production comparison with packed restrictions
+
+The production smoke and separate archived visit passed on managed build
+`20261125-091339-20c7aecc`. Its single-unit `-prod` C SHA-256 was
+`ea26fbae3c6e8ab40cc6b6569b200fb0a8be224e7f2d19b038590ba162046bd5`.
+Its executable SHA-256 was
+`0fb8d34da40c266b0235bb9512bfddc81db775d8b7a6e4d3b9be17dce9297e82`.
+The build includes the four-lane layout shaping change in `334b43aa2`.
+The component probe isolates the parser change.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,884,246,359 | 11,690,824,376 | 2060.587 | 2042.850 |
+| 2 | 5,892,463,009 | 11,637,159,880 | 2069.057 | 1982.454 |
+| 3 | 5,824,146,521 | 11,734,726,931 | 2050.275 | 1984.226 |
+| 4 | 5,822,044,596 | 11,771,215,217 | 2059.646 | 1977.429 |
+| 5 | 5,802,322,540 | 11,712,057,097 | 2048.781 | 1990.901 |
+| 6 | 5,870,922,725 | 11,830,172,277 | 2054.369 | 1990.511 |
+| 7 | 5,818,700,694 | 11,735,029,610 | 2061.745 | 1988.166 |
+| Median | 5,824,146,521 | 11,734,726,931 | 2059.646 | 1988.166 |
+
+Vox used 50.37% fewer median observed instructions. Its highest count was
+50.63% of Brave's lowest. Brave led by 71.48 ms at the median and won all
+seven pairs. Both browsers matched their fixed references with all five
+scripts and 25 posts in order. Vox's final complete samples preceded the
+PNG endpoint by 6.21–7.62 ms and Brave's by 1.11–8.26 ms. Vox had zero
+missing final samples and Brave had 1, 2, 1, 3, 1, 3 and 2. These polled
+process-tree counts are lower bounds and omit GPU and external services.
+Browser roots, the driver and the 12 GiB guard exited zero. The guard
+adopted 14 roots and observed a peak aggregate RSS of 787,611,648 bytes.
+Host one-minute load was 4.07–5.28 from 09:20:09 to 09:20:46 UTC+03.
+
+### Production comparison with both expression changes
+
+Managed build `20261125-092027-321e27ea` verified `b9aaa22d0`. The sealed
+single-unit `-prod` C contains both expression changes. Its SHA-256 was
+`0fa6ac602a67921c0cf7c403986b7038d84a8c4b6bf81a90ef97d65818159e55`.
+The executable SHA-256 was
+`fdaf0e1eb1c6c01b38288bad7aa16e3438108674ee7654efa5234c72444e2d03`.
+The headless LibJS smoke check passed. A separate archived visit ran
+all five scripts in LibJS and matched the fixed Vox reference.
+
+The seven-pair run used the same fixed-clock archive as the control,
+with fresh private profiles and empty browser caches. The viewport was
+1024×768 at scale 1 with 1.4 s settling. Vox's LibJS native and frontend code caches
+were disabled. OS filesystem and shader caches were retained. Both
+browsers matched their fixed PNGs and reached `complete` with all
+25 posts in order and all five original scripts. LibJS execution
+generation was 147 in pairs 1 and 7, and 145 in the other pairs. Vox
+reported zero script diagnostics and JavaScriptCore uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,848,212,403 | 11,834,720,353 | 2088.851 | 2023.558 |
+| 2 | 5,868,733,128 | 11,690,651,496 | 2055.844 | 2015.346 |
+| 3 | 5,827,605,009 | 11,774,290,795 | 2063.041 | 1992.203 |
+| 4 | 5,835,521,436 | 11,694,633,800 | 2056.923 | 1969.002 |
+| 5 | 5,794,364,590 | 11,869,483,992 | 2060.833 | 2024.502 |
+| 6 | 5,873,069,978 | 11,870,486,149 | 2084.936 | 1977.235 |
+| 7 | 5,844,192,122 | 11,807,302,919 | 2088.553 | 2001.617 |
+| Median | 5,844,192,122 | 11,807,302,919 | 2063.041 | 2001.617 |
+
+Vox used **50.50% fewer median observed instructions**. Its highest
+count was **50.24%** of Brave's lowest and met the observed-count gate.
+Brave led by **61.42 ms** at the median and won all seven elapsed-time
+pairs. The two preceding production cohorts ran at different host loads.
+The matched script probes isolate the parser improvements.
+
+The polled process-tree counts are lower bounds and omit GPU and external
+services. The final complete samples preceded capture by 6.52–7.68 ms for
+Vox and 1.11–6.63 ms for Brave. Vox reported zero missing final samples.
+Brave reported 2, 1, 3, 3, 3, 3 and 3. The 12 GiB guard adopted all 14
+browser roots and observed a peak aggregate RSS of 832,372,736 bytes.
+Browser roots, the driver and the guard exited zero. One-minute host
+load was 6.28–7.99 on 18 cores from 09:26:07 to 09:26:44 UTC+03.
+
+A separate fresh direct visit in this bundle redirected to Reddit's
+login page and reached `complete` with zero posts. It logged two
+unsupported URL scheme diagnostics for scripts. The browser and guard
+exited zero. The World News result comes from the archived listing.
