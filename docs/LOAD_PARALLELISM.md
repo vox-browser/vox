@@ -2896,3 +2896,109 @@ The eight request and response records matched in every run, including
 the favicon miss. Executable, library, helper, archive and driver
 hashes stayed pinned throughout. Browser, driver and 3 GiB guard exits
 were zero. Peak aggregate timing RSS was 374,718,464 bytes.
+
+### Schedule short retained text runs by clipped pixel workload
+
+Commit `f67d4df3e` lets short retained macOS text runs use the existing
+striped mask blender when their device clip can hold 4,096 pixels. The
+blender budgets one lane per 2,048 clipped mask pixels, up to four
+lanes, and stays serial below two lanes. Long runs remain eligible for
+batch collection, including overlapping glyphs in a small clip. The
+workers retain paint order within each disjoint stripe.
+`VOX_PREVIOUS_GLYPH_BLEND_BUDGET=1` restores the 24-glyph collection
+minimum and the previous 4,096-pixel budget per lane.
+
+The focused test used eight overlapping glyphs, a clipped edge,
+fractional paint and row padding. It matched the individually drawn
+reference and logged four blend participants over 14,468 mask pixels.
+The arena-poisoned focused tests, legacy-budget control, ThreadSanitizer,
+and production browser type check passed. The pinned glyph differential
+returned 1,963 exact cases and 37 declines. A broad differential started
+with the wrong case selector and reached the 3 GiB guard. The focused
+retry used the glyph selector and exited zero. A preliminary unit run
+used V `-prod`, which removed assertions, including preparation calls
+inside assertions. The assertion-enabled rerun completed seven tests.
+
+#### Hacker News retained text replay
+
+The fresh dump on executable `4575782cafab…cbfac` used the archived
+homepage and matched the reference PNG. The capture contained 332
+retained draws and reproduced the input log SHA-256
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+Both replay modes used a fresh glyph cache and arena poisoning on
+the same single-C-unit V `-prod` executable, SHA-256
+`0fa03d4094dc4b7717cf10463bf2c12bae0560a99fbcf82387347f0a69e40621`.
+
+The earlier budget blended 811 masks and 234,733 clipped mask pixels
+in 17 parallel batches. The new budget blended 974 masks and 277,052
+pixels in 25 batches. The eight extra batches held 16 to 23 glyphs
+and each ran on two or three threads. The other batches used up to
+four threads. All captures reproduced reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+
+| Pair | Pilot previous, ms | Pilot new, ms | Pinned previous, ms | Pinned new, ms | Reversed previous, ms | Reversed new, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 9.589 | 8.934 | 9.342 | 9.866 | 8.608 | 9.053 |
+| 2 | 9.232 | 9.204 | 8.739 | 8.574 | 9.047 | 8.341 |
+| 3 | 8.927 | 8.964 | 8.466 | 8.933 | 8.255 | 8.523 |
+| 4 | 8.761 | 9.188 | 10.028 | 10.012 | 8.346 | 8.312 |
+| 5 | 8.300 | 9.426 | 11.266 | 11.549 | 8.917 | 9.088 |
+| 6 | 8.596 | 8.284 | 9.125 | 11.719 | 8.412 | 8.432 |
+| 7 | 9.640 | 8.493 | 9.489 | 9.047 | 9.829 | 8.831 |
+| Median | 8.927 | 8.964 | 9.342 | 9.866 | 8.608 | 8.523 |
+
+The pilot's median paired change was −0.027 ms. The two pinned cohorts
+recorded +0.282 and +0.019 ms with three wins each. One-minute host
+load was 5.84 on 18 CPUs throughout the pinned run. Executable, driver,
+captured backdrops and font hashes remained fixed in the pinned runs.
+All replay processes and guards exited zero. The pinned run peaked
+at 48,037,888 bytes under its 3 GiB guard.
+
+#### Matched production captures
+
+Receipt `20261125-133450-35c1b22c` sealed `f67d4df3e`, passed startup
+smoke and published single-C-unit V `-prod` executable SHA-256
+`dcbf80bcd447a22cccab9dec1709ca927f7fb7e773f21f825fd9ffda2fce382f`.
+The native AVIF library remained
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The separate diagnostic pair reproduced the replay's batch, mask and
+pixel counts. The previous budget used multiple threads in all 17
+scheduled batches. The new budget used multiple threads in 24 of 25
+batches. The system dispatch queue executed both stripes of one
+4,822-pixel batch on the same thread. Both diagnostics matched the
+archived page URL, ready state, viewport and 30 ordered story IDs.
+
+The instrumented pair recorded 142,993,066 → 139,789,214 browser-thread
+text replay instructions and 289,373,388 → 288,978,982 inclusive native
+raster replay instructions.
+
+The unprofiled cohorts alternated the previous and new budgets on the
+same executable. The reversed cohort started with the previous budget.
+Each trial measured fresh launch through completion of a 1024×768 CSS
+pixel document PNG at 2×, with JavaScriptCore, empty private profiles
+and HTTP caches, retained OS filesystem caches and 60 ms of replay delay
+per logo response.
+
+| Pair | Previous, ms | New, ms | Reversed previous, ms | Reversed new, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 309.882 | 314.714 | 328.005 | 321.755 |
+| 2 | 299.872 | 310.499 | 330.447 | 343.048 |
+| 3 | 345.902 | 303.931 | 336.979 | 389.971 |
+| 4 | 357.564 | 356.695 | 414.600 | 403.732 |
+| 5 | 345.929 | 354.955 | 435.167 | 382.735 |
+| 6 | 336.380 | 317.966 | 393.992 | 368.270 |
+| 7 | 322.080 | 304.362 | 379.062 | 409.547 |
+| Median | 336.380 | 314.714 | 379.062 | 382.735 |
+
+Median paired changes were −0.869 and −6.250 ms, with four wins in each
+cohort. Sampled browser-thread CPU medians were 202.69 → 175.93 ms and
+239.65 → 240.52 ms. One-minute load ranged from 8.33 to 8.70 and 8.32 to
+8.53 on 18 CPUs. The trial ranges and the replay timings leave the
+end-to-end speed difference uncertain.
+
+All 28 timed and two diagnostic captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight replay request and response records, executable, library,
+helper, archive and driver hashes matched throughout. All browser and
+driver exits were zero. The 3 GiB guard exited zero at a peak aggregate
+RSS of 385,990,656 bytes.

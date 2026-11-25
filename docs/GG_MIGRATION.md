@@ -14682,6 +14682,12 @@ ThreadSanitizer and the pinned 2,500-draw glyph check passed. The archived
 Hacker News replay confirmed worker activity and byte-for-byte output.
 [Striped blend measurements](LOAD_PARALLELISM.md#retained-glyph-blending-across-pixel-stripes)
 
+Short retained runs can use the striped blend based on clipped pixel
+work. The focused checks exercised overlapping antialiased glyphs,
+fractional paint and a padded target under ThreadSanitizer. The pinned
+glyph differential returned 1,963 exact cases and 37 declines.
+[Hacker News measurements](LOAD_PARALLELISM.md#schedule-short-retained-text-runs-by-clipped-pixel-workload)
+
 Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
 tests matched serial glyphs and preserved masks added before the join. The
 pinned V `-prod` glyph differential check returned 1,962 exact draws and 38
