@@ -6660,3 +6660,111 @@ the unchanged reference. The executable, native library, helper,
 font inputs, archive and measurement scripts remained pinned.
 Browser, driver and 3 GiB guards exited zero. Peak sampled RSS was
 339,853,312 bytes.
+
+### Record canvas ink bounds during display-list projection
+
+Commit `c76812e93` adds `VOX_RECORD_CANVAS_INK_BOUNDS=1` on macOS.
+Existing display-list lanes store conservative ink bounds for retained
+horizontal text and ordinary shapes. The scene owns the bounds, and
+the renderer borrows them only for the matching command vector. The
+canvas-bounds batch tests those rectangles against the current canvas
+size and offset. Effect scopes, live video and other resource-dependent
+commands retain their existing handling. A new recording builds its
+own geometry. There is no additional worker dispatch or join.
+
+The focused culling tests passed with ThreadSanitizer and arena
+poisoning. The scrolled fixture recorded 682 bounds among 686 commands.
+The cached and on-demand paths agreed at two offsets and on the
+nonfinite-offset fallback. An equal command copy rejected the cache,
+and a new scrolled list rejected the previous vector while the old
+scene remained usable under its own lease. The previous early
+projection and raster-extent options also passed in combination.
+Guarded compilation and runtime peaked at 6,510,706,688 and 366,526,464
+bytes of sampled RSS, respectively.
+
+#### Isolated Hacker News canvas preparation
+
+The unoptimized test executable SHA-256
+`5f2a11d5391e5613f972aae487ded282057d494222d8c5767e9c119088d271bd`
+used the archived homepage and inlined stylesheet at a 1024×768 CSS
+viewport. It reused one display list of 443 commands and measured
+four-lane canvas-bounds preparation with the caller on one lane.
+Canvas height was 880 CSS pixels and the page offset was 112.
+Recording, loading, blending and encoding were outside the timer.
+Each launch checked the same culling bits in all 155 pairs, including
+five warm-up pairs. A separate diagnostic showed 378 recorded bounds
+used and 67 commands rejected in every batch under both schedules.
+All launches and guards exited zero. Runtime peak sampled RSS was
+97,599,488 bytes. One-minute host load was 5.15 on 18 CPUs.
+
+| Run | On-demand median | Recorded median | Median paired change | Recorded wins |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 98.834 µs | 78.917 µs | −20.668 µs | 147/150 |
+| 2 | 96.563 µs | 76.438 µs | −19.813 µs | 150/150 |
+
+#### Matched production captures
+
+The compact build published receipt `20261126-015740-597770fb` after
+the standard builds exhausted disk space. It verified the feature
+commit and passed headless smoke using single-C-unit V `-prod`.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `a3717126c6efe558bf46fd431d017b2acaff5f0f4dc181f713fa9c00f8a73fe9` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Recorded mode consumed 378 bounds in the 443-command canvas batch.
+The workers completed before the join and rejected the same 60
+commands as the control. Both the early projection prefix with
+recorded raster extents and range-by-range canvas replay consumed
+all 378 bounds. The range replay read four ranges without waiting.
+Serial display-list projection used the on-demand geometry.
+
+Main-thread counters from separate launches showed one canvas
+preparation call and three native raster replay calls in each run.
+The preparation scope measures the renderer's join and related
+work. The cached geometry arithmetic runs on the existing worker
+lanes, so this counter cannot measure its cost directly.
+
+| Pair | Record commands control | Record commands cached | Canvas join control | Canvas join cached | Native raster replay control | Native raster replay cached |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1,190,167 | 1,322,343 | 35,340 | 38,764 | 262,022,628 | 258,842,913 |
+| 2 | 1,413,306 | 1,322,960 | 35,390 | 38,707 | 263,648,481 | 261,515,701 |
+
+Four unprofiled cohorts alternated seven fresh-launch pairs on
+that executable. Cached mode started the second and fourth cohorts.
+Each trial used the archived origin and JavaScriptCore, an empty
+private profile and HTTP cache, retained OS filesystem and shader
+caches, a 1024×768 CSS viewport at 2× scale, `tr.athing` readiness,
+and a 60 ms delay on the logo response. The timer ran from process
+launch through observation of the completed document PNG at a nominal
+1 ms poll interval.
+
+| Pair | Control 1, ms | Recorded 1, ms | Control 2, ms | Recorded 2, ms | Control 3, ms | Recorded 3, ms | Control 4, ms | Recorded 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 324.613 | 321.516 | 315.782 | 313.882 | 304.862 | 303.281 | 300.302 | 320.073 |
+| 2 | 316.778 | 306.325 | 306.345 | 300.694 | 290.899 | 312.751 | 355.560 | 299.753 |
+| 3 | 307.781 | 324.786 | 316.665 | 306.979 | 312.670 | 326.631 | 296.927 | 308.319 |
+| 4 | 319.102 | 311.804 | 313.623 | 305.222 | 314.571 | 311.149 | 312.374 | 298.008 |
+| 5 | 323.420 | 321.012 | 311.805 | 311.060 | 328.195 | 312.598 | 302.197 | 297.055 |
+| 6 | 303.838 | 309.231 | 299.942 | 319.419 | 299.666 | 302.264 | 305.496 | 336.788 |
+| 7 | 311.137 | 308.262 | 313.114 | 315.482 | 297.700 | 303.824 | 318.939 | 326.582 |
+| Median | 316.778 | 311.804 | 313.114 | 311.060 | 304.862 | 311.149 | 305.496 | 308.319 |
+
+Median paired changes were −2.875, −1.900, +2.599 and +7.644 ms.
+Recorded mode finished first in 5, 5, 3
+and 3 of seven pairs, respectively. One-minute load ranged
+from 2.99 to 3.66 on 18 CPUs. The launch results keep
+recorded canvas ink opt-in.
+
+All 67 launches reproduced eight replay requests with identical
+fingerprints, including the favicon miss. They passed the URL,
+readiness, viewport and 30-story audits and reproduced PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All 11 diagnostic captures verified all 3,145,728 pixels against
+the unchanged reference. The executable, native library, helper,
+font inputs, archive and harness remained pinned. Browser, driver
+and 3 GiB guards exited zero. Peak sampled RSS was 322,715,648 bytes.
