@@ -2,7 +2,6 @@ module cpuraster
 
 import math
 import os
-import runtime
 
 const glyph_blend_batch_size = 128
 const glyph_blend_pixels_per_lane = 2048
@@ -11,6 +10,7 @@ const previous_glyph_blend_run_min = 24
 const serial_glyph_blend = os.getenv('VOX_SERIAL_GLYPH_BLEND') == '1'
 const previous_glyph_blend_budget = os.getenv('VOX_PREVIOUS_GLYPH_BLEND_BUDGET') == '1'
 const glyph_blend_diagnostics = os.getenv('VOX_GLYPH_BLEND_DIAGNOSTICS') == '1'
+const glyph_blend_dispatch_apply = os.getenv('VOX_GLYPH_BLEND_DISPATCH_APPLY') == '1'
 
 struct GlyphMaskBlit {
 	mask Mask
@@ -44,10 +44,11 @@ fn (mut batch GlyphMaskBatch) flush(mut blitter Blitter) {
 }
 
 struct GlyphMaskBlend {
-	blitter &PipelineBlitter
-	blits   []GlyphMaskBlit
-	bounds  IRect
-	lanes   int
+	blitter        &PipelineBlitter
+	blits          []GlyphMaskBlit
+	bounds         IRect
+	lanes          int
+	record_threads bool
 mut:
 	threads [4]u64
 }
@@ -60,7 +61,7 @@ fn blend_glyph_mask_stripes(context voidptr, first i32, end i32) {
 	columns := extent.width() >= extent.height()
 	for lane in int(first) .. int(end) {
 		$if macos && !cpuraster_freetype ? {
-			if glyph_blend_diagnostics {
+			if work.record_threads {
 				C.pthread_threadid_np(unsafe { nil }, &work.threads[lane])
 			}
 		}
@@ -87,31 +88,44 @@ fn blend_glyph_mask_stripes(context voidptr, first i32, end i32) {
 	}
 }
 
+fn (mut work GlyphMaskBlend) draw() bool {
+	$if macos {
+		if !glyph_blend_dispatch_apply {
+			// Submit background stripes explicitly. dispatch_apply can run
+			// every stripe inline, especially for a short batch.
+			return C.vox_scan_workers_with_caller(&work, i32(work.lanes), i32(work.lanes),
+				blend_glyph_mask_stripes)
+		}
+	}
+	C.vox_scan_workers_run(&work, i32(work.lanes), i32(work.lanes), blend_glyph_mask_stripes)
+	return true
+}
+
 fn (batch &GlyphMaskBatch) blend_parallel(blitter &PipelineBlitter) bool {
 	pixels_per_lane := if previous_glyph_blend_budget {
 		previous_glyph_blend_pixels_per_lane
 	} else {
 		glyph_blend_pixels_per_lane
 	}
-	mut lanes := math.min(int(batch.pixels / pixels_per_lane),
-		int(C.VOX_SCAN_WORKERS_MAX))
-	if lanes < 2 { return false }
+	requested_lanes := int(batch.pixels / pixels_per_lane)
+	if requested_lanes < 2 { return false }
 	mut bounds := batch.blits[0].clip
 	for index in 1 .. batch.blits.len {
 		clip := &batch.blits[index].clip
 		bounds = IRect{math.min(bounds.left, clip.left), math.min(bounds.top, clip.top), math.max(bounds.right, clip.right), math.max(bounds.bottom, clip.bottom)}
 	}
 	span := math.max(bounds.width(), bounds.height())
-	lanes = math.min(lanes, math.min(span, runtime.nr_cpus()))
+	lanes := raster_range_lanes(span, requested_lanes)
 	if lanes < 2 { return false }
 	mut work := GlyphMaskBlend{
 		// The worker dispatch joins while the blitter and masks are borrowed.
-		blitter: unsafe { blitter }
-		blits:   batch.blits
-		bounds:  bounds
-		lanes:   lanes
+		blitter:        unsafe { blitter }
+		blits:          batch.blits
+		bounds:         bounds
+		lanes:          lanes
+		record_threads: glyph_blend_diagnostics
 	}
-	C.vox_scan_workers_run(&work, i32(lanes), i32(lanes), blend_glyph_mask_stripes)
+	if !work.draw() { return false }
 	if glyph_blend_diagnostics {
 		mut threads := []u64{}
 		for thread_id in work.threads {

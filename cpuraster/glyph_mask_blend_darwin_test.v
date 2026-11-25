@@ -2,6 +2,36 @@ module cpuraster
 
 import runtime
 
+fn test_two_glyph_stripes_run_on_caller_and_worker() {
+	$if !cpuraster_freetype ? {
+		if runtime.nr_cpus() < 2 || glyph_blend_dispatch_apply { return }
+		width, height := 241, 20
+		mut pixels := []u8{len: width * height * 4}
+		blitter := new_pipeline_blitter(mut pixels, width * 4, 0xff123456, 1, .src_over)
+		bounds := IRect{0, 0, width, height}
+		mask := Mask{
+			bounds:    bounds
+			row_bytes: width
+			image:     []u8{len: width * height, init: 255}
+		}
+		mut work := GlyphMaskBlend{
+			blitter:        &blitter
+			blits:          [GlyphMaskBlit{mask, bounds}]
+			bounds:         bounds
+			lanes:          2
+			record_threads: true
+		}
+		mut caller := u64(0)
+		assert C.pthread_threadid_np(unsafe { nil }, &caller) == 0
+		assert work.draw()
+		assert work.threads[1] == caller
+		assert work.threads[0] != 0 && work.threads[0] != caller
+		for i in 0 .. width * height {
+			assert pixels[i * 4..i * 4 + 4] == [u8(0x12), 0x34, 0x56, 0xff]
+		}
+	}
+}
+
 fn test_short_retained_run_blends_large_overlapping_masks_in_paint_order() {
 	width, height := 256, 76
 	pitch := width * 4 + 12
