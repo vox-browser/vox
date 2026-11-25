@@ -3473,3 +3473,206 @@ host's one-minute load ranged from 6.07 to 7.62 between 13:08:40 and
 A fresh live visit on the same executable redirected to Reddit sign-in
 with zero listing posts and two script diagnostics. The browser and
 guard exited zero.
+
+
+## Reuse variable declaration names and bindings in LibJS
+
+A sampled production replay on `20261125-130257-647367d1` reached
+`ScopeCollector.add_var_declaration` while parsing the archived scripts.
+The document PNG matched the fixed Vox reference, with all 25 posts and
+LibJS execution generation 143. JavaScriptCore stayed uninitialized. A
+separate debugger run reached the new registration routine during parsing
+of the original `reddit.en.nBLA_HYpm1I.js` and completed all five scripts.
+Both diagnostics and their guards exited zero.
+
+Variable declarations now use an interned identifier key for registration
+and update the resolved binding once per scope. Function metadata reuses
+existing identifier text and derives its sorted name list from the sorted
+initialization records. The tests cover equivalent Unicode spellings across
+blocks, redeclaration diagnostics and the order of initializer records.
+
+### Archived parser comparison
+
+Each fresh process read the five frozen JS bodies before timing eight
+parse passes with the browser's 256-level recursion budget. It checked
+that every script parsed successfully. Both binaries used one-unit C
+`-prod -prealloc -gc none`; the counter covers the parser thread. Each
+version ran seven alternating fresh control/candidate pairs. The control
+source was `d0cd88101`, with executable SHA-256 `eb944f2db8017f6bad84e8c9d6b12e2e4c3f4faba70f15f2632b8e4e8475d034`.
+The pinned archive manifest SHA-256 was `b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+The driver and workload SHA-256 values were
+`3e7347f4ff2a4a64229baad443b1342e7966dff95a0849f76630672f9f5daf66` and
+`59c4701590263e9b878f7e5425c5e932cc6975a498fee9094ab01739a36fe9ab`.
+
+| Version | Control median instructions | Candidate median instructions | Control median ms per pass | Candidate median ms per pass | Candidate elapsed wins |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Registration | 5,873,743,262 | 5,692,053,147 | 53.313 | 52.034 | 7/7 |
+| Registration and metadata | 5,830,892,521 | 5,563,746,104 | 55.495 | 53.405 | 7/7 |
+| Final map access | 5,891,223,431 | 5,622,178,185 | 58.230 | 56.066 | 5/7 |
+
+The final version used 4.57% fewer median instructions,
+about 33.63 million per pass, and saved 2.16 ms per pass between medians.
+Instructions fell in all seven final pairs. All 42 trial processes and
+three 3 GiB guards exited zero. Sampled aggregate RSS peaked at
+2,089,484,288 bytes. One-minute host load on 18 cores was
+3.47–3.60, 4.04–5.48, and
+6.80–6.83 in the three cohorts, respectively, with
+concurrent compiler activity in the later cohorts.
+
+**Registration**
+
+Candidate executable SHA-256 `042b7bf18933a54f63b75f063bb9bfc75edff9369a92f662ffd7710d23724fbb`.
+
+| Pair | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,876,503,241 | 5,682,293,343 | 53.173 | 51.879 |
+| 2 | 5,867,866,790 | 5,681,500,892 | 53.313 | 51.846 |
+| 3 | 5,866,150,502 | 5,692,053,147 | 53.339 | 52.034 |
+| 4 | 5,873,743,262 | 5,678,266,860 | 53.279 | 51.871 |
+| 5 | 5,868,390,091 | 5,692,526,816 | 52.783 | 52.508 |
+| 6 | 5,889,456,569 | 5,703,742,637 | 53.634 | 52.537 |
+| 7 | 5,885,470,578 | 5,699,082,015 | 53.730 | 52.761 |
+
+**Registration and metadata**
+
+Candidate executable SHA-256 `0af5d80ae0778af15e2357dc8eb8eb657bb1f9d3b157a2f150989c3367ba9dc1`.
+
+| Pair | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,858,659,181 | 5,580,825,585 | 55.607 | 54.855 |
+| 2 | 5,830,892,521 | 5,558,078,408 | 56.102 | 52.678 |
+| 3 | 5,820,043,517 | 5,552,692,447 | 55.495 | 52.358 |
+| 4 | 5,823,208,909 | 5,565,246,099 | 55.335 | 54.436 |
+| 5 | 5,833,298,392 | 5,560,653,962 | 55.190 | 52.746 |
+| 6 | 5,828,797,089 | 5,569,406,221 | 54.208 | 53.811 |
+| 7 | 5,845,640,402 | 5,563,746,104 | 56.295 | 53.405 |
+
+**Final map access**
+
+Candidate executable SHA-256 `e6c98d5e3151792d5916838ce51b4e919db6c14400cbb5e5820f5eb9cac103d3`.
+
+| Pair | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,892,209,777 | 5,650,697,788 | 58.904 | 58.406 |
+| 2 | 5,891,223,431 | 5,624,517,426 | 58.898 | 55.699 |
+| 3 | 5,897,603,026 | 5,622,178,185 | 58.230 | 56.066 |
+| 4 | 5,883,774,636 | 5,618,824,742 | 58.159 | 55.724 |
+| 5 | 5,905,911,223 | 5,615,382,873 | 59.409 | 54.867 |
+| 6 | 5,884,106,267 | 5,616,586,403 | 56.727 | 57.240 |
+| 7 | 5,868,016,132 | 5,624,009,353 | 56.338 | 59.954 |
+
+The early map-pointer lookup in the first two versions produced a new
+FastC `invalid operand types for binary operation` error. The final version
+uses the existing map lookup pattern. Its broad FastC runs reach the
+pre-existing `expression expected before '?'` error in
+`absent_property_set_test.v`. That test passed separately with the C
+backend in both heap modes. All five focused C test files and all 100 exact
+upstream AST fixtures passed under Boehm and `-gc none`.
+
+### Published control before declaration reuse
+
+The single-unit C `-prod` bundle `20261125-131010-632ad881` verified
+`d0cd88101` and had executable SHA-256
+`f7ab6eb54d69b50ada0dc37bf10d8bd5cfaf20bb73a20268c905cc0688ec6ba0`.
+Its sealed C SHA-256 was
+`b15c7623ebeefd249da231a1dddb45fc2f3c569d96133f75b2cabc236418142e`.
+Seven fresh Vox-only launches used the clock-pinned archive, empty private
+profiles and HTTP caches, a 1.4 s settle setting, 1024×768 PNGs at scale 1,
+and retained OS filesystem and shader caches. The counter observation ends
+when the controller first sees a complete native document PNG.
+
+| Run | Observed instructions | Launch through PNG (ms) |
+| --- | ---: | ---: |
+| 1 | 5,831,922,124 | 2116.637 |
+| 2 | 5,603,661,254 | 2013.322 |
+| 3 | 5,593,575,409 | 2024.859 |
+| 4 | 5,657,145,135 | 2019.828 |
+| 5 | 5,563,702,247 | 2042.520 |
+| 6 | 5,563,100,141 | 2012.201 |
+| 7 | 5,699,845,349 | 2004.303 |
+| Median | 5,603,661,254 | 2019.828 |
+
+All seven runs matched the fixed Vox screenshot, served all five author
+scripts and exposed the 25 ordered posts. All browser exits, the driver
+and the memory guard returned zero. The guard adopted all seven roots and
+sampled 763,199,488 bytes at peak. Complete samples preceded
+capture by 5.30–7.75 ms, with zero missing final samples. The sampled
+CPU counts are lower bounds and exclude GPU and outside services.
+One-minute host load on 18 cores ranged from 6.95 to 7.62
+between 13:16:31 and 13:16:49 UTC+03 while focused compilers were active.
+
+### Production comparison with declaration reuse
+
+The managed build `20261125-131603-897e3a17` stopped when source inputs
+changed before C preprocessing. The worker retained the previous bundle
+and then published `20261125-131846-a6067da7` with verified source
+`d0cd66c78`. Its single-unit `-prod` sealed C SHA-256 was
+`377d4166401d81201e490631ebf7b91a2f6adcdc2e77cc0337174b1940e5d92d`.
+Its executable SHA-256 was
+`4575782cafab004239ad56713933582762b7bc3f6806e876129c061e8e1cbfac`.
+The controller verified 185 workload and binary hashes and 14 observer,
+helper and reference hashes. Brave's executable and framework matched
+those of the previous comparison. It reported Chromium 158.0.8127.42.
+
+LibJS headless smoke passed bytecode execution, DOM mutation and click
+events. A separate sampled archive replay reached function scope metadata
+construction, exposed the 25 posts and matched Vox's fixed PNG. It recorded
+execution generation 147, zero script diagnostics and an uninitialized
+JavaScriptCore context. Both checks and their guards exited zero.
+
+Seven fresh alternating browser pairs used the clock-pinned archive, empty
+private profiles and HTTP caches, retained OS filesystem and shader caches,
+1024×768 at scale 1 and the 1.4 s settle setting. Vox used LibJS with native
+and frontend caches disabled. Counts include launch through the
+last complete sample before the first complete native PNG observed in Vox
+or the first complete CDP PNG response in Brave. They are process-tree lower
+bounds and exclude GPU work, outside services and short-lived tasks missed
+by sampling.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,520,831,058 | 11,577,103,725 | 2006.300 | 2031.834 | Alternate thumbnails |
+| 2 | 5,521,639,875 | 11,545,028,735 | 1977.749 | 1951.497 | Alternate thumbnails |
+| 3 | 5,489,501,288 | 11,574,166,393 | 2019.574 | 1961.206 | Alternate thumbnails |
+| 4 | 5,556,420,803 | 11,455,777,760 | 1966.094 | 1973.399 | Second thumbnail variant |
+| 5 | 5,506,803,352 | 11,578,049,121 | 2000.198 | 1970.488 | Alternate thumbnails |
+| 6 | 5,555,891,664 | 11,486,023,136 | 1969.597 | 1957.738 | Alternate thumbnails |
+| 7 | 5,518,178,556 | 11,680,510,599 | 1947.451 | 1949.383 | Exact |
+| Median | 5,520,831,058 | 11,574,166,393 | 1977.749 | 1961.206 | Six failures |
+
+Every Vox PNG matched its fixed reference. All 14 visits exposed the same
+25 ordered posts and served the five original scripts. Vox LibJS execution
+generations were 143, 155, 143, 151, 157, 155 and 153. JavaScriptCore stayed
+uninitialized. Brave exposed its required author handlers and zero script
+exceptions or author messages. Replay URL and response SHA-256 sets were
+identical within each browser, with 43 distinct pairs in Vox and 44 in Brave.
+
+Five Brave deviations reproduced PNG SHA-256
+`b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`,
+with 13,902 differing RGB pixels at x=83–153 and y=400–762 and maximum
+channel error 83. Pair 4 produced
+`636d91c5d06abfd724767953af2f0c57984695422204662f24ce126d9eb0456e`
+and differed from the fixed image in 14,077 pixels in the same area, with
+maximum channel error 83. Its difference from the usual alternate was
+confined to y=634–679, affecting 2,421 pixels with maximum channel error 6.
+The fixed references and threshold were unchanged.
+
+The six Brave pixel failures invalidate the cohort. In the raw observations
+Vox used 52.30% fewer median instructions and its highest observed total
+was 48.50% of Brave's lowest. Vox's median elapsed time was 16.54 ms slower,
+with three pair wins and a median paired deficit of 11.86 ms. The earlier
+Vox-only control median was 42.08 ms higher than the candidate median.
+Those sequential cohorts also differ in renderer code and host load. The
+matched standalone runs establish the declaration optimization's effect on
+parsing. The earlier qualifying frozen comparison remains in the catalog.
+
+All 14 browsers exited zero. The driver and 12 GiB guard returned 1 on the
+pixel failures. The guard adopted every root and sampled 780,615,680 bytes
+at peak. Final complete samples preceded capture by 5.93–7.69 ms for Vox
+and 0.38–7.42 ms for Brave. Vox reported no missing final samples. Brave
+reported 2, 3, 2, 2, 2, 2 and 2. One-minute load on 18 cores ranged from
+4.91 to 5.55 between 13:24:18 and 13:24:54 UTC+03.
+
+A separate live visit on the same executable redirected to Reddit sign-in,
+with zero listing posts and two script diagnostics. The browser and guard
+returned zero.
