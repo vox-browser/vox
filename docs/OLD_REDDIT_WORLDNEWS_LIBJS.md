@@ -1,11 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **49.17% fewer median observed CPU instructions**
-than Brave on the frozen `/r/worldnews/` listing. Median launch-to-PNG time
-across all seven attempts was **2.272 s for Vox and 2.297 s for Brave**.
-One Brave capture differed from its fixed reference, leaving the acceptance
-gate open. A fresh live Vox visit reached Reddit's login page.
-[Current comparison](#production-cohort-with-scope-and-first-tag-read-optimizations)
+Production Vox with LibJS used **49.05% fewer median observed CPU instructions**
+than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
+their respective screenshot references. Median launch-to-PNG time was
+**2.302 s for Vox and 2.292 s for Brave**. A fresh live Vox visit reached
+Reddit's login page. [Current comparison](#pixel-exact-production-comparison-on-the-glyph-worker-build)
 
 ## Workload and execution
 
@@ -722,7 +721,8 @@ their decoded code units. The focused regression checks an escaped `eval`
 call alongside the existing escaped `arguments` coverage.
 All four focused test files and all 100 upstream AST fixtures passed with
 Boehm and `-gc none`. Both default full-package attempts stopped at the
-existing FastC-generated C error in `absent_property_set_test.v`.
+existing FastC-generated C error in `absent_property_set_test.v`. That file
+passed separately with the C backend in both heap modes.
 
 A separate debugger run on the candidate reached the length branch on a
 one-code-unit name in the archived main Reddit bundle. Single-unit `-prod`
@@ -769,3 +769,101 @@ zero. The candidate SHA-256 was
 
 The cache experiment was dropped after median elapsed time rose 12.24 ms
 and five pairs took longer. Its median instruction count fell 0.42%.
+
+## Pixel-exact production comparison on the glyph-worker build
+
+Managed build `20261125-070646-a45fd477` verified `5a4df55d3` in
+single-unit `-prod` C. The executable SHA-256 was
+`1bb154684a1fcd711cec033152c86c1f62ce2d173d8139d3e465c15c555a9e29`.
+The sealed C input SHA-256 was
+`4c9b20961b5792293fe3e48158e487515c5e38eaa49d9eaf0ca97bd9afce1801`.
+This baseline predates the identifier-length prefilter.
+
+Seven alternating pairs used the clock-pinned 1024×768 replay at scale 1
+with 1.4 s settling, empty private profiles and HTTP caches, and retained
+OS filesystem and shader caches. The endpoint was the first complete native
+document PNG observed for Vox and the completed CDP screenshot response for
+Brave. The executable, native libraries, archive, observer and references
+were pinned throughout. Brave's binary and framework hashes and the replay
+manifest match the previous production cohort.
+
+All 14 browser visits reached `complete` with all 25 ordered posts, and
+replay served the five original author scripts each time. Vox reported
+LibJS execution generation 145 or 147, zero diagnostics and an uninitialized
+JavaScriptCore context. Every PNG matched its browser's fixed reference.
+The two browser references differ in the rendered viewport.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,952,878,408 | 11,682,236,833 | 2348.7 | 2403.5 |
+| 2 | 5,967,493,004 | 11,658,867,859 | 2329.0 | 2217.8 |
+| 3 | 5,971,426,414 | 11,675,241,376 | 2307.6 | 2292.5 |
+| 4 | 5,961,209,836 | 11,698,984,983 | 2293.2 | 2272.1 |
+| 5 | 5,918,625,467 | 11,811,471,508 | 2301.0 | 2312.6 |
+| 6 | 5,971,942,730 | 11,773,777,217 | 2302.5 | 2310.6 |
+| 7 | 5,888,078,166 | 11,749,762,114 | 2277.1 | 2256.2 |
+| Median | 5,961,209,836 | 11,698,984,983 | 2302.5 | 2292.5 |
+
+Vox used **49.05% fewer median observed instructions**. Its highest
+observed count was 51.22% of Brave's lowest and met the 10% observed-count
+gate. Brave reached its capture 10.0 ms sooner at the median. Vox finished
+sooner in three pairs. Trial-start one-minute load was 19.39–23.78 on 18
+cores, and the cohort ran from 07:20:23 to 07:21:10 UTC+03 on November 25.
+
+The counts are process-tree lower bounds, excluding GPU execution and
+external services such as WindowServer. The last complete samples preceded
+the PNG boundary by 7.15–10.07 ms for Vox and 0.95–7.61 ms for Brave.
+The seven Vox visits reported zero missing final samples. Brave reported
+2, 1, 1, 2, 1, 2 and 2. The browser roots, driver and 12 GiB guard exited
+zero. The guard adopted all 14 roots and sampled a peak aggregate RSS of
+863,895,552 bytes.
+
+A separate fresh visit using this build and an empty private profile reached
+`Welcome to Reddit` at the login redirect. The document reached `complete`
+with zero listing posts. LibJS reported two unsupported `data:` script URLs.
+The browser and guard exited zero.
+
+## Production comparison with the identifier-length prefilter
+
+Managed build `20261125-072247-4031dc62` verified `b92bb2bda`, which
+contains the identifier-length change and subsequent raster changes.
+The sealed single-unit `-prod` C file contains the prefilter and had
+SHA-256 `16f476bf55886e050fa01c474c57da17c95f144d07c96b5d65da0b3ccd7a2a93`.
+The browser SHA-256 was
+`8937b44ce64f1559096c0af2c202c720cfa9858df5982a622d0c00a0de7cb36a`.
+The fresh LibJS headless smoke check passed. The seven alternating pairs
+used the same archive, capture boundaries, fixed references and Brave
+executable and framework as the glyph-worker cohort.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,994,410,280 | 11,809,762,498 | 2365.7 | 2473.9 |
+| 2 | 5,981,673,647 | 11,681,403,455¹ | 2330.8 | 2356.6¹ |
+| 3 | 5,956,996,275 | 11,724,203,517 | 2346.2 | 2347.8 |
+| 4 | 6,009,003,401 | 11,866,259,834 | 2433.3 | 2403.4 |
+| 5 | 5,907,840,387 | 11,718,992,397 | 2326.4 | 2298.2 |
+| 6 | 5,915,613,070 | 11,729,833,295 | 2293.8 | 2289.8 |
+| 7 | 5,886,572,081 | 11,700,353,617 | 2297.5 | 2205.8 |
+
+¹ Brave pair 2 captured a reference-matching PNG. Its teardown watchdog
+then expired, and the browser exited 2. The harness retained the counts
+and elapsed time recorded at the screenshot boundary. Every other browser
+root exited zero. Both the driver and guard exited 1 on the shutdown
+failure. All 14 attempts remain in the table and the cohort is invalid for
+acceptance. Across the six pairs with clean shutdowns, median elapsed time
+was 2336.3 ms for Vox and 2323.0 ms for Brave.
+
+All seven Vox PNGs matched their reference. The Vox audits returned the 25
+ordered posts, execution generation 145 or 157, zero diagnostics and an
+uninitialized JavaScriptCore context. Each of the six normally completed
+Brave visits matched its reference and passed the document audit. The
+instruction counts are process-tree lower bounds. Vox's last samples
+preceded capture by 5.21–7.63 ms, with zero missing final samples. Brave's
+preceded capture by 1.64–8.06 ms, with 1, 1, 1, 0, 1, 0 and 1 missing final
+samples in pair order. The guard adopted all 14 roots and sampled a peak
+aggregate RSS of 867,450,880 bytes. Host one-minute load was 60.00–88.85 on
+18 cores. The cohort ran from 07:33:04 to 07:34:05 UTC+03 on November 25.
+
+A fresh direct visit reached `Welcome to Reddit` at the login redirect
+with zero posts and two unsupported `data:` script URLs. The browser and
+guard exited zero. Live listing performance remains unverified.
