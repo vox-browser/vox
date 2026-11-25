@@ -867,3 +867,59 @@ aggregate RSS of 867,450,880 bytes. Host one-minute load was 60.00–88.85 on
 A fresh direct visit reached `Welcome to Reddit` at the login redirect
 with zero posts and two unsupported `data:` script URLs. The browser and
 guard exited zero. Live listing performance remains unverified.
+
+## Classifying ASCII identifier starts in the lexer
+
+LibJS now classifies ordinary ASCII identifier starts using the current
+code unit. The general UTF-16 decoder still handles Unicode starts and
+escaped starts still use their decoded spelling. One-code-unit, unescaped
+identifiers skip keyword lookup. A separate debugger run on the archived
+main Reddit bundle reached both paths. The focused test verifies source
+lengths for ASCII, supplementary, escaped and private names, and checks
+that an escaped digit cannot start an identifier.
+The five focused test files and all 100 upstream AST fixtures passed under
+Boehm and `-gc none`. Both default full-package runs stopped at the existing
+FastC-generated C error in `absent_property_set_test.v`.
+
+Both standalone cohorts used single-unit `-prod` C, `-prealloc -gc none`,
+and the production parser recursion limit. The driver verified the five
+unchanged archived scripts and both executable hashes on every visit.
+Each process read the scripts before starting its timer, then parsed them
+eight times. The counts cover parser-thread instructions during all eight
+sets. Elapsed times are per set of five scripts.
+
+| Pair | Control thread instructions | Candidate thread instructions | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,884,137,539 | 6,780,667,914 | 63.160 | 65.230 |
+| 2 | 6,920,205,215 | 6,777,839,410 | 68.986 | 65.863 |
+| 3 | 6,906,247,030 | 6,810,154,597 | 67.800 | 69.441 |
+| 4 | 6,951,174,330 | 6,810,936,908 | 80.911 | 70.163 |
+| 5 | 6,953,443,703 | 6,813,790,958 | 70.539 | 66.436 |
+| 6 | 6,928,948,009 | 6,817,695,049 | 69.161 | 68.432 |
+| 7 | 6,937,466,525 | 6,789,069,977 | 68.658 | 67.681 |
+| Median | 6,928,948,009 | 6,810,154,597 | 68.986 | 67.681 |
+
+The two changes together reduced median parser-thread instructions by
+**1.71%**, or 14.85 million per set. Instructions fell in all seven pairs.
+Elapsed parse time improved in five pairs. One-minute host load was
+20.84–21.55 on 18 cores. All 14 processes and the 3 GiB guard exited zero.
+The control and candidate executable SHA-256 values were
+`39fbdab42f22ead85199388d9c8d436f65980c63cacefc8040030c1cf3c74edb`
+and `014adf9bce91e3c899b24a2d20051ff71e1c494ed08c915f320d2917b7829f28`.
+
+The earlier cohort tested ASCII start classification alone. It used the
+same control and candidate SHA-256
+`8374ed8f3da17eca3ed98df0a2f5343a3faf5f1ca1b5f26583d1397edc2749b5`.
+Median instructions fell 1.15%, and median elapsed time rose 1.66 ms.
+One-minute load was 23.94–25.30, and all processes and the guard exited zero.
+
+| Pair | Control thread instructions | Start classification thread instructions | Control parse (ms) | Start classification parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,891,229,774 | 6,803,522,608 | 65.527 | 64.595 |
+| 2 | 6,879,154,671 | 6,801,538,325 | 62.500 | 64.127 |
+| 3 | 6,818,172,502 | 6,745,843,198 | 59.149 | 60.838 |
+| 4 | 6,772,837,988 | 6,695,108,872 | 60.524 | 60.813 |
+| 5 | 6,772,194,816 | 6,691,953,242 | 58.619 | 58.550 |
+| 6 | 6,771,545,373 | 6,691,941,724 | 58.273 | 59.496 |
+| 7 | 6,772,595,677 | 6,691,447,190 | 58.843 | 58.384 |
+| Median | 6,772,837,988 | 6,695,108,872 | 59.149 | 60.813 |

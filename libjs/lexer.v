@@ -660,26 +660,23 @@ fn (l &Lexer) build_identifier_value(scan_start int) Utf16String {
 	}
 }
 
-// Check if current position starts an identifier start character.
-// Returns (code_point, len) or (-1, 0).
-fn (l &Lexer) is_identifier_start() (i64, int) {
-	cp := l.current_code_point()
-	if cp == u32(`\\`) {
+// Number of source code units in a valid identifier start, or zero.
+fn (l &Lexer) identifier_start_length() int {
+	unit := u32(l.current_code_unit)
+	if unit < 128 && unit != u32(`\\`) {
+		return if is_identifier_start_cp(unit) { 1 } else { 0 }
+	}
+	if unit == u32(`\\`) {
 		esc_cp, esc_len := l.is_identifier_unicode_escape()
-		if esc_cp >= 0 {
-			if is_identifier_start_cp(u32(esc_cp)) {
-				return esc_cp, esc_len
-			}
-		}
-		return -1, 0
+		return if esc_cp >= 0 && is_identifier_start_cp(u32(esc_cp)) { esc_len } else { 0 }
 	}
 
+	cp := l.current_code_point()
 	if is_identifier_start_cp(cp) {
-		len := if cp > 0xFFFF { 2 } else { 1 }
-		return i64(cp), len
+		return if cp > 0xFFFF { 2 } else { 1 }
 	}
 
-	return -1, 0
+	return 0
 }
 
 // Check if current position continues an identifier.
@@ -1014,8 +1011,8 @@ fn (mut l Lexer) lex_token() Token {
 		}
 	} else if l.current_code_unit == ch(u8(`#`)) {
 		l.consume()
-		start_cp, start_len := l.is_identifier_start()
-		if start_cp >= 0 {
+		start_len := l.identifier_start_length()
+		if start_len > 0 {
 			has_escape := l.scan_identifier_body(start_len)
 			if has_escape {
 				identifier_value = ast_text(l.build_identifier_value(value_start))
@@ -1026,8 +1023,8 @@ fn (mut l Lexer) lex_token() Token {
 			token_message = "Start of private name '#' but not followed by valid identifier"
 		}
 	} else {
-		start_cp, start_len := l.is_identifier_start()
-		if start_cp >= 0 {
+		start_len := l.identifier_start_length()
+		if start_len > 0 {
 			has_escape := l.scan_identifier_body(start_len)
 
 			if has_escape {
@@ -1038,6 +1035,9 @@ fn (mut l Lexer) lex_token() Token {
 					token_type = .identifier
 				}
 				identifier_value = ast_text(decoded)
+			} else if l.position - value_start == 1 {
+				// Every keyword has at least two code units.
+				token_type = .identifier
 			} else {
 				if kw := keyword_from_str(l.source[value_start - 1..l.position - 1]) {
 					token_type = kw

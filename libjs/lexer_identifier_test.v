@@ -36,3 +36,17 @@ fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
 	assert end.offset == u32(source.len)
 	assert end.line_column == ascii_end.line_column + ascii_end.value_len
 }
+
+fn test_lexer_identifier_starts_keep_escaped_and_supplementary_lengths() {
+	mut lexer := Lexer.new(utf16(r'A $ _ 𐐀 #𐐀 \u0061 #\u0061 . 0'), 1, 0)
+	lengths := [u32(1), 1, 1, 2, 3, 6, 7, 1, 1]
+	for index, kind in [TokenType.identifier, .identifier, .identifier, .identifier,
+		.private_identifier, .identifier, .private_identifier, .period, .numeric_literal] {
+		token := lexer.next()
+		assert token.token_type == kind
+		assert token.value_len == lengths[index]
+	}
+	assert lexer.next().token_type == .eof
+	mut bad := Lexer.new(utf16(r'\u0030'), 1, 0)
+	assert bad.next().token_type == .invalid
+}
