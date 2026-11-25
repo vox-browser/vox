@@ -1,5 +1,9 @@
 # Old Reddit LibJS verification — 2026-11-17
 
+The [worldnews follow-up](OLD_REDDIT_WORLDNEWS_LIBJS.md) verifies native
+`localStorage` and dynamic templates in production LibJS and records the
+scripted replay comparison against Brave.
+
 The subsequent [three-engine performance measurement](LIBJS_OLD_REDDIT_PERFORMANCE.md)
 records compiled LibJS at 657.184 ms per 100 representative collapse/expand
 cycles, versus V8 266.793 ms and JSC 409.549 ms. It separately records cache-fill

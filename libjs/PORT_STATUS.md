@@ -14,6 +14,11 @@ GC and `-gc none`, and the exact upstream AST corpus passes all 100 cases.
 Updated production-browser native-input validation remains pending; broad-suite
 resource/test failures and unverified site behavior are recorded in that report.
 
+Sloppy-mode `with` statements now execute in object environments, including in
+dynamic `Function` bodies. The production worldnews probe executes Reddit's
+generated template and verifies the page's main script handlers. See the
+[worldnews comparison](../docs/OLD_REDDIT_WORLDNEWS_LIBJS.md).
+
 The [GitHub continuation](../docs/LIBJS_GITHUB.md) adds bounded deeper browser
 parsing, iterative conditional alternatives and synchronous module graphs.
 Graph loading supports asynchronous host completion; linking/evaluation preserve
