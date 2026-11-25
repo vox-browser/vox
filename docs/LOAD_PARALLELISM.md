@@ -6768,3 +6768,120 @@ All 11 diagnostic captures verified all 3,145,728 pixels against
 the unchanged reference. The executable, native library, helper,
 font inputs, archive and harness remained pinned. Browser, driver
 and 3 GiB guards exited zero. Peak sampled RSS was 322,715,648 bytes.
+
+### Record short glyph replay geometry during display-list projection
+
+Commit `318e180c7` adds `VOX_RECORD_GLYPH_REPLAY_GEOMETRY=1` on
+macOS. The existing display-list lanes convert short horizontal runs,
+fold in the Chromium baseline and validate the position buffer.
+Each command owns a scene-local slice of up to 32 coordinates.
+Canvas preparation can borrow the matching scene's positions,
+validation and bounds. Longer runs still use its existing per-range
+storage. Packed and serial glyph geometry retain their own paths.
+Glyph-mask preparation and ordered blending use the same draw path.
+
+The focused culling tests passed with ThreadSanitizer and arena
+poisoning. The fixture reused 240 short runs and prepared one longer
+run through the fallback. Both schedules produced identical positions,
+bounds and culling results. A copied command vector rejected the
+recorded slots. The early projection prefix with the existing ink
+and raster-extent options, serial validation, packed glyph positions
+and disabled workers passed. Guarded compile and runtime peak RSS
+were 6,500,122,624 and 501,186,560 bytes.
+
+#### Isolated Hacker News replay preparation
+
+The unoptimized executable SHA-256
+`ec6a300709b08facccb304a4becbffb707b4d8f35a95aadefcfa02e7034da423`
+recorded the archived homepage with inlined archived CSS at a
+1024×768 CSS viewport. It timed four-lane canvas preparation with
+a 112 CSS-pixel page offset and an 880 CSS-pixel canvas. The positions
+were already recorded before timing. The diagnostic found 334
+recorded slots in 443 commands. Of 327 glyph runs prepared by the
+canvas batch, 300 used the recording and 27 used the usual work.
+Every pair compared culling bits and prepared positions and bounds.
+
+Each launch alternated 150 measured pairs after five warm-up pairs.
+The one-minute host load was 6.89 on 18 CPUs. Test launches and
+guards exited zero and runtime peak RSS was 114,114,560 bytes.
+
+| Run | On-demand median | Recorded median | Median paired change | Recorded wins |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 170.354 µs | 132.251 µs | −38.750 µs | 143/150 |
+| 2 | 164.230 µs | 128.271 µs | −37.896 µs | 144/150 |
+
+#### Matched staged production captures
+
+Receipt `20261126-021936-36822c66` sealed the feature in single-C-unit
+V `-prod` mode. Compilation and the headless smoke exited zero.
+Disk exhaustion prevented the builder from writing its publication
+receipt. The signed staged bundle passed strict signature verification
+and was measured in place under the artifact lease. The canonical
+bundle still pointed to the previous publication during these runs.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `9b64cf6b89f734a3d934690acd63d18a948d5100e4214e19bc0c0f42ed31d0eb` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Each recorded-mode diagnostic replay reused 303 of 332 glyph runs.
+The early prefix and range-by-range replay used the same 303 slots. Range
+replay read all four ranges without waiting. With frame glyph
+prefetch enabled, four lanes published 107 masks using the retained
+positions. Packed mode used its usual 373 prepared runs.
+
+The separate counter runs measured the same number of calls in
+each pair. Moving work into recording increased the command
+recording substage. Instructions in the full native replay varied
+by more than the change in the glyph preparation scopes.
+
+| Pair | Scope | Control | Recorded |
+| ---: | --- | ---: | ---: |
+| 1 | Paint record commands | 1,211,709 | 1,484,410 |
+| 1 | Retained glyph geometry reservation | 46,775 | 47,008 |
+| 1 | Canvas bounds join | 51,260 | 55,409 |
+| 1 | Text replay | 129,894,992 | 131,352,091 |
+| 1 | Native raster replay | 265,964,785 | 265,280,098 |
+| 2 | Paint record commands | 1,208,962 | 1,441,974 |
+| 2 | Retained glyph geometry reservation | 48,889 | 46,477 |
+| 2 | Canvas bounds join | 52,467 | 54,462 |
+| 2 | Text replay | 130,622,343 | 130,436,351 |
+| 2 | Native raster replay | 274,015,038 | 260,423,072 |
+
+The unprofiled comparison alternated seven fresh-launch pairs in
+each of four cohorts. Recorded mode started cohorts two and four.
+Both schedules used JavaScriptCore, a private empty profile and HTTP
+cache, retained OS filesystem and shader caches, and the archived origin
+with a 60 ms delay on logo replay. Captures used a 1024×768 CSS viewport
+at 2× scale and waited for `tr.athing`. The timer ran from process
+launch through the completed document PNG with nominal 1 ms polling.
+
+| Pair | Control 1, ms | Recorded 1, ms | Control 2, ms | Recorded 2, ms | Control 3, ms | Recorded 3, ms | Control 4, ms | Recorded 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 296.611 | 307.014 | 318.317 | 308.349 | 310.226 | 312.411 | 326.276 | 313.785 |
+| 2 | 331.884 | 314.998 | 333.698 | 323.794 | 337.525 | 329.434 | 323.755 | 325.510 |
+| 3 | 306.490 | 304.778 | 324.983 | 297.878 | 317.287 | 508.372 | 323.925 | 319.474 |
+| 4 | 332.394 | 318.097 | 291.263 | 294.762 | 310.764 | 324.500 | 325.384 | 311.082 |
+| 5 | 325.125 | 323.909 | 322.563 | 306.005 | 336.202 | 339.224 | 320.129 | 330.002 |
+| 6 | 312.670 | 308.618 | 330.962 | 322.012 | 315.132 | 320.416 | 313.425 | 327.396 |
+| 7 | 324.895 | 305.390 | 328.212 | 319.585 | 322.865 | 329.499 | 313.151 | 332.211 |
+| Median | 324.895 | 308.618 | 324.983 | 308.349 | 317.287 | 329.434 | 323.755 | 325.510 |
+
+Median paired changes were −4.052, −9.904, +5.284 and +1.756 ms.
+Recorded mode finished first in 6, 6, 1
+and 3 of seven pairs, respectively. One-minute load ranged
+from 5.11 to 5.69 on 18 CPUs. The mixed launch
+timings keep recorded glyph geometry opt-in.
+
+All 68 launches reproduced eight replay requests with identical
+fingerprints, including the favicon miss. They passed the URL,
+readiness, viewport and 30-story audits and reproduced PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All 12 diagnostic captures matched all 3,145,728 pixels of the
+unchanged reference. Executable, native library, helper, font
+inputs, archive, receipt and harness identity stayed pinned.
+Browser, driver and 3 GiB guards exited zero, with peak sampled
+RSS of 355,713,024 bytes.
