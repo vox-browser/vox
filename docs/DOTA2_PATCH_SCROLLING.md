@@ -354,3 +354,103 @@ One-minute host load was 43.11→43.00 and 42.68→42.91. Both browsers and
 drivers exited 0. The 3 GiB guard exited 0 and peaked at 1,462,337,536 B RSS.
 These trials show that the page still misses many frame deadlines after
 loading. They establish baseline behavior for the later memory changes.
+
+## Production build with the stylesheet cache cap
+
+The single-unit C production bundle at `08729cfc0` includes the stylesheet
+cache cap. Its executable SHA-256 was
+`4812830ce1912f8bb86e16b97dd4af79b5070c1857201732ad53f1cccd0d26bc`.
+The latest audited comparison retained the 23-second checkpoint, viewport,
+profile, live network policy, process-tree sampler and 12-second observation
+period above. The Brave executable and runtime hashes were pinned through each
+trial. The content audit still required the full 15,620-byte patch text with
+UUID normalization, 133 patch images, and matching title, visibility and
+font readiness.
+
+| Trial order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Vox 1 | 749,883,208 B | 1,197,756,928 B | 0 |
+| Brave 1 | 334,323,512 B | 887,693,040 B | 0 |
+| Brave 2 | 295,690,328 B | 858,595,416 B | 0 |
+| Vox 2 | Missing item and neutral item text, 133 images | — | −15 |
+
+The guard and driver exited 1 after rejecting the incomplete Vox run. The
+guard observed 1,059,815,424 B of peak process-tree RSS with its 3 GiB cap.
+The 18-CPU host's one-minute load at launch was 25.10, 17.05, 15.95 and
+14.06. The complete pair places Vox at 2.24 times Brave's settled footprint.
+Host load and other bundled changes prevent isolating the CSS cap's effect
+from these live observations.
+
+Native Fetch now uses a shared stream read request throughout body delivery
+(`011b4c2a7`). Each Fetch consumer receives an independent byte array.
+Native reads skip the extra Uint8Array and promise result used for
+script-facing reads. Focused body and response handover
+tests passed with preallocation. The XHR binding tests initially stopped at
+`OPENED` because the fixture drained the HTML queue before delivering
+`PendingResponse`'s deferred platform callback. All cases passed once the
+fixture drained both queues. The production bundle measured above predates
+this change.
+
+Inline measurements and resolved grid-track entries now share the existing
+layout-pass arena (`28550f04f`). Probes can reuse cached geometry until the
+pass ends. Final layout takes ownership of promoted lines, glyph buffers,
+and inline box values before the arena retires. Tests covered matching
+previous lines, changed lines, intrinsic glyph ownership, inline box edges,
+and independent grid track results. All four focused FastC test files
+passed normally and with the measurement and probe arenas poisoned.
+
+Committed subtree replay now shares rare geometry when its backing is
+safe to share (`0058ec186`). A write through either state detaches it.
+SVG path and grid data retain their copy behavior. The rare-state and
+incremental-root tests passed normally and with the targeted arena
+poisoning enabled.
+
+`33efcc64d` puts XHR text decoding and the JSON reply in a temporary
+workspace. The JavaScript binding copies the text before the workspace
+retires. The focused application test reads a 160 KiB response five times
+through `response` and `responseText`. It verified text equality and
+native document arena growth smaller than one response body. Both
+the normal C-backend runtime check and the check with input and reply
+workspace poisoning exited 0. Standalone browserjs C compilation hit the
+12 GiB guard, so the focused check used the production application's
+module layout.
+
+### Longer scroll on the stylesheet-cap build
+
+Two fresh runs used the same viewport, scale and live content audit. Each
+sent 720 native precise wheel events at 60 Hz, with delta 16 and a reversal
+after input 540. The completed frames reached scroll position 13,791.5 CSS
+pixels. These trials use a different workload from the 240-input baseline.
+A 50 ms process-tree observer sampled physical footprint from process
+discovery. It used receipt of the native scroll log markers to identify the
+input interval. Peak footprint in both launches occurred during scrolling.
+
+| Run | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap | Sampled peak footprint |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 13.32 | 59.75 / 93.94 / 2,079.96 ms | 166/170 | 720 / 416 | 56.35 Hz | 123.41 / 18.45 ms | 1,473,581,112 B |
+| 2 | 15.25 | 53.79 / 83.22 / 2,159.39 ms | 187/197 | 720 / 466 | 55.65 Hz | 59.39 / 37.02 ms | 1,425,641,528 B |
+
+The input windows lasted 12.759 and 12.920 seconds. Both browsers and drivers
+exited 0. The guard exited 0 with a 1,448,312,832-byte RSS peak. One-minute
+host load was 14.56→10.65 and 10.65→10.27. These fresh single-tab runs
+peaked below the reported 5 GB and still missed most frame deadlines.
+
+A separate 10-second macOS stack sample during the same wheel schedule
+recorded 3,966 main-thread samples. It found 1,128 in CSS filter-layer
+completion, including 644 in Core Image rendering, and 1,027 in portable
+shadow drawing, including Metal readback. Linear gradient shading and
+transformed image drawing accounted for another 641 and 524 samples.
+The full patch audit, sampler, browser and 3 GiB guard passed. The sample
+identifies active rendering work during the stalls. The throughput table
+uses the two separate runs without stack sampling.
+
+An injected diagnostic switched off Core Image intermediate caching for the
+same browser's CSS filter context. The probe verified the context constructor
+in Vox. One run missed the content audit with only five images. The complete
+run peaked at 1,384,353,848 B during scrolling and published 7.81
+scroll-changing frames per second. The respective one-minute host loads
+were 49.47→85.28 and 85.28→103.90. Both browsers and precise-scroll drivers
+exited 0. The audit wrapper and its 3 GiB guard exited 1 because the first
+document was incomplete. The guard's observed RSS peak was 1,378,615,296 B.
+The host load disparity leaves the cache setting's effect unverified.
+[Core Image cache option](https://developer.apple.com/documentation/coreimage/cicontextoption/cacheintermediates?language=objc)
