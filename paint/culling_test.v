@@ -1,12 +1,56 @@
 module main
 
 import gg
+import dom
+import html
 import layout
 import painting
 import math
 import os
 import platform
 import runtime
+
+$if macos {
+	fn test_recorded_canvas_ink_applies_the_replay_canvas_offset() {
+		if os.getenv('VOX_RECORD_CANVAS_INK_BOUNDS') != '1'
+			|| os.getenv('VOX_SERIAL_DISPLAY_LIST_REPLAY') == '1'
+			|| os.getenv('VOX_SERIAL_CPU_RASTER') == '1' || runtime.nr_cpus() < 2 { return }
+		mut document := html.parse_document('<!doctype html><style>
+			body{margin:0}p{margin:0;height:9px;background:#eee;transform:translateX(.25px)}
+			aside{position:fixed;top:30px;left:1px;background:#ffc}
+		</style><aside>Fixed</aside>' + '<p>Recorded <b>text</b> <i>with</i> <u>styles</u></p>'.repeat(180))
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		_ = layout.layout_document_typed_in_viewport(document, 700, 600)
+		document.set_viewport_rect(dom.Rect{y: 120, width: 700, height: 600})
+		list := document.record_viewport_display_list() or { panic('missing viewport recording') }
+		scene := layout.retain_display_list_scene(list)
+		defer { layout.release_display_list_scene(scene) }
+		commands := layout.display_list_commands(list)
+		ink := layout.display_list_canvas_ink(list, commands)
+		assert ink.len == commands.len
+		assert ink.any(it.prepared())
+		assert layout.display_list_canvas_ink(list, commands.clone()).len == 0
+		for page_y in [0.0, -50.25, math.nan()] {
+			mut batch := new_paint_canvas_bounds_batch(commands, 2, page_y, 700, 600,
+				recorded_ink: ink)
+			bounds := batch.finish(true)
+			assert bounds.len == commands.len
+			for index in 0 .. bounds.len {
+				if bounds[index] == u8(PaintLeafCanvasBounds.unprepared) { continue }
+				command := &commands[index]
+				expected := layout.paint_leaf_is_outside_canvas(command, 0, page_y, 700, 600)
+				assert (bounds[index] == u8(PaintLeafCanvasBounds.outside)) == expected
+			}
+		}
+		document.set_viewport_rect(dom.Rect{y: 150, width: 700, height: 600})
+		next := document.record_viewport_display_list() or { panic('missing scrolled recording') }
+		next_commands := layout.display_list_commands(next)
+		assert layout.display_list_canvas_ink(next, next_commands).any(it.prepared())
+		assert layout.display_list_canvas_ink(next, commands).len == 0
+		assert layout.display_list_canvas_ink(list, commands).len == commands.len
+	}
+}
 
 fn test_grouped_native_replay_closes_resource_culling_scopes() {
 	mut culling := PaintCanvasCulling{enabled: true}

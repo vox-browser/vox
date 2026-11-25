@@ -2822,16 +2822,16 @@ $if test {
 		phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
 		snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
 		mut scratch := CompatibilityRecordScratch{}
-		mut bounds := RecordedRasterBounds{}
+		mut geometry := RecordedPaintGeometry{}
 		return record_cached_paint_commands_with_visual_context_into(steps, []bool{}, phase_commands,
-			command_count, &tree, snapshot, show_line_box_borders, mut scratch, mut bounds)
+			command_count, &tree, snapshot, show_line_box_borders, mut scratch, mut geometry)
 	}
 }
 
 fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPaintStep, selected []bool,
 	phase_commands [][]PaintCommand, command_count int, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool, mut scratch CompatibilityRecordScratch,
-	mut bounds RecordedRasterBounds) []PaintCommand {
+	mut geometry RecordedPaintGeometry) []PaintCommand {
 	mut contexts := new_compatibility_visual_context_memo_with_scratch(tree, snapshot, mut
 		scratch)
 	mut plan := unsafe { scratch.plan }
@@ -2897,9 +2897,14 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		result = []PaintCommand{cap: output_count}
 	}
 	parallel_leaves := cached_visual_replay_can_defer_leaves(output_count)
-	if parallel_leaves && bounds.paint_order != unsafe { nil }
-		&& output_count >= raster_chunk_bounds_min_commands && output_count <= raster_chunk_bounds_max_commands {
-		bounds.slots = []RecordedRasterBound{len: output_count}
+	if parallel_leaves && output_count >= raster_chunk_bounds_min_commands
+		&& output_count <= raster_chunk_bounds_max_commands {
+		if geometry.raster_bounds.paint_order != unsafe { nil } {
+			geometry.raster_bounds.slots = []RecordedRasterBound{len: output_count}
+		}
+		if geometry.prepare_canvas_ink {
+			geometry.canvas_ink = []RecordedCanvasInk{len: output_count}
+		}
 	}
 	mut deferred_leaves := 0
 	mut prefix := unsafe { &CachedVisualLeafPrefix(nil) }
@@ -2950,7 +2955,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			if pipeline_display_list_replay && deferred_leaves == display_list_replay_prefix_leaves
 				&& step_index + 1 < plan.len && plan.len <= max_i32 {
 				prefix = submit_cached_visual_leaf_prefix(unsafe { plan[..step_index + 1] },
-					contexts.contexts, result, &bounds)
+					contexts.contexts, result, &geometry)
 			}
 			continue
 		}
@@ -3004,7 +3009,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	}
 	if deferred_leaves > 0 {
 		materialize_cached_visual_leaves(plan, contexts.contexts, mut result, deferred_leaves,
-			prefix: prefix, bounds: bounds)
+			prefix: prefix, geometry: geometry)
 	}
 	scratch.memo_slots = contexts.slots
 	scratch.memo_contexts = contexts.contexts
@@ -3156,17 +3161,19 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	steps := if filter_viewport_paint_steps && selected.len > 0 {
 		result.paint_steps.filter(it.entry_index < 0 || selected[it.entry_index])
 	} else { unsafe { result.paint_steps } }
-	mut raster_bounds := RecordedRasterBounds{}
+	mut geometry := RecordedPaintGeometry{
+		prepare_canvas_ink: record_canvas_ink_bounds && viewport_only && force_dark == none
+	}
 	if record_raster_chunk_bounds && force_dark == none
 		&& result.document.font_rendering_policy() == .chromium {
-		raster_bounds = RecordedRasterBounds{
+		geometry.raster_bounds = RecordedRasterBounds{
 			paint_order: result.paint_order.data
 			revision: result.document.paint_content_revision()
 		}
 	}
 	mut commands := record_cached_paint_commands_with_visual_context_into(steps, selected,
 		result.paint_phase_commands, result.paint_phase_command_count, &result.visual_context_tree,
-		snapshot, show_line_box_borders, mut result.record_scratch, mut raster_bounds)
+		snapshot, show_line_box_borders, mut result.record_scratch, mut geometry)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if settings := force_dark {
@@ -3178,7 +3185,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		generation: scene.generation
 		scene: scene
 		visual_context_tree: snapshot_display_list_visual_context_tree(&result.visual_context_tree)
-		raster_bounds: raster_bounds
+		geometry: geometry
 		document: result.document
 	}
 	display_list := &dom.DisplayList{

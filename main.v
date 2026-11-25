@@ -7779,7 +7779,7 @@ fn (mut app BrowserApp) draw() {
 					bounds_lanes = paint_canvas_bounds_lanes(app.paint_commands.len)
 					if bounds_lanes >= 2 && app.can_submit_canvas_bounds_during_setup() {
 						mut bounds_scratch := app.begin_native_replay_scratch()
-						canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
+						canvas_bounds = app.new_document_canvas_bounds_batch(bounds_lanes,
 							f64(page_y), f64(window.width), f64(window.height))
 						canvas_bounds.submit(replay_ranges: stream_canvas_bounds)
 						$if !cpuraster_freetype ? {
@@ -7845,7 +7845,7 @@ fn (mut app BrowserApp) draw() {
 					// A prior key frame deferred submission until the reuse
 					// decision. Prepare geometry during the clear and GPU setup.
 					mut bounds_scratch := app.begin_native_replay_scratch()
-					canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
+					canvas_bounds = app.new_document_canvas_bounds_batch(bounds_lanes,
 						f64(page_y), f64(window.width), f64(window.height))
 					canvas_bounds.submit(replay_ranges: true)
 					if paint_canvas_bounds_worker_diagnostics && canvas_bounds.replay_ranges {
@@ -7877,7 +7877,7 @@ fn (mut app BrowserApp) draw() {
 			mut text_scroll_layer := false
 			mut replay_scratch := app.begin_native_replay_scratch()
 			if !scroll_damage.reused && bounds_lanes >= 2 && canvas_bounds.lanes == 0 {
-				canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
+				canvas_bounds = app.new_document_canvas_bounds_batch(bounds_lanes,
 					f64(page_y), f64(window.width), f64(window.height))
 			}
 			has_canvas_bounds := canvas_bounds.begin_replay(!scroll_damage.reused)

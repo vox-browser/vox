@@ -21,6 +21,7 @@ enum PaintLeafCanvasBounds as u8 {
 
 struct PaintCanvasBoundsWork {
 	commands       []layout.PaintCommand
+	recorded_ink   []layout.RecordedCanvasInk
 	bounds         &u8
 	glyph_geometry &RetainedGlyphReplayGeometry = unsafe { nil }
 	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
@@ -48,7 +49,12 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 		if kind == 'draw_video' || kind.starts_with('begin_') || kind.starts_with('end_') {
 			continue
 		}
-		result := if layout.paint_leaf_is_outside_canvas(command, 0, work.page_y, work.width, work.height) {
+		outside := if work.recorded_ink.len > 0 && work.recorded_ink[index].prepared() {
+			work.recorded_ink[index].outside_canvas(0, work.page_y, work.width, work.height)
+		} else {
+			layout.paint_leaf_is_outside_canvas(command, 0, work.page_y, work.width, work.height)
+		}
+		result := if outside {
 			PaintLeafCanvasBounds.outside
 		} else {
 			PaintLeafCanvasBounds.retain
@@ -97,8 +103,19 @@ fn paint_canvas_bounds_lanes(count int) int {
 	return 0
 }
 
+@[params]
+struct PaintCanvasBoundsInputs {
+	recorded_ink []layout.RecordedCanvasInk
+}
+
+fn (app &BrowserApp) new_document_canvas_bounds_batch(lanes int, page_y f64, width f64,
+	height f64) PaintCanvasBoundsBatch {
+	return new_paint_canvas_bounds_batch(app.paint_commands, lanes, page_y, width, height,
+		recorded_ink: layout.display_list_canvas_ink(app.paint_display_list, app.paint_commands))
+}
+
 fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page_y f64,
-	width f64, height f64) PaintCanvasBoundsBatch {
+	width f64, height f64, inputs PaintCanvasBoundsInputs) PaintCanvasBoundsBatch {
 	// Use a byte buffer at the native worker boundary.
 	bounds := []u8{len: commands.len}
 	glyph_stage := processmetrics.begin_thread_instruction_substage('retained_glyph_geometry_reservation')
@@ -113,6 +130,11 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics || paint_screen_geometry_diagnostics {
 		threads = []u64{len: commands.len}
 	}
+	recorded_ink := if inputs.recorded_ink.len == commands.len {
+		inputs.recorded_ink
+	} else {
+		[]layout.RecordedCanvasInk{}
+	}
 	return PaintCanvasBoundsBatch{
 		bounds: bounds
 		glyph_geometry: geometry
@@ -121,6 +143,7 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 		lanes: lanes
 		work: &PaintCanvasBoundsWork{
 			commands: commands
+			recorded_ink: recorded_ink
 			bounds: unsafe { &u8(bounds.data) }
 			glyph_geometry: unsafe { if geometry.len > 0 { &RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
 			screen_geometry: unsafe { if screen_geometry.len > 0 { &PaintCommandScreenGeometry(screen_geometry.data) } else { nil } }
@@ -210,7 +233,8 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 		off_thread := batch.threads.count(it != 0 && it != caller)
 		prepared := batch.threads.count(it != 0)
 		outside := batch.bounds.count(it == u8(PaintLeafCanvasBounds.outside))
-		eprintln('VOX_PAINT_CANVAS_BOUNDS_BATCH commands=${batch.bounds.len} prepared=${prepared} lanes=${used_lanes} off_thread=${off_thread} outside=${outside} background=${background} ready_at_join=${ready}')
+		recorded := batch.work.recorded_ink.count(it.prepared())
+		eprintln('VOX_PAINT_CANVAS_BOUNDS_BATCH commands=${batch.bounds.len} prepared=${prepared} lanes=${used_lanes} off_thread=${off_thread} outside=${outside} background=${background} ready_at_join=${ready} recorded_ink=${recorded}')
 		if replay_ranges {
 			eprintln('VOX_PAINT_CANVAS_BOUNDS_REPLAY ranges=${batch.ranges_observed} waited=${batch.ranges_waited}')
 		}

@@ -30,7 +30,7 @@ fn (bounds &RecordedRasterBounds) slot_data() &RecordedRasterBound {
 fn recorded_chromium_raster_bounds(result &DocumentLayoutResult, commands []PaintCommand) []RecordedRasterBound {
 	if record_raster_chunk_bounds && !result.needs_repaint {
 		if recording := display_list_recording(result.display_list) {
-			bounds := &recording.raster_bounds
+			bounds := &recording.geometry.raster_bounds
 			if recording.commands.data == commands.data && bounds.slots.len == commands.len
 				&& bounds.paint_order == result.paint_order.data
 				&& bounds.revision == result.document.paint_content_revision() {

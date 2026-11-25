@@ -13,7 +13,7 @@ struct DisplayListRecording {
 	generation          u64
 	scene               &DisplayListScene = unsafe { nil }
 	visual_context_tree painting.AccumulatedVisualContextTree
-	raster_bounds       RecordedRasterBounds
+	geometry            RecordedPaintGeometry
 	// Used only by current-list cache maintenance, never by replay or dump.
 	document &dom.Document = unsafe { nil }
 }
