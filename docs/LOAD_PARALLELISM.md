@@ -6306,3 +6306,126 @@ The fixture input SHA-256 was
 `3a5b2c16fc8f1783d5b8ace1eafbe772935829e93db509421092375610a2e338`.
 The four browsers, direct pixel comparisons and 3 GiB guard
 exited zero. Peak sampled RSS was 302,628,864 bytes.
+
+### Consume paint geometry by worker range during replay
+
+Commit `e44b088fd` adds `VOX_STREAM_PAINT_CANVAS_BOUNDS=1` on
+macOS. Raster workers keep their existing command ranges and their
+disjoint slices of the glyph-position buffer. The replay loop waits
+once for each range it actually reads, then uses that range's culling
+bits, screen rectangles and retained glyph positions in paint order.
+Any range skipped by replay is joined before the scratch arena resets.
+When a previous scroll frame exists, a failed reuse probe now starts a
+background batch during the clear and GPU setup. Reused frames keep
+their damage-driven path. Frame glyph prefetch uses the full join
+because it can read positions across ranges.
+
+The focused culling tests passed under ThreadSanitizer and arena
+poisoning, including packed glyph positions and disabled raster workers.
+The new test consumes two of three uneven ranges, skips the middle
+range during replay, then verifies that teardown finishes the skipped
+range. Compilation used 6,982,696,960 bytes of observed peak RSS.
+The focused runtime guards had zero exits and peaked at 97,026,048 bytes.
+
+#### Matched production captures
+
+Receipt `20261126-004309-1373c9eb` verified the feature commit and
+published a single-C-unit V `-prod` build after headless startup smoke.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `d8ef4fdacf3ad11e2ef6cd6a002dbfe7321743594b99c5cd95bf1184484af65e` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both schedules prepared all 443 command bounds on four workers
+and identified the same 60 off-canvas commands in the Hacker News
+path diagnostics. The whole batch was already ready at its pre-replay
+join. All four ranges were ready at their first use in every
+range-mode diagnostic. Cleanup joined the completed ticket.
+
+Three further guarded captures enabled ranges together with a
+control that takes precedence. The synchronous control prepared
+332 bounds off-thread and 111 on the main thread. Frame glyph prefetch
+used a whole-batch join and processed 107 glyph masks. Disabling
+raster workers selected on-demand geometry. All three matched the
+homepage pixels and the 30 ordered story IDs.
+
+#### Repaint and reuse checks
+
+A separate 150-row text fixture captured the initial viewport, then
+advanced in 900 CSS-pixel steps to scroll offset 1800. The first
+step established a previous key frame. At the second step the
+reuse probe rejected the frame with `damage-too-large`. The
+whole-batch control ran 216 of 324 commands on workers. Range
+mode submitted after the reuse decision and ran all 324 commands
+on three workers. Each range was ready when first read. The two
+captures matched all pixels and row IDs. Their PNG SHA-256 was
+`8b245609792a2117bbf61c5850f03753fcb0debb2fe627f41c23181b64a1c086`.
+
+The same fixture advanced in 40 CSS-pixel steps to offset 80.
+Both modes reused the previous pixels on the last step, with
+296 of 324 commands skipped. Neither mode started a geometry batch
+for the reused frame. The paired capture SHA-256 was
+`20693ddbb0b20d70fcd4bcd38d51dbc55fddf9f178d0994ceb20289c6d035a96`.
+Fixture input SHA-256 was
+`48a5e717a777e539d97aeb2d77877be9054d82bbabcb5f7a15c5333748cd1605`.
+All four measured fixture launches, pixel comparisons and guards
+exited zero. The first preflight used a single jump at 1200 and
+completed the capture before a previous key frame could be observed.
+The driver rejected that launch as a test of the late path. None
+of the fixture captures contribute to the homepage timing cohorts.
+
+#### Homepage launch timings
+
+Counter diagnostics ran separately from timing. Each capture recorded
+one canvas-bounds submission and one final join. Range mode moves the
+join into paint command dispatch. Frame setup and dispatch counters
+therefore have different work at their boundaries. Inclusive native
+raster replay used about 258 million main-thread instructions in both
+schedules.
+
+| Pair | Batch frame setup | Range frame setup | Batch command dispatch | Range command dispatch | Batch native raster replay | Range native raster replay |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 5,339,714 | 5,310,387 | 231,000,476 | 231,120,638 | 257,968,998 | 257,954,220 |
+| 2 | 5,328,357 | 5,289,450 | 230,700,557 | 231,134,462 | 257,725,440 | 257,854,330 |
+| 3 | 5,368,043 | 5,333,625 | 231,244,540 | 231,763,869 | 258,207,313 | 258,839,676 |
+| 4 | 5,348,586 | 5,247,346 | 230,830,832 | 230,872,282 | 257,662,287 | 257,712,610 |
+
+Four unprofiled cohorts alternated seven fresh-launch pairs each.
+Range mode started the second and fourth cohorts. The timer ran
+through the completed document PNG at a 1024×768 CSS-pixel viewport
+and 2× scale. Trials used JavaScriptCore, private empty profiles and
+HTTP caches, retained OS filesystem and shader caches, `tr.athing`
+readiness and a 60 ms delay per replayed logo response.
+
+| Pair | Batch 1, ms | Range 1, ms | Batch 2, ms | Range 2, ms | Batch 3, ms | Range 3, ms | Batch 4, ms | Range 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 330.491 | 293.186 | 313.208 | 304.548 | 303.367 | 300.750 | 285.188 | 304.787 |
+| 2 | 310.287 | 295.077 | 320.029 | 303.438 | 302.340 | 305.131 | 317.958 | 323.841 |
+| 3 | 320.236 | 308.479 | 322.380 | 306.948 | 331.384 | 296.147 | 295.856 | 331.590 |
+| 4 | 305.367 | 311.139 | 306.033 | 297.968 | 357.063 | 293.259 | 326.953 | 332.185 |
+| 5 | 309.089 | 312.776 | 306.371 | 313.756 | 350.736 | 345.308 | 325.750 | 312.682 |
+| 6 | 316.480 | 321.366 | 314.052 | 317.483 | 321.490 | 300.823 | 318.110 | 305.381 |
+| 7 | 303.488 | 326.037 | 309.865 | 309.448 | 301.928 | 320.827 | 293.099 | 344.224 |
+| Median | 310.287 | 311.139 | 313.208 | 306.948 | 321.490 | 300.823 | 317.958 | 323.841 |
+
+Paired median changes were +3.687, −8.065, −5.428 and +5.884 ms.
+Range mode finished first in three, five, five and two pairs.
+Sampled main-thread CPU medians were 153.435 → 154.967,
+150.904 → 151.527, 157.807 → 154.528 and 156.420 → 158.336 ms.
+One-minute host load on 18 CPUs ranged from 4.63–4.86, 4.29–4.63,
+5.08–5.60 and 5.20–5.60. Range mode remains opt-in given the mixed
+launch times.
+
+All 72 cohort launches and three compatibility launches reproduced
+eight replay records, including the favicon miss, and matched
+document PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The 19 diagnostic captures verified URL, readiness, viewport and
+all 30 ordered story IDs. The 11 path captures directly verified
+all 3,145,728 pixels against the unchanged reference. Executable,
+library, helper, fonts, archive and benchmark inputs stayed pinned.
+Browser, driver and 3 GiB guards exited zero. Peak sampled RSS was
+434,094,080 bytes.
