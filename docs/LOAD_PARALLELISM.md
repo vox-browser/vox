@@ -4475,3 +4475,79 @@ All four had matching PNGs, tile grids, story IDs and replay records.
 Executable, helper, library, archive and harness hashes stayed pinned.
 All browser, driver and guard exits were zero. Peak guard RSS was
 371,441,664 bytes.
+
+### Validate retained glyph coordinates on the culling workers
+
+Commit `eca57586d` checks the converted coordinates in the existing
+culling-worker batch. The check records the exact buffer and coordinate
+count. CPU glyph replay reuses it while that position view is immutable.
+Other position views and nonfinite buffers use the regular raster check.
+`VOX_SERIAL_RETAINED_GLYPH_VALIDATION=1` keeps this check in raster replay
+for the same-executable control and preserves worker position preparation.
+
+The CPU glyph suite rendered the checked and serial views with identical
+pixels. It also checked short views, copied buffers, NaN and both signs of
+infinity. Pairing a valid check with replacement positions containing NaN
+declined the draw and preserved destination pixels. The culling suite
+passed under ThreadSanitizer and arena poisoning in worker-validation,
+serial-validation and packed-position modes. The guarded tests verified
+that each prepared view carries its own check.
+
+Production receipt `20261125-202827-7588b02e` verified `eca57586d` and
+passed startup smoke in single-C-unit V `-prod` mode. Both modes used
+the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `3f021777d017a95715131e6fc059e865a6b70b41431a4151f508653daddd7a1c` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+All four diagnostic launches prepared 332 glyph runs off-thread in the
+existing worker ranges. In both worker-validation launches, CPU glyph
+replay reused the checks for all 332 runs and 5,428 coordinates. In the
+serial launches replay performed every check itself.
+
+Separate counter captures recorded 333 text leaves, three native raster
+replay scopes and one culling preparation scope per launch. The
+instrumented inclusive text instruction counts increased in both pairs.
+
+| Scope | Pair 1 serial | Pair 1 worker | Pair 2 serial | Pair 2 worker |
+| --- | ---: | ---: | ---: | ---: |
+| Text leaves | 127,637,815 | 128,799,685 | 128,250,833 | 128,773,834 |
+| Native raster replay | 270,570,646 | 276,719,886 | 276,243,477 | 276,337,917 |
+| Culling preparation | 18,235 | 18,367 | 18,320 | 18,406 |
+
+Two unprofiled seven-pair cohorts alternated modes and reversed which
+setting went first. The timer spans fresh process launch through
+completed document PNG at 1024×768 CSS pixels and 2× scale with
+JavaScriptCore, empty private profiles and HTTP caches, retained OS
+filesystem caches, `tr.athing` readiness and a 60 ms replay delay per
+logo response.
+
+| Pair | Serial, ms | Worker, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 368.399 | 337.612 | 359.902 | 375.630 |
+| 2 | 335.087 | 332.580 | 392.038 | 374.874 |
+| 3 | 344.586 | 363.472 | 353.054 | 331.563 |
+| 4 | 339.283 | 333.368 | 328.928 | 326.303 |
+| 5 | 358.645 | 357.794 | 340.435 | 385.906 |
+| 6 | 363.896 | 353.845 | 448.498 | 415.591 |
+| 7 | 358.177 | 368.452 | 445.091 | 400.293 |
+| Median | 358.177 | 353.845 | 359.902 | 375.630 |
+
+Median paired changes were −2.507 ms and −17.163 ms, with five worker
+wins in each cohort. Sampled browser-thread CPU medians went from
+206.705 to 203.923 ms and from 214.013 to 229.601 ms. One-minute host
+load ranged from 6.88 to 7.44 and from 7.44 to 7.92 on 18 CPUs. The
+captures establish reuse of the checks. The full-launch timing measures
+many stages, with mixed browser-thread CPU results.
+
+All 36 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the favicon
+miss. Diagnostics verified the URL, complete ready state, viewport and
+all 30 ordered story IDs. The executable, helper, library, archive and
+harness inputs stayed pinned. All browser, driver and guard exits were
+zero. Peak RSS was 392,462,336 bytes under the 3 GiB guard.
