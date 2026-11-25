@@ -119,7 +119,11 @@ mut:
 
 fn (mut context ExecutionContext) leave_lexical_scope() ! {
 	environment := context.lexical_environment or { return error('Frame has no lexical environment') }
-	if !environment.is_declarative_environment() || environment.is_function_environment() {
+	if environment is ObjectEnvironment {
+		if !environment.is_with_environment() || context.lexical_scope_depth == 0 {
+			return error('Cannot leave a non-block environment')
+		}
+	} else if !environment.is_declarative_environment() || environment.is_function_environment() {
 		return error('Cannot leave a non-block environment')
 	}
 	if environment is DeclarativeEnvironment {

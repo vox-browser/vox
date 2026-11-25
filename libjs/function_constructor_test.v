@@ -49,6 +49,7 @@ fn test_dynamic_function_reuses_native_compilation_on_a_new_vm() {
 		})!
 		vm.diagnose_native_code(true)!
 		assert function_constructor_eval(mut vm, r'Function("a","return a+1")(41)===42')!.as_bool()
+		assert function_constructor_eval(mut vm, r'Function("data","with (data) return x")({x:9})===9')!.as_bool()
 		activity := vm.diagnose_native_code(false)!
 		stats := vm.flush_native_code_cache()!
 		if visit == 1 {

@@ -180,6 +180,11 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			frame.lexical_environment = Environment(DeclarativeEnvironment.create(frame.lexical_environment))
 			frame.lexical_scope_depth++
 		}
+		.enter_object_scope {
+			object := left.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
+			frame.lexical_environment = Environment(ObjectEnvironment.create(object, true, frame.lexical_environment))
+			frame.lexical_scope_depth++
+		}
 		.leave_scope {
 			frame.leave_lexical_scope()!
 		}
@@ -471,12 +476,16 @@ fn (mut vm VM) execute_instruction(instruction &Instruction, executable &Executa
 			holder.mut_slots().binding_reference = &Reference{ ...reference }
 			result = Value.from_object(holder)
 		}
-		.put_binding_reference {
+		.read_binding_reference, .put_binding_reference {
 			if !left.is_object() { return vm.throw_error(.internal_error, 'Invalid binding reference') }
 			reference := left.as_object().slots.binding_reference or {
 				return vm.throw_error(.internal_error, 'Missing binding reference')
 			}
-			reference.put_value(mut vm, right)!
+			if instruction.op == .read_binding_reference {
+				result = reference.get_value(mut vm)!
+			} else {
+				reference.put_value(mut vm, right)!
+			}
 		}
 		.create_mutable_binding, .create_immutable_binding {
 			mut environment := frame.lexical_environment or {
@@ -549,7 +558,7 @@ fn compute_inline_handlers() []u8 {
 	// reads) take execute_instruction() while the other inline handlers stay.
 	// Their code remains in the loop, so this measures their dynamic effect.
 	slow_calling_dispatch := os.getenv('VOX_LIBJS_SLOW_CALLING_DISPATCH') != ''
-	mut handlers := []u8{len: int(OpCode.nop) + 1}
+	mut handlers := []u8{len: opcode_count}
 	// VOX_LIBJS_SLOW_DISPATCH and checked operands (inline_interpreter_dispatch)
 	// send every instruction to execute_instruction(): leave the table all slow.
 	if os.getenv('VOX_LIBJS_SLOW_DISPATCH') != '' || os.getenv('VOX_LIBJS_CHECKED_OPERANDS') != '' {

@@ -120,7 +120,11 @@ pub enum OpCode {
 	yield_iterator_result
 	generator_delegate_step
 	nop
+	enter_object_scope
+	read_binding_reference
 }
+
+const opcode_count = int(OpCode.read_binding_reference) + 1
 
 pub struct Instruction {
 pub mut:
@@ -163,7 +167,7 @@ fn (instruction Instruction) input_count() int {
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
 		.initialize_empty_static_fields,
 		.new_class_field_initializer,
-		.get_super_this, .resolve_super_reference,
+		.get_super_this, .resolve_super_reference, .enter_object_scope, .read_binding_reference,
 		.get_object_property_iterator, .property_name_iterator_next,
 		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
 		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
@@ -187,10 +191,9 @@ struct OpcodeOperandFacts {
 const opcode_operand_facts = compute_opcode_operand_facts()
 
 fn compute_opcode_operand_facts() OpcodeOperandFacts {
-	count := int(OpCode.nop) + 1
-	mut input_counts := []u8{len: count}
-	mut writes := []bool{len: count}
-	for index in 0 .. count {
+	mut input_counts := []u8{len: opcode_count}
+	mut writes := []bool{len: opcode_count}
+	for index in 0 .. opcode_count {
 		instruction := Instruction{
 			op: unsafe { OpCode(index) }
 		}
@@ -224,7 +227,7 @@ fn (instruction Instruction) input_operand(index int) Operand {
 fn (instruction Instruction) writes_operand() bool {
 	return instruction.op !in [.nop, .put_property, .put_super_property, .put_binding_reference, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
 		.put_private, .record_private_class_method, .enter_class_private_environment,
-		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .enter_function_body, .jump,
+		.create_mutable_binding, .create_immutable_binding, .enter_scope, .enter_object_scope, .leave_scope, .enter_function_body, .jump,
 		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,
 		.record_empty_class_field, .record_class_static_block, .initialize_empty_static_fields,
 		.close_sync_iterator, .close_sync_iterator_throw,

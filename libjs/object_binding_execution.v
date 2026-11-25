@@ -11,6 +11,10 @@ fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, ta
 		return
 	}
 	if target is BindingPatternVarTarget {
+		if !lexical && generator.with_depth > 0 {
+			generator.assignment_pattern(mut vm, target.pattern, value)!
+			return
+		}
 		generator.binding_pattern(mut vm, target.pattern, value, lexical)!
 	}
 }
@@ -19,6 +23,9 @@ fn (mut generator BytecodeGenerator) store_declared_binding(identifier &Identifi
 	name := identifier.name
 	if lexical {
 		if generator.initialize_lexical_register(identifier, value) { return }
+	} else if generator.with_depth > 0 {
+		generator.emit(Instruction{op: .set_binding, lhs: value, identifier: generator.identifier(name), strict: generator.strict})
+		return
 	} else if local := generator.variable_register(name) {
 		generator.emit(Instruction{op: .mov, dst: local, lhs: value})
 		return

@@ -187,6 +187,7 @@ mut:
 	local_index               u32
 	is_global                 bool
 	is_inside_scope_with_eval bool
+	is_inside_with            bool
 	declaration_kind          int // 0=none, 1=var, 2=let, 3=const
 }
 

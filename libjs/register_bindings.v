@@ -207,7 +207,7 @@ fn (mut generator BytecodeGenerator) load_identifier(expression &Expression, dst
 // and those that scope analysis resolves to the global environment.
 fn static_binding_target(expression &Expression) u32 {
 	identifier := expression.kind.identifier or { return 0 }
-	if identifier.is_inside_scope_with_eval { return 0 }
+	if identifier.is_inside_scope_with_eval || identifier.is_inside_with { return 0 }
 	return if identifier.is_global { global_binding_scope } else { static_binding_scope }
 }
 

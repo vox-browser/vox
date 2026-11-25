@@ -32,6 +32,7 @@ mut:
 	starting_line u32 = 1
 	range         SourceRange
 	scope_depth   int
+	with_depth    int
 	loops         []BytecodeLoop
 	labels        []BytecodeLabel
 	finalizers    []BytecodeFinally
@@ -611,25 +612,31 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 					return error('Missing assignment rhs')
 				})
 			}
-			_ := identifier_name(target.expression) or {
+			identifier := target.expression.kind.identifier or {
 				return generator.unsupported('property assignment')
 			}
 			rhs := kind.rhs or { return error('Missing assignment rhs') }
+			reference := if identifier.is_inside_with {
+				?PreparedAssignmentTarget(generator.prepare_identifier_assignment(identifier.name))
+			} else { none }
 			if kind.assignment_op == .assignment {
 				right := generator.expression(mut vm, rhs)!
 				// The right side's own result register already holds the value.
-				if generator.is_expression_temporary(right) {
-					generator.store_identifier(target.expression, right)!
-					return right
+				value := if generator.is_expression_temporary(right) { right } else {
+					dst := generator.temporary()
+					generator.emit(Instruction{op: .mov, dst: dst, lhs: right})
+					dst
 				}
-				dst := generator.temporary()
-				generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
-				generator.store_identifier(target.expression, dst)!
-				return dst
+				if prepared := reference {
+					generator.store_assignment_target(mut vm, prepared, value)!
+				} else {
+					generator.store_identifier(target.expression, value)!
+				}
+				return value
 			}
 			dst := generator.temporary()
 			logical_assignment := kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment]
-			if !logical_assignment && !might_contain_assignment(rhs) {
+			if reference == none && !logical_assignment && !might_contain_assignment(rhs) {
 				if local := generator.in_place_register(target.expression) {
 					right := generator.immediate_value(mut vm, rhs)!
 					generator.emit(Instruction{ op: compound_assignment_opcode(kind.assignment_op)!, dst: dst, lhs: local, rhs: right })
@@ -638,7 +645,11 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				}
 			}
 			{
-				generator.load_identifier(target.expression, dst)!
+				if prepared := reference {
+					generator.emit(Instruction{op: .read_binding_reference, dst: dst, lhs: prepared.binding})
+				} else {
+					generator.load_identifier(target.expression, dst)!
+				}
 				mut jumps := []u32{}
 				if kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment] {
 					logical := match kind.assignment_op {
@@ -657,7 +668,11 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 
 					generator.emit(Instruction{ op: actual, dst: dst, lhs: dst, rhs: right })
 				}
-				generator.store_identifier(target.expression, dst)!
+				if prepared := reference {
+					generator.store_assignment_target(mut vm, prepared, dst)!
+				} else {
+					generator.store_identifier(target.expression, dst)!
+				}
 				for jump in jumps {
 					generator.patch(jump)
 				}
@@ -698,9 +713,15 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				})
 				return if kind.prefixed { dst } else { old }
 			}
-			_ := identifier_name(operand) or { return generator.unsupported('property update') }
+			identifier := operand.kind.identifier or { return generator.unsupported('property update') }
+			reference := if identifier.is_inside_with {
+				?PreparedAssignmentTarget(generator.prepare_identifier_assignment(identifier.name))
+			} else { none }
 			old := generator.temporary()
-			if local := generator.in_place_register(operand) {
+			if prepared := reference {
+				generator.emit(Instruction{op: .read_binding_reference, dst: old, lhs: prepared.binding})
+				generator.emit(Instruction{op: .to_numeric, dst: old, lhs: old})
+			} else if local := generator.in_place_register(operand) {
 				generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: local })
 			} else {
 				generator.load_identifier(operand, old)!
@@ -712,7 +733,11 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				dst: dst
 				lhs: old
 			})
-			generator.store_identifier(operand, dst)!
+			if prepared := reference {
+				generator.store_assignment_target(mut vm, prepared, dst)!
+			} else {
+				generator.store_identifier(operand, dst)!
+			}
 			return if kind.prefixed { dst } else { old }
 		}
 		else {
@@ -764,7 +789,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 				}
 			}
 		}
-	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt, .for_in_of] {
+	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt, .for_in_of, .with_stmt] {
 		if body := kind.body { generator.collect_vars(body)! }
 		if consequent := kind.consequent { generator.collect_vars(consequent)! }
 		if alternate := kind.alternate { generator.collect_vars(alternate)! }
@@ -871,6 +896,17 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		.switch_stmt { generator.switch_statement(mut vm, statement)! }
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
 		.labelled { generator.labelled_statement(mut vm, statement)! }
+		.with_stmt {
+			object := generator.immediate_value(mut vm, kind.object or { return error('Missing with object') })!
+			generator.emit(Instruction{op: .enter_object_scope, lhs: object})
+			generator.scope_depth++
+			generator.with_depth++
+			generator.clear_completion()
+			generator.statement(mut vm, kind.body or { return error('Missing with body') })!
+			generator.with_depth--
+			generator.scope_depth--
+			generator.emit(Instruction{op: .leave_scope})
+		}
 		.function_declaration {
 			if generator.initialized_functions.get(u64(kind.function_id.id)) == none {
 				return generator.unsupported('conditional function declarations')
@@ -928,6 +964,16 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
         .variable_declaration {
             for declaration in kind.declarations {
                 if declaration.init==none && kind.decl_kind==.var_kind { continue }
+				if kind.decl_kind == .var_kind && generator.with_depth > 0 && declaration.target is IdentifierVarTarget {
+					// Resolve before the initializer runs, since it can change the
+					// object environment's properties or @@unscopables.
+					name := declaration.target.identifier.name
+					target := generator.prepare_identifier_assignment(name)
+					init := declaration.init or { return error('Missing var initializer') }
+					value := generator.immediate_value(mut vm, &init)!
+					generator.store_assignment_target(mut vm, target, value)!
+					continue
+				}
                 value := if init := declaration.init {
                     if declaration.target is IdentifierVarTarget { generator.immediate_value(mut vm, &init)! } else { generator.expression(mut vm, &init)! }
                 } else { generator.constant(js_undefined()) }

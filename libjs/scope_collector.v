@@ -1065,6 +1065,9 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 
 			if sc.records[index].scope_type == .with_scope {
 				group.used_inside_with_statement = true
+				for id in group.identifiers {
+					unsafe { id.is_inside_with = true }
+				}
 			}
 
 			if sc.records[index].eval_in_current_function {
