@@ -736,3 +736,38 @@ host load was 86.59→58.05 and 58.05→52.74. Both browser and driver exits
 and the 3 GiB guard exit were 0. The guard observed 1,485,225,984 B of
 peak RSS. Host contention and bundled changes limit timing attribution.
 The scroll runs still show repeated missed frame deadlines.
+
+## Completed bitmap input for spatial filters
+
+`d28c30a42` passes the private bitmap of a completed single blur or drop
+shadow to Core Image through immutable `NSData`. The data owns the bitmap
+context until Core Image finishes with it. The filter renders the same full
+extent as before and avoids the `CGImage` data-provider copy. This path
+excludes backdrop snapshots and shared frame buffers.
+
+The filter source fixture matched the copied path pixel for pixel in padded
+RGBA and BGRA, in sRGB and Display
+P3, after releasing the original context. Clipped blur and drop-shadow frame
+publication also matched exactly. The ARC and manual-retain runs completed
+200 spatially filtered Retina frames each with stable RSS after warmup. All
+20 optimized and ASan/UBSan document-canvas cases passed. The filter source,
+manual-retain and canvas jobs and their 3 GiB guards exited 0, with sampled
+peak RSS of 777,748,480 B, 598,048,768 B and 891,174,912 B respectively.
+[Filter source fixture](../tools/native_css_filter_source_test.m)
+
+Four fresh launches of the same `-O2` manual-retain fixture tested the copy
+switch in copied/direct/direct/copied order, with 200 frames per launch.
+The 1280×900 canvas at backing scale 2 alternated blur and drop shadow.
+Work began before frame 1 and ended after frame 200. Each fixture and the
+3 GiB guard exited 0. The guard observed 584,204,288 B of peak RSS.
+
+| Source | Elapsed | Sampled fixture peak RSS | One-minute host load at launch |
+| --- | ---: | ---: | ---: |
+| Copied | 4.957 s | 526,254,080 B | 37.32 |
+| Direct | 5.248 s | 525,598,720 B | 35.53 |
+| Direct | 5.151 s | 525,746,176 B | 34.29 |
+| Copied | 6.204 s | 525,484,032 B | 32.66 |
+
+The timings overlap and the peak differences are below 1 MB on this fixture.
+The managed production build was still pending. The live scrolling effect
+and the RAM comparison with Brave remain open.
