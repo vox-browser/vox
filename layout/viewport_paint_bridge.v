@@ -2896,8 +2896,10 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	}
 	parallel_leaves := cached_visual_replay_can_defer_leaves(output_count)
 	mut deferred_leaves := 0
+	mut prefix := unsafe { &CachedVisualLeafPrefix(nil) }
 	mut active := []PaintVisualLayer{}
-	for mut step in plan {
+	for step_index in 0 .. plan.len {
+		mut step := unsafe { &plan[step_index] }
 		context := unsafe { &contexts.contexts[step.context_slot] }
 		desired := if step.layer_list != unsafe { nil } {
 			step.layer_list.items
@@ -2939,6 +2941,11 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			step.output_index = result.len
 			unsafe { result.len++ }
 			deferred_leaves++
+			if pipeline_display_list_replay && deferred_leaves == display_list_replay_prefix_leaves
+				&& step_index + 1 < plan.len && plan.len <= max_i32 {
+				prefix = submit_cached_visual_leaf_prefix(unsafe { plan[..step_index + 1] },
+					contexts.contexts, result)
+			}
 			continue
 		}
 		result << *step.command
@@ -2990,7 +2997,8 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		}
 	}
 	if deferred_leaves > 0 {
-		materialize_cached_visual_leaves(plan, contexts.contexts, mut result, deferred_leaves)
+		materialize_cached_visual_leaves(plan, contexts.contexts, mut result, deferred_leaves,
+			prefix: prefix)
 	}
 	scratch.memo_slots = contexts.slots
 	scratch.memo_contexts = contexts.contexts

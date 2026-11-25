@@ -4,10 +4,13 @@ import cpuraster
 import math
 import os
 import platform
+import time
 
 const serial_display_list_replay = os.getenv('VOX_SERIAL_DISPLAY_LIST_REPLAY') == '1'
+const pipeline_display_list_replay = os.getenv('VOX_PIPELINE_DISPLAY_LIST_REPLAY') == '1'
 const display_list_replay_worker_diagnostics = os.getenv('VOX_DISPLAY_LIST_REPLAY_WORKER_DIAGNOSTICS') == '1'
 const display_list_replay_leaves_per_lane = 64
+const display_list_replay_prefix_leaves = 2 * display_list_replay_leaves_per_lane
 
 fn cached_visual_replay_can_defer_leaves(command_count int) bool {
 	$if macos {
@@ -55,6 +58,15 @@ struct CachedVisualLeafWork {
 	threads  &u64
 }
 
+@[heap]
+struct CachedVisualLeafPrefix {
+	work    CachedVisualLeafWork
+	threads []u64
+mut:
+	ticket       voidptr
+	completed_ns u64
+}
+
 // Each plan entry writes only its preassigned destination. Input commands
 // and context lists are retained by the caller until every range has joined.
 fn materialize_cached_visual_leaf_range(context voidptr, first i32, end i32) {
@@ -72,27 +84,75 @@ fn materialize_cached_visual_leaf_range(context voidptr, first i32, end i32) {
 	}
 }
 
+fn materialize_cached_visual_leaf_prefix(context voidptr, first i32, end i32) {
+	mut prefix := unsafe { &CachedVisualLeafPrefix(context) }
+	materialize_cached_visual_leaf_range(&prefix.work, first, end)
+	if display_list_replay_worker_diagnostics {
+		prefix.completed_ns = time.sys_mono_now()
+	}
+}
+
+fn submit_cached_visual_leaf_prefix(plan []CompatibilityCachedVisualReplayStep,
+	contexts []CompatibilityFlattenedVisualContext, output []PaintCommand) &CachedVisualLeafPrefix {
+	// The prefix already has output indices. The caller writes only later
+	// plan entries and output slots, all in buffers reserved before dispatch.
+	mut threads := []u64{}
+	if display_list_replay_worker_diagnostics { threads = []u64{len: plan.len} }
+	mut prefix := &CachedVisualLeafPrefix{
+		work: CachedVisualLeafWork{
+			plan: plan
+			contexts: contexts
+			output: unsafe { &PaintCommand(output.data) }
+			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
+		}
+		threads: threads
+	}
+	prefix.ticket = cpuraster.start_background_raster_range(prefix, i32(plan.len),
+		materialize_cached_visual_leaf_prefix)
+	if prefix.ticket == unsafe { nil } { return unsafe { nil } }
+	return prefix
+}
+
+@[params]
+struct CachedVisualLeafProjectionOptions {
+	prefix &CachedVisualLeafPrefix = unsafe { nil }
+}
+
 fn materialize_cached_visual_leaves(plan []CompatibilityCachedVisualReplayStep,
-	contexts []CompatibilityFlattenedVisualContext, mut output []PaintCommand, deferred int) {
+	contexts []CompatibilityFlattenedVisualContext, mut output []PaintCommand, deferred int,
+	options CachedVisualLeafProjectionOptions) {
+	prefix := options.prefix
+	background := prefix != unsafe { nil }
+	reservation_end := if background && display_list_replay_worker_diagnostics {
+		time.sys_mono_now()
+	} else { u64(0) }
+	first := if background { prefix.work.plan.len } else { 0 }
+	tail := unsafe { plan[first..] }
 	mut threads := []u64{}
 	if display_list_replay_worker_diagnostics {
-		threads = []u64{len: plan.len}
+		threads = []u64{len: tail.len}
 	}
 	work := CachedVisualLeafWork{
-		plan: plan
+		plan: tail
 		contexts: contexts
 		output: unsafe { &PaintCommand(output.data) }
 		threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 	}
-	requested_lanes := math.min(4, deferred / display_list_replay_leaves_per_lane)
-	lanes := cpuraster.run_raster_ranges_with_caller(&work, plan.len, requested_lanes,
+	prefix_lanes := int(background)
+	prefix_leaves := prefix_lanes * display_list_replay_prefix_leaves
+	requested_lanes := math.min(4 - prefix_lanes,
+		(deferred - prefix_leaves) / display_list_replay_leaves_per_lane)
+	lanes := cpuraster.run_raster_ranges_with_caller(&work, tail.len, requested_lanes,
 		materialize_cached_visual_leaf_range)
 	if lanes == 0 {
-		materialize_cached_visual_leaf_range(&work, 0, i32(plan.len))
+		materialize_cached_visual_leaf_range(&work, 0, i32(tail.len))
 	}
+	prefix_ready := if background { cpuraster.join_background_raster_range(prefix.ticket) } else { false }
 	if display_list_replay_worker_diagnostics {
 		caller := platform.native_thread_identity()
-		off_thread := threads.count(it != 0 && it != caller)
-		eprintln('VOX_DISPLAY_LIST_LEAF_BATCH commands=${output.len} leaves=${deferred} lanes=${lanes} off_thread=${off_thread}')
+		prefix_workers := if background { prefix.threads.count(it != 0 && it != caller) } else { 0 }
+		off_thread := prefix_workers + threads.count(it != 0 && it != caller)
+		completed_during_reservation := background && prefix.completed_ns <= reservation_end
+		eprintln('VOX_DISPLAY_LIST_LEAF_BATCH commands=${output.len} leaves=${deferred} lanes=${lanes + prefix_lanes} off_thread=${off_thread} early_leaves=${prefix_workers} early_ready_after_reservation=${completed_during_reservation} early_ready_at_join=${prefix_ready}')
 	}
 }
