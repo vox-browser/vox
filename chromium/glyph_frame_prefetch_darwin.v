@@ -31,7 +31,10 @@ $if !cpuraster_freetype ? {
 			smoothing := native_retained_font_smoothing(command.font_smoothing, font)
 			if smoothing & 16 == 0 { continue }
 			matrix := normalized_paint_transform(command.transform)
-			if matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1 { continue }
+			if matrix[1] != 0 || matrix[2] != 0 || matrix[0] <= 0 || matrix[3] <= 0
+				|| !f32_finite(f32(matrix[0])) || !f32_finite(f32(matrix[3])) {
+				continue
+			}
 			color := app.paint_colors.color(command.color, command.opacity)
 			// An integral device scale makes removing the raster's integer
 			// origin subpixel-neutral. Float rounding can still pick a
@@ -49,7 +52,7 @@ $if !cpuraster_freetype ? {
 					chromium_coverage: true
 					paint_color: chromium_retained_paint_color(*command)
 				}
-				transform: [scale, f32(0), 0, scale, f32(matrix[4]) * scale,
+				transform: [f32(matrix[0]) * scale, f32(0), 0, f32(matrix[3]) * scale, f32(matrix[4]) * scale,
 					(page_y + f32(matrix[5])) * scale]!
 				color: u32(color.a) << 24 | u32(color.r) << 16 | u32(color.g) << 8 | u32(color.b)
 			}
