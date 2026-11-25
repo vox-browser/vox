@@ -4258,48 +4258,58 @@ static BOOL native_css_filter_bounded_output_is_empty(NativeCSSFilterLayer const
 #ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
 static unsigned native_test_empty_pointwise_filters;
 #endif
+#ifdef VOX_TEST_EMPTY_SPATIAL_FILTERS
+static unsigned native_test_empty_spatial_filters;
+#endif
 
 // Pointwise filters preserve zero alpha. If every source pixel that can reach
 // the destination clip is transparent, filtering and source-over publication
-// cannot change that destination. Include the ordinary crop's guard pixels;
-// blur, shadows, SVG graphs and non-integral mappings retain ordinary replay.
+// cannot change that destination. Blur and drop shadows can spread ink, so
+// prove their complete source is empty before skipping them.
 static BOOL native_css_filter_visible_input_is_empty(NativeCSSFilterLayer const *layer) {
-    if (!getenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS") || !layer->active || !layer->context
-        || layer->svg_filter_recording || layer->gradient_blur_recording) return NO;
+    if (!layer->active || !layer->context || !layer->operations || !layer->operation_count
+        || layer->svg_filter_recording || layer->gradient_blur_recording
+        || layer->graph_node_count || layer->borrows_fresh_frame || layer->copies_to_fresh_frame) return NO;
+    NativeCSSFilterOperation first = layer->operations[0];
+    BOOL spatial = layer->operation_count == 1 && (first.kind == 0 || first.kind == 1)
+        && isfinite(first.third) && isfinite(first.red) && isfinite(first.green)
+        && isfinite(first.blue) && isfinite(first.alpha)
+        && !getenv("VOX_DISABLE_EMPTY_SPATIAL_FILTERS");
+    if (!spatial && !getenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS")) return NO;
     CGContextRef context = layer->context;
     size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
     CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
     if (!width || !height || width > INT_MAX || height > INT_MAX
         || width > SIZE_MAX / 4 || pitch < width * 4 || pitch > 64 * 1024 * 1024 / height
+        || pitch % sizeof(uint32_t) != 0
         || CGBitmapContextGetBitsPerComponent(context) != 8
         || CGBitmapContextGetBitsPerPixel(context) != 32
         || (info != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
             && info != (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little))) return NO;
     CGRect whole = CGRectMake(0, 0, width, height);
-    if (!native_css_filter_has_pointwise_device_mapping(layer, whole)) return NO;
+    if (!spatial && !native_css_filter_has_pointwise_device_mapping(layer, whole)) return NO;
     for (size_t index = 0; index < layer->operation_count; ++index) {
         NativeCSSFilterOperation operation = layer->operations[index];
         if (!isfinite(operation.first) || !isfinite(operation.second)) return NO;
     }
     CGContextFlush(context);
     const uint8_t *pixels = CGBitmapContextGetData(context);
-    if (!pixels) return NO;
-    CGRect rect = native_css_filter_output_rect(layer, whole);
+    if (!pixels || (uintptr_t)pixels % sizeof(uint32_t) != 0) return NO;
+    CGRect rect = spatial ? whole : native_css_filter_output_rect(layer, whole);
     size_t left = rect.origin.x, right = CGRectGetMaxX(rect);
     size_t top = height - CGRectGetMaxY(rect), bottom = height - rect.origin.y;
     for (size_t y = top; y < bottom; ++y) {
         const uint32_t *row = (const uint32_t *)(pixels + y * pitch);
-        size_t x = left;
-#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
-        for (; right - x >= 16; x += 16) {
-            uint32x4x4_t block = vld1q_u32_x4(row + x);
-            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
-                vorrq_u32(block.val[2], block.val[3]));
-            if (vmaxvq_u32(ink)) return NO;
-        }
+        if (native_opacity_row_has_ink(row, (int)left, (int)right)) return NO;
+    }
+    if (spatial) {
+#ifdef VOX_TEST_EMPTY_SPATIAL_FILTERS
+        ++native_test_empty_spatial_filters;
 #endif
-        for (; x < right; ++x) if (row[x]) return NO;
+        if (getenv("VOX_EMPTY_SPATIAL_FILTER_DIAGNOSTICS"))
+            fprintf(stderr, "VOX_EMPTY_SPATIAL_FILTER kind=%d size=%zux%zu\n", first.kind, width, height);
+        return YES;
     }
 #ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
     ++native_test_empty_pointwise_filters;
