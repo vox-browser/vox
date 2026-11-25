@@ -304,6 +304,21 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			filter, legacy) or { Blitter(NullBlitter{}) }
 	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
+	batch_blend := $if macos && !cpuraster_freetype ? {
+		run.retained && run.glyphs.len >= 24 && rc.is_bw && mode == .src_over && style == none
+			&& filter_in == none && blitter is PipelineBlitter && !serial_glyph_blend
+			&& !C.vox_scan_workers_disabled()
+	} $else {
+		false
+	}
+	mut mask_batch := if batch_blend {
+		&GlyphMaskBatch{blits: []GlyphMaskBlit{cap: math.min(run.glyphs.len, glyph_blend_batch_size)}}
+	} else {
+		unsafe { &GlyphMaskBatch(nil) }
+	}
+	defer {
+		if batch_blend { mask_batch.flush(mut wrapped) }
+	}
 	mut prepare_masks := $if macos && !cpuraster_freetype ? { run.retained } $else { false }
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
@@ -344,6 +359,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		x := float_saturate2int(pos.x)
 		y := float_saturate2int(pos.y)
 		if glyph.image.len == glyph.width * glyph.height * 4 {
+			if batch_blend { mask_batch.flush(mut wrapped) }
 			draw_glyph_sprite(mut pixels, pitch, glyph, glyph.left + x, glyph.top + y, &rc, paint_color, alpha, mode, filter, legacy)
 			continue
 		}
@@ -358,7 +374,14 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			&& clip_bounds.right >= bounds.right && clip_bounds.bottom >= bounds.bottom) {
 			bounds = bounds.intersect(clip_bounds) or { continue }
 		}
-		wrapped.blit_mask(&mask, bounds)
+		if batch_blend {
+			mask_batch.add(mask, bounds)
+			if mask_batch.blits.len == glyph_blend_batch_size {
+				mask_batch.flush(mut wrapped)
+			}
+		} else {
+			wrapped.blit_mask(&mask, bounds)
+		}
 	}
 	return true
 }
