@@ -20,7 +20,7 @@ struct PaintCommandScreenGeometry {
 
 @[params]
 struct PaintCommandReplayOptions {
-	glyph_geometry  &RetainedGlyphReplayGeometry = unsafe { nil }
+	glyph_geometry  &layout.RetainedGlyphReplayGeometry = unsafe { nil }
 	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
 }
 

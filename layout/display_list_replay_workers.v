@@ -58,6 +58,8 @@ struct CachedVisualLeafWork {
 	threads  &u64
 	raster_bounds &RecordedRasterBound = unsafe { nil }
 	canvas_ink    &RecordedCanvasInk = unsafe { nil }
+	glyphs        &RetainedGlyphReplayGeometry = unsafe { nil }
+	glyph_coordinates []f32
 }
 
 @[heap]
@@ -84,6 +86,12 @@ fn materialize_cached_visual_leaf_range(context voidptr, first i32, end i32) {
 		apply_cached_visual_context_clip(mut command, state)
 		if work.canvas_ink != unsafe { nil } {
 			unsafe { work.canvas_ink[step.output_index] = record_canvas_leaf_ink(command) }
+		}
+		if work.glyphs != unsafe { nil } && command.kind == 'draw_text' {
+			first_coordinate := step.output_index * recorded_glyph_coordinates_per_command
+			mut glyph := unsafe { &work.glyphs[step.output_index] }
+			glyph.prepare_in_range(command, work.glyph_coordinates, first_coordinate,
+				first_coordinate + recorded_glyph_coordinates_per_command)
 		}
 		if work.raster_bounds != unsafe { nil } && command.visual_layer_data == none
 			&& !chromium_raster_chunk_has_empty_clip(command) {
@@ -121,6 +129,8 @@ fn submit_cached_visual_leaf_prefix(plan []CompatibilityCachedVisualReplayStep,
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 			raster_bounds: geometry.raster_bounds.slot_data()
 			canvas_ink: geometry.canvas_ink_data()
+			glyphs: geometry.glyph_data()
+			glyph_coordinates: geometry.glyph_coordinates
 		}
 		threads: threads
 	}
@@ -157,6 +167,8 @@ fn materialize_cached_visual_leaves(plan []CompatibilityCachedVisualReplayStep,
 		threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 		raster_bounds: options.geometry.raster_bounds.slot_data()
 		canvas_ink: options.geometry.canvas_ink_data()
+		glyphs: options.geometry.glyph_data()
+		glyph_coordinates: options.geometry.glyph_coordinates
 	}
 	prefix_lanes := int(background)
 	prefix_leaves := prefix_lanes * display_list_replay_prefix_leaves

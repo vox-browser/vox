@@ -22,8 +22,9 @@ enum PaintLeafCanvasBounds as u8 {
 struct PaintCanvasBoundsWork {
 	commands       []layout.PaintCommand
 	recorded_ink   []layout.RecordedCanvasInk
+	recorded_glyphs []layout.RetainedGlyphReplayGeometry
 	bounds         &u8
-	glyph_geometry &RetainedGlyphReplayGeometry = unsafe { nil }
+	glyph_geometry &layout.RetainedGlyphReplayGeometry = unsafe { nil }
 	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
 	glyph_positions []f32
 	threads        &u64
@@ -73,7 +74,11 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 			if glyph_count == 0 {
 				geometry.prepare(command)
 			} else if result != .outside {
-				glyph_start = geometry.prepare_in_range(command, work.glyph_positions, glyph_start, glyph_end)
+				if work.recorded_glyphs.len > 0 && work.recorded_glyphs[index].positions.len > 0 {
+					unsafe { *geometry = work.recorded_glyphs[index] }
+				} else {
+					glyph_start = geometry.prepare_in_range(command, work.glyph_positions, glyph_start, glyph_end)
+				}
 			}
 		}
 		if thread_id != 0 { unsafe { work.threads[index] = thread_id } }
@@ -83,7 +88,7 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 struct PaintCanvasBoundsBatch {
 	work           &PaintCanvasBoundsWork = unsafe { nil }
 	bounds         []u8
-	glyph_geometry []RetainedGlyphReplayGeometry
+	glyph_geometry []layout.RetainedGlyphReplayGeometry
 	screen_geometry []PaintCommandScreenGeometry
 	threads        []u64
 	lanes          int
@@ -106,12 +111,14 @@ fn paint_canvas_bounds_lanes(count int) int {
 @[params]
 struct PaintCanvasBoundsInputs {
 	recorded_ink []layout.RecordedCanvasInk
+	recorded_glyphs []layout.RetainedGlyphReplayGeometry
 }
 
 fn (app &BrowserApp) new_document_canvas_bounds_batch(lanes int, page_y f64, width f64,
 	height f64) PaintCanvasBoundsBatch {
 	return new_paint_canvas_bounds_batch(app.paint_commands, lanes, page_y, width, height,
-		recorded_ink: layout.display_list_canvas_ink(app.paint_display_list, app.paint_commands))
+		recorded_ink: layout.display_list_canvas_ink(app.paint_display_list, app.paint_commands),
+		recorded_glyphs: layout.display_list_glyph_geometry(app.paint_display_list, app.paint_commands))
 }
 
 fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page_y f64,
@@ -135,6 +142,11 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 	} else {
 		[]layout.RecordedCanvasInk{}
 	}
+	recorded_glyphs := if inputs.recorded_glyphs.len == commands.len {
+		inputs.recorded_glyphs
+	} else {
+		[]layout.RetainedGlyphReplayGeometry{}
+	}
 	return PaintCanvasBoundsBatch{
 		bounds: bounds
 		glyph_geometry: geometry
@@ -144,8 +156,9 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 		work: &PaintCanvasBoundsWork{
 			commands: commands
 			recorded_ink: recorded_ink
+			recorded_glyphs: recorded_glyphs
 			bounds: unsafe { &u8(bounds.data) }
-			glyph_geometry: unsafe { if geometry.len > 0 { &RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
+			glyph_geometry: unsafe { if geometry.len > 0 { &layout.RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
 			screen_geometry: unsafe { if screen_geometry.len > 0 { &PaintCommandScreenGeometry(screen_geometry.data) } else { nil } }
 			glyph_positions: glyph_positions
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
@@ -243,13 +256,18 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 		caller := platform.native_thread_identity()
 		mut prepared := 0
 		mut off_thread := 0
+		mut recorded := 0
 		for index, geometry in batch.glyph_geometry {
 			if geometry.positions.len == 0 { continue }
 			prepared++
 			if batch.threads[index] != caller { off_thread++ }
+			if batch.work.recorded_glyphs.len > 0
+				&& geometry.positions.data == batch.work.recorded_glyphs[index].positions.data {
+				recorded++
+			}
 		}
 		mode := if batch.work.glyph_positions.len > 0 { 'worker_ranges' } else { 'packed' }
-		eprintln('VOX_RETAINED_GLYPH_GEOMETRY_BATCH prepared=${prepared} off_thread=${off_thread} mode=${mode}')
+		eprintln('VOX_RETAINED_GLYPH_GEOMETRY_BATCH prepared=${prepared} off_thread=${off_thread} mode=${mode} recorded=${recorded}')
 	}
 	if paint_screen_geometry_diagnostics && batch.screen_geometry.len > 0 {
 		caller := platform.native_thread_identity()

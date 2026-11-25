@@ -11,6 +11,48 @@ import platform
 import runtime
 
 $if macos {
+	fn test_recorded_glyph_positions_match_replay_with_long_run_fallback() {
+		if os.getenv('VOX_RECORD_GLYPH_REPLAY_GEOMETRY') != '1'
+			|| os.getenv('VOX_SERIAL_DISPLAY_LIST_REPLAY') == '1' || serial_retained_glyph_geometry
+			|| packed_retained_glyph_geometry || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
+			|| runtime.nr_cpus() < 2 { return }
+		mut document := html.parse_document('<!doctype html><style>
+			body{margin:0}p{margin:0;height:10px;background:#f4f4ef}
+		</style><header>One retained line of text with more than sixteen glyphs</header>'
+			+ '<p>A <i>short</i> <b>run.</b></p>'.repeat(150))
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		_ = layout.layout_document_typed_in_viewport(document, 700, 600)
+		document.set_viewport_rect(dom.Rect{width: 700, height: 600})
+		list := document.record_viewport_display_list() or { panic('missing viewport recording') }
+		scene := layout.retain_display_list_scene(list)
+		defer { layout.release_display_list_scene(scene) }
+		commands := layout.display_list_commands(list)
+		slots := layout.display_list_glyph_geometry(list, commands)
+		assert slots.len == commands.len
+		assert layout.display_list_glyph_geometry(list, commands.clone()).len == 0
+		mut control := new_paint_canvas_bounds_batch(commands, 2, 30.25, 700, 630)
+		mut cached := new_paint_canvas_bounds_batch(commands, 2, 30.25, 700, 630,
+			recorded_glyphs: slots)
+		assert control.finish(true) == cached.finish(true)
+		mut reused := 0
+		mut long_runs := 0
+		for index, geometry in cached.glyph_geometry {
+			if geometry.positions.len == 0 { continue }
+			expected := control.glyph_geometry[index]
+			assert geometry.positions == expected.positions
+			assert geometry.bounds == expected.bounds
+			assert geometry.validation.covers(geometry.positions, geometry.positions.len) == !layout.serial_retained_glyph_validation
+			if slots[index].positions.len > 0 {
+				assert geometry.positions.data == slots[index].positions.data
+				reused++
+			} else if geometry.positions.len > 32 {
+				long_runs++
+			}
+		}
+		assert reused > 0 && long_runs > 0
+	}
+
 	fn test_recorded_canvas_ink_applies_the_replay_canvas_offset() {
 		if os.getenv('VOX_RECORD_CANVAS_INK_BOUNDS') != '1'
 			|| os.getenv('VOX_SERIAL_DISPLAY_LIST_REPLAY') == '1'
@@ -314,7 +356,7 @@ $if macos {
 		assert geometry[2].bounds.left == -3.5 && geometry[2].bounds.right == 5.25
 		assert geometry[3].positions == geometry[0].positions
 		for index in [0, 2, 3] {
-			assert geometry[index].validation.covers(geometry[index].positions, 4) == !serial_retained_glyph_validation
+			assert geometry[index].validation.covers(geometry[index].positions, 4) == !layout.serial_retained_glyph_validation
 		}
 		assert !geometry[0].validation.covers(geometry[3].positions, 4)
 		assert chromium.glyph_positions() == libweb.glyph_positions()

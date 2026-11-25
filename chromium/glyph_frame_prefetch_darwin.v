@@ -26,7 +26,7 @@ $if !cpuraster_freetype ? {
 		return app.start_document_glyph_prefetch([], page_y, width: width, height: height)
 	}
 
-	fn (mut app BrowserApp) start_document_glyph_prefetch(geometry []RetainedGlyphReplayGeometry,
+	fn (mut app BrowserApp) start_document_glyph_prefetch(geometry []layout.RetainedGlyphReplayGeometry,
 		page_y f32, options DocumentGlyphPrefetchOptions) voidptr {
 		if !prefetch_frame_glyph_masks || app.document == unsafe { nil }
 			|| app.document.font_rendering_policy() != .chromium
@@ -52,7 +52,7 @@ $if !cpuraster_freetype ? {
 			if !in_front && front_runs == 0 { break }
 			command := unsafe { &app.paint_commands[index] }
 			if early {
-				if command.kind != 'draw_text' || retained_glyph_geometry_position_count(command) == 0
+				if command.kind != 'draw_text' || layout.retained_glyph_geometry_position_count(command) == 0
 					|| layout.paint_leaf_is_outside_canvas(command, 0, f64(page_y), f64(options.width), f64(options.height)) {
 					continue
 				}

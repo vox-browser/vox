@@ -1,5 +1,7 @@
 module main
 
+import layout
+
 import cpuraster
 import os
 import platform
@@ -169,7 +171,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
 	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32,
-	glyph_geometry &RetainedGlyphReplayGeometry) string {
+	glyph_geometry &layout.RetainedGlyphReplayGeometry) string {
 	$if macos {
 		if glyphs.len == 0 || positions.len < glyphs.len * 2 || font_path == '' || !(font_size >= 0) {
 			return 'empty run'

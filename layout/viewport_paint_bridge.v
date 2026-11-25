@@ -2905,6 +2905,10 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		if geometry.prepare_canvas_ink {
 			geometry.canvas_ink = []RecordedCanvasInk{len: output_count}
 		}
+		if geometry.prepare_glyphs {
+			geometry.glyphs = []RetainedGlyphReplayGeometry{len: output_count}
+			geometry.glyph_coordinates = []f32{len: output_count * recorded_glyph_coordinates_per_command}
+		}
 	}
 	mut deferred_leaves := 0
 	mut prefix := unsafe { &CachedVisualLeafPrefix(nil) }
@@ -3163,6 +3167,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	} else { unsafe { result.paint_steps } }
 	mut geometry := RecordedPaintGeometry{
 		prepare_canvas_ink: record_canvas_ink_bounds && viewport_only && force_dark == none
+		prepare_glyphs: record_glyph_replay_geometry && viewport_only && force_dark == none
 	}
 	if record_raster_chunk_bounds && force_dark == none
 		&& result.document.font_rendering_policy() == .chromium {

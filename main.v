@@ -8075,7 +8075,7 @@ fn (mut app BrowserApp) draw() {
 				}
 				glyph_geometry := if has_glyph_geometry && command.kind == 'draw_text' {
 					unsafe { &canvas_bounds.glyph_geometry[command_index] }
-				} else { unsafe { &RetainedGlyphReplayGeometry(nil) } }
+				} else { unsafe { &layout.RetainedGlyphReplayGeometry(nil) } }
 				screen_geometry := if has_canvas_bounds {
 					canvas_bounds.screen_geometry_at(command_index)
 				} else { unsafe { &PaintCommandScreenGeometry(nil) } }
