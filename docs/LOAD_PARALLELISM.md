@@ -4365,3 +4365,113 @@ state, viewport and all 30 ordered story IDs. The executable, helper,
 library, archive and harness inputs stayed pinned. All browser, driver
 and guard exits were zero. Peak RSS was 400,490,496 bytes under the
 3 GiB guard.
+
+### Prepare ordinary MSAA leaves during SVG collection
+
+Commit `5f41bad3e` uses the existing bounded SVG preflight scan to detect
+a trailing run of ordinary leaves. When the scan finds a retained SVG
+background and at least 96 eligible trailing commands, it submits those
+leaves before collecting the SVG triggers. The worker reads retained
+geometry and writes to a reusable result buffer. The browser thread
+collects the earlier triggers and merges the suffix after the ordered SVG
+merge. Nested viewports and other resource-dependent commands follow the
+existing collection path. The measured build used `VOX_SERIAL_MSAA_LEAF_TAIL=1`
+for the serial suffix control.
+
+All 23 focused MSAA tests passed with ThreadSanitizer and arena poisoning
+in the worker, serial suffix, late SVG and raster-workers-disabled modes.
+The diagnostic test ran the 128-command suffix three times. Each worker
+run returned 64 qualifying triggers in serial order and finished before
+the join. The test also covered the bounded scan and reuse of a full SVG
+job buffer.
+
+The first 1024×768 Hacker News launch on receipt `20261125-195337-07b324e7`
+matched the reference PNG and all 30 story IDs. The browser exited zero.
+The driver and guard exited 1 because the diagnostic recorded zero leaf
+jobs. A separate 1024×1800 capture on the same executable exposed a
+replaced-image command near the footer that ended the eligible suffix.
+This diagnostic used a different viewport and supplies no timing result.
+Both launches used executable SHA-256
+`323b7d19437dff637c0e02e6ee9aca67fe21f0618c9b39779cdeb6e3468c1bef`.
+
+Commit `dc200e8c3` includes retained replaced-image geometry in the
+worker scan. Its MSAA check reads the destination rectangle, transform,
+and clip radii. Image decoding and drawing stay in their existing replay
+paths. The final focused suite passed the same four modes under
+ThreadSanitizer. Three repeats of the expanded 129-command batch
+returned 65 triggers in serial order, including the constrained elliptical
+image, and finished before the join.
+
+Production receipt `20261125-200615-9febd3ff` verified `dc200e8c3` and
+passed startup smoke in single-C-unit V `-prod` mode. Both modes used the
+same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `ad82c4507bf9ac39e0bf86bfe8f4558c0b77000c95380a235fdf4109eff73172` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both worker diagnostics checked 379 ordinary commands off-thread and
+finished before the join. Those leaves added zero MSAA triggers on the
+archived page. All 54 SVG jobs ran off-thread and were ready at the join
+in every diagnostic. Raster grids, selected tiles and reported triggers
+matched in both modes.
+
+Separate counter captures recorded one tile setup, one frame setup and
+three native raster replay scopes per launch. Inclusive browser-thread
+instructions changed little in the tile setup scope.
+
+| Scope | Pair 1 serial | Pair 1 worker | Pair 2 serial | Pair 2 worker |
+| --- | ---: | ---: | ---: | ---: |
+| Raster tile setup | 4,483,119 | 4,482,944 | 4,438,393 | 4,422,579 |
+| Raster frame setup | 5,325,359 | 5,312,214 | 5,259,294 | 5,270,181 |
+| Native raster replay | 269,975,610 | 271,827,272 | 269,290,870 | 269,496,616 |
+
+Two unprofiled seven-pair cohorts alternated modes, reversing which
+setting went first. The timer spans fresh launch through completed
+document PNG at 1024×768 CSS pixels and 2× scale, with JavaScriptCore,
+empty private profiles and HTTP caches, retained OS filesystem caches,
+`tr.athing` readiness and a 60 ms replay delay per logo response.
+
+| Pair | Serial, ms | Worker, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 298.696 | 307.466 | 298.632 | 308.680 |
+| 2 | 311.780 | 292.084 | 306.051 | 304.663 |
+| 3 | 289.964 | 306.537 | 348.207 | 330.973 |
+| 4 | 304.077 | 320.527 | 286.254 | 307.930 |
+| 5 | 293.178 | 308.391 | 316.600 | 312.744 |
+| 6 | 292.803 | 298.771 | 309.737 | 310.422 |
+| 7 | 301.583 | 312.449 | 348.203 | 323.481 |
+| Median | 298.696 | 307.466 | 309.737 | 310.422 |
+
+Median paired changes were +10.866 ms and −1.388 ms, with one and four
+worker wins. Sampled browser-thread CPU medians went from 158.271 to
+160.295 ms and from 171.815 to 172.240 ms. One-minute host load ranged
+from 6.28 to 8.10 and from 7.39 to 7.69 on 18 CPUs.
+
+All 36 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the favicon
+miss. Diagnostics verified the URL, complete ready state, viewport and
+all 30 ordered story IDs. The executable, helper, library, archive and
+harness inputs stayed pinned. All browser, driver and guard exits were
+zero. Peak RSS was 401,965,056 bytes under the 3 GiB guard.
+
+The weak timing result and higher browser-thread CPU medians led to commit
+`9794688c2`. It keeps serial leaf collection as the default and exposes
+the worker path through `VOX_PARALLEL_MSAA_LEAF_TAIL=1`. The focused
+suite passed under ThreadSanitizer and arena poisoning in the default
+and opt-in modes, with raster workers disabled, and with late SVG
+submission.
+
+Receipt `20261125-201551-cc7fa132` verified the opt-in change, passed
+startup smoke and published Vox SHA-256
+`30500d29306cbb90a5dbd32a0eb127b2c370e955e8bcf2dc2cef2ab7da4363cf`.
+Two further diagnostic pairs recorded zero leaf batches in default
+mode and 379 off-thread checks ready at the join per opt-in launch.
+All four had matching PNGs, tile grids, story IDs and replay records.
+Executable, helper, library, archive and harness hashes stayed pinned.
+All browser, driver and guard exits were zero. Peak guard RSS was
+371,441,664 bytes.
