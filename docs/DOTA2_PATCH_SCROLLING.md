@@ -3714,3 +3714,163 @@ updated build's scroll intervals exceeded the 60 Hz budget.
 on both bundles with zero pixel differences. The actual and reference
 PNGs agreed byte for byte across builds. Both comparison drivers and
 their 3 GiB guards exited 0 at 240,680,960 B and 241,057,792 B peak RSS.
+
+## Sharing scalar geometry in relayout records
+
+`0ae507a89` shares the scalar rare geometry of committed boxes with
+their before and after layout records. The source and record detach on
+writes. SVG and grid records continue to take independent copies, and
+incremental and text-control relayout use the existing copy-on-write
+restore path for committed geometry. The snapshot returns by value so
+its construction avoids a heap temporary.
+
+A C-backend fixture stored 1,024 scalar snapshots in the same inline
+record field as the production caller. The copy path used 344,064 B of
+arena storage. The sharing path used 0 B. The fixture checked mutation
+from each owner, and the SVG and grid inputs retained their previous
+values after the source changed. Disassembly showed the clone call only
+in the copy branch of the snapshot function.
+
+The focused runner executed 16 entries covering rare snapshots,
+measurement storage, relayout records, incremental replay, and collapsed
+table layout. It exited 0 in preallocation, with reuse disabled for
+`document geometry` and `relayout records`, and in Boehm. The preallocation
+and Boehm compile guards sampled 2,935,668,736 B and 2,992,160,768 B peak
+RSS. The optional generic instance checker exceeded the compiler or
+process-tree budget in the earlier focused compiles. The successful
+focused runs kept the original budgets and used C compilation for that
+check. `57f8abf8a` fixed an existing unconditional layout type reference
+whose import was gated on preallocation, allowing the same suite to run
+under Boehm.
+
+### Signed staging build and live allocation path
+
+Single-unit C `-prod` receipt `20261126-021936-36822c66` sealed
+`0ae507a89`. Its compiler and startup smoke guards exited 0 with
+7,726,530,560 B and 112,263,168 B peak RSS. The worker stopped before
+creating its publication receipt during local disk exhaustion. Live
+checks used the signed staged bundle at its original path, with executable
+SHA-256 `9b64cf6b89f734a3d934690acd63d18a948d5100e4214e19bc0c0f42ed31d0eb`.
+The AVIF library and packaged runtime resources matched the published
+control. The staged build also includes the glyph replay geometry change
+in `318e180c7`.
+
+An earlier instrumented launch passed the full patch audit and reported
+29 layout passes and one bounded incremental relayout. PID 57572,
+the driver and the guard exited 0 at 980,303,872 B peak guard RSS.
+The staged diagnostic passed the same visible patch audit at 22.18 s
+and counted 3,723 shared scalar snapshots. These captures skipped
+1,250,928 B of eager record copies before any later detach allocations.
+The count describes the record path. PID 83766, the driver and the guard
+exited 0 at 971,390,976 B peak guard RSS.
+
+### Live settled footprint
+
+Fresh native browsers used direct HTTPS, the visible 1024×768 document
+viewport at scale two, empty private HTTP caches and profiles, and
+retained OS caches. The staged and Brave rerun profiles lived on temporary
+storage to avoid the local disk limit. At 22 seconds the patch audit
+checked the title, complete readiness, fonts, 133 images and the normalized
+digest of 15,620 UTF-8 bytes. Settled memory is the median over the last
+three seconds of 12 seconds after that audit, sampled at 50 ms intervals.
+
+| Trial | PID | Audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Published control 1 | 61987 | 22.24 s | 598,298,344 B | 1,051,480,432 B | 56 |
+| Published control 2 | 63350 | 22.21 s | 594,923,264 B | 1,048,170,960 B | 55 |
+| Brave 1 | 79484 | 22.04 s | 339,927,104 B | 861,445,992 B | 52 |
+| Brave 2 | 80090 | 22.04 s | 334,291,032 B | 862,756,880 B | 52 |
+| Staged Vox 1 | 81563 | 22.15 s | 601,362,248 B | 1,047,335,256 B | 51 |
+| Staged Vox 2 | 82674 | 22.18 s | 606,703,360 B | 1,066,340,648 B | 52 |
+
+All browsers, drivers and 3 GiB guards exited 0 for these pairs. Peak guard
+RSS was 1,010,499,584 B for the controls, 1,201,438,720 B for Brave,
+and 1,007,370,240 B for staged Vox. On the 18-CPU host, one-minute load
+was 7.57→7.23, 6.45→5.28 and 5.28→5.31 for the three pairs. Brave's
+executable and framework matched the preceding 158.1.100.59 measurements.
+An earlier Brave pair retained a first observation of 387,440,656 B at
+22.04 seconds plus the same settle interval, with browser exit 0. Local
+disk exhaustion interrupted the second audit and sample write, so that
+driver and guard exited 1 at 1,258,192,896 B peak guard RSS.
+
+The staged build used 261–272 MB more than the complete Brave pair.
+It also measured above the earlier Vox controls. This comparison covers
+two production configurations, and execution and host load varied between
+launches. The fixture measures the allocation change in isolation.
+
+### Native wheel input and pixels
+
+Two staged-bundle `tools/measure_precise_scroll.py` runs used
+`VOX_TEST_WINDOW=1`, the 1024×768 viewport at scale two, 112 pixels of chrome,
+and automatic script policy. The tool used direct live HTTPS, empty
+private profiles and HTTP caches, retained OS caches, and a 23-second
+settle after the patch title appeared. It sent 720 precise wheel inputs
+at a nominal 60 Hz with delta 16 and reversed at 360, with a 66-second
+timeout. The complete live patch audit passed. The endpoint was completed
+native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Staged Vox 1 | 21.71 | 46.75 / 69.89 / 121.87 ms | 259/283 | 720 / 321 | 55.16 Hz | 64.14 / 11.34 ms |
+| Staged Vox 2 | 20.72 | 48.25 / 76.84 / 137.73 ms | 247/270 | 720 / 307 | 55.16 Hz | 67.50 / 6.12 ms |
+
+The rates use the complete 13.034-second input windows. Scroll position
+reached 12,065 and 12,029.5 CSS pixels and finished at 1.5 and 0 pixels.
+Browser PIDs were 84329 and 85044. Both browsers, drivers and the 3 GiB
+guard exited 0 at 1,301,512,192 B peak guard RSS. One-minute load was
+5.15→4.47 and 4.47→5.41. The preceding build measured 21.37 and 21.69
+publications/s. About 92% of the staged intervals exceeded the 60 Hz budget.
+
+Both bundles passed `svg-image-source-switch-same-size`,
+`selection-focus-between-text-controls`, and `selection-moves-between-subtrees`
+pixel-exactly. The fourth case, `column-shrink-to-fit-width-from-item-aspect-ratio`,
+differed from its reference by 10,000 pixels on each bundle. All actual,
+reference and diff PNGs agreed byte for byte across builds. The flex
+mismatch made both comparison drivers and 3 GiB guards exit 1. Their
+sampled peak RSS was 251,609,088 B and 261,259,264 B.
+
+### Published production bundle
+
+The resumed managed worker published single-unit C `-prod` receipt
+`20261126-022701-0b2e9807`, sealed at `9cdb87bd0` with both layout commits.
+The installed executable SHA-256 was
+`c484fe2dae9eab8c9ad35782aa142a34a71f96ae2a69b57bbf4f29dbc18ff8ad`.
+The production and startup smoke guards exited 0 at 7,735,394,304 B
+and 117,358,592 B peak RSS.
+
+Both fresh launches of the installed app passed the same complete
+live audit at 22.18 seconds.
+
+| Trial | PID | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Published Vox 1 | 88570 | 590,925,592 B | 1,039,371,912 B | 51 |
+| Published Vox 2 | 89587 | 587,304,800 B | 1,037,225,944 B | 51 |
+
+Both browsers, the driver and the 3 GiB guard exited 0. The guard
+observed 961,511,424 B peak RSS, with one-minute host load of 4.81→6.72.
+The published readings were 4–11 MB below this turn's earlier Vox
+controls and 247–257 MB above the complete Brave pair. The production
+bundles, host load and allocation timings varied across the launches.
+
+Two installed-bundle wheel trials used the same native input protocol
+and passed the complete patch audit.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Published Vox 1 | 21.40 | 47.19 / 72.78 / 133.35 ms | 261/284 | 720 / 321 | 54.19 Hz | 58.47 / 8.98 ms |
+| Published Vox 2 | 21.07 | 48.30 / 75.06 / 122.11 ms | 253/275 | 720 / 311 | 55.10 Hz | 63.40 / 7.42 ms |
+
+The input windows were 13.269 and 13.050 seconds. Scroll positions
+reached 12,097 and 12,064 CSS pixels and ended at 1 and 0 pixels.
+Browser PIDs were 90827 and 92034. Both browsers, both drivers and the
+guard exited 0 at 1,281,327,104 B peak guard RSS. One-minute load was
+6.50→7.10 and 7.10→5.80. About 92% of the intervals exceeded the
+60 Hz budget.
+
+With reuse disabled for `document geometry` and `relayout records`,
+installed PID 93494 passed the complete audit at 22.16 seconds and
+recorded 3,198 shared snapshots. The browser, driver and guard exited 0
+at 948,633,600 B peak guard RSS. The installed bundle produced the same
+12 reference, actual and diff PNG hashes as the control and staged
+builds. Its comparison driver and guard exited 1 for the same flex case,
+at 251,150,336 B peak guard RSS.
