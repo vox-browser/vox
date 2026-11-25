@@ -3147,3 +3147,144 @@ it at 3.14 seconds and recorded 407 ms for the main response fetch.
 All three browser, driver and guard exits were 0, with peak guard RSS
 of 908,738,560 B, 700,710,912 B and 722,862,080 B. These live launch
 observations show substantial readiness variation.
+
+## Retiring font-face conversion workspaces
+
+`ec99a61ca` parses each transient `@font-face` rule in a short-lived
+arena. Converted fonts keep their typed descriptors, source URLs and
+modifiers, Unicode ranges, and CSSOM spelling in the document owner.
+Raw component trees and discarded descriptors retire after conversion.
+Descriptors with an unsupported value graph are reparsed with owned input.
+
+A fresh control with CSS conversion logging observed a deferred conversion
+of Valve's 1,648,921-byte `dota_react/main.css`. The captured stylesheet
+SHA-256 was
+`f86324bf8ffa19d8af396df2ac7bee29796aff93ccd50deee4fda952ebd79545`.
+All 736 font rules in those bytes were converted once through each path
+in a focused C-backend fixture. Copying each rule's syntax before
+conversion grew the caller arena by 15,231,478 B. Publishing the parsed
+descriptors grew it by 4,306,303 B, a reduction of 10,925,175 B. The fixture
+compared all 736 serialized rules, family names and Unicode ranges after
+retiring the source and conversion workspaces. Poisoning both workspaces
+preserved the results and byte counts.
+
+Sixteen focused CSS tests covered font connections, descriptor validation,
+CSSOM serialization, typed face selection and ownership. Preallocation,
+poisoned preallocation, and Boehm runs exited 0. The compile guards
+sampled peak RSS of 2,190,540,800 B and 2,191,409,152 B. The guarded fixture
+runs exited 0 with peaks of 171,458,560 B and 168,476,672 B. The reported
+caller bytes measure scoped allocation in the fixture.
+
+The CSS-logging control passed the full document audit at 23.05 seconds,
+settled at 671,338,336 B and reached a sampled peak of 1,113,805,336 B.
+Browser PID 31851, driver and 3 GiB guard exited 0. Peak guard RSS was
+981,565,440 B, and one-minute host load was 5.32→5.75 on 18 CPUs.
+
+### Production build and live RAM
+
+Single-unit C `-prod` receipt `20261126-004309-1373c9eb` sealed
+`e44b088fd` with the font-face changes already in its source inputs.
+The completed generated C calls the scoped descriptor publisher and the
+receipt records compiler exit 0. The executable SHA-256 was
+`d8ef4fdacf3ad11e2ef6cd6a002dbfe7321743594b99c5cd95bf1184484af65e`.
+The native helpers and runtime resources matched the preceding control.
+The production and startup smoke guards exited 0 at 7,750,090,752 B
+and 87,015,424 B peak RSS. This build includes the separate change to
+consume paint geometry by worker range.
+
+Both browsers used fresh visible processes, private profiles and HTTP
+caches, retained OS caches, direct HTTPS, and a 1024×768 document viewport
+at scale two. The complete live patch audit checked title, readiness,
+fonts, 133 images and the established normalized text digest. Brave's
+window was sized through CDP before navigation. Simultaneous process-tree
+physical footprint was sampled every 50 ms from launch. The settled
+value was the median during the final three seconds of a 12-second
+observation after the 23-second audit.
+
+| Trial | PID | First full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Brave | 42351 | 23.02 s | 333,717,376 B | 897,965,952 B | 52 |
+| Vox 1 | 43426 | 23.05 s | 632,016,784 B | 1,089,032,872 B | 51 |
+| Vox 2 | 44675 | 23.04 s | 631,213,848 B | 1,096,700,248 B | 51 |
+
+All browser, driver and 3 GiB guard exits were 0. Guard RSS peaks were
+906,756,096 B, 950,648,832 B and 960,020,480 B. One-minute host load was
+4.33→5.08, 5.47→4.73 and 4.05→4.88. Brave 158.1.100.59 reported Chromium
+158.0.8127.92. The installed executable SHA-256 was
+`16db606608c3101c4a2deace5822ec948acc4be8de524c0108e81356767fdcd3`.
+The framework SHA-256 was
+`eba91727c2d8408bd397d776c9561bc0480d75cbc671318e42517e7e1c8c1ecc`.
+Executable, framework and helper hashes were unchanged at the final audit.
+Both Vox caches contained the same captured stylesheet SHA-256.
+The new Vox launch samples are 1.6–6.4 MB below the preceding build's
+two unprofiled samples. The bundled painting change and live-run
+variation limit attribution. Vox used about 1.89 times Brave's settled
+physical footprint on this comparison.
+
+### Live precise wheel input
+
+The native driver used `tools/measure_precise_scroll.py` and
+`VOX_TEST_WINDOW=1` under the 3 GiB guard. It used the same viewport,
+network and profile policy as the memory runs, with a 23-second settle
+after the title matched, 720 precise wheel inputs at nominal 60 Hz,
+delta 16 and reversal at event 360. Both runs passed the complete
+patch audit. The endpoint was completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Vox 1 | 22.11 | 46.25 / 69.90 / 123.17 ms | 266/290 | 720 / 328 | 54.81 Hz | 64.93 / 6.08 ms |
+| Vox 2 | 21.82 | 47.31 / 72.14 / 126.97 ms | 261/284 | 720 / 321 | 55.24 Hz | 64.26 / 5.29 ms |
+
+The rates cover 13.118 and 13.017 seconds from first to last input.
+Scroll positions reached 12,065 and 12,063.5 CSS pixels and ended at
+0.5 and 0. Browser PIDs were 44080 and 45934. Browser, driver and
+guard exits were 0, with peak guard RSS of 1,308,409,856 B and
+1,232,961,536 B. One-minute load was 4.73→4.23 and 4.88→4.10.
+The prior build published 21.13 and 22.92 scroll-changing frames per
+second. Both new runs exceeded the 60 Hz budget on about 92% of scroll
+intervals.
+
+### First complete page and reference pixels
+
+Two fresh launches audited the document every 250 ms and first confirmed
+the complete patch at 5.67 and 5.40 seconds. Browser PIDs were 47745 and
+47974. Browser, driver and 3 GiB guard exits were 0, with peak guard
+RSS of 705,806,336 B and 737,411,072 B. Live readiness on the earlier
+build ranged from 3.15 to 13.41 seconds.
+
+All four 800×600 actual and reference PNGs matched byte for byte across
+builds. The `font-weight-range` and `svg-image-source-switch-same-size`
+captures matched their references pixel-exactly. `svg-text-font-fallback`
+had eight one-channel differences under its existing tolerance.
+`unicode-range` retained its 4,883-pixel mismatch against the upstream
+reference, so both comparison drivers and guards exited 1. Peak guard
+RSS was 190,889,984 B and 193,150,976 B. Two preceding control invocations
+exited 1 during fixture path resolution. The complete run used the
+absolute upstream `css/font-weight-range.html` path.
+
+### Resident memory categories
+
+A separate fresh launch passed the complete patch audit at 23.03 seconds.
+Its settled process-tree footprint was 606,834,456 B over 52 samples.
+The sampled peak was 1,059,426,672 B. At 35 seconds, `vmmap -summary`
+reported 314.0 MiB of dirty untagged mappings, 110.9 MiB of dirty WebKit
+Malloc, 41.3 MiB of dirty IOSurface and 34.6 MiB of dirty IOAccelerator
+graphics memory. These categories describe the main process's mappings.
+Browser PID 48198, vmmap, driver and guard exited 0. Peak guard RSS
+was 930,054,144 B and one-minute host load was 6.47→4.97.
+
+### Scroll filter stage timings
+
+A separate native-input run enabled CSS conversion and filter stage
+logging with the same viewport and input schedule. It passed the full
+page audit and observed the same deferred stylesheet conversion.
+Between the native input start marker and the batch of input event
+records emitted at completion, it recorded 555 direct bitmap filters.
+All were 2048×1760 single drop shadows. No bitmap filter stages
+were logged before the input start marker. The median filter completion
+took 7.20 ms, including 1.44 ms for source preparation, 3.63 ms for
+filtering and 1.49 ms for destination drawing. Core Image's median
+render took 3.54 ms within the filter stage. The interval includes the
+input tail and the timings include logging overhead. Browser PID 48840,
+driver and guard exited 0, with 1,269,465,088 B peak guard RSS and
+one-minute host load 4.97→5.74.
