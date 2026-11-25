@@ -2222,3 +2222,91 @@ first observed the complete visible patch at 3.81 seconds. Its browser,
 driver and 3 GiB guard exited 0 with 950,255,616 B peak guard RSS and
 one-minute host load 4.55→4.20. This diagnostic uses an earlier and more
 frequent audit than the RAM cohort.
+
+## Copies at the native Fetch boundaries
+
+`e4cfdf3c1` passes libcurl's callback buffer directly to the receiver.
+The receiver copies it synchronously into the stream delivery, sniff and
+cache storage that it needs. Fetch's full-body collector reads each
+delivered chunk during the callback and appends it to its accumulator.
+Public incremental callbacks receive independent storage for asynchronous
+consumers.
+
+Twelve focused C-backend preallocation tests passed. They exercised the
+native body callback with a reused input buffer, compared received chunk
+identity for borrowed and public readers, and checked buffered input,
+streamed input, EOF and error behavior. The compile and 3 GiB test
+guards exited 0, with 6,506,102,784 B and 19,775,488 B peak RSS.
+
+Six broader socket and proxy fixtures failed under the standalone test
+driver. Separate private profiles and the pipe-wait override did not
+resolve the failures. A control with the original native callback copy
+restored reproduced all six failures, including requests with zero active
+transfers before any body delivery. The isolated candidate and control
+drivers and 3 GiB guards exited 1, with peak RSS of 13,598,720 B and
+25,395,200 B. The control compile exited 0 at 6,499,074,048 B peak RSS.
+
+### Live launches and copy diagnostics
+
+The single-unit C `-prod` control was receipt
+`20261125-221521-a0ddf206`, executable SHA-256
+`f39a97dd16779ec05ce9dce29864188a6132cd6038d5b1f268450f23e78db2aa`.
+The shared build published the candidate source in receipt
+`20261125-222108-2ad23468` at sealed revision `f2ddd8a44`, with executable
+SHA-256 `d61519f126aea5c731df5e1f46b86de4959dde6eb405c812b5a88b28f5313ca4`.
+The generated C contained the borrowed reader path and disassembly showed
+that the native body callback's direct array clone was gone. Production
+compile and headless smoke guards exited 0 at peak RSS of 7,646,740,480 B
+and 122,322,944 B. One later control attempt stopped at the identity check
+before launch after the shared bundle changed.
+
+Each accepted launch used live direct HTTPS, fresh private profiles and
+HTTP caches, and a 1024×768 viewport at scale 2. The visible page matched
+the 133-image, 15,620-byte full-patch audit and normalized text checksum.
+Settled footprint is the browser process-tree median across the last
+three seconds of the 12-second interval after the first passing audit.
+
+| Launch | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Control standard | 23.03 s | 688,099,192 B | 1,101,041,528 B | 51 |
+| Control growth trace | 23.06 s | 668,929,912 B | 1,083,740,024 B | 52 |
+| Candidate standard | 23.04 s | 709,447,568 B | 1,124,503,440 B | 52 |
+| Candidate growth trace | 23.02 s | 680,955,744 B | 1,098,993,504 B | 54 |
+
+The first diagnostic interposed byte copies and aborted at browser startup
+with exit −6. That driver and its guard exited 1. The replacement diagnostic
+checked the running Mach-O UUID, allocator header layout and callsite
+addresses. At about 35 seconds it found zero block-growth stacks matching
+the two clone callsites on either build. Nine native curl GETs completed
+with HTTP 200 and transport result 0 in the candidate trace. The allocator
+probe measured block growth, so the number and size of live copies remain
+unmeasured. All four accepted browsers, drivers and guards exited 0.
+The two control guards and the shared candidate guard sampled 959,692,800 B,
+948,846,592 B and 977,633,280 B peak RSS. One-minute host load was
+5.58→4.93, 22.54→22.47, 16.85→16.74 and 16.74→11.85 on 18 CPUs.
+
+The standard candidate measured 21,348,376 B above its standard control.
+The cohorts include different host load, live resources and shared code
+changes. The last valid visible Brave result was 354,492,360 B.
+The macOS session was locked during this work.
+
+### Native scrolling on the published bundle
+
+Two fresh launches of the candidate passed the full patch audit using
+`tools/measure_precise_scroll.py`. Each used 720 precise native wheels at
+nominal 60 Hz, delta 16 and reversal at event 360, starting 23 seconds
+after the matching title. The document viewport was 1024×768 at scale 2
+with 112 pixels of chrome. Both used automatic JavaScript, direct HTTPS,
+fresh private profiles and HTTP caches, and retained OS caches.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 21.19 | 47.61 / 74.82 / 128.48 ms | 257/278 | 720 / 283 | 54.80 Hz | 56.86 / 0.16 ms |
+| 2 | 21.75 | 46.53 / 71.32 / 120.42 ms | 266/286 | 720 / 291 | 54.67 Hz | 59.00 / 2.04 ms |
+
+The input windows lasted 13.120 and 13.151 seconds. The page reached
+12,065.5 and 12,098.5 CSS pixels and returned to 0 and 3.5. The
+endpoint was completed native frame installation. Both browsers,
+drivers and the 3 GiB guard exited 0, with 1,279,967,232 B peak guard
+RSS. One-minute host load was 9.25→6.87 and 6.87→5.79. The cohort
+missed most 60 Hz deadlines.
