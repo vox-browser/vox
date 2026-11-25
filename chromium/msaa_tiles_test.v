@@ -458,17 +458,30 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 		commands << msaa_test_underline(f64(index * 15), 2)
 	}
 	mut storage := ChromiumMSAAStorage{}
-	// The short list gives a 32-path prefix and a 22-path tail. The long
-	// list crosses the job capacity and reuses the same storage.
-	for command_count in [54, commands.len] {
-		short := command_count == 54
-		visible_commands := commands[..command_count]
+	// The short list gives a 32-path prefix and a 22-path tail, followed
+	// by an ordinary trigger and a retained background outside the viewport.
+	mut short_commands := commands[..54].clone()
+	short_commands << msaa_test_svg_path(600, 610, 'svg')
+	short_commands << layout.PaintCommand{
+		...background
+		transform: [f64(1), 0, 0, 1, 0, 5000]!
+	}
+	oversized_suffix := []layout.PaintCommand{len: chromium_msaa_path_overlap_commands + 7}
+	assert chromium_msaa_path_batch_end(oversized_suffix, none) == 7
+	// The long list crosses the job capacity and reuses the same storage.
+	for visible_commands in [short_commands, commands] {
+		short := visible_commands.len == short_commands.len
 		viewport := ChromiumMSAAViewport{scroll_y: if short { 0 } else { 85 }, height: 2100, fringe: 7}
 		expected := chromium_msaa_triggers_for_viewport(visible_commands, viewport)
-		assert if short { expected.len == 54 } else { expected.len > 288 && expected.len < 320 }
+		if short {
+			assert expected.len == 55
+			assert chromium_msaa_path_batch_end(visible_commands, viewport) == 53
+			assert chromium_msaa_path_batch_end(visible_commands, none) == short_commands.len
+		} else {
+			assert expected.len > 288 && expected.len < 320
+		}
 		for _ in 0 .. 3 {
-			storage.queue_triggers(visible_commands, viewport, true)
-			tail := storage.path_work.submit_tail()
+			tail := storage.queue_triggers(visible_commands, viewport, true)
 			$if macos {
 				if short && !chromium_serial_msaa_path_tail && !chromium_sync_msaa_paths
 					&& runtime.nr_cpus() > 1 && os.getenv('VOX_SERIAL_CPU_RASTER') != '1' {

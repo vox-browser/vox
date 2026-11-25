@@ -9,9 +9,11 @@ import platform
 const chromium_serial_msaa_paths = os.getenv('VOX_SERIAL_MSAA_PATHS') == '1'
 const chromium_sync_msaa_paths = os.getenv('VOX_SYNC_MSAA_PATHS') == '1'
 const chromium_serial_msaa_path_tail = os.getenv('VOX_SERIAL_MSAA_PATH_TAIL') == '1'
+const chromium_late_msaa_path_tail = os.getenv('VOX_LATE_MSAA_PATH_TAIL') == '1'
 const chromium_msaa_paths_per_lane = 16
 const chromium_msaa_background_paths = 2 * chromium_msaa_paths_per_lane
 const chromium_msaa_max_path_jobs = 256
+const chromium_msaa_path_overlap_commands = 512
 
 struct ChromiumMSAAPathJob {
 	transform [6]f64
@@ -65,17 +67,53 @@ fn (mut work ChromiumMSAAPathWork) add(job ChromiumMSAAPathJob, mut triggers []C
 	if work.count == chromium_msaa_max_path_jobs { work.finish(mut triggers, unsafe { nil }) }
 }
 
+// Only top-level, resource-owned SVG backgrounds can add worker jobs.
+// Bound the backward scan and keep earlier commands in the batch.
+fn chromium_msaa_path_batch_end(commands []layout.PaintCommand,
+	viewport ?ChromiumMSAAViewport) int {
+	first := if commands.len > chromium_msaa_path_overlap_commands {
+		commands.len - chromium_msaa_path_overlap_commands
+	} else { 0 }
+	for index := commands.len - 1; index >= first; index-- {
+		command := unsafe { &commands[index] }
+		if command.image_data == unsafe { nil } || command.kind != 'draw_background_image'
+			|| command.image_data.background_static_svg_resource == none { continue }
+		if visible := viewport {
+			if !chromium_svg_background_intersects_raster_viewport(command, visible) { continue }
+		}
+		return index + 1
+	}
+	return first
+}
+
 fn (mut storage ChromiumMSAAStorage) queue_triggers(commands []layout.PaintCommand,
-	viewport ?ChromiumMSAAViewport, batch_paths bool) {
+	viewport ?ChromiumMSAAViewport, batch_paths bool) voidptr {
 	storage.triggers.clear()
 	if !batch_paths || commands.len < chromium_msaa_background_paths {
 		append_chromium_msaa_triggers(commands, viewport, mut storage.triggers)
-		return
+		return unsafe { nil }
 	}
-	for index in 0 .. commands.len {
+	mut path_end := commands.len
+	$if macos {
+		if !chromium_late_msaa_path_tail && !chromium_serial_msaa_path_tail && !chromium_sync_msaa_paths {
+			path_end = chromium_msaa_path_batch_end(commands, viewport)
+		}
+	}
+	for index in 0 .. path_end {
 		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, true,
 			mut storage.path_work, mut storage.triggers)
 	}
+	tail := storage.path_work.submit_tail()
+	if chromium_msaa_tile_diagnostics && tail != unsafe { nil } {
+		eprintln('VOX_MSAA_PATH_TAIL_SUBMIT commands_remaining=${commands.len - path_end}')
+	}
+	// Later commands can append synchronous triggers while the workers fill
+	// their job slots. The trigger vector is published in order at the join.
+	for index in path_end .. commands.len {
+		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, false,
+			mut storage.path_work, mut storage.triggers)
+	}
+	return tail
 }
 
 fn (work &ChromiumMSAAPathWork) tail_lanes() int {
@@ -83,7 +121,7 @@ fn (work &ChromiumMSAAPathWork) tail_lanes() int {
 	return if work.running > 0 && lanes > 3 { 3 } else { lanes }
 }
 
-// The last paths can run while the caller prepares raster parents. The
+// The last paths can run during trigger collection and raster-parent setup. The
 // retained source scenes and both job ranges live through the finish call.
 fn (work &ChromiumMSAAPathWork) submit_tail() voidptr {
 	lanes := work.tail_lanes()

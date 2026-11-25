@@ -476,12 +476,11 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	device_viewport_width int, device_viewport_height int, scroll_y f64, scale f64,
 	root_extent ?layout.LayoutRect) {
 	tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(viewport_height) * scale)))
-	storage.queue_triggers(commands, ChromiumMSAAViewport{
+	tail := storage.queue_triggers(commands, ChromiumMSAAViewport{
 		scroll_y: scroll_y
 		height: f64(viewport_height)
 		fringe: f64(tile_rows) / scale
 	}, !chromium_serial_msaa_paths)
-	tail := storage.path_work.submit_tail()
 	for storage.by_layer.len < plan.layers.len {
 		storage.by_layer << []ChromiumMSAATrigger{}
 		storage.tiles << []i32{}
