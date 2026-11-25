@@ -13,7 +13,7 @@ fn C.vox_scan_workers_disabled() bool
 $if macos {
 	fn C.vox_scan_workers_with_caller(voidptr, i32, i32, fn (voidptr, i32, i32)) bool
 	fn C.vox_scan_workers_with_caller_range(voidptr, i32, i32, bool, fn (voidptr, i32, i32)) bool
-	fn C.vox_scan_worker_start(voidptr, i32, i32, bool, fn (voidptr, i32, i32)) voidptr
+	fn C.vox_scan_worker_start(voidptr, i32, i32, bool, bool, fn (voidptr, i32, i32)) voidptr
 	fn C.vox_scan_worker_wait_index(voidptr, i32) bool
 	fn C.vox_scan_worker_join(voidptr) bool
 }
@@ -99,7 +99,7 @@ fn raster_range_lanes(lines int, requested_lanes int) int {
 pub fn start_background_raster_range(context voidptr, lines i32, scan fn (voidptr, i32, i32)) voidptr {
 	$if macos {
 		if lines > 0 && !C.vox_scan_workers_disabled() && runtime.nr_cpus() > 1 {
-			return C.vox_scan_worker_start(context, lines, 1, false, scan)
+			return C.vox_scan_worker_start(context, lines, 1, false, false, scan)
 		}
 	}
 	return unsafe { nil }
@@ -109,25 +109,29 @@ pub fn start_background_raster_range(context voidptr, lines i32, scan fn (voidpt
 pub struct BackgroundRasterRangeOptions {
 pub:
 	wait_by_index bool
+	// Keep the worker ranges. Call scan for each item and publish it separately.
+	wait_by_item bool
 }
 
 // Submit every range to a worker. The caller can do independent work before
 // joining with join_background_raster_range. With wait_by_index the caller
-// can read one completed range early.
+// can read one completed range early. With wait_by_item it can read an
+// individual item early.
 pub fn start_background_raster_ranges(context voidptr, lines int, requested_lanes int,
 	scan fn (voidptr, i32, i32), options BackgroundRasterRangeOptions) (voidptr, int) {
 	$if macos {
 		lanes := raster_range_lanes(lines, requested_lanes)
 		if lanes >= 2 {
-			ticket := C.vox_scan_worker_start(context, i32(lines), i32(lanes), options.wait_by_index, scan)
+			ticket := C.vox_scan_worker_start(context, i32(lines), i32(lanes), options.wait_by_index,
+				options.wait_by_item, scan)
 			if ticket != unsafe { nil } { return ticket, lanes }
 		}
 	}
 	return unsafe { nil }, 0
 }
 
-// Wait for the range containing index and report whether it was already
-// finished. The ticket stays live until join_background_raster_range.
+// Wait for the item or worker range containing index and report whether it
+// was already finished. The ticket stays live until join_background_raster_range.
 // The caller must provide an index from the submitted range.
 pub fn wait_background_raster_range_for_index(ticket voidptr, index int) bool {
 	$if macos {

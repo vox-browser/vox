@@ -51,20 +51,21 @@ $if macos && !cpuraster_freetype ? {
 	struct IndexedRasterTest {
 		release_tail &sync.Semaphore
 		finished_tail &sync.Semaphore
+		pause_at i32
 	mut:
 		values [11]i32
 	}
 
 	fn record_indexed_raster_range(context voidptr, first i32, end i32) {
 		mut work := unsafe { &IndexedRasterTest(context) }
-		if first != 0 {
+		if first == work.pause_at {
 			mut release := work.release_tail
 			release.timed_wait(2 * time.second)
 		}
 		for index in first .. end {
 			work.values[index] = first + 1
 		}
-		if first != 0 {
+		if first == work.pause_at {
 			mut finished := work.finished_tail
 			finished.post()
 		}
@@ -78,7 +79,7 @@ $if macos && !cpuraster_freetype ? {
 
 		mut release := sync.new_semaphore()
 		mut finished := sync.new_semaphore()
-		mut work := IndexedRasterTest{release_tail: release, finished_tail: finished}
+		mut work := IndexedRasterTest{release_tail: release, finished_tail: finished, pause_at: 5}
 		ticket, lanes := start_background_raster_ranges(&work, work.values.len, 2,
 			record_indexed_raster_range, wait_by_index: true)
 		assert lanes == 2 && ticket != unsafe { nil }
@@ -90,6 +91,32 @@ $if macos && !cpuraster_freetype ? {
 		release.post()
 		wait_background_raster_range_for_index(ticket, 5)
 		assert work.values[5] == 6 && work.values[10] == 6
+		assert finished.try_wait()
+	}
+
+	fn test_item_wait_reads_output_while_the_same_worker_is_still_busy() {
+		if runtime.nr_cpus() < 2 { return }
+		previous := os.getenv_opt(serial_cpu_raster)
+		defer { restore_serial_raster_setting(previous) }
+		assert os.unsetenv(serial_cpu_raster) == 0
+
+		mut release := sync.new_semaphore()
+		mut finished := sync.new_semaphore()
+		// Indices 0 and 1 both run in the first worker's range of [0, 5).
+		mut work := IndexedRasterTest{release_tail: release, finished_tail: finished, pause_at: 1}
+		ticket, lanes := start_background_raster_ranges(&work, work.values.len, 2,
+			record_indexed_raster_range, wait_by_item: true)
+		assert lanes == 2 && ticket != unsafe { nil }
+		defer { join_background_raster_range(ticket) }
+		wait_background_raster_range_for_index(ticket, 0)
+		assert work.values[0] == 1
+		assert !finished.try_wait()
+		assert wait_background_raster_range_for_index(ticket, 0)
+		wait_background_raster_range_for_index(ticket, 10)
+		assert work.values[10] == 11
+		release.post()
+		wait_background_raster_range_for_index(ticket, 1)
+		assert work.values[1] == 2
 		assert finished.try_wait()
 	}
 
@@ -156,18 +183,21 @@ $if macos && !cpuraster_freetype ? {
 			expected << shaped.glyph_run.glyphs().clone()
 			whitespace << shaped.trailing_whitespace
 		}
-		for mode in ['caller', 'batch', 'range'] {
+		for mode in ['caller', 'batch', 'range', 'item'] {
 			platform.release_unused_text_shaping()
 			jobs := platform.prepare_ascii_shape_jobs(phrases.map(platform.ASCIIShapeRequest{it, font}))
 			assert jobs.len == phrases.len
 			mut batch := if mode != 'caller' {
 				ticket, lanes := start_background_raster_ranges(jobs.data, jobs.len, 4,
-					platform.shape_ascii_job_range, wait_by_index: mode == 'range')
+					platform.shape_ascii_job_range,
+					wait_by_index: mode == 'range'
+					wait_by_item: mode == 'item'
+				)
 				assert lanes >= 2 && ticket != unsafe { nil }
 				platform.stage_ascii_shape_jobs(jobs,
 					worker_ticket: ticket
 					join_workers: join_background_raster_range
-					wait_worker_range: if mode == 'range' {
+					wait_worker_range: if mode != 'batch' {
 						wait_background_raster_range_for_index
 					} else {
 						unsafe { nil }
