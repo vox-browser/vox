@@ -10508,6 +10508,10 @@ pub mut:
 	combinator       SelectorCombinator
 }
 
+struct SelectorInvalidationProjection {
+	groups []InvalidationSimpleSelectorGroup
+}
+
 struct SelectorRighthand {
 mut:
 	subject_match_set   InvalidationSet
@@ -10641,6 +10645,33 @@ fn simple_selector_for_invalidation(simple_selector &SimpleSelector) Invalidatio
 }
 
 fn selector_groups_for_invalidation(selector Selector) []InvalidationSimpleSelectorGroup {
+	if selector.has_invalidation_projection() {
+		return selector.data_.invalidation_projection_.groups
+	}
+	return project_selector_invalidation_groups(selector)
+}
+
+fn (selector Selector) has_invalidation_projection() bool {
+	return selector.data_ != unsafe { nil } && selector.data_.invalidation_projection_ != unsafe { nil }
+}
+
+// Called before a worker publishes an immutable selector graph. The names and
+// child handles may borrow the graph, and both live in the same retained arena.
+fn prepare_selector_invalidation_projection(selector Selector) {
+	if selector.data_ == unsafe { nil } || selector.has_invalidation_projection() { return }
+	groups := project_selector_invalidation_groups(selector)
+	mut data := unsafe { &SelectorData(selector.data_) }
+	data.invalidation_projection_ = &SelectorInvalidationProjection{groups: groups}
+	for group in groups {
+		for simple in group.simple_selectors {
+			for child in simple.nested_selectors {
+				prepare_selector_invalidation_projection(child)
+			}
+		}
+	}
+}
+
+fn project_selector_invalidation_groups(selector Selector) []InvalidationSimpleSelectorGroup {
 	compound_selectors := selector.compound_selectors()
 	if compound_selectors.len == 0 {
 		return []InvalidationSimpleSelectorGroup{}

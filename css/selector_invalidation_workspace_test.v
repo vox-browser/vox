@@ -38,6 +38,30 @@ fn test_owned_selector_invalidation_preserves_plan_unions_and_nested_feature_dep
 	}
 }
 
+fn test_prepared_selector_projections_preserve_document_invalidation_plans() {
+	mut prepared := StyleInvalidationData{}
+	mut reference := StyleInvalidationData{}
+	for text in ['a:is(.one, #two) > b:has(+ .next)', '.root:has(:not(:empty)) .tail',
+		'a + .last', ':host(.state) ::slotted(span.ready)'] {
+		selector := selector_from_text(text)
+		ordinary := selector_from_text(text)
+		prepare_selector_invalidation_projection(selector)
+		groups := selector_groups_for_invalidation(selector)
+		prepare_selector_invalidation_projection(selector)
+		assert selector_groups_for_invalidation(selector).data == groups.data
+		for group in groups {
+			for simple in group.simple_selectors {
+				for child in simple.nested_selectors { assert child.has_invalidation_projection() }
+			}
+		}
+		for boundary in [false, true] {
+			build_owned_selector_invalidation(mut prepared, selector, boundary)
+			build_owned_selector_invalidation(mut reference, ordinary, boundary)
+			assert_owned_invalidation_matches_reference(prepared, reference)
+		}
+	}
+}
+
 fn test_unpublished_selector_dependencies_grow_match_sets_without_retaining_old_maps() {
 	mut selectors := []Selector{}
 	for index in 0 .. 128 {

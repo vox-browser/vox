@@ -103,6 +103,12 @@ fn test_worker_user_agent_syntax_retires_before_the_published_sheet_is_used() {
 			selector := first.selectors.selectors[0]
 			assert storage.arena.contains(voidptr(selector.data_))
 			assert selector.text() == 'html'
+			assert selector.has_invalidation_projection() == !sync_user_agent_selector_invalidation
+			if selector.has_invalidation_projection() {
+				groups := selector_groups_for_invalidation(selector)
+				assert storage.arena.contains(groups.data)
+				assert groups[0].simple_selectors[0].name == 'html'
+			}
 		}
 		if !disable_stylesheet_rule_cache && stylesheet_rule_cache_.eligible(user_agent_cascade_stylesheet_source) {
 			entry := stylesheet_rule_cache_.lookup(user_agent_cascade_stylesheet_source) or {

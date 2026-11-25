@@ -766,6 +766,7 @@ struct RuleCacheBuildContext {
 	duplicate_group &DuplicateSheetGroup = unsafe { nil }
 mut:
 	rule_index uint
+	prepared_invalidation_selectors int
 }
 
 fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
@@ -787,6 +788,9 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 	if style_invalidation_data := scope.style_invalidation_data {
 		mut mutable_invalidation_data := unsafe { &StyleInvalidationData(style_invalidation_data) }
 		for selector in absolutized_selectors.selectors {
+			if user_agent_syntax_diagnostics && selector.has_invalidation_projection() {
+				context.prepared_invalidation_selectors++
+			}
 			mutable_invalidation_data.build_selector_dependencies(selector, false,
 				context.unpublished_invalidation)
 		}
@@ -957,6 +961,9 @@ fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, in
 			duplicate_group: duplicate_group
 		}
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), style_scope_cache_style_rule)
+		if context.prepared_invalidation_selectors > 0 {
+			eprintln('VOX_UA_SELECTOR_INVALIDATION selectors=${context.prepared_invalidation_selectors}')
+		}
 
 		// Loosely based on https://drafts.csswg.org/css-animations-2/#keyframe-processing
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)

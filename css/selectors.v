@@ -979,6 +979,8 @@ pub mut:
 	contains_part_pseudo_element  bool
 	contained_pseudo_classes      PseudoClassBitmap
 	ancestor_hashes               [8]u32
+mut:
+	invalidation_projection_ &SelectorInvalidationProjection = unsafe { nil }
 }
 
 // Kept as traversal entry points for the declared-value fallback cache. Parsed
