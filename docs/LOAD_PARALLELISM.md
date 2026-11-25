@@ -5146,3 +5146,163 @@ miss. The six path diagnostics also verified the URL, readiness,
 viewport and all 30 ordered story IDs. Executable, helper, library,
 archive and harness hashes stayed pinned. All browser, driver and
 guard exits were zero. Peak sampled RSS was 392,757,248 bytes.
+
+### Main-thread utilization on the default homepage renderer
+
+The bundle from receipt `20261125-220515-c448ff98` ran nine fresh launches
+using the same archived page, 2× capture, profile and replay settings.
+Its executable SHA-256 was
+`05da72a103b91f93c7a80af2955f8655c8e058a574f91b4929b7c73b216dea64`.
+No experimental GG switches were enabled.
+
+The seven timing launches reached the PNG at 293.292, 305.483, 294.294,
+307.006, 312.798, 303.126 and 298.809 ms (median 303.126 ms).
+Median sampled process CPU was 223.542 ms, with 152.567 ms on the
+browser main thread and 71.577 ms on other threads. The median
+main-thread share was 68.2%. Two or more threads ran in parallel for
+8.878 ms of the sampled interval at the median, using the sampler's
+50% busy threshold. Samples exclude GPU execution and separate
+processes and can miss a retiring thread's final interval. Host
+one-minute load ranged from 3.25 to 3.27 on 18 CPUs.
+
+Two separate instruction diagnostics recorded 2,005,145,816 and
+2,000,724,932 main-thread instructions from launch through PNG encoding.
+These are thread counters. The browser inherited a shared coalition, so
+its cumulative coalition reading cannot establish process ownership or
+a comparable instruction total.
+
+| Main-thread scope | First launch | Second launch |
+| --- | ---: | ---: |
+| Style update, inclusive | 345,365,698 | 346,001,767 |
+| Flow layout, inclusive | 148,239,390 | 148,293,228 |
+| Native raster replay, inclusive | 257,003,323 | 255,507,349 |
+| Text leaves, included in replay | 126,969,831 | 126,732,775 |
+| Fill leaves, included in replay | 58,418,945 | 58,103,740 |
+| JavaScript execution and bindings | 228,745,355 | 229,327,217 |
+
+Style, layout and ordered raster replay still use substantial
+main-thread CPU despite the parallel preparation and raster worker
+paths. Both diagnostics verified the document URL, ready state,
+viewport and all 30 stories in order. All nine captures matched the
+reference PNG and eight replay records. Browser, driver and guard
+exits were zero. Peak sampled RSS was 423,346,176 bytes.
+
+### Build depth-stencil states on Metal workers
+
+Commit `939588968` lets the drawing thread enqueue the depth-stencil work
+for each batched GG render pipeline while Metal compiles the render
+state. The same dispatch group covers both. After joining, the drawing
+thread publishes each completed pipeline in submission order and checks
+the Sokol slot generation. The depth job keeps its descriptor through
+completion. [Metal depth-stencil states](https://developer.apple.com/documentation/metal/mtldepthstencilstate)
+
+Set `VOX_PARALLEL_GG_METAL_DEPTH_STATES=1` alongside
+`VOX_PARALLEL_GG_METAL_PIPELINES=1` to select the worker path. The
+first-use comparison keeps render-pipeline batching enabled in both
+variants and changes the depth-stencil schedule alone.
+
+The native Metal tests verified worker completions through the
+failed-pipeline, retired-slot and post-submission cases and passed
+all 128 readback cases. Address, undefined-behavior and thread
+sanitizer runs and the non-ARC test passed. The GG leaf-region tests
+passed with inline and worker depth creation, and the Sokol staging
+comparison passed.
+#### Matched production captures
+
+Receipt `20261125-221521-a0ddf206` verified `939588968` and
+passed headless startup smoke in single-C-unit V `-prod` mode. Each launch
+used this same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `f39a97dd16779ec05ce9dce29864188a6132cd6038d5b1f268450f23e78db2aa` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Each diagnostic compiled 42 render pipelines off-thread and published
+all 42. The worker launches also built 42 depth-stencil states
+off-thread. Both first-use diagnostics had work pending at the join.
+Both early-submission diagnostics had every state ready at the join.
+The early runs enabled shader-library queueing. All four diagnostics
+verified the URL, complete readiness, viewport and all 30 story IDs.
+
+Each comparison used two alternating seven-pair cohorts with opposite
+starting modes. They launched fresh JavaScriptCore processes and used
+private empty profiles and HTTP caches, retained OS filesystem and shader
+caches, `tr.athing` readiness, and a 60 ms replay delay per logo response.
+Capture used a 1024×768 CSS-pixel viewport at 2× scale.
+
+#### Depth-stencil schedule, launch through completed PNG
+
+| Pair | Inline, ms | Worker, ms | Reversed inline, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 310.284 | 332.634 | 297.082 | 293.712 |
+| 2 | 295.681 | 300.404 | 326.801 | 306.139 |
+| 3 | 312.843 | 299.706 | 299.629 | 292.176 |
+| 4 | 298.934 | 296.118 | 304.186 | 329.209 |
+| 5 | 319.196 | 294.446 | 307.923 | 307.957 |
+| 6 | 301.377 | 308.781 | 290.553 | 303.222 |
+| 7 | 305.816 | 319.357 | 306.950 | 313.289 |
+| Median | 305.816 | 300.404 | 304.186 | 306.139 |
+
+Median paired changes were +4.722 and +0.034 ms, with three worker wins in each cohort.
+One-minute load ranged from 4.88 to 5.99 and from 5.99 to 6.14 on 18 CPUs.
+Sampled main-thread CPU medians went from 164.275 to 162.846 ms and
+from 166.690 to 168.054 ms.
+
+#### Depth-stencil schedule, first gradient replay
+
+These separate timing runs enabled paint-command diagnostics. The
+first gradient includes GG initialization, precompilation and drawing.
+
+| Pair | Inline, µs | Worker, µs | Reversed inline, µs | Reversed worker, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 11,720 | 12,383 | 14,446 | 15,271 |
+| 2 | 13,723 | 12,698 | 14,558 | 14,237 |
+| 3 | 12,178 | 14,143 | 14,518 | 14,355 |
+| 4 | 15,525 | 14,317 | 14,179 | 15,156 |
+| 5 | 14,490 | 14,983 | 12,955 | 14,450 |
+| 6 | 14,996 | 14,938 | 13,334 | 13,066 |
+| 7 | 14,397 | 14,417 | 15,020 | 12,089 |
+| Median | 14,397 | 14,317 | 14,446 | 14,355 |
+
+Median paired changes were +20 and −163 µs, with three and four worker wins.
+One-minute load ranged from 6.13 to 6.20 and from 5.85 to 6.10 on 18 CPUs.
+
+The depth-stencil queue remains opt-in. It did not shorten either
+paired launch-to-PNG median.
+
+#### Default render settings and combined Metal queues
+
+The combined mode started the batch during frame setup and queued shader
+libraries, render pipelines and depth-stencil states. Both
+schedules were timed from launch through completed PNG.
+
+| Pair | Default, ms | Combined, ms | Reversed default, ms | Reversed combined, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 298.676 | 309.786 | 302.752 | 301.825 |
+| 2 | 303.352 | 294.605 | 308.590 | 302.730 |
+| 3 | 318.910 | 293.410 | 299.777 | 318.486 |
+| 4 | 308.479 | 302.578 | 302.247 | 313.574 |
+| 5 | 309.976 | 294.222 | 325.928 | 320.951 |
+| 6 | 325.118 | 311.187 | 305.317 | 300.748 |
+| 7 | 315.937 | 324.490 | 337.011 | 303.342 |
+| Median | 309.976 | 302.578 | 305.317 | 303.342 |
+
+Median paired changes were −8.747 and −4.569 ms, with five combined-mode wins in each cohort.
+One-minute load ranged from 5.58 to 5.87 and from 5.45 to 5.98 on 18 CPUs.
+Sampled main-thread CPU medians went from 168.483 to 167.720 ms and
+from 168.539 to 164.893 ms.
+
+The combined configuration reduced both paired launch medians. Individual
+launch times overlapped and the modes had similar sampled CPU totals, 245.724
+versus 246.829 ms and 244.858 versus 242.834 ms. The queue switches remain
+opt-in.
+
+All 88 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+Executable, library, helper, fixture and harness hashes stayed pinned.
+All browser, driver and guard exits were zero. Peak sampled RSS was
+426,508,288 bytes.
