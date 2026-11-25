@@ -4551,3 +4551,132 @@ miss. Diagnostics verified the URL, complete ready state, viewport and
 all 30 ordered story IDs. The executable, helper, library, archive and
 harness inputs stayed pinned. All browser, driver and guard exits were
 zero. Peak RSS was 392,462,336 bytes under the 3 GiB guard.
+
+### Reuse worker-computed position bounds in CPU glyph replay
+
+Commit `fe04e74ca` carries the culling worker's glyph position bounds
+with its finite-coordinate check. CPU replay can reuse the bounds for
+quick rejection and filter-layer sizing when the position buffer and
+coordinate count match. The CPU glyph tests matched serial pixels for
+plain and blurred text, exercised unmatched views and kept rejecting
+nonfinite replacement coordinates. The culling suite passed under
+ThreadSanitizer and arena poisoning with the worker, serial-bounds,
+serial-validation and packed-position modes.
+
+#### Isolated retained glyph replay
+
+The verified browser from receipt `20261125-202827-7588b02e` captured
+332 glyph runs from the 1024×768 Hacker News archive at 2× scale. The
+glyph-dump launch exited zero and matched the reference document PNG.
+Its executable SHA-256 was
+`3f021777d017a95715131e6fc059e865a6b70b41431a4151f508653daddd7a1c`.
+The matched replay used `tools/benchmark_hn_glyphs.v` with the
+`--checked-positions` option added in `822faea96`. Checks were prepared
+outside the timer in both modes. The measurement spans fresh-cache CPU
+glyph rasterization of the 332 runs and their recorded backdrops. It
+excludes fixture loading, the browser, Quartz publication and PNG
+encoding. The serial control used `VOX_SERIAL_RETAINED_GLYPH_BOUNDS=1`
+on the same single-C-unit V `-prod` replay executable.
+
+| Input or output | SHA-256 |
+| --- | --- |
+| Replay executable | `8ac67cd91fb1c619d991707a1d29e3bf783e290e2fc7d83b890ffb0c2b908e4e` |
+| Captured run records | `0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24` |
+| Ordered capture file fingerprints | `ceb4fc25a750f446b7a164281dd3d05059bde6d86939907e258489815b3bd20b` |
+| Concatenated raster outputs | `66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52` |
+
+In both diagnostic sets, the original one-argument invocation reused zero
+checks. Checked replay reused validation for all 332 runs in both modes.
+The reuse mode also skipped the bounds scan for all 5,428 coordinates.
+Two unprofiled nine-pair cohorts alternated modes and reversed their
+starting mode. Each pair used fresh processes and retained OS filesystem
+caches. The executable, renderer and harness sources, captured run
+records and all backdrop hashes stayed pinned.
+
+| Pair | Serial, ms | Reuse, ms | Reversed serial, ms | Reversed reuse, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 14.390208 | 15.147375 | 15.649875 | 14.935625 |
+| 2 | 14.369292 | 14.932750 | 15.950542 | 13.627042 |
+| 3 | 14.815458 | 15.872625 | 16.406541 | 14.118375 |
+| 4 | 13.592917 | 15.468666 | 14.802125 | 16.190250 |
+| 5 | 14.364041 | 15.070083 | 15.587375 | 16.076584 |
+| 6 | 15.449917 | 14.755792 | 15.437292 | 13.730250 |
+| 7 | 14.349209 | 16.069417 | 14.282667 | 15.798417 |
+| 8 | 14.562125 | 14.924042 | 13.525791 | 16.839042 |
+| 9 | 14.073250 | 15.677125 | 15.541333 | 18.016292 |
+| Median | 14.369292 | 15.147375 | 15.541333 | 15.798417 |
+
+Median paired changes were +0.757167 ms and +0.489209 ms, with one and
+four reuse wins. One-minute host load was 4.39 and 6.13 on 18 CPUs.
+All 42 processes produced the same output digest and exited zero. Both
+3 GiB guards exited zero and the higher RSS peak was 47,939,584 bytes.
+
+Commit `b669cbb35` leaves CPU bounds recomputation as the default. Set
+`VOX_REUSE_RETAINED_GLYPH_BOUNDS=1` to use the worker's bounds. The focused
+CPU tests passed again in both modes. Rebuilding the standalone replay
+with the final flag verified the matching output digest, all 332 checks
+in both modes, and 332 reused bounds in the opt-in mode. The replay
+executable SHA-256 was
+`3a67d535bc6646e9a447ec232e846759c96c22e821737b6b88dc44d6c65f1fc9`.
+
+#### Full-page captures
+
+Production receipt `20261125-205113-4a675b7f` verified `b669cbb35` and
+passed startup smoke in single-C-unit V `-prod` mode. Both settings
+used the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `b27e26e3422e1d900dffe0347b9dce7ff99cd10bddac6bd42578e2e6c456b9cf` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+All four worker diagnostics prepared 332 glyph runs off-thread and reused
+the finite checks for all 5,428 coordinates in CPU replay. The two opt-in
+launches reused the worker bounds for all 332 runs. The two default
+launches computed their own CPU replay bounds.
+
+Separate counter captures recorded inclusive main-thread instructions
+for 333 text leaves, three native replay scopes and one bounds
+preparation scope per launch.
+
+| Scope | Pair 1 default | Pair 1 reuse | Pair 2 default | Pair 2 reuse |
+| --- | ---: | ---: | ---: | ---: |
+| Text leaves | 128,095,206 | 127,412,263 | 127,567,660 | 128,231,657 |
+| Native raster replay | 270,102,994 | 269,964,514 | 269,820,110 | 271,841,909 |
+| Bounds preparation | 18,445 | 18,557 | 18,495 | 18,421 |
+
+Two unprofiled seven-pair cohorts alternated the settings and reversed
+the first mode. The timer spans fresh process launch through completion
+of the document PNG at 1024×768 CSS pixels and 2× scale. The captures
+used JavaScriptCore, empty private profiles and HTTP caches, retained OS
+filesystem caches, `tr.athing` readiness and a 60 ms replay delay per
+logo response.
+
+| Pair | Default, ms | Reuse, ms | Reversed default, ms | Reversed reuse, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 306.852 | 300.129 | 291.438 | 319.483 |
+| 2 | 309.559 | 282.474 | 305.214 | 303.270 |
+| 3 | 322.183 | 298.231 | 302.101 | 300.278 |
+| 4 | 297.750 | 302.204 | 300.671 | 313.370 |
+| 5 | 301.631 | 301.961 | 336.296 | 341.458 |
+| 6 | 303.899 | 302.654 | 365.592 | 364.702 |
+| 7 | 291.628 | 303.683 | 361.869 | 334.655 |
+| Median | 303.899 | 301.961 | 305.214 | 319.483 |
+
+The median paired changes were −1.245 ms and −0.889 ms, with four reuse
+wins per cohort. Sampled browser main-thread CPU medians went from
+158.534 to 157.719 ms and from 164.904 to 162.062 ms. One-minute host
+load ranged from 4.52 to 4.84 and from 4.84 to 5.41 on 18 CPUs. Individual
+launch differences ranged from −27.214 to +28.045 ms. The launch times
+and instruction counts varied in both directions, and the isolated
+replay regressed in both cohorts.
+
+All 36 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the favicon
+miss. Worker diagnostics verified the URL, complete ready state, viewport
+and all 30 ordered story IDs. The executable, helper, library, archive and
+harness inputs stayed pinned. All browser, driver and guard exits were
+zero. Peak RSS was 384,909,312 bytes under the 3 GiB guard.
