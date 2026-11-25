@@ -58,70 +58,34 @@ enum Associativity {
 
 // Tracks which tokens are forbidden in the current expression context.
 struct ForbiddenTokens {
-mut:
-	forbid_in                   bool
-	forbid_logical              bool
-	forbid_coalesce             bool
-	forbid_paren_open           bool
-	forbid_question_mark_period bool
-	forbid_equals               bool
+	bits u8
 }
 
-fn ForbiddenTokens.none() ForbiddenTokens {
-	return ForbiddenTokens{}
+const forbidden_in = ForbiddenTokens{bits: 1 << 0}
+const forbidden_logical = ForbiddenTokens{bits: 1 << 1}
+const forbidden_coalesce = ForbiddenTokens{bits: 1 << 2}
+const forbidden_call = ForbiddenTokens{bits: 1 << 3}
+const forbidden_optional_chain = ForbiddenTokens{bits: 1 << 4}
+const forbidden_equals = ForbiddenTokens{bits: 1 << 5}
+
+fn (f ForbiddenTokens) allows(token TokenType) bool {
+	if f.bits == 0 {
+		return true
+	}
+	disallowed := match token {
+		.in_kw { forbidden_in }
+		.double_ampersand, .double_pipe { forbidden_logical }
+		.double_question_mark { forbidden_coalesce }
+		.paren_open { forbidden_call }
+		.question_mark_period { forbidden_optional_chain }
+		.equals { forbidden_equals }
+		else { ForbiddenTokens{} }
+	}
+	return f.bits & disallowed.bits == 0
 }
 
-fn ForbiddenTokens.with_in() ForbiddenTokens {
-	return ForbiddenTokens{
-		forbid_in: true
-	}
-}
-
-fn (f &ForbiddenTokens) allows(token TokenType) bool {
-	return match token {
-		.in_kw { !f.forbid_in }
-		.double_ampersand, .double_pipe { !f.forbid_logical }
-		.double_question_mark { !f.forbid_coalesce }
-		.paren_open { !f.forbid_paren_open }
-		.question_mark_period { !f.forbid_question_mark_period }
-		.equals { !f.forbid_equals }
-		else { true }
-	}
-}
-
-fn (f &ForbiddenTokens) merge(other ForbiddenTokens) ForbiddenTokens {
-	return ForbiddenTokens{
-		forbid_in:                   f.forbid_in || other.forbid_in
-		forbid_logical:              f.forbid_logical || other.forbid_logical
-		forbid_coalesce:             f.forbid_coalesce || other.forbid_coalesce
-		forbid_paren_open:           f.forbid_paren_open || other.forbid_paren_open
-		forbid_question_mark_period: f.forbid_question_mark_period
-			|| other.forbid_question_mark_period
-		forbid_equals:               f.forbid_equals || other.forbid_equals
-	}
-}
-
-fn (f &ForbiddenTokens) forbid(tokens []TokenType) ForbiddenTokens {
-	mut result := ForbiddenTokens{
-		forbid_in:                   f.forbid_in
-		forbid_logical:              f.forbid_logical
-		forbid_coalesce:             f.forbid_coalesce
-		forbid_paren_open:           f.forbid_paren_open
-		forbid_question_mark_period: f.forbid_question_mark_period
-		forbid_equals:               f.forbid_equals
-	}
-	for t in tokens {
-		match t {
-			.in_kw { result.forbid_in = true }
-			.double_ampersand, .double_pipe { result.forbid_logical = true }
-			.double_question_mark { result.forbid_coalesce = true }
-			.paren_open { result.forbid_paren_open = true }
-			.question_mark_period { result.forbid_question_mark_period = true }
-			.equals { result.forbid_equals = true }
-			else {}
-		}
-	}
-	return result
+fn (f ForbiddenTokens) merge(other ForbiddenTokens) ForbiddenTokens {
+	return ForbiddenTokens{bits: f.bits | other.bits}
 }
 
 struct ParserError {

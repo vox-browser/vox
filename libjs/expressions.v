@@ -114,7 +114,7 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 	if !should_continue {
 		// Yield/Await expressions don't participate in secondary expression
 		// parsing but do participate in comma expressions.
-		return p.parse_comma_expression(lhs_start, expression, min_precedence, forbidden)
+		return p.parse_comma_expression(lhs_start, expression, min_precedence)
 	}
 
 	expression2 := if p.match_token(.template_literal_start) {
@@ -157,11 +157,11 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 		}
 	}
 
-	return p.parse_comma_expression(lhs_start, expression, min_precedence, forbidden)
+	return p.parse_comma_expression(lhs_start, expression, min_precedence)
 }
 
-fn (mut p Parser) parse_comma_expression(start Position, expression Expression, min_precedence int, forbidden ForbiddenTokens) Expression {
-	if min_precedence <= 1 && p.match_token(.comma) && forbidden.allows(.comma) {
+fn (mut p Parser) parse_comma_expression(start Position, expression Expression, min_precedence int) Expression {
+	if min_precedence <= 1 && p.match_token(.comma) {
 		mark := p.expression_scratch.len
 		p.expression_scratch << expression
 		for p.match_token(.comma) {
@@ -508,7 +508,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		// === Logical operators ===
 		.double_ampersand {
 			p.consume()
-			new_forbidden := forbidden.forbid([TokenType.double_question_mark])
+			new_forbidden := forbidden.merge(forbidden_coalesce)
 			rhs := p.parse_expression(min_precedence, .left, new_forbidden)
 			return p.expression(start, ExpressionKind{
 				tag:        .logical
@@ -519,7 +519,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		}
 		.double_pipe {
 			p.consume()
-			new_forbidden := forbidden.forbid([TokenType.double_question_mark])
+			new_forbidden := forbidden.merge(forbidden_coalesce)
 			rhs := p.parse_expression(min_precedence, .left, new_forbidden)
 			return p.expression(start, ExpressionKind{
 				tag:        .logical
@@ -530,7 +530,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		}
 		.double_question_mark {
 			p.consume()
-			new_forbidden := forbidden.forbid([TokenType.double_ampersand, .double_pipe])
+			new_forbidden := forbidden.merge(forbidden_logical)
 			rhs := p.parse_expression(min_precedence, .left, new_forbidden)
 			return p.expression(start, ExpressionKind{
 				tag:        .logical
@@ -816,7 +816,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 	callee := if p.match_token(.new_kw) {
 		p.parse_new_expression()
 	} else {
-		forbidden := ForbiddenTokens{}.forbid([TokenType.paren_open, .question_mark_period])
+		forbidden := forbidden_call.merge(forbidden_optional_chain)
 		p.parse_expression(precedence_member, .right, forbidden)
 	}
 

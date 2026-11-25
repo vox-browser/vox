@@ -422,9 +422,8 @@ fn (mut p Parser) parse_for_statement() Statement {
 			statement: p.parse_variable_declaration(true)
 		})
 	} else {
-		forbidden := ForbiddenTokens.with_in()
 		LocalForInit(LocalForInitExpression{
-			expression: p.parse_expression(precedence_comma, .right, forbidden)
+			expression: p.parse_expression(precedence_comma, .right, forbidden_in)
 		})
 	}
 

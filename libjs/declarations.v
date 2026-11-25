@@ -234,7 +234,7 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			p.consume()
 			any_init = true
 			forbidden := if is_for_loop {
-				ForbiddenTokens.with_in()
+				forbidden_in
 			} else {
 				ForbiddenTokens{}
 			}
@@ -306,7 +306,7 @@ fn (mut p Parser) parse_using_declaration(is_for_loop bool) Statement {
 		if p.match_token(.equals) {
 			p.consume()
 			if is_for_loop {
-				init = p.parse_expression(precedence_assignment, .right, ForbiddenTokens.with_in())
+				init = p.parse_expression(precedence_assignment, .right, forbidden_in)
 			} else {
 				init = p.parse_assignment_expression()
 			}
@@ -1268,9 +1268,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 
 		if is_object {
 			if p.allow_member_expressions && is_rest {
-				expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
-					TokenType.equals,
-				]))
+				expression := p.parse_expression(precedence_assignment, .right, forbidden_equals)
 				if is_member_expression(expression) {
 					entry_alias = BindingEntryAlias{
 						kind:       .member_expression_kind
@@ -1355,9 +1353,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 					p.consume()
 					if p.allow_member_expressions {
 						expression_start := p.position()
-						expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
-							TokenType.equals,
-						]))
+						expression := p.parse_expression(precedence_assignment, .right, forbidden_equals)
 						if is_parenthesized_object_or_array_expression(expression, expression_start) {
 							p.syntax_error('Invalid destructuring assignment target')
 							break
@@ -1427,9 +1423,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 			}
 		} else if p.allow_member_expressions {
 			expression_start := p.position()
-			expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
-				TokenType.equals,
-			]))
+			expression := p.parse_expression(precedence_assignment, .right, forbidden_equals)
 			if is_parenthesized_object_or_array_expression(expression, expression_start) {
 				p.syntax_error('Invalid destructuring assignment target')
 				break
