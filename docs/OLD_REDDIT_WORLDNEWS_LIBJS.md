@@ -1113,3 +1113,60 @@ of 865,124,352 bytes.
 A direct visit in the same executable with a fresh profile reached Reddit's
 login page with zero posts and two unsupported `data:` script URLs. The
 browser and guard exited zero. The live listing was unavailable in this check.
+
+## Waiting for a late classic-script worker
+
+A load trace on executable `c3d935d0021c5909ba8cc4f630167f62641abb3b62c402f42d7d2d07650bf54e`
+found that the main 598,332-byte Reddit bundle finished fetching at 369.2 ms
+after launch. The first substantial document layout ran from 377.7 to
+444.8 ms, followed by the bundle's JavaScript stage from 447.5 to 471.2 ms.
+The recorded stage durations come from a diagnostic with thread counters.
+
+An experiment prepared the syntax of parser-blocking external classic
+scripts on their fetch worker once the parser had built body content. The
+response stayed on the worker until preparation finished. This kept the
+early head scripts on the document thread. The parser still ran the script
+in sequence against its own document. Four focused lifecycle tests passed
+under production preallocation, all 14 lifecycle tests passed under Boehm,
+and all six request and cancellation tests passed under preallocation with
+the repository's adblock assets selected explicitly.
+
+The single-unit `-prod` executable from build `20261125-081947-87776ad4`
+had SHA-256 `25a4419dd5ebe7ab916a465634fa27be4447094486083b9d6814a1037f04e434`.
+The LibJS smoke check passed. Both same-binary variants used the standard
+clock-pinned archive, fixed Vox reference, 1024×768 scale-1 document PNG,
+private empty profiles and HTTP caches, and 1.4 s settling. Both code
+caches were disabled. `VOX_LIBJS_SCRIPT_PREPARSE=0` selected the control.
+An eligibility visit recorded one worker syntax hit and zero on the control.
+It also found execution generation 157 on the worker path and 145 on the
+control. The comparison verified actual LibJS execution and recorded both
+generation counts.
+
+| Pair | Worker observed instructions | Owner observed instructions | Worker elapsed (ms) | Owner elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,889,163,673 | 5,889,835,645 | 2052.779 | 2058.851 |
+| 2 | 5,922,554,026 | 5,939,148,615 | 2053.113 | 2038.892 |
+| 3 | 5,998,919,175 | 5,875,835,925 | 2090.291 | 2065.545 |
+| 4 | 5,967,930,411 | 5,912,974,004 | 2094.259 | 2043.039 |
+| 5 | 5,920,501,797 | 5,880,110,903 | 2062.140 | 2058.233 |
+| 6 | 5,906,314,081 | 5,942,979,196 | 2072.465 | 2057.777 |
+| 7 | 5,926,126,247 | 5,842,884,793 | 2060.460 | 2068.422 |
+| Median | 5,922,554,026 | 5,889,835,645 | 2062.140 | 2058.233 |
+
+The worker path raised median observed instructions by **0.56%** and median
+elapsed time by **3.9 ms**. It finished sooner in two pairs. Every visit
+matched the fixed Vox reference, served all five scripts and completed with
+all 25 posts in order and zero script diagnostics. The worker recorded one
+syntax hit and generation 155 or 157 on each visit. The control recorded
+zero worker hits and generation 145. Both left JavaScriptCore uninitialized.
+The guard adopted all 14 roots and sampled a peak RSS of 786,219,008 bytes.
+The browser roots, driver and guard exited zero. Host one-minute load was
+16.64–20.32 on 18 cores from 08:26:06 to 08:26:42 UTC+03.
+
+A separate instrumented pair explains the delay. The worker reduced the
+main bundle's owner-thread JavaScript stage from 23.3 ms to 6.6 ms. Its
+dispatch started at 453.3 ms after launch, 35.6 ms later than the control,
+and followed an extra frame preparation pass. The owner could receive its
+response before the first substantial layout and already had an execution
+task queued when layout returned. This blocked-delivery experiment was
+rejected.
