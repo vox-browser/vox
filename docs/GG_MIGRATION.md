@@ -14700,6 +14700,12 @@ checks matched the serial masks. The pinned 2,000-case glyph
 differential passed.
 [Hacker News measurements](LOAD_PARALLELISM.md#draw-short-cold-glyph-mask-batches-on-workers)
 
+Ordinary cold-mask batches explicitly submit the background ranges.
+The focused four-mask test verified caller and worker identities and
+compared all four masks with the serial CoreText path. The focused
+tests, ThreadSanitizer and pinned glyph differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#submit-larger-cold-glyph-mask-ranges-explicitly)
+
 Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
 tests matched serial glyphs and preserved masks added before the join. The
 pinned V `-prod` glyph differential check returned 1,962 exact draws and 38

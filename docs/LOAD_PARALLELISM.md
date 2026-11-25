@@ -3220,3 +3220,87 @@ Every launch reproduced eight request and response records, including the
 favicon miss. Executable, library, helper, archive and driver hashes
 stayed fixed. All browsers, the driver and the 3 GiB guard exited zero.
 Peak aggregate RSS was 397,934,592 bytes.
+
+### Submit larger cold glyph-mask ranges explicitly
+
+Before commit `5a7e9f5f7`, larger ordinary cold-mask batches used `dispatch_apply`, whose
+scheduler can run multiple ranges inline. The retained renderer now
+submits background ranges explicitly and draws the final range on
+the caller for every eligible batch. It keeps the existing lane
+budget and joins before publishing the masks. If submission fails,
+the existing per-glyph lookup draws the missing masks.
+`VOX_GLYPH_MASK_DISPATCH_APPLY=1` restores the previous scheduler for
+batches of four or more. The diagnostics record how many jobs ran
+on the caller.
+
+#### Bitmap context reuse experiment
+
+The production baseline `0a575bf30871…f311` captured 332 retained
+draws on the archived Hacker News homepage. Its PNG reproduced
+the reference, and the glyph input log SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+Reusing one same-size CoreGraphics context per worker range avoided
+70 context creations in the replay. The focused test matched
+fresh-context masks across subpixel origins and smoothing modes,
+and both variants matched the reference RGBA. Each comparison used
+its own single-C-unit V `-prod` executable in both modes, a fresh
+strike cache and arena poisoning.
+
+| Experiment | Host one-minute load on 18 CPUs | First paired median | Reversed paired median | Wins |
+| --- | ---: | ---: | ---: | ---: |
+| All ranges | 73.21–77.38 | +1.125 ms | +2.532 ms | 2/7, 1/7 |
+| Excluding single-glyph ranges | 106.26–109.37 | +0.474 ms | +6.202 ms | 3/7, 0/7 |
+
+The executable SHA-256 values were
+`7b7d6949d9544be6d09bb5aeb374b51c54568f372e2c39ad7e41a65679090f04`
+and `bd9bed8d51c3b043d6f0741c586a24cb0d438d0afeff3d996823485c58411015`.
+Each cohort kept its executable, captured inputs, fonts and driver
+hashes pinned. Every isolated process and guard exited zero. The two
+3 GiB runs peaked at 59,539,456 and 59,785,216 bytes. Both implementations
+were withdrawn after all four paired medians increased. Explicit
+dispatch uses the existing per-glyph bitmap code.
+
+#### Explicit dispatch in retained text replay
+
+The single-C-unit V `-prod` replay executable had SHA-256
+`50730163349d9db529f98247152b3e4d18dc946310dab39967aaf2acf7608012`.
+Both modes drew 391 masks across 84 batches, including 37 larger
+batches. Both used multiple threads in every sampled larger batch.
+The old scheduler drew 86 of 277 masks from the larger batches on
+the caller. Explicit dispatch drew 101 there. The explicit scheduler
+reserves a worker range in every eligible batch, even when the
+system would choose inline execution.
+
+Both alternating cohorts used fresh processes and strike caches
+with arena poisoning. Every replay matched reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+
+| Pair | Previous, ms | Explicit, ms | Reversed previous, ms | Reversed explicit, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 17.741 | 17.895 | 17.501 | 20.457 |
+| 2 | 17.860 | 23.975 | 44.206 | 20.944 |
+| 3 | 21.048 | 20.572 | 23.949 | 19.276 |
+| 4 | 18.821 | 17.967 | 20.280 | 22.500 |
+| 5 | 22.556 | 21.587 | 19.498 | 16.967 |
+| 6 | 21.139 | 27.891 | 18.904 | 19.111 |
+| 7 | 19.112 | 19.130 | 16.419 | 20.024 |
+| Median | 19.112 | 20.572 | 19.498 | 20.024 |
+
+The paired medians were +0.018 and +0.207 ms, with three wins per cohort.
+Host one-minute load was 67.69–67.92 on 18 CPUs. Inputs stayed pinned,
+every replay exited zero, and the guard for the focused tests, build
+and replays exited zero at a peak aggregate RSS of 600,096,768 bytes.
+
+Ten arena-poisoned tests passed, including a four-mask case that
+verified caller and worker identities and compared the published
+masks with serial CoreText output. ThreadSanitizer passed. The pinned
+2,000-case glyph differential returned 1,963 exact cases and 37
+declines, with both the suite and guard exiting zero. An earlier
+focused attempt hit a full workspace volume before execution. The
+successful runs followed cleanup of the completed experiment artifacts.
+
+The full-page comparison is pending. The guard was occupied by
+single-C-unit production receipt `20261125-141127-f26f0f12`, which
+sealed before the scheduler change. The commit hook queued the new
+source for the shared builder. The available production executable
+served as the archived text capture baseline.
