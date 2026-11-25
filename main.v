@@ -1650,8 +1650,11 @@ fn browser_response_mime_essence(headers []adblock.ResponseHeader) string {
 // Chromium selects its SVG image decoder from the response's image/svg+xml
 // type, not the URL: GitHub's camo and shields.io badge URLs have no .svg name.
 fn browser_decoded_resource_image(resource_url dom.URL, resource PreloadedResource) !html.DecodedImageData {
-	return browser_decoded_image_data_for_type(resource_url, resource.body.bytes(),
-		browser_response_mime_essence(resource.response_headers))
+	// Decoders read the immutable response. A deferred PNG can also reuse it
+	// after this call when the response already has a process-lifetime owner.
+	bytes := unsafe { resource.body.str.vbytes(resource.body.len) }
+	return browser_decoded_image_data_for_type(resource_url, bytes,
+		browser_response_mime_essence(resource.response_headers), resource.retained_for_process)
 }
 
 fn browser_raster_can_share_native_pixels(bytes []u8) bool {
@@ -1665,14 +1668,15 @@ fn browser_raster_can_share_native_pixels(bytes []u8) bool {
 }
 
 fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedImageData {
-	return browser_decoded_image_data_for_type(resource_url, bytes, '')
+	return browser_decoded_image_data_for_type(resource_url, bytes, '', false)
 }
 
-fn browser_decoded_image_data_for_type(resource_url dom.URL, bytes []u8, mime_essence string) !html.DecodedImageData {
+fn browser_decoded_image_data_for_type(resource_url dom.URL, bytes []u8, mime_essence string,
+	share_encoded_bytes bool) !html.DecodedImageData {
 	if mime_essence == 'image/svg+xml' || browser_image_resource_is_svg(resource_url) {
 		return browser_decode_svg_image(resource_url, bytes)
 	}
-	if deferred := browser_deferred_png_bitmap(bytes) {
+	if deferred := browser_deferred_png_bitmap(bytes, share_encoded_bytes) {
 		decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(deferred)}], 0, false)
 		decoded.set_is_cors_cross_origin(resource_url.scheme() in ['http', 'https'])
 		return decoded

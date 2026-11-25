@@ -5,6 +5,7 @@ import encoding.base64
 import html
 import layout
 import os
+import platform
 
 // Responses are decoded while their document's native storage is entered, as
 // in navigation; deferred pixels are read later, outside it.
@@ -103,7 +104,7 @@ fn test_replaced_image_pixels_decode_only_for_the_drawn_command() {
 	defer { document.finalize() }
 	mut allocations := document.enter_native_storage()
 	bytes := deferred_png_small()
-	bitmap := browser_deferred_png_bitmap(bytes) or { panic('not deferred') }
+	bitmap := browser_deferred_png_bitmap(bytes, false) or { panic('not deferred') }
 	allocations.finish()
 	mut compatible := unsafe { &dom.Bitmap_(bitmap) }
 	compatible.native_resource_replay_compatible = true
@@ -119,4 +120,43 @@ fn test_replaced_image_pixels_decode_only_for_the_drawn_command() {
 	assert voidptr(drawn) == voidptr(bitmap)
 	assert bitmap.has_pixels()
 	assert drawn.data.len == drawn.pitch * drawn.height
+}
+
+fn test_deferred_png_reuses_process_owned_response_bytes() {
+	address := dom.URL{ value: 'https://images.test/gradient.png' }
+	resource := persistent_preloaded_resource(PreloadedResource{
+		body: deferred_png_fixture().bytestr()
+	})
+	$if prealloc {
+		before := platform.thread_arena_usage().used
+		// Measure the former resource path with the ordinary byte decoder.
+		control := browser_decoded_image_data(address, resource.body.bytes())!
+		assert control.intrinsic_width() or { 0 } == 131
+		control_bytes := platform.thread_arena_usage().used - before
+		assert control_bytes >= 2 * resource.body.len
+		current := platform.thread_arena_usage().used
+		decoded := browser_decoded_resource_image(address, resource)!
+		frame := decoded.frame(0)?
+		bytes := platform.thread_arena_usage().used - current
+		assert frame.width() == 131 && frame.height() == 768
+		assert !frame.deferred_bitmap().has_pixels()
+		assert bytes < resource.body.len
+
+		request := platform.begin_thread_scratch('temporary PNG response fixture')
+		defer { request.finish() }
+		temporary := PreloadedResource{body: resource.body.clone()}
+		request.leave()
+		before_copy := platform.thread_arena_usage().used
+		unowned := browser_decoded_resource_image(address, temporary)!
+		copied := platform.thread_arena_usage().used - before_copy
+		assert unowned.intrinsic_width() or { 0 } == 131
+		assert copied >= resource.body.len && copied < 2 * resource.body.len
+		println('deferred PNG arena bytes: old path ${control_bytes}, process response ${bytes}, temporary response ${copied}')
+	} $else {
+		decoded := browser_decoded_resource_image(address, resource)!
+		temporary := browser_decoded_resource_image(address, PreloadedResource{body: resource.body})!
+		control := browser_decoded_image_data(address, resource.body.bytes())!
+		assert decoded.frame(0)?.bitmap().data == control.frame(0)?.bitmap().data
+		assert temporary.frame(0)?.bitmap().data == control.frame(0)?.bitmap().data
+	}
 }
