@@ -26,15 +26,19 @@ static void vox_frame_clear_range(void *context, size_t lane) {
         memset(clear->pixels + y * clear->pitch, clear->value, clear->row_bytes);
 }
 
+static size_t vox_frame_clear_lanes(size_t row_bytes, size_t rows) {
+    size_t available = row_bytes * rows / (2u * 1024u * 1024u);
+    if (available > 4) available = 4;
+    return available > rows ? rows : available;
+}
+
 // The caller owns the bitmap until this returns. Assign whole rows and
 // leave padding alone unless the caller includes it in row_bytes.
 static size_t vox_fill_frame_rows(uint8_t *pixels, size_t row_bytes, size_t pitch, size_t rows,
     uint8_t value) {
     if (!pixels || !row_bytes || row_bytes > pitch || !rows || pitch > SIZE_MAX / rows) return 0;
     VoxFrameClear clear = {pixels, row_bytes, pitch, rows, 1, value};
-    size_t available = row_bytes * rows / (2u * 1024u * 1024u);
-    if (available > 4) available = 4;
-    if (available > rows) available = rows;
+    size_t available = vox_frame_clear_lanes(row_bytes, rows);
     if (available > 1 && !getenv("VOX_SERIAL_FRAME_CLEAR")) {
         clear.lanes = available;
         dispatch_apply_f(clear.lanes, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),

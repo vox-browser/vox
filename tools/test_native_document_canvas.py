@@ -38,7 +38,8 @@ def entry_points(text):
         "void native_begin_css_filter_layer(")]
     functions.append("void native_end_css_filter_layer(void);")
     functions += [function(signature) for signature in (
-        "void native_begin_font_compositing_layer(", "void native_end_font_compositing_layer(")]
+        "void native_begin_font_compositing_layer(", "void native_end_font_compositing_layer(",
+        "void *native_start_initial_document_clear(", "void native_finish_initial_document_clear(")]
     functions.append(text[text.index("void native_begin_backdrop_filter_layer("):
                           text.index("static CGRect native_svg_mask_canvas_rect(")])
     return declarations + "\n" + "\n".join(functions) + "\n"

@@ -144,6 +144,60 @@ static int check_rejections(void) {
   assert(!native_layer_begin_document_canvas(NULL,64,48,1));
  return cases;
 }
+
+static void check_background_initial_clear(void) {
+    size_t width = 2051, height = 1379, pitch = 4 * width + 20;
+    uint8_t *pixels = malloc(pitch * height);
+    assert(pixels);
+    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef context = CGBitmapContextCreate(pixels, width, height, 8, pitch, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);
+    assert(context);
+    memset(pixels, 19, pitch * height);
+    NSGraphicsContext *previous = NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    native_layer_document_bitmap = context;
+    native_layer_document_bitmap_claimed = NO;
+    assert(native_layer_claim_document_bitmap(context));
+    assert(native_layer_begin_document_canvas(context, width, height, 1));
+
+    assert(!native_start_initial_document_clear(width - 1, height));
+    CGContextSaveGState(context);
+    CGContextClipToRect(context, CGRectMake(0, 0, width, height - 1));
+    assert(!native_start_initial_document_clear(width, height));
+    CGContextRestoreGState(context);
+    setenv("VOX_SERIAL_FRAME_CLEAR", "1", 1);
+    assert(!native_start_initial_document_clear(width, height));
+    unsetenv("VOX_SERIAL_FRAME_CLEAR");
+    assert(!native_layer_initial_document_clear.completed && pixels[0] == 19);
+
+    void *work = native_start_initial_document_clear(width, height);
+    assert(work);
+    native_finish_initial_document_clear(work);
+    assert(native_layer_initial_document_clear.completed);
+    for (size_t y = 0; y < height; ++y)
+        for (size_t x = 0; x < pitch; ++x)
+            assert(pixels[y * pitch + x] == (x < 4 * width ? 255 : 19));
+    assert(!native_start_initial_document_clear(width, height));
+    // The normal draw consumes the completed clear without writing again.
+    pixels[0] = 19;
+    CGRect frame = CGRectMake(0, 0, width, height);
+    assert(vox_initial_document_clear(&native_layer_initial_document_clear, context,
+        frame, 255, 255, 255, 255));
+    assert(pixels[0] == 19);
+    assert(!vox_initial_document_clear(&native_layer_initial_document_clear, context,
+        frame, 255, 255, 255, 255));
+    CGContextRestoreGState(context);
+    native_layer_initial_document_clear = (VoxInitialDocumentClear){0};
+    native_layer_document_bitmap = NULL;
+    native_layer_document_bitmap_claimed = NO;
+    NSGraphicsContext.currentContext = previous;
+    CGContextRelease(context);
+    free(pixels);
+    puts("PASS background initial clear with guarded layout and row padding");
+}
+
 int main(void) {
  @autoreleasepool {
   const CGFloat scales[] = {1, 1.25, 2};
@@ -156,5 +210,6 @@ int main(void) {
   }
   int rejected = check_rejections();
   fprintf(stderr, "PASS %d exact root/nested/CSS/SVG/backdrop/overflow/state/immutable-frame comparisons; %d guarded rejections plus NULL\n", comparisons, rejected);
+  check_background_initial_clear();
  }
 }

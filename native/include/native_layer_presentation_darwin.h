@@ -220,7 +220,8 @@ static BOOL native_layer_begin_document_canvas(CGContextRef context,
     CGContextSaveGState(context);
     CGContextSetShouldAntialias(context, true);
     CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
-    native_layer_initial_document_clear = (VoxInitialDocumentClear){context, canvas_width, canvas_height};
+    native_layer_initial_document_clear = (VoxInitialDocumentClear){
+        .context = context, .width = canvas_width, .height = canvas_height};
     return YES;
 }
 

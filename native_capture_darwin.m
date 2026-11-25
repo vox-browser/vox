@@ -3117,6 +3117,15 @@ void native_end_font_compositing_layer(void) {
 	native_end_css_filter_layer();
 }
 
+void *native_start_initial_document_clear(float width, float height) {
+	return vox_start_initial_document_clear(&native_layer_initial_document_clear,
+		NSGraphicsContext.currentContext.CGContext, CGRectMake(0, 0, width, height));
+}
+
+void native_finish_initial_document_clear(void *work) {
+	vox_finish_initial_document_clear(&native_layer_initial_document_clear, work);
+}
+
 void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 	float region_x, float region_y, float region_width, float region_height,
 	float top_left_x, float top_left_y, float top_right_x, float top_right_y,

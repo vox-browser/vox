@@ -7819,7 +7819,7 @@ fn (mut app BrowserApp) draw() {
 					}
 					C.native_set_chromium_shared_recording(i32(app.page_zoom == 1 && chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
 					C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
-					app.set_chromium_msaa_tiles()
+					app.prepare_chromium_msaa_tiles(window.width, window.height)
 				} else if app.ctx.native_rendering
 					&& app.paint_commands_have_backdrop_filter {
 					// Backdrop commands need a snapshot of pixels already painted in this

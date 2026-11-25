@@ -549,6 +549,24 @@ fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
 	}
 }
 
+const overlap_initial_document_clear = os.getenv('VOX_OVERLAP_INITIAL_DOCUMENT_CLEAR') == '1'
+
+fn C.native_start_initial_document_clear(width f32, height f32) voidptr
+fn C.native_finish_initial_document_clear(work voidptr)
+
+fn (mut app BrowserApp) prepare_chromium_msaa_tiles(window_width int, window_height int) {
+	$if macos {
+		// A deferred frame cannot enter scroll raster reuse. Its first draw
+		// clears the complete bitmap after this pixel-free setup.
+		clear := if overlap_initial_document_clear && app.scroll_raster_frame_deferred
+			&& os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') == '' {
+			C.native_start_initial_document_clear(f32(window_width), f32(window_height))
+		} else { voidptr(0) }
+		defer { if clear != unsafe { nil } { C.native_finish_initial_document_clear(clear) } }
+		app.set_chromium_msaa_tiles()
+	}
+}
+
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	stage := processmetrics.begin_instruction_stage('raster_tile_setup')
 	defer { stage.finish() }
