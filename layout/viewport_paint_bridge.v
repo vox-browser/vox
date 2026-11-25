@@ -2740,6 +2740,8 @@ struct CompatibilityCachedVisualReplayStep {
 	context_slot  int
 	layer_list    &PaintVisualLayerList = unsafe { nil }
 	opacity_scale f64 = 1.0
+mut:
+	output_index int = -1
 }
 
 fn cached_visual_replay_command_count(steps []CompatibilityCachedVisualReplayStep) int {
@@ -2872,8 +2874,10 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	} else {
 		result = []PaintCommand{cap: output_count}
 	}
+	parallel_leaves := cached_visual_replay_can_defer_leaves(output_count)
+	mut deferred_leaves := 0
 	mut active := []PaintVisualLayer{}
-	for step in plan {
+	for mut step in plan {
 		context := unsafe { &contexts.contexts[step.context_slot] }
 		desired := if step.layer_list != unsafe { nil } {
 			step.layer_list.items
@@ -2909,9 +2913,14 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			active << desired[index]
 		}
 		if step.command == unsafe { nil } { continue }
-		// Copy the cached command once, straight into its output slot, and
-		// resolve it there: a wide local copy plus the push copied it twice.
-		// Nothing else is appended before the next step, so the slot is stable.
+		if parallel_leaves && result.len < result.cap && step.can_project_on_worker() {
+			// The plan holds the output index. Keep the slot private until the
+			// workers have filled it and joined.
+			step.output_index = result.len
+			unsafe { result.len++ }
+			deferred_leaves++
+			continue
+		}
 		result << *step.command
 		mut command := unsafe { &result[result.len - 1] }
 		if canvas := command.canvas_paintable {
@@ -2919,8 +2928,8 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 				command.canvas_bitmap = html.html_canvas_element_present_existing_surface(canvas.element)
 			}
 		}
-		command.transform = chromium_border_replay_transform(step.command, context.transform, tree)
-		command.fixed_to_viewport = step.box.fixed_to_viewport
+		apply_cached_visual_leaf_state(mut command, step.box, step.opacity_scale, context,
+			chromium_border_replay_transform(step.command, context.transform, tree))
 		if recording_clip := command.recording_clip {
 			mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
 			mut clips := []PaintClip{}
@@ -2938,18 +2947,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			command.clip_width = combined_clip.width
 			command.clip_height = combined_clip.height
 		} else {
-			command.has_clip = context.has_clip
-			command.clip_list = context.clip_list
-			if context.has_clip {
-				command.clip_x = context.clip.x
-				command.clip_y = context.clip.y
-				command.clip_width = context.clip.width
-				command.clip_height = context.clip.height
-			}
-		}
-		command.group_opacity = context.group_opacity
-		if step.opacity_scale != 1.0 {
-			command.opacity *= step.opacity_scale
+			apply_cached_visual_context_clip(mut command, context)
 		}
 		apply_live_scrollbar_offset(mut command, step.box)
 		apply_live_background_offsets(mut command, step.box)
@@ -2964,13 +2962,15 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 				unsafe { &PaintClipList(nil) }
 			}
 		}
-		command.visual_layer_list = unsafe { nil }
 	}
 	for index := active.len - 1; index >= 0; index-- {
 		result << PaintCommand{
 			kind: compatibility_end_visual_layer_kind(active[index])
 			visual_layer_data: &PaintVisualLayer{ ...active[index] }
 		}
+	}
+	if deferred_leaves > 0 {
+		materialize_cached_visual_leaves(plan, contexts.contexts, mut result, deferred_leaves)
 	}
 	scratch.memo_slots = contexts.slots
 	scratch.memo_contexts = contexts.contexts

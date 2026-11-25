@@ -237,6 +237,35 @@ fn test_masked_recording_matches_filtered_steps_across_scene_reuse() {
 	}
 }
 
+fn test_cached_replay_leaf_projection_preserves_layer_slots_and_source_commands() {
+	box := &BlockBox{fixed_to_viewport: true}
+	source := &PaintCommand{kind: 'draw_text', text: 'Retained text', opacity: 0.6}
+	clip := LayoutRect{12, 14, 100, 80}
+	clip_list := &PaintClipList{items: [PaintClip{rect: clip}]}
+	context := CompatibilityFlattenedVisualContext{
+		transform: [f64(1), 0, 0, 1, -5, 10]!
+		group_opacity: 0.75
+		has_clip: true
+		clip: clip
+		clip_list: clip_list
+	}
+	steps := [
+		CompatibilityCachedVisualReplayStep{command: source, box: box, opacity_scale: 0.5, output_index: 2},
+		CompatibilityCachedVisualReplayStep{command: source, box: box, output_index: 0},
+		CompatibilityCachedVisualReplayStep{command: source, box: box},
+	]
+	mut commands := [PaintCommand{}, PaintCommand{kind: 'begin_css_effect_layer'}, PaintCommand{}]
+	materialize_cached_visual_leaves(steps, [context], mut commands, 2)
+	assert commands[0].text == source.text && commands[0].opacity == 0.6
+	assert commands[1].kind == 'begin_css_effect_layer'
+	assert commands[2].text == source.text && commands[2].opacity == 0.3
+	assert commands[2].transform == context.transform && commands[2].fixed_to_viewport
+	assert commands[2].group_opacity == 0.75
+	assert commands[2].has_clip && voidptr(commands[2].clip_list) == voidptr(clip_list)
+	assert [commands[2].clip_x, commands[2].clip_y, commands[2].clip_width, commands[2].clip_height] == [clip.x, clip.y, clip.width, clip.height]
+	assert source.opacity == 0.6 && !source.has_clip
+}
+
 fn test_viewport_scene_storage_tracks_visible_output_instead_of_document_steps() {
 	$if prealloc {
 		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}p{height:30px;margin:0}</style>' + '<p>comment text</p>'.repeat(1500))
