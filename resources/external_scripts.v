@@ -89,7 +89,7 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 			}
 		}
 		mut prepared := unsafe { &html.HTMLScriptElementModel(model) }
-		prepared.complete_external_fetch(filtered.body)
+		complete_browser_parser_script(mut prepared, filtered)
 		return
 	}
 	persistent := platform.enter_persistent()
@@ -104,6 +104,14 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 		loader.queued << resource_url.clone()
 	}
 	loader.start_fetches()
+}
+
+fn complete_browser_parser_script(mut model html.HTMLScriptElementModel, resource PreloadedResource) {
+	if resource.retained_for_process {
+		model.complete_external_fetch_from_retained_source(resource.body)
+	} else {
+		model.complete_external_fetch(resource.body)
+	}
 }
 
 // A paused parser may still encounter another element using an initial response.
@@ -285,7 +293,7 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 				if model.script_type() == .module {
 					runtime.preparse_libjs_document_module(request.url, resource.body)
 				}
-				model.complete_external_fetch(resource.body)
+				complete_browser_parser_script(mut model, resource)
 			} else {
 				messages << 'Script ${request.url}: ${err.msg()}'
 				model.complete_external_fetch(none)

@@ -84,6 +84,45 @@ fn test_parser_script_response_resumes_the_live_parser_without_a_runtime() {
 	assert !document.anything_is_delaying_the_load_event()
 }
 
+fn test_parser_shares_retained_script_bodies_for_preloads_and_worker_results() {
+	address := 'https://parser-requests.test/retained.js'
+	resource := persistent_preloaded_resource(PreloadedResource{
+		url: address
+		source_url: 'https://parser-requests.test/'
+		request_type: 'script'
+		body: '/* retained external source */'.repeat(32768)
+	})
+	for preloaded in [true, false] {
+		mut resources := map[string]PreloadedResource{}
+		if preloaded { resources[address] = resource }
+		mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+			'<!doctype html><script id="script" src="retained.js"></script><p id="later">Ready</p>', resources)
+		document.enable_native_storage()
+		defer {
+			loader.cancel()
+			document.finalize()
+			document.release_native_storage()
+		}
+		parser.run()
+		if !preloaded {
+			assert parser.paused()
+			assert observed.sources.len == 0
+			loader.results <- resource
+			mut messages := []string{}
+			loader.poll(unsafe { &browserjs.Runtime(nil) }, mut messages)
+			assert messages.len == 0
+		}
+		parser_script_request_drain_tasks()
+		assert observed.sources.len == 1
+		assert observed.sources[0] == resource.body
+		assert voidptr(observed.sources[0].str) == voidptr(resource.body.str)
+		assert observed.later_visible == [false]
+		assert parser_script_request_model(document, 'script').event_count('load') == 1
+		assert document.get_element_by_id('later') != none
+		assert !document.anything_is_delaying_the_load_event()
+	}
+}
+
 fn test_throttled_frame_delivers_blocking_script_only_for_the_current_navigation() {
 	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
 		'<!doctype html><script src="blocking.js"></script><p id="later">After</p>', {})

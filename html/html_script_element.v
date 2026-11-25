@@ -408,6 +408,16 @@ fn (mut script HTMLScriptElementModel) prepare_execution_schedule() {
 
 // Both queued requests and completed cache reads use the same transition.
 pub fn (mut script HTMLScriptElementModel) complete_external_fetch(source ?string) {
+	script.complete_external_fetch_source(source, false)
+}
+
+// The immutable source already has an owner that outlives the script model.
+// A queued parser task can use it directly even after the transport returns.
+pub fn (mut script HTMLScriptElementModel) complete_external_fetch_from_retained_source(source string) {
+	script.complete_external_fetch_source(source, true)
+}
+
+fn (mut script HTMLScriptElementModel) complete_external_fetch_source(source ?string, retained bool) {
 	if !script.fetch_pending_ || script.executed_ { return }
 	script.fetch_pending_ = false
 	if !script.belongs_to_preparation_document() {
@@ -416,7 +426,11 @@ pub fn (mut script HTMLScriptElementModel) complete_external_fetch(source ?strin
 	}
 	mut allocations := enter_html_document_storage(script.preparation_time_document_)
 	defer { allocations.finish() }
-	owned_source := if text := source { ?string(text.clone()) } else { none }
+	owned_source := if text := source {
+		?string(if retained { text } else { text.clone() })
+	} else {
+		none
+	}
 	script.mark_as_ready(owned_source)
 }
 
