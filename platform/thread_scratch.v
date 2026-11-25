@@ -31,6 +31,7 @@ pub struct ThreadScratchScope {
 pub struct DetachedThreadScratch {
 mut:
 	scope &PreallocScopeView = unsafe { nil }
+	poison bool
 }
 
 pub fn begin_thread_scratch(label string) ThreadScratchScope {
@@ -100,10 +101,33 @@ pub fn (scratch ThreadScratchScope) detach() DetachedThreadScratch {
 		scratch.leave()
 		mut scope := unsafe { &PreallocScopeView(lease.scope) }
 		scope.first.previous = unsafe { nil }
+		poison := lease.poison != 0
 		clear_thread_scratch_lease(mut lease)
-		return DetachedThreadScratch{scope: scope}
+		return DetachedThreadScratch{scope: scope, poison: poison}
 	}
 	return DetachedThreadScratch{}
+}
+
+pub fn (detached DetachedThreadScratch) capacity() i64 {
+	$if prealloc {
+		if detached.scope != unsafe { nil } {
+			return i64(unsafe { prealloc_scope_allocated_size(voidptr(detached.scope)) })
+		}
+	}
+	return 0
+}
+
+// Retire an unadopted scope from whichever thread owns its handoff token.
+pub fn (mut detached DetachedThreadScratch) discard(label string) {
+	$if prealloc {
+		if detached.scope == unsafe { nil } { return }
+		if detached.poison {
+			poison_prealloc_scope(detached.scope, label)
+		} else {
+			unsafe { prealloc_scope_free_after(voidptr(detached.scope)) }
+		}
+		detached.scope = unsafe { nil }
+	}
 }
 
 pub fn (mut detached DetachedThreadScratch) adopt(label string) &RetainedArena {

@@ -2,6 +2,7 @@ module main
 
 import platform
 import browsernet
+import css
 import os
 import time
 
@@ -113,6 +114,15 @@ fn fetch_resource_job(job ResourceFetchJob, source_url string, scope &browsernet
 		}
 	}
 	if resource_fetch_log_path != '' { log_resource_fetch(job, started_us, resource) }
+	if job.request_type == 'stylesheet' && resource.error == '' && !scope.is_cancelled() {
+		for header in resource.response_headers {
+			if header.name.to_lower() == 'content-type'
+				&& header.value.all_before(';').trim_space().to_lower() == 'text/css' {
+				css.prepare_preloaded_stylesheet_syntax(resource.body)
+				break
+			}
+		}
+	}
 	$if prealloc {
 		// Filtering can return the same cache entry. Its original owner
 		// already keeps the immutable result alive after this request.

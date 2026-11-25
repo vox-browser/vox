@@ -31,6 +31,18 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 				deferred: deferred, syntax_id: entry.id)
 		}
 	}
+	if params.rule_context.len == 0 && params.is_ua_style_sheet == .no {
+		if mut staged := preloaded_stylesheet_syntax_.take(text) {
+			defer { staged.storage.discard(preloaded_stylesheet_syntax_label) }
+			if preloaded_stylesheet_syntax_diagnostics {
+				off_thread := staged.thread_id != platform.native_thread_identity()
+				eprintln('VOX_PRELOADED_STYLESHEET_SYNTAX bytes=${text.len} rules=${staged.rules.len} off_thread=${off_thread}')
+			}
+			id := if cache_rules { stylesheet_rule_cache_.store(text, staged.rules) } else { u64(0) }
+			return convert_transient_stylesheet_rules(params, staged.rules, location, media_list,
+				deferred: deferred, syntax_id: id)
+		}
+	}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('stylesheet conversion input')
 		mut parser := RuleSelectorParser{
