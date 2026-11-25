@@ -2028,3 +2028,82 @@ The eight-record request and response fingerprints matched in every
 launch, including the favicon miss. Executable, native library,
 archive and driver hashes stayed pinned. Browser, driver and 3 GiB
 guard exits were zero. Peak aggregate timing RSS was 376,258,560 bytes.
+
+### Overlap cold glyph masks with the backdrop read
+
+Commit `633625da4` submits a cold A8 mask batch before reading the
+backdrop for eligible document text. CoreText workers draw into
+private bitmaps while the browser thread reads the previously
+painted pixels. It joins the batch, publishes completed masks into
+the glyph cache and blends in paint order. Short runs and warm
+starts use the ordinary mask lookup. Clipped and extended-color runs
+use the established read-before-raster path.
+
+A dump from the preceding production bundle (`d28f00de…2664`) found
+332 retained glyph runs on the Hacker News reference image. All 332
+used a backdrop and 174 contained at least four glyphs. The new
+diagnostic records how many completed mask jobs overlapped the
+backdrop read. `VOX_SYNC_GLYPH_BACKDROP=1` reads the backdrop first
+and uses the existing parallel mask batches as the timing control.
+
+The production type check and arena-poisoned mask tests passed.
+The tests compare the resulting pixels and verify caller-thread
+loading, completed joins, and unchanged output and mask contents
+after a failed backdrop read.
+The CPU glyph raster suite also passed its Skia pixel comparisons.
+
+Production receipt `20261125-105649-29d81323` sealed `633625da4` in
+single-C-unit V `-prod` mode, passed startup smoke and published
+executable SHA `87e856b295d23343569bbdacba074c0e3c9c43ae7fdff8038e8eb5338465d303`.
+
+The production diagnostic saw 27 asynchronous batches containing
+202 mask jobs across two to four lanes. Three jobs, each in a
+different batch, overlapped the backdrop read. Every batch was
+still running at the join. Both launches ran 34 total parallel
+mask batches and matched all 30 ordered story IDs. A separate
+instrumented pair measured 145,659,171 versus 136,908,798 main-thread
+instructions for text replay, and 295,080,770 versus 283,785,200
+inclusive native raster instructions, in synchronous and overlap
+mode respectively.
+
+The two seven-pair cohorts alternated modes on the same executable.
+The reversed cohort started with the synchronous control. Each
+trial measured fresh launch through the completed document PNG at
+1024×768 CSS pixels and 2× scale, with JavaScriptCore, empty private
+profiles and HTTP caches, and a replayed 60 ms delay on each logo
+response. OS filesystem caches were retained.
+
+| Pair | Synchronous, ms | Overlap, ms | Reversed sync, ms | Reversed overlap, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 307.766 | 302.737 | 329.298 | 338.384 |
+| 2 | 329.841 | 318.692 | 334.162 | 314.100 |
+| 3 | 306.484 | 320.464 | 330.396 | 294.155 |
+| 4 | 301.197 | 315.878 | 300.174 | 323.864 |
+| 5 | 330.500 | 319.797 | 291.354 | 322.017 |
+| 6 | 312.779 | 337.143 | 309.710 | 311.444 |
+| 7 | 306.556 | 362.447 | 318.429 | 313.462 |
+| Median | 307.766 | 319.797 | 318.429 | 314.100 |
+
+Median paired changes were +13.980 ms and +1.734 ms, with overlap
+finishing first in three pairs in each cohort. Host load was
+3.86–6.32 and 6.32–7.10 on 18 CPUs. Sampled main-thread CPU medians
+were 179.96 → 179.14 ms and 174.85 → 173.34 ms. Both launch-to-capture
+cohorts had a slower median paired result with overlap.
+
+All 28 timing launches and four diagnostic launches matched reference
+PNG SHA `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight-record request and response fingerprints matched in every
+launch, including the favicon miss. Executable, native library,
+archive and driver hashes stayed pinned. Browser, driver and 3 GiB
+guard exits were zero. Peak aggregate timing RSS was 370,524,160 bytes.
+
+Commit `118447667` makes overlap opt-in with
+`VOX_OVERLAP_GLYPH_BACKDROP=1` following the timing results. Production
+receipt `20261125-110428-557f50e0` sealed that setting and passed
+startup smoke. Executable SHA
+`0c03a94fe7cf6a81d3cfef9db4b732f86e1810cb37ce51e22fe1817ba3f65299`
+ran 34 parallel mask batches in both verification captures. The
+default ran zero asynchronous batches. Enabling the flag ran 27.
+Both fresh launches matched the reference PNG, the 30 ordered
+story IDs and the eight replay records. Browser and guard exits
+were zero.
