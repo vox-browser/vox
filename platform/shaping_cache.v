@@ -44,6 +44,7 @@ struct CachedShape {
 	context_metrics_valid bool
 	context_width         f32
 	context_length        int
+	parallel_prepared     bool
 }
 
 struct ShapeForParams {
@@ -135,6 +136,9 @@ fn (mut cache ShapingCache) lookup(font_key string, text string, params ShapePar
 	cache.fonts[font_index].shapes_by_text[text_index].last_used_tick = cache.tick
 	for entry in cache.fonts[font_index].shapes_by_text[text_index].shapes {
 		if entry.params.matches(params) {
+			if entry.shape.parallel_prepared {
+				eprintln('VOX_LAYOUT_ASCII_SHAPE_HIT')
+			}
 			return entry.shape
 		}
 	}
@@ -191,6 +195,7 @@ fn clone_cached_shape(shape CachedShape) CachedShape {
 		context_metrics_valid: metrics != none
 		context_width:         if value := metrics { value.width } else { f32(0) }
 		context_length:        if value := metrics { value.length_in_code_units } else { 0 }
+		parallel_prepared:     shape.parallel_prepared
 	}
 }
 

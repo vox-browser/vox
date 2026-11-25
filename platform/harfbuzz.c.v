@@ -81,6 +81,8 @@ fn C.hb_font_create(face voidptr) voidptr
 
 fn C.hb_font_destroy(font voidptr)
 
+fn C.hb_font_make_immutable(font voidptr)
+
 fn C.vox_hb_with_coretext_hyphens(font voidptr) voidptr
 
 fn C.hb_ot_font_set_funcs(font voidptr)
@@ -98,6 +100,8 @@ fn C.hb_font_get_glyph_h_advance(font voidptr, glyph u32) int
 fn C.hb_buffer_create() voidptr
 
 fn C.hb_buffer_destroy(buffer voidptr)
+
+fn C.hb_buffer_allocation_successful(buffer voidptr) int
 
 fn C.hb_buffer_add_utf8(buffer voidptr, text &char, text_length int, item_offset u32, item_length int)
 
@@ -847,6 +851,12 @@ fn harfbuzz_latin_punctuation_units(units []u16) bool {
 	return has_latin
 }
 
+fn fill_harfbuzz_ascii_buffer(buffer voidptr, text string, rtl bool) {
+	C.hb_buffer_add_utf8(buffer, text.str, text.len, 0, -1)
+	C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))
+	C.hb_buffer_set_direction(buffer, if rtl { harfbuzz_direction_rtl } else { harfbuzz_direction_ltr })
+}
+
 fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?ShapedText {
 	mut face := unsafe { nil }
 	uses_emoji := text_uses_emoji_fallback(text) && !font_supplies_chromium_emoji(font, text)
@@ -875,8 +885,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		utf16_units.len
 	}
 	if is_ascii {
-		shaping_text := font.text_for_shaping(text)
-		C.hb_buffer_add_utf8(buffer, shaping_text.str, shaping_text.len, 0, -1)
+		fill_harfbuzz_ascii_buffer(buffer, font.text_for_shaping(text),
+			font.font_rendering_policy == .chromium && text_type == .rtl)
 	} else if utf16_units.len > 0 {
 		if font.synthesize_ascii_caps {
 			mut shaping_units := utf16_units.clone()
@@ -888,14 +898,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			C.hb_buffer_add_utf16(buffer, utf16_units.data, utf16_units.len, 0, -1)
 		}
 	}
-	if is_ascii {
-		C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))
-		C.hb_buffer_set_direction(buffer, if font.font_rendering_policy == .chromium && text_type == .rtl {
-			harfbuzz_direction_rtl
-		} else {
-			harfbuzz_direction_ltr
-		})
-	} else {
+	if !is_ascii {
 		if text_type == .ltr {
 			C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)
 		} else if text_type == .rtl {
@@ -914,6 +917,16 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		feature_count = 3
 	}
 	C.hb_shape(hb_font, buffer, &features[0], feature_count)
+	return decode_harfbuzz_shape(buffer, face, hb_font, initial_x, letter_spacing, word_spacing,
+		text, font, text_type, utf16_units, text_length_in_code_units, is_ascii, uses_emoji)
+}
+
+// Decode while the buffer is owned by the caller, then release it. The cache
+// batch and the normal shaper use the same glyph, advance and cluster handling.
+fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_x f32,
+	letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType,
+	utf16_units []u16, text_length_in_code_units int, is_ascii bool, uses_emoji bool) ShapedText {
+	resolution := f64(font.shaping_resolution())
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
