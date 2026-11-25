@@ -10,6 +10,8 @@ Scanning strings in ASCII spans reduced median parser instructions by
 another 0.59%. Reusing scope analysis storage cut median parse time by
 1.05 ms and median instructions by 1.08%. Compacting the tokens cut
 median parse time by another 0.87 ms and instructions by 0.93%.
+Grouped UTF-16 decoding cut isolated compilation time by 25.10%
+and instructions by 37.84%.
 Later browser cohorts failed the fixed Brave pixel check because of
 thumbnail variation. Fresh live visits in both browsers reached
 Reddit's sign-in page.
@@ -2962,3 +2964,150 @@ no JavaScriptCore context. The browser and guard exited zero.
 The direct live visit reached Reddit's sign-in page with zero
 listing posts and two unsupported `data:` script diagnostics. Its
 browser and guard exited zero.
+
+## Widen ASCII groups during UTF-16 decoding
+
+A separate 1 ms sample of repeated top-level compilation attributed
+217 of 405 samples to UTF-16 decoding and allocation during
+`Script.compile`. The three large archived bundles have 82, 3 and
+15 non-ASCII bytes in 280,793, 598,332 and 587,666 bytes,
+respectively. The other two scripts are ASCII. A guarded LLDB
+diagnostic on the final standalone binary reached the eight-byte
+ASCII test while compiling the 598,332-byte main bundle.
+
+The decoder tests eight bytes with a high-bit mask and widens full
+ASCII groups into the output. If a group contains non-ASCII bytes,
+it processes up to 256 input bytes with the existing scalar decoder
+before checking another group. UTF-8 sequences can finish across the
+window boundary. Malformed input still follows the rune-based
+fallback.
+
+### Archived compilation probe
+
+Each fresh process parsed the five original archived scripts before
+measurement. It compiled the sequence 32 times using immutable
+compiler executables and checked the output counts. The isolated
+interval includes top-level bytecode generation, source record
+construction and validation. Function-body execution, parsing and
+browser capture sit outside the timed interval. Both binaries used
+`-prod -prealloc -gc none` in one C unit.
+The manifest and individual script bodies were pinned throughout.
+The control and final candidate executable SHA-256 values were
+`2bfe5c2668c8e46d1b852d90ae9493a5a27d524079d88591b3023dc027996272`
+and `8793b3adf909a820fc85ab8e27c2c801be06e11409b4ce81fc4f8f8e8b2af649`.
+
+| Pair | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 902,939,228 | 562,106,574 | 1.239 | 0.926 |
+| 2 | 902,954,937 | 561,311,047 | 1.229 | 0.918 |
+| 3 | 904,055,879 | 561,840,493 | 1.193 | 0.957 |
+| 4 | 903,455,373 | 561,643,616 | 1.245 | 0.921 |
+| 5 | 901,650,515 | 560,482,051 | 1.174 | 0.945 |
+| 6 | 903,293,072 | 561,227,820 | 1.183 | 0.853 |
+| 7 | 902,676,195 | 561,095,093 | 1.273 | 0.887 |
+| Median | 902,954,937 | 561,311,047 | 1.229 | 0.921 |
+
+Median instructions fell **37.84%**, about 10.68 million per pass.
+Median elapsed time fell **25.10%**, or 0.31 ms per pass. Every
+pair improved in both measures. Every process emitted 198,656
+bytecode instructions and 127,552 source map entries. The 18-core
+host's one-minute load was 6.11 from 12:20:32 to 12:20:34 UTC+03.
+All 14 timed processes and the 3 GiB guard exited zero. Sampled
+peak aggregate RSS was 507,723,776 bytes.
+
+### Unicode-heavy diagnostics
+
+Two earlier versions applied the ASCII test at every ASCII run or
+after a 32-byte scalar window. They reduced median instructions
+by 38.22% and 38.14% on the five archived scripts, respectively,
+and slowed regularly alternating ASCII and Unicode input. The final
+256-byte window kept the gains on the archive and reduced the
+instruction cost of those dense mixtures to approximately 1%.
+The dense diagnostics compiled a single small program with a long
+comment alternating `aé` or `a😀`. Every row uses seven fresh
+alternating pairs, with the same 32 passes per process.
+
+| Decoder | Synthetic mixture | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Check each ASCII run | `aé` | 343,492,061 | 568,271,510 | 0.373 | 0.733 |
+| Check each ASCII run | `a😀` | 594,334,538 | 861,119,840 | 0.627 | 1.075 |
+| 32-byte window | `aé` | 341,525,070 | 369,533,467 | 0.320 | 0.362 |
+| 32-byte window | `a😀` | 591,160,691 | 635,142,126 | 0.555 | 0.592 |
+| 256-byte window | `aé` | 341,517,438 | 345,134,171 | 0.326 | 0.349 |
+| 256-byte window | `a😀` | 591,155,266 | 597,180,345 | 0.568 | 0.603 |
+
+All synthetic and archived trials for these versions exited zero.
+The final candidate elapsed medians on the two synthetic mixtures
+were 7.0% and 6.1% higher, respectively.
+
+The final decoder is in `45ce00941`. The conversion, frontend source,
+Unicode source, function source ownership and primitive string tests
+passed with C under Boehm and `-gc none`. All 100 upstream AST
+fixtures matched in each mode. Both full-package FastC attempts
+stopped at the existing generated C error
+`expression expected before '?'` in `absent_property_set_test.v`.
+That test passed with the C backend in both heap modes.
+
+### Production comparison with grouped UTF-16 decoding
+
+Shared receipt `20261125-121959-2712ca82` used verified source
+commit `780cfb16b` with the final decoder present in the sealed
+single-unit `-prod` C. The sealed C SHA-256 was
+`c9b1c96041c43482e6cfc020a924a5e8827e5f85fb23a94b67bcde1ef615127d`.
+The installed Vox executable SHA-256 was
+`1b46b97d7f8d7bc2ba4ef14dd5360a42888005a93959eeb89284dc717de069d1`.
+The controller checked 185 workload and binary input hashes and 14
+observer, Brave helper and reference hashes. Brave's executable and
+framework matched the earlier cohorts. The LibJS headless smoke
+passed bytecode execution, DOM mutation and click events.
+
+Seven alternating fresh pairs used the clock-pinned archive,
+1024×768 scale-1 document PNG, 1.4 s settle setting, fixed references
+and empty private profiles and HTTP caches. OS filesystem and shader
+caches were retained. Vox used LibJS with native and frontend code
+caches disabled. The launch interval ended at the first complete
+native PNG observed for Vox and first complete CDP PNG response
+for Brave.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,683,208,915 | 11,626,338,118 | 1988.546 | 1970.841 | Alternate thumbnails |
+| 2 | 5,615,499,032 | 11,647,121,146 | 1968.977 | 1966.092 | Alternate thumbnails |
+| 3 | 5,591,994,764 | 11,729,000,984 | 1977.273 | 1972.324 | Exact |
+| 4 | 5,649,659,961 | 11,703,284,991 | 1980.506 | 1974.068 | Exact |
+| 5 | 5,611,131,845 | 11,813,478,351 | 1976.425 | 1984.222 | Exact |
+| 6 | 5,663,450,796 | 11,619,597,542 | 1985.487 | 1969.016 | Alternate thumbnails |
+| 7 | 5,589,155,797 | 11,696,425,656 | 1953.973 | 1984.118 | Exact |
+| Median | 5,615,499,032 | 11,696,425,656 | 1977.273 | 1972.324 | Three failures |
+
+Every Vox PNG matched its fixed reference. All visits completed
+with the 25 ordered posts and all five original scripts.
+Vox LibJS execution generations were 153, 151, 159, 151, 153,
+155 and 149. JavaScriptCore stayed uninitialized. Brave reported
+the required author handlers and zero script exceptions. Every
+Brave replay recorded the same 44 archived URL and body-hash pairs.
+
+The three Brave failures reproduced PNG SHA-256
+`b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`.
+It differs from the fixed reference in 13,902 RGB pixels in x=83–153
+and y=400–762, with maximum channel error 83. That invalidates the
+cohort for acceptance. In the raw observations Vox's median elapsed
+time was 4.95 ms slower, with two Vox pair wins and a median paired
+deficit of 4.95 ms. It used 51.99% fewer median observed instructions.
+Its highest observed total was 48.91% of Brave's lowest. The earlier
+qualifying result remains in the catalog.
+
+All 14 browsers exited zero. The driver and 12 GiB guard exited 1
+on the reference failures. The guard adopted all 14 roots and
+sampled 778,518,528 bytes at peak. Final complete samples preceded
+capture by 5.83–7.83 ms for Vox and 2.19–8.06 ms for Brave. Vox
+reported no missing final samples and Brave reported 2, 2, 3, 2,
+3, 1 and 1. Both process-tree totals are lower bounds and exclude
+GPU and external services. One-minute host load ranged from 5.15 to
+6.23 on 18 cores from 12:25:41 to 12:26:18 UTC+03.
+
+The separate sampled production capture completed the archived
+listing with LibJS execution generation 147, zero script diagnostics
+and no JavaScriptCore context. A direct live visit reached Reddit's
+sign-in page with zero listing posts and three script diagnostics.
+Both visits and their guards exited zero.
