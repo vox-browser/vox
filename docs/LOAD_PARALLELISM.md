@@ -1891,3 +1891,69 @@ All launches had identical eight-record request and response fingerprints,
 including the replayed favicon miss. The executable, native library,
 archive and driver hashes stayed pinned throughout. Browser, driver and
 3 GiB guard exits were zero. Peak timing RSS was 368,885,760 bytes.
+
+### Prepare retained glyph positions on raster workers
+
+On the preceding production build (`a7640749…7731`), an instrumented
+Hacker News capture measured 146,829,173 main-thread instructions for
+text replay, the largest paint-leaf scope. Commit `e35e4ffc6` adds
+position conversion and conservative run bounds to the canvas-bounds
+worker batch. Each worker writes into a separate slice of a packed
+replay scratch buffer. Chromium runs fold in the baseline after
+rounding positions to float32. LibWeb runs apply the baseline later.
+Replay uses the prepared values after joining the batch.
+
+The native context, glyph cache and backdrop blending stay on the
+browser thread. Small batches, zoomed commands and frames that reuse
+scroll pixels prepare glyph positions when they draw. Frames cap the
+number of prepared positions and command slots. The culling test ran
+with arena poisoning and verified Chromium and LibWeb coordinates,
+per-command bounds, and the source glyph positions across the worker join.
+The CPU glyph raster suite passed its Skia pixel comparisons.
+
+Production receipt `20261125-103028-32cdceac` sealed `c654765bd`,
+which includes the glyph preparation change, in single-C-unit V `-prod`
+mode. It passed startup smoke and published executable SHA
+`e2d4c598ddd30eb15a8cf1e7ace242d3abb15c16bb63e2783b17c0b55bd5b5ee`.
+Its native AVIF library SHA matched the preceding trial.
+
+The Hacker News diagnostic found 373 runs prepared off-thread. Replay
+used the prepared geometry for 332 runs, covering 5,428 position
+coordinates. Both diagnostic launches matched the 30 ordered story IDs.
+A separate instrumented pair without per-run logging measured
+145,809,691 main-thread instructions in serial text replay and
+150,919,537 with worker preparation. Inclusive native raster replay
+measured 289,636,065 and 295,612,637 instructions, respectively.
+
+The timing control set `VOX_SERIAL_RETAINED_GLYPH_GEOMETRY=1` and kept
+canvas culling on workers. Two seven-pair cohorts alternated the same
+executable's settings, with the second cohort starting in serial mode.
+Each trial measured from fresh launch through the completed document
+PNG at 1024×768 CSS pixels and 2× scale, with JavaScriptCore, private
+empty profiles and HTTP caches, and a replayed 60 ms delay on each
+logo response. OS filesystem caches were retained.
+
+| Pair | Serial, ms | Workers, ms | Reversed serial, ms | Reversed workers, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 316.604 | 323.809 | 327.868 | 331.212 |
+| 2 | 323.917 | 309.341 | 325.309 | 329.601 |
+| 3 | 301.238 | 335.162 | 313.102 | 354.741 |
+| 4 | 321.472 | 316.094 | 305.038 | 294.409 |
+| 5 | 314.082 | 334.345 | 321.012 | 317.801 |
+| 6 | 318.654 | 309.870 | 299.547 | 306.877 |
+| 7 | 309.213 | 317.952 | 300.813 | 307.958 |
+| Median | 316.604 | 317.952 | 313.102 | 317.801 |
+
+Median paired changes were +7.205 ms and +4.293 ms. Workers finished
+first in three and two pairs. Host load was 7.34–7.59 and 6.98–7.34
+on 18 CPUs. Sampled main-thread CPU medians were 173.90 → 173.95 ms
+and 170.22 → 171.18 ms. The measured cohorts show a launch-to-capture
+regression alongside the extra off-thread work.
+
+The 28 timing captures and four diagnostic captures matched the prior
+reference PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All 32 launches produced identical eight-record request and response
+fingerprints, including the favicon miss. Executable, native library,
+archive and driver hashes stayed pinned. All browser, driver and 3 GiB
+guard exits were zero. Peak aggregate timing RSS was 383,270,912 bytes.
