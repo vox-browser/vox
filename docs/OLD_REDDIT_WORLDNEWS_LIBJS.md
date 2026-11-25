@@ -8,9 +8,11 @@ with Vox ahead in four pairs. The later LibJS punctuator change reduced
 median parser instructions by 0.96% across the five archived scripts.
 Scanning strings in ASCII spans reduced median parser instructions by
 another 0.59%. Reusing scope analysis storage cut median parse time by
-1.05 ms and median instructions by 1.08%. Later browser cohorts failed
-the fixed Brave pixel check because of thumbnail variation. Fresh live
-visits in both browsers reached Reddit's sign-in page.
+1.05 ms and median instructions by 1.08%. Compacting the tokens cut
+median parse time by another 0.87 ms and instructions by 0.93%.
+Later browser cohorts failed the fixed Brave pixel check because of
+thumbnail variation. Fresh live visits in both browsers reached
+Reddit's sign-in page.
 [Qualifying comparison](#published-comparison-before-the-punctuator-change)
 
 ## Workload and execution
@@ -2824,3 +2826,139 @@ JavaScriptCore context. The browser and guard exited zero. Fresh
 direct visits in Vox and Brave both reached Reddit's sign-in page
 with zero listing posts and normal exits. Vox reported two unsupported
 `data:` script diagnostics on the sign-in page.
+
+## Shrink tokens copied by the LibJS frontend
+
+On the measured arm64 C build, a token shrank from 72 to 48 bytes.
+The token's value start already supplies its source offset. Escaped
+identifiers and explicit lexer diagnostics use nullable pointers to
+their existing out-of-line payloads. The lookahead test checks both
+payloads after the lexer has advanced to EOF.
+
+The standalone comparison parsed the five archived author scripts
+eight times per fresh process, with a recursion limit of 256.
+Counters and elapsed time cover parsing and scope analysis after
+file reads. Both binaries used single-unit `-prod -prealloc -gc none`
+C. The manifest and script bodies were pinned throughout.
+The control and candidate executable SHA-256 values were
+`ae6efc65915ee01d9742add32363206a7ed2b173c11d3ca8926f3989989c14c4`
+and `7e9895e61da189e895bd304ab80191638d2e264458ba4e54d3381abb38ce5cd2`.
+
+| Pair | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,125,076,301 | 6,070,761,255 | 56.109 | 54.678 |
+| 2 | 6,129,190,513 | 6,055,564,593 | 55.933 | 54.073 |
+| 3 | 6,150,860,078 | 6,073,660,413 | 56.171 | 55.264 |
+| 4 | 6,119,578,572 | 6,067,887,132 | 55.561 | 54.807 |
+| 5 | 6,107,878,992 | 6,062,583,942 | 55.038 | 54.945 |
+| 6 | 6,112,387,340 | 6,059,562,213 | 55.308 | 54.212 |
+| 7 | 6,125,144,124 | 6,076,616,875 | 55.674 | 55.791 |
+| Median | 6,125,076,301 | 6,067,887,132 | 55.674 | 54.807 |
+
+Median instructions fell **0.93%**, about 7.15 million per pass,
+and fell in every pair. Median elapsed time fell **0.87 ms**,
+or 1.56%, with six candidate pair wins. The median paired lead
+was 0.91 ms. One-minute host load ranged from 3.76 to 4.17 on
+18 cores from 12:01:40 to 12:01:47 UTC+03. All 14 processes and
+the 3 GiB guard exited zero. Sampled aggregate RSS peaked at
+2,166,816,768 bytes. A separate LLDB run reached lexer lookahead
+from the arrow parser on the archived main script and exited zero.
+
+### Other parser candidates
+
+Each completed diagnostic used all seven alternating pairs against
+the same control executable. The elapsed columns are per five-script
+pass and the instruction columns cover all eight passes per process.
+
+| Diagnostic | Control instructions | Candidate instructions | Control median ms | Candidate median ms | Candidate elapsed wins |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Return the expression by itself | 6,160,295,397 | 6,149,622,095 | 64.058 | 64.495 | 5 of 7 |
+| Update the expression in place with explicit child ownership | 6,156,767,279 | 6,300,846,967 | 60.990 | 60.931 | 5 of 7 |
+| Dispatch calls directly from the operator loop | 6,144,080,191 | 6,242,077,862 | 55.836 | 54.667 | 6 of 7 |
+| Return empty scratch lists directly | 6,140,435,733 | 6,145,995,099 | 58.620 | 58.629 | 4 of 7 |
+| Build empty and one-argument lists directly | 6,144,945,420 | 6,124,948,701 | 60.190 | 60.639 | 3 of 7 |
+| Track trivia line breaks during the initial scan | 6,162,681,094 | 6,164,626,607 | 57.454 | 56.724 | 5 of 7 |
+
+The first in-place variant timed out at 15 s on its first candidate
+attempt. Its control used 6,170,955,887 instructions and 69.959 ms
+per pass. Generated C stored some child addresses on the parser
+stack. Explicitly retaining those nodes completed the cohort and
+increased median CPU instructions by 2.34%. Direct call dispatch
+reduced elapsed time by 1.17 ms between medians and raised
+instructions by 1.59%. These alternatives were discarded. The final
+change keeps the smaller token representation.
+
+The change is in `884e27054`. The lookahead, frontend,
+source-position, HTML comment, arguments scope, identifier and
+keyword tests passed using C under Boehm and `-gc none`. All
+100 upstream AST fixtures matched in each mode. Both full-package
+FastC runs stopped at the existing generated C error
+`expression expected before '?'` in `absent_property_set_test.v`.
+That test passed with the C backend in both heap modes.
+
+### Production comparison with smaller tokens
+
+Shared receipt `20261125-120409-e0083ee7` verified commit
+`884e27054` and the smaller layout in sealed single-unit
+`-prod` C. The sealed C SHA-256 was
+`6f4660048c84aadc38afd8d53bc68a0fb4dfcec8e6ba5b60eca26c9ad198ed2f`.
+The Vox executable SHA-256 was
+`3aeba18066748f06b3fb28159cf4f9f50218b3a545f5270d2b1346e4e2d7f8d4`.
+The controller checked 185 workload and binary identities and
+14 observer, helper and reference identities. Brave's executable
+and framework matched the previous comparisons. The LibJS headless
+smoke passed bytecode execution, DOM mutation and click events.
+
+Seven alternating fresh pairs used the clock-pinned replay, 1024×768
+scale-1 document PNG, 1.4 s settle setting, and empty private profiles
+and HTTP caches. OS filesystem and shader caches were retained.
+LibJS used its interpreter with native and frontend code caches
+disabled. The scope ran from process creation to the observer's
+first complete Vox PNG or the first complete Brave CDP PNG response.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,696,754,604 | 11,845,826,710 | 1987.707 | 2023.312 | Exact |
+| 2 | 5,698,673,439 | 11,721,286,358 | 1969.284 | 1958.532 | Alternate thumbnails |
+| 3 | 5,592,484,278 | 11,760,453,139 | 1960.334 | 1997.017 | Alternate thumbnails |
+| 4 | 5,696,968,605 | 11,570,554,084 | 1971.307 | 1976.887 | Alternate thumbnails |
+| 5 | 5,684,399,160 | 11,612,283,305 | 1988.826 | 1955.377 | Alternate thumbnails |
+| 6 | 5,691,887,780 | 11,652,709,555 | 1965.859 | 1958.054 | Alternate thumbnails |
+| 7 | 5,627,850,875 | 11,698,194,488 | 1956.384 | 1976.638 | Alternate thumbnails |
+| Median | 5,691,887,780 | 11,698,194,488 | 1969.284 | 1976.638 | Six failures |
+
+Every Vox capture matched its fixed reference. Every visit reached
+a complete document with the 25 ordered posts and all five original
+author scripts. Vox's LibJS execution generations were 151, 153,
+149, 151, 161, 155 and 157. JavaScriptCore stayed uninitialized.
+All Brave visits had the required author handlers and zero author
+script exceptions. Their replay logs recorded the same 44 archived
+URL and response-hash pairs.
+
+The six Brave failures reproduced the 13,902-pixel thumbnail image
+with SHA-256
+`b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`.
+The differences were at x=83–153 and y=400–762, with maximum channel
+error 83. The six mismatches invalidate acceptance. The observed
+Vox elapsed median was 7.35 ms sooner, and Vox led in four pairs.
+The median paired lead was 5.58 ms. Vox used 51.34% fewer median
+observed instructions, and its highest observed total was 49.25%
+of Brave's lowest. The earlier qualifying cohort remains the
+catalog result.
+
+All 14 browser roots exited zero. The driver and 12 GiB guard
+exited 1 on the reference check. The guard adopted all 14 roots
+and sampled 779,927,552 bytes peak aggregate RSS. Vox missed no
+final samples and Brave missed 2, 2, 2, 1, 1, 2 and 2. Final
+complete samples preceded capture by 7.56–7.65 ms for Vox and
+1.52–6.01 ms for Brave. Both sets of process-tree totals are lower
+bounds and exclude GPU and external services. One-minute load
+ranged from 4.15 to 4.85 on 18 cores from 12:09:52 to 12:10:29 UTC+03.
+
+A separate sampled visit reached the LibJS lexer and parser in the
+installed executable. It captured the complete archived listing and
+recorded LibJS execution generation 149, zero script diagnostics and
+no JavaScriptCore context. The browser and guard exited zero.
+The direct live visit reached Reddit's sign-in page with zero
+listing posts and two unsupported `data:` script diagnostics. Its
+browser and guard exited zero.
