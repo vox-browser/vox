@@ -3847,3 +3847,79 @@ The worker diagnostic captures verified the URL, complete ready state,
 viewport and all 30 ordered story IDs. Executable, native library, helper,
 archive and driver hashes stayed pinned. All browser, driver and guard
 exits were zero. The 3 GiB guard observed a peak of 399,933,440 bytes.
+
+### Parse default stylesheet selectors on the startup worker
+
+Commit `3a4d41e3d` prepares the standalone selector lists for the default
+stylesheet alongside browser setup. The worker uses the ordinary validated
+selector parser for top-level style rules and style rules within top-level
+media groups. It hands over a detached arena holding the selector graphs.
+The browser thread assembles CSSOM in source order, handles namespace and
+nesting context, and reports parse errors. The shared default sheet owns
+the selector arena for the process lifetime. `VOX_SYNC_UA_STYLESHEET_SELECTORS=1`
+restores browser-thread selector parsing while preserving the worker's raw
+grammar and cache preparation.
+
+The user-agent and syntax-cache suites passed with arena poisoning. Tests
+checked retained selector storage after worker exit, serialization after
+cache eviction, namespace and nested-selector fallback, invalid selectors,
+and discarding a startup task. The user-agent suite passed under
+ThreadSanitizer. The selector memo and syntax-cache suites passed without
+preallocation.
+
+Receipt `20261125-180110-c0f9257e` verified `3a4d41e3d`, passed startup
+smoke and published a single-C-unit V `-prod` build.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `85a440370b6dc773afdeb6213d63c9505e7ff7912b13698272671202cd1b55cc` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both diagnostic pairs found the startup worker ready at the join. Both
+schedules parsed 157 raw rules and built the 4,156-node cache entry on
+the worker. In each candidate launch the browser used all 154 selector
+lists the worker prepared. Separate counter runs measured these inclusive
+browser-thread scopes.
+
+| Pair | Serial default stylesheet | Worker default stylesheet | Serial companion sheets | Worker companion sheets | Serial style update | Worker style update |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 5,021,619 | 1,012,058 | 2,409,206 | 2,353,133 | 347,792,274 | 346,438,751 |
+| 2 | 5,069,211 | 1,014,691 | 2,384,216 | 2,434,529 | 347,462,422 | 345,761,051 |
+
+Browser-thread instructions for the default stylesheet fell by 79.8%
+and 80.0%. The combined default and companion scopes fell by 54.7% and
+53.7%. Style update accounted for about 346 million browser-thread
+instructions per candidate launch.
+
+Each unprofiled cohort alternated seven pairs of fresh launches through
+completed document PNG. The reversed cohort started with serial selector
+parsing. Both used JavaScriptCore, a 1024×768 CSS-pixel viewport at 2×
+scale, private empty profiles and HTTP caches, retained OS filesystem
+caches, and a 60 ms replay delay per logo response.
+
+| Pair | Serial selectors, ms | Worker selectors, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 294.723 | 304.172 | 305.600 | 318.723 |
+| 2 | 321.012 | 292.331 | 331.865 | 323.570 |
+| 3 | 299.443 | 329.578 | 295.078 | 290.523 |
+| 4 | 307.913 | 297.760 | 314.206 | 303.025 |
+| 5 | 328.918 | 293.210 | 290.862 | 299.475 |
+| 6 | 313.209 | 306.028 | 311.477 | 291.864 |
+| 7 | 316.181 | 310.969 | 299.891 | 306.469 |
+| Median | 313.209 | 304.172 | 305.600 | 303.025 |
+
+Paired median changes were −7.181 and −4.555 ms, with five and four
+worker wins. Sampled browser-thread CPU medians were 162.946 → 162.451 ms
+and 161.900 → 160.775 ms. The browser thread accounted for about 69% of
+sampled process CPU. One-minute host load was 5.96–6.13 and 6.12–6.86 on
+18 CPUs.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced the same eight replay records, including the favicon miss.
+The worker diagnostics verified the URL, complete ready state, viewport
+and all 30 ordered story IDs. Executable, native library, helper, archive
+and driver hashes stayed pinned. All browsers, the driver and the 3 GiB
+guard exited zero. The guard observed a peak of 389,218,304 bytes.
