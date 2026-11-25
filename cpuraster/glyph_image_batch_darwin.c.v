@@ -17,6 +17,7 @@ $if !cpuraster_freetype ? {
 	const single_glyph_mask_batch = os.getenv('VOX_SINGLE_GLYPH_MASK_BATCH') == '1'
 	const glyph_mask_batch_min_four = os.getenv('VOX_GLYPH_MASK_BATCH_MIN_FOUR') == '1'
 	const glyph_batch_diagnostics = os.getenv('VOX_GLYPH_BATCH_DIAGNOSTICS') == '1'
+	const glyph_mask_dispatch_apply = os.getenv('VOX_GLYPH_MASK_DISPATCH_APPLY') == '1'
 
 	struct GlyphImageJob {
 		key u32
@@ -75,6 +76,17 @@ $if !cpuraster_freetype ? {
 			mut job := unsafe { &batch.jobs[index] }
 			draw_glyph_image_job(batch.strike, mut job, batch.diagnostics)
 		}
+	}
+
+	fn (mut batch GlyphImageBatch) draw() bool {
+		// Small batches need two lanes. Give each lane of a larger batch
+		// at least two keys to amortize its dispatch.
+		requested_lanes := math.max(2, batch.jobs.len / 2)
+		if glyph_mask_dispatch_apply && batch.jobs.len >= glyph_batch_min {
+			return run_raster_ranges(&batch, batch.jobs.len, requested_lanes, draw_glyph_image_jobs) > 0
+		}
+		return run_raster_ranges_with_caller(&batch, batch.jobs.len, requested_lanes,
+			draw_glyph_image_jobs) > 0
 	}
 
 	fn draw_glyph_image_job(strike &GlyphStrike, mut job GlyphImageJob, diagnostics bool) {
@@ -152,11 +164,15 @@ $if !cpuraster_freetype ? {
 		}
 		glyph_cache_leave(entry.owner)
 		if batch.diagnostics {
+			mut caller := u64(0)
+			C.pthread_threadid_np(unsafe { nil }, &caller)
+			mut caller_jobs := 0
 			mut threads := []u64{}
 			for job in batch.jobs {
 				if job.thread != 0 && job.thread !in threads { threads << job.thread }
+				caller_jobs += int(job.thread != 0 && job.thread == caller)
 			}
-			eprintln('VOX_GLYPH_MASK_BATCH jobs=${batch.jobs.len} threads=${threads.len} followup=${batch.followup}')
+			eprintln('VOX_GLYPH_MASK_BATCH jobs=${batch.jobs.len} threads=${threads.len} followup=${batch.followup} caller_jobs=${caller_jobs}')
 		}
 	}
 
@@ -182,17 +198,7 @@ $if !cpuraster_freetype ? {
 		mut batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, start, rounding,
 			minimum_jobs, mut window) or { return window.next }
 		batch.followup = followup
-		if batch.jobs.len < glyph_batch_min {
-			// Two lanes suffice for short batches. Submit one explicitly so
-			// the caller can draw the remaining masks in parallel.
-			if run_raster_ranges_with_caller(&batch, batch.jobs.len, 2, draw_glyph_image_jobs) == 0 {
-				return window.next
-			}
-		} else {
-			// Give each lane at least two keys to amortize its dispatch.
-			lanes := math.min(batch.jobs.len / 2, math.min(runtime.nr_cpus(), int(C.VOX_SCAN_WORKERS_MAX)))
-			C.vox_scan_workers_run(&batch, i32(batch.jobs.len), i32(lanes), draw_glyph_image_jobs)
-		}
+		if !batch.draw() { return window.next }
 		entry.publish_glyph_image_batch(&batch)
 		return window.next
 	}
