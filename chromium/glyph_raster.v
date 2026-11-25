@@ -193,9 +193,11 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		// masks; other runs draw the blob at its baseline.
 		mut glyph_positions := []f32{}
 		mut position_bounds := cpuraster.Rect{}
+		mut position_validation := cpuraster.GlyphPositionValidation{}
 		if glyph_geometry != unsafe { nil } && glyph_geometry.positions.len == glyphs.len * 2 {
 			glyph_positions = glyph_geometry.positions
 			position_bounds = glyph_geometry.bounds
+			position_validation = glyph_geometry.validation
 			if retained_glyph_geometry_diagnostics {
 				eprintln('VOX_RETAINED_GLYPH_GEOMETRY_USE positions=${glyph_positions.len}')
 			}
@@ -221,6 +223,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 			font_size:         font_size
 			glyphs:            glyphs
 			positions:         glyph_positions
+			position_validation: position_validation
 			translation:       if chromium { [f32(0), 0]! } else { [baseline_x, baseline_y]! }
 			baseline_snap:     true
 			smoothing:         font_smoothing & 15

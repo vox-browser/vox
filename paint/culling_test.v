@@ -269,6 +269,10 @@ $if macos {
 		assert geometry[2].positions == [f32(5.25), -1.5, -3.5, 2.25]
 		assert geometry[2].bounds.left == -3.5 && geometry[2].bounds.right == 5.25
 		assert geometry[3].positions == geometry[0].positions
+		for index in [0, 2, 3] {
+			assert geometry[index].validation.covers(geometry[index].positions, 4) == !serial_retained_glyph_validation
+		}
+		assert !geometry[0].validation.covers(geometry[3].positions, 4)
 		assert chromium.glyph_positions() == libweb.glyph_positions()
 	}
 

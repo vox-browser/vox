@@ -5,6 +5,7 @@ import layout
 import os
 
 const serial_retained_glyph_geometry = os.getenv('VOX_SERIAL_RETAINED_GLYPH_GEOMETRY') == '1'
+const serial_retained_glyph_validation = os.getenv('VOX_SERIAL_RETAINED_GLYPH_VALIDATION') == '1'
 const packed_retained_glyph_geometry = os.getenv('VOX_PACKED_RETAINED_GLYPH_GEOMETRY') == '1'
 const retained_glyph_geometry_diagnostics = os.getenv('VOX_RETAINED_GLYPH_GEOMETRY_DIAGNOSTICS') == '1'
 const retained_glyph_geometry_position_limit = 128 * 1024
@@ -17,6 +18,7 @@ struct RetainedGlyphReplayGeometry {
 mut:
 	positions []f32
 	bounds    cpuraster.Rect
+	validation cpuraster.GlyphPositionValidation
 }
 
 @[params]
@@ -95,4 +97,7 @@ fn (mut geometry RetainedGlyphReplayGeometry) prepare(command &layout.PaintComma
 	geometry.bounds = cpuraster.prepare_retained_glyph_positions(run.glyph_positions(),
 		mut geometry.positions, f32(command.glyph_translation_x), f32(command.glyph_translation_y),
 		chromium)
+	if !serial_retained_glyph_validation {
+		geometry.validation = cpuraster.validate_prepared_glyph_positions(geometry.positions)
+	}
 }

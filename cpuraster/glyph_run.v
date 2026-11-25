@@ -1,6 +1,9 @@
 module cpuraster
 
 import math
+import os
+
+const glyph_position_validation_diagnostics = os.getenv('VOX_GLYPH_POSITION_VALIDATION_DIAGNOSTICS') == '1'
 
 // Canvas2D fillText() glyph runs, as skia/canvas_raster.cpp's
 // vox_skia_canvas_glyphs() draws them with LibWeb Skia: an SkFont at the
@@ -23,6 +26,8 @@ pub:
 	font_size     f32
 	glyphs        []u16
 	positions     []f32
+	// Optional check for the same immutable position buffer and coordinate count.
+	position_validation GlyphPositionValidation
 	translation   [2]f32
 	baseline_snap bool
 	// Retained text's native smoothing modes: default, alias, AA, subpixel.
@@ -39,6 +44,35 @@ pub:
 	linear_coverage bool
 	// Computed document color before byte serialization, including author alpha.
 	paint_color ?[4]f32
+}
+
+// Binds a successful check to one exact view. Keep the positions alive and
+// immutable until replay has finished using the check.
+pub struct GlyphPositionValidation {
+	data  voidptr
+	count int
+}
+
+pub fn (validation GlyphPositionValidation) covers(positions []f32, count int) bool {
+	return count > 0 && positions.len == count && validation.count == count
+		&& validation.data == positions.data
+}
+
+pub fn validate_prepared_glyph_positions(positions []f32) GlyphPositionValidation {
+	if glyph_positions_are_finite(positions, positions.len) {
+		return GlyphPositionValidation{positions.data, positions.len}
+	}
+	return GlyphPositionValidation{}
+}
+
+fn glyph_positions_are_finite(positions []f32, count int) bool {
+	// Both callers have already established that count fits within positions.
+	// Reading without a slice keeps V's backing-buffer metadata untouched.
+	data := unsafe { &f32(positions.data) }
+	for index in 0 .. count {
+		if !is_finite_f32(unsafe { data[index] }) { return false }
+	}
+	return true
 }
 
 // fill_canvas_glyphs fills run with color (an SkColor), or the gradient or
@@ -137,10 +171,13 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		return false
 	}
 	filter := plan.color
-	for v in run.positions[..run.glyphs.len * 2] {
-		if !is_finite_f32(v) {
-			return false
+	coordinates := run.glyphs.len * 2
+	if run.position_validation.covers(run.positions, coordinates) {
+		if glyph_position_validation_diagnostics {
+			eprintln('VOX_GLYPH_POSITION_VALIDATION_REUSED coordinates=${coordinates}')
 		}
+	} else if !glyph_positions_are_finite(run.positions, coordinates) {
+		return false
 	}
 	$if !linux && !windows && !cpuraster_freetype ? {
 		// SkTypeface_Mac::MakeFromStream() only opens the first face.
