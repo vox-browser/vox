@@ -1826,3 +1826,68 @@ and `459894db09e97b4d456446e4f9e3419593c7238a631936711f15bce0ac37363d`.
 All four fixture browser exits and both guard exits were zero. Native
 paint dispatch, group transitions and frame publication still execute
 on the browser thread.
+
+### Overlap canvas bounds with native frame setup
+
+Commit `6b2f81f52` submits all canvas-bounds ranges to raster workers
+before native frame setup when there is no previous scroll-raster
+key frame. Worker inputs and results live in replay scratch until
+the draw loop joins the batch. Raster-layer setup and the scroll
+probe use their usual allocation scopes during that interval.
+When previous scroll keys exist, the probe runs first. A full
+repaint can use the synchronous worker batch, and a reused frame
+culls against its scroll-damage plan. `VOX_SYNC_PAINT_CANVAS_BOUNDS=1`
+selects the synchronous batch for the same-binary comparison.
+
+The culling tests passed with arena poisoning. The overlap test
+released the scratch allocation scope, allocated frame-setup data,
+then reentered scratch and checked all 443 worker results before
+resetting it. A ThreadSanitizer check ran 100 uneven workloads at
+each of one, two, three and four background lanes and verified that
+every range ran off the caller and wrote its assigned indices.
+
+Production receipt `20261125-101808-2d03fa5d` sealed `6b2f81f52`,
+passed startup smoke and published executable SHA
+`a764074919e4bdbaab3600224665f7c197aba1c61dc2f2a3bcdad6f947187731`.
+It used single-C-unit V `-prod`. Its native AVIF library SHA matched
+the preceding canvas-bounds trial.
+
+The diagnostic launch computed all 443 Hacker News bounds on four
+worker lanes and completed before the join. The synchronous control
+computed 332 bounds off-thread and 111 on the browser thread. Both
+identified 60 off-canvas bounds and preserved all 30 ordered story IDs.
+In the instrumented pair, the two overlap scopes used a combined
+64,878 main-thread instructions for submission and join, compared
+with 129,980 for the synchronous scope. Inclusive native raster replay
+measured 287,971,459 instructions in the synchronous control and
+291,091,538 with overlap.
+
+The two seven-pair cohorts alternated both settings on the same build.
+The second cohort started with the synchronous setting. Each trial ran
+from fresh launch through completion of the 1024×768 CSS-pixel document
+PNG at 2× scale, using JavaScriptCore, a private empty profile and HTTP
+cache, and a replayed 60 ms delay on each logo response. OS filesystem
+caches were retained.
+
+| Pair | Synchronous, ms | Overlapped, ms | Reversed sync, ms | Reversed overlap, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 334.619 | 296.961 | 322.931 | 325.543 |
+| 2 | 294.956 | 329.842 | 303.386 | 298.553 |
+| 3 | 314.728 | 313.902 | 300.167 | 308.427 |
+| 4 | 301.639 | 341.804 | 344.583 | 325.793 |
+| 5 | 322.734 | 301.959 | 290.892 | 329.495 |
+| 6 | 330.257 | 308.381 | 332.630 | 326.608 |
+| 7 | 321.161 | 323.644 | 300.582 | 309.645 |
+| Median | 321.161 | 313.902 | 303.386 | 325.543 |
+
+Median paired changes were −0.826 ms and +2.612 ms, with overlap
+finishing first in four and three pairs. Host load was 6.19–7.02 and
+6.63–6.86 on 18 CPUs. The paired timings show no consistent change in
+launch-to-capture latency.
+
+The 28 timing captures and both diagnostics matched the prior reference
+PNG SHA `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All launches had identical eight-record request and response fingerprints,
+including the replayed favicon miss. The executable, native library,
+archive and driver hashes stayed pinned throughout. Browser, driver and
+3 GiB guard exits were zero. Peak timing RSS was 368,885,760 bytes.
