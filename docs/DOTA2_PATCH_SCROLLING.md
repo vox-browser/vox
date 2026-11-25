@@ -3452,3 +3452,152 @@ mappings and 109.7 MiB of dirty WebKit Malloc. Browser PID 87338, vmmap,
 driver and guard exited 0, with peak guard RSS of 989,118,464 B and
 one-minute host load 4.87→5.00. This diagnostic and the instrumented control
 had different retained arena sizes and settled footprints.
+
+## Script prefix ownership and shared deferred CSS context
+
+`fde7c5620` retires the UTF-16 prefixes and lexer state used to detect
+strict mode for external Script Records. The ASCII early exit and token
+recognition remain the same. The script record keeps its existing source
+and the strict-mode flag.
+
+A fresh control on executable `08f9c5c9` captured 22 scripts from the
+live patch. The captured script set totaled 5,740,554 B and included
+the 3,694,313-byte `main.js` with SHA-256
+`f912b9d309f0a3c22cdb3e7bd70553e064fab00d98db902f20a557f07346cf8f`.
+The ordered compact JSON list of URL, length and SHA-256 triples in
+cache-key order hashed to
+`a5fa816b234a0db183907ebba69438aa729ea40e83ae24d5441a6d2832b47784`.
+The C-backend fixture ran the preceding prologue scan and the scoped
+scan on those exact bytes. Both identified 18 strict scripts and agreed
+on every decision. The old scan left 238,991 B in the caller arena.
+The new scan left 0 B, including with the lexer workspace poisoned.
+The fixture isolates the lexer allocations within the larger growth
+stack seen in the previous allocation trace.
+
+Nine focused metadata and external Script Record cases passed with
+preallocation, Boehm and `-gc none`. All three compile guards exited 0,
+with sampled peak RSS of 880,705,536 B, 850,919,424 B and 871,088,128 B.
+Both captured-script fixture runs exited 0, at 3,571,712 B and
+3,932,160 B peak guard RSS.
+
+`e383d7e0c` shares an immutable parsing-parameter snapshot for lazy
+style declarations with an empty grammar context. Namespaced and
+otherwise context-sensitive rules retain their own snapshots.
+The captured 1,648,921-byte stylesheet kept 10,526 deferred declarations
+among 11,363 root rules. Whole-sheet conversion in the C-backend fixture
+grew the caller arena by 46,660,257 B with per-rule snapshots and
+43,797,493 B with the shared snapshot. The complete CSSOM serialization
+hashed to the same value, `6543411409047156056`, in both conversions.
+Poisoning the retired workspaces preserved the rule counts and hash
+with 43,797,492 B of caller growth.
+
+Seventeen focused stylesheet, parameter ownership, and resource URL
+cases passed in preallocation and Boehm. The test also checked that
+namespaced declarations have independent contexts and that all tested
+rules can be realized. The baseline, candidate and Boehm compile guards
+exited 0 at 2,242,740,224 B, 2,220,015,616 B and 2,239,479,808 B peak RSS.
+The baseline stylesheet fixture exited 0 at 376,635,392 B peak guard RSS.
+Candidate fixture peak guard RSS was 371,228,672 B normally and
+245,301,248 B with poisoning, with exit 0 on both. An initial fixture
+used an incorrect count assertion and exited 1 at 195,887,104 B peak
+guard RSS. The corrected test requires the captured count of 10,526.
+
+The fresh control, which logged startup timing, passed the established
+full patch audit at 23.05 seconds. Browser PID 93257 settled at
+589,860,632 B over 56 samples and peaked at 1,036,947,800 B. Browser,
+driver and guard exited 0 at 908,951,552 B peak guard RSS. One-minute
+host load was 5.57→6.87 on 18 CPUs.
+
+A fresh Brave 158.1.100.59 launch used Chromium 158.0.8127.92, the
+pinned executable and framework above, and a new profile and HTTP cache.
+CDP set its actual native window to a 1024×768 viewport at scale two
+before direct HTTPS navigation. The full visible audit passed at
+23.03 seconds. Process PID 13145 settled at 345,825,176 B over
+51 samples and peaked at 869,097,344 B. The metric is simultaneous
+process-tree physical footprint sampled every 50 ms from launch.
+Settled memory is the median across the last three seconds of the
+12-second observation after the audit. The browser, driver and 3 GiB
+guard exited 0, with 1,160,986,624 B peak guard RSS. One-minute host
+load was 4.65→4.42.
+
+### Published browser
+
+Single-unit C `-prod` receipt `20261126-013053-7d38fb40` sealed
+`e383d7e0c`. The executable SHA-256 was
+`e9ba606bb96ab23620aa3e1ee0cbcf7a8e48de80abdb4124e4fd2379ce53ebac`.
+Its generated C contains both the scoped lexer and the shared CSS
+parsing context. The build also includes the raster-extent projection
+change from `8d60de35a`.
+
+Three earlier build attempts ran out of disk space. A fourth rejected
+changed source inputs before preprocessing. The completed build used
+the documented low-space workflow with compiler scratch on a separate
+volume and compressed sealed inputs. The production and startup
+smoke guards exited 0 at 7,723,450,368 B and 118,849,536 B peak RSS.
+
+### Live memory
+
+Two fresh `Vox --window-width 1024 --window-height 880` processes opened
+the live patch with `VOX_TEST_WINDOW=1`, private profiles and HTTP caches,
+direct HTTPS, and retained OS caches. The complete content audit and
+memory sampling used the same endpoints as the preceding runs.
+Both caches contained the same 1,648,921-byte stylesheet. The native
+helper and resource hashes matched the preceding production build.
+
+| Trial | PID | Full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Vox 1 | 17367 | 23.04 s | 616,320,816 B | 1,070,485,992 B | 52 |
+| Vox 2 | 19169 | 23.01 s | 618,254,104 B | 1,069,404,624 B | 51 |
+
+Both browser, driver and 3 GiB guard exits were 0. Peak guard RSS was
+927,137,792 B and 922,746,880 B. One-minute host load was 3.64→3.46
+and 3.82→3.90. The Vox observations overlap the previous unprofiled
+608,669,488–618,418,016 B range. Vox used about 1.78–1.79 times the
+fresh Brave footprint, a difference of 270.5–272.4 MB. The new build's
+additional compositor change and live variation limit attribution.
+
+### Native input and reference pixels
+
+The 3 GiB guard ran `tools/measure_precise_scroll.py` with
+`--width 1024 --height 768 --chrome-height 112 --script-policy automatic`,
+`--inputs 720 --delta 16 --input-hz 60 --target-hz 60 --reverse-every 360`,
+and `--settle-seconds 23 --timeout 66 --require-title 'Dota Patch Notes - 7.42a'`.
+The two fresh processes used the same live URL, viewport and cache
+policy as the memory runs. Both passed the full patch audit. The
+endpoint was completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Vox 1 | 22.06 | 46.41 / 69.09 / 122.22 ms | 264/286 | 720 / 323 | 55.45 Hz | 60.81 / 6.10 ms |
+| Vox 2 | 22.41 | 45.55 / 68.33 / 124.77 ms | 266/291 | 720 / 329 | 55.37 Hz | 60.42 / 3.26 ms |
+
+The rates cover 12.967 and 12.986 seconds of input. Scroll positions
+reached 12,063.5 and 12,062.5 CSS pixels and ended at zero. Browser PIDs
+were 18040 and 19723. Both browser, driver and guard exits were 0.
+Peak guard RSS was 1,232,781,312 B and 1,244,102,656 B. One-minute load
+was 3.26→3.82 and 3.99→3.93. The preceding browser measured 21.77 and
+20.07 publications per second. About 91–92% of the new intervals
+exceeded the 60 Hz budget.
+
+Both production builds matched the upstream `svg-image-source-switch-same-size`,
+`selection-focus-between-text-controls`, and `selection-moves-between-subtrees`
+references pixel-exactly. All three actual and reference PNG pairs agreed
+byte for byte across builds. Both drivers and 3 GiB guards exited 0
+with peak guard RSS of 208,338,944 B and 206,733,312 B.
+
+### First complete page and early shutdown
+
+Two launches with `VOX_NATIVE_OBSERVATION_INTERVAL_MS=250` first matched
+the full page audit at 3.19 seconds. Sending AppKit a quit request as
+soon as the audit completed triggered a panic because the browser tried
+to release the native command replay arena while it was entered. The
+stack included `dispose_browser_tab` invoked by `applicationWillTerminate:`
+inside a cooperative event pump during `BrowserApp.draw`. Both quit
+requests returned 0. Browser PIDs 21803 and 21976, the drivers and the
+guards exited 1 at 761,757,696 B and 797,376,512 B peak guard RSS.
+
+Two further fresh launches kept the same audit interval and stayed open
+for 12 seconds after the first full audit. They matched that audit at
+5.42 and 8.67 seconds and quit cleanly. Browser PIDs were 23009 and
+23612. Browser, driver and guard exits were 0 at 931,233,792 B and
+945,733,632 B peak guard RSS. The readiness results varied across launches.
