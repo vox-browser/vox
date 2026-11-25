@@ -37,7 +37,7 @@ mut:
 	pixels []u8
 }
 
-fn load_glyph_replay(directory string) ![]GlyphReplay {
+fn load_glyph_replay(directory string, checked_positions bool) ![]GlyphReplay {
 	mut output := []GlyphReplay{}
 	mut registered := map[string]bool{}
 	for line in os.read_lines(os.join_path(directory, 'runs.jsonl'))! {
@@ -72,6 +72,9 @@ fn load_glyph_replay(directory string) ![]GlyphReplay {
 				font_size:         row.size
 				glyphs:            row.glyphs
 				positions:         row.positions
+				position_validation: if checked_positions {
+					cpuraster.validate_prepared_glyph_positions(row.positions)
+				} else { cpuraster.GlyphPositionValidation{} }
 				translation:       [row.translation[0], row.translation[1]]!
 				baseline_snap:     true
 				smoothing:         row.smoothing & 15
@@ -91,8 +94,11 @@ fn load_glyph_replay(directory string) ![]GlyphReplay {
 }
 
 fn main() {
-	if os.args.len != 2 { panic('Usage: benchmark_hn_glyphs GLYPH_DUMP_DIRECTORY') }
-	mut draws := load_glyph_replay(os.args[1]) or { panic(err) }
+	checked_positions := os.args.len == 3 && os.args[2] == '--checked-positions'
+	if os.args.len != 2 && !checked_positions {
+		panic('Usage: benchmark_hn_glyphs GLYPH_DUMP_DIRECTORY [--checked-positions]')
+	}
+	mut draws := load_glyph_replay(os.args[1], checked_positions) or { panic(err) }
 	mut cache := cpuraster.new_glyph_cache()
 	start := time.sys_mono_now()
 	for mut draw in draws {
