@@ -23,6 +23,7 @@ const user_agent_mathml_stylesheet = user_agent_stylesheets.mathml
 const user_agent_svg_stylesheet = user_agent_stylesheets.svg
 const sync_user_agent_syntax = os.getenv('VOX_SYNC_UA_STYLESHEET_SYNTAX') == '1'
 const sync_user_agent_rule_cache = os.getenv('VOX_SYNC_UA_STYLESHEET_RULE_CACHE') == '1'
+const sync_user_agent_selectors = os.getenv('VOX_SYNC_UA_STYLESHEET_SELECTORS') == '1'
 const early_user_agent_stylesheet_join = os.getenv('VOX_EARLY_UA_STYLESHEET_JOIN') == '1'
 const user_agent_syntax_diagnostics = os.getenv('VOX_UA_STYLESHEET_DIAGNOSTICS') == '1'
 const deferred_user_agent_startup = use_deferred_user_agent_startup()
@@ -50,13 +51,56 @@ struct UserAgentSyntaxPreparation {
 struct PreparedUserAgentSyntax {
 	rules []Rule
 	cache_payload StylesheetRulePayload
+	selectors &PreparedStyleRuleSelectors = unsafe { nil }
 	thread_id u64
 	ready_ns u64
 mut:
 	cache_storage platform.DetachedThreadScratch
+	selector_storage platform.DetachedThreadScratch
 }
 
-fn prepare_user_agent_syntax(source string, max_cache_nodes int, ready chan PreparedUserAgentSyntax, consumed chan bool) {
+struct PreparedStyleRuleSelectors {
+mut:
+	lists map[voidptr]SelectorList
+}
+
+fn prepare_user_agent_selector_lists(rules []Rule) (&PreparedStyleRuleSelectors, platform.DetachedThreadScratch) {
+	scratch := platform.begin_thread_scratch('user agent stylesheet selectors')
+	mut prepared := &PreparedStyleRuleSelectors{}
+	mut parser := RuleSelectorParser{is_ua_style_sheet: .yes}
+	for rule in rules {
+		parser.prepare_user_agent_selector_list(rule, mut prepared)
+	}
+	return prepared, scratch.detach()
+}
+
+fn (mut parser RuleSelectorParser) prepare_user_agent_selector_list(rule Rule, mut prepared PreparedStyleRuleSelectors) {
+	match rule {
+		QualifiedRule {
+			// The owner uses this exact raw prelude when converting the rule.
+			// Invalid lists stay on the normal path to report the same error.
+			mut stream := ParserTokenStream.from_values(rule.prelude)
+			if selectors := parser.parse_a_selector_list(mut stream, .standalone, .standard) {
+				prepared.lists[rule.prelude.data] = selectors
+			}
+		}
+		AtRule {
+			// A top-level media rule preserves the standalone selector mode.
+			if !rule.is_block_rule || !equals_ignoring_ascii_case(rule.name, 'media') { return }
+			for child in rule.child_rules_and_lists_of_declarations {
+				if child is RuleNode { parser.prepare_user_agent_selector_list(child.rule, mut prepared) }
+			}
+		}
+	}
+}
+
+fn user_agent_selector_worker_available() bool {
+	// These opt-in selector traces write main-thread diagnostic state.
+	return !sync_user_agent_selectors && !rule_selector_reuse_diagnostics
+		&& !borrowed_selector_span_diagnostics
+}
+
+fn prepare_user_agent_syntax(source string, max_cache_nodes int, prepare_selectors bool, ready chan PreparedUserAgentSyntax, consumed chan bool) {
 	scratch := platform.begin_thread_scratch('user agent stylesheet worker')
 	defer { scratch.finish() }
 	// Parse raw grammar and prepare an independent cache copy. The caller owns
@@ -71,10 +115,18 @@ fn prepare_user_agent_syntax(source string, max_cache_nodes int, ready chan Prep
 	} else {
 		StylesheetRulePayload{}, platform.DetachedThreadScratch{}
 	}
+	selectors, selector_storage := if prepare_selectors {
+		prepare_user_agent_selector_lists(rules)
+	} else {
+		empty := unsafe { &PreparedStyleRuleSelectors(nil) }
+		empty, platform.DetachedThreadScratch{}
+	}
 	ready <- PreparedUserAgentSyntax{
 		rules: rules
 		cache_payload: payload
 		cache_storage: storage
+		selectors: selectors
+		selector_storage: selector_storage
 		thread_id: if user_agent_syntax_diagnostics { platform.native_thread_identity() } else { u64(0) }
 		ready_ns: if user_agent_syntax_diagnostics { time.sys_mono_now() } else { u64(0) }
 	}
@@ -130,7 +182,8 @@ fn start_user_agent_syntax_preparation() &UserAgentSyntaxPreparation {
 		&& stylesheet_rule_cache_.eligible(source) {
 		stylesheet_rule_cache_.max_nodes
 	} else { 0 }
-	worker := spawn prepare_user_agent_syntax(source, max_cache_nodes, ready, consumed)
+	worker := spawn prepare_user_agent_syntax(source, max_cache_nodes,
+		user_agent_selector_worker_available(), ready, consumed)
 	return &UserAgentSyntaxPreparation{ready: ready, consumed: consumed, worker: worker}
 }
 
@@ -143,6 +196,8 @@ fn (preparation &UserAgentSyntaxPreparation) discard() {
 	mut prepared := <-preparation.ready
 	mut storage := prepared.cache_storage.adopt('stylesheet rule cache')
 	if storage != unsafe { nil } { storage.release() }
+	mut selector_storage := prepared.selector_storage.adopt('user agent stylesheet selectors')
+	if selector_storage != unsafe { nil } { selector_storage.release() }
 	preparation.release()
 }
 
@@ -169,7 +224,8 @@ fn (preparation &UserAgentSyntaxPreparation) convert() &CSSStyleSheet {
 		stylesheet_rule_cache_.store(source, prepared.rules)
 	} else { u64(0) }
 	mut default_sheet := convert_transient_stylesheet_rules(ParsingParams{is_ua_style_sheet: .yes},
-		prepared.rules, none, none, deferred, id)
+		prepared.rules, none, none, deferred: deferred, syntax_id: id, prepared_selectors: prepared.selectors)
+	default_sheet.user_agent_selector_storage_ = prepared.selector_storage.adopt('user agent stylesheet selectors')
 	default_sheet.process_lifetime = true
 	return default_sheet
 }

@@ -28,7 +28,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		if entry := stylesheet_rule_cache_.lookup(text) {
 			defer { entry.release() }
 			return convert_transient_stylesheet_rules(params, entry.rules, location, media_list,
-				deferred, entry.id)
+				deferred: deferred, syntax_id: entry.id)
 		}
 	}
 	$if prealloc {
@@ -48,7 +48,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		defer { scratch.finish() }
 		syntax_id := if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) } else { u64(0) }
 		return convert_transient_stylesheet_rules(params, raw.rules, location, media_list,
-			deferred, syntax_id)
+			deferred: deferred, syntax_id: syntax_id)
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred
@@ -64,10 +64,17 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	return parser.parse_as_css_stylesheet(location, media_list)
 }
 
+@[params]
+struct TransientStylesheetOptions {
+	deferred bool
+	syntax_id u64
+	prepared_selectors &PreparedStyleRuleSelectors = unsafe { nil }
+}
+
 // Raw syntax can belong to a scratch arena, a retained cache or a worker.
 // Conversion owns every span that survives the input's lifetime.
 fn convert_transient_stylesheet_rules(params ParsingParams, raw_rules []Rule, location ?string,
-	media_list ?&MediaList, deferred bool, syntax_id u64) &CSSStyleSheet {
+	media_list ?&MediaList, options TransientStylesheetOptions) &CSSStyleSheet {
 	mut parser := RuleSelectorParser{
 		document: params.document
 		mode: params.mode
@@ -75,14 +82,18 @@ fn convert_transient_stylesheet_rules(params ParsingParams, raw_rules []Rule, lo
 		rule_context: params.rule_context.clone()
 		declared_namespaces: params.declared_namespaces.clone()
 		is_ua_style_sheet: params.is_ua_style_sheet
-		defer_style_declarations: deferred
+		defer_style_declarations: options.deferred
 		raw_rules_transient: true
 		component_input_transient: true
+		prepared_rule_selectors: options.prepared_selectors
 	}
 	rules := CSSRuleList.create(parser.convert_rules(raw_rules))
+	if user_agent_syntax_diagnostics && options.prepared_selectors != unsafe { nil } {
+		eprintln('VOX_UA_STYLESHEET_SELECTORS prepared=${options.prepared_selectors.lists.len} used=${parser.prepared_rule_selector_hits}')
+	}
 	media := media_list or { MediaList.create_empty() }
 	mut sheet := CSSStyleSheet.create(rules, media, location)
-	sheet.source_syntax_id_ = syntax_id
+	sheet.source_syntax_id_ = options.syntax_id
 	return sheet
 }
 

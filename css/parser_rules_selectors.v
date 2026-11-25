@@ -77,6 +77,8 @@ mut:
 	component_input_transient bool
 	parsed_rule_selectors map[string]RuleSelectorMemoEntry
 	parsed_rule_selector_bytes int
+	prepared_rule_selectors &PreparedStyleRuleSelectors = unsafe { nil }
+	prepared_rule_selector_hits int
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
@@ -1300,9 +1302,16 @@ fn (parser RuleSelectorParser) parent_for_style_nesting(nested ParserNested) Sty
 	return if nested == .scope { .scope } else { .style }
 }
 
-fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule QualifiedRule, nested ParserNested) ?&CSSRule {
-	mut prelude_stream := ParserTokenStream.from_values(qualified_rule.prelude)
-	maybe_selectors := parser.parse_a_selector_list(mut prelude_stream, if nested != .no {
+fn (mut parser RuleSelectorParser) style_rule_selectors(prelude []ComponentValue, nested ParserNested) ?SelectorList {
+	if parser.prepared_rule_selectors != unsafe { nil } && nested == .no
+		&& parser.declared_namespaces.len == 0 {
+		if selectors := parser.prepared_rule_selectors.lists[prelude.data] {
+			parser.prepared_rule_selector_hits++
+			return selectors
+		}
+	}
+	mut prelude_stream := ParserTokenStream.from_values(prelude)
+	selectors := parser.parse_a_selector_list(mut prelude_stream, if nested != .no {
 		ParserSelectorType.relative
 	} else {
 		ParserSelectorType.standalone
@@ -1315,7 +1324,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		return none
 	}
 
-	if maybe_selectors.is_empty() {
+	if selectors.is_empty() {
 		parser_report_error(ParsingError(InvalidRuleError{
 			rule_name: 'style'
 			prelude: prelude_stream.dump_string()
@@ -1324,7 +1333,11 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		return none
 	}
 
-	mut selectors := maybe_selectors
+	return selectors
+}
+
+fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule QualifiedRule, nested ParserNested) ?&CSSRule {
+	mut selectors := parser.style_rule_selectors(qualified_rule.prelude, nested) or { return none }
 	if nested != .no {
 		selectors = adapt_nested_relative_selector_list(selectors, parser.parent_for_style_nesting(nested))
 	}

@@ -1871,6 +1871,8 @@ mut:
 	source_syntax_id_       u64
 	content_mutated_        bool
 	duplicate_contents_     u8
+	// The process-lifetime default sheet holds its startup worker's selector graphs.
+	user_agent_selector_storage_ &platform.RetainedArena = unsafe { nil }
 }
 
 fn (rule &CSSRule) has_process_lifetime_sheet() bool {

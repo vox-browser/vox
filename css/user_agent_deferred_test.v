@@ -96,6 +96,14 @@ fn test_worker_user_agent_syntax_retires_before_the_published_sheet_is_used() {
 		if bulk_css_input_probe_diagnostics { return }
 		release_unused_stylesheet_syntax()
 		actual := load_user_agent_stylesheets_with_worker()
+		if user_agent_selector_worker_available() {
+			storage := actual.default_sheet.user_agent_selector_storage_
+			assert storage != unsafe { nil }
+			first := actual.default_sheet.rules.item(0) or { panic('missing default rule') }
+			selector := first.selectors.selectors[0]
+			assert storage.arena.contains(voidptr(selector.data_))
+			assert selector.text() == 'html'
+		}
 		if !disable_stylesheet_rule_cache && stylesheet_rule_cache_.eligible(user_agent_cascade_stylesheet_source) {
 			entry := stylesheet_rule_cache_.lookup(user_agent_cascade_stylesheet_source) or {
 				panic('missing startup syntax cache entry')
@@ -122,6 +130,34 @@ fn test_worker_user_agent_syntax_retires_before_the_published_sheet_is_used() {
 			rule := actual.default_sheet.rules.item(index) or { panic('worker rule') }
 			reference := serial.rules.item(index) or { panic('serial rule') }
 			assert rule.css_text() == reference.css_text()
+		}
+	}
+}
+
+fn test_prepared_user_agent_selectors_allow_namespace_and_nested_fallback() {
+	$if macos && prealloc && !vox_css_diagnostics ? {
+		if !user_agent_selector_worker_available() { return }
+		source := '@namespace x url("urn:x"); x|a { color: red } .parent { & > b { color: blue } } .bad, > .invalid { color: green }'
+		scratch := platform.begin_thread_scratch('raw selector test')
+		mut parser := RuleSelectorParser{
+			token_stream: ParserTokenStream.from_transient_source(source, 'utf-8')
+			is_ua_style_sheet: .yes
+		}
+		raw := parser.parse_a_stylesheet(none)
+		prepared, worker_storage := prepare_user_agent_selector_lists(raw.rules)
+		mut detached := worker_storage
+		assert prepared.lists.len == 1
+		scratch.leave()
+		actual := convert_transient_stylesheet_rules(ParsingParams{is_ua_style_sheet: .yes},
+			raw.rules, none, none, deferred: true, prepared_selectors: prepared)
+		mut storage := detached.adopt('user agent stylesheet selectors')
+		storage.release()
+		scratch.finish()
+		expected := parse_shared_user_agent_stylesheet(source)
+		assert actual.rules.length() == 3
+		assert actual.rules.length() == expected.rules.length()
+		for index, rule in actual.rules.rules {
+			assert rule.css_text() == expected.rules.rules[index].css_text()
 		}
 	}
 }
