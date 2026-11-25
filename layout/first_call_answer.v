@@ -67,10 +67,12 @@ fn answer_first_call_from_first_record(mut state LayoutState, box &Node, mut box
 	apply_recorded_inner_layout(mut box_state, &first.before, &first.after)
 	// Kept as this pass's first record, so the next pass can answer the call
 	// again; the container's second call keeps it (note_repeated_relayout_root).
+	mut allocations := state.enter_relayout_record_allocations()
 	state.first_relayout_records_[styled.layout_index()] = RelayoutRecord{
 		...first
 		serial: state.pass_serial_
 	}
+	allocations.finish()
 	state.first_call_answered_box_ = voidptr(box)
 	first_call_answer_count++
 	return first.result

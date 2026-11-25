@@ -1446,6 +1446,7 @@ mut:
 	// of each box that can bound a relayout, each replaced box's natural size,
 	// and the layout invalidations recorded against this pass.
 	relayout_records_ map[u32]RelayoutRecord
+	relayout_record_arena_ &platform.Arena = unsafe { nil }
 	replaced_sizes_ map[u32]ReplacedSizeEntry
 	layout_invalidation_origins_ []&Node
 	layout_invalidation_unbounded_ bool

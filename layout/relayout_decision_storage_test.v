@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import html
 import platform
 
 fn test_fresh_subtree_decisions_survive_geometry_workspace_retirement_and_growth() {
@@ -68,4 +69,71 @@ fn test_subtree_layout_comparison_reuses_empty_rare_inputs() {
 		assert subtree_layout_inputs_difference(margin, missing) == 'collapsed-margin'
 	}
 	assert arena.usage().used == before
+}
+
+fn test_native_relayout_record_maps_retire_on_relayout_and_navigation() {
+	$if !prealloc { return }
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	document.set_scripting_enabled_by_embedder(false)
+	mut allocations := document.enter_native_storage()
+	html.parse_html_from_a_string(document, '<!doctype html><style>
+		#column{display:flex;flex-direction:column;height:280px}
+		.item{display:flow-root;flex:1}
+		</style><div id="column"><div class="item">Retained content</div>
+		<div class="item"><input value="editable"></div></div>')
+	allocations.finish()
+	enable_native_paint_tree_storage(document)
+	mut previous := unsafe { &LayoutState(nil) }
+	for width in [420, 380, 460] {
+		previous_arena := if previous != unsafe { nil } {
+			previous.relayout_record_arena_
+		} else {
+			unsafe { &platform.Arena(nil) }
+		}
+		_ = layout_document_typed_in_viewport(document, width, 400)
+		result := document_layout_result(document) or { panic('missing document layout') }
+		state := result.state
+		arena := state.relayout_record_arena_
+		assert arena != unsafe { nil }
+		assert state.relayout_records_.len > 0
+		assert state.text_control_layouts_.len > 0
+		for index, record in state.relayout_records_ {
+			assert arena.contains(unsafe { &state.relayout_records_[index] })
+			if rare := record.before.rare_ {
+				assert !arena.contains(rare)
+			}
+		}
+		for index, _ in state.text_control_layouts_ {
+			assert arena.contains(unsafe { &state.text_control_layouts_[index] })
+		}
+		if previous != unsafe { nil } {
+			assert previous.relayout_record_arena_ == unsafe { nil }
+			assert previous_arena.usage().capacity == 0
+			assert previous.relayout_records_.len == 0
+			assert previous.first_relayout_records_.len == 0
+			assert previous.text_control_layouts_.len == 0
+		}
+		// The viewport has no independent-context record. A cloned attempt
+		// must leave the active pass readable after rejecting that root.
+		mut attempt_allocations := document.enter_native_storage()
+		attempt := try_incremental_relayout(document, result.root, state, state.committed_pass_,
+			[result.root])
+		attempt_allocations.finish()
+		assert attempt.state == unsafe { nil }
+		assert voidptr(attempt.failed) == voidptr(result.root)
+		assert arena.usage().used > 0
+		previous = state
+	}
+	final_arena := previous.relayout_record_arena_
+	document.retains_layout_while_inactive = true
+	document.did_stop_being_active_document_in_navigable()
+	assert voidptr(previous.relayout_record_arena_) == voidptr(final_arena)
+	document.retains_layout_while_inactive = false
+	document.did_stop_being_active_document_in_navigable()
+	assert previous.relayout_record_arena_ == unsafe { nil }
+	assert final_arena.usage().capacity == 0
+	document.destroy_a_document_and_its_descendants()
+	document.finalize()
+	document.release_native_storage()
 }

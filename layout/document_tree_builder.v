@@ -701,6 +701,8 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	// The replaced result no longer publishes commands; the shell keeps any
 	// scene it adopted until it adopts the next one.
 	if previous_result != unsafe { nil } && voidptr(previous_result) != voidptr(result_ptr) {
+		mut retired_state := previous_result.state
+		if retired_state != unsafe { nil } { retired_state.release_relayout_record_storage() }
 		previous_result.retire_display_list_scene()
 		result_ptr.box_index_arena = previous_result.take_box_index_arena()
 		if result_ptr.box_index_arena != unsafe { nil } { result_ptr.box_index_arena.reset() }
@@ -998,6 +1000,7 @@ fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport
 	geometry_started := started
 	mut timing_checkpoint := started
 	mut state := LayoutState.new()
+	state.enable_relayout_record_storage(document)
 	state.layout_tree_order_ = voidptr(root.tree_order_)
 	mut previous_backoff := unsafe { &RetainedBlockBackoffTable(nil) }
 	if previous := document_layout_result(document) {
@@ -1108,9 +1111,10 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 		if relaid := relayout_dirty_text_controls(document, root, previous_state, pass) {
 			state = relaid
 			if verify_text_control_relayout {
-				full, _ := run_document_geometry(document, root, viewport, viewport_width,
+				mut full, _ := run_document_geometry(document, root, viewport, viewport_width,
 					viewport_height, timing_checkpoint)
 				verify_text_control_geometry(state, full)
+				full.release_relayout_record_storage()
 			}
 		}
 	}
@@ -1118,9 +1122,10 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 		if relaid := relayout_incrementally(document, root, previous_state, pass, replaced_sizes) {
 			state = relaid
 			if verify_incremental_layout {
-				full, _ := run_document_geometry(document, root, viewport, viewport_width,
+				mut full, _ := run_document_geometry(document, root, viewport, viewport_width,
 					viewport_height, timing_checkpoint)
 				verify_incremental_layout_geometry_for(document, pass, state, full)
+				full.release_relayout_record_storage()
 			}
 		}
 	}
@@ -1128,9 +1133,10 @@ fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewpor
 		state, timing_checkpoint = run_document_geometry_with_reuse(document, root, viewport,
 			viewport_width, viewport_height, timing_checkpoint, reuse && !verify_incremental_layout_control)
 		if reuse && verify_incremental_layout {
-			full, _ := run_document_geometry(document, root, viewport, viewport_width,
+			mut full, _ := run_document_geometry(document, root, viewport, viewport_width,
 				viewport_height, timing_checkpoint)
 			verify_incremental_layout_geometry_for(document, pass, state, full)
+			full.release_relayout_record_storage()
 		}
 	}
 	report_incremental_layout_pass(same_tree)

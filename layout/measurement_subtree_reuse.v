@@ -58,8 +58,8 @@ fn note_repeated_relayout_root(mut state LayoutState, box &Node, box_state &Used
 	}
 	if existing.space == space && subtree_layout_inputs_match(&existing.before, box_state) { return }
 	baselines := layout_box_baselines(state, box)
-	mut retained := retain_geometry_allocations()
-	defer { retained.finish() }
+	mut allocations := state.enter_relayout_record_allocations()
+	defer { allocations.finish() }
 	state.first_relayout_records_[index] = RelayoutRecord{
 		...existing
 		baselines:     baselines

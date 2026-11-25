@@ -81,20 +81,14 @@ fn record_text_control_inner_layout(mut state LayoutState, box &Node, before &Us
 	space AvailableSpace, result FormattingContextResult) {
 	if disable_text_control_relayout || state.subtree_root != none || !text_control_host(box) { return }
 	styled := box.as_node_with_style() or { return }
-	mut retained := retain_geometry_allocations()
-	defer { retained.finish() }
-	mut snapshot := *before
-	snapshot.line_boxes = []LineBox{}
-	snapshot.line_boxes_are_shared_ = false
-	if rare := before.rare_ {
-		snapshot.rare_ = rare.clone()
-		snapshot.rare_is_shared_ = false
-	}
-	state.text_control_layouts_[styled.layout_index()] = TextControlInnerLayout{
-		before: snapshot
+	snapshot := TextControlInnerLayout{
+		before: layout_record_snapshot(before)
 		space: space
 		result: result
 	}
+	mut allocations := state.enter_relayout_record_allocations()
+	state.text_control_layouts_[styled.layout_index()] = snapshot
+	allocations.finish()
 }
 
 fn committed_layout_pass(document &dom.Document, viewport_width f64, viewport_height f64,
@@ -213,14 +207,14 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 		collect_layout_subtree_indices(control, mut skipped)
 	}
 	mut state := LayoutState.new()
+	state.enable_relayout_record_storage(document)
 	unsafe {
 		state.previous_inline_layouts_ = previous.inline_layouts_
 		state.previous_block_layouts_ = previous.block_layouts_
 	}
 	state.block_layouts_ = previous.block_layouts_.clone()
 	state.inline_layouts_ = previous.inline_layouts_.clone()
-	state.text_control_layouts_ = previous.text_control_layouts_.clone()
-	state.relayout_records_ = previous.relayout_records_.clone()
+	state.copy_relayout_records(previous, false)
 	state.resolved_anchor_positions_ = previous.resolved_anchor_positions_
 	state.subgrid_storage_ = previous.subgrid_storage_
 	state.begin_retained_block_backoff_pass(previous.block_layout_backoff_)
@@ -322,6 +316,7 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 	if !accepted {
 		geometry_scratch.finish()
 		state.previous_state_ = unsafe { nil }
+		state.release_relayout_record_storage()
 		return none
 	}
 	coordinates := begin_paint_coordinate_session(state)

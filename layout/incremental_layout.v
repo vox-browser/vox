@@ -112,8 +112,8 @@ fn record_relayout_root(mut state LayoutState, box &Node, snapshots RelayoutReco
 	// compare with those its first record kept (measurement_subtree_reuse.v).
 	repeated := relayout_root_has_first_record_of_this_pass(state, box, index)
 	baselines := if repeated { layout_box_baselines(state, box) } else { TextControlBaselines{} }
-	mut retained := retain_geometry_allocations()
-	defer { retained.finish() }
+	mut allocations := state.enter_relayout_record_allocations()
+	defer { allocations.finish() }
 	state.relayout_records_[index] = RelayoutRecord{
 		...snapshots
 		node:          box
@@ -337,6 +337,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 		collect_layout_subtree_indices(relayout_root, mut skipped)
 	}
 	mut state := LayoutState.new()
+	state.enable_relayout_record_storage(document)
 	unsafe {
 		state.previous_inline_layouts_ = previous.inline_layouts_
 		state.previous_block_layouts_ = previous.block_layouts_
@@ -345,9 +346,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 		skipped)
 	state.inline_layouts_ = inline_layouts_outside_relayout_roots(previous.inline_layouts_, root,
 		roots, skipped)
-	state.text_control_layouts_ = previous.text_control_layouts_.clone()
-	state.relayout_records_ = previous.relayout_records_.clone()
-	state.first_relayout_records_ = previous.first_relayout_records_.clone()
+	state.copy_relayout_records(previous, true)
 	state.pass_serial_ = next_layout_pass_serial()
 	state.layout_tree_order_ = voidptr(root.tree_order_)
 	state.subgrid_storage_ = previous.subgrid_storage_
@@ -384,6 +383,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			geometry_scratch.finish()
 			state.previous_state_ = unsafe { nil }
 			state.subtree_reuse_source_ = unsafe { nil }
+			state.release_relayout_record_storage()
 			return IncrementalRelayoutAttempt{
 				failed: relayout_root
 			}
@@ -713,6 +713,7 @@ fn carry_committed_layout_records(mut state LayoutState, previous &LayoutState, 
 	if lookup.values != unsafe { nil } {
 		index := styled.layout_index()
 		old_index := lookup.index
+		mut allocations := state.enter_relayout_record_allocations()
 		if record := previous.relayout_records_[old_index] {
 			if voidptr(record.node) == voidptr(node) {
 				state.relayout_records_[index] = RelayoutRecord{
@@ -725,6 +726,7 @@ fn carry_committed_layout_records(mut state LayoutState, previous &LayoutState, 
 		if record := previous.text_control_layouts_[old_index] {
 			state.text_control_layouts_[index] = record
 		}
+		allocations.finish()
 		if previous.subgrid_storage_ != unsafe { nil } {
 			if subgrid := previous.subgrid_storage_.values[old_index] {
 				mut storage := state.ensure_subgrid_storage()
