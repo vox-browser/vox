@@ -3676,3 +3676,58 @@ reported 2, 3, 2, 2, 2, 2 and 2. One-minute load on 18 cores ranged from
 A separate live visit on the same executable redirected to Reddit sign-in,
 with zero listing posts and two script diagnostics. The browser and guard
 returned zero.
+
+## Shared production build after the FastC merge
+
+The latest completed Vox bundle at launch was
+`20261125-144341-7c04b73d`, from sealed inputs at `b2d54c0b1` with local
+changes. It used single-unit C with literal `-prod`. The
+[FastC merge](https://github.com/vlang/v/pull/32910) changed the upstream
+compiler and this bundle still uses the C backend.
+
+The existing clock-pinned archive and exact references were used for
+seven alternating pairs with fresh private profiles, empty HTTP caches,
+retained OS filesystem and shader caches, 1024×768 scale-1 captures and
+1.4 s settling. The process-tree counters cover fresh launch through
+PNG availability to the observer, including native file-write detection
+for Vox and CDP delivery for Brave. They are observed lower bounds that
+exclude GPU and outside services. All 14 screenshots captured the
+complete listing with 25 ordered posts and five original scripts.
+Every Vox visit executed LibJS with JavaScriptCore uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Vox exit | Brave exit | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,702,030,762 | 13,481,580,952 | 2552.252 | 2994.609 | 0 | 2 | Exact |
+| 2 | 5,595,749,214 | 11,765,813,333 | 2380.911 | 2450.473 | 0 | 2 | 1,703 RGB pixels differ |
+| 3 | 5,633,062,221 | 12,336,526,575 | 2552.168 | 2535.742 | 0 | 2 | Exact |
+| 4 | 5,675,479,507 | 12,413,289,459 | 2465.501 | 2574.013 | 0 | 2 | Exact |
+| 5 | 5,691,589,789 | 12,352,722,321 | 2448.316 | 2476.560 | 0 | 2 | Exact |
+| 6 | 5,636,994,552 | 11,752,192,912 | 2390.377 | 2466.379 | 0 | 2 | Exact |
+| 7 | 5,640,186,131 | 12,411,268,166 | 2387.084 | 2480.232 | 0 | 2 | Exact |
+| Median | 5,640,186,131 | 12,352,722,321 | 2448.316 | 2480.232 | — | — | — |
+
+Every Vox PNG matched its fixed reference. Brave pair 2 differed in the
+scrollbar strip with maximum channel error 128. Every Brave visit hit its
+teardown watchdog after capture and exited 2. The driver and guard
+returned 1. The raw medians show 54.34% fewer observed instructions and
+a 31.92 ms elapsed lead for Vox, which led in six pairs. The highest
+observed Vox count was 48.52% of the lowest Brave count. The abnormal
+exits and pixel difference invalidate acceptance. The catalog retains
+the earlier qualifying comparison.
+
+The 12 GiB guard adopted all 14 browser roots and sampled 1,016,479,744
+bytes of peak aggregate RSS. Vox reported zero missing final samples and
+Brave reported one in every run. Final complete samples preceded capture
+by 5.80–6.90 ms in Vox and 1.85–7.59 ms in Brave. One-minute host load
+ranged from 169.86 to 209.25 on 18 cores between 15:18:17 and 15:20:36
+UTC+03 on 2026-11-25 while other builds were running.
+
+Vox executable SHA-256
+`4812830ce1912f8bb86e16b97dd4af79b5070c1857201732ad53f1cccd0d26bc`.
+Brave 158.1.100.58 and Chromium 158.0.8127.42 match the executable and
+framework identities above. The archive manifest SHA-256 was
+`b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+Pinned asset, executable, library and reference hashes were unchanged.
+The first controller invocation stopped before launch because the system
+Python lacks `hashlib.file_digest`. The seven-pair run used the Homebrew
+Python and the existing system Pillow for decoded pixel hashes.
