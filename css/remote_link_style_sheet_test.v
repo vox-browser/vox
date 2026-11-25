@@ -43,6 +43,37 @@ fn remote_link_test_append(mut parent dom.Node, document &dom.Document, name str
 	return element
 }
 
+fn test_document_link_cache_borrows_its_response_and_isolates_documents() {
+	mut document := dom.Document.create(dom.URL{value: 'https://document-link-cache.test/'})
+	mut other := dom.Document.create(document.url)
+	defer {
+		other.finalize()
+		document.finalize()
+		document.release_native_storage()
+	}
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	address := 'https://document-link-cache.test/style.css'.clone()
+	final_url := 'https://document-link-cache.test/assets/style.css'.clone()
+	text := '/*${'a'.repeat(1024 * 1024)}*/ html { color: red }'
+	set_document_link_style_sheet_response(document, address, ImportedStyleSheetSource{
+		css_text: text
+		response_url: final_url
+		content_type: 'text/css'
+	})
+	owner.finish()
+	link := document.create_element_ns(dom.namespace_html_uri, 'link')!
+	other_link := other.create_element_ns(dom.namespace_html_uri, 'link')!
+	actual, location := read_link_stylesheet(link, address, document.url.serialize())?
+	assert actual == text
+	assert actual.str == text.str
+	assert location == final_url
+	assert !has_remote_link_style_sheet(address)
+	assert read_link_stylesheet(other_link, address, other.url.serialize()) == none
+	set_document_link_style_sheet_response(document, address, none)
+	assert read_link_stylesheet(link, address, document.url.serialize()) == none
+}
+
 fn test_remote_link_cache_preserves_request_location_and_redirect_base() {
 	for same_origin in [false, true] {
 		mut document := dom.Document.create(dom.URL{value: 'https://redirect-cache.test/page.html'})

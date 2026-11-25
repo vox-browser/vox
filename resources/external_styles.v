@@ -273,11 +273,13 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		for header in retained.response_headers {
 			if header.name.to_lower() == 'content-type' { content_type = header.value }
 		}
-		css.set_remote_link_style_sheet_response(resource.url, css.ImportedStyleSheetSource{
+		css.set_document_link_style_sheet_response(app.document, retained.url, css.ImportedStyleSheetSource{
 			css_text: retained.body
 			response_url: if retained.final_url == '' { retained.url } else { retained.final_url }
 			content_type: content_type
 		})
+	} else {
+		css.set_document_link_style_sheet_response(app.document, retained.url, none)
 	}
 	mut installed := false
 	for link in css.query_selector_all(app.document.as_node(), 'link[rel][href]') {

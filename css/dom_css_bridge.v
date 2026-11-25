@@ -181,6 +181,7 @@ mut:
 	// them on every layout neither duplicates nor reparses them.
 	link_sheets  []&CSSStyleSheet
 	link_sources []string
+	link_responses map[string]ImportedStyleSheetSource
 }
 
 // The document's author-stylesheet holder, created on first use and cached on the document via its handle.
@@ -571,10 +572,28 @@ pub fn set_remote_link_style_sheet_response(resolved_url string, source Imported
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	remote_link_style_sheets[resolved_url.clone()] = ImportedStyleSheetSource{
-		css_text: decode_stylesheet_response_text(source.css_text)
+		css_text: decode_stylesheet_response_text(source.css_text, true)
 		response_url: source.response_url.clone()
 		content_type: source.content_type.clone()
 		cors_same_origin: source.cors_same_origin
+	}
+}
+
+// The browser already owns these immutable response strings in the document.
+// Store only a reference for CSS's fallback synchronization. A failed fetch
+// removes the previous response so it cannot supply an outdated sheet.
+pub fn set_document_link_style_sheet_response(document &dom.Document, resolved_url string,
+	response ?ImportedStyleSheetSource) {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
+	mut holder := css_author_style_sheets_for(document)
+	if source := response {
+		holder.link_responses[resolved_url] = ImportedStyleSheetSource{
+			...source
+			css_text: decode_stylesheet_response_text(source.css_text, false)
+		}
+	} else {
+		holder.link_responses.delete(resolved_url)
 	}
 }
 
@@ -597,7 +616,9 @@ fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(
 	if path := local_path_for_stylesheet_url(resolved_url) {
 		return os.read_file(path) or { return none }, resolved_url
 	}
-	source := remote_link_style_sheets[resolved_url] or { return none }
+	source := css_author_style_sheets_for(link.document()).link_responses[resolved_url] or {
+		remote_link_style_sheets[resolved_url] or { return none }
+	}
 	if mime := mimesniff.MimeType.parse(source.content_type) {
 		assume_css_in_quirks_mode := link.document().in_quirks_mode()
 			&& dom.URL{value: source.response_url}.origin().is_same_origin(link.document().origin())
@@ -744,7 +765,7 @@ pub fn install_link_style_sheet_with_base(owner &dom.HTMLLinkElement, css_text s
 	mut scope := css_style_scope_for_scope_node(scope_node)
 	mut list := scope.style_sheet_list()
 	resource_base_url := base_url or { location }
-	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), decode_stylesheet_response_text(css_text), resource_base_url)
+	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), decode_stylesheet_response_text(css_text, false), resource_base_url)
 	sheet.base.location = location
 	sheet.set_base_url(base_url)
 	// Cache-only synchronization has no CORS response to approve. A Fetch
@@ -830,13 +851,10 @@ pub fn style_element_sheet(element &dom.Element) ?&CSSStyleSheet {
 	return unsafe { &CSSStyleSheet(sheet) }
 }
 
-// Synchronize the document CSS style sheet list with its <link rel=stylesheet>
-// elements, then re-evaluate media rules for the current viewport. Style
-// elements maintain their own sheets through DOM::StyleElementBase.
-// Boundary: HTMLLinkElement does not yet fetch and process stylesheet
-// resources, so this bridge reads local link stylesheets, and remote ones the
-// browser fetched, on each layout and adds them to the list with the link's
-// media, title, and alternate flag.
+// Synchronize fallback link sheets, then re-evaluate media rules for the
+// current viewport. The bridge reads local files and cached remote responses
+// for links that have yet to install a sheet through resource completion.
+// Style elements maintain their own sheets through DOM::StyleElementBase.
 pub fn sync_document_style_elements(document &dom.Document) {
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
