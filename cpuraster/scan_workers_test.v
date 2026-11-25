@@ -1,6 +1,7 @@
 module cpuraster
 
 import os
+import runtime
 
 const serial_cpu_raster = 'VOX_SERIAL_CPU_RASTER'
 
@@ -9,6 +10,39 @@ fn restore_serial_raster_setting(previous ?string) {
 		assert os.setenv(serial_cpu_raster, value, true) == 0
 	} else {
 		assert os.unsetenv(serial_cpu_raster) == 0
+	}
+}
+
+$if macos && !cpuraster_freetype ? {
+	struct BackgroundRasterTestRange {
+	mut:
+		thread_id u64
+		first     i32
+		end       i32
+	}
+
+	fn record_background_raster_range(context voidptr, first i32, end i32) {
+		mut range := unsafe { &BackgroundRasterTestRange(context) }
+		C.pthread_threadid_np(unsafe { nil }, &range.thread_id)
+		range.first = first
+		range.end = end
+	}
+
+	fn test_submitted_raster_range_runs_on_a_worker() {
+		if runtime.nr_cpus() < 2 { return }
+		previous := os.getenv_opt(serial_cpu_raster)
+		defer { restore_serial_raster_setting(previous) }
+		assert os.unsetenv(serial_cpu_raster) == 0
+
+		mut caller := u64(0)
+		C.pthread_threadid_np(unsafe { nil }, &caller)
+		mut range := BackgroundRasterTestRange{}
+		ticket := start_background_raster_range(&range, 32, record_background_raster_range)
+		assert ticket != unsafe { nil }
+		join_background_raster_range(ticket)
+		assert range.first == 0
+		assert range.end == 32
+		assert range.thread_id != 0 && range.thread_id != caller
 	}
 }
 

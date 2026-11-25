@@ -461,8 +461,9 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 	assert expected.len > 288 && expected.len < 320
 	for _ in 0 .. 3 {
 		storage.collect_triggers(commands, viewport, true)
-		assert storage.path_jobs.cap >= chromium_msaa_max_path_jobs
-		assert storage.path_jobs.len == 0
+		assert storage.path_work.jobs.len == chromium_msaa_max_path_jobs
+		assert storage.path_work.count == 0
+		assert storage.path_work.ticket == unsafe { nil }
 		assert storage.triggers.len == expected.len
 		for index, trigger in storage.triggers {
 			assert trigger == expected[index]

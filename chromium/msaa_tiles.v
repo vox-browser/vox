@@ -61,15 +61,15 @@ fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport 
 
 fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
 	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
-	mut jobs := []ChromiumMSAAPathJob{}
+	mut path_work := ChromiumMSAAPathWork{}
 	for index in 0 .. commands.len {
 		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, false,
-			mut jobs, mut triggers)
+			mut path_work, mut triggers)
 	}
 }
 
 fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
-	viewport ?ChromiumMSAAViewport, batch_paths bool, mut jobs []ChromiumMSAAPathJob,
+	viewport ?ChromiumMSAAViewport, batch_paths bool, mut path_work ChromiumMSAAPathWork,
 	mut triggers []ChromiumMSAATrigger) {
 	// Native replay discards empty clips before drawing. Culled geometry must
 	// not select multisampling for the other draws in its document tile.
@@ -84,7 +84,7 @@ fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 			if !chromium_svg_background_intersects_raster_viewport(command, visible) { return }
 		}
 		collect_chromium_svg_background_msaa_triggers(command, index, batch_paths,
-			mut jobs, mut triggers)
+			mut path_work, mut triggers)
 	} else if command.kind == 'paint_nested_display_list' {
 		paintable := command.nested_viewport_paintable or { return }
 		converter := painting.new_device_pixel_converter(1) or { return }
@@ -98,7 +98,7 @@ fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 			transformed := layout.paint_command_for_nested_viewport(path, command.transform,
 				painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
 			append_chromium_msaa_trigger(unsafe { &transformed }, index, viewport, false,
-				mut jobs, mut nested_triggers)
+				mut path_work, mut nested_triggers)
 		}
 		scratch.leave()
 		triggers << nested_triggers
@@ -456,7 +456,7 @@ $if test {
 struct ChromiumMSAAStorage {
 mut:
 	triggers []ChromiumMSAATrigger
-	path_jobs []ChromiumMSAAPathJob
+	path_work ChromiumMSAAPathWork
 	by_layer [][]ChromiumMSAATrigger
 	legacy_tiles []i32
 	tiles [][]i32

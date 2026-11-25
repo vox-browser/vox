@@ -21,12 +21,12 @@ fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.Layo
 
 fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, index int,
 	mut triggers []ChromiumMSAATrigger) {
-	mut jobs := []ChromiumMSAAPathJob{}
-	collect_chromium_svg_background_msaa_triggers(command, index, false, mut jobs, mut triggers)
+	mut path_work := ChromiumMSAAPathWork{}
+	collect_chromium_svg_background_msaa_triggers(command, index, false, mut path_work, mut triggers)
 }
 
 fn collect_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, index int,
-	batch_paths bool, mut jobs []ChromiumMSAAPathJob, mut triggers []ChromiumMSAATrigger) {
+	batch_paths bool, mut path_work ChromiumMSAAPathWork, mut triggers []ChromiumMSAATrigger) {
 	if command.image_data == unsafe { nil } || command.opacity <= 0 { return }
 	// Rounded SVG backgrounds are image shaders on the parent pass. Their
 	// vector paths belong to the shader's image, not the parent's MSAA tile.
@@ -80,17 +80,14 @@ fn collect_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, i
 			// CSS border diagnostics and other paint kinds can reach mutable
 			// renderer state. Only ordinary SVG path bounds run on workers.
 			if retained && path.kind == 'draw_svg_path' && path.force_dark_role != .border {
-				jobs << ChromiumMSAAPathJob{
+				path_work.add(ChromiumMSAAPathJob{
 					path: path
 					transform: replay.transform
 					origin: offset
 					viewport: viewport_bounds
 					slot: triggers.len
-				}
-				triggers << ChromiumMSAATrigger{command_index: index}
-				if jobs.len == chromium_msaa_max_path_jobs {
-					finish_chromium_msaa_path_jobs(mut jobs, mut triggers)
-				}
+					trigger: ChromiumMSAATrigger{command_index: index}
+				}, mut triggers)
 			} else if trigger := chromium_svg_background_path_trigger(path, replay.transform,
 				offset, viewport_bounds, index) {
 				triggers << trigger

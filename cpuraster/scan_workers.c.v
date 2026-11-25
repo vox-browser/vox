@@ -10,6 +10,11 @@ import runtime
 fn C.vox_scan_workers_run(voidptr, i32, i32, fn (voidptr, i32, i32))
 fn C.vox_scan_workers_disabled() bool
 
+$if macos {
+	fn C.vox_scan_worker_start(voidptr, i32, fn (voidptr, i32, i32)) voidptr
+	fn C.vox_scan_worker_join(voidptr) bool
+}
+
 const scan_pixels_per_worker = 128 * 1024
 const packed_rgba_scan_pixels = 1024
 const packed_rgba_scan_bytes = packed_rgba_scan_pixels * 4
@@ -54,4 +59,24 @@ pub fn run_raster_ranges(context voidptr, lines int, requested_lanes int, scan f
 	}
 	C.vox_scan_workers_run(context, i32(lines), i32(lanes), scan)
 	return lanes
+}
+
+// Start a borrowed range on a background worker. A non-nil ticket must be
+// joined before the caller reads the results or releases the backing storage.
+// A nil ticket leaves the range unprocessed.
+pub fn start_background_raster_range(context voidptr, lines i32, scan fn (voidptr, i32, i32)) voidptr {
+	$if macos {
+		if lines > 0 && !C.vox_scan_workers_disabled() && runtime.nr_cpus() > 1 {
+			return C.vox_scan_worker_start(context, lines, scan)
+		}
+	}
+	return unsafe { nil }
+}
+
+// Join the range and report whether it was already finished at the join.
+pub fn join_background_raster_range(ticket voidptr) bool {
+	$if macos {
+		if ticket != unsafe { nil } { return C.vox_scan_worker_join(ticket) }
+	}
+	return false
 }

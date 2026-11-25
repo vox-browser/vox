@@ -40,6 +40,51 @@ static void vox_scan_worker_range(const VoxRasterScanBatch *batch, int32_t lane)
 static void vox_scan_worker_dispatch(void *context, size_t lane) {
     vox_scan_worker_range(context, (int32_t)lane);
 }
+
+typedef struct {
+    VoxRasterScanBatch batch;
+    void *group;
+} VoxRasterBackgroundScan;
+
+static void vox_scan_worker_background(void *context) {
+    const VoxRasterBackgroundScan *work = (const VoxRasterBackgroundScan *)context;
+    vox_scan_worker_range(&work->batch, 0);
+}
+
+static void *vox_scan_worker_start(void *context, int32_t lines, VoxRasterScan scan) {
+    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)malloc(sizeof *work);
+    if (!work) return NULL;
+    dispatch_group_t group = dispatch_group_create();
+    if (!group) {
+        free(work);
+        return NULL;
+    }
+#if __has_feature(objc_arc)
+    work->group = (__bridge_retained void *)group;
+#else
+    work->group = (void *)group;
+#endif
+    work->batch = (VoxRasterScanBatch){context, lines, 1, scan, fegetround()};
+    dispatch_group_async_f(group, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
+        work, vox_scan_worker_background);
+    return work;
+}
+
+static bool vox_scan_worker_join(void *ticket) {
+    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)ticket;
+#if __has_feature(objc_arc)
+    dispatch_group_t group = (__bridge_transfer dispatch_group_t)work->group;
+#else
+    dispatch_group_t group = (dispatch_group_t)work->group;
+#endif
+    bool ready = dispatch_group_wait(group, DISPATCH_TIME_NOW) == 0;
+    if (!ready) dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+#if !__has_feature(objc_arc)
+    dispatch_release(group);
+#endif
+    free(work);
+    return ready;
+}
 #else
 typedef struct {
     const VoxRasterScanBatch *batch;
