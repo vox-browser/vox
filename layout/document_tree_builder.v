@@ -1013,7 +1013,7 @@ fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport
 	}
 	defer { state.release_measurement_chunk_pool() }
 	mut geometry_scratch := begin_document_geometry_scratch(document)
-	prepare_first_layout_ascii_shapes(document, root)
+	mut ascii_shapes := prepare_first_layout_ascii_shapes(document, root)
 	layout_viewport(mut state, viewport, viewport_width * document.layout_coordinate_scale(),
 		viewport_height * document.layout_coordinate_scale())
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
@@ -1034,6 +1034,7 @@ fn run_document_geometry_with_reuse(document &dom.Document, root &Node, viewport
 	// Decisions are geometry-workspace data; later passes keep the records,
 	// not the traversal map backed by this pass's scratch arena.
 	state.subtree_layout_decisions_ = map[u64]SubtreeLayoutDecision{}
+	ascii_shapes.finish()
 	geometry_scratch.finish()
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.

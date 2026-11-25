@@ -1,6 +1,5 @@
 module platform
 
-// Written but deliberately not compiled or run until Brave parity.
 fn test_safe_break_handle_ranges_and_dynamic_identity() {
 	release_unused_text_shaping()
 	mut local := SafeBreakWidthCache{}
@@ -29,7 +28,7 @@ fn test_safe_break_handle_ranges_and_dynamic_identity() {
 	assert shaped_text_safe_break_width_cached(mut local, 0, 0, text, 0, text.len, font, true) == none
 	_ = shape_text_with_spacing(0, 0, 0, text, font, .ltr)
 	assert shaped_text_safe_break_width_cached(mut local, 0, 0, text, 0, text.len, font, true) != none
-	font.point_size = 21
+	font = &Font{ family: 'Arial', point_size: 21, font_rendering_policy: .chromium }
 	assert shaped_text_safe_break_width_cached(mut local, 0, 0, text, 0, text.len, font, true) == none
 	_ = shape_text_with_spacing(0, 0, 0, text, font, .ltr)
 	assert shaped_text_safe_break_width_cached(mut local, 0, 0, text, 0, text.len, font, true) == shaped_text_safe_break_width(0, 0, text, 0, text.len, font)

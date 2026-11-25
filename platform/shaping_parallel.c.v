@@ -2,6 +2,10 @@ module platform
 
 import os
 
+#include "@DIR/shaping_preparation.h"
+fn C.vox_ascii_shape_batch_get() voidptr
+fn C.vox_ascii_shape_batch_set(voidptr)
+
 const parallel_ascii_shape_diagnostics = os.getenv('VOX_PARALLEL_ASCII_SHAPE_DIAGNOSTICS') == '1'
 
 pub struct ASCIIShapeRequest {
@@ -18,6 +22,94 @@ pub struct ASCIIShapeJob {
 mut:
 	buffer    voidptr
 	thread_id u64
+	next_for_text int
+}
+
+@[heap]
+struct ASCIIShapeBatch {
+	jobs            []ASCIIShapeJob
+	first_by_text   map[string]int
+	font_generation u64
+	previous        &ASCIIShapeBatch
+	staged          int
+}
+
+pub struct ASCIIShapeScope {
+mut:
+	batch &ASCIIShapeBatch = unsafe { nil }
+}
+
+fn active_ascii_shape_batch() &ASCIIShapeBatch {
+	return unsafe { &ASCIIShapeBatch(C.vox_ascii_shape_batch_get()) }
+}
+
+// Keep native results in this layout's ownership scope. Each matching cache
+// miss transfers one buffer to the normal decoder. The cache owns only glyphs.
+pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
+	mut first_by_text := map[string]int{}
+	caller := if parallel_ascii_shape_diagnostics { native_thread_identity() } else { u64(0) }
+	mut staged := 0
+	mut off_thread := 0
+	for index in 0 .. jobs.len {
+		mut job := unsafe { &jobs[index] }
+		if job.buffer == unsafe { nil } { continue }
+		text := job.request.text
+		job.next_for_text = first_by_text[text]
+		first_by_text[text] = index + 1
+		staged++
+		if parallel_ascii_shape_diagnostics && job.thread_id != caller { off_thread++ }
+	}
+	if parallel_ascii_shape_diagnostics {
+		eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${jobs.len} staged=${staged} off_thread=${off_thread}')
+	}
+	if staged == 0 { return ASCIIShapeScope{} }
+	batch := &ASCIIShapeBatch{
+		jobs: jobs
+		first_by_text: first_by_text
+		font_generation: harfbuzz_cache_generation
+		previous: active_ascii_shape_batch()
+		staged: staged
+	}
+	C.vox_ascii_shape_batch_set(batch)
+	return ASCIIShapeScope{batch: batch}
+}
+
+pub fn (mut scope ASCIIShapeScope) finish() {
+	batch := scope.batch
+	if batch == unsafe { nil } { return }
+	assert voidptr(active_ascii_shape_batch()) == voidptr(batch)
+	C.vox_ascii_shape_batch_set(batch.previous)
+	mut discarded := 0
+	for index in 0 .. batch.jobs.len {
+		mut job := unsafe { &batch.jobs[index] }
+		if job.buffer == unsafe { nil } { continue }
+		C.hb_buffer_destroy(job.buffer)
+		job.buffer = unsafe { nil }
+		discarded++
+	}
+	if parallel_ascii_shape_diagnostics {
+		eprintln('VOX_LAYOUT_ASCII_SHAPE_SCOPE consumed=${batch.staged - discarded} discarded=${discarded}')
+	}
+	scope.batch = unsafe { nil }
+}
+
+fn take_ascii_shape_job(font_key string, text string, params ShapeParams) ?ASCIIShapeJob {
+	if params.text_type != .ltr || params.letter_spacing_bits != 0 || params.word_spacing_bits != 0 {
+		return none
+	}
+	batch := active_ascii_shape_batch()
+	if batch == unsafe { nil } || batch.font_generation != harfbuzz_cache_generation { return none }
+	mut link := batch.first_by_text[text]
+	for link > 0 {
+		mut job := unsafe { &batch.jobs[link - 1] }
+		if job.buffer != unsafe { nil } && job.font_key == font_key {
+			result := *job
+			job.buffer = unsafe { nil }
+			return result
+		}
+		link = job.next_for_text
+	}
+	return none
 }
 
 // Resolve the normal cache and native font keys on the owner thread. The
@@ -79,13 +171,8 @@ pub fn store_ascii_shape_jobs(jobs []ASCIIShapeJob) int {
 	for index in 0 .. jobs.len {
 		mut job := unsafe { &jobs[index] }
 		if job.buffer == unsafe { nil } { continue }
-		shaped := decode_harfbuzz_shape(job.buffer, job.face, job.hb_font, 0, 0, 0,
-			job.request.text, job.request.font, .ltr, [], job.request.text.len, true, false)
+		cache.publish_ascii_shape_job(*job, job.font_key, job.request.text, job.request.font, params)
 		job.buffer = unsafe { nil }
-		cache.store(job.font_key, job.request.text, params, CachedShape{
-			...cached_shape_from(shaped)
-			parallel_prepared: parallel_ascii_shape_diagnostics
-		})
 		stored++
 		if parallel_ascii_shape_diagnostics && job.thread_id != caller { off_thread++ }
 	}
