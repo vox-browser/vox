@@ -57,11 +57,17 @@ pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width in
 	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, &cache)
 }
 
+@[params]
+pub struct CanvasGlyphBoundsOptions {
+pub:
+	position_bounds ?Rect
+}
+
 // canvas_glyph_run_bounds returns the run's conservative SkTextBlob bounds
 // (the glyph positions expanded by the typeface's bounds at the font size)
 // offset by its translation, as left, top, right, bottom. None when the face
 // cannot be opened or has no bounds.
-pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun) ?[4]f32 {
+pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun, options CanvasGlyphBoundsOptions) ?[4]f32 {
 	if run.glyphs.len == 0 || run.positions.len < run.glyphs.len * 2 {
 		return none
 	}
@@ -75,11 +81,25 @@ pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun) ?[4]f32
 	}
 	mut info := glyph_face_info(&cache, face_key, mut lazy)?
 	font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size)?
-	b := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+	b := options.position_bounds or { glyph_positions_bounds(run.positions[..run.glyphs.len * 2]) }
 	return [b.left + font_bounds.left + run.translation[0],
 		b.top + font_bounds.top + run.translation[1], b.right + font_bounds.right + run.translation[0],
 		b.bottom + font_bounds.bottom +
 			run.translation[1]]!
+}
+
+// Convert the packed native positions with the same float32 rounding as
+// retained SkTextBlob replay. The destination is preallocated by the caller.
+pub fn prepare_retained_glyph_positions(source []f64, mut positions []f32,
+	baseline_x f32, baseline_y f32, fold_origin bool) Rect {
+	for i in 0 .. positions.len {
+		positions[i] = if fold_origin {
+			f32(source[i]) + if i % 2 == 0 { baseline_x } else { baseline_y }
+		} else {
+			f32(source[i])
+		}
+	}
+	return glyph_positions_bounds(positions)
 }
 
 fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache) bool {

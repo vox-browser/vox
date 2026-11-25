@@ -5,6 +5,7 @@ import layout
 import painting
 import math
 import os
+import platform
 import runtime
 
 fn test_grouped_native_replay_closes_resource_culling_scopes() {
@@ -206,6 +207,36 @@ fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
 }
 
 $if macos {
+	fn test_replay_workers_prepare_glyph_positions_in_their_command_slots() {
+		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
+			|| serial_retained_glyph_geometry { return }
+		glyphs := [
+			platform.Glyph{glyph_index: 1, position: platform.GlyphPosition{5.25, -1.5}},
+			platform.Glyph{glyph_index: 2, position: platform.GlyphPosition{-3.5, 2.25}},
+		]
+		chromium := platform.GlyphRun.new(&platform.Font{font_rendering_policy: .chromium},
+			.ltr, glyphs)
+		libweb := platform.GlyphRun.new(&platform.Font{font_rendering_policy: .libweb},
+			.ltr, glyphs)
+		text := layout.PaintCommand{kind: 'draw_text', glyph_run: chromium,
+			glyph_translation_x: 10.5, glyph_translation_y: 20.25}
+		commands := [text, layout.PaintCommand{kind: 'fill_rect'},
+			layout.PaintCommand{...text, glyph_run: libweb}, text]
+		mut batch := new_paint_canvas_bounds_batch(commands, 2, 0, 100, 100)
+		batch.submit()
+		assert batch.background_lanes == 2
+		assert batch.finish(true).len == commands.len
+		geometry := batch.glyph_geometry
+		assert geometry[0].positions == [f32(15.75), 18.75, 7, 22.5]
+		assert geometry[0].bounds.left == 7 && geometry[0].bounds.top == 18.75
+		assert geometry[0].bounds.right == 15.75 && geometry[0].bounds.bottom == 22.5
+		assert geometry[1].positions.len == 0
+		assert geometry[2].positions == [f32(5.25), -1.5, -3.5, 2.25]
+		assert geometry[2].bounds.left == -3.5 && geometry[2].bounds.right == 5.25
+		assert geometry[3].positions == geometry[0].positions
+		assert chromium.glyph_positions() == libweb.glyph_positions()
+	}
+
 	fn test_canvas_bounds_can_join_after_other_frame_setup_allocations() {
 		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1' { return }
 		visible := layout.PaintCommand{kind: 'fill_rect', width: 20, height: 20}

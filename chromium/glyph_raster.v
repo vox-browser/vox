@@ -100,10 +100,11 @@ fn f32_finite(value f32) bool {
 fn draw_document_glyph_raster(glyphs []u16, positions []f64, font_path string, face_index int,
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
-	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32) bool {
+	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32,
+	options RetainedGlyphGeometryOptions) bool {
 	reason := draw_document_glyph_raster_run(glyphs, positions, font_path, face_index, font_size,
 		font_weight, baseline_x, baseline_y, matrix, page_x, page_y, scroll_y, canvas_width,
-		canvas_height, color, font_smoothing, paint_color, clip_bounds)
+		canvas_height, color, font_smoothing, paint_color, clip_bounds, options.glyph_geometry)
 	if reason != '' && document_glyph_raster_dump != '' {
 		eprintln('VOX_TEXT_RASTER fallback=${reason} font=${font_path}#${face_index} size=${font_size} weight=${font_weight} smoothing=${font_smoothing}')
 	}
@@ -145,7 +146,8 @@ fn document_glyph_raster_record(run cpuraster.CanvasGlyphRun, transform [6]f32, 
 fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path string, face_index int,
 	font_size f32, font_weight int, baseline_x f32, baseline_y f32, matrix [6]f32,
 	page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32,
-	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32) string {
+	color u32, font_smoothing int, paint_color ?[4]f32, clip_bounds ?[4]f32,
+	glyph_geometry &RetainedGlyphReplayGeometry) string {
 	$if macos {
 		if glyphs.len == 0 || positions.len < glyphs.len * 2 || font_path == '' || !(font_size >= 0) {
 			return 'empty run'
@@ -167,13 +169,18 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		// Chromium runs keep the document origin in the glyph positions
 		// (f32(position) + origin), so the float sums select the same subpixel
 		// masks; other runs draw the blob at its baseline.
-		mut glyph_positions := []f32{len: glyphs.len * 2}
-		for i in 0 .. glyphs.len * 2 {
-			glyph_positions[i] = if chromium {
-				f32(positions[i]) + if i % 2 == 0 { baseline_x } else { baseline_y }
-			} else {
-				f32(positions[i])
+		mut glyph_positions := []f32{}
+		mut position_bounds := cpuraster.Rect{}
+		if glyph_geometry != unsafe { nil } && glyph_geometry.positions.len == glyphs.len * 2 {
+			glyph_positions = glyph_geometry.positions
+			position_bounds = glyph_geometry.bounds
+			if retained_glyph_geometry_diagnostics {
+				eprintln('VOX_RETAINED_GLYPH_GEOMETRY_USE positions=${glyph_positions.len}')
 			}
+		} else {
+			glyph_positions = []f32{len: glyphs.len * 2}
+			position_bounds = cpuraster.prepare_retained_glyph_positions(positions,
+				mut glyph_positions, baseline_x, baseline_y, chromium)
 		}
 		source_color := paint_color or {
 			[f32((color >> 16) & 255) / 255, f32((color >> 8) & 255) / 255,
@@ -203,7 +210,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		tx := page_x + matrix[4]
 		ty := page_y - scroll_y + matrix[5]
 		mut cache := document_glyph_cache()
-		mut local := cpuraster.canvas_glyph_run_bounds(mut cache, run) or {
+		local := cpuraster.canvas_glyph_run_bounds(mut cache, run, position_bounds: position_bounds) or {
 			// Faces without typeface bounds: the positions with an em of margin.
 			mut b := [glyph_positions[0], glyph_positions[1], glyph_positions[0], glyph_positions[1]]!
 			for i := 0; i + 1 < glyph_positions.len; i += 2 {

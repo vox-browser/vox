@@ -4409,7 +4409,8 @@ fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x
 }
 
 fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_y f32,
-	scroll_y f64, canvas_width f32, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool, clip_bounds ?[4]f32) bool {
+	scroll_y f64, canvas_width f32, canvas_height f32, glyph_color gg.Color, blur f32,
+	shadow_only bool, clip_bounds ?[4]f32, options RetainedGlyphGeometryOptions) bool {
 	$if macos {
 		glyph_run := command.glyph_run or { return false }
 		if command.glyph_orientation != .horizontal {
@@ -4436,7 +4437,8 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 				f32(command.glyph_translation_y), [f32(matrix[0]), f32(matrix[1]), f32(matrix[2]),
 				f32(matrix[3]), f32(matrix[4]), f32(matrix[5])]!, page_x, page_y, f32(scroll_y),
 				canvas_width, canvas_height, u32(glyph_color.a) << 24 | u32(glyph_color.r) << 16 | u32(glyph_color.g) << 8 | u32(glyph_color.b),
-				smoothing, chromium_retained_paint_color(command), clip_bounds) {
+				smoothing, chromium_retained_paint_color(command), clip_bounds,
+				glyph_geometry: options.glyph_geometry) {
 				return true
 			}
 		}
@@ -5942,7 +5944,8 @@ fn replaced_image_pixels_for_renderer(command &layout.PaintCommand, native_rende
 	return bitmap
 }
 
-fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32,
+	window_height int, options RetainedGlyphGeometryOptions) {
 	leaf_instructions := paint_leaf_instruction_stage(source_command.kind)
 	defer { leaf_instructions.finish() }
 	// A native border or coincident antialiased fill can consume the underlay
@@ -7540,7 +7543,8 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					if app.ctx.native_rendering {
 						set_native_chromium_paint_color(*command)
 						defer { C.native_set_unrounded_paint_color(unsafe { nil }) }
-						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false, glyph_rectangle_clip) {
+						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false, glyph_rectangle_clip,
+							glyph_geometry: options.glyph_geometry) {
 							return
 						}
 						if app.use_document_font {
@@ -7831,6 +7835,7 @@ fn (mut app BrowserApp) draw() {
 					f64(page_y), f64(window.width), f64(window.height))
 			}
 			leaf_canvas_bounds := canvas_bounds.finish(!scroll_damage.reused)
+			has_glyph_geometry := leaf_canvas_bounds.len > 0 && canvas_bounds.glyph_geometry.len > 0
 			app.portable_background_clip_replay = PortableBackgroundClipReplay{
 				active: portable_background_clip_reuse && !app.ctx.native_rendering
 			}
@@ -8010,12 +8015,15 @@ fn (mut app BrowserApp) draw() {
 						app.step_video_backdrop(command_index, command, mut scroll_damage, page_y, window.height)
 					}
 				}
+				glyph_geometry := if has_glyph_geometry && command.kind == 'draw_text' {
+					unsafe { &canvas_bounds.glyph_geometry[command_index] }
+				} else { unsafe { &RetainedGlyphReplayGeometry(nil) } }
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
-					app.draw_command(*command, 0, page_y, window.height)
+					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry)
 					app.scroll_profile.record_replay_allocation(command.kind, platform.thread_arena_usage().used - before)
 				} else {
-					app.draw_command(*command, 0, page_y, window.height)
+					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry)
 				}
 				$if macos {
 					if app.ctx.native_rendering && command.kind == 'begin_css_filter_layer' {

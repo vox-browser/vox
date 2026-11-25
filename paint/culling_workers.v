@@ -19,12 +19,13 @@ enum PaintLeafCanvasBounds as u8 {
 }
 
 struct PaintCanvasBoundsWork {
-	commands []layout.PaintCommand
-	bounds   &u8
-	threads  &u64
-	page_y   f64
-	width    f64
-	height   f64
+	commands       []layout.PaintCommand
+	bounds         &u8
+	glyph_geometry &RetainedGlyphReplayGeometry = unsafe { nil }
+	threads        &u64
+	page_y         f64
+	width          f64
+	height         f64
 }
 
 // The display list remains immutable while workers calculate the same
@@ -45,17 +46,22 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 			PaintLeafCanvasBounds.retain
 		}
 		unsafe { work.bounds[index] = u8(result) }
+		if work.glyph_geometry != unsafe { nil } && kind == 'draw_text' {
+			mut geometry := unsafe { &work.glyph_geometry[index] }
+			geometry.prepare(command)
+		}
 		if thread_id != 0 { unsafe { work.threads[index] = thread_id } }
 	}
 }
 
 struct PaintCanvasBoundsBatch {
-	work    &PaintCanvasBoundsWork = unsafe { nil }
-	bounds  []u8
-	threads []u64
-	lanes   int
+	work           &PaintCanvasBoundsWork = unsafe { nil }
+	bounds         []u8
+	glyph_geometry []RetainedGlyphReplayGeometry
+	threads        []u64
+	lanes          int
 mut:
-	ticket  voidptr
+	ticket           voidptr
 	background_lanes int
 }
 
@@ -70,15 +76,20 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 	width f64, height f64) PaintCanvasBoundsBatch {
 	// Use a byte buffer at the native worker boundary.
 	bounds := []u8{len: commands.len}
+	geometry := plan_retained_glyph_geometry(commands)
 	mut threads := []u64{}
-	if paint_canvas_bounds_worker_diagnostics { threads = []u64{len: commands.len} }
+	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics {
+		threads = []u64{len: commands.len}
+	}
 	return PaintCanvasBoundsBatch{
 		bounds: bounds
+		glyph_geometry: geometry
 		threads: threads
 		lanes: lanes
 		work: &PaintCanvasBoundsWork{
 			commands: commands
 			bounds: unsafe { &u8(bounds.data) }
+			glyph_geometry: unsafe { if geometry.len > 0 { &RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 			page_y: page_y
 			width: width
@@ -123,6 +134,17 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 		prepared := batch.threads.count(it != 0)
 		outside := batch.bounds.count(it == u8(PaintLeafCanvasBounds.outside))
 		eprintln('VOX_PAINT_CANVAS_BOUNDS_BATCH commands=${batch.bounds.len} prepared=${prepared} lanes=${used_lanes} off_thread=${off_thread} outside=${outside} background=${background} ready_at_join=${ready}')
+	}
+	if retained_glyph_geometry_diagnostics && batch.glyph_geometry.len > 0 {
+		caller := platform.native_thread_identity()
+		mut prepared := 0
+		mut off_thread := 0
+		for index, geometry in batch.glyph_geometry {
+			if geometry.positions.len == 0 { continue }
+			prepared++
+			if batch.threads[index] != caller { off_thread++ }
+		}
+		eprintln('VOX_RETAINED_GLYPH_GEOMETRY_BATCH prepared=${prepared} off_thread=${off_thread}')
 	}
 	return batch.bounds
 }
