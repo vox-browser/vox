@@ -1,10 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **49.73% fewer median observed CPU instructions**
+Production Vox with LibJS used **49.58% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
 their respective screenshot references. Median launch-to-PNG time was
-**2.061 s for Vox and 2.007 s for Brave**. A fresh live Vox visit reached
-Reddit's login page. [Current comparison](#production-comparison-with-ascii-identifier-starts)
+**2.060 s for Vox and 1.994 s for Brave**. A fresh live Vox visit reached
+Reddit's login page. [Current comparison](#production-comparison-with-coalesced-bytecode-source-locations)
 
 ## Workload and execution
 
@@ -1008,3 +1008,108 @@ JavaScript and binding stages. The sample reached ordinary function
 frames, native calls and the bytecode interpreter as well as parsing.
 The sampler, browser and guard exited zero. These instrumented observations
 identify active paths and were collected separately from the comparison.
+
+## Coalescing consecutive bytecode source locations
+
+The bytecode emitter stores an entry when an instruction's line, column or
+UTF-16 offset changes. The existing range lookup finds the latest entry at or
+before the requested instruction. The focused regression covers consecutive
+instructions sharing a location, column and offset changes, a later return
+to an earlier location and the configured starting line.
+
+An isolated single-unit `-prod` C probe compiled the five pinned World News
+scripts 32 times per fresh process with `-prealloc -gc none`. It parsed each
+script before measurement at the browser's recursion limit, then timed
+top-level bytecode generation and validation using the browser's immutable
+compiler executable mode. The probe used cumulative process instructions
+from `proc_pid_rusage` inside the measured interval. It left function-body
+execution, HTML, layout and capture outside the interval.
+
+Every trial generated 198,656 bytecode instructions. The source map fell
+from 198,656 entries to 127,552, a **35.79% reduction**. CPU instructions
+fell **0.82%** at the median and fell in each pair. Median compilation time
+per set of scripts was 1.378 ms for the control and 1.301 ms for the candidate.
+The one-minute host load was 11.32–11.78 on 18 cores. All processes and the
+3 GiB guard exited zero. The control SHA-256 was
+`37bf8aa3a223b069d36a2a8f920143065f4163bab76d52132b70a7e936b4f588`.
+The candidate SHA-256 was
+`7da962cd833ab96dc839319d7268b282176a541f1b9ed8ff6e2968f593b92834`.
+
+| Pair | Control observed instructions | Candidate observed instructions | Control ms per set | Candidate ms per set |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 919,191,028 | 912,102,059 | 1.276 | 1.233 |
+| 2 | 919,109,945 | 911,436,510 | 1.312 | 1.278 |
+| 3 | 918,981,259 | 911,663,546 | 1.258 | 1.301 |
+| 4 | 919,041,542 | 911,463,457 | 1.499 | 1.226 |
+| 5 | 919,355,941 | 912,887,985 | 1.479 | 1.302 |
+| 6 | 912,221,593 | 905,165,192 | 1.440 | 1.304 |
+| 7 | 912,148,551 | 905,313,539 | 1.378 | 1.453 |
+| Median | 919,041,542 | 911,463,457 | 1.378 | 1.301 |
+
+Two earlier attempts to build the source-level Reddit DOM diagnostic reached
+the 12 GiB compiler guard. The smaller probe measures top-level compilation
+with both binaries and all five script bodies pinned throughout.
+
+Both source-location cases, the execution context and module test files,
+and all 100 upstream AST fixtures passed under Boehm and `-gc none`.
+The whole C-backed script-evaluation file still contains a rejection test
+for `with`, which the interpreter now executes. The two source-location
+cases were selected separately. Both full-package attempts stopped at the
+existing FastC error in `absent_property_set_test.v`.
+
+## Production comparison with coalesced bytecode source locations
+
+Managed build `20261125-080258-26aa2838` verified `6f917d517` with the
+source-location change applied. Its sealed single-unit `-prod` C includes
+the coalescing path. The sealed C SHA-256 was
+`858e1edebe89b5bae791e884b59d5ca42c199bc92f49434b4574f1f70e886987`.
+The executable SHA-256 was
+`ebc1426818e108c8208c3d33209b68c3db600d381deb292bdb915e79c031b0ef`.
+The LibJS headless smoke check passed. A separate fresh replay matched
+the Vox reference and recorded 1,369 function compilations with execution
+generation 145, zero script diagnostics and JavaScriptCore uninitialized.
+
+The seven alternating fresh pairs used the same clock-pinned 1024×768
+archive, scale 1, 1.4 s settle period, empty private profiles and HTTP caches,
+and retained OS filesystem and shader caches. Both LibJS disk code caches
+were disabled. Vox ended at observer confirmation of a complete native
+document PNG. Brave ended at receipt of the complete CDP screenshot response.
+The browser executables, native libraries, replay, observer and references
+were pinned throughout. Brave used the same version and assets as above.
+
+Every capture matched its browser's fixed reference. Both engines reached
+`complete` with all 25 post IDs in order and received all five author
+scripts on each visit. All Vox visits compiled 1,369 function bodies and
+recorded LibJS generation 145 with JavaScriptCore uninitialized. Both
+browsers reported zero author script errors.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,877,625,827 | 11,648,760,355 | 2044.463 | 2100.447 |
+| 2 | 5,853,447,671 | 11,657,169,579 | 2063.034 | 2000.911 |
+| 3 | 5,932,220,260 | 11,772,612,118 | 2088.242 | 1961.438 |
+| 4 | 5,910,413,495 | 11,642,658,479 | 2072.418 | 1994.090 |
+| 5 | 5,865,906,691 | 11,615,227,117 | 2059.504 | 1968.914 |
+| 6 | 5,858,676,040 | 11,752,481,005 | 2055.688 | 2000.612 |
+| 7 | 5,914,636,486 | 11,720,369,475 | 2057.113 | 1992.106 |
+| Median | 5,877,625,827 | 11,657,169,579 | 2059.504 | 1994.090 |
+
+Vox used **49.58% fewer median observed instructions**. Its highest observed
+count was 51.07% of Brave's lowest and met the 10% observed-count gate. Brave
+finished 65.4 ms sooner at the median and won six pairs. The browser result
+covers the complete build, including raster-worker text shaping from
+`6f917d517`. The isolated compilation pairs measure the source-location
+change. Host one-minute load was 14.15–18.11 on 18 cores, and the cohort ran
+from 08:10:41 to 08:11:18 UTC+03 on November 25.
+
+Both process-tree instruction counts are lower bounds and exclude the GPU
+and external services such as WindowServer. The final complete sample
+preceded the PNG boundary by 5.38–7.63 ms for Vox and 0.49–7.65 ms for Brave.
+Vox reported zero missing final samples. Brave reported 2, 0, 2, 2, 2, 3
+and 1. Every browser root, the driver and the 12 GiB guard exited zero.
+The guard adopted all 14 browser roots and sampled a peak aggregate RSS
+of 865,124,352 bytes.
+
+A direct visit in the same executable with a fresh profile reached Reddit's
+login page with zero posts and two unsupported `data:` script URLs. The
+browser and guard exited zero. The live listing was unavailable in this check.
