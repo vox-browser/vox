@@ -574,7 +574,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			scratch.composited_scrolls[box.own_scroll_frame_index] = true
 		}
 		if box.sticky_scroll_frame_index > 0
-			&& chromium_sticky_needs_compositing(box, result.boxes_by_layout_cache) {
+			&& result.box_index != unsafe { nil }
+			&& chromium_sticky_needs_compositing(box, result.box_index.last) {
 			scratch.composited_stickies[box.sticky_scroll_frame_index] = true
 			scratch.sticky_bounds[box.sticky_scroll_frame_index] =
 				compatibility_affine_map_rect(chromium_sticky_raster_transform(box, result), box.border_box())

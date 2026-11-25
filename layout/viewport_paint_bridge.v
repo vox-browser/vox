@@ -377,23 +377,43 @@ fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &paintin
 }
 
 fn (mut result DocumentLayoutResult) ensure_boxes_by_layout_cache() {
-	if result.boxes_by_layout_cache_valid { return }
-	result.boxes_by_layout_cache = map[u64]&BlockBox{}
-	result.visual_boxes_by_layout_cache = map[u64]&BlockBox{}
-	collect_compatibility_box_indices(mut result.paint_tree, mut result.boxes_by_layout_cache,
-		mut result.visual_boxes_by_layout_cache)
+	if result.box_index != unsafe { nil } { return }
+	// The index refers to the current projection and has its own rebuild
+	// boundary. The document can replace it many times during its lifetime.
+	if result.box_index_arena == unsafe { nil } && result.paint_tree_storage != unsafe { nil } {
+		persistent := platform.enter_persistent()
+		result.box_index_arena = platform.new_arena('paint box indices')
+		platform.leave_persistent(persistent)
+	}
+	mut arena := result.box_index_arena
+	mut entry := platform.ArenaEntry{}
+	if arena != unsafe { nil } { entry = arena.enter() }
+	defer { if arena != unsafe { nil } { arena.leave(entry) } }
+	mut index := &PaintBoxIndex{}
+	collect_compatibility_box_indices(mut result.paint_tree, mut index.last, mut index.first)
 	// The renderer transport omits the typed Viewport itself and puts its
 	// mandatory scroll frame on the root box. Keep its real layout identity in
 	// the lookup too: absolute descendants can have that Viewport, rather than
 	// the document element, as their containing block.
-	result.boxes_by_layout_cache[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
-	result.boxes_by_layout_cache_valid = true
+	index.last[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
+	result.box_index = index
 }
 
 fn (mut result DocumentLayoutResult) invalidate_boxes_by_layout_cache() {
-	result.boxes_by_layout_cache_valid = false
-	result.boxes_by_layout_cache = map[u64]&BlockBox{}
-	result.visual_boxes_by_layout_cache = map[u64]&BlockBox{}
+	if result.box_index == unsafe { nil } { return }
+	result.box_index = unsafe { nil }
+	if result.box_index_arena != unsafe { nil } {
+		result.box_index_arena.reset()
+	}
+}
+
+fn (mut result DocumentLayoutResult) take_box_index_arena() &platform.Arena {
+	arena := result.box_index_arena
+	if arena != unsafe { nil } {
+		result.box_index_arena = unsafe { nil }
+		result.invalidate_boxes_by_layout_cache()
+	}
+	return arena
 }
 
 fn collect_compatibility_box_indices(mut box BlockBox, mut last map[u64]&BlockBox,
@@ -413,7 +433,7 @@ fn collect_compatibility_box_indices(mut box BlockBox, mut last map[u64]&BlockBo
 fn (mut result DocumentLayoutResult) retained_box_for_layout(layout_handle voidptr) ?&BlockBox {
 	if layout_handle == unsafe { nil } || layout_handle == voidptr(result.root) { return none }
 	result.ensure_boxes_by_layout_cache()
-	return result.boxes_by_layout_cache[u64(layout_handle)] or { return none }
+	return result.box_index.last[u64(layout_handle)] or { return none }
 }
 
 fn collect_compatibility_boxes(mut box BlockBox, mut boxes_by_layout map[u64]&BlockBox) {
@@ -1204,14 +1224,14 @@ fn build_compatibility_visual_contexts(mut result DocumentLayoutResult,
 	// ScrollState appends indices in traversal order, starting after its sentinel.
 	boxes_by_scroll_frame.clear()
 	boxes_by_scroll_frame << unsafe { &BlockBox(nil) }
-	assign_compatibility_scroll_frames(mut result.paint_tree, result.boxes_by_layout_cache, mut boxes_by_scroll_frame, mut result.scroll_state)
+	assign_compatibility_scroll_frames(mut result.paint_tree, result.box_index.last, mut boxes_by_scroll_frame, mut result.scroll_state)
 	mut coordinate_root := 0
 	if result.document.layout_coordinate_scale() != 1 {
 		coordinate_root = result.visual_context_tree.append(painting.TransformVisualData{
 			matrix: compatibility_painting_affine(layout_to_css_transform(result.document))
 		}, 0)
 	}
-	assign_compatibility_visual_contexts_with_coordinate_root(mut result.paint_tree, none, result.boxes_by_layout_cache, coordinate_root, mut result.visual_context_tree)
+	assign_compatibility_visual_contexts_with_coordinate_root(mut result.paint_tree, none, result.box_index.last, coordinate_root, mut result.visual_context_tree)
 	result.needs_accumulated_visual_contexts = false
 }
 
@@ -1361,7 +1381,7 @@ fn (mut result DocumentLayoutResult) indexed_visual_context_for_layout_handle(la
 		return visual_context_index_for_layout_handle(result.paint_tree, layout_handle)
 	}
 	result.ensure_boxes_by_layout_cache()
-	box := result.visual_boxes_by_layout_cache[u64(layout_handle)] or { return none }
+	box := result.box_index.first[u64(layout_handle)] or { return none }
 	if os.getenv('VOX_VISUAL_CONTEXT_INDEX_DIAGNOSTICS') != '' {
 		eprintln('Vox client geometry: indexed visual context')
 	}
@@ -1380,7 +1400,7 @@ fn (mut result DocumentLayoutResult) client_rect_visual_context(layout_handle vo
 	mut current := unsafe { &Node(layout_handle) }.parent()
 	for {
 		ancestor := current or { break }
-		if box := result.visual_boxes_by_layout_cache[u64(voidptr(ancestor))] {
+		if box := result.box_index.first[u64(voidptr(ancestor))] {
 			return box.accumulated_visual_context_for_descendants_idx
 		}
 		current = ancestor.parent()

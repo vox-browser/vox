@@ -555,6 +555,14 @@ fn propagate_root_styles_to_viewport(root &Node, mut viewport Node) {
 	}
 }
 
+struct PaintBoxIndex {
+mut:
+	// Containing-block lookups include the Viewport's root-box mapping.
+	last map[u64]&BlockBox
+	// Client geometry follows the first transport box in tree order.
+	first map[u64]&BlockBox
+}
+
 // The result of laying out a document: the root layout box and the LayoutState holding every box's geometry.
 pub struct DocumentLayoutResult {
 pub:
@@ -624,14 +632,10 @@ mut:
 	// Scratch for refresh_local_paint_styles, kept for its storage.
 	paint_style_update_ordinary_handles HandleSet
 	paint_style_update_line_handles     HandleSet
-	// Layout handle -> retained paint box, including the Viewport's root-box
-	// mapping. The paint tree is immutable between refreshes, so wheel
-	// coordinates and visual-context rebuilds share one lazily built index.
-	boxes_by_layout_cache       map[u64]&BlockBox
-	boxes_by_layout_cache_valid bool
-	// Client geometry follows the first transport box in tree order. Other
-	// consumers of boxes_by_layout_cache retain their existing last-box rule.
-	visual_boxes_by_layout_cache map[u64]&BlockBox
+	// Wheel coordinates and visual-context rebuilds share a lazily built index
+	// for the current paint tree.
+	box_index &PaintBoxIndex = unsafe { nil }
+	box_index_arena &platform.Arena = unsafe { nil }
 	// Private recording storage plus command vectors returned by the shell.
 	record_scratch CompatibilityRecordScratch
 	paintable_bindings []&dom.Paintable
@@ -677,7 +681,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	} else {
 		BlockBox{}
 	}
-	result_ptr := &DocumentLayoutResult{
+	mut result_ptr := &DocumentLayoutResult{
 		root: result.root
 		state: result.state
 		document: document
@@ -698,6 +702,8 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	// scene it adopted until it adopts the next one.
 	if previous_result != unsafe { nil } && voidptr(previous_result) != voidptr(result_ptr) {
 		previous_result.retire_display_list_scene()
+		result_ptr.box_index_arena = previous_result.take_box_index_arena()
+		if result_ptr.box_index_arena != unsafe { nil } { result_ptr.box_index_arena.reset() }
 		previous_result.retire_paint_tree_storage()
 	}
 	if build_paint_tree {

@@ -22,7 +22,7 @@ fn retained_paint_parent(result &DocumentLayoutResult, node &Node) ?&Node {
 	mut ancestor := node.parent()
 	for ancestor != none {
 		current := ancestor or { break }
-		if u64(voidptr(current)) in result.boxes_by_layout_cache && voidptr(current) != voidptr(result.root) {
+		if u64(voidptr(current)) in result.box_index.last && voidptr(current) != voidptr(result.root) {
 			return current
 		}
 		ancestor = current.parent()
@@ -32,9 +32,9 @@ fn retained_paint_parent(result &DocumentLayoutResult, node &Node) ?&Node {
 
 fn paint_subtree_refresh_node_is_eligible(result &DocumentLayoutResult, node &Node) bool {
 	key := u64(voidptr(node))
-	slot := result.boxes_by_layout_cache[key] or { return false }
+	slot := result.box_index.last[key] or { return false }
 	// Continuations and fragments have several boxes for one node.
-	first := result.visual_boxes_by_layout_cache[key] or { return false }
+	first := result.box_index.first[key] or { return false }
 	if voidptr(first) != voidptr(slot) || voidptr(slot) == voidptr(&result.paint_tree) {
 		return false
 	}
@@ -54,7 +54,7 @@ fn plan_paint_subtree_refresh(mut result DocumentLayoutResult) ?[]PaintSubtreeRe
 	for handle in handles {
 		changed := unsafe { &Node(voidptr(handle)) }
 		mut target := changed
-		if u64(handle) !in result.boxes_by_layout_cache {
+		if u64(handle) !in result.box_index.last {
 			target = retained_paint_parent(result, changed) or { return none }
 		}
 		root := retained_paint_parent(result, target) or { return none }
@@ -76,8 +76,8 @@ fn plan_paint_subtree_refresh(mut result DocumentLayoutResult) ?[]PaintSubtreeRe
 		}
 		if covered { continue }
 		parent := retained_paint_parent(result, root) or { return none }
-		parent_box := result.boxes_by_layout_cache[u64(voidptr(parent))] or { return none }
-		slot := result.boxes_by_layout_cache[u64(voidptr(root))] or { return none }
+		parent_box := result.box_index.last[u64(voidptr(parent))] or { return none }
+		slot := result.box_index.last[u64(voidptr(root))] or { return none }
 		plan << PaintSubtreeRefresh{
 			slot: slot
 			node: root

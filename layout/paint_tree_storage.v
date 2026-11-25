@@ -107,6 +107,8 @@ pub fn release_paint_tree(handle voidptr) {
 }
 
 fn (mut result DocumentLayoutResult) retire_paint_tree_storage() {
+	mut index_arena := result.take_box_index_arena()
+	if index_arena != unsafe { nil } { index_arena.release() }
 	storage := result.paint_tree_storage
 	result.paint_tree_storage = unsafe { nil }
 	release_paint_tree(voidptr(storage))
