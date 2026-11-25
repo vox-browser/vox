@@ -45,6 +45,14 @@ fn own_inline_layout_lines(lines []LineBox) []LineBox {
 	return clone_inline_layout_lines(lines, true)
 }
 
+fn index_layout_glyph_run(run &platform.GlyphRun, mut indexes map[u64]int,
+	mut runs []&platform.GlyphRun) {
+	key := u64(voidptr(run))
+	if key in indexes { return }
+	indexes[key] = runs.len
+	runs << run
+}
+
 fn clone_inline_layout_lines(lines []LineBox, into_document bool) []LineBox {
 	mut run_indexes := map[u64]int{}
 	mut source_runs := []&platform.GlyphRun{}
@@ -53,10 +61,11 @@ fn clone_inline_layout_lines(lines []LineBox, into_document bool) []LineBox {
 		for fragment_index in 0 .. line.fragments_.len {
 			fragment := unsafe { &line.fragments_[fragment_index] }
 			if run := fragment.glyph_run_ {
-				key := u64(voidptr(run))
-				if key !in run_indexes {
-					run_indexes[key] = source_runs.len
-					source_runs << run
+				index_layout_glyph_run(run, mut run_indexes, mut source_runs)
+			}
+			if !isnil(fragment.intrinsic_glyph_runs_) {
+				for run in fragment.intrinsic_glyph_runs_.runs {
+					index_layout_glyph_run(run, mut run_indexes, mut source_runs)
 				}
 			}
 		}
@@ -86,11 +95,21 @@ fn clone_inline_layout_lines(lines []LineBox, into_document bool) []LineBox {
 			if source := fragment.glyph_run_ {
 				run = owned_runs[run_indexes[u64(voidptr(source))]]
 			}
+			mut intrinsic_runs := unsafe { &IntrinsicGlyphRuns(nil) }
+			if !isnil(fragment.intrinsic_glyph_runs_) {
+				borrowed := fragment.intrinsic_glyph_runs_.runs
+				mut runs := []&platform.GlyphRun{cap: borrowed.len}
+				for source in borrowed {
+					runs << owned_runs[run_indexes[u64(voidptr(source))]]
+				}
+				intrinsic_runs = &IntrinsicGlyphRuns{runs: runs}
+			}
 			mut ellipsis := ?string(none)
 			if text := fragment.block_ellipsis_text_ { ellipsis = text.clone() }
 			owned_line.fragments_ << LineBoxFragment{
 				...fragment
 				glyph_run_:           run
+				intrinsic_glyph_runs_: intrinsic_runs
 				block_ellipsis_text_: ellipsis
 			}
 		}

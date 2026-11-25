@@ -98,7 +98,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			|| cached.style_environment != style_environment { continue }
 		if !grid_measurement_inputs_are_current(cached.inputs) {
 			if cached.opacity_measurement || cached.absolute_measurement {
-				mut retained := pool.enter_flex_grid_measurement_cache()
+				mut retained := pool.enter_measurement_cache()
 				pool.flex_measurement_rejections_[node_key] = true
 				retained.finish()
 				return run_uncached_flex_formatting_context_with_mode(mut state, container,
@@ -111,11 +111,11 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		// synthesize a different baseline for replaced or empty flex items.
 		used.set_derived_baselines(cached.first_baseline, cached.last_baseline)
 		used.set_derived_vertical_baselines(cached.vertical_first_baseline, cached.vertical_last_baseline)
-		publish := committed && pool.flex_grid_measurement_cache_ != unsafe { nil }
+		publish := committed && pool.measurement_cache_arena_ != unsafe { nil }
 		for index in 0 .. cached.values.len {
 			entry := unsafe { &cached.values[index] }
 			containing := if parent := entry.containing { state.get(parent) } else { none }
-			state.restore_flex_grid_measurement_values(entry, containing, publish)
+			state.restore_measurement_values(entry.node, &entry.values, containing, publish)
 		}
 		if flex_measurement_diagnostics && !flex_measurement_reuse_reported {
 			flex_measurement_reuse_reported = true
@@ -146,7 +146,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	if committed || !pool.allows_measurement_recording(container, false) {
 		return run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)
 	}
-	mut retained_inputs := pool.enter_flex_grid_measurement_cache()
+	mut retained_inputs := pool.enter_measurement_cache()
 	mut inputs := []RetainedInlineInput{}
 	mut eligible := collect_grid_measurement_inputs(container, mut inputs,
 		mut pool.flex_measurement_rejections_)
@@ -173,13 +173,13 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		|| style_environment != container.document().style_environment_version() { return result }
 	if !grid_measurement_inputs_are_current(owned_inputs) {
 		if absolute_measurement {
-			mut retained := pool.enter_flex_grid_measurement_cache()
+			mut retained := pool.enter_measurement_cache()
 			pool.flex_measurement_rejections_[node_key] = true
 			retained.finish()
 		}
 		return result
 	}
-	mut retained := pool.enter_flex_grid_measurement_cache()
+	mut retained := pool.enter_measurement_cache()
 	defer { retained.finish() }
 	mut snapshots := []RetainedBlockValues{cap: owned_inputs.len - 1}
 	for input in owned_inputs[1..] {

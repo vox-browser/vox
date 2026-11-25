@@ -28,16 +28,17 @@ fn test_published_measurement_outlives_its_layout_pass() {
 	rare.computed_svg_path_ = svg.Path{
 		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
 	}
-	mut entry := pool.enter_flex_grid_measurement_cache()
+	mut entry := pool.enter_measurement_cache()
 	mut snapshots := []RetainedBlockValues{cap: 1}
 	append_owned_measurement_values(mut snapshots, node, measured)
 	entry.finish()
 	probe.release_measurement()
-	if pool.flex_grid_measurement_cache_ != unsafe { nil } {
-		assert pool.flex_grid_measurement_cache_.contains(snapshots[0].values.line_boxes.data)
+	if pool.measurement_cache_arena_ != unsafe { nil } {
+		assert pool.measurement_cache_arena_.contains(snapshots[0].values.line_boxes.data)
 	}
 	snapshot := unsafe { &snapshots[0] }
-	state.restore_flex_grid_measurement_values(snapshot, none, pool.flex_grid_measurement_cache_ != unsafe { nil })
+	state.restore_measurement_values(snapshot.node, &snapshot.values, none,
+		pool.measurement_cache_arena_ != unsafe { nil })
 	state.release_measurement_chunk_pool()
 	result := state.try_get(node) or { panic('missing published geometry') }
 	assert result.line_boxes[0].inline_length_.raw_value() == CSSPixels.new(80).raw_value()
@@ -72,12 +73,13 @@ fn test_published_measurement_reuses_exact_previous_lines() {
 		mut measured := probe.get_mutable(node)
 		measured.line_boxes << LineBox.new(.ltr, .horizontal_tb)
 		measured.line_boxes[0].inline_length_ = CSSPixels.new(width)
-		mut entry := pool.enter_flex_grid_measurement_cache()
+		mut entry := pool.enter_measurement_cache()
 		mut snapshots := []RetainedBlockValues{cap: 1}
 		append_owned_measurement_values(mut snapshots, node, measured)
 		entry.finish()
 		probe.release_measurement()
-		state.restore_flex_grid_measurement_values(unsafe { &snapshots[0] }, none, true)
+		entry_values := unsafe { &snapshots[0].values }
+		state.restore_measurement_values(node, entry_values, none, true)
 		state.release_measurement_chunk_pool()
 		result := state.try_get(node) or { panic('missing published geometry') }
 		assert result.line_boxes[0].inline_length_.raw_value() == CSSPixels.new(width).raw_value()

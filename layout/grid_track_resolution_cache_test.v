@@ -42,6 +42,7 @@ fn test_cached_initial_tracks_match_the_resolver_and_are_detached_copies() {
 		available, gap, true, 0, 3)
 	mut state := LayoutState.new()
 	state.enable_measurement_chunk_pool()
+	state.measurement_chunk_pool_.scratch_enabled_ = true
 	mut first := resolve_grid_axis_tracks_in_state(mut state, container, true, available, gap, true, 0, 3)
 	assert first == direct
 	key := u64(voidptr(container))
@@ -53,6 +54,13 @@ fn test_cached_initial_tracks_match_the_resolver_and_are_detached_copies() {
 	first[1].collapsed = true
 	second := resolve_grid_axis_tracks_in_state(mut state, container, true, available, gap, true, 0, 3)
 	assert second == direct
+	$if prealloc {
+		if expected_entries > 0 {
+			cached := pool.grid_track_resolutions_[key][0]
+			assert pool.measurement_cache_arena_.contains(cached.tracks.data)
+			assert !pool.measurement_cache_arena_.contains(second.data)
+		}
+	}
 	// A different available size is a different question.
 	narrow := resolve_grid_axis_tracks_in_state(mut state, container, true, CSSPixels.new(150), gap, true, 0, 3)
 	assert narrow == resolve_grid_tracks(container, computed.grid_template_columns(), computed.grid_auto_columns(),
@@ -62,6 +70,7 @@ fn test_cached_initial_tracks_match_the_resolver_and_are_detached_copies() {
 		available, gap, false, 0, 2)
 	state.release_measurement_chunk_pool()
 	assert pool.closed && pool.grid_track_resolutions_.len == 0
+	assert second == direct
 }
 
 fn test_calculated_tracks_and_poolless_states_bypass_the_cache() {

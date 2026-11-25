@@ -3,7 +3,6 @@ module layout
 import css
 import dom
 import os
-import platform
 
 const disable_inline_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_MEASUREMENT_REUSE') != ''
 const disable_inline_element_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_ELEMENT_MEASUREMENT_REUSE') != ''
@@ -157,15 +156,22 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			if !key.definite_height && cached.initial_height != used.content_height() {
 				report_indefinite_inline_measurement_height(root)
 			}
-			used.borrow_retained_line_boxes(cached.lines)
+			styled := unsafe { &NodeWithStyle(containing_block) }
+			publish := committed && pool.measurement_cache_arena_ != unsafe { nil }
+			if publish {
+				used.publish_measurement_lines(state, styled, cached.lines)
+			} else {
+				used.borrow_retained_line_boxes(cached.lines)
+			}
 			if !width_only {
 				if position := cached.inline_end { used.set_inline_end_static_position_rect(position) }
 			}
 			if cached.values.len > 0 {
-				containing_values := state.get(unsafe { &NodeWithStyle(containing_block) })
+				containing_values := state.get(styled)
 				for index in 0 .. cached.values.len {
 					entry := unsafe { &cached.values[index] }
-					_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
+					state.restore_measurement_values(entry.node, &entry.values, containing_values,
+						publish)
 				}
 			}
 			if mut bfc := context {
@@ -198,7 +204,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	}
 	// The ordinary text shaping caches retain their own payloads. Copy line
 	// fragments and glyph runs explicitly; none may point into this probe's arena.
-	mut retained := platform.enter_retained_allocations()
+	mut retained := pool.enter_measurement_cache()
 	defer { retained.finish() }
 	mut inputs := []RetainedInlineInput{}
 	if !collect_inline_inputs_with_measurement_roots(root, true,
@@ -211,7 +217,9 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		if index == 0 { continue }
 		styled := input.node.as_node_with_style() or { continue }
 		if snapshot := state.try_get(styled) {
-			append_retained_inline_snapshot(mut values, styled, snapshot)
+			values << RetainedInlineValues{node: styled, values: *snapshot}
+			mut owned := unsafe { &values[values.len - 1].values }
+			own_measurement_snapshot(mut owned, snapshot)
 		}
 	}
 	cached := &InlineMeasurementLayout{
@@ -221,7 +229,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		font_policy: root.document().font_rendering_policy()
 		style_environment: root.document().style_environment_version()
 		initial_height: used.content_height()
-		lines: own_inline_layout_lines(used.line_boxes)
+		lines: clone_inline_layout_lines(used.line_boxes, false)
 		inline_end: used.inline_end_static_position_rect()
 		values: values
 		result: result

@@ -1082,7 +1082,7 @@ mut:
 	active_arenas int
 	closed bool
 	scratch_metadata_ &platform.Arena = unsafe { nil }
-	flex_grid_measurement_cache_ &platform.Arena = unsafe { nil }
+	measurement_cache_arena_ &platform.Arena = unsafe { nil }
 	scratch_slots_ []&MeasurementScratchSlot
 	scratch_depth_ int
 	scratch_enabled_ bool
@@ -1139,14 +1139,14 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.grid_measurement_rejections_ = map[u64]bool{}
 	pool.flex_measurements_ = map[u64][]&FlexMeasurementLayout{}
 	pool.flex_measurement_rejections_ = map[u64]bool{}
-	if pool.flex_grid_measurement_cache_ != unsafe { nil } {
-		pool.flex_grid_measurement_cache_.reset()
-		pool.flex_grid_measurement_cache_.release()
-		pool.flex_grid_measurement_cache_ = unsafe { nil }
-	}
 	pool.grid_track_resolutions_ = map[u64][]&GridTrackResolutionCache{}
 	pool.opacity_measurement_seen_ = map[u64]bool{}
 	pool.absolute_measurement_seen_ = map[u64]bool{}
+	if pool.measurement_cache_arena_ != unsafe { nil } {
+		pool.measurement_cache_arena_.reset()
+		pool.measurement_cache_arena_.release()
+		pool.measurement_cache_arena_ = unsafe { nil }
+	}
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}
