@@ -18,7 +18,7 @@ fn parser_script_request_fixture(markup string, resources map[string]PreloadedRe
 	document.set_ready_to_run_scripts()
 	mut loader := new_browser_script_request_loader(document, resources)
 	// Deliver responses explicitly so fetch completion order is deterministic.
-	loader.fetch = fn (_ string, _ string, _ bool, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
+	loader.fetch = fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	observations := &ParserScriptRequestObservations{}
 	mut parser := html.HTMLParser.create(document, markup)
 	parser.set_script_hooks(none, fn [document, observations] (_ html.ScriptElementType,

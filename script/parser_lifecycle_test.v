@@ -9,7 +9,6 @@ import encoding.base64
 import html
 import net
 import page
-import platform
 import time
 
 fn testsuite_begin() {
@@ -33,7 +32,7 @@ fn parser_lifecycle_fixture_with_resources(url string, engine browserjs.Engine,
 	images := new_browser_image_request_loader(document, {})
 	mut scripts := new_browser_script_request_loader(document, resources)
 	// Tests deliver completions on the owner thread, independently of wall time.
-	scripts.fetch = fn (_ string, _ string, _ bool, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
+	scripts.fetch = fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	return install_browser_parser_script_host(document, engine, images, scripts, resources, none, none)
 }
 
@@ -238,7 +237,7 @@ fn test_external_classic_script_resumes_before_later_markup_and_runs_once() {
 	assert messages == []
 }
 
-fn test_libjs_module_preparse_counts_exclude_unprepared_classic_scripts() {
+fn test_libjs_preparse_queues_only_external_modules() {
 	$if !darwin && !linux { return }
 	base := 'https://parser-lifecycle.example/'
 	mut host := parser_lifecycle_fixture_with_resources(base + 'page', .libjs, {
@@ -257,42 +256,6 @@ fn test_libjs_module_preparse_counts_exclude_unprepared_classic_scripts() {
 	mut messages := []string{}
 	host.flush(mut messages)
 	assert messages == []
-}
-
-fn parser_lifecycle_prepare_classic_on_worker(body string) &browserjs.ClassicScriptFrontend {
-	platform.retain_thread_allocations()
-	return browserjs.prepare_classic_script_frontend(body) or { panic('missing worker frontend') }
-}
-
-fn test_libjs_parser_consumes_its_own_classic_frontend_before_resuming() {
-	$if !darwin && !linux { return }
-	base := 'https://parser-lifecycle.example/'
-	for stale in [false, true] {
-		mut host := parser_lifecycle_fixture_with_resources(base + 'page', .libjs, {})
-		defer { parser_lifecycle_close(host) }
-		parser_lifecycle_parse(host, '<!doctype html><script id=first src=blocking.js></script><p id=later>Later</p>')
-		assert host.document.get_element_by_id('later') == none
-		assert host.scripts.requests[0].prepare_classic
-		body := ' '.repeat(32 * 1024) + 'globalThis.result = document.currentScript.id + "|" + (document.getElementById("later") === null); globalThis.afterWorker = () => 42;'
-		worker_source := if stale { body + 'globalThis.result="wrong";' } else { body }
-		worker := spawn parser_lifecycle_prepare_classic_on_worker(worker_source)
-		background := worker.wait()
-		host.scripts.results <- PreloadedResource{
-			url: base + 'blocking.js'
-			source_url: host.document.url.serialize()
-			request_type: 'script'
-			body: body
-			classic_frontend: background
-		}
-		host.scripts.poll(host.runtime, mut host.messages)
-		parser_lifecycle_run_tasks()
-		assert host.runtime.frontend_code_cache_stats().classic_background_hits == if stale { u64(0) } else { u64(1) }
-		assert host.runtime.evaluate_host('result')! == 'first|true'
-		assert host.runtime.evaluate_host('afterWorker()')! == '42'
-		assert host.document.get_element_by_id('later') != none
-		assert host.document.ready_state() == 'complete'
-		assert host.scripts.ready_classic == none
-	}
 }
 
 fn test_libjs_external_classic_script_reads_and_writes_native_local_storage() {

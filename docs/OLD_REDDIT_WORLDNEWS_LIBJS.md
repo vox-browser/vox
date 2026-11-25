@@ -375,3 +375,70 @@ stages totaled 107.4 and 108.5 ms to that point. Both diagnostic visits
 and the guard exited zero. The fresh direct production visit reached
 `Welcome to Reddit` at the login redirect and exited normally, so live
 listing performance remains unverified.
+
+## Classic script worker experiment
+
+Production build `7cd06bd22` parsed large, parser-blocking classic scripts
+on their fetch workers. LibJS checked that the syntax came from the bytes
+delivered to the parser and executed the scripts in their original order.
+The parser lifecycle suite passed with both production preallocation and
+Boehm. The cross-thread test checked syntax lifetime after worker exit
+and reparsing when the source changed.
+
+The single-unit `-prod` C executable SHA-256 was
+`b2137c2a18f8f7ef6272e1229fa9edfe124a0658f5d807b829b11711ae4bff80`.
+Separate production diagnostics confirmed three worker syntax hits and
+stable pixels. With `VOX_LIBJS_SCRIPT_PREPARSE=0`, the same executable
+recorded zero hits and produced the same pixels. Both diagnostic visits
+exited zero and executed LibJS with JavaScriptCore uninitialized.
+
+Seven fresh pairs alternated worker and owner-thread syntax preparation
+using that switch on the same executable. The clock-pinned archive, 1024×768
+viewport at scale 1, 1.4 s settle period, private profiles, empty HTTP
+caches and retained OS caches matched the earlier launch-to-PNG comparison.
+All 14 captures matched the Vox reference and exited zero. Each worker
+visit recorded three hits and each owner-thread visit recorded zero.
+
+| Pair | Worker observed instructions | Owner observed instructions | Worker elapsed (ms) | Owner elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,993,146,181 | 5,952,999,990 | 2083.2 | 2039.3 |
+| 2 | 5,991,390,119 | 5,922,083,757 | 2033.9 | 2055.5 |
+| 3 | 6,001,742,916 | 5,948,655,998 | 2045.1 | 2045.1 |
+| 4 | 6,013,454,731 | 5,934,084,209 | 2060.5 | 2044.2 |
+| 5 | 6,003,805,151 | 5,934,821,867 | 2046.6 | 2056.3 |
+| 6 | 5,986,045,560 | 5,928,490,265 | 2093.6 | 2064.3 |
+| 7 | 5,967,902,830 | 5,969,691,141 | 2111.6 | 2140.4 |
+| Median | 5,993,146,181 | 5,934,821,867 | 2060.5 | 2055.5 |
+
+Moving preparation to the fetch worker raised median observed instructions by
+0.98% and raised the median elapsed time by 5.0 ms. Elapsed results varied
+across the pairs. One-minute load ranged from 5.94 to 12.64 on 18 cores.
+The experiment was reverted to preserve the cheaper owner-thread path.
+
+A further seven alternating pairs compared the worker build against Brave
+with its fixed reference. Both browser roots exited zero in every pair.
+All seven Vox captures matched. Brave pair 4 differed in 13,902 thumbnail
+pixels within x=83–153 and y=400–762. The maximum channel error was 83.
+The file is retained locally as `references/brave-classic-worker-pair-4.png`.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,977,510,792 | 11,880,776,356 | 2125.2 | 2197.5 |
+| 2 | 6,086,404,892 | 11,864,403,226 | 2181.0 | 2302.2 |
+| 3 | 5,977,323,115 | 12,369,428,114 | 2124.2 | 2148.4 |
+| 4 | 5,990,589,043 | 11,665,207,864 | 2200.2 | 2170.4 |
+| 5 | 5,973,412,977 | 11,942,826,907 | 2189.6 | 2152.0 |
+| 6 | 6,077,408,446 | 12,083,213,562 | 2297.5 | 2315.6 |
+| 7 | 6,064,899,370 | 12,050,162,500 | 2354.8 | 2206.3 |
+| Median | 5,990,589,043 | 11,942,826,907 | 2189.6 | 2197.5 |
+
+Vox's highest observed count was 52.18% of Brave's lowest. The median Vox
+capture arrived 7.9 ms sooner, and Brave won three of the seven pairs.
+Host one-minute load ranged from 11.89 to 18.65. The last complete samples
+preceded capture by 5.90–6.40 ms for Vox and 1.61–7.58 ms for Brave.
+Vox reported zero missing final samples. Brave reported 1, 2, 1, 1, 1, 2
+and 1. Both totals are process-tree lower bounds. The memory guard adopted
+all 30 browser roots across diagnostics and both cohorts, with a sampled
+peak aggregate RSS of 866,549,760 bytes. The comparison driver and guard
+exited 1 on the Brave pixel mismatch. The fixed-pixel acceptance gate
+remains open.
