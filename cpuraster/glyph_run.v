@@ -213,27 +213,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	strike.snap_y = run.baseline_snap && sk_relax(position_matrix.ky) == 0
 	strike.snap_x = run.baseline_snap && !strike.snap_y && sk_relax(position_matrix.sx) == 0
 	strike.smoothing = run.smoothing
-	mut smooth_luminance := -1
-	$if macos && !cpuraster_freetype ? {
-		behavior := int(C.cpuraster_ct_smoothing_behavior())
-		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
-			smooth_luminance = paint_mask_luminance(paint_color, alpha, shader, filter, behavior)
-			strike.table = smooth_mask_gamma_tables[smooth_luminance]
-		} else if run.chromium_coverage {
-			// Zero contrast with the sRGB transfer, or no preblend at all for
-			// the unhinted antialiased mode's linear gamma.
-			strike.table = if run.smoothing == 2 {
-				identity_mask_gamma_table
-			} else {
-				smooth_mask_gamma_tables[luminance]
-			}
-		}
-	}
-	if run.linear_coverage {
-		strike.table = identity_mask_gamma_table
-		// Keep filtered masks separate from both ordinary and smooth strikes.
-		smooth_luminance = -2
-	}
+	smooth_luminance := select_glyph_mask_gamma(mut strike, run, paint_color, alpha, shader, filter,
+		luminance)
 	defer {
 		strike.release()
 	}
@@ -470,6 +451,30 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		}
 	}
 	return true
+}
+
+fn select_glyph_mask_gamma(mut strike GlyphStrike, run &CanvasGlyphRun, color u32, alpha f32,
+	shader ?CanvasShader, filter ?ColorFilter, luminance int) int {
+	mut smooth_luminance := -1
+	$if macos && !cpuraster_freetype ? {
+		behavior := int(C.cpuraster_ct_smoothing_behavior())
+		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
+			smooth_luminance = paint_mask_luminance(color, alpha, shader, filter, behavior)
+			strike.table = smooth_mask_gamma_tables[smooth_luminance]
+		} else if run.chromium_coverage {
+			strike.table = if run.smoothing == 2 {
+				identity_mask_gamma_table
+			} else {
+				smooth_mask_gamma_tables[luminance]
+			}
+		}
+	}
+	if run.linear_coverage {
+		strike.table = identity_mask_gamma_table
+		// Keep filtered masks separate from both ordinary and smooth strikes.
+		return -2
+	}
+	return smooth_luminance
 }
 
 // Draw::paintMasks() for an ARGB32 strike: each glyph that survives the

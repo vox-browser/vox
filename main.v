@@ -7836,6 +7836,12 @@ fn (mut app BrowserApp) draw() {
 			}
 			leaf_canvas_bounds := canvas_bounds.finish(!scroll_damage.reused)
 			has_glyph_geometry := leaf_canvas_bounds.len > 0 && canvas_bounds.glyph_geometry.len > 0
+			mut frame_glyph_prefetch := voidptr(0)
+			$if macos && !cpuraster_freetype ? {
+				if has_glyph_geometry {
+					frame_glyph_prefetch = app.start_document_glyph_prefetch(canvas_bounds.glyph_geometry, page_y)
+				}
+			}
 			app.portable_background_clip_replay = PortableBackgroundClipReplay{
 				active: portable_background_clip_reuse && !app.ctx.native_rendering
 			}
@@ -8018,6 +8024,12 @@ fn (mut app BrowserApp) draw() {
 				glyph_geometry := if has_glyph_geometry && command.kind == 'draw_text' {
 					unsafe { &canvas_bounds.glyph_geometry[command_index] }
 				} else { unsafe { &RetainedGlyphReplayGeometry(nil) } }
+				$if macos && !cpuraster_freetype ? {
+					if frame_glyph_prefetch != unsafe { nil } && command.kind == 'draw_text' {
+						publish_document_glyph_prefetch(frame_glyph_prefetch)
+						frame_glyph_prefetch = unsafe { nil }
+					}
+				}
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
 					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry)
@@ -8037,6 +8049,9 @@ fn (mut app BrowserApp) draw() {
 							command_index, app.scroll_y))
 					}
 				}
+			}
+			$if macos && !cpuraster_freetype ? {
+				discard_document_glyph_prefetch(frame_glyph_prefetch)
 			}
 			command_instructions.finish()
 			gpu_instructions := processmetrics.begin_instruction_stage('gpu_frame_finalization')

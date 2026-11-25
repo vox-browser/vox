@@ -91,6 +91,24 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 			1, .src_over, [], none)
 		assert serial == parallel
 
+		mut prefetched_cache := new_glyph_cache()
+		other := CanvasGlyphRun{...run, font_size: 16}
+		expect := [
+			GlyphFramePrefetchRun{run: run, transform: transform, color: 0xff123456},
+			GlyphFramePrefetchRun{run: other, transform: transform, color: 0xff123456},
+		]
+		prefetch := start_glyph_frame_prefetch(prefetched_cache, expect)
+		assert prefetch != unsafe { nil }
+		assert prefetched_cache.strikes.len == 0
+		finish_glyph_frame_prefetch(prefetch, prefetched_cache)
+		assert prefetched_cache.strikes.len == 2
+		assert prefetched_cache.strikes.values().all(it.glyphs.len >= glyph_batch_min)
+		assert start_glyph_frame_prefetch(prefetched_cache, expect) == unsafe { nil }
+		mut prefetched := []u8{len: serial.len, init: 255}
+		assert fill_canvas_glyphs_cached(mut prefetched_cache, mut prefetched, 256, 48, 1024,
+			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
+		assert prefetched == serial
+
 		mut caller := u64(0)
 		C.pthread_threadid_np(unsafe { nil }, &caller)
 		for pipeline in [false, true] {
