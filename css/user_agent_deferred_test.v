@@ -48,3 +48,20 @@ fn test_process_lifetime_ua_declarations_outlive_the_materializing_document_aren
 	assert declaration.get_property_value('width') == '17px'
 	assert declaration.get_property_value('color') == 'rgb(11, 22, 33)'
 }
+
+fn test_worker_user_agent_syntax_retires_before_the_published_sheet_is_used() {
+	$if macos && prealloc && !vox_css_diagnostics ? {
+		if bulk_css_input_probe_diagnostics { return }
+		actual := load_user_agent_stylesheets_with_worker()
+		serial := parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
+		// The worker has already released its input. Serializing every rule
+		// also forces lazy values to read their retained source spelling.
+		assert actual.default_sheet.process_lifetime
+		assert actual.default_sheet.rules.length() == serial.rules.length()
+		for index in 0 .. serial.rules.length() {
+			rule := actual.default_sheet.rules.item(index) or { panic('worker rule') }
+			reference := serial.rules.item(index) or { panic('serial rule') }
+			assert rule.css_text() == reference.css_text()
+		}
+	}
+}

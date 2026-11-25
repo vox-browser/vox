@@ -27,22 +27,8 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	if cache_rules {
 		if entry := stylesheet_rule_cache_.lookup(text) {
 			defer { entry.release() }
-			mut parser := RuleSelectorParser{
-				document: params.document
-				mode: params.mode
-				value_context: params.value_context.clone()
-				rule_context: params.rule_context.clone()
-				declared_namespaces: params.declared_namespaces.clone()
-				is_ua_style_sheet: params.is_ua_style_sheet
-				defer_style_declarations: deferred
-				raw_rules_transient: true
-				component_input_transient: true
-			}
-			rules := CSSRuleList.create(parser.convert_rules(entry.rules))
-			media := media_list or { MediaList.create_empty() }
-			mut sheet := CSSStyleSheet.create(rules, media, location)
-			sheet.source_syntax_id_ = entry.id
-			return sheet
+			return convert_transient_stylesheet_rules(params, entry.rules, location, media_list,
+				deferred, entry.id)
 		}
 	}
 	$if prealloc {
@@ -61,17 +47,8 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		scratch.leave()
 		defer { scratch.finish() }
 		syntax_id := if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) } else { u64(0) }
-		parser.raw_rules_transient = true
-		parser.component_input_transient = true
-		parser.token_stream = ParserTokenStream{}
-		parser.value_context = params.value_context.clone()
-		parser.rule_context = params.rule_context.clone()
-		parser.declared_namespaces = params.declared_namespaces.clone()
-		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
-		media := if provided := media_list { provided } else { MediaList.create_empty() }
-		mut sheet := CSSStyleSheet.create(rules, media, location)
-		sheet.source_syntax_id_ = syntax_id
-		return sheet
+		return convert_transient_stylesheet_rules(params, raw.rules, location, media_list,
+			deferred, syntax_id)
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred
@@ -85,6 +62,28 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		return sheet
 	}
 	return parser.parse_as_css_stylesheet(location, media_list)
+}
+
+// Raw syntax can belong to a scratch arena, a retained cache or a worker.
+// Conversion owns every span that survives the input's lifetime.
+fn convert_transient_stylesheet_rules(params ParsingParams, raw_rules []Rule, location ?string,
+	media_list ?&MediaList, deferred bool, syntax_id u64) &CSSStyleSheet {
+	mut parser := RuleSelectorParser{
+		document: params.document
+		mode: params.mode
+		value_context: params.value_context.clone()
+		rule_context: params.rule_context.clone()
+		declared_namespaces: params.declared_namespaces.clone()
+		is_ua_style_sheet: params.is_ua_style_sheet
+		defer_style_declarations: deferred
+		raw_rules_transient: true
+		component_input_transient: true
+	}
+	rules := CSSRuleList.create(parser.convert_rules(raw_rules))
+	media := media_list or { MediaList.create_empty() }
+	mut sheet := CSSStyleSheet.create(rules, media, location)
+	sheet.source_syntax_id_ = syntax_id
+	return sheet
 }
 
 fn own_transient_rule_prelude(rule Rule) Rule {
