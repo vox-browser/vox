@@ -1989,3 +1989,119 @@ Malloc and 103,956,480 B across IOSurface, IOAccelerator and unmapped
 graphics allocations. The memory tool, browser, driver and 3 GiB guard
 exited 0. The guard sampled 1,097,170,944 B peak RSS. One-minute host
 load was 4.16→5.22 on 18 CPUs.
+
+## Resident allocation owners and pending style invalidations
+
+The live control was single-unit C `-prod` receipt `20261125-212936-1293ba54`,
+with executable SHA-256
+`29080a84257991cb8e599d92a2fc2b0e36c08bad7df0add03d9e78862ba04a11`.
+Both launches used fresh profiles and caches, direct HTTPS and a 1024×768
+document at scale 2. The complete patch audit checked the visible document,
+title, 133 images and the existing 15,620-byte text digest. The memory
+endpoint was the median across the last three seconds of a 12-second
+observation starting at the first successful audit.
+
+| Vox control | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Allocation tracing | 23.00 s | 702,697,336 B | 1,125,879,672 B | 52 |
+| Standard launch | 23.04 s | 662,703,968 B | 1,106,563,440 B | 54 |
+
+The temporary diagnostic checked the executing Mach-O UUID and allocator
+symbol range. It tracked V allocator block creation and frees, then
+sampled resident pages with `mincore` on the main queue. At about 35 seconds,
+526 live blocks accounted for 419,069,952 resident bytes, with 119,655
+observed creations, 119,129 retires and no dropped records. The main
+navigation document arena accounted for 294,322,176 resident bytes in
+266 blocks. The main thread's base arena accounted for 82,821,120 bytes.
+The separate `footprint` snapshot reported 702,566,264 B physical footprint
+and 425,820,160 B dirty untagged mappings. Resident pages and physical
+footprint are distinct accounting measures.
+
+Seven main document blocks totaling 15,433,728 resident bytes had grown
+while converting CSS plans to DOM invalidation rules. Another 22 blocks
+totaling 22,495,232 resident bytes had grown while constructing selector
+invalidation caches. Growth stacks classify the allocation that opened a
+block. They can include bytes subsequently used by other call paths.
+Both Vox processes, their drivers and the 3 GiB guards exited 0, with 976,224,256 B
+and 968,441,856 B peak guard RSS. One-minute host load was 5.72→5.56
+and 8.83→7.29 on 18 CPUs.
+
+`18c44dfcf` scopes CSS plan merges and DOM payload conversion to the
+native document's pending invalidation batch. It builds the rule cache
+before entering that arena. Descendant and sibling dispatch can continue
+reading the plans until the queue drains, and document closure releases any
+outstanding batch.
+
+Six staged preallocation cases passed normally and with the pending-plan
+and selector-construction arenas poisoned at retirement. The native case
+tested a lazy rule-cache rebuild, three class toggles across both descendant
+and sibling selectors, placement of queued match data outside the document
+arena, public snapshot reads after retirement, and closure with pending
+work. The other cases covered existing inert, relational and local-link
+invalidation behavior. The compile and 3 GiB test guards exited 0 with
+6,473,449,472 B, 10,502,144 B and 36,749,312 B peak RSS.
+
+### Published build and live memory
+
+Single-unit C `-prod` receipt `20261125-214923-2508873f` sealed
+`18c44dfcf`. The executable SHA-256 was
+`80a967c9d87ada4663e9f3e2f874eb06812489f7c270a3dc51bbb6f3d58ae430`.
+The production compile and headless smoke guards exited 0 at peak RSS of
+7,706,673,152 B and 89,473,024 B. The AVIF, adblock helper and adblock
+asset hashes matched the control runs.
+
+| Vox candidate | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Standard launch | 23.05 s | 664,817,552 B | 1,121,473,072 B | 54 |
+| Allocation tracing | 23.03 s | 660,213,600 B | 1,117,819,464 B | 52 |
+
+The candidate trace observed 111,076 block creations, 110,596 retires
+and zero dropped records. The 480 live blocks accounted for
+391,315,456 resident bytes. Main document residency was 251,379,712 B
+in 232 blocks. The new pending-plan arena had zero used bytes and
+16,384 resident bytes. Zero live block growth stacks included the plan
+conversion. The separate selector cache construction still appeared in
+22 blocks totaling 22,495,232 resident bytes. The physical footprint
+snapshot measured 660,082,528 B overall and 398,098,432 B in dirty untagged
+mappings. Both fresh processes, their drivers and the 3 GiB guard
+exited 0, with 981,712,896 B peak guard RSS. One-minute host load was
+5.36→4.80 and 4.80→5.21.
+
+The traces confirm the allocation lifetime change on the live page.
+The standard candidate settled 2,113,584 B above its standard control.
+Other shared changes and normal variation across live loads limit
+attribution of whole-process differences. The last valid Brave
+comparison measured 354,492,360 B. The current macOS session was
+screen-locked through the live checks, so a fresh visible Brave
+comparison remains pending.
+
+### Live precise scrolling and reference pixels
+
+Two fresh processes per build passed the full patch audit. The guarded
+`tools/measure_precise_scroll.py` runs used 720 native precise wheel events
+at nominal 60 Hz, delta 16 and reversal at event 360. Input began 23
+seconds after the matching title. The viewport was 1024×768 at scale 2
+with 112 pixels of chrome, automatic JavaScript, fresh profiles and
+HTTP caches, and direct HTTPS. The endpoint was completed native frame
+installation after view paint.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 21.25 | 47.11 / 72.64 / 129.54 ms | 255/278 | 720 / 282 | 54.95 Hz | 57.99 / 0.48 ms |
+| Control 2 | 22.64 | 44.37 / 67.87 / 122.69 ms | 278/297 | 720 / 302 | 54.81 Hz | 55.08 / 0.16 ms |
+| Candidate 1 | 23.63 | 42.12 / 66.00 / 118.62 ms | 284/310 | 720 / 313 | 54.81 Hz | 54.72 / 8.92 ms |
+| Candidate 2 | 22.67 | 44.65 / 69.42 / 115.84 ms | 271/294 | 720 / 299 | 55.44 Hz | 56.18 / 6.99 ms |
+
+The input periods were 13.084, 13.119, 13.119 and 12.969 seconds. The
+document reached 12,064, 12,061, 12,057.5 and 12,062 CSS pixels, then
+returned to the top. All browsers, drivers and 3 GiB guards exited 0.
+The control and candidate guards sampled 1,306,214,400 B and
+1,354,678,272 B peak RSS. One-minute host load on 18 CPUs was
+6.77→6.83, 6.83→5.99, 5.21→3.50 and 3.46→4.73. The two cohorts ran in
+build order, with lower host load during the candidate runs. Both
+cohorts missed most 60 Hz deadlines.
+
+At 800×600, `nth-child-of-class` and `nth-child-of-has` matched their
+upstream pixel references for both builds. Each case produced identical
+actual PNG bytes across builds. Both comparison and guard runs exited 0
+with 163,627,008 B and 177,291,264 B peak guard RSS.
