@@ -4287,3 +4287,81 @@ miss. Diagnostics verified the URL, complete ready state, viewport and
 all 30 ordered story IDs. Executable, helper, library, archive and harness
 hashes stayed pinned. All browser, driver and guard exits were zero. The
 3 GiB guard observed peak RSS of 389,660,672 bytes.
+
+### Submit the SVG path tail during trigger collection
+
+Commit `7a48fb4bb` scans up to the last 512 commands to locate the final
+possible source of retained SVG background jobs in the raster viewport.
+It submits the tail after collecting the jobs through that boundary. The
+browser thread continues collecting later triggers while the workers write
+to their fixed job slots. The join and ordered merge precede tile selection.
+`VOX_LATE_MSAA_PATH_TAIL=1` delays submission until the end of trigger
+collection for the same-executable control. Both modes use the same worker
+ranges.
+
+All 23 focused MSAA tests passed under ThreadSanitizer and arena poisoning
+with early submission, late submission, synchronous tail processing,
+synchronous batching and raster workers disabled. The expanded test checks
+the scan limit, an offscreen retained background after the boundary, and an
+ordinary trigger collected after submission. The output matches the serial
+trigger list across those cases and reuse of a capacity-sized batch.
+
+Production receipt `20261125-194033-81e62f42` verified `7a48fb4bb` and
+passed startup smoke in single-C-unit V `-prod` mode. Both settings used
+the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `d7b1c9c64ba50cca838578c515f601ee4d2f9ba06287bfc8c37ad380a31c0ab7` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both modes prepared all 54 retained SVG path jobs off-thread. The early
+schedule submitted the final 22 with 387 document commands left to scan.
+The tail was ready at the join in both early diagnostic launches. Both
+late launches still waited for it. The raster grids, selected tiles and
+reported triggers matched in all four diagnostics.
+
+Separate counter captures recorded one tile setup, one frame setup and
+three native raster replay scopes per launch. The inclusive browser-thread
+tile setup scope used 0.6% and 1.5% fewer instructions with early submission.
+
+| Scope | Pair 1 late | Pair 1 early | Pair 2 late | Pair 2 early |
+| --- | ---: | ---: | ---: | ---: |
+| Raster tile setup | 4,492,183 | 4,463,867 | 4,486,648 | 4,418,209 |
+| Raster frame setup | 5,320,478 | 5,310,419 | 5,304,980 | 5,241,989 |
+| Native raster replay | 269,808,694 | 269,484,951 | 270,581,769 | 268,934,941 |
+
+Two unprofiled seven-pair cohorts alternated modes, reversing which mode
+went first. The measurement spans a fresh launch through completed
+document PNG at 1024×768 CSS pixels and 2× scale. The browser used
+JavaScriptCore, fresh private profiles and HTTP caches, retained OS
+filesystem caches, `tr.athing` readiness and a 60 ms replay delay per
+logo response.
+
+| Pair | Late, ms | Early, ms | Reversed late, ms | Reversed early, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 353.957 | 347.433 | 331.222 | 351.633 |
+| 2 | 341.336 | 352.246 | 325.352 | 339.280 |
+| 3 | 337.691 | 359.462 | 351.466 | 324.407 |
+| 4 | 328.630 | 324.729 | 334.209 | 319.747 |
+| 5 | 356.752 | 339.782 | 352.023 | 299.397 |
+| 6 | 382.628 | 389.668 | 309.544 | 303.882 |
+| 7 | 361.303 | 412.106 | 319.939 | 311.756 |
+| Median | 353.957 | 352.246 | 331.222 | 319.747 |
+
+Median paired changes were +7.041 ms and −8.183 ms, with three and
+five early wins. Sampled browser-thread CPU medians went from 202.890
+to 202.115 ms and from 195.735 to 187.788 ms. One-minute host load ranged
+from 6.92 to 7.16 and 6.88 to 7.23 on 18 CPUs. The launch-to-PNG timing
+result remains mixed.
+
+All 36 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced the same eight request and response records, including the
+favicon miss. The worker diagnostics verified the URL, complete ready
+state, viewport and all 30 ordered story IDs. The executable, helper,
+library, archive and harness inputs stayed pinned. All browser, driver
+and guard exits were zero. Peak RSS was 400,490,496 bytes under the
+3 GiB guard.
