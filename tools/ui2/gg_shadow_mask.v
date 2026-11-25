@@ -2,33 +2,44 @@ module canvas
 
 import sokol.gfx
 
-// Analytic coverage remains floating-point until the paint and destination
-// blend. Resolving it to A8 first would add a visible quantization step.
-pub fn (mut s GpuSurface) draw_float_alpha_mask(mask []f32, width int, height int, paint Paint) ! {
-	if width <= 0 || height <= 0 || width > 4096 || height > 4096 || width * height > 4 * 1024 * 1024 || mask.len != width * height {
-		return error('gg.canvas: invalid floating alpha mask')
+$if macos {
+	// Metal samples the R32Float coverage as (r, r, r, r). Sokol keeps the
+	// borrowed texture alive through the queued draw and surface readback.
+	pub fn (mut s GpuSurface) draw_float_alpha_mask_texture(texture voidptr, width int, height int, paint Paint) ! {
+		if texture == unsafe { nil } || width <= 0 || height <= 0 || width > 4096
+			|| height > 4096 || width * height > 4 * 1024 * 1024 {
+			return error('gg.canvas: invalid floating alpha mask texture')
+		}
+		if s.layer != unsafe { nil } {
+			mut top := s.layer
+			top.draw_float_alpha_mask_texture(texture, width, height, paint)!
+			return
+		}
+		mut desc := gfx.ImageDesc{
+			width:        width
+			height:       height
+			pixel_format: .r32f
+		}
+		desc.mtl_textures[0] = texture
+		image := gfx.make_image(&desc)
+		if gfx.query_image_state(image) != .valid {
+			gfx.destroy_image(image)
+			return error('gg.canvas: failed to wrap floating alpha mask texture')
+		}
+		s.retired << &GpuSurface{ ctx: s.ctx, color: image }
+		s.draw_shape(ShapeGeometry{
+			kind: .rect
+			rect: Rect.ltrb(0, 0, f32(width), f32(height))
+		}, Paint{
+			anti_alias:  paint.anti_alias
+			layer_image: LayerImage{
+				image:          image
+				texture_width:  width
+				texture_height: height
+				mask_color:     paint.color.premul()
+			}
+		})!
 	}
-	if s.layer != unsafe { nil } {
-		mut top := s.layer
-		top.draw_float_alpha_mask(mask, width, height, paint)!
-		return
-	}
-	mut rgba := []f32{len: mask.len * 4}
-	for i, a in mask {
-		for c in 0 .. 4 { rgba[i * 4 + c] = a }
-	}
-	mut desc := gfx.ImageDesc{ width: width, height: height, pixel_format: .rgba32f }
-	desc.data.subimage[0][0] = gfx.Range{ ptr: rgba.data, size: u32(rgba.len * int(sizeof(f32))) }
-	image := gfx.make_image(&desc)
-	if gfx.query_image_state(image) != .valid {
-		gfx.destroy_image(image)
-		return error('gg.canvas: float mask upload failed')
-	}
-	s.retired << &GpuSurface{ ctx: s.ctx, color: image }
-	s.draw_shape(ShapeGeometry{ kind: .rect, rect: Rect.ltrb(0, 0, f32(width), f32(height)) }, Paint{
-		anti_alias:  paint.anti_alias
-		layer_image: LayerImage{ image: image, texture_width: width, texture_height: height, mask_color: paint.color.premul() }
-	})!
 }
 
 // draw_alpha_mask shades an A8 coverage mask with the paint's floating-point

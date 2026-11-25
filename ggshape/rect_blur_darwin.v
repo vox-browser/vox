@@ -6,7 +6,9 @@ import math
 #include "@DIR/rect_blur_darwin.m"
 
 fn C.erff(f32) f32
-fn C.vox_rect_blur_coverage(&u8, i32, &f32, i32, i32, &f32, f32, i32, &f32) i32
+fn C.sg_mtl_device() voidptr
+fn C.vox_rect_blur_texture(voidptr, &u8, i32, i32, i32, &f32, f32, i32, &f32) voidptr
+fn C.vox_rect_blur_release_texture(voidptr)
 
 fn rectangular_shadow_supported(shape &C.VoxGraphiteShape) bool {
 	return shape.fill == 10 && affine_shadow_supported(shape)
@@ -46,13 +48,16 @@ fn draw_rectangular_shadow(mut target canvas.GpuSurface, shape &C.VoxGraphiteSha
 		(shape.rect[1] + shape.rect[3]) * m[4] + m[5] - pad]!
 	fast := inset[0] <= inset[2] && inset[1] <= inset[3]
 	table := rectangle_integral_table(6 * sigma)
-	mut coverage := []f32{len: region.width * region.height}
 	origin := [f32(region.x), f32(region.y)]!
-	if C.vox_rect_blur_coverage(table.data, i32(table.len), coverage.data, i32(region.width),
-		i32(region.height), &inset[0], f32(1) / (f32(6) * sigma), i32(fast), &origin[0]) == 0 {
+	coverage := C.vox_rect_blur_texture(C.sg_mtl_device(), table.data, i32(table.len),
+		i32(region.width), i32(region.height), &inset[0], f32(1) / (f32(6) * sigma), i32(fast), &origin[0])
+	if coverage == unsafe { nil } {
 		return error('Rectangular blur GPU pass failed')
+	}
+	defer {
+		C.vox_rect_blur_release_texture(coverage)
 	}
 	target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
 	target.set_matrix(canvas.Matrix.translate(origin[0], origin[1]))
-	target.draw_float_alpha_mask(coverage, region.width, region.height, paint)!
+	target.draw_float_alpha_mask_texture(coverage, region.width, region.height, paint)!
 }

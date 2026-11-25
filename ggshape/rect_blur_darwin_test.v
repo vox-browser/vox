@@ -82,3 +82,29 @@ fn test_rectangular_shadow_accepts_transfer_metadata_and_keeps_transform_fallbac
 	shape.rect[4] = 1
 	assert !rectangular_shadow_supported(&shape)
 }
+
+fn test_rectangular_shadow_coverage_modulates_all_premultiplied_channels() {
+	width, height := 63, 35
+	for samples in [0, 1] {
+		mut pixels := []u8{len: width * height * 4}
+		shape := C.VoxGraphiteShape{
+			matrix:          [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!
+			rect:            [f32(10), 8, 40, 20, 0, 0, 0, 0, 0, 0, 0, 0]!
+			fill:            10
+			thickness:       4
+			anti_alias:      1
+			force_msaa:      samples
+			has_float_color: 1
+			float_color:     [f32(1), .5, .25, .8]!
+		}
+		assert draw(pixels.data, i32(width), i32(height), i32(width * 4), 0, &shape) == 1
+		center := (16 * width + 30) * 4
+		assert pixels[center..center + 4] == [u8(51), 102, 204, 204]
+		// A pixel on the blurred edge has fractional coverage in every channel.
+		edge := (16 * width + 9) * 4
+		assert pixels[edge] > 0 && pixels[edge] < pixels[edge + 1]
+		assert pixels[edge + 1] < pixels[edge + 2] && pixels[edge + 2] < 204
+		assert pixels[edge + 2] == pixels[edge + 3]
+		assert pixels[0..4] == [u8(0), 0, 0, 0]
+	}
+}
