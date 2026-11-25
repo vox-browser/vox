@@ -1381,3 +1381,149 @@ guard observed 1,084,063,744 B peak RSS. Host load was 4.93→4.68 on 18 CPUs.
 A preliminary diagnostic on the previous executable coincided with shared
 bundle publication. Its browser exited 0 and its driver and guard exited 1
 after the identity check. The table and breakdown use the stable launches.
+
+### Resident pages in the allocator's live blocks
+
+A fresh diagnostic launch used the published `cdecff67` executable, a
+private profile and cache, and the same live HTTPS document and viewport.
+It passed the complete patch audit. The injected probe selected the main
+Mach-O executable and matched the block-header allocation caller against
+the `vmemory_block_new_sized` symbol range. It tracked the allocator's
+headers through reuse and used `mincore` to check mapped pages in each
+still-live block. The snapshot completed at 37.44 seconds.
+
+| Blocks | Live blocks | Bytes used by allocation cursors | Resident bytes |
+| --- | ---: | ---: | ---: |
+| Main document arena | 264 | 297,757,246 B | 292,405,248 B |
+| Unscoped arenas | 163 | 98,877,910 B | 98,713,600 B |
+| All measured allocator blocks | 513 | 411,712,829 B | 414,334,976 B |
+
+The probe recorded 114,046 header creations, 113,533 retirements and zero
+dropped or incomplete records. All 513 page-residency checks succeeded.
+Allocation cursors and resident pages measure different quantities. Retired
+headers and system allocator mappings are outside these totals. The
+browser, driver and 3 GiB guard exited 0. The guard sampled 1,025,097,728 B
+peak RSS, and host load on 18 CPUs was 5.71→5.13.
+
+Two document blocks grew while cloning fetched script text. Together they
+held 6,275,072 B of resident pages at the snapshot. This is the size of
+the blocks reached by those growth stacks, including later allocations.
+Two other growth stacks started in CPU pixel arrays for background JPEG and
+stb decoding. Their blocks held 30.91 MiB of resident pages. The streamed
+Fetch data path accounted for a growth stack with 13.67 MiB of resident
+pages in its block. The browser also retained computed style projections,
+invalidation queues and committed layout data in the document arena.
+
+### Reuse of external script and stream response bytes
+
+`d03cf6d29` shares immutable external script text when the browser has
+already given its response a process-lifetime owner. Other responses
+still give the delayed parser task a document-owned copy. Nine parser
+request tests passed with the preallocated C backend. The new fixture
+verified that both preload and worker-result paths executed directly from
+the original 983,040 B buffer and resumed the parser with correct events.
+
+`c2f4112af` removes a duplicate copy at the curl callback boundary and
+hands each already-owned delivery buffer directly to the byte stream.
+Seven Fetch tests passed, including readback of an owned chunk by
+identity after another network delivery. All six native curl transport
+tests passed using the existing `VOX_DISABLE_CURL_PIPEWAIT=1` control.
+With the default setting, all 64 response bodies and events matched
+but the concurrency fixture observed one concurrent connection and
+failed its lower-bound assertion. A control that restored both copies
+in the generated test code reproduced the same one-connection result
+with all 64 bodies and completion events delivered.
+
+A focused preallocation fixture delivered sixteen 256 KiB chunks and
+verified every byte at EOF. In the same diagnostic executable, restoring
+the copy in the stream enqueue path grew the allocation cursors by
+13,112,319 B. Passing the owned chunk through grew them by 8,917,583 B,
+a reduction of 4,194,736 B. The fixture starts at the Fetch receiver.
+The compile and 3 GiB runtime guards exited 0.
+
+### Live RAM before response-copy changes
+
+A fresh Vox–Brave pair used the same live full-patch audit and process
+footprint method as above. Vox was single-unit C `-prod` receipt
+`20261125-193430-ae774619`, executable SHA-256
+`b0238ff5933a7ae9fc37bc03c0c4ea3a6f45e08bc0a86f56c0bae3477f9cae62`.
+Brave reported Chromium `158.0.8127.42`. Both included the complete
+15,620-byte patch text and 133 image elements at the 23-second
+audit. Final process identities stayed fixed.
+
+| Browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Vox | 767,414,184 B | 1,176,440,744 B | 53 |
+| Brave | 351,707,224 B | 870,326,336 B | 54 |
+
+Both browsers, driver and 3 GiB guard exited 0. The guard sampled
+959,610,880 B peak RSS. One-minute host load was 5.07→6.15 and 6.15→7.23.
+Vox used 2.18 times Brave's settled footprint.
+
+### Live RAM on the response-copy build
+
+Single-unit C `-prod` receipt `20261125-194705-28f9e7fe` installed
+executable SHA-256
+`a1daa1e8050bedd8657e8e056d2b2c70e64b7222a41a92291d37c9f45e4caade`.
+The sealed C contains both source ownership changes. The production
+compile and headless smoke guards exited 0 and sampled 7,673,102,336 B
+and 101,482,496 B peak RSS. All nine SVG source-switch and paint-server
+reftests were pixel-exact at 800×600. The capture and 3 GiB guard exited 0
+with pinned executable, resource and fixture hashes.
+
+The next pair ran Brave first with the same audit and memory endpoint.
+Brave and Vox confirmed the complete patch at 23.06 and 23.01 seconds,
+respectively. Process identities stayed fixed in the final windows.
+
+| Browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Brave | 344,874,856 B | 848,256,872 B | 52 |
+| Vox | 675,975,056 B | 1,135,071,912 B | 54 |
+
+The browsers, driver and 3 GiB guard exited 0. The guard sampled
+1,000,472,576 B peak RSS. One-minute host load was 4.82→5.80
+and 5.80→6.60 on 18 CPUs. The Vox result was 91,439,128 B lower
+than the earlier build and 1.96 times the Brave observation.
+Both live pairs include variation in the network, launch order,
+and shared production changes.
+
+An instrumented launch of the same executable recorded 22 script fetches
+totaling 5,740,554 B. The allocation probe found no live block growth
+stack through external script completion. A growth trace identifies
+the allocation that expanded a block and does not count every copy.
+The diagnostic read 594 live blocks at 36.89 seconds after 129,544
+creations and 128,950 retirements, with zero dropped or incomplete
+records. The main document arena had 353,878,016 B of resident pages,
+and unscoped arenas had 98,238,464 B. The live preallocation blocks
+held 491,552,768 B altogether.
+
+macOS recorded a 787,681,216 B footprint after the instrumented
+snapshot, including 498,335,744 B of dirty untagged memory. Document
+blocks that grew while reserving dense map entries accounted for
+47,284,224 B of resident pages. Their stacks led mainly through
+independent formatting context layout, carried committed layout
+records and compatibility box indexing. The browser, driver, footprint
+tool and 3 GiB guard exited 0. The guard sampled 1,117,863,936 B peak RSS.
+This diagnostic's higher footprint illustrates the run-to-run differences
+in retained arenas and includes probe and request-log activity.
+
+### Native scrolling on the response-copy build
+
+Two fresh launches of the same executable used direct HTTPS, private
+profiles and caches, retained OS caches, automatic scripting, and a
+1024×768 document at backing scale 2. Both audits confirmed the
+complete patch. The driver supplied 720 precise wheel events at
+nominal 60 Hz after a 23-second settle from the matching title, using
+delta 16 and reversing at 360 events.
+
+| Trial | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 21.49 | 47.31 / 71.23 / 123.28 ms | 257/278 | 720 / 316 | 55.59 Hz | 67.23 / 9.80 ms |
+| 2 | 20.25 | 49.08 / 82.43 / 124.36 ms | 243/269 | 720 / 305 | 54.12 Hz | 64.10 / 11.10 ms |
+
+Throughput covers the 12.934- and 13.285-second input windows. The
+endpoint records frame installation after native view paint. The
+document reached 12,031 and 12,063 CSS pixels and returned to the top in
+both runs. One-minute host load on 18 CPUs was 5.19→4.27 and 4.27→5.30.
+The browsers, drivers and 3 GiB guard exited 0. The guard peaked at
+1,379,106,816 B RSS. Both runs remained well below the 60 Hz target.
