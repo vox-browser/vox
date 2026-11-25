@@ -71,7 +71,7 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		mut entry := CachedGlyphStrike{}
 		rounding := SkAffine{ ...device, tx: device.tx + glyph_subpixel_round, ty: device.ty + 0.5 }
 		entry.prepare_glyph_masks(mut strike, mut lazy, run, []GlyphRoute{len: run.glyphs.len},
-			0, rounding)
+			0, rounding, false)
 		assert entry.glyphs.len >= glyph_batch_min
 		mut bytes := 0
 		for key, parallel in entry.glyphs {
@@ -246,5 +246,52 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		assert unread.calls == 0
 		assert culled.all(it == 0)
 		assert empty_cache.strikes.values().all(it.glyphs.len == 0)
+	}
+}
+
+fn test_later_glyph_mask_windows_use_workers_and_match_serial_pixels() {
+	$if !cpuraster_freetype ? {
+		if runtime.nr_cpus() < 2 || serial_glyph_masks || C.vox_scan_workers_disabled() { return }
+		count := glyph_batch_lookahead + 25
+		run := CanvasGlyphRun{
+			font_path: '/System/Library/Fonts/Supplemental/Verdana Bold.ttf'
+			font_size: 16
+			glyphs: []u16{len: count, init: if index < glyph_batch_lookahead { u16(43) } else { u16(44 + index - glyph_batch_lookahead) }}
+			positions: []f32{len: 2 * count, init: if index % 2 == 0 { f32(8 + 4 * (index / 2)) } else { f32(25) }}
+			retained: true
+			chromium_coverage: true
+			baseline_snap: true
+		}
+		mut strike := glyph_strike_template(run.font_size, SkAffine{}, 0) or { panic('invalid strike') }
+		defer { strike.release() }
+		strike.snap_y = true
+		mut lazy := LazyGlyphFace{path: run.font_path}
+		defer { lazy.release() }
+		mut entry := CachedGlyphStrike{}
+		routes := []GlyphRoute{len: count}
+		rounding := SkAffine{tx: glyph_subpixel_round, ty: 0.5}
+		first := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, 0, rounding, false)
+		assert entry.glyphs.len == 0
+		if single_glyph_mask_batch {
+			assert first == count
+		} else {
+			assert first == glyph_batch_lookahead
+			second := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, first, rounding, true)
+			assert second == first + glyph_batch_max
+			assert entry.glyphs.len == glyph_batch_max
+			assert entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, second, rounding, true) == count
+			assert entry.glyphs.len == 25
+		}
+
+		mut parallel := []u8{len: 320 * 48 * 4, init: 255}
+		mut serial := parallel.clone()
+		transform := [f32(1), 0, 0, 1, 0, 0]!
+		assert fill_canvas_glyphs(mut parallel, 320, 48, 1280, 2, run, transform, 0xff123456,
+			none, 1, .src_over, [], none)
+		os.setenv('VOX_SERIAL_CPU_RASTER', '1', true)
+		defer { os.unsetenv('VOX_SERIAL_CPU_RASTER') }
+		assert fill_canvas_glyphs(mut serial, 320, 48, 1280, 2, run, transform, 0xff123456,
+			none, 1, .src_over, [], none)
+		assert parallel == serial
 	}
 }

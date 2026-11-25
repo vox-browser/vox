@@ -14,6 +14,7 @@ $if !cpuraster_freetype ? {
 	const glyph_batch_lookahead = 48
 	const glyph_batch_max_context_pixels = 64 * 1024
 	const serial_glyph_masks = os.getenv('VOX_SERIAL_GLYPH_MASKS') == '1'
+	const single_glyph_mask_batch = os.getenv('VOX_SINGLE_GLYPH_MASK_BATCH') == '1'
 	const glyph_batch_diagnostics = os.getenv('VOX_GLYPH_BATCH_DIAGNOSTICS') == '1'
 
 	struct GlyphImageJob {
@@ -31,13 +32,20 @@ $if !cpuraster_freetype ? {
 		strike      &GlyphStrike
 		diagnostics bool
 	mut:
-		jobs []GlyphImageJob
+		jobs     []GlyphImageJob
+		followup bool
+	}
+
+	struct GlyphMaskWindow {
+	mut:
+		next int
 	}
 
 	@[heap]
 	struct PendingGlyphBackdropBatch {
 		entry    &CachedGlyphStrike
 		pipeline bool
+		next     int
 	mut:
 		batch         GlyphImageBatch
 		ticket        voidptr
@@ -104,14 +112,17 @@ $if !cpuraster_freetype ? {
 
 	fn (entry &CachedGlyphStrike) glyph_image_batch(mut strike GlyphStrike,
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, start int,
-		rounding SkAffine) ?GlyphImageBatch {
+		rounding SkAffine, mut window GlyphMaskWindow) ?GlyphImageBatch {
+		window.next = run.glyphs.len
 		if entry.empty || run.glyphs.len - start < glyph_batch_min || serial_glyph_masks
 			|| C.vox_scan_workers_disabled() {
 			return none
 		}
 		mut keys := [glyph_batch_max]u32{}
 		mut count := 0
+		mut next := start
 		for index in start .. math.min(run.glyphs.len, start + glyph_batch_lookahead) {
+			next = index + 1
 			if routes[index].kind != .mask { continue }
 			key := glyph_run_mask_key(run, &strike, rounding, index)
 			if key in entry.glyphs || key in keys[..count] { continue }
@@ -119,7 +130,10 @@ $if !cpuraster_freetype ? {
 			count++
 			if count == keys.len { break }
 		}
-		if count < glyph_batch_min || runtime.nr_cpus() < 2 || !strike.ensure_font(mut lazy) {
+		if !single_glyph_mask_batch { window.next = next }
+		if count < glyph_batch_min { return none }
+		if runtime.nr_cpus() < 2 || !strike.ensure_font(mut lazy) {
+			window.next = run.glyphs.len
 			return none
 		}
 		return GlyphImageBatch{
@@ -141,7 +155,7 @@ $if !cpuraster_freetype ? {
 			for job in batch.jobs {
 				if job.thread != 0 && job.thread !in threads { threads << job.thread }
 			}
-			eprintln('VOX_GLYPH_MASK_BATCH jobs=${batch.jobs.len} threads=${threads.len}')
+			eprintln('VOX_GLYPH_MASK_BATCH jobs=${batch.jobs.len} threads=${threads.len} followup=${batch.followup}')
 		}
 	}
 
@@ -161,12 +175,16 @@ $if !cpuraster_freetype ? {
 
 	fn (mut entry CachedGlyphStrike) prepare_glyph_masks(mut strike GlyphStrike,
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, start int,
-		rounding SkAffine) {
-		mut batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, start, rounding) or { return }
+		rounding SkAffine, followup bool) int {
+		mut window := GlyphMaskWindow{}
+		mut batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, start, rounding,
+			mut window) or { return window.next }
+		batch.followup = followup
 		// Give each lane at least two keys to amortize its dispatch.
 		lanes := math.min(batch.jobs.len / 2, math.min(runtime.nr_cpus(), int(C.VOX_SCAN_WORKERS_MAX)))
 		C.vox_scan_workers_run(&batch, i32(batch.jobs.len), i32(lanes), draw_glyph_image_jobs)
 		entry.publish_glyph_image_batch(&batch)
+		return window.next
 	}
 
 	fn (mut entry CachedGlyphStrike) start_glyph_backdrop_batch(mut strike GlyphStrike,
@@ -177,12 +195,14 @@ $if !cpuraster_freetype ? {
 		if routes[0].kind != .mask || glyph_run_mask_key(run, &strike, rounding, 0) in entry.glyphs {
 			return unsafe { nil }
 		}
-		batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, 0, rounding) or {
+		mut window := GlyphMaskWindow{}
+		batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, 0, rounding, mut window) or {
 			return unsafe { nil }
 		}
 		mut pending := &PendingGlyphBackdropBatch{
 			entry: &entry
 			pipeline: pipeline
+			next: window.next
 			batch: batch
 		}
 		ticket, lanes := start_background_raster_ranges(&pending.batch, batch.jobs.len, batch.jobs.len / 2,
@@ -203,8 +223,8 @@ $if !cpuraster_freetype ? {
 		return loaded
 	}
 
-	fn finish_glyph_backdrop_batch(context voidptr, publish bool) {
-		if context == unsafe { nil } { return }
+	fn finish_glyph_backdrop_batch(context voidptr, publish bool) int {
+		if context == unsafe { nil } { return 0 }
 		pending := unsafe { &PendingGlyphBackdropBatch(context) }
 		batch := &pending.batch
 		join_started := if batch.diagnostics { time.sys_mono_now() } else { u64(0) }
@@ -222,14 +242,15 @@ $if !cpuraster_freetype ? {
 			setup_overlap := batch.jobs.count(it.rendered > pending.owner_started && it.started < join_started)
 			eprintln('VOX_GLYPH_BACKDROP_BATCH jobs=${batch.jobs.len} lanes=${pending.lanes} published=${publish} ready_at_join=${ready} overlap=${overlap} owner_overlap=${setup_overlap} pipeline=${pending.pipeline}')
 		}
+		return pending.next
 	}
 
 	fn (mut entry CachedGlyphStrike) prepare_glyph_masks_over_backdrop(mut strike GlyphStrike,
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, rounding SkAffine,
-		backdrop CanvasGlyphBackdrop) (bool, bool) {
+		backdrop CanvasGlyphBackdrop) (int, bool) {
 		pending := entry.start_glyph_backdrop_batch(mut strike, mut lazy, run, routes, rounding, false)
 		loaded := read_pending_glyph_backdrop(pending, backdrop)
-		finish_glyph_backdrop_batch(pending, loaded)
-		return pending != unsafe { nil }, loaded
+		next := finish_glyph_backdrop_batch(pending, loaded)
+		return next, loaded
 	}
 }

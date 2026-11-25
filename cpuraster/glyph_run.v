@@ -268,7 +268,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		return true
 	}
 	mut prepared_entry := unsafe { &CachedGlyphStrike(nil) }
-	mut prepared_masks := false
+	mut next_mask_batch := 0
 	mut pending_masks := voidptr(0)
 	$if macos && !cpuraster_freetype ? {
 		if has_backdrop && backdrop.pipeline_masks && run.retained && !strike.color && !draw_as_paths
@@ -277,7 +277,6 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 				&strike, smooth_luminance, luminance)
 			pending_masks = prepared_entry.start_glyph_backdrop_batch(mut strike, mut lazy, run,
 				routes, rounding, true)
-			prepared_masks = pending_masks != unsafe { nil }
 		}
 	}
 	defer {
@@ -317,7 +316,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 				&& (strike.font != unsafe { nil } || strike.deferred) {
 				prepared_entry = cached_canvas_run_strike(cache, face_key, run, position_matrix,
 					&strike, smooth_luminance, luminance)
-				prepared_masks, loaded = prepared_entry.prepare_glyph_masks_over_backdrop(mut strike,
+				next_mask_batch, loaded = prepared_entry.prepare_glyph_masks_over_backdrop(mut strike,
 					mut lazy, run, routes, rounding, backdrop)
 			} else {
 				loaded = backdrop.read(backdrop.context)
@@ -384,11 +383,10 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	$if macos && !cpuraster_freetype ? {
 		if pending_masks != unsafe { nil } {
-			finish_glyph_backdrop_batch(pending_masks, true)
+			next_mask_batch = finish_glyph_backdrop_batch(pending_masks, true)
 			pending_masks = unsafe { nil }
 		}
 	}
-	mut prepare_masks := $if macos && !cpuraster_freetype ? { run.retained && !prepared_masks } $else { false }
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue
@@ -408,10 +406,11 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		if known := entry.glyphs[packed_glyph_key(id, sub_x, sub_y)] {
 			glyph = known
 		} else {
-			if prepare_masks {
-				prepare_masks = false
-				$if macos && !cpuraster_freetype ? {
-					entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, i, rounding)
+			$if macos && !cpuraster_freetype ? {
+				if run.retained && i >= next_mask_batch {
+					// Resume at the first miss beyond the last bounded scan.
+					next_mask_batch = entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, i,
+						rounding, next_mask_batch > 0)
 				}
 			}
 			glyph = entry.glyph(mut strike, mut lazy, id, sub_x, sub_y) or { return true }
