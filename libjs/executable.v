@@ -69,7 +69,7 @@ pub mut:
 	local_index_base           u32
 	// Sorted by start_offset with exclusive end offsets.
 	exception_handlers []ExceptionHandlers
-	// Sorted by bytecode_offset.
+	// Source location changes, sorted by bytecode_offset.
 	source_map      []SourceMapEntry
 	bytecode_length u32
 	source_code     ?&SourceCode

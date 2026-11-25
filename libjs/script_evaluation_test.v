@@ -162,8 +162,36 @@ fn test_compilation_caches_executable_and_preserves_utf16_and_source_locations()
 	second := script.compile(mut vm)!
 	assert first == second
 	assert first.source_code?.code == utf16_string(script.parsed.source_text)
-	assert first.source_map[first.source_map.len - 2].source_range.start.line == 2
+	assert first.source_range_at(first.bytecode_length - 2)?.start.line == 2
 	assert vm.run(mut script)!.number == 42
 	mut joined := Script.parse('"\\ud800" + "\\udc00";', vm.realm(), 'utf16.js', unsafe { nil })!
 	assert vm.run(mut joined)!.as_string().utf16.data == [u16(0xd800), 0xdc00]
+}
+
+fn test_bytecode_source_map_preserves_positions_across_repeated_emits() {
+	source := SourceCode.create(utf16_string('source-map.js'), utf16_string(''))
+	start := Position{line: 2, column: 3, offset: 4}
+	mut generator := BytecodeGenerator{
+		executable: &Executable{source_code: source}
+		starting_line: 7
+		range: SourceRange{start: start}
+	}
+	generator.emit(Instruction{op: .nop})
+	generator.emit(Instruction{op: .nop})
+	generator.range.start.column++
+	generator.emit(Instruction{op: .nop})
+	generator.range.start.offset++
+	generator.emit(Instruction{op: .nop})
+	generator.range.start = start
+	generator.emit(Instruction{op: .nop})
+	mut executable := generator.executable
+	executable.bytecode_length = 5
+	assert executable.source_map.map(it.bytecode_offset) == [u32(0), 2, 3, 4]
+	for offset, expected in [Position{8, 3, 4}, Position{8, 3, 4}, Position{8, 4, 4},
+		Position{8, 4, 5}, Position{8, 3, 4}] {
+		range := executable.source_range_at(u32(offset))?
+		assert range.start == expected
+		assert voidptr(range.code?) == voidptr(source)
+	}
+	assert executable.source_range_at(5) == none
 }

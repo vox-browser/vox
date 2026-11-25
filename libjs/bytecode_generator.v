@@ -54,11 +54,16 @@ fn (mut generator BytecodeGenerator) check_compile_stack() ! {
 	}
 }
 
+@[direct_array_access]
 fn (mut generator BytecodeGenerator) emit(instruction Instruction) u32 {
 	index := u32(generator.executable.instructions.len)
 	mut start := generator.range.start
 	if start.line > 0 { start.line += generator.starting_line - 1 }
 	generator.executable.instructions << instruction
+	last := generator.executable.source_map.len - 1
+	if last >= 0 && generator.executable.source_map[last].source_range.start == start {
+		return index
+	}
 	generator.executable.source_map << SourceMapEntry{
 		bytecode_offset: index
 		source_range:    SourceCodeRange{
