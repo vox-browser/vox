@@ -858,6 +858,11 @@ fn (mut l Lexer) consume_regex_literal() TokenType {
 
 // === Main tokenization ===
 
+@[inline]
+fn lex_may_start_trivia(unit u16) bool {
+	return unit <= 0x20 || unit >= 0x80 || unit in [u16(`/`), u16(`<`), u16(`-`), u16(`#`)]
+}
+
 fn (mut l Lexer) next() Token {
 	if l.has_lookahead {
 		l.has_lookahead = false
@@ -891,7 +896,7 @@ fn (mut l Lexer) lex_token() Token {
 	mut token_message := ?string(none)
 
 	if !in_template || l.template_states[l.template_states.len - 1].in_expression {
-		for {
+		for lex_may_start_trivia(l.current_code_unit) {
 			if l.is_line_terminator() {
 				line_has_token_yet = false
 				for {
