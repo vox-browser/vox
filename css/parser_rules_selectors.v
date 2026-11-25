@@ -79,6 +79,7 @@ mut:
 	parsed_rule_selector_bytes int
 	prepared_rule_selectors &PreparedStyleRuleSelectors = unsafe { nil }
 	prepared_rule_selector_hits int
+	shared_deferred_style_params &ParsingParams = unsafe { nil }
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {

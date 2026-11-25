@@ -64,6 +64,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred
+	parser.share_empty_deferred_style_params()
 	if cache_rules {
 		raw := parser.parse_a_stylesheet(location)
 		syntax_id := stylesheet_rule_cache_.store(text, raw.rules)
@@ -99,6 +100,7 @@ fn convert_transient_stylesheet_rules(params ParsingParams, raw_rules []Rule, lo
 		component_input_transient: true
 		prepared_rule_selectors: options.prepared_selectors
 	}
+	parser.share_empty_deferred_style_params()
 	rules := CSSRuleList.create(parser.convert_rules(raw_rules))
 	if options.prepared_selectors != unsafe { nil } {
 		if params.is_ua_style_sheet == .yes && user_agent_syntax_diagnostics {

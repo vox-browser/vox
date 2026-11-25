@@ -130,6 +130,31 @@ fn test_deferred_workspace_declarations_keep_source_without_token_trees() {
 	assert style.deferred_declarations_ == none
 }
 
+fn test_deferred_styles_reuse_only_the_empty_grammar_context() {
+	sheet := parse_css_stylesheet_in_workspace(ParsingParams{},
+		'a { width: 1px; } b { width: 2px; }', none, none, true)
+	first := sheet.css_rules().rules[0].declaration?
+	second := sheet.css_rules().rules[1].declaration?
+	first_params := first.deferred_declarations_?.params?
+	second_params := second.deferred_declarations_?.params?
+	assert voidptr(first_params) == voidptr(second_params)
+	assert first.get_property_value('width') == '1px'
+	assert second.get_property_value('width') == '2px'
+
+	namespaced := parse_css_stylesheet_in_workspace(ParsingParams{},
+		'@namespace s "http://www.w3.org/2000/svg"; s|a { width: 3px; } s|b { width: 4px; }',
+		none, none, true)
+	namespaced_first := namespaced.css_rules().rules[1].declaration?
+	namespaced_second := namespaced.css_rules().rules[2].declaration?
+	namespaced_first_params := namespaced_first.deferred_declarations_?.params?
+	namespaced_second_params := namespaced_second.deferred_declarations_?.params?
+	assert voidptr(namespaced_first_params) != voidptr(namespaced_second_params)
+	assert namespaced_first_params.declared_namespaces['s']
+	assert namespaced_second_params.declared_namespaces['s']
+	assert namespaced_first.get_property_value('width') == '3px'
+	assert namespaced_second.get_property_value('width') == '4px'
+}
+
 fn test_stylesheet_conversion_retires_discarded_large_token_input() {
 	$if prealloc {
 		mut document := dom.Document.create(dom.url_about_blank())
