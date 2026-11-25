@@ -5599,3 +5599,128 @@ readiness, viewport and all 30 ordered story IDs. The executable,
 helper, library, archive and harness stayed pinned. All browser,
 driver and guard exits were zero. Peak sampled RSS was
 425,852,928 bytes.
+
+### Wait for the requested range during cold text shaping
+
+Commit `0dd428a2f` gives each worker range its own completion group
+when `VOX_WAIT_ASCII_SHAPING_RANGE=1` is set. At a matching cache miss
+layout waits for the range containing the requested job and publishes
+that shape through the ordinary cache. Later requests can wait for
+their own ranges. The scope still drains every remaining group before
+it releases the job arrays or allows font-cache retirement.
+
+The focused tests passed with preallocation, arena poisoning and
+ThreadSanitizer. They held a neighboring range open while reading a
+finished range, covered an uneven range boundary and checked exact
+glyphs in both schedules. The font retirement test drained an
+outstanding range after a shape had been consumed. The native header
+also passed ARC and non-ARC syntax checks.
+
+Two preliminary launches on receipt `20261125-225847-5c0feb90`
+reproduced the full-batch wait on all 64 jobs. Both matched the
+reference PNG and all 30 ordered stories. The executable SHA-256 was
+`d5d1b545614a51f6b49f138acec437ed83509a1094e5bde512f1e88402467314`.
+Two earlier production attempts stopped when checkout inputs changed.
+The managed build then verified and published the candidate.
+
+#### Matched production captures
+
+Receipt `20261125-231123-8745b241` verified `0dd428a2f` and
+passed startup smoke in single-C-unit V `-prod` mode. Both schedules
+used the same executable. Both range-only timing cohorts enabled the expanded
+64-job batch with `VOX_PREPARE_SHORT_ASCII_LAYOUT_SHAPES=1`.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `62a038841ae78ebfe515f47d2d4b514866aab1de87ed917bc8373563ff025513` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `31dfe96b534e9bf5f14ff05f6f5db53b2f9a0bb2001fb27f9060f92bc034da14` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+All four expanded diagnostics shaped and decoded 64 jobs on four
+workers and consumed every shape. The unexpanded pair did the same
+for all 28 jobs. Range mode retired the batch at scope exit.
+
+| Diagnostic | First requested job index | Job indices that waited | Batch join |
+| --- | --- | --- | --- |
+| 64 jobs, batch 1 | — | — | First use, pending |
+| 64 jobs, range 1 | 28, pending | 28 | Scope exit, ready |
+| 64 jobs, range 2 | 28, pending | 28 | Scope exit, ready |
+| 64 jobs, batch 2 | — | — | First use, pending |
+| 28 jobs, batch | — | — | First use, ready |
+| 28 jobs, range | 0, ready | — | Scope exit, ready |
+
+Both 64-job range launches waited only for the range containing job 28.
+All later range requests were ready.
+
+Separate counter diagnostics measured inclusive browser-thread scopes.
+
+| Scope | Batch 1 | Range 1 | Batch 2 | Range 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Shaping job preparation | 665,359 | 665,697 | 645,110 | 676,350 |
+| Flow layout | 143,722,842 | 143,755,105 | 143,733,950 | 143,871,462 |
+| Layout geometry | 166,459,783 | 166,472,948 | 166,442,006 | 166,612,394 |
+
+Each unprofiled comparison used two alternating seven-pair cohorts
+with opposite starting modes. The timer spans fresh launch through the completed
+document PNG at 1024×768 CSS pixels and 2× scale. Captures used
+JavaScriptCore, empty private profiles and HTTP caches, retained OS
+filesystem and shader caches, `tr.athing` readiness and a 60 ms replay
+delay per logo response.
+
+#### Range waits with the 64-job batch
+
+| Pair | Batch, ms | Range, ms | Reversed batch, ms | Reversed range, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 345.313 | 329.437 | 320.746 | 321.974 |
+| 2 | 392.533 | 324.190 | 328.075 | 312.893 |
+| 3 | 339.160 | 340.362 | 300.072 | 312.356 |
+| 4 | 354.460 | 326.305 | 302.712 | 298.006 |
+| 5 | 330.614 | 330.657 | 312.206 | 310.261 |
+| 6 | 317.824 | 284.397 | 304.182 | 309.556 |
+| 7 | 322.918 | 297.190 | 326.654 | 306.888 |
+| Median | 339.160 | 326.305 | 312.206 | 310.261 |
+
+Median paired changes were −25.728 and −1.945 ms, with five and four
+range wins.
+Sampled main-thread CPU medians went from 198.910 to
+171.627 ms and from 160.976 to 159.492 ms.
+One-minute load ranged from 4.25 to 5.23
+and from 4.79 to 5.13 on 18 CPUs.
+
+#### Default settings and both shaping changes
+
+The default used 28 jobs and a single join. The combined schedule
+used up to 64 jobs with range joins.
+
+| Pair | Default, ms | Combined, ms | Reversed default, ms | Reversed combined, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 315.971 | 294.787 | 300.809 | 317.876 |
+| 2 | 307.094 | 311.250 | 289.454 | 326.256 |
+| 3 | 292.489 | 297.255 | 330.079 | 312.859 |
+| 4 | 306.665 | 334.524 | 312.801 | 292.038 |
+| 5 | 305.714 | 322.030 | 315.325 | 298.701 |
+| 6 | 302.738 | 317.439 | 310.416 | 319.429 |
+| 7 | 321.718 | 308.984 | 294.671 | 317.233 |
+| Median | 306.665 | 311.250 | 310.416 | 317.233 |
+
+Median paired changes were +4.767 and +9.012 ms, with two and three
+combined wins.
+Sampled main-thread CPU medians went from 161.062 to
+160.392 ms and from 158.355 to 162.558 ms.
+One-minute load ranged from 4.79 to 5.05
+and from 4.74 to 5.16 on 18 CPUs.
+
+Range waits improved both paired medians with the expanded batch.
+The size of the change varied across cohorts. Enabling both changes
+together increased both paired medians against Vox’s default. Both
+changes stay opt-in.
+
+All 66 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+The ten diagnostic launches verified the document URL, complete
+readiness, viewport and all 30 ordered story IDs. The executable,
+helper, library, archive and harness stayed pinned. All browser,
+driver and guard exits were zero. Peak sampled RSS was
+433,455,104 bytes.
