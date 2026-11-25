@@ -24,10 +24,9 @@ fn test_published_measurement_outlives_its_layout_pass() {
 	measured.line_boxes[0].inline_length_ = CSSPixels.new(80)
 	measured.set_grid_line_names([['start'], ['end']], [[]string{}])
 	measured.set_inline_end_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(7, 8, 9, 10)})
-	mut rare := measured.ensure_rare_data()
-	rare.computed_svg_path_ = svg.Path{
+	measured.set_computed_svg_path(svg.Path{
 		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
-	}
+	})
 	mut entry := pool.enter_measurement_cache()
 	mut snapshots := []RetainedBlockValues{cap: 1}
 	append_owned_measurement_values(mut snapshots, node, measured)

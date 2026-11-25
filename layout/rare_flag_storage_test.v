@@ -2,7 +2,33 @@ module layout
 
 import css
 import dom
+import platform
 import svg
+
+fn test_ordinary_rare_geometry_copy_storage() {
+	assert sizeof(UsedValuesRareData) <= 512
+	mut values := UsedValues{}
+	mut storage := platform.new_arena('ordinary rare geometry copies')
+	entry := storage.enter()
+	for index in 0 .. 1024 {
+		values = UsedValues{}
+		values.set_relative_inset_basis(CSSPixels.new(index), CSSPixels.new(20))
+		values.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(3, 4, 20, 30)})
+		rare := values.rare_?
+		copy := rare.clone()
+		assert copy.grid_geometry_ == none
+		assert copy.svg_geometry_ == none
+		assert copy.relative_inset_basis_width_?.raw_value() == CSSPixels.new(index).raw_value()
+		assert copy.static_position_rect_?.rect.left_value() == 3
+	}
+	storage.leave(entry)
+	used := storage.usage().used
+	println('ordinary rare geometry: ${sizeof(UsedValuesRareData)} B per record, ${used} B in the fixture')
+	$if prealloc {
+		assert used <= 1024 * 1024
+	}
+	storage.release()
+}
 
 fn set_all_rare_flags(mut values UsedValues, value bool) {
 	values.set_has_line_clamp_point(value)
@@ -83,15 +109,15 @@ fn test_committed_layout_replay_owns_svg_and_grid_geometry() {
 	mut before := LayoutState.new()
 	mut original := before.get_mutable(node)
 	original.set_grid_template_columns([CSSPixels.new(10)])
-	mut rare := original.ensure_rare_data()
-	rare.computed_svg_path_ = svg.Path{
+	original.set_computed_svg_path(svg.Path{
 		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
-	}
+	})
 	mut after := LayoutState.new()
 	restored := after.restore_layout_values(node, original, none, true)
 	assert !restored.rare_is_shared_
 	assert voidptr(original.rare_?) != voidptr(restored.rare_?)
-	mut path := restored.computed_svg_path()?
-	path.instructions[0].data[0] = 99
+	path := restored.computed_svg_path()?
+	mut coordinates := unsafe { path.instructions[0].data }
+	coordinates[0] = 99
 	assert original.computed_svg_path()?.instructions[0].data[0] == 7
 }

@@ -133,7 +133,8 @@ fn test_retained_grid_track_vectors_detach_from_cached_and_previous_layouts() {
 	if !disable_retained_grid_layout {
 		cached := after.state.block_layouts_[u64(voidptr(root))] or { panic('missing cache') }
 		rare := cached.grid_container_rare or { panic('missing retained tracks') }
-		assert rare.used_grid_template_columns == expected
+		grid := rare.grid_geometry_ or { panic('missing retained grid geometry') }
+		assert grid.columns == expected
 	}
 	changed.set_attribute_value('style', 'height:60px')
 	document.update_layout(.debugging)

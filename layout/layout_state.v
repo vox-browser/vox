@@ -34,6 +34,30 @@ mut:
 }
 
 @[heap]
+struct UsedValuesGridGeometry {
+mut:
+	columns           []CSSPixels
+	rows              []CSSPixels
+	column_line_names [][]string
+	row_line_names    [][]string
+}
+
+@[heap]
+struct UsedValuesSvgGeometry {
+mut:
+	path               ?svg.Path
+	text_paint_origin  ?SVGTextPaintOrigin
+	has_transforms     bool
+	viewbox_transform  svg.AffineTransform
+	local_transform    svg.AffineTransform
+	transform          svg.AffineTransform
+	viewport_transform ?svg.AffineTransform
+	rendering_disabled bool
+}
+
+// Ordinary positioned and flex boxes can have rare scalar geometry. Allocate
+// the larger SVG and grid payloads only for boxes that publish those values.
+@[heap]
 struct UsedValuesRareData {
 mut:
 	static_position_rect_         ?StaticPositionRect
@@ -43,20 +67,10 @@ mut:
  had_clearance_ bool
  collapsed_flow_margin_bottom_ ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
-	used_grid_template_columns    []CSSPixels
-	used_grid_template_rows       []CSSPixels
-	used_grid_column_line_names   [][]string
-	used_grid_row_line_names      [][]string
+	grid_geometry_               ?&UsedValuesGridGeometry
 	used_grid_columns_are_subgrid bool
 	used_grid_rows_are_subgrid    bool
-	computed_svg_path_            ?svg.Path
-	svg_text_paint_origin_        ?SVGTextPaintOrigin
-	has_computed_svg_transforms   bool
-	svg_viewbox_transform_        svg.AffineTransform
-	svg_local_transform_          svg.AffineTransform
-	svg_transform_                svg.AffineTransform
-	svg_viewport_transform_       ?svg.AffineTransform
-	svg_rendering_disabled_       bool
+	svg_geometry_                ?&UsedValuesSvgGeometry
 	override_borders_data_        ?painting.BordersDataWithElementKind
 	table_cell_coordinates_       ?painting.TableCellCoordinates
 	uses_collapsing_borders_model_ bool
@@ -74,50 +88,27 @@ mut:
 // Empty zero-capacity arrays have no writable backing storage to escape
 // through the public grid getters. Retain eager copies for every other case.
 fn (rare &UsedValuesRareData) can_share_for_measurement() bool {
-	return rare.used_grid_template_columns.cap == 0
-		&& rare.used_grid_template_rows.cap == 0
-		&& rare.used_grid_column_line_names.cap == 0
-		&& rare.used_grid_row_line_names.cap == 0
+	grid := rare.grid_geometry_ or { return true }
+	return grid.columns.cap == 0 && grid.rows.cap == 0
+		&& grid.column_line_names.cap == 0 && grid.row_line_names.cap == 0
 }
 
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 	mut retained_scope := retain_geometry_allocations()
 	defer { retained_scope.finish() }
-	return &UsedValuesRareData{
-		static_position_rect_: rare.static_position_rect_
-		relative_inset_basis_width_: rare.relative_inset_basis_width_
-		relative_inset_basis_height_: rare.relative_inset_basis_height_
-		box_model_percentage_basis_: rare.box_model_percentage_basis_
- had_clearance_: rare.had_clearance_
- collapsed_flow_margin_bottom_:rare.collapsed_flow_margin_bottom_
-		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
-		used_grid_template_columns: rare.used_grid_template_columns.clone()
-		used_grid_template_rows: rare.used_grid_template_rows.clone()
-		used_grid_column_line_names: rare.used_grid_column_line_names.clone()
-		used_grid_row_line_names: rare.used_grid_row_line_names.clone()
-		used_grid_columns_are_subgrid: rare.used_grid_columns_are_subgrid
-		used_grid_rows_are_subgrid: rare.used_grid_rows_are_subgrid
-		computed_svg_path_: rare.computed_svg_path_
-		svg_text_paint_origin_: rare.svg_text_paint_origin_
-		has_computed_svg_transforms: rare.has_computed_svg_transforms
-		svg_viewbox_transform_: rare.svg_viewbox_transform_
-		svg_local_transform_: rare.svg_local_transform_
-		svg_transform_: rare.svg_transform_
-		svg_viewport_transform_: rare.svg_viewport_transform_
-		svg_rendering_disabled_: rare.svg_rendering_disabled_
-		override_borders_data_: rare.override_borders_data_
-		table_cell_coordinates_: rare.table_cell_coordinates_
-		uses_collapsing_borders_model_: rare.uses_collapsing_borders_model_
-		is_collapsed_borders_table_box_: rare.is_collapsed_borders_table_box_
-		hidden_by_collapsed_columns_: rare.hidden_by_collapsed_columns_
-		has_line_clamp_point_: rare.has_line_clamp_point_
-		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
-		clip_decided_by_parent_: rare.clip_decided_by_parent_
-		derived_first_baseline_: rare.derived_first_baseline_
-		derived_last_baseline_: rare.derived_last_baseline_
-		derived_vertical_first_baseline_: rare.derived_vertical_first_baseline_
-		derived_vertical_last_baseline_: rare.derived_vertical_last_baseline_
+	mut copy := &UsedValuesRareData{...*rare}
+	if grid := rare.grid_geometry_ {
+		copy.grid_geometry_ = &UsedValuesGridGeometry{
+			columns: grid.columns.clone()
+			rows: grid.rows.clone()
+			column_line_names: grid.column_line_names.clone()
+			row_line_names: grid.row_line_names.clone()
+		}
 	}
+	if geometry := rare.svg_geometry_ {
+		copy.svg_geometry_ = &UsedValuesSvgGeometry{...*geometry}
+	}
+	return copy
 }
 
 @[heap]
@@ -333,16 +324,30 @@ pub fn (mut u UsedValues) set_table_cell_coordinates(table_cell_coordinates pain
 	rare.table_cell_coordinates_ = table_cell_coordinates
 }
 
+fn (u &UsedValues) grid_geometry() ?&UsedValuesGridGeometry {
+	rare := u.rare_ or { return none }
+	return rare.grid_geometry_
+}
+
+// The setters enter the owner before publishing grid data and its arrays.
+fn (mut u UsedValues) ensure_grid_geometry() &UsedValuesGridGeometry {
+	mut rare := u.ensure_rare_data()
+	if grid := rare.grid_geometry_ { return grid }
+	grid := &UsedValuesGridGeometry{}
+	rare.grid_geometry_ = grid
+	return grid
+}
+
 pub fn (mut u UsedValues) set_grid_template_columns(columns []CSSPixels) {
 	mut retained_scope := retain_geometry_allocations()
 	defer { retained_scope.finish() }
-	mut rare := u.ensure_rare_data()
-	rare.used_grid_template_columns = columns.clone()
+	mut grid := u.ensure_grid_geometry()
+	grid.columns = columns.clone()
 }
 
 pub fn (u &UsedValues) grid_template_columns() []CSSPixels {
-	rare := u.rare_ or { return []CSSPixels{} }
-	return rare.used_grid_template_columns
+	grid := u.grid_geometry() or { return []CSSPixels{} }
+	return grid.columns
 }
 
 // getComputedStyle() reports the used grid-template sizes and explicit line
@@ -350,21 +355,21 @@ pub fn (u &UsedValues) grid_template_columns() []CSSPixels {
 pub fn (mut u UsedValues) set_grid_template_rows(rows []CSSPixels) {
 	mut retained_scope := retain_geometry_allocations()
 	defer { retained_scope.finish() }
-	mut rare := u.ensure_rare_data()
-	rare.used_grid_template_rows = rows.clone()
+	mut grid := u.ensure_grid_geometry()
+	grid.rows = rows.clone()
 }
 
 pub fn (u &UsedValues) grid_template_rows() []CSSPixels {
-	rare := u.rare_ or { return []CSSPixels{} }
-	return rare.used_grid_template_rows
+	grid := u.grid_geometry() or { return []CSSPixels{} }
+	return grid.rows
 }
 
 pub fn (mut u UsedValues) set_grid_line_names(columns [][]string, rows [][]string) {
 	mut retained_scope := retain_geometry_allocations()
 	defer { retained_scope.finish() }
-	mut rare := u.ensure_rare_data()
-	rare.used_grid_column_line_names = own_grid_line_names(columns)
-	rare.used_grid_row_line_names = own_grid_line_names(rows)
+	mut grid := u.ensure_grid_geometry()
+	grid.column_line_names = own_grid_line_names(columns)
+	grid.row_line_names = own_grid_line_names(rows)
 }
 
 fn own_grid_line_names(source [][]string) [][]string {
@@ -378,13 +383,13 @@ fn own_grid_line_names(source [][]string) [][]string {
 }
 
 pub fn (u &UsedValues) grid_column_line_names() [][]string {
-	rare := u.rare_ or { return [][]string{} }
-	return rare.used_grid_column_line_names
+	grid := u.grid_geometry() or { return [][]string{} }
+	return grid.column_line_names
 }
 
 pub fn (u &UsedValues) grid_row_line_names() [][]string {
-	rare := u.rare_ or { return [][]string{} }
-	return rare.used_grid_row_line_names
+	grid := u.grid_geometry() or { return [][]string{} }
+	return grid.row_line_names
 }
 
 pub fn (mut u UsedValues) set_grid_subgridded_axes(columns bool, rows bool) {
@@ -808,78 +813,93 @@ pub fn (u &UsedValues) static_position_rect() ?StaticPositionRect {
 	return rare.static_position_rect_
 }
 
+fn (u &UsedValues) svg_geometry() ?&UsedValuesSvgGeometry {
+	rare := u.rare_ or { return none }
+	return rare.svg_geometry_
+}
+
+fn (mut u UsedValues) ensure_svg_geometry() &UsedValuesSvgGeometry {
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
+	mut rare := u.ensure_rare_data()
+	if geometry := rare.svg_geometry_ { return geometry }
+	geometry := &UsedValuesSvgGeometry{}
+	rare.svg_geometry_ = geometry
+	return geometry
+}
+
 // SVGGraphicsPaintable::ComputedTransforms and the path materialized by
 // SVGFormattingContext. Painting consumes the same state instead of reparsing
 // geometry independently.
 pub fn (mut u UsedValues) set_computed_svg_path(path svg.Path) {
-	mut rare := u.ensure_rare_data()
-	rare.computed_svg_path_ = path
+	mut geometry := u.ensure_svg_geometry()
+	geometry.path = path
 }
 
 pub fn (u &UsedValues) computed_svg_path() ?svg.Path {
-	rare := u.rare_ or { return none }
-	return rare.computed_svg_path_
+	geometry := u.svg_geometry() or { return none }
+	return geometry.path
 }
 
 // Where SVGFormattingContext placed a text element's own text, in its user
 // space, so painting can draw the glyphs instead of their outline path.
 pub fn (mut u UsedValues) set_svg_text_paint_origin(origin SVGTextPaintOrigin) {
-	mut rare := u.ensure_rare_data()
-	rare.svg_text_paint_origin_ = origin
+	mut geometry := u.ensure_svg_geometry()
+	geometry.text_paint_origin = origin
 }
 
 pub fn (u &UsedValues) svg_text_paint_origin() ?SVGTextPaintOrigin {
-	rare := u.rare_ or { return none }
-	return rare.svg_text_paint_origin_
+	geometry := u.svg_geometry() or { return none }
+	return geometry.text_paint_origin
 }
 
 pub fn (mut u UsedValues) set_computed_svg_transforms(viewbox_transform svg.AffineTransform, local_transform svg.AffineTransform, svg_transform svg.AffineTransform) {
-	mut rare := u.ensure_rare_data()
-	rare.has_computed_svg_transforms = true
-	rare.svg_viewbox_transform_ = viewbox_transform
-	rare.svg_local_transform_ = local_transform
-	rare.svg_transform_ = svg_transform
+	mut geometry := u.ensure_svg_geometry()
+	geometry.has_transforms = true
+	geometry.viewbox_transform = viewbox_transform
+	geometry.local_transform = local_transform
+	geometry.transform = svg_transform
 }
 
 pub fn (u &UsedValues) has_computed_svg_transforms() bool {
-	rare := u.rare_ or { return false }
-	return rare.has_computed_svg_transforms
+	geometry := u.svg_geometry() or { return false }
+	return geometry.has_transforms
 }
 
 pub fn (u &UsedValues) svg_viewbox_transform() svg.AffineTransform {
-	rare := u.rare_ or { return svg.AffineTransform{} }
-	return rare.svg_viewbox_transform_
+	geometry := u.svg_geometry() or { return svg.AffineTransform{} }
+	return geometry.viewbox_transform
 }
 
 pub fn (u &UsedValues) svg_local_transform() svg.AffineTransform {
-	rare := u.rare_ or { return svg.AffineTransform{} }
-	return rare.svg_local_transform_
+	geometry := u.svg_geometry() or { return svg.AffineTransform{} }
+	return geometry.local_transform
 }
 
 pub fn (u &UsedValues) svg_transform() svg.AffineTransform {
-	rare := u.rare_ or { return svg.AffineTransform{} }
-	return rare.svg_transform_
+	geometry := u.svg_geometry() or { return svg.AffineTransform{} }
+	return geometry.transform
 }
 
 pub fn (mut u UsedValues) set_svg_viewport_transform(transform svg.AffineTransform) {
-	mut rare := u.ensure_rare_data()
-	rare.svg_viewport_transform_ = transform
+	mut geometry := u.ensure_svg_geometry()
+	geometry.viewport_transform = transform
 }
 
 pub fn (u &UsedValues) svg_viewport_transform() ?svg.AffineTransform {
-	rare := u.rare_ or { return none }
-	return rare.svg_viewport_transform_
+	geometry := u.svg_geometry() or { return none }
+	return geometry.viewport_transform
 }
 
 pub fn (mut u UsedValues) set_svg_rendering_disabled(disabled bool) {
 	if u.svg_rendering_disabled() == disabled { return }
-	mut rare := u.ensure_rare_data()
-	rare.svg_rendering_disabled_ = disabled
+	mut geometry := u.ensure_svg_geometry()
+	geometry.rendering_disabled = disabled
 }
 
 pub fn (u &UsedValues) svg_rendering_disabled() bool {
-	rare := u.rare_ or { return false }
-	return rare.svg_rendering_disabled_
+	geometry := u.svg_geometry() or { return false }
+	return geometry.rendering_disabled
 }
 
 // --- Margin box (margin + border + padding + content) ---
@@ -1564,7 +1584,7 @@ fn (mut state LayoutState) restore_layout_values(node &NodeWithStyle,
 	values.containing_block_used_values_ = containing
 	values.borrow_retained_line_boxes(snapshot.line_boxes)
 	if rare := snapshot.rare_ {
-		if previous_layout && rare.can_share_for_measurement() && rare.computed_svg_path_ == none {
+		if previous_layout && rare.can_share_for_measurement() && snapshot.computed_svg_path() == none {
 			// Both committed nodes belong to the document. Each detaches
 			// before mutating the common scalar geometry.
 			mut source := unsafe { &UsedValues(snapshot) }
@@ -1573,9 +1593,7 @@ fn (mut state LayoutState) restore_layout_values(node &NodeWithStyle,
 			return values
 		}
 		mut restored := rare.clone()
-		if path := rare.computed_svg_path_ {
-			restored.computed_svg_path_ = own_measurement_svg_path(path)
-		}
+		restored.own_svg_path()
 		values.rare_ = restored
 		values.rare_is_shared_ = false
 	}

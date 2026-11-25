@@ -43,6 +43,23 @@ fn own_measurement_svg_path(path svg.Path) svg.Path {
 	return svg.Path{ instructions: instructions }
 }
 
+// The cold records already belong to this copy. Give their nested buffers
+// independent storage before the source workspace retires.
+fn (mut rare UsedValuesRareData) own_svg_path() {
+	if mut geometry := rare.svg_geometry_ {
+		if path := geometry.path {
+			geometry.path = own_measurement_svg_path(path)
+		}
+	}
+}
+
+fn (mut rare UsedValuesRareData) own_grid_names() {
+	if mut grid := rare.grid_geometry_ {
+		grid.column_line_names = own_grid_line_names(grid.column_line_names)
+		grid.row_line_names = own_grid_line_names(grid.row_line_names)
+	}
+}
+
 // Copy probe data into the caller's measurement cache before the probe retires.
 fn append_owned_measurement_values(mut snapshots []RetainedBlockValues,
 	node &NodeWithStyle, values &UsedValues) {
@@ -66,11 +83,8 @@ fn own_measurement_snapshot(mut snapshot UsedValues, values &UsedValues) {
 	}
 	if source := snapshot.rare_ {
 		mut rare := source.clone()
-		if path := rare.computed_svg_path_ {
-			rare.computed_svg_path_ = own_measurement_svg_path(path)
-		}
-		rare.used_grid_column_line_names = own_grid_line_names(rare.used_grid_column_line_names)
-		rare.used_grid_row_line_names = own_grid_line_names(rare.used_grid_row_line_names)
+		rare.own_svg_path()
+		rare.own_grid_names()
 		snapshot.rare_ = rare
 		snapshot.rare_is_shared_ = false
 	}
@@ -101,8 +115,7 @@ fn (mut state LayoutState) restore_measurement_values(node &NodeWithStyle, snaps
 		values.set_inline_end_static_position_rect(position)
 	}
 	if mut rare := values.rare_ {
-		rare.used_grid_column_line_names = own_grid_line_names(rare.used_grid_column_line_names)
-		rare.used_grid_row_line_names = own_grid_line_names(rare.used_grid_row_line_names)
+		rare.own_grid_names()
 	}
 	retained.finish()
 	values.publish_measurement_lines(state, node, snapshot.line_boxes)
