@@ -3452,8 +3452,7 @@ Receipt `20261125-153205-c781deaf` rejected checkout changes before
 C preprocessing. Receipt `20261125-155026-9db2f7bb` captured its
 input inventory before the pruning fix and rejected the edit to
 `tools/buildtools/prune.v`. The coalesced single-C-unit V `-prod`
-request includes the fix. The available bundle still predates the
-shorter caller range. Full-page timings remain pending.
+request included the fix.
 
 Receipt `20261125-155553-2483b004` also rejected checkout changes
 before C preprocessing and exited 1. Peak process-tree RSS was
@@ -3471,3 +3470,69 @@ aggregate RSS was 371,392,512 bytes and one-minute load was 124.30 on
 18 CPUs. This capture verifies the benchmark setup on the published
 baseline. The shorter-range scheduler was measured in the retained
 text replay above.
+
+#### Shorter-range production captures
+
+Receipt `20261125-161203-c3737351` sealed `ef8a858a2`, passed startup
+smoke and published a single-C-unit V `-prod` build. Both modes used
+that executable with `VOX_GLYPH_MASK_CALLER_LAST=0` for the shorter
+range and `=1` for the previous range.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `16c404942668946b797186d3133dba0a7dd84b200e355e7596b2f02966514caa` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `e1a6650b8fc91a2060dceb7fa737d2fe8b9244f13628323d8f40e29569d9d10d` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+In both diagnostic pairs, each mode drew 391 masks in 84 batches,
+including 277 masks in 37 batches of at least four. Every batch used
+two to four threads in both modes. The shorter range moved 39 masks
+off the browser thread, reducing its share from 168 to 129 masks.
+Caller counts went from 101 to 82 in the larger batches and from 67
+to 47 in the two- and three-mask batches.
+
+Separate browser-thread counter runs used
+`VOX_DIAGNOSTIC_LOAD_STAGES=1`, `VOX_DIAGNOSTIC_THREAD_LOAD_STAGES=1`
+and `VOX_PROFILE_INSTRUCTIONS=1` with glyph logging disabled.
+Text instructions fell 4.6% and 4.4% in the two pairs. Native raster
+replay instructions fell 2.8% and 2.1%.
+
+| Counter pair | Previous text instructions | Shorter-range text instructions | Previous native raster instructions | Shorter-range native raster instructions |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 135,908,614 | 129,634,669 | 279,346,497 | 271,527,811 |
+| 2 | 134,844,150 | 128,896,198 | 278,048,800 | 272,123,387 |
+
+Two unprofiled cohorts alternated fresh browser launches through the
+completed document PNG. The reversed cohort started with the previous
+range. Both used a 1024×768 CSS-pixel viewport at 2× scale, JavaScriptCore,
+private empty profiles and HTTP caches, retained OS filesystem caches
+and a 60 ms replay delay per logo response.
+
+| Pair | Previous, ms | Shorter range, ms | Reversed previous, ms | Reversed shorter range, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 336.234 | 323.910 | 327.548 | 335.642 |
+| 2 | 301.384 | 328.743 | 323.343 | 315.295 |
+| 3 | 291.555 | 312.694 | 347.368 | 319.982 |
+| 4 | 312.872 | 303.879 | 392.296 | 387.234 |
+| 5 | 299.477 | 313.863 | 366.504 | 347.118 |
+| 6 | 301.060 | 307.184 | 324.301 | 336.639 |
+| 7 | 297.526 | 302.748 | 319.894 | 329.494 |
+| Median | 301.060 | 312.694 | 327.548 | 335.642 |
+
+Paired median changes were +6.124 and −5.063 ms, with two and four
+wins. Sampled browser-thread CPU medians were 164.212 → 160.971 ms
+and 185.087 → 187.298 ms. The browser thread still accounted for
+69%–70% of sampled process CPU time over the full capture interval.
+One-minute host load ranged from 13.31 to 14.58 and 14.58 to 18.73 on
+18 CPUs. The launch-to-PNG results show mixed elapsed times.
+
+All 28 timed and eight diagnostic captures reproduced the eight
+request records, including the favicon miss, and matched the
+reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The diagnostic captures also verified the URL, complete ready state,
+viewport and all 30 ordered story IDs. Executable, library, helper,
+archive body and driver hashes stayed fixed. All browser processes,
+the benchmark driver and the 3 GiB guard exited zero. Peak aggregate
+RSS was 388,055,040 bytes.
