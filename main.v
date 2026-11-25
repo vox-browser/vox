@@ -7818,7 +7818,7 @@ fn (mut app BrowserApp) draw() {
 				prepare_paint_canvas_bounds(app.paint_commands, f64(page_y), f64(window.width),
 					f64(window.height))
 			} else {
-				[]PaintLeafCanvasBounds{}
+				[]u8{}
 			}
 			app.portable_background_clip_replay = PortableBackgroundClipReplay{
 				active: portable_background_clip_reuse && !app.ctx.native_rendering
@@ -7850,7 +7850,7 @@ fn (mut app BrowserApp) draw() {
 					command = &projected
 				}
 				bounds := if leaf_canvas_bounds.len > 0 {
-					leaf_canvas_bounds[command_index]
+					unsafe { PaintLeafCanvasBounds(leaf_canvas_bounds[command_index]) }
 				} else {
 					PaintLeafCanvasBounds.unprepared
 				}

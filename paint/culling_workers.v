@@ -19,7 +19,7 @@ enum PaintLeafCanvasBounds as u8 {
 
 struct PaintCanvasBoundsWork {
 	commands []layout.PaintCommand
-	bounds   &PaintLeafCanvasBounds
+	bounds   &u8
 	threads  &u64
 	page_y   f64
 	width    f64
@@ -43,24 +43,25 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 		} else {
 			PaintLeafCanvasBounds.retain
 		}
-		unsafe { work.bounds[index] = result }
+		unsafe { work.bounds[index] = u8(result) }
 		if thread_id != 0 { unsafe { work.threads[index] = thread_id } }
 	}
 }
 
 fn prepare_paint_canvas_bounds(commands []layout.PaintCommand, page_y f64, width f64,
-	height f64) []PaintLeafCanvasBounds {
+	height f64) []u8 {
 	$if macos {
 		lanes := math.min(4, commands.len / paint_canvas_bounds_commands_per_lane)
 		if serial_paint_canvas_bounds || lanes < 2 { return [] }
 		stage := processmetrics.begin_thread_instruction_substage('paint_canvas_bounds_preparation')
 		defer { stage.finish() }
-		mut bounds := []PaintLeafCanvasBounds{len: commands.len}
+		// Use a byte buffer at the native worker boundary.
+		mut bounds := []u8{len: commands.len}
 		mut threads := []u64{}
 		if paint_canvas_bounds_worker_diagnostics { threads = []u64{len: commands.len} }
 		work := PaintCanvasBoundsWork{
 			commands: commands
-			bounds: unsafe { &PaintLeafCanvasBounds(bounds.data) }
+			bounds: unsafe { &u8(bounds.data) }
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 			page_y: page_y
 			width: width
@@ -73,7 +74,7 @@ fn prepare_paint_canvas_bounds(commands []layout.PaintCommand, page_y f64, width
 			caller := platform.native_thread_identity()
 			off_thread := threads.count(it != 0 && it != caller)
 			prepared := threads.count(it != 0)
-			outside := bounds.count(it == .outside)
+			outside := bounds.count(it == u8(PaintLeafCanvasBounds.outside))
 			eprintln('VOX_PAINT_CANVAS_BOUNDS_BATCH commands=${commands.len} prepared=${prepared} lanes=${used_lanes} off_thread=${off_thread} outside=${outside}')
 		}
 		return bounds

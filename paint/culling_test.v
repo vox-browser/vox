@@ -179,14 +179,16 @@ fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
 		translated,
 		layout.PaintCommand{kind: 'draw_video'},
 	]
-	mut bounds := []PaintLeafCanvasBounds{len: commands.len}
+	mut bytes := []u8{len: commands.len}
 	work := PaintCanvasBoundsWork{
 		commands: commands
-		bounds: unsafe { &PaintLeafCanvasBounds(bounds.data) }
+		bounds: unsafe { &u8(bytes.data) }
+		threads: unsafe { nil }
 		width: 100
 		height: 100
 	}
 	prepare_paint_canvas_bounds_range(&work, 0, i32(commands.len))
+	bounds := bytes.map(unsafe { PaintLeafCanvasBounds(it) })
 	assert bounds[0] == .outside && bounds[2] == .outside
 	assert bounds[1] == .unprepared && bounds[8] == .unprepared
 	assert bounds[5] == .retain && bounds[7] == .retain
