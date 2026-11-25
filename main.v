@@ -7741,6 +7741,23 @@ fn (mut app BrowserApp) draw() {
 		// document scripts and rendering opportunities have already run.
 		for replay_attempt in 0 .. 2 {
 			setup_instructions := processmetrics.begin_instruction_stage('raster_frame_setup')
+			page_y := app.page_top()
+			mut culling := PaintCanvasCulling{}
+			mut bounds_lanes := 0
+			mut canvas_bounds := PaintCanvasBoundsBatch{}
+			$if macos {
+				culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
+				if culling.enabled && app.page_zoom == 1 {
+					bounds_lanes = paint_canvas_bounds_lanes(app.paint_commands.len)
+					if bounds_lanes >= 2 && app.can_submit_canvas_bounds_during_setup() {
+						mut bounds_scratch := app.begin_native_replay_scratch()
+						canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
+							f64(page_y), f64(window.width), f64(window.height))
+						canvas_bounds.submit()
+						bounds_scratch.leave_for_frame_setup()
+					}
+				}
+			}
 			app.portable_raster_image_index = 0
 			$if linux || windows { app.portable_background_text_clip = none }
 			$if macos {
@@ -7806,20 +7823,14 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 			}
-			page_y := app.page_top()
-			mut culling := PaintCanvasCulling{}
-			$if macos {
-				culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
-			}
 			mut raster_layer := -1
 			mut text_scroll_layer := false
 			mut replay_scratch := app.begin_native_replay_scratch()
-			leaf_canvas_bounds := if culling.enabled && app.page_zoom == 1 && !scroll_damage.reused {
-				prepare_paint_canvas_bounds(app.paint_commands, f64(page_y), f64(window.width),
-					f64(window.height))
-			} else {
-				[]u8{}
+			if !scroll_damage.reused && bounds_lanes >= 2 && canvas_bounds.lanes == 0 {
+				canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
+					f64(page_y), f64(window.width), f64(window.height))
 			}
+			leaf_canvas_bounds := canvas_bounds.finish(!scroll_damage.reused)
 			app.portable_background_clip_replay = PortableBackgroundClipReplay{
 				active: portable_background_clip_reuse && !app.ctx.native_rendering
 			}

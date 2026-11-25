@@ -1,8 +1,11 @@
 module main
 
+import gg
 import layout
 import painting
 import math
+import os
+import runtime
 
 fn test_grouped_native_replay_closes_resource_culling_scopes() {
 	mut culling := PaintCanvasCulling{enabled: true}
@@ -200,4 +203,32 @@ fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
 			serial.skip(command, 0, 0, 100, 100)
 	}
 	assert prepared.depth == 0 && prepared.resource_depth == 0 && prepared.skipped_depth == 0
+}
+
+$if macos {
+	fn test_canvas_bounds_can_join_after_other_frame_setup_allocations() {
+		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1' { return }
+		visible := layout.PaintCommand{kind: 'fill_rect', width: 20, height: 20}
+		outside := layout.PaintCommand{...visible, y: 250}
+		commands := []layout.PaintCommand{len: 443, init: if index % 2 == 0 { visible } else { outside }}
+		mut app := BrowserApp{
+			ctx: &gg.Context{native_rendering: true}
+		}
+		mut scratch := app.begin_native_replay_scratch()
+		mut batch := new_paint_canvas_bounds_batch(commands, 4, 0, 100, 100)
+		batch.submit()
+		scratch.leave_for_frame_setup()
+		assert batch.background_lanes >= 2
+		setup := []int{len: 4096, init: index}
+		mut replay := app.begin_native_replay_scratch()
+		result := batch.finish(true)
+		assert result.len == commands.len
+		for index, byte in result {
+			expected := if index % 2 == 0 { PaintLeafCanvasBounds.retain } else { PaintLeafCanvasBounds.outside }
+			assert byte == u8(expected)
+		}
+		replay.finish()
+		app.release_native_replay_scratch()
+		assert setup.last() == 4095
+	}
 }

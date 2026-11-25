@@ -74,14 +74,10 @@ static bool vox_scan_workers_with_caller(void *context, int32_t lines, int32_t l
 typedef struct {
     VoxRasterScanBatch batch;
     void *group;
+    VoxRasterScanWorker workers[VOX_SCAN_WORKERS_MAX];
 } VoxRasterBackgroundScan;
 
-static void vox_scan_worker_background(void *context) {
-    const VoxRasterBackgroundScan *work = (const VoxRasterBackgroundScan *)context;
-    vox_scan_worker_range(&work->batch, 0);
-}
-
-static void *vox_scan_worker_start(void *context, int32_t lines, VoxRasterScan scan) {
+static void *vox_scan_worker_start(void *context, int32_t lines, int32_t lanes, VoxRasterScan scan) {
     VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)malloc(sizeof *work);
     if (!work) return NULL;
     dispatch_group_t group = dispatch_group_create();
@@ -94,9 +90,12 @@ static void *vox_scan_worker_start(void *context, int32_t lines, VoxRasterScan s
 #else
     work->group = (void *)group;
 #endif
-    work->batch = (VoxRasterScanBatch){context, lines, 1, scan, fegetround()};
-    dispatch_group_async_f(group, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
-        work, vox_scan_worker_background);
+    work->batch = (VoxRasterScanBatch){context, lines, lanes, scan, fegetround()};
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
+    for (int32_t lane = 0; lane < lanes; ++lane) {
+        work->workers[lane] = (VoxRasterScanWorker){&work->batch, lane};
+        dispatch_group_async_f(group, queue, &work->workers[lane], vox_scan_worker_joined_dispatch);
+    }
     return work;
 }
 
