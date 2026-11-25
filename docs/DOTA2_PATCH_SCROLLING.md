@@ -1527,3 +1527,211 @@ document reached 12,031 and 12,063 CSS pixels and returned to the top in
 both runs. One-minute host load on 18 CPUs was 5.19→4.27 and 4.27→5.30.
 The browsers, drivers and 3 GiB guard exited 0. The guard peaked at
 1,379,106,816 B RSS. Both runs remained well below the 60 Hz target.
+
+### Reclaiming paint-box indices between layout passes
+
+`7b8377990` rebuilds the first-box and last-box lookup maps in their
+own arena. Replacing the paint tree resets the index. A full relayout
+transfers the arena to the new result after clearing the old result's
+lookup pointer. The lookup still resolves fragmented boxes in tree
+order and keeps the Viewport's containing-block entry.
+
+Three client-geometry fixtures passed, including eight repeated index
+rebuilds with zero document-arena growth and a full relayout that
+reused the index arena. They also passed with retired paint-tree and
+index pages made inaccessible. The standalone layout package compile
+exceeded the 12 GiB guard. The passing checks compiled the same test
+bodies through the browser module, with 6,491,783,168 B peak compile
+RSS. The compile and 3 GiB runtime guards exited 0.
+
+`1d6ccb531` shares an immutable empty record when comparing missing
+rare layout inputs. Before the change, the generated C allocated a
+default record on each missing-input branch. The focused fixture
+repeated matching and differing comparisons 256 times, including
+diagnostic lookups, with zero allocation-arena growth. Its staged
+preallocation compile and 3 GiB runtime guards exited 0.
+
+### Live RAM with the paint-box index arena
+
+The baseline executable was single-unit C `-prod` receipt
+`20261125-195337-07b324e7` with SHA-256
+`323b7d19437dff637c0e02e6ee9aca67fe21f0618c9b39779cdeb6e3468c1bef`.
+The published single-unit C `-prod` receipt `20261125-200615-9febd3ff`
+included the arena change in its generated C. Its executable SHA-256
+was `ad82c4507bf9ac39e0bf86bfe8f4558c0b77000c95380a235fdf4109eff73172`.
+The candidate build and headless smoke guards exited 0 and sampled
+7,669,284,864 B and 133,103,616 B peak RSS.
+
+The pairs used the same fresh profiles, caches, live HTTPS, 1024×768
+viewport at scale 2 and full-content audit as above. They ran in
+Vox–Brave and Brave–Vox order. Each confirmed the complete patch at
+the first 23-second audit. All final process identities stayed fixed.
+
+| Build and browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Baseline Vox | 688,934,704 B | 1,128,681,960 B | 52 |
+| Baseline Brave | 333,422,536 B | 856,154,008 B | 57 |
+| Index-build Brave | 353,116,032 B | 843,145,040 B | 55 |
+| Index-build Vox | 677,121,840 B | 1,124,847,984 B | 55 |
+
+All browsers, drivers and 3 GiB guards exited 0. The guards sampled
+1,003,765,760 B and 991,264,768 B peak RSS. One-minute host load
+on 18 CPUs was 5.11→4.59, 4.59→6.40, 5.72→5.13 and 5.13→5.92.
+The index build used 1.92 times the paired Brave footprint.
+The 11,812,864 B drop between Vox observations includes shared
+production changes and live-run variation.
+
+### Native scrolling on the paint-box index build
+
+All nine SVG same-size source-switch and paint-server reftests were
+pixel-exact on the candidate at 800×600. The capture, comparison and
+3 GiB guard exited 0 with pinned browser, library and fixture hashes.
+The guard sampled 195,706,880 B peak RSS.
+
+Two fresh launches of the same bundle used the existing precise
+wheel workload and complete live patch audit. Each used 720 events,
+delta 16, nominal 60 Hz and reversal at 360, after 23 seconds from
+the matching title. The 1024×768 viewport had backing scale 2.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 15.07 | 68.43 / 109.96 / 125.26 ms | 183/204 | 720 / 237 | 53.11 Hz | 68.06 / 178.07 ms |
+| 2 | 19.10 | 55.82 / 78.79 / 137.47 ms | 226/248 | 720 / 281 | 55.38 Hz | 75.16 / 6.60 ms |
+
+The input windows lasted 13.537 and 12.984 seconds. The endpoint was
+completed frame installation after native view paint. The document
+reached 12,098.5 and 12,070 CSS pixels and returned to the top. Host load
+on 18 CPUs was 5.68→7.25 and 7.39→7.06. Both browsers, drivers and the
+3 GiB guard exited 0. The guard sampled 1,294,057,472 B peak RSS.
+Throughput was below the prior bundle's two observations. That build
+comparison spans other production changes and different run conditions.
+
+In a separate poisoned-arena trial of the same executable, 26 paint-index
+blocks totaling 13,107,200 B of capacity retired before wheel input. One
+1,048,576 B block retired inside the wheel interval. An interposed `mprotect`
+checked successful page protections from the pinned executable's
+`poison_prealloc_scope` symbol. Event timestamps excluded a 20 ms margin at
+each input boundary. Those sizes describe retired capacity. The trial
+completed all 480 wheel events and passed the full patch audit. The browser,
+driver and 3 GiB guard exited 0, with 1,282,064,384 B peak sampled RSS and
+one-minute load 5.30→5.52 on 18 CPUs. Two preliminary browsers and wheel
+drivers completed successfully, but their wrapper and guard exited 1 while
+validating the diagnostic flag and the resolved probe path, respectively.
+
+### Live RAM with both layout allocation changes
+
+Single-unit C `-prod` receipt `20261125-201551-cc7fa132` installed executable
+SHA-256 `30500d29306cbb90a5dbd32a0eb127b2c370e955e8bcf2dc2cef2ab7da4363cf`.
+Its sealed revision `9794688c2` includes both layout changes. The compile
+and headless smoke guards exited 0 and sampled 7,669,219,328 B and
+101,105,664 B peak RSS.
+
+The next fresh pair ran Vox first. Both browsers confirmed the complete patch
+at the first audit, 23.04 and 23.02 seconds after launch, respectively. The
+1024×768 viewport at scale 2, direct HTTPS, fresh private profiles and caches,
+and retained OS caches matched the earlier pairs. Pinned executables, libraries
+and resources stayed fixed, as did process identities during the final window.
+
+| Browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Vox | 684,117,856 B | 1,136,120,272 B | 55 |
+| Brave | 314,154,784 B | 858,480,392 B | 56 |
+
+Both browsers, the driver and its 3 GiB guard exited 0. The guard sampled
+986,333,184 B peak RSS. One-minute host load was 5.02→5.87 and 5.87→5.45
+on 18 CPUs. Vox used 2.18 times Brave's settled footprint. Across the three
+pairs, live variation and other production changes overlap the measured
+Vox differences.
+
+### Native scrolling with both layout allocation changes
+
+Two further fresh launches of the same executable passed the full live patch
+audit. Each sent 720 precise wheel events at nominal 60 Hz, delta 16 and
+reversal at 360, after 23 seconds from the matching title. All four scrolling
+trials across these two builds pinned `libVoxAVIF.dylib` at SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` and
+`VoxAdblockWorker` at `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4`.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 20.69 | 49.03 / 77.45 / 133.02 ms | 244/267 | 720 / 301 | 55.73 Hz | 63.77 / 3.77 ms |
+| 2 | 20.82 | 49.48 / 75.58 / 131.56 ms | 248/270 | 720 / 306 | 55.44 Hz | 60.25 / 10.46 ms |
+
+The first-to-last input windows lasted 12.902 and 12.968 seconds. The
+document reached 12,031 and 12,099.5 CSS pixels and returned to the top.
+The endpoint was native frame installation after view paint. Both browsers,
+drivers and the 3 GiB guard exited 0, with 1,389,346,816 B peak guard RSS.
+One-minute host load was 6.31→7.54 and 7.54→6.89 on 18 CPUs.
+
+```sh
+VOX_TEST_WINDOW=1 sh tools/run_v_tool.sh run_memory_bounded \
+  --lock "$job/scroll.lock" --report "$job/scroll-guard.json" --limit-gib 3 -- \
+  python3 tools/measure_precise_scroll.py \
+  --binary "$PWD/Build/v/Vox.app/Contents/MacOS/Vox" --output "$job/scroll-1" \
+  --url https://www.dota2.com/patches/7.42a --require-title 'Dota Patch Notes - 7.42a' \
+  --width 1024 --height 768 --chrome-height 112 --inputs 720 --delta 16 \
+  --input-hz 60 --target-hz 60 --reverse-every 360 --settle-seconds 23 --timeout 65 \
+  --script-policy automatic \
+  --network-policy 'Direct HTTPS, fresh private profile and HTTP cache, retained OS caches' \
+  --env "VOX_CAPTURE_AUDIT_PATH=$audit" --env "VOX_CAPTURE_AUDIT_CONFIG=$config" \
+  --env VOX_NATIVE_OBSERVATION_DELAY_MS=22000
+```
+
+The audit config selects `#dota_react_root` and counts its `img` descendants.
+The accepted document had 133 images and 15,620 UTF-8 bytes of patch text.
+The UUID-normalized text SHA-256 was
+`a17a1ac87c46cd03abde2d0ae3f58d1a1ff600dd72c10e5ef7187f675ce922fe`.
+
+### Capturing the relayout snapshots once
+
+`8c2cac0cf` stores the before and after geometry snapshots by value and
+clones their rare geometry only when each snapshot is taken. The previous
+generated C allocated temporary `UsedValues` records and cloned the rare
+geometry again when publishing the map entry. The focused test binary's
+record writer inserts the values directly into the map.
+
+The browser-module fixtures verified that 128 independent contexts preserve
+both snapshots after later edits to the source geometry and after eight
+workspace retirements. The empty-input comparison fixture also passed.
+Both tests ran normally and with `document geometry` arena reuse disabled.
+The compile and 3 GiB runtime guards exited 0 with 6,496,305,152 B and
+7,782,400 B peak RSS.
+
+The C emitted for the production build of that commit still moved each
+local `UsedValues` to heap storage. It did so even on calls that skipped
+recording. `fd28b1093` carries both snapshots inline in the `RelayoutRecord`
+instead. Inspection of the C from its focused build confirmed both direct
+field assignments and the by-value record argument. Both fixtures passed
+again, normally and with workspace poisoning. The compile and 3 GiB
+runtime guards exited 0 with 6,451,609,600 B and 2,654,208 B peak RSS.
+The commit hook requested the shared production rebuild.
+
+A separate diagnostic on `30500d29` tried disabling incremental layout
+to estimate how much its live records contributed. The control passed the
+full audit at 23.01 seconds and settled at 676,597,576 B. The disabled launch
+was still loading with an empty title and zero patch bytes at 59.35 seconds.
+The driver closed that browser with SIGTERM and exited 1, as did the guard.
+The control exited 0. The guard sampled 985,579,520 B peak RSS. The failed
+audit ended the diagnostic before the second pair. It yielded no usable
+comparison of the record footprint.
+
+### Live RAM on the first relayout snapshot build
+
+Single-unit C `-prod` receipt `20261125-202827-7588b02e` published executable
+SHA-256 `3f021777d017a95715131e6fc059e865a6b70b41431a4151f508653daddd7a1c`.
+It includes `8c2cac0cf`. The shared worker was building the inline-record
+follow-up when this pair finished. The measured build and headless smoke
+guards exited 0, sampling 7,654,080,512 B and 119,832,576 B peak RSS.
+
+The pair ran Brave first with fresh profiles, pinned inputs and the same
+viewport and full live patch audit. Both passed at the first audit, 23.05
+and 23.06 seconds after launch, respectively.
+
+| Browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Brave | 328,327,088 B | 846,012,336 B | 51 |
+| Vox | 688,197,472 B | 1,133,203,968 B | 52 |
+
+Both browsers, driver and 3 GiB guard exited 0. The guard sampled
+1,001,652,224 B peak RSS. One-minute host load was 7.44→7.66 and
+7.66→7.40 on 18 CPUs. Vox used 2.10 times Brave's settled footprint.
