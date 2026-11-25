@@ -57,6 +57,9 @@ pub mut:
 	cache_misses         u64
 	invalid_entries      u64
 	compiled_executables u64
+	compiled_instructions u64
+	// Emitted inline paths, including paths guarded by runtime value tags.
+	fast_instructions     u64
 	compiler_invocations u64
 	compile_ms           f64
 	load_ms              f64
@@ -83,6 +86,7 @@ fn native_cache_abi() !string {
 		// change, without invalidating it for unrelated browser/docs commits.
 		return sha256.hexhash('native-disk-v3:${native_cache_runtime_mode()}:${os.user_os()}:${os.uname().machine}:${native_primitive_layout_identity()}:' +
 			$embed_file('@VMODROOT/libjs/native_tier.v').to_string() +
+			$embed_file('@VMODROOT/libjs/native_number_ops.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_dynamic_dispatch.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_read.v').to_string() +
 			$embed_file('@VMODROOT/libjs/native_property_length.v').to_string() +
@@ -409,6 +413,8 @@ fn (mut cache NativeCodeCache) install_batch(mut tier NativeTier, keys []string,
 		cache.libraries[library.clone()] = NativeCachedLibrary{ handle: compiled.handle, digest: compiled.stats.library_sha256.clone() }
 	}
 	cache.stats.compiled_executables += u64(keys.len)
+	cache.stats.compiled_instructions += u64(compiled.stats.compiled_instructions)
+	cache.stats.fast_instructions += u64(compiled.stats.fast_instructions)
 	if !compiled.stats.cache_hit { cache.stats.compiler_invocations++ }
 	cache.stats.compile_ms += compiled.stats.compile_ms
 	cache.stats.load_ms += compiled.stats.load_ms

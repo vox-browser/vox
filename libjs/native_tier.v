@@ -6,7 +6,7 @@ import strings
 // An experimental baseline compiler, explicitly driven by the embedder after
 // warmup. Cache entries contain code/layout only, never realm pointers or values.
 // Dynamic operations retain the interpreter's semantics and exception machinery.
-type NativeEntry = fn (voidptr, voidptr, &u64, u8, &u32, fn (voidptr, u32) u32, &u64)
+type NativeEntry = fn (voidptr, voidptr, &u64, u8, &u32, fn (voidptr, u32) u32, &u64, u32)
 
 @[heap]
 struct NativeTier {
@@ -281,8 +281,7 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 }
 
 fn native_slot(operand Operand, executable &Executable) !u32 {
-	// Argument-count-dependent streams stay interpreted. Generated function
-	// bodies access parameters through their environments in this VM.
+	// Only GetArgument has a runtime bounds check for the argument area.
 	return operand.slot(executable, 0, false)
 }
 
@@ -327,6 +326,7 @@ fn native_source(executables []&Executable) !(string, int) {
 	source.writeln('static int number(NV v) { return v.tag==${int(ValueTag.int32)} || v.tag==${int(ValueTag.double)}; }')
 	source.writeln('static NV num(double x) { NV v={.number=x,.tag=${int(ValueTag.double)}}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
 	source.writeln('static NV boolean(int x) { NV v={.number=!!x,.tag=${int(ValueTag.boolean)}}; return v; }')
+	source.writeln(native_number_helpers)
 	source.writeln(native_primitive_helpers())
 	source.writeln(native_property_helpers())
 	source.writeln(native_length_helpers())
@@ -339,7 +339,7 @@ fn native_source(executables []&Executable) !(string, int) {
 			if _ := native_property_plan(instruction, executable, u32(offset)) { has_properties = true; break }
 		}
 		property_reader := if has_properties { 'PropertyRead property=property_reader(state);' } else { '' }
-		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; ${property_reader} goto dispatch;')
+		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps,uint32_t argc) { uint32_t next=*pc; ${property_reader} goto dispatch;')
 		for offset, instruction in executable.instructions {
 			length_fast := native_length_instruction(instruction, executable, u32(offset))
 			index_fast := native_index_instruction(instruction, executable, u32(offset))
@@ -382,9 +382,16 @@ fn native_source(executables []&Executable) !(string, int) {
 
 fn native_fast_instruction(instruction Instruction, executable &Executable) !string {
 	if instruction.op in [.jump, .nop] { return 'BUDGET' }
+	if instruction.op == .get_argument {
+		dst := native_slot(instruction.dst, executable)!
+		argument := u64(executable.registers_and_locals_count) + u64(executable.constants.len) + instruction.identifier
+		return 'BUDGET v[${dst}]=argc>${instruction.identifier}u ? v[${argument}] : (NV){.tag=${int(ValueTag.undefined)}};'
+	}
 	if instruction.op !in [.mov, .end, .jump_if_true, .jump_if_false, .jump_if_nullish, .add, .sub,
-		.mul, .div, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
-		.strict_inequals, .loose_equals, .loose_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op, .typeof_op] {
+		.mul, .div, .mod_, .exp, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
+		.strict_inequals, .loose_equals, .loose_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op, .typeof_op,
+		.bitwise_not, .bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
+		.require_object_coercible, .to_string, .to_property_key] {
 		return ''
 	}
 	if instruction.op == .typeof_op && !use_native_primitive_ops() { return '' }
@@ -400,8 +407,18 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 	if instruction.op == .mov {
 		return code + 'BUDGET v[${native_slot(instruction.dst, executable)!}]=${left};'
 	}
-	if instruction.op == .jump_if_nullish {
-		return code + 'BUDGET if(${left}.tag==${int(ValueTag.undefined)} || ${left}.tag==${int(ValueTag.null)}) goto L${instruction.target};'
+	if instruction.op in [.jump_if_nullish, .require_object_coercible] {
+		nullish := '(${left}.tag==${int(ValueTag.undefined)} || ${left}.tag==${int(ValueTag.null)})'
+		return if instruction.op == .jump_if_nullish { code + 'BUDGET if${nullish} goto L${instruction.target};' }
+			else { code + 'if${nullish} goto SLOW; BUDGET' }
+	}
+	if instruction.op in [.to_string, .to_property_key, .to_numeric] {
+		guard := match instruction.op {
+			.to_string { '${left}.tag==${int(ValueTag.string)}' }
+			.to_property_key { '${left}.tag==${int(ValueTag.string)} || ${left}.tag==${int(ValueTag.symbol)}' }
+			else { 'number(${left}) || ${left}.tag==${int(ValueTag.bigint)}' }
+		}
+		return code + 'if(!(${guard})) goto SLOW; BUDGET v[${native_slot(instruction.dst, executable)!}]=${left};'
 	}
 	if instruction.op in [.jump_if_true, .jump_if_false, .not_op] {
 		if use_native_primitive_ops() {
@@ -421,20 +438,29 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 		if instruction.op in [.loose_equals, .loose_inequals] { return '' }
 	}
 	dst := native_slot(instruction.dst, executable)!
-	code += 'if(!number(${left})) goto SLOW;\n'
-	if instruction.op in [.increment, .decrement, .to_numeric, .unary_plus, .unary_minus] {
+	if instruction.op in [.increment, .decrement, .unary_plus, .unary_minus, .bitwise_not] {
+		code += 'if(!number(${left})) goto SLOW;\n'
 		value := match instruction.op {
 			.increment { '${left}.number+1' }
 			.decrement { '${left}.number-1' }
 			.unary_minus { '-${left}.number' }
+			.bitwise_not { 'signed_bits(~uint32_bits(${left}.number))' }
 			else { '${left}.number' }
 		}
 		return code + 'BUDGET v[${dst}]=num(${value});'
 	}
 	rhs := native_slot(instruction.rhs, executable)!
 	right := 'v[${rhs}]'
-	code += 'if(!number(${right})) goto SLOW;\n'
-	op := match instruction.op {
+	if use_native_primitive_ops() && instruction.op in [.less_than, .less_than_equals, .greater_than, .greater_than_equals] {
+		op := native_number_operator(instruction.op)
+		return code + '{ int strings=${left}.tag==${int(ValueTag.string)} && ${right}.tag==${int(ValueTag.string)}; if(!strings && (!number(${left}) || !number(${right}))) goto SLOW; BUDGET v[${dst}]=boolean(strings ? string_order(${left},${right}) ${op} 0 : ${left}.number ${op} ${right}.number); }'
+	}
+	code += 'if(!number(${left}) || !number(${right})) goto SLOW;\n'
+	return code + 'BUDGET v[${dst}]=${native_number_binary(instruction.op, left + '.number', right + '.number')};'
+}
+
+fn native_number_operator(op OpCode) string {
+	return match op {
 		.add { '+' }
 		.sub { '-' }
 		.mul { '*' }
@@ -446,6 +472,4 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 		.strict_equals { '==' }
 		else { '!=' }
 	}
-	wrap := if instruction.op in [.add, .sub, .mul, .div] { 'num' } else { 'boolean' }
-	return code + 'BUDGET v[${dst}]=${wrap}(${left}.number ${op} ${right}.number);'
 }

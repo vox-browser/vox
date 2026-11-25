@@ -63,6 +63,7 @@ fn (build &NativeLibraryBuild) compile() !f64 {
 		args << ['-shared', '-fPIC']
 	}
 	args << [input, '-o', output]
+	$if linux { args << '-lm' }
 	// Capture both output streams together. Reading only stderr can leave the
 	// child blocked writing stdout while the parent is waiting for EOF.
 	result := os.exec(args)

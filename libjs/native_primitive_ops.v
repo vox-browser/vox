@@ -32,13 +32,22 @@ fn native_primitive_helpers() string {
 static int${sizeof(int) * 8}_t string_length(NV v) {
  int${sizeof(int) * 8}_t n; memcpy(&n,(char*)v.cell+${length_offset},sizeof(n)); return n;
 }
+static const uint16_t *string_data(NV v) {
+ const uint16_t *data; memcpy(&data,(char*)v.cell+${data_offset},sizeof(data)); return data;
+}
 static int string_equal(NV a,NV b) {
  if(a.cell==b.cell) return 1;
  int${sizeof(int) * 8}_t n=string_length(a);
  if(n!=string_length(b)) return 0;
  if(!n) return 1;
- void *x,*y; memcpy(&x,(char*)a.cell+${data_offset},sizeof(x)); memcpy(&y,(char*)b.cell+${data_offset},sizeof(y));
- return memcmp(x,y,(size_t)n*sizeof(uint16_t))==0;
+ return memcmp(string_data(a),string_data(b),(size_t)n*sizeof(uint16_t))==0;
+}
+static int string_order(NV a,NV b) {
+ if(a.cell==b.cell) return 0;
+ size_t m=string_length(a),n=string_length(b),common=m<n?m:n;
+ const uint16_t *x=string_data(a),*y=string_data(b);
+ for(size_t i=0;i<common;i++) if(x[i]!=y[i]) return x[i]<y[i]?-1:1;
+ return (m>n)-(m<n);
 }
 static void *primitive_typeof(void *state,NV v) {
  void *const *names; memcpy(&names,(char*)state+${types_offset},sizeof(names));

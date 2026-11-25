@@ -31,7 +31,8 @@ fn (mut vm VM) invoke_native_entry(entry NativeEntry, executable &Executable, fa
 	invocation := stack.acquire_native_invocation(&vm, executable)
 	defer { stack.release_native_invocation(invocation) }
 	entry(voidptr(invocation), frame.values.data, &vm.instruction_budget,
-		u8(vm.instruction_budget_active), &frame.program_counter, native_slow_step, fast_steps)
+		u8(vm.instruction_budget_active), &frame.program_counter, native_slow_step, fast_steps,
+		frame.argument_count)
 	if failure := invocation.failure { return failure }
 	if frame.program_counter == 0xfffffffe {
 		frame.program_counter = executable.bytecode_length
