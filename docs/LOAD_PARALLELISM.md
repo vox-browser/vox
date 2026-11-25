@@ -5969,3 +5969,141 @@ The eight diagnostic launches verified the document URL, completion,
 viewport and all 30 ordered story IDs. Executable, helper, library,
 archive and harness hashes stayed pinned. Browser, driver and guard
 exits were zero. Peak sampled RSS was 427,819,008 bytes.
+
+### Consume cold glyph masks as worker jobs finish
+
+Commit `1dbc0e20a` adds an opt-in macOS schedule for the ordinary
+retained-text mask path. With `VOX_STREAM_GLYPH_MASKS=1`, the renderer
+submits the same bounded list of uncached A8 masks to workers. The browser
+thread consumes a mask at its first use in paint order, using the per-item
+completion primitive, and can blend earlier glyphs while later masks
+render. It still owns the cache and blends in the original order. A
+worker allocation or draw failure uses the existing single-mask fallback.
+Leaving the run joins the workers and releases any unconsumed bitmaps.
+
+The focused tests passed under ThreadSanitizer and arena poisoning with
+both settings. They check one-item publication, cleanup after partial
+consumption, exact subpixel masks, overlapping glyphs and later cache-miss
+windows. The pinned V `-prod` glyph differential accepted 1,963 comparisons
+under its existing checks and declined 37 of 2,000 draws. It uses Canvas2D
+glyph inputs and did not exercise the retained-text scheduling branch.
+The focused and differential checks exited zero under their guards.
+
+#### Isolated retained-text replay
+
+The existing production bundle from receipt `20261125-234627-f55241b8`
+captured 332 retained text draws from the archived Hacker News homepage.
+The input capture matched the page reference pixel for pixel. Its
+`runs.jsonl` SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The `tools/benchmark_hn_glyphs.v` driver used the current code with
+single-C-unit V `-prod`, a fresh glyph cache and `VOX_ARENA_POISON=1`.
+Its executable SHA-256 was
+`84cbf2fe075ff5cd8d5d71cca4ec344cb891e1bbed11b4d74e2fa5238d2a075f`.
+The driver times CPU glyph rasterization, including mask generation and
+blending.
+
+Both diagnostics dispatched 391 mask jobs in 84 batches. Whole-batch mode
+drew 129 of those masks on the replay caller. Streaming moved all 391
+to workers. It waited for 216 requested masks and found 175 ready. All
+84 worker groups were complete at the final join.
+
+| Pair | Whole batch, ms | Streamed, ms | Reversed whole batch, ms | Reversed streamed, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 9.121 | 9.742 | 10.069 | 10.830 |
+| 2 | 10.089 | 8.972 | 10.056 | 9.019 |
+| 3 | 8.977 | 9.222 | 8.906 | 10.015 |
+| 4 | 8.890 | 10.029 | 9.207 | 8.893 |
+| 5 | 9.666 | 8.942 | 8.961 | 9.052 |
+| 6 | 9.091 | 8.941 | 9.100 | 9.112 |
+| 7 | 8.863 | 8.967 | 9.270 | 9.010 |
+| Median | 9.091 | 8.972 | 9.207 | 9.052 |
+
+Paired medians were +0.104 and +0.012 ms, with three streamed wins in
+each cohort. One-minute host load was 5.03–5.42 on 18 CPUs. All 30
+replays matched RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+The binary, fonts and replay inputs stayed pinned. Capture, replay
+and guard exits were zero, and sampled replay RSS peaked at 50,528,256
+bytes.
+
+#### Matched production captures
+
+Receipt `20261125-235806-5ecefa76` verified the feature commit, compiled it
+in single-C-unit V `-prod` mode and passed headless startup smoke. The
+same bundle ran all four measured cohorts.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `166774cee9a288781560cfd3ad53a15a4ed06835a3ffdb67765fe3ffadc09751` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Four diagnostic pairs reproduced all 84 batches and 391 masks per
+capture. Whole-batch mode drew 129 of the masks on the main thread
+per capture. Streaming drew all of them on workers. It waited at
+240, 242, 239 and 237 individual lookups. All worker groups were
+ready at the final join in all four captures.
+
+Separate counter diagnostics measured the following inclusive
+main-thread instruction scopes. These counts omit the instructions
+that moved to workers.
+
+| Pair | Whole-batch text leaves | Streamed text leaves | Whole-batch native raster | Streamed native raster |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 128,339,540 | 106,006,997 | 258,265,817 | 237,142,038 |
+| 2 | 127,499,409 | 106,878,039 | 255,945,502 | 238,305,334 |
+| 3 | 127,841,252 | 105,691,331 | 259,467,576 | 242,692,290 |
+| 4 | 127,972,451 | 105,638,887 | 256,215,101 | 233,046,389 |
+
+Four unprofiled cohorts alternated seven whole-batch and streamed
+pairs each. The second and fourth cohorts started with streaming.
+Trials measured launch through completed PNG at a 1024×768 CSS-pixel
+viewport and 2× scale. They used JavaScriptCore, private empty
+profiles and HTTP caches, retained OS filesystem and shader caches,
+`tr.athing` readiness and a 60 ms delay per replayed logo response.
+
+| Pair | Whole 1, ms | Stream 1, ms | Whole 2, ms | Stream 2, ms | Whole 3, ms | Stream 3, ms | Whole 4, ms | Stream 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 292.402 | 304.881 | 288.964 | 309.877 | 320.935 | 340.287 | 300.146 | 309.919 |
+| 2 | 334.567 | 320.643 | 317.414 | 318.625 | 322.716 | 313.177 | 320.086 | 302.831 |
+| 3 | 300.661 | 311.613 | 328.569 | 309.723 | 324.109 | 308.867 | 325.159 | 392.173 |
+| 4 | 326.548 | 308.930 | 315.492 | 298.447 | 309.256 | 344.946 | 326.834 | 322.983 |
+| 5 | 317.633 | 314.627 | 327.237 | 310.969 | 330.309 | 310.925 | 288.845 | 322.981 |
+| 6 | 326.143 | 318.311 | 315.659 | 302.505 | 331.513 | 335.307 | 318.593 | 319.936 |
+| 7 | 321.116 | 310.503 | 320.207 | 339.079 | 314.383 | 317.209 | 318.604 | 332.488 |
+| Median | 321.116 | 311.613 | 317.414 | 309.877 | 322.716 | 317.209 | 318.604 | 322.981 |
+
+Median paired changes were −7.832, −13.154, +2.826 and +9.773 ms.
+Streaming finished first in five, four, three and two of the seven
+pairs. Sampled main-thread CPU medians were 156.476 → 149.630,
+151.423 → 149.184, 162.170 → 161.510 and 156.863 → 157.667 ms.
+One-minute load ranged from 4.94–5.28, 4.86–5.03, 4.47–5.07 and
+5.04–5.22 on 18 CPUs.
+
+Streaming reduced main-thread text instructions by 16–18% across
+the four counter pairs. The repeated timing cohorts reversed the
+initial launch-time gains, and isolated replay also had slower
+paired medians. The schedule remains opt-in.
+
+All 72 production launches reproduced the eight replay records,
+including the favicon miss, and matched document PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The 16 diagnostic captures verified URL, ready state, viewport and
+all 30 story IDs in order. The eight path diagnostics also directly
+compared all 3,145,728 pixels against the unchanged reference.
+The executable, library, helper, fonts, archive and benchmark inputs
+stayed pinned. Browser, driver and both 3 GiB guard exits were zero.
+Peak sampled RSS was 435,388,416 bytes.
+
+The full pinned CPU raster differential suite ran at its default
+20,000-input count and seed `20261106`. The suite and its 12 GiB guard
+exited zero at 1,555,791,872 bytes peak sampled RSS. The standard
+screenshot smoke set produced pixel-identical results between modes
+for all 11 cases. Eight passed their upstream references or existing
+tolerances. `inline-node`, `ordered-list` and `text-decorations`
+exceeded their upstream bounds in both modes with 6,106, 2,345 and
+9,976 differing pixels respectively. Both upstream comparison runs
+exited 1. The direct pixel comparisons between modes exited zero
+under a 3 GiB guard.
