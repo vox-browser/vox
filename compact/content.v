@@ -386,7 +386,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	if action == 'childNodeMutation' { return binding.child_node_query(root, selector) }
 	if action == 'parentNodeMutation' { return binding.parent_node_query(root, selector) }
-	if action == 'dataset' { return compact_dataset_query(root, selector) }
+	if action == 'dataset' { return binding.dataset_query(root, selector) }
 	if action in ['shadowRoot', 'shadowHost', 'shadowValue', 'shadowElementById', 'getRootNode'] {
 		return binding.shadow_query(root, action, selector)
 	}

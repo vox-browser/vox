@@ -3,12 +3,46 @@ module main
 import browserjs
 import html
 
+fn test_compact_dataset_retires_attribute_snapshots_and_keeps_written_values() {
+	mut document := html.parse_document('<!doctype html><div id="host"></div>')
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer {
+		owner.finish()
+		document.finalize()
+		document.release_native_storage()
+	}
+	mut host := document.get_element_by_id('host') or { panic('missing dataset host') }
+	host.set_attribute_value('aria-label', 'unrelated'.repeat(4096))
+	mut binding := &CompactElementQueryBinding{document: document, runtime: unsafe { nil }}
+	binding.elements['host'] = host
+	write_reply := binding.query_with_temporary_reply(r'{"key":"host","action":"dataset","selector":"{\"op\":\"set\",\"name\":\"nameValue\",\"value\":\"λ😀\"}"}')!
+	assert write_reply.value.contains('λ😀')
+	write_reply.workspace.finish()
+	assert host.get_attribute_value('data-name-value') == 'λ😀'
+	storage := document.native_storage()
+	before := if storage != unsafe { nil } { storage.arena.usage().used } else { i64(0) }
+	for _ in 0 .. 8 {
+		reply := binding.query_with_temporary_reply(r'{"key":"host","action":"dataset","selector":"{\"op\":\"read\"}"}')!
+		assert reply.value.contains('"nameValue","λ😀"')
+		assert reply.value.contains('unrelatedunrelated')
+		$if prealloc { assert !storage.arena.contains(reply.value.str) }
+		reply.workspace.finish()
+	}
+	$if prealloc { assert storage.arena.usage().used - before < 8 * 1024 }
+	delete_reply := binding.query_with_temporary_reply(r'{"key":"host","action":"dataset","selector":"{\"op\":\"delete\",\"name\":\"nameValue\"}"}')!
+	delete_reply.workspace.finish()
+	assert !host.has_attribute('data-name-value')
+}
+
 fn test_compact_dataset_reads_ssr_cache_and_replays_live_attribute_mutations() {
 	mut document := html.parse_document('<!doctype html><div id="host" data-ssr-uid="search-1"><b>cached</b></div><svg id="icon" data-part-name="search"></svg>')
+	document.enable_native_storage()
 	mut runtime := browserjs.Runtime.create()
 	defer {
 		runtime.close()
 		document.finalize()
+		document.release_native_storage()
 	}
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [r'
@@ -38,10 +72,12 @@ globalThis.savedDataset=data;
 
 fn test_compact_dataset_handles_names_conversion_and_prototype_keys() {
 	mut document := html.parse_document('<!doctype html><div id="host"></div><svg id="icon"></svg>')
+	document.enable_native_storage()
 	mut runtime := browserjs.Runtime.create()
 	defer {
 		runtime.close()
 		document.finalize()
+		document.release_native_storage()
 	}
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [r'
