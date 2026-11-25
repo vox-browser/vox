@@ -51,7 +51,11 @@ $if !cpuraster_freetype ? {
 		index int) u32 {
 		mapped := map_point_affine(rounding,
 			Point{run.positions[index * 2], run.positions[index * 2 + 1]})
-		return packed_glyph_key(run.glyphs[index],
+		return glyph_mask_key_at_position(run.glyphs[index], strike, mapped)
+	}
+
+	fn glyph_mask_key_at_position(id u16, strike &GlyphStrike, mapped Point) u32 {
+		return packed_glyph_key(id,
 			if strike.snap_x { 0 } else { packed_subpixel(mapped.x) },
 			if strike.snap_y { 0 } else { packed_subpixel(mapped.y) })
 	}

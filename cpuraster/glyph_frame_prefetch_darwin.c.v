@@ -52,7 +52,7 @@ $if !cpuraster_freetype ? {
 		if run.glyphs.len == 0 || run.positions.len != run.glyphs.len * 2
 			|| !run.retained || !run.chromium_coverage || run.font_path == '' { return }
 		device := pre_translate(canvas_affine(run_spec.transform), run.translation[0], run.translation[1])
-		if glyphs_draw_as_paths(run.font_size, device) { return }
+		if !affine_is_finite(device) || glyphs_draw_as_paths(run.font_size, device) { return }
 		face_key := glyph_face_key(run.font_path, run.face_index)
 		color := run_spec.color
 		alpha := if precise := run.paint_color { fmin(fmax(precise[3], 0), 1) }
@@ -90,7 +90,10 @@ $if !cpuraster_freetype ? {
 		}
 		for index in 0 .. run.glyphs.len {
 			if batch.jobs.len == glyph_frame_prefetch_jobs { break }
-			glyph := glyph_run_mask_key(run, &strike, rounding, index)
+			point := map_point_affine(rounding,
+				Point{run.positions[index * 2], run.positions[index * 2 + 1]})
+			if !is_finite_f32(point.x) || !is_finite_f32(point.y) { continue }
+			glyph := glyph_mask_key_at_position(run.glyphs[index], &strike, point)
 			if glyph in owner.keys || (entry != unsafe { nil } && glyph in entry.glyphs) { continue }
 			owner.keys[glyph] = true
 			batch.jobs << GlyphFrameJob{slot: slot, image: GlyphImageJob{key: glyph}}

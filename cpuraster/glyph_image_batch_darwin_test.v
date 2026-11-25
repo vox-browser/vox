@@ -1,5 +1,6 @@
 module cpuraster
 
+import math
 import os
 import runtime
 
@@ -108,6 +109,16 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		assert fill_canvas_glyphs_cached(mut prefetched_cache, mut prefetched, 256, 48, 1024,
 			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
 		assert prefetched == serial
+
+		finite_keys_only := new_glyph_cache()
+		invalid_positions := []f32{len: run.positions.len, init: f32(math.nan())}
+		assert start_glyph_frame_prefetch(finite_keys_only, [
+			GlyphFramePrefetchRun{run: run, transform: [f32(1), 0, 0, 1, f32(math.inf(1)), 0]!,
+				color: 0xff123456},
+			GlyphFramePrefetchRun{run: CanvasGlyphRun{...run, positions: invalid_positions},
+				transform: transform, color: 0xff123456},
+		]) == unsafe { nil }
+		assert finite_keys_only.strikes.len == 0
 
 		mut caller := u64(0)
 		C.pthread_threadid_np(unsafe { nil }, &caller)
