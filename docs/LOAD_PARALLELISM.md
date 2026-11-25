@@ -6429,3 +6429,119 @@ all 3,145,728 pixels against the unchanged reference. Executable,
 library, helper, fonts, archive and benchmark inputs stayed pinned.
 Browser, driver and 3 GiB guards exited zero. Peak sampled RSS was
 434,094,080 bytes.
+
+### Prepare compositor raster chunk bounds on workers
+
+Commit `7e952cef9` adds `VOX_PARALLEL_RASTER_CHUNK_BOUNDS=1`
+on macOS. Two raster workers calculate ordinary command bounds while
+the renderer discovers compositor candidates and inherits visual
+properties. They read the retained paint order and write disjoint
+bounds slots. The renderer joins the batch before assembling chunks
+in paint order. Sticky geometry uses the live replay transform on
+the renderer thread. The 256–4096 command range bounds job overhead
+and reused storage. Worker unavailability selects the serial calculation.
+
+The focused test replayed 807 commands after a 260 CSS-pixel root
+scroll with a sticky header, a fixed box, clipped outlines, shadows,
+and opacity. Both plans preserved bounds, raster origins, command
+order and layer assignments. Workers supplied 805 command bounds.
+ThreadSanitizer with arena poisoning was clean. The compile and
+runtime guards exited zero and peaked at 6,424,576,000 and 254,771,200
+bytes of sampled RSS.
+
+#### Isolated Hacker News layer planning
+
+An unoptimized test executable used the archived homepage HTML
+(`d5e63157…2fc53`) and linked stylesheet bytes (`de472281…54b5`)
+at 1024×768 CSS pixels and 2× scale. It loaded the archived CSS inline
+and measured warmed layer planning on a retained list of 554 commands
+with two compositor layers. This workload omits network fetches,
+JavaScript, native rasterization and PNG encoding. Both schedules
+produced the same layer bounds and command assignments in every
+pair. A separate diagnostic launch recorded all 554 command bounds
+on two workers across 155 plans. The batch was still running at
+the join every time.
+
+Each timing launch alternated 150 measured pairs after five warm-up
+pairs. Times include candidate discovery, property inheritance,
+the worker join and completed chunk grouping. The 18-core host
+was also running a production build. The test executable SHA-256
+was `421c0c21061eb261ceef8ea1f29aa23699bf735b0c6aac8a38abffd436a95696`.
+The compile and runtime guards exited zero. Runtime peak sampled RSS
+was 94,502,912 bytes.
+
+| Run | Serial median | Worker median | Median paired change | Worker wins |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 147.188 µs | 136.021 µs | −11.292 µs | 150/150 |
+| 2 | 146.750 µs | 135.688 µs | −11.521 µs | 146/150 |
+
+#### Production Hacker News captures
+
+The shared builder published receipt `20261126-010909-fb10a9dd`
+after earlier attempts exhausted temporary disk space. The receipt
+verified the feature commit in a single-C-unit V `-prod` executable,
+and the guarded headless smoke passed.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `08f9c5c9d9171d72ab10184f76d497df2cf8916bf135c331cbdfd1d879f99c45` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Each diagnostic capture built two raster plans. Worker mode supplied
+all 443 bounds in each plan on two workers. The renderer waited at
+each join. The disabled-worker capture took the serial fallback.
+All nine diagnostic captures matched all 3,145,728 pixels of the
+existing reference. Each capture preserved the URL, viewport, ready
+state, and all 30 story IDs in document order.
+
+The separate main-thread counter runs recorded two calls per stage.
+Work moved out of chunk grouping while submission and allocation
+increased setup instructions. The enclosing plan saved 63,617
+instructions in one pair and used 14,436 more in the other.
+
+| Pair | Setup serial | Setup workers | Chunks serial | Chunks workers | Complete plan serial | Complete plan workers |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 73,032 | 157,262 | 674,805 | 520,934 | 1,294,475 | 1,230,858 |
+| 2 | 69,079 | 177,332 | 667,438 | 530,621 | 1,281,889 | 1,296,325 |
+
+Four unprofiled cohorts alternated seven pairs on the same executable,
+with worker mode first in cohorts two and four. Every trial launched a
+fresh process with JavaScriptCore, a private empty profile and HTTP
+cache, and retained OS filesystem and shader caches. Captures used
+the archived origin, a 1024×768 CSS-pixel viewport at 2× scale,
+`tr.athing` readiness, and a 60 ms delay on each replayed logo
+response. libproc sampling and PNG polling ran at nominal 1 ms intervals.
+The endpoint is the first observation of the completed document PNG
+after launch, including startup, replayed network requests, painting
+and encoding.
+
+| Pair | Serial 1, ms | Worker 1, ms | Serial 2, ms | Worker 2, ms | Serial 3, ms | Worker 3, ms | Serial 4, ms | Worker 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 335.819 | 335.194 | 321.537 | 295.161 | 305.771 | 334.125 | 319.486 | 324.586 |
+| 2 | 314.014 | 321.260 | 299.332 | 334.503 | 305.585 | 323.642 | 312.704 | 336.702 |
+| 3 | 317.060 | 284.925 | 306.285 | 337.132 | 303.316 | 295.519 | 307.697 | 335.738 |
+| 4 | 304.072 | 335.751 | 310.289 | 318.459 | 314.296 | 333.441 | 320.795 | 333.558 |
+| 5 | 320.669 | 318.869 | 316.436 | 332.524 | 322.958 | 311.418 | 337.458 | 316.210 |
+| 6 | 313.160 | 295.457 | 309.870 | 303.558 | 315.269 | 322.575 | 331.572 | 320.451 |
+| 7 | 290.262 | 305.325 | 307.433 | 295.325 | 312.004 | 287.679 | 330.757 | 284.603 |
+| Median | 314.014 | 318.869 | 309.870 | 318.459 | 312.004 | 322.575 | 320.795 | 324.586 |
+
+Median paired changes were −0.626, +8.170, +7.306 and +5.100 ms.
+Workers finished first in four, three, three and three pairs.
+The 18-core host's one-minute load ranged from 3.86 to 4.42.
+Full launch-to-PNG medians were higher in all four worker cohorts,
+so the path remains opt-in. Style, layout, layer grouping and
+ordered paint replay still contain renderer-thread work.
+
+All 65 launches using `tools/measure_load_parallelism.py` reproduced
+eight replay requests with the same fingerprints, including the
+archived route's favicon miss. All passed the document audit and
+reproduced PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The bundle lease, executable, helper, libraries, font inputs,
+archive and reference remained pinned throughout the measurements.
+Browser, driver and 3 GiB guards exited zero. Peak sampled RSS
+was 323,780,608 bytes.
