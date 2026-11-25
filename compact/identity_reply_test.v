@@ -49,6 +49,37 @@ fn test_compact_identity_reply_preserves_non_element_node_states() {
 	}
 }
 
+fn test_compact_element_query_retires_its_hydration_reply() {
+	mut document := dom.Document.create(dom.URL{value: 'https://identity-reply.test/'})
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer {
+		owner.finish()
+		document.finalize()
+		document.release_native_storage()
+	}
+	html.parse_html_from_a_string(document, '<!doctype html><textarea id="field">λ😀</textarea>')
+	element := document.get_element_by_id('field') or { panic('field') }
+	mut binding := &CompactElementQueryBinding{document: document, runtime: unsafe { nil }}
+	key := '__element_field'
+	binding.keys[voidptr(element)] = key
+	binding.elements[key] = element
+	request := r'{"key":"","action":"documentElementById","selector":"field"}'
+	first := binding.query_with_temporary_reply(request)!
+	state := json2.decode[map[string]json2.Any](first.value)!
+	$if prealloc {
+		assert !document.native_storage().arena.contains(first.value.str)
+	}
+	assert json_string_property(state, 'bridgeKey')? == key
+	assert json_string_property(state, 'value')? == 'λ😀'
+	first.workspace.finish()
+	after := binding.query_with_temporary_reply(request)!
+	assert after.value == json2.encode(json2.Any({'bridgeKey': json2.Any(key)}))
+	after.workspace.finish()
+	model := html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) })
+	assert model.value() == 'λ😀'
+}
+
 fn test_compact_identity_reply_preserves_wrappers_across_live_queries() {
 	mut document := html.parse_document('<!doctype html><main id="host"><input id="field" value="initial"><svg><rect id="shape" width="7"/></svg></main>')
 	document.enable_native_storage()
