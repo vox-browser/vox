@@ -2992,3 +2992,158 @@ drivers and 3 GiB guards exited 0 with 1,329,905,664 B and 1,268,891,648 B
 peak guard RSS. One-minute host load was 4.17→4.56 and 4.96→5.49. These
 build-order trials were slower than the preceding cohort, and most
 frames on both bundles exceeded the 60 Hz budget.
+
+## Batching stylesheet invalidation and retiring parsed URLs
+
+`d964ede12` accumulates invalidation plans for appended stylesheets in a
+temporary arena. It merges the completed additions into the published
+cache while preserving readers of the previous match sets. The existing
+rule indexes and cascade order stay with the style scope. `6d236c4ff`
+scopes URL records and parser temporaries to a stylesheet-key lookup.
+The resulting serialized keys keep the caller's lifetime.
+
+A diagnostic on single-unit C `-prod` receipt
+`20261126-001521-7e07b98a`, executable SHA-256
+`9016aa335116c1a1eb5928a4e3ef9676042442d39c5e43cc45c8cc8156bd2976`,
+confirmed that the 11,363-rule Dota stylesheet extends an existing
+author cache. The three later author additions also used extensions.
+The trace completed the live audit at 23.04 seconds, settled at
+679,841,632 B and peaked at 1,141,461,576 B. Browser, driver and 3 GiB
+guard exited 0 at 999,260,160 B peak guard RSS. One-minute host load
+was 4.68→4.30 on 18 CPUs.
+
+The component comparison started each cache with the 28,766 B AOS
+stylesheet and appended the 1,648,921 B Dota stylesheet. The captured
+response SHA-256 hashes were
+`a73040c660ed6058552e3695e2c99bb943ab3b0bd74c11d8ead94bdd92fa604a`
+and `f86324bf8ffa19d8af396df2ac7bee29796aff93ccd50deee4fda952ebd79545`.
+The C-backend preallocation fixture measured 26,950,245 B of caller-arena
+growth with per-selector publication and 12,878,871 B with batching.
+All 4,406 published plans and their property keys and feature flags
+agreed. Poisoning the retired staging and publication arenas yielded
+the same result. The compile and two runtime guards exited 0, peaking
+at 2,213,658,624 B, 403,144,704 B and 403,374,080 B of aggregate RSS.
+
+Eighteen focused cache-extension, selector-invalidation, and scope cases
+passed normally and with retired workspaces poisoned. The initial new
+assertion compared raw map iteration order with a complete rebuild.
+Comparing key membership and plan contents preserves the test of
+stylesheet semantics. The first runtime and guard exited 1 at
+34,799,616 B peak RSS. The corrected guards exited 0 at 23,003,136 B
+and 49,004,544 B.
+
+A separate C-backend fixture resolved the two captured stylesheet URLs
+256 times each. The earlier parser path used 1,617,910 B in the caller
+arena. The scoped path used 43,264 B and returned the same keys, including
+with the arena poisoned. The compile and runtime guards exited 0 at
+2,303,819,776 B, 32,768 B and 344,064 B peak RSS. Eleven browser CSS cases
+also passed under preallocation, poisoned preallocation and Boehm,
+covering URL resolution, cached response MIME and redirect policy,
+imports and cache extension. The two compile guards sampled
+2,219,737,088 B and 2,201,108,480 B. The 3 GiB runtime guards sampled
+22,495,232 B, 884,736 B and 45,547,520 B. All exited 0.
+
+### Live controls
+
+The figures below use fresh visible processes, a 1024×768 native viewport
+at backing scale two, private profiles and HTTP caches, direct HTTPS and
+automatic scripting. The audits checked the title, readiness, loaded
+fonts, 133 patch images and the established normalized digest of 15,620
+UTF-8 bytes of patch text. Process-tree physical footprint was sampled
+every 50 ms from launch. The settled value is the median of the final
+three seconds of the 12-second window following the first passing audit.
+
+| Trial | First full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Vox control 1 | 23.01 s | 653,315,960 B | 1,110,250,056 B | 55 |
+| Vox control 2 | 23.05 s | 636,325,704 B | 1,086,624,256 B | 56 |
+| Brave | 23.00 s | 342,008,112 B | 875,471,104 B | 55 |
+
+All browser, driver and 3 GiB guard exits were 0. Peak guard RSS was
+962,854,912 B, 943,030,272 B and 918,290,432 B. One-minute host load was
+4.00→4.05, 4.45→5.48 and 6.45→6.83. Brave 158.1.100.59 reported Chromium
+158.0.8127.92. Its executable and framework matched the pinned hashes
+in the prior controls. CDP sized the actual window before navigation and
+confirmed the visible complete page at both observation endpoints.
+
+### Native scrolling diagnostic
+
+On the Vox control, a 35 ms slow-frame sampler filled its 1,024-sample
+buffer and dropped 70 samples. The browser exited 0, and the diagnostic
+driver and guard exited 1 with peak guard RSS of 1,251,409,920 B. A
+separate 65 ms configuration captured 132 stacks from 56 slow frames
+with zero drops or snapshot failures. The latter run passed the full
+patch audit. Its main-thread samples included
+`native_end_css_filter_layer` in 95 stacks,
+`native_render_css_filter_image` in 48, and Core Image in 59.
+Browser, driver and 3 GiB guard exited 0 at 1,268,989,952 B peak guard
+RSS. The samples describe the selected slow frames.
+
+### Published browser
+
+Single-unit C `-prod` receipt `20261126-002902-8ebd329a` sealed
+`8ba6d0e6d`. Executable SHA-256 was
+`68d9c5dd1474bdd62c697e89ce40ed7296535f26cfd1995755e191e0424caed3`.
+The build includes both stylesheet changes and a separate display-list
+projection change. All pinned native helpers and resources matched the
+control. The production and smoke guards exited 0, with sampled peak
+RSS of 7,757,840,384 B and 262,144 B. Two preceding build attempts
+rejected changing source inputs before C preprocessing.
+
+| Trial | First full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Vox candidate 1 | 23.01 s | 637,620,064 B | 1,095,471,640 B | 53 |
+| Vox candidate 2 | 23.05 s | 633,573,144 B | 1,090,572,608 B | 51 |
+
+Both browser, driver and 3 GiB guard runs exited 0. Peak guard RSS was
+966,688,768 B and 940,081,152 B. One-minute host load was 3.86→3.92 and
+3.53→3.34. The settled and peak ranges overlapped the Vox controls.
+Vox used 1.85–1.86 times the fresh Brave result. The observed
+whole-browser footprints cover a live workload and the shared build's
+additional engine change.
+
+### Native input and reference pixels
+
+The unprofiled launches used `tools/measure_precise_scroll.py` with a
+23-second settle after the title matched. They delivered 720 precise
+wheel events at nominal 60 Hz and delta 16, reversing at event 360.
+All four passed the full patch audit. The endpoint was completed native
+frame installation. Throughput covers the full input window.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 18.59 | 55.55 / 84.14 / 139.44 ms | 223/246 | 720 / 280 | 54.32 Hz | 67.27 / 2.81 ms |
+| Control 2 | 15.01 | 68.64 / 102.04 / 140.11 ms | 186/205 | 720 / 230 | 52.66 Hz | 79.39 / 174.66 ms |
+| Candidate 1 | 21.13 | 48.75 / 72.85 / 123.48 ms | 256/274 | 720 / 311 | 55.45 Hz | 60.53 / 7.05 ms |
+| Candidate 2 | 22.92 | 43.97 / 66.87 / 123.83 ms | 283/301 | 720 / 337 | 54.74 Hz | 84.74 / 4.28 ms |
+
+The input windows lasted 13.236, 13.653, 12.967 and 13.135 seconds.
+Maximum scroll positions were 12,038, 12,036, 12,031 and 12,094.5 CSS
+pixels. Final positions were 2, 1.5, 0 and 0. All browser, driver and
+3 GiB guard exits were 0. Peak guard RSS was 1,257,357,312 B,
+1,278,656,512 B, 1,215,725,568 B and 1,270,349,824 B.
+One-minute host load was 5.48→6.61, 6.61→7.35, 3.92→3.53 and 3.47→2.70.
+The trials ran in build order, with more host contention during the
+controls and a shared rendering change in the candidate. Most frames in
+each trial exceeded the 60 Hz budget.
+
+The four 800×600 captures for `nth-child-of-class`, `nth-child-of-has`,
+`scope-shadow-sharing` and `css-local-link-selector` matched their
+upstream references and matched byte for byte across both Vox builds.
+Both comparison drivers and guards exited 0. Peak guard RSS was
+194,347,008 B and 190,332,928 B.
+
+A separate candidate startup trace observed the same four author-cache
+extensions, including the one for the 11,363-rule stylesheet. The
+published C routes that extension through the batched builder and bounds
+stylesheet URL parsing with its temporary scope. This instrumented
+launch passed the audit at 23.01 seconds, settled at 619,974,400 B,
+and peaked at 1,074,270,504 B. Browser, driver and guard exited 0 with
+932,970,496 B peak guard RSS and one-minute host load 4.85→4.86.
+
+Two separate launches with a 250 ms audit first confirmed the full
+patch at 13.41 and 3.15 seconds. A separate timing-log launch confirmed
+it at 3.14 seconds and recorded 407 ms for the main response fetch.
+All three browser, driver and guard exits were 0, with peak guard RSS
+of 908,738,560 B, 700,710,912 B and 722,862,080 B. These live launch
+observations show substantial readiness variation.
