@@ -117,6 +117,8 @@ fn C.hb_buffer_guess_segment_properties(buffer voidptr)
 
 fn C.hb_shape(font voidptr, buffer voidptr, features voidptr, feature_count u32)
 
+fn C.hb_buffer_get_length(buffer voidptr) u32
+
 fn C.hb_buffer_get_glyph_infos(buffer voidptr, length &u32) &C.hb_glyph_info_t
 
 fn C.hb_buffer_get_glyph_positions(buffer voidptr, length &u32) &C.hb_glyph_position_t
@@ -973,10 +975,13 @@ struct HarfBuzzGlyphBuffer {
 }
 
 fn harfbuzz_buffer_glyphs(buffer voidptr) HarfBuzzGlyphBuffer {
-	mut count := u32(0)
-	infos := C.hb_buffer_get_glyph_infos(buffer, &count)
-	positions := C.hb_buffer_get_glyph_positions(buffer, &count)
-	return HarfBuzzGlyphBuffer{infos, positions, int(count)}
+	// An address passed to C can make V heap-allocate the output variable.
+	// Workers borrow the arrays and read the count separately.
+	return HarfBuzzGlyphBuffer{
+		infos: C.hb_buffer_get_glyph_infos(buffer, unsafe { nil })
+		positions: C.hb_buffer_get_glyph_positions(buffer, unsafe { nil })
+		count: int(C.hb_buffer_get_length(buffer))
+	}
 }
 
 // Resolve any native advances the caller did not prepare, then dispose of
