@@ -110,6 +110,38 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
 		assert prefetched == serial
 
+		mut split_cache := new_glyph_cache()
+		if glyph_frame_prefetch_can_split(split_cache) {
+			wave_runs := [expect[0], expect[0], expect[1]]
+			waves := start_glyph_frame_prefetch(split_cache, wave_runs, front_runs: 1, tail_command: 64)
+			assert advance_glyph_frame_prefetch(waves, split_cache, 0) == 64
+			assert split_cache.strikes.len == 1
+			batch := unsafe { &GlyphFrameWork(waves) }
+			assert batch.front_jobs * 2 == batch.job_count
+			assert advance_glyph_frame_prefetch(waves, split_cache, 63) == 64
+			assert split_cache.strikes.len == 1
+			assert advance_glyph_frame_prefetch(waves, split_cache, 64) == -1
+			assert split_cache.strikes.len == 2
+			mut expected_tail := []u8{len: serial.len, init: 255}
+			mut actual_tail := expected_tail.clone()
+			assert fill_canvas_glyphs(mut expected_tail, 256, 48, 1024, 2, other, transform,
+				0xff123456, none, 1, .src_over, [], none)
+			assert fill_canvas_glyphs_cached(mut split_cache, mut actual_tail, 256, 48, 1024, 2, other,
+				transform, 0xff123456, none, 1, .src_over, [], none)
+			assert actual_tail == expected_tail
+
+			discard_cache := new_glyph_cache()
+			unused := start_glyph_frame_prefetch(discard_cache, expect, front_runs: 1, tail_command: 64)
+			assert advance_glyph_frame_prefetch(unused, discard_cache, 0) == 64
+			finish_glyph_frame_prefetch(unused, unsafe { nil })
+			assert discard_cache.strikes.len == 1
+
+			skipped_cache := new_glyph_cache()
+			skipped := start_glyph_frame_prefetch(skipped_cache, expect, front_runs: 1, tail_command: 64)
+			assert advance_glyph_frame_prefetch(skipped, skipped_cache, 64) == -1
+			assert skipped_cache.strikes.len == 2
+		}
+
 		// Replay can cache a glyph before frame publication. Keep that mask and
 		// publish only the missing masks from the worker-owned batch.
 		mut growing_cache := new_glyph_cache()

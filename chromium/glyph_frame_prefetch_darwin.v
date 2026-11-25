@@ -7,6 +7,7 @@ import processmetrics
 
 $if !cpuraster_freetype ? {
 	const prefetch_frame_glyph_masks = os.getenv('VOX_PREFETCH_FRAME_GLYPH_MASKS') == '1'
+	const prefetch_tail_frame_glyph_masks = os.getenv('VOX_PREFETCH_TAIL_FRAME_GLYPH_MASKS') == '1'
 
 	fn (mut app BrowserApp) start_document_glyph_prefetch(geometry []RetainedGlyphReplayGeometry,
 		page_y f32) voidptr {
@@ -19,8 +20,15 @@ $if !cpuraster_freetype ? {
 		if scale != 1 && scale != 2 { return unsafe { nil } }
 		stage := processmetrics.begin_thread_instruction_substage('glyph_frame_prefetch_submission')
 		defer { stage.finish() }
-		mut runs := []cpuraster.GlyphFramePrefetchRun{cap: 32}
-		for index in 0 .. math.min(geometry.len, 160) {
+		cache := document_glyph_cache()
+		split := prefetch_tail_frame_glyph_masks && cpuraster.glyph_frame_prefetch_can_split(cache)
+		limit := if split { 128 } else { 32 }
+		mut runs := []cpuraster.GlyphFramePrefetchRun{cap: limit}
+		mut front_runs := 0
+		mut tail_command := 0
+		for index in 0 .. math.min(geometry.len, if split { 512 } else { 160 }) {
+			in_front := index < 160 && front_runs < 32
+			if !in_front && front_runs == 0 { break }
 			prepared := &geometry[index]
 			if prepared.positions.len == 0 { continue }
 			command := unsafe { &app.paint_commands[index] }
@@ -36,6 +44,11 @@ $if !cpuraster_freetype ? {
 				continue
 			}
 			color := app.paint_colors.color(command.color, command.opacity)
+			if in_front {
+				front_runs++
+			} else if tail_command == 0 {
+				tail_command = index
+			}
 			// An integral device scale makes removing the raster's integer
 			// origin subpixel-neutral. Float rounding can still pick a
 			// neighboring key, which ordinary glyph lookup then misses.
@@ -56,16 +69,16 @@ $if !cpuraster_freetype ? {
 					(page_y + f32(matrix[5])) * scale]!
 				color: u32(color.a) << 24 | u32(color.r) << 16 | u32(color.g) << 8 | u32(color.b)
 			}
-			if runs.len == 32 { break }
+			if runs.len == limit { break }
 		}
 		if runs.len == 0 { return unsafe { nil } }
-		return cpuraster.start_glyph_frame_prefetch(document_glyph_cache(), runs)
+		return cpuraster.start_glyph_frame_prefetch(cache, runs, front_runs: front_runs, tail_command: tail_command)
 	}
 
-	fn publish_document_glyph_prefetch(context voidptr) {
+	fn publish_document_glyph_prefetch(context voidptr, command_index int) int {
 		stage := processmetrics.begin_thread_instruction_substage('glyph_frame_prefetch_join')
 		defer { stage.finish() }
-		cpuraster.finish_glyph_frame_prefetch(context, document_glyph_cache())
+		return cpuraster.advance_glyph_frame_prefetch(context, document_glyph_cache(), command_index)
 	}
 
 	fn discard_document_glyph_prefetch(context voidptr) {

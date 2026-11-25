@@ -7837,6 +7837,7 @@ fn (mut app BrowserApp) draw() {
 			leaf_canvas_bounds := canvas_bounds.finish(!scroll_damage.reused)
 			has_glyph_geometry := leaf_canvas_bounds.len > 0 && canvas_bounds.glyph_geometry.len > 0
 			mut frame_glyph_prefetch := voidptr(0)
+			mut frame_glyph_prefetch_at := 0
 			$if macos && !cpuraster_freetype ? {
 				if has_glyph_geometry {
 					frame_glyph_prefetch = app.start_document_glyph_prefetch(canvas_bounds.glyph_geometry, page_y)
@@ -8025,9 +8026,10 @@ fn (mut app BrowserApp) draw() {
 					unsafe { &canvas_bounds.glyph_geometry[command_index] }
 				} else { unsafe { &RetainedGlyphReplayGeometry(nil) } }
 				$if macos && !cpuraster_freetype ? {
-					if frame_glyph_prefetch != unsafe { nil } && command.kind == 'draw_text' {
-						publish_document_glyph_prefetch(frame_glyph_prefetch)
-						frame_glyph_prefetch = unsafe { nil }
+					if frame_glyph_prefetch != unsafe { nil } && command.kind == 'draw_text'
+						&& command_index >= frame_glyph_prefetch_at {
+						frame_glyph_prefetch_at = publish_document_glyph_prefetch(frame_glyph_prefetch, command_index)
+						if frame_glyph_prefetch_at < 0 { frame_glyph_prefetch = unsafe { nil } }
 					}
 				}
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {

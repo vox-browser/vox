@@ -19,6 +19,13 @@ $if !cpuraster_freetype ? {
 		color     u32
 	}
 
+	@[params]
+	pub struct GlyphFramePrefetchOptions {
+	pub:
+		front_runs   int
+		tail_command int
+	}
+
 	struct GlyphFrameStrikeSpec {
 		path string
 		index int
@@ -51,9 +58,9 @@ $if !cpuraster_freetype ? {
 		key string
 		cached map[u32]bool
 		strike GlyphStrike
-		// A frame admits at most 128 keys across all strikes. Keep this
+		// A two-wave frame admits at most 256 keys across all strikes. Keep this
 		// table at no more than half full without growing it on a worker.
-		keys [256]u32
+		keys [512]u32
 	}
 
 	fn (mut slot GlyphFrameStrike) open_font() bool {
@@ -78,7 +85,9 @@ $if !cpuraster_freetype ? {
 
 	@[heap]
 	struct GlyphFrameWork {
-		input []GlyphFramePrefetchRun
+		input        []GlyphFramePrefetchRun
+		front_input  int
+		tail_command int
 	mut:
 		strikes      []GlyphFrameStrike
 		strike_count int
@@ -88,6 +97,14 @@ $if !cpuraster_freetype ? {
 		job_count    int
 		ticket       voidptr
 		lanes        int
+		front_runs   int
+		front_jobs   int
+		front_ready  bool
+		front_published int
+		front_overlap int
+		front_finished_ns u64
+		tail_ticket  voidptr
+		tail_lanes   int
 		owner_start  u64
 		has_cold_strike bool
 		prepare_strikes bool
@@ -105,6 +122,12 @@ $if !cpuraster_freetype ? {
 			strike := unsafe { &batch.strikes[job.slot].strike }
 			draw_glyph_image_job(strike, mut job.image, glyph_frame_prefetch_diagnostics)
 		}
+	}
+
+	fn draw_tail_glyph_frame_jobs(context voidptr, first i32, end i32) {
+		batch := unsafe { &GlyphFrameWork(context) }
+		offset := i32(batch.front_jobs)
+		draw_glyph_frame_jobs(context, first + offset, end + offset)
 	}
 
 	fn (mut batch GlyphFrameWork) collect(run_spec &GlyphFramePrefetchRun, cache &GlyphCache,
@@ -178,10 +201,18 @@ $if !cpuraster_freetype ? {
 		}
 	}
 
-	fn (mut batch GlyphFrameWork) prepare_cold_strikes() {
-		for index in 0 .. batch.input.len {
-			batch.collect(unsafe { &batch.input[index] }, unsafe { nil }, true)
+	fn (mut batch GlyphFrameWork) collect_cold_strikes(defer_font bool) {
+		for index in 0 .. batch.front_input {
+			batch.collect(unsafe { &batch.input[index] }, unsafe { nil }, defer_font)
 		}
+		batch.front_runs = batch.runs.len
+		for index in batch.front_input .. batch.input.len {
+			batch.collect(unsafe { &batch.input[index] }, unsafe { nil }, defer_font)
+		}
+	}
+
+	fn (mut batch GlyphFrameWork) prepare_cold_strikes() {
+		batch.collect_cold_strikes(true)
 		if batch.strike_count == 0 { return }
 		start := if glyph_frame_prefetch_diagnostics { time.sys_mono_now() } else { u64(0) }
 		if !serial_glyph_frame_font_opens {
@@ -202,9 +233,7 @@ $if !cpuraster_freetype ? {
 			for index in 0 .. batch.strike_count { batch.strikes[index].strike.release() }
 			batch.strike_count = 0
 			batch.runs.clear()
-			for index in 0 .. batch.input.len {
-				batch.collect(unsafe { &batch.input[index] }, unsafe { nil }, false)
-			}
+			batch.collect_cold_strikes(false)
 		}
 	}
 
@@ -212,23 +241,24 @@ $if !cpuraster_freetype ? {
 		if key in slot.cached { return false }
 		// Glyph keys occupy 20 bits. Reserve zero for an empty slot.
 		stored := key + 1
-		mut index := int(((key >> 4) ^ (key << 4)) & 255)
+		mask := slot.keys.len - 1
+		mut index := int((key >> 4) ^ (key << 4)) & mask
 		for slot.keys[index] != 0 {
 			if slot.keys[index] == stored { return false }
-			index = (index + 1) & 255
+			index = (index + 1) & mask
 		}
 		slot.keys[index] = stored
 		return true
 	}
 
-	fn (mut batch GlyphFrameWork) plan_keys() {
+	fn (mut batch GlyphFrameWork) plan_keys(runs []GlyphFrameRunPlan, limit int) {
 		if glyph_frame_prefetch_diagnostics {
 			C.pthread_threadid_np(unsafe { nil }, &batch.planner_thread)
 		}
-		for run in batch.runs {
+		for run in runs {
 			mut slot := &batch.strikes[run.slot]
 			for index, id in run.glyphs {
-				if batch.job_count == glyph_frame_prefetch_jobs { return }
+				if batch.job_count == limit { return }
 				point := map_point_affine(run.rounding,
 					Point{run.positions[index * 2], run.positions[index * 2 + 1]})
 				if !is_finite_f32(point.x) || !is_finite_f32(point.y) { continue }
@@ -243,43 +273,67 @@ $if !cpuraster_freetype ? {
 	fn plan_and_draw_glyph_frame(context voidptr, _ i32, _ i32) {
 		mut batch := unsafe { &GlyphFrameWork(context) }
 		if batch.prepare_strikes { batch.prepare_cold_strikes() }
-		batch.plan_keys()
-		if batch.job_count >= 8 {
-			batch.lanes = run_raster_ranges(batch, batch.job_count, batch.job_count / 4,
+		batch.plan_keys(batch.runs[..batch.front_runs], glyph_frame_prefetch_jobs)
+		batch.front_jobs = batch.job_count
+		if batch.front_jobs >= 8 {
+			batch.lanes = run_raster_ranges(batch, batch.front_jobs, batch.front_jobs / 4,
 				draw_glyph_frame_jobs)
 		}
+		if batch.tail_command > 0 && batch.front_runs < batch.runs.len {
+			batch.plan_keys(batch.runs[batch.front_runs..], batch.jobs.len)
+			count := batch.job_count - batch.front_jobs
+			ticket, lanes := start_background_raster_ranges(batch, count, count / 4,
+				draw_tail_glyph_frame_jobs)
+			batch.tail_ticket = ticket
+			batch.tail_lanes = lanes
+			if ticket == unsafe { nil } { batch.job_count = batch.front_jobs }
+		}
+	}
+
+	pub fn glyph_frame_prefetch_can_split(cache &GlyphCache) bool {
+		return cache != unsafe { nil } && cache.strikes.len == 0 && !sync_glyph_frame_strikes
+			&& !sync_glyph_frame_planning
 	}
 
 	// The batch owns its CoreText strikes and carries no borrowed cache entry
 	// across replay. Even an unused batch must be joined before scratch resets.
-	pub fn start_glyph_frame_prefetch(cache &GlyphCache, runs []GlyphFramePrefetchRun) voidptr {
+	pub fn start_glyph_frame_prefetch(cache &GlyphCache, runs []GlyphFramePrefetchRun,
+		options GlyphFramePrefetchOptions) voidptr {
 		if cache == unsafe { nil } || runs.len == 0 || serial_glyph_masks || C.vox_scan_workers_disabled() {
 			return unsafe { nil }
 		}
+		front := if options.front_runs > 0 { math.min(options.front_runs, runs.len) } else { runs.len }
+		cold := glyph_frame_prefetch_can_split(cache)
+		split := options.tail_command > 0 && front < runs.len && cold
+		input := if split { runs } else { runs[..front] }
 		mut batch := &GlyphFrameWork{
-			input: runs
+			input: input
+			front_input: front
+			tail_command: if split { options.tail_command } else { 0 }
 			strikes: []GlyphFrameStrike{len: glyph_frame_prefetch_strikes}
-			runs: []GlyphFrameRunPlan{cap: runs.len}
-			jobs: []GlyphFrameJob{len: glyph_frame_prefetch_jobs}
+			runs: []GlyphFrameRunPlan{cap: input.len}
+			jobs: []GlyphFrameJob{len: if split { 2 * glyph_frame_prefetch_jobs } else { glyph_frame_prefetch_jobs }}
 		}
 		// With no cached strikes the worker needs only the immutable runs.
 		// Slot storage and the run plan are allocated before dispatch.
-		if cache.strikes.len == 0 && !sync_glyph_frame_strikes && !sync_glyph_frame_planning {
+		if cold {
 			batch.prepare_strikes = true
 			batch.ticket = start_background_raster_range(batch, 1, plan_and_draw_glyph_frame)
 		}
 		if batch.ticket == unsafe { nil } {
 			batch.prepare_strikes = false
-			for index in 0 .. runs.len {
+			for index in 0 .. front {
 				batch.collect(unsafe { &runs[index] }, cache, false)
 			}
+			batch.front_runs = batch.runs.len
 			if batch.has_cold_strike && !sync_glyph_frame_planning {
 				batch.ticket = start_background_raster_range(batch, 1, plan_and_draw_glyph_frame)
 			}
 		}
 		if batch.ticket == unsafe { nil } {
 			// Warm frames can detect an empty plan without waking a worker.
-			batch.plan_keys()
+			batch.plan_keys(batch.runs, glyph_frame_prefetch_jobs)
+			batch.front_jobs = batch.job_count
 			ticket, lanes := start_background_raster_ranges(batch, batch.job_count,
 				batch.job_count / 4, draw_glyph_frame_jobs)
 			batch.ticket = ticket
@@ -293,17 +347,12 @@ $if !cpuraster_freetype ? {
 		return batch
 	}
 
-	pub fn finish_glyph_frame_prefetch(context voidptr, cache &GlyphCache) {
-		if context == unsafe { nil } { return }
-		mut batch := unsafe { &GlyphFrameWork(context) }
-		before_join := if glyph_frame_prefetch_diagnostics { time.sys_mono_now() } else { u64(0) }
-		ready := join_background_raster_range(batch.ticket)
+	fn (batch &GlyphFrameWork) publish_jobs(cache &GlyphCache, jobs []GlyphFrameJob) int {
 		mut published := 0
 		for slot_index in 0 .. batch.strike_count {
-			mut slot := unsafe { &batch.strikes[slot_index] }
-			slot.strike.release()
+			slot := unsafe { &batch.strikes[slot_index] }
 			mut entry := unsafe { &CachedGlyphStrike(nil) }
-			for job in batch.jobs[..batch.job_count] {
+			for job in jobs {
 				if job.slot != slot_index || !job.image.ready { continue }
 				if entry == unsafe { nil } && cache != unsafe { nil } {
 					key := if batch.prepare_strikes {
@@ -322,8 +371,53 @@ $if !cpuraster_freetype ? {
 			}
 			if entry != unsafe { nil } { glyph_cache_leave(entry.owner) }
 		}
+		return published
+	}
+
+	fn (mut batch GlyphFrameWork) finish_front(cache &GlyphCache) {
+		if batch.ticket == unsafe { nil } { return }
+		before_join := if glyph_frame_prefetch_diagnostics { time.sys_mono_now() } else { u64(0) }
+		batch.front_ready = join_background_raster_range(batch.ticket)
+		batch.ticket = unsafe { nil }
+		jobs := batch.jobs[..batch.front_jobs]
+		batch.front_published = batch.publish_jobs(cache, jobs)
 		if glyph_frame_prefetch_diagnostics {
-			overlap := batch.jobs[..batch.job_count].count(it.image.rendered > batch.owner_start && it.image.started < before_join)
+			batch.front_finished_ns = time.sys_mono_now()
+			batch.front_overlap = jobs.count(it.image.rendered > batch.owner_start && it.image.started < before_join)
+		}
+	}
+
+	// Publish the ready prefix and return the command index at which to join
+	// the second wave. A negative result consumes the whole batch.
+	pub fn advance_glyph_frame_prefetch(context voidptr, cache &GlyphCache, command_index int) int {
+		if context == unsafe { nil } { return -1 }
+		mut batch := unsafe { &GlyphFrameWork(context) }
+		batch.finish_front(cache)
+		if batch.tail_ticket != unsafe { nil } && command_index < batch.tail_command {
+			return batch.tail_command
+		}
+		finish_glyph_frame_prefetch(context, cache)
+		return -1
+	}
+
+	pub fn finish_glyph_frame_prefetch(context voidptr, cache &GlyphCache) {
+		if context == unsafe { nil } { return }
+		mut batch := unsafe { &GlyphFrameWork(context) }
+		batch.finish_front(cache)
+		mut tail_ready := false
+		mut tail_published := 0
+		mut tail_overlap := 0
+		if batch.tail_ticket != unsafe { nil } {
+			before_join := if glyph_frame_prefetch_diagnostics { time.sys_mono_now() } else { u64(0) }
+			tail_ready = join_background_raster_range(batch.tail_ticket)
+			jobs := batch.jobs[batch.front_jobs..batch.job_count]
+			tail_published = batch.publish_jobs(cache, jobs)
+			if glyph_frame_prefetch_diagnostics {
+				tail_overlap = jobs.count(it.image.rendered > batch.front_finished_ns && it.image.started < before_join)
+			}
+		}
+		for index in 0 .. batch.strike_count { batch.strikes[index].strike.release() }
+		if glyph_frame_prefetch_diagnostics {
 			mut caller := u64(0)
 			C.pthread_threadid_np(unsafe { nil }, &caller)
 			planned_off_thread := batch.planner_thread != 0 && batch.planner_thread != caller
@@ -331,7 +425,7 @@ $if !cpuraster_freetype ? {
 			for thread_id in batch.font_threads {
 				if thread_id != 0 && thread_id !in font_threads { font_threads << thread_id }
 			}
-			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strike_count} lanes=${batch.lanes} published=${published} ready_at_join=${ready} owner_overlap=${overlap} planned_off_thread=${planned_off_thread} strikes_off_thread=${batch.prepare_strikes && planned_off_thread} font_lanes=${batch.font_lanes} font_threads=${font_threads.len} font_open_ns=${batch.font_open_ns} font_fallback=${batch.font_fallback}')
+			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strike_count} lanes=${batch.lanes} published=${batch.front_published + tail_published} ready_at_join=${batch.front_ready} owner_overlap=${batch.front_overlap} planned_off_thread=${planned_off_thread} strikes_off_thread=${batch.prepare_strikes && planned_off_thread} font_lanes=${batch.font_lanes} font_threads=${font_threads.len} font_open_ns=${batch.font_open_ns} font_fallback=${batch.font_fallback} front_jobs=${batch.front_jobs} front_published=${batch.front_published} tail_jobs=${batch.job_count - batch.front_jobs} tail_lanes=${batch.tail_lanes} tail_published=${tail_published} tail_ready=${tail_ready} tail_overlap=${tail_overlap}')
 		}
 	}
 }
