@@ -1594,3 +1594,83 @@ native library, archive and driver hashes stayed pinned, and the largest
 timing peak was 377,847,808 bytes of aggregate RSS. Style resolution,
 line placement, cache publication, and native frame submission still
 run on the browser thread.
+
+### Parallel viewport visibility checks
+
+Commits `b027edd89` and `752ea3530` distribute cached viewport paint blocks
+across raster workers on macOS. The browser thread resolves the visual
+contexts used by testable entries, then workers use the existing
+native-precision rectangle tests to mark disjoint ranges of the
+visibility mask. The browser thread joins
+the workers before recording commands in paint order. The serial path
+handles small batches and legacy rectangle
+diagnostics. `VOX_SERIAL_VIEWPORT_CULLING=1` selects the serial control.
+
+The production browser type check passed. The focused layout test
+compiler reached its memory limit during standalone compilation. The
+production checks below exercise the visibility path through display-list
+recording and capture.
+
+Receipt `20261125-092631-fdf65c44` published the initial change with an
+eligibility test that compared the full visual-context tree with the
+number of entry blocks. The diagnostic Hacker News replays recorded
+438 entries but issued zero worker batches. Both seven-pair timing
+cohorts therefore measured the serial fallback. Their median paired
+changes were −3.206 ms and +0.992 ms. Every capture matched the
+reference PNG. Commit `752ea3530` removes the ineligible-context
+limit and resolves only contexts used for ink tests.
+
+Receipt `20261125-093413-469f9eae` published the corrected single-C-unit
+V `-prod` executable at SHA
+`1d227f827419b55b15f74e2dc175e7d9b5ab21e1cc4a7e343fcb4380c5e1bd41`.
+The startup smoke passed. Hacker News used 129 visual contexts. The
+candidate ran three lanes for each of two recordings of 438 entries
+and tested nine of the 14 blocks off the browser thread in each
+recording. The control ran the serial checks. Both diagnostics verified
+the 30 ordered story IDs and complete document readiness.
+
+Main-thread hardware instructions for viewport visibility fell from
+1,941,999 to 1,546,419. Inclusive paint command recording fell from
+33,378,268 to 33,299,282. These are instrumented scopes.
+
+Two alternating seven-pair production cohorts used the same binary with
+`VOX_SERIAL_VIEWPORT_CULLING=1` for the control. The second cohort ran
+the serial setting first in odd-numbered pairs. The measurement spans
+fresh launch through the encoded document PNG at 1024×768 CSS pixels
+and 2× scale with JavaScriptCore and fresh private profiles and HTTP
+caches. The replay retains the 60 ms delay on each logo response. OS
+filesystem caches were retained.
+
+| Pair | Serial, ms | Workers, ms | Reversed serial, ms | Reversed workers, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 327.004 | 351.014 | 359.601 | 368.243 |
+| 2 | 349.519 | 339.458 | 389.586 | 365.713 |
+| 3 | 334.575 | 337.330 | 363.172 | 384.928 |
+| 4 | 375.633 | 344.910 | 370.586 | 361.044 |
+| 5 | 370.963 | 367.383 | 391.478 | 399.443 |
+| 6 | 361.144 | 354.364 | 378.370 | 379.977 |
+| 7 | 361.390 | 376.542 | 402.738 | 387.336 |
+| Median | 361.144 | 351.014 | 378.370 | 379.977 |
+
+Median paired changes were −3.579 ms and +1.608 ms. Workers finished
+first in four and three pairs, respectively. Host load was 7.00–7.40
+and 7.93–8.02 on 18 CPUs. The launch-to-capture timings show no
+consistent speedup.
+
+All 28 timing launches and both diagnostics matched the same eight
+replay requests and the established PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The executable, native libraries, replay archive and driver hashes
+stayed pinned. All browsers, drivers and 3 GiB guards exited zero.
+The larger timing peak was 377,225,216 bytes of aggregate RSS.
+
+The focused browser fixture exercised a fixed translucent layer, a rotated
+entry, an overflow clip, and an off-screen source with a visible drop
+shadow. The first version stayed on the small-batch fallback and matched
+the serial PNG at both offsets. A denser version with 160 rows generated
+1,128 paint entries and dispatched 27 of 36 blocks to workers. Its top
+and 740 CSS-pixel scroll captures matched the serial PNG byte for byte
+at each offset. Both modes retained all 160 ordered row IDs. The four
+processes and both 3 GiB guards exited zero. The two PNG SHAs were
+`7d51e803cd0676a54cfe2c056d279bb933451d073610c73ef06823fc270cd7b8`
+and `db268acf0e143fc1eb8a69c78c519bce30fe2e965843d273f2b15adc22939414`.
