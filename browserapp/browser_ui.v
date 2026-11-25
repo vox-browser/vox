@@ -27,6 +27,7 @@ mut:
 	link            string
 	select_node     &dom.Node = unsafe { nil }
 	select_document dom.UniqueNodeID
+	select_popup_timer &platform.Timer = unsafe { nil }
 	tab_color       browsertabs.TabColor
 	tab_color_target string
 	custom_tab_title string
@@ -64,7 +65,10 @@ fn (mut app BrowserApp) refresh_browser_ui() {
 fn (app &BrowserApp) browser_popup_elements(width int, height int) []ui2.Element {
 	state := app.browser_ui()
 	if editor := state.tab_title_editor { return editor.elements(f64(width), f64(height)) }
-	if popup := state.popup { return popup.elements(f64(width), f64(height)) }
+	if popup := state.popup {
+		if state.select_popup_timer != unsafe { nil } { return []ui2.Element{} }
+		return popup.elements(f64(width), f64(height))
+	}
 	if bar := state.find_bar { return bar.elements(f64(width), f64(app.page_top())) }
 	return []ui2.Element{}
 }
@@ -78,6 +82,13 @@ fn (mut app BrowserApp) dismiss_browser_popup() {
 	if state.select_node != unsafe { nil } && app.document != unsafe { nil }
 		&& state.select_document == app.document.unique_id() {
 		app.close_browser_select_picker(state.select_node)
+	}
+	$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+		if state.select_popup_timer != unsafe { nil } {
+			state.select_popup_timer.stop()
+			state.select_popup_timer = unsafe { nil }
+			if popup := state.popup { browserui.cancel_native_popup(popup.token) }
+		}
 	}
 	state.select_node = unsafe { nil }
 	state.inspect_node = unsafe { nil }
@@ -132,6 +143,7 @@ fn (mut app BrowserApp) browser_popup_action(action string) {
 fn (mut app BrowserApp) handle_browser_popup_key(key string) bool {
 	mut state := app.browser_ui()
 	mut popup := state.popup or { return false }
+	if state.select_popup_timer != unsafe { nil } && key != 'escape' { return false }
 	if key !in ['up', 'down', 'home', 'end', 'enter', 'space', 'escape', 'tab'] { return false }
 	action := if key == 'tab' { 'browser-menu:${popup.token}:dismiss' } else { popup.key(key) }
 	state.popup = popup
