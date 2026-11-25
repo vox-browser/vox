@@ -6,30 +6,30 @@ import libjs
 import platform
 
 @[heap]
-struct SessionStorageBinding {
+struct StorageBinding {
 	host   &Host
 	native &html.Storage
 	object &libjs.Object
 }
 
-fn (binding &SessionStorageBinding) is_supported_property_name(name libjs.Utf16String) bool {
+fn (binding &StorageBinding) is_supported_property_name(name libjs.Utf16String) bool {
 	if binding.host.closed { return false }
 	_ = binding.native.get_item(name.str()) or { return false }
 	return true
 }
 
-fn (binding &SessionStorageBinding) named_property_value(name libjs.Utf16String) libjs.Value {
+fn (binding &StorageBinding) named_property_value(name libjs.Utf16String) libjs.Value {
 	if binding.host.closed { return libjs.js_undefined() }
 	value := binding.native.get_item(name.str()) or { return libjs.js_undefined() }
 	return libjs.Value.from_string(binding.host.vm.create_string(libjs.utf16_string_from_utf8_without_validation(value)))
 }
 
-fn (binding &SessionStorageBinding) supported_property_names() []libjs.Utf16String {
+fn (binding &StorageBinding) supported_property_names() []libjs.Utf16String {
 	if binding.host.closed { return [] }
 	return binding.native.supported_property_names().map(libjs.utf16_string_from_utf8_without_validation(it))
 }
 
-fn (binding &SessionStorageBinding) set_named_property(mut vm libjs.VM, name libjs.Utf16String, value libjs.Value) ! {
+fn (binding &StorageBinding) set_named_property(mut vm libjs.VM, name libjs.Utf16String, value libjs.Value) ! {
 	binding.host.require_open(mut vm)!
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -39,25 +39,29 @@ fn (binding &SessionStorageBinding) set_named_property(mut vm libjs.VM, name lib
 	native.set_item(name.str(), text) or { return host.dom_error(mut vm, err) }
 }
 
-fn (binding &SessionStorageBinding) delete_named_property(mut vm libjs.VM, name libjs.Utf16String) !bool {
+fn (binding &StorageBinding) delete_named_property(mut vm libjs.VM, name libjs.Utf16String) !bool {
 	binding.host.require_open(mut vm)!
 	mut native := binding.native
 	native.remove_item(name.str())
 	return true
 }
 
-fn (host &Host) storage_receiver(mut vm libjs.VM) !&SessionStorageBinding {
+fn (host &Host) storage_receiver(mut vm libjs.VM) !&StorageBinding {
 	host.require_open(mut vm)!
-	if binding := host.session_storage_binding {
-		receiver := vm.this_value()
-		if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(binding.object) {
-			return binding
+	receiver := vm.this_value()
+	if receiver.is_object() {
+		object := receiver.as_object()
+		if binding := host.session_storage_binding {
+			if voidptr(object) == voidptr(binding.object) { return binding }
+		}
+		if binding := host.local_storage_binding {
+			if voidptr(object) == voidptr(binding.object) { return binding }
 		}
 	}
 	return vm.throw_error(.type_error, 'Storage member called on incompatible receiver')
 }
 
-fn (mut host Host) install_session_storage() {
+fn (mut host Host) install_storage() {
 	mut vm := host.vm
 	mut prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	prototype.define_direct_property(libjs.PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()),
@@ -116,25 +120,43 @@ fn (mut host Host) install_session_storage() {
 	mut global := host.realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('Storage'), libjs.Value.from_object(constructor),
 		libjs.attribute_writable | libjs.attribute_configurable)
-	host.accessor(mut global, 'sessionStorage', fn [host, prototype] (mut vm libjs.VM) !libjs.Value {
-		host.window_receiver(mut vm)!
-		if binding := host.session_storage_binding {
-			return libjs.Value.from_object(binding.object)
-		}
-		persistent := platform.enter_persistent()
-		defer { platform.leave_persistent(persistent) }
+	host.accessor(mut global, 'localStorage', fn [host, prototype] (mut vm libjs.VM) !libjs.Value {
 		mut owner := unsafe { &Host(host) }
-		mut window := owner.frame_window(mut vm)!
-		native := window.session_storage() or { return owner.dom_error(mut vm, err) }
-		mut object := libjs.Object.create(owner.realm, prototype)
-		object.class_name = 'Storage'
-		binding := &SessionStorageBinding{host: owner, native: native, object: object}
-		object.legacy_platform_object = &libjs.LegacyPlatformObject{
-			named_properties: libjs.LegacyNamedProperties(binding)
-			named_setter: libjs.LegacyNamedPropertySetter(binding)
-			named_deleter: libjs.LegacyNamedPropertyDeleter(binding)
-		}
-		owner.session_storage_binding = binding
-		return libjs.Value.from_object(object)
+		return owner.window_storage(mut vm, prototype, .local)
 	}, unsafe { nil })
+	host.accessor(mut global, 'sessionStorage', fn [host, prototype] (mut vm libjs.VM) !libjs.Value {
+		mut owner := unsafe { &Host(host) }
+		return owner.window_storage(mut vm, prototype, .session)
+	}, unsafe { nil })
+}
+
+fn (mut host Host) window_storage(mut vm libjs.VM, prototype &libjs.Object, type_ html.StorageType) !libjs.Value {
+	host.window_receiver(mut vm)!
+	if type_ == .local {
+		if binding := host.local_storage_binding { return libjs.Value.from_object(binding.object) }
+	} else if binding := host.session_storage_binding {
+		return libjs.Value.from_object(binding.object)
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut window := host.frame_window(mut vm)!
+	native := if type_ == .local {
+		window.local_storage() or { return host.dom_error(mut vm, err) }
+	} else {
+		window.session_storage() or { return host.dom_error(mut vm, err) }
+	}
+	mut object := libjs.Object.create(host.realm, prototype)
+	object.class_name = 'Storage'
+	binding := &StorageBinding{host: host, native: native, object: object}
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{
+		named_properties: libjs.LegacyNamedProperties(binding)
+		named_setter: libjs.LegacyNamedPropertySetter(binding)
+		named_deleter: libjs.LegacyNamedPropertyDeleter(binding)
+	}
+	if type_ == .local {
+		host.local_storage_binding = binding
+	} else {
+		host.session_storage_binding = binding
+	}
+	return libjs.Value.from_object(object)
 }

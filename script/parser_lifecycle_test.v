@@ -258,6 +258,49 @@ fn test_libjs_preparse_queues_only_external_modules() {
 	assert messages == []
 }
 
+fn test_libjs_external_classic_script_reads_and_writes_native_local_storage() {
+	$if !darwin && !linux { return }
+	base := 'https://parser-lifecycle.example/'
+	mut first := parser_lifecycle_fixture_with_resources(base + 'storage', .libjs, {})
+	defer { parser_lifecycle_close(first) }
+	parser_lifecycle_parse(first, '<!doctype html><script src="storage.js"></script>')
+	parser_lifecycle_respond(mut first, 'storage.js', r'
+		const local = window.localStorage;
+		const session = window.sessionStorage;
+		Storage.prototype.setItem.call(local, "native-state", "shared");
+		session["native-state"] = "tab";
+		local["empty"] = "";
+		globalThis.storageWorks = local === localStorage && local instanceof Storage &&
+			local !== session && Object.getPrototypeOf(local) === Object.getPrototypeOf(session) &&
+			Object.keys(local).join(",") === "native-state,empty" && local.key(0) === "native-state" &&
+			local.empty === "" && local.getItem("missing") === null && local.getItem("native-state") === "shared";
+		delete local.empty;
+		globalThis.storageWorks &&= local.length === 1 && local.empty === undefined;
+	', '')
+	assert first.document.ready_state() == 'complete'
+	assert first.runtime.evaluate_host('storageWorks && sessionStorage.getItem("native-state") === "tab"')! == 'true'
+	mut messages := []string{}
+	first.flush(mut messages)
+	assert messages == []
+
+	mut foreign := parser_lifecycle_fixture_with_resources('https://parser-lifecycle.example:444/storage', .libjs, {})
+	defer { parser_lifecycle_close(foreign) }
+	parser_lifecycle_parse(foreign, '<!doctype html><script>globalThis.tabState = localStorage.getItem("native-state");</script>')
+	assert foreign.runtime.evaluate_host('tabState === null')! == 'true'
+
+	mut other_tab := parser_lifecycle_fixture_with_resources(base + 'next', .libjs, {})
+	defer { parser_lifecycle_close(other_tab) }
+	parser_lifecycle_parse(other_tab, '<!doctype html><script>globalThis.tabState = localStorage.getItem("native-state");</script>')
+	assert other_tab.runtime.evaluate_host('tabState === "shared" && sessionStorage.getItem("native-state") === null')! == 'true'
+	other_tab.runtime.evaluate_host('localStorage.removeItem("native-state")')!
+	assert first.runtime.evaluate_host('localStorage.length === 0 && sessionStorage.getItem("native-state") === "tab"')! == 'true'
+
+	mut opaque := parser_lifecycle_fixture_with_resources('about:blank', .libjs, {})
+	defer { parser_lifecycle_close(opaque) }
+	parser_lifecycle_parse(opaque, '<!doctype html><script>try { localStorage; } catch (e) { globalThis.denied = e instanceof DOMException && e.name === "SecurityError"; }</script>')
+	assert opaque.runtime.evaluate_host('globalThis.denied')! == 'true'
+}
+
 fn test_defer_delays_dom_content_loaded_while_async_only_delays_load() {
 	$if !darwin && !linux { return }
 	mut host := parser_lifecycle_fixture()

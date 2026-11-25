@@ -458,14 +458,18 @@ pub fn (mut window WindowModel) local_storage() !&Storage {
 	if storage := window.local_storage_ {
 		return storage
 	}
-	key := window.associated_document().origin().serialize()
-	bottle := window_local_storage_bottle(key)
+	document := window.associated_document()
+	origin := document.origin()
+	if origin.is_opaque() {
+		return error('SecurityError: localStorage is not available for opaque origins')
+	}
+	bottle := window_local_storage_bottle(origin.serialize())
 	mut hub := window_storage_hub()
-	storage := Storage.create(.local, bottle, mut hub, window.associated_document().origin(), window.storage_traversable_id(), window.associated_document().url)
+	storage := Storage.create(.local, bottle, mut hub, origin, window.storage_traversable_id(), document.url)
 	window.local_storage_bottle_ = bottle
 	window.storage_hub_ = hub
 	window.local_storage_ = storage
-	register_window_storage_retirement(window.associated_document(), storage)
+	register_window_storage_retirement(document, storage)
 	return storage
 }
 
