@@ -5845,3 +5845,127 @@ The eight diagnostic launches verified the document URL, completion,
 viewport and all 30 ordered story IDs. Executable, helper, library,
 archive and harness hashes stayed pinned. Browser, driver and guard
 exits were zero. Peak sampled RSS was 434,077,696 bytes.
+
+### Publish cold shaping jobs as each item finishes
+
+With `VOX_WAIT_ASCII_SHAPING_JOB=1`, commit `47f802471` publishes
+completion for each job in the existing worker ranges. A ticket uses
+an atomic state per job and one shared semaphore for the sole
+waiting thread. A worker signals that semaphore only when the
+browser is waiting for its job. Layout can read a completed job
+immediately, including when its worker still has jobs in the
+same range. The batch still joins before job or font storage retires.
+
+The focused tests passed with preallocation, arena poisoning and
+ThreadSanitizer. The worker test held the second job in the first
+range and read the completed first job before releasing the worker.
+It also read a result from the other range and checked every glyph
+and trailing-space metric in the shaping suite. The native header
+passed ARC and non-ARC syntax checks.
+
+Two preliminary launches on receipt `20261125-232916-2c643a96`
+reproduced the wait at job 0 with range completion. Both matched
+the reference PNG and all 30 ordered stories. The executable SHA-256
+was `130dfc955e7acca1feccacdced2695561a7765069c9684b437a986ad4ae4ab9f`.
+An earlier build stopped at input verification while the shared
+checkout changed. The matched captures used the published candidate.
+
+#### Matched production captures
+
+Receipt `20261125-234627-f55241b8` verified `47f802471` and
+passed startup smoke in single-C-unit V `-prod` mode. All launches used
+the same executable. The isolated comparison used 64 jobs in document
+order in both settings.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `f6013547f1bf1dbd210c61c23f2d3d50e9f3b7fe63191d41e8dd3157d0521a5d` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+All four path diagnostics shaped and decoded 64 jobs on workers,
+then consumed every shape.
+
+| Diagnostic | First requested job | Job indices that waited | Worker threads |
+| --- | --- | --- | ---: |
+| Range completion 1 | 0, pending | 0 | 4 |
+| Job completion 1 | 0, ready | — | 4 |
+| Range completion 2 | 0, pending | 0 | 4 |
+| Job completion 2 | 0, ready | — | 4 |
+
+Both range-mode launches waited for job 0. Both job-mode launches
+found all 64 outputs ready when requested and drained the batch at
+scope exit.
+
+Separate counter diagnostics measured inclusive browser-thread scopes.
+
+| Scope | Range 1 | Job 1 | Range 2 | Job 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Shaping job preparation | 728,670 | 698,040 | 707,478 | 697,021 |
+| Flow layout | 144,025,582 | 144,027,305 | 144,007,220 | 144,214,726 |
+| Layout geometry | 166,805,428 | 166,764,496 | 166,855,501 | 166,961,564 |
+
+Flow layout used about 144 million main-thread instructions in both
+settings. The scheduling change primarily moves the wait boundary.
+
+Each unprofiled comparison used two alternating seven-pair cohorts
+with opposite starting modes. The timer spans fresh launch through
+the completed document PNG at a 1024×768 CSS-pixel viewport and 2×
+scale. Captures used JavaScriptCore, empty private profiles and
+HTTP caches, retained OS filesystem and shader caches, `tr.athing`
+readiness and a 60 ms replay delay per logo response.
+
+#### Job waits with 64 jobs in document order
+
+| Pair | Range, ms | Job, ms | Reversed range, ms | Reversed job, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 315.178 | 295.331 | 322.929 | 296.853 |
+| 2 | 310.056 | 310.802 | 308.334 | 294.736 |
+| 3 | 309.503 | 301.275 | 289.418 | 302.357 |
+| 4 | 320.288 | 306.963 | 317.483 | 332.107 |
+| 5 | 289.109 | 292.925 | 304.238 | 326.909 |
+| 6 | 295.756 | 312.677 | 300.429 | 314.203 |
+| 7 | 310.366 | 290.361 | 345.559 | 305.142 |
+| Median | 310.056 | 301.275 | 308.334 | 305.142 |
+
+Median paired changes were −8.228 and +12.939 ms, with four and three
+job-mode wins.
+Sampled main-thread CPU medians went from 158.530 to
+159.084 ms and from 167.970 to 164.220 ms.
+One-minute load ranged from 4.24 to 4.65
+and from 4.65 to 5.31 on 18 CPUs.
+
+#### Default settings and expanded shaping with job waits
+
+Default settings used 28 jobs with a single join. The combined
+schedule used 64 jobs in document order with job waits.
+
+| Pair | Default, ms | Combined, ms | Reversed default, ms | Reversed combined, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 339.787 | 354.780 | 324.051 | 315.351 |
+| 2 | 326.000 | 310.530 | 310.999 | 325.159 |
+| 3 | 338.702 | 337.004 | 350.359 | 297.759 |
+| 4 | 299.486 | 304.901 | 310.734 | 307.815 |
+| 5 | 314.012 | 332.069 | 316.605 | 314.227 |
+| 6 | 303.909 | 309.122 | 329.788 | 310.750 |
+| 7 | 301.194 | 310.490 | 350.259 | 302.818 |
+| Median | 314.012 | 310.530 | 324.051 | 310.750 |
+
+Median paired changes were +5.416 and −8.700 ms, with two and six
+combined wins.
+Sampled main-thread CPU medians went from 177.595 to
+177.123 ms and from 178.981 to 172.495 ms.
+One-minute load ranged from 5.31 to 6.09
+and from 5.76 to 6.07 on 18 CPUs.
+
+Job completion removed the observed first-range wait. Both end-to-end
+comparisons had mixed timing, so the schedule stays opt-in.
+
+All 64 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+The eight diagnostic launches verified the document URL, completion,
+viewport and all 30 ordered story IDs. Executable, helper, library,
+archive and harness hashes stayed pinned. Browser, driver and guard
+exits were zero. Peak sampled RSS was 427,819,008 bytes.
