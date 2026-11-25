@@ -4126,3 +4126,84 @@ The diagnostic captures verified the URL, ready state, viewport and
 30 ordered story IDs. Executable, native library, helper, archive and
 driver hashes stayed pinned. All browsers, the driver and the 3 GiB guard
 exited zero. Peak guard RSS was 393,363,456 bytes.
+
+### Prepare replay rectangles on the culling workers
+
+Commit `6a17a465b` adds screen-space corner projection to the existing
+macOS culling batch. Workers prepare the projected corners, enclosing
+rectangle and normalized transform for eligible visible leaves in their
+assigned command slots. Replay reads those results after the culling join.
+Video, native checkbox and radio geometry, and commands whose replay
+depends on group order use their existing projection paths. Zoom and
+reused scroll damage also use the existing path.
+
+ThreadSanitizer found both glyph workers writing V array slice metadata
+for the same backing buffer. It reproduced with rectangle preparation
+disabled. Commit `27e2f21ff` gives each worker a fixed, non-owning view
+of its disjoint range. The focused culling suite passed with arena
+poisoning in both projection modes. It checked identity and reflected,
+sheared transforms, replay-time fallbacks and uneven glyph ranges.
+ThreadSanitizer passed with worker projection, serial projection and the
+alternate packed glyph mode after the fix.
+
+Production receipt `20261125-190608-7e5cf005` passed startup smoke in
+single-C-unit V `-prod` mode. The same executable ran both modes, with
+`VOX_SERIAL_PAINT_SCREEN_GEOMETRY=1` selecting the serial control.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `99d6e8590f0a7c7749c65dc5dc243e4707405edcb1daa6371fae4feaaac7eae5` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both worker diagnostic launches prepared 383 rectangles off the browser
+thread. The batch was ready at the join, and replay consumed 381 prepared
+rectangles per launch. Both serial controls prepared zero. Separate
+counter captures measured inclusive browser-thread instructions.
+
+| Scope | Pair 1 serial | Pair 1 worker | Pair 2 serial | Pair 2 worker |
+| --- | ---: | ---: | ---: | ---: |
+| Paint command dispatch | 235,232,360 | 237,874,281 | 239,272,724 | 238,345,893 |
+| Text leaves | 126,726,887 | 127,124,261 | 127,759,050 | 126,756,468 |
+| Native raster replay | 261,949,574 | 264,692,246 | 269,361,985 | 264,938,562 |
+| Raster frame setup | 5,314,011 | 5,310,125 | 6,038,434 | 5,247,829 |
+| Culling worker submission | 29,190 | 29,721 | 29,031 | 29,249 |
+
+Every counter capture recorded one dispatch, 333 text leaf calls, three
+native raster replay scopes, one frame setup and one culling submission.
+Native raster replay instructions rose 1.0% in the first pair and fell
+1.6% in the second.
+
+Two unprofiled timing cohorts each alternated seven launch pairs through
+completed document PNG, starting with worker mode in the first cohort and
+serial mode in the second. The archived Hacker News homepage used a
+1024×768 CSS-pixel viewport at 2× scale, JavaScriptCore, fresh private
+profiles and HTTP caches, retained OS filesystem caches, `tr.athing`
+readiness, and a 60 ms replay delay per logo response.
+
+| Pair | Serial, ms | Worker, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 598.452 | 510.912 | 768.177 | 598.737 |
+| 2 | 563.704 | 566.757 | 501.294 | 573.851 |
+| 3 | 476.840 | 534.079 | 481.955 | 495.882 |
+| 4 | 464.753 | 447.299 | 489.916 | 491.827 |
+| 5 | 479.923 | 463.721 | 487.777 | 448.464 |
+| 6 | 472.115 | 483.222 | 426.328 | 454.973 |
+| 7 | 532.740 | 480.623 | 422.909 | 411.816 |
+| Median | 479.923 | 483.222 | 487.777 | 491.827 |
+
+Median paired changes were −16.202 ms and +1.911 ms, with four and three
+worker wins. Sampled browser-thread CPU medians fell from 287.257 to
+285.873 ms and from 296.306 to 294.683 ms. The two cohorts ran at
+one-minute host loads of 12.27–16.90 and 16.46–17.20 on 18 CPUs. The
+elapsed-time result is inconclusive. Display list sequencing and native
+submission still use the browser thread.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the favicon
+miss. The worker diagnostics verified the URL, complete ready state,
+viewport and all 30 ordered story IDs. The executable, helper, library,
+archive and harness inputs stayed pinned. All browser, driver and guard
+exits were zero. The 3 GiB guard observed peak RSS of 403,292,160 bytes.
