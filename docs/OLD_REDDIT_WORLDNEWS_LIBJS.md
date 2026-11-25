@@ -442,3 +442,52 @@ all 30 browser roots across diagnostics and both cohorts, with a sampled
 peak aggregate RSS of 866,549,760 bytes. The comparison driver and guard
 exited 1 on the Brave pixel mismatch. The fixed-pixel acceptance gate
 remains open.
+
+## Scanning ASCII identifiers in one pass
+
+Dispatching keyword lookup by the first UTF-16 unit gave mixed results.
+Across seven pairs, the median observed instructions moved from
+6,288,614,891 to 6,283,130,103 and elapsed parse time moved from 220.95 ms
+to 245.63 ms per set of five scripts. One-minute host load ranged from
+103.44 to 112.30. The lexer kept its original keyword lookup.
+
+A separate sample of the archived bundles reached the lexer identifier
+scan. The updated scan consumes a validated ASCII start together with
+the tail, tracks the column in one update and stops directly at an ASCII
+delimiter. Unicode and escaped identifiers use the existing decoding and
+validation. A debugger verified the new path on an ASCII `t` in Reddit's
+main bundle. The focused test covers mixed identifiers, private names,
+CRLF, delimiters and an ASCII identifier ending at EOF. The five focused
+test files and all 100 upstream AST fixtures pass in both Boehm and
+`-gc none` builds.
+
+The component benchmark reads the five pinned script bodies before timing
+and parses them as classic scripts with the browser's recursion limit. It
+uses eight repetitions per fresh process. The elapsed and thread CPU
+times are divided by eight. The instruction counts include the complete
+standalone process through exit. Both binaries used single-unit `-prod`
+C with `-prealloc -gc none`.
+
+| Pair | Control observed instructions | Candidate observed instructions | Control elapsed (ms) | Candidate elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,373,033,606 | 6,193,818,328 | 130.452 | 143.021 |
+| 2 | 6,299,615,189 | 6,138,086,892 | 136.087 | 153.300 |
+| 3 | 6,303,278,193 | 6,122,035,127 | 132.479 | 132.242 |
+| 4 | 6,301,101,799 | 6,129,761,342 | 144.487 | 131.521 |
+| 5 | 6,313,463,247 | 6,135,801,003 | 150.018 | 174.695 |
+| 6 | 6,303,977,348 | 6,133,501,436 | 172.894 | 173.148 |
+| 7 | 6,304,666,508 | 6,129,848,400 | 201.702 | 197.213 |
+| Median | 6,303,977,348 | 6,133,501,436 | 144.487 | 153.300 |
+
+Observed instructions fell in all seven pairs and by **2.70%** at the
+median, equivalent to 21.31 million instructions per set of five scripts.
+Median parser-thread CPU time fell from 92.96 to 90.96 ms per set.
+Host one-minute load ranged from 87.05 to 95.01 on 18 cores. The candidate
+had a higher median elapsed time, and the pairs showed substantial elapsed
+variation. All 14 processes and the memory guard exited zero. Each trial
+captured the final process sample and had zero missing samples.
+
+The control executable SHA-256 was
+`2b47a10bf76f15d4f0013194e137ced36ace13803a83117c6896b79de64c7337`.
+The candidate executable SHA-256 was
+`4244bc906a7c747ba2c672be65be1d3dff4e893c9f33f0b20396cce9c4a7454f`.

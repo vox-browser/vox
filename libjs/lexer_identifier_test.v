@@ -3,7 +3,7 @@ module libjs
 fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
 	first_source := r'alpha0_$𐐀more\u0061bc'
 	private_source := '#private3tail'
-	source := utf16(first_source + '\r\n' + private_source + ';éclair_ends42')
+	source := utf16(first_source + '\r\n' + private_source + ';éclair_ends42;final_7$')
 	mut lexer := Lexer.new(source, 1, 0)
 	first := lexer.next()
 	assert first.token_type == .identifier
@@ -24,8 +24,15 @@ fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
 	assert last.token_type == .identifier
 	assert last.line_column == separator.line_column + 1
 	assert last.value_len == u32(utf16('éclair_ends42').len)
+	delimiter := lexer.next()
+	assert delimiter.token_type == .semicolon
+	assert delimiter.line_column == last.line_column + last.value_len
+	ascii_end := lexer.next()
+	assert ascii_end.token_type == .identifier
+	assert ascii_end.line_column == delimiter.line_column + 1
+	assert ascii_end.value_len == 8
 	end := lexer.next()
 	assert end.token_type == .eof
 	assert end.offset == u32(source.len)
-	assert end.line_column == last.line_column + last.value_len
+	assert end.line_column == ascii_end.line_column + ascii_end.value_len
 }

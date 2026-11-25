@@ -565,12 +565,15 @@ fn (l &Lexer) is_surrogate_pair(len int) bool {
 
 // ASCII identifier characters advance by one column and cannot end a line.
 // Leave the first other code unit to the Unicode and escape checks.
+@[direct_array_access]
 fn (mut l Lexer) consume_ascii_identifier_tail() {
 	start := l.position - 1
 	mut end := start
 	for end < l.source.len {
-		point := u32(l.source[end])
-		if !(lex_is_ascii_alphanumeric(point) || point == u32(`_`) || point == u32(`$`)) {
+		unit := l.source[end]
+		letter := unit | 0x20
+		if !((letter >= u16(`a`) && letter <= u16(`z`)) || lex_is_ascii_digit(unit)
+			|| unit == u16(`_`) || unit == u16(`$`)) {
 			break
 		}
 		end++
@@ -591,13 +594,20 @@ fn (mut l Lexer) scan_identifier_body(initial_len int) bool {
 	mut has_escape := false
 	mut ident_len := initial_len
 	for {
-		is_pair := l.is_surrogate_pair(ident_len)
-		has_escape = has_escape || (ident_len > 1 && !is_pair)
-		consume_count := if is_pair { 1 } else { ident_len }
-		for _ in 0 .. consume_count {
-			l.consume()
+		// A validated ASCII start fits in the same run as its tail.
+		if ident_len != 1 || l.current_code_unit >= 128 {
+			is_pair := l.is_surrogate_pair(ident_len)
+			has_escape = has_escape || (ident_len > 1 && !is_pair)
+			consume_count := if is_pair { 1 } else { ident_len }
+			for _ in 0 .. consume_count {
+				l.consume()
+			}
 		}
 		l.consume_ascii_identifier_tail()
+		// The run stops at a delimiter, a Unicode unit, an escape or EOF.
+		if l.current_code_unit < 128 && l.current_code_unit != u16(`\\`) {
+			break
+		}
 		next_cp, next_len := l.is_identifier_middle()
 		if next_cp >= 0 {
 			ident_len = next_len
