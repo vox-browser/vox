@@ -454,3 +454,118 @@ exited 0. The audit wrapper and its 3 GiB guard exited 1 because the first
 document was incomplete. The guard's observed RSS peak was 1,378,615,296 B.
 The host load disparity leaves the cache setting's effect unverified.
 [Core Image cache option](https://developer.apple.com/documentation/coreimage/cicontextoption/cacheintermediates?language=objc)
+
+## Production build with temporary DOM replay tables
+
+`ef8a858a2` releases the compact DOM bridge's key set and temporary element
+tables after each replay batch. Elements and published bridge keys keep
+document ownership. A focused preallocation test built tables for 512 keyed
+lookups with the C backend and verified zero document-arena growth during
+construction. The tests also passed with both replay workspaces poisoned.
+
+The next single-unit C `-prod` bundle passed its startup check. Its executable
+SHA-256 was `16c404942668946b797186d3133dba0a7dd84b200e355e7596b2f02966514caa`
+and its AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The build was requested at `9df057554`. The sealed compiler inputs and
+installed executable included the replay table, element reply and XHR text
+workspace changes already present in the checkout. The build and smoke
+guards exited 0. Several previous attempts had failed source verification
+or lost their sealed compiler inputs during shared build cleanup.
+
+Nine SVG reftests on this bundle matched pixel for pixel. They covered
+same-size image replacement, gradient removal and updates, stop reordering,
+paint-server ID collisions, and inherited style changes. The screenshot
+driver and 3 GiB guard exited 0.
+
+### Live memory
+
+Fresh Vox and Brave processes used private profiles and HTTP caches, retained
+OS caches, and loaded the live HTTPS page directly at 1024×768 and scale 2.
+The process-tree sampler read physical footprint every 50 ms from launch.
+The settled value is the median of the final three seconds of a 12-second
+observation after a content check at about 23 seconds. Brave reported
+Chromium `158.0.8127.42` and retained the same executable hash as the earlier
+comparison. The executable, framework, and helper hashes stayed fixed.
+
+The audit requires 133 images and equality with the complete patch text
+after replacing generated UUIDs. The first attempt mistakenly required word
+boundaries and missed UUIDs in CSS class names. It rejected both Vox launches
+and the first Brave launch at 15,620 raw bytes and 133 images. The other Brave
+launch independently had five images. The browser exits were −15, 0, 0,
+and −15 in that order. No launch in that attempt reached the settled
+measurement. The driver and guard exited 1, with 1,057,914,880 B of peak
+sampled RSS observed by the guard.
+
+| Corrected audit order | Document at checkpoint | Settled footprint | Sampled peak | Browser exit |
+| --- | --- | ---: | ---: | ---: |
+| Vox 1 | Missing item and neutral item notes, 133 images | — | — | −15 |
+| Brave 1 | Incomplete patch, 5 images | — | — | 0 |
+| Brave 2 | Incomplete patch, 5 images | — | — | 0 |
+| Vox 2 | Complete patch, 133 images | 744,804,240 B | 1,200,034,376 B | 0 |
+
+The corrected driver and guard exited 1 after the incomplete documents.
+The guard observed 1,074,888,704 B of peak process-tree RSS. One-minute host
+load at launch ranged from 7.21 to 15.23 on 18 CPUs. The complete Vox
+launch audited the page 23.17 seconds after launch and had 56 samples in its
+settled window. This cohort supplies no matched Brave measurement. The
+latest matched fixed-checkpoint comparison remains 749,883,208 B for Vox
+and 334,323,512 B for Brave at settled footprint.
+
+A separate pair allowed up to 65 seconds for complete text, images, and
+fonts. Vox wrote an audit every four seconds. Brave started sampling content
+at 23 seconds and could check every four seconds thereafter. Both were
+complete at the first checkpoint, about 23.01 seconds after launch. The
+profiles, browser identities, process-tree sampler and 12-second observation
+were unchanged. The different audit schedule makes this a separate
+diagnostic.
+
+| Diagnostic order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 318,480,472 B | 845,308,040 B | 0 |
+| Vox | 732,450,728 B | 1,169,199,736 B | 0 |
+
+Both audits matched the complete document. The settled windows contained 55
+Brave and 56 Vox samples. One-minute host load was 7.03→5.58 for Brave and
+5.58→5.29 for Vox. The driver and 3 GiB guard exited 0 and the guard observed
+1,041,989,632 B of peak RSS. Vox used 2.30 times Brave's settled footprint
+in this pair.
+
+### Sustained native scroll
+
+Two fresh launches passed the same document text and image audit. The
+precise-input probe started after a 23-second settle with the patch title.
+Each trial delivered 720 native vertical wheel events at nominal 60 Hz,
+delta 16, with reversal after input 540. Both reached scroll position
+13,791.5 CSS pixels. Throughput uses changed scroll positions in completed
+native frame installations after outer view paint, over the entire input
+window. This endpoint cannot measure display scanout.
+
+| Run | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 17.05 | 48.35 / 72.79 / 2,151.94 ms | 204/215 | 720 / 482 | 57.02 Hz | 60.16 / 33.55 ms |
+| 2 | 15.19 | 55.02 / 85.65 / 2,112.33 ms | 183/194 | 720 / 456 | 56.29 Hz | 64.54 / 19.96 ms |
+
+The input windows lasted 12.609 and 12.774 seconds. The browsers, both
+drivers, and the 3 GiB guard exited 0. The guard observed a peak
+1,428,291,584 B of process-tree RSS. One-minute load was 5.81→5.72 and
+5.72→7.12. The new bundle still stalls for more than two seconds and
+misses most frame deadlines. Host load and bundled changes differ from
+the previous trials, so the throughput difference has no engine attribution.
+
+A separate candidate rendered clipped output rectangles for single Gaussian
+blurs and drop shadows with the full source available to Core Image. The
+exact native pixel assertion failed in both the optimized and sanitized
+fixture. The candidate was reverted before publication.
+
+### Memory map on the following production bundle
+
+A fresh launch of the bundle requested at `a81f48c01` passed the complete
+live audit. Its executable SHA-256 was
+`b0a6ad63e5e6a11c8b835f92894a1e392f2d1c44ce03cde21fd86182fa74b1b9`.
+It settled at 766,250,896 B and peaked at 1,213,026,888 B in the process-tree
+sampler. A separate `vmmap -summary` snapshot at 35 seconds reported 476.2 MiB
+of dirty untagged mappings, 108.0 MiB of dirty WebKit Malloc regions, and
+23.3 MiB of dirty graphics-owned unmapped memory. The snapshot classifies
+the mappings by VM tag. It cannot identify their owners within the engine.
+Vox, `vmmap`, the driver, and the 3 GiB guard exited 0.
