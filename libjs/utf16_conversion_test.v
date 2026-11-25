@@ -16,3 +16,16 @@ fn test_utf16_matches_rune_conversion() {
 	converted := utf16_string('aé😀')
 	assert converted.data == [u16(0x61), 0xe9, 0xd83d, 0xde00] && converted.data.cap >= converted.data.len
 }
+
+fn test_utf16_ascii_groups_keep_unicode_and_malformed_boundaries() {
+	for prefix_len in 0 .. 24 {
+		for boundary in ['é', '€', '😀', '\xff', '\xe2\x82', '\xed\xa0\x80'] {
+			text := 'a'.repeat(prefix_len) + boundary + 'a\x00b0123456'.repeat(4) + '€end'
+			assert utf16(text) == utf16_from_runes(text), 'prefix length ${prefix_len}'
+		}
+	}
+	for prefix_len in 250 .. 257 {
+		text := 'é' + 'a'.repeat(prefix_len) + '😀' + 'z'.repeat(40) + '€'
+		assert utf16(text) == utf16_from_runes(text), 'scalar window boundary ${prefix_len}'
+	}
+}

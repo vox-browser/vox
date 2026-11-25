@@ -154,41 +154,59 @@ pub fn utf16(s string) []u16 {
 	mut count := 0
 	mut i := 0
 	for i < s.len {
-		b := s[i]
-		if b < 0x80 {
-			units[count] = u16(b)
-			count++
-			i++
-			continue
+		// Test a group of bytes together and widen it without a branch per
+		// byte. The word copy also handles unaligned string views.
+		for i <= s.len - 8 {
+			mut bytes := u64(0)
+			unsafe { vmemcpy(&bytes, s.str + i, 8) }
+			if bytes & 0x8080808080808080 != 0 { break }
+			for lane in 0 .. 8 {
+				units[count + lane] = u16(s[i + lane])
+			}
+			count += 8
+			i += 8
 		}
-		if b >= 0xc2 && b <= 0xdf && i + 1 < s.len && s[i + 1] & 0xc0 == 0x80 {
-			units[count] = (u16(b & 0x1f) << 6) | u16(s[i + 1] & 0x3f)
-			count++
-			i += 2
-			continue
-		}
-		if b >= 0xe0 && b <= 0xef && i + 2 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80 {
-			code_point := (u32(b & 0x0f) << 12) | (u32(s[i + 1] & 0x3f) << 6) | u32(s[i + 2] & 0x3f)
-			if code_point >= 0x800 && (code_point < 0xd800 || code_point > 0xdfff) {
-				units[count] = u16(code_point)
+		// Decode a window before trying another group, so Unicode-heavy
+		// text keeps the ordinary decoder loop. A sequence may cross the
+		// window boundary as long as it fits in the remaining source.
+		scalar_end := if s.len - i < 256 { s.len } else { i + 256 }
+		for i < scalar_end {
+			b := s[i]
+			if b < 0x80 {
+				units[count] = u16(b)
 				count++
-				i += 3
+				i++
 				continue
 			}
-		}
-		if b >= 0xf0 && b <= 0xf4 && i + 3 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80
-			&& s[i + 3] & 0xc0 == 0x80 {
-			code_point := (u32(b & 0x07) << 18) | (u32(s[i + 1] & 0x3f) << 12) | (u32(s[i + 2] & 0x3f) << 6) | u32(s[i + 3] & 0x3f)
-			if code_point >= 0x10000 && code_point <= 0x10ffff {
-				value := code_point - 0x10000
-				units[count] = u16(0xD800 + (value >> 10))
-				units[count + 1] = u16(0xDC00 + (value & 0x3FF))
-				count += 2
-				i += 4
+			if b >= 0xc2 && b <= 0xdf && i + 1 < s.len && s[i + 1] & 0xc0 == 0x80 {
+				units[count] = (u16(b & 0x1f) << 6) | u16(s[i + 1] & 0x3f)
+				count++
+				i += 2
 				continue
 			}
+			if b >= 0xe0 && b <= 0xef && i + 2 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80 {
+				code_point := (u32(b & 0x0f) << 12) | (u32(s[i + 1] & 0x3f) << 6) | u32(s[i + 2] & 0x3f)
+				if code_point >= 0x800 && (code_point < 0xd800 || code_point > 0xdfff) {
+					units[count] = u16(code_point)
+					count++
+					i += 3
+					continue
+				}
+			}
+			if b >= 0xf0 && b <= 0xf4 && i + 3 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80
+				&& s[i + 3] & 0xc0 == 0x80 {
+				code_point := (u32(b & 0x07) << 18) | (u32(s[i + 1] & 0x3f) << 12) | (u32(s[i + 2] & 0x3f) << 6) | u32(s[i + 3] & 0x3f)
+				if code_point >= 0x10000 && code_point <= 0x10ffff {
+					value := code_point - 0x10000
+					units[count] = u16(0xD800 + (value >> 10))
+					units[count + 1] = u16(0xDC00 + (value & 0x3FF))
+					count += 2
+					i += 4
+					continue
+				}
+			}
+			return utf16_from_runes(s)
 		}
-		return utf16_from_runes(s)
 	}
 	unsafe {
 		units.len = count
