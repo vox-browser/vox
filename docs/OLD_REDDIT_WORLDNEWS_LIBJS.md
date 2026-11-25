@@ -1,10 +1,11 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **50.50% fewer median observed CPU instructions**
+Production Vox with LibJS used **51.22% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
 their respective screenshot references. Median launch-to-PNG time was
-**2.063 s for Vox and 2.002 s for Brave**. A fresh live Vox visit reached
-Reddit's login page. [Current comparison](#production-comparison-with-both-expression-changes)
+**2.193 s for Vox and 2.185 s for Brave**, with Vox ahead in five of the
+seven pairs. A fresh live Vox visit reached Reddit's login page.
+[Current comparison](#production-comparison-with-overlapped-stylesheets)
 
 ## Workload and execution
 
@@ -1619,3 +1620,113 @@ A separate fresh direct visit in this bundle redirected to Reddit's
 login page and reached `complete` with zero posts. It logged two
 unsupported URL scheme diagnostics for scripts. The browser and guard
 exited zero. The World News result comes from the archived listing.
+
+## Overlap the named stylesheet set with window startup
+
+The archive contains nine untitled stylesheets and one enabled link titled
+`applied_subreddit_stylesheet`. The title sent the preloader through the full
+discovery parser. In an instrumented visit on `fdaf0e1e` the main response
+completed at 65.12 ms after launch. The ten stylesheet requests reached
+the replay between 153.77 and 161.59 ms, followed by document installation
+at 170.72 ms.
+
+Commit `db728f044` allows links with a single distinct stylesheet-set title
+through tokenized discovery. The order of these links selects the same
+set, and the untitled stylesheets still take part. Competing titles,
+titled inline styles, alternates, disabled links and unsupported types
+continue through full discovery. The normal stylesheet barrier and the
+HTML parser's script scheduling still apply.
+
+Both four-test native files passed under production preallocation and
+`-gc none` with arena poisoning. The tokenizer test checks exact URL and
+kind agreement with full discovery for same-title links and rejects
+conflicting titles. The loopback test held the titled stylesheet across
+navigation polling, kept the previous document installed until release,
+and then observed the sheet's rule in the new layout. The first
+tokenizer test execution lacked the adblock asset path and timed out on
+its separate async script case. The rerun with the repository's adblock
+assets exited zero, as did the navigation test. The build guards sampled
+6,458,310,656 and 6,465,224,704 bytes at peak. The successful 3 GiB
+runtime guards sampled 74,629,120 and 104,185,856 bytes.
+All 85 replay and benchmark observer tests passed with the system Python
+and Pillow.
+
+Managed build `20261125-093413-469f9eae` compiled single-unit `-prod` C
+with SHA-256
+`f346b5aa9e12e6d93fd1a97157d410f1484d56f96e0be6258a2f2e4e75cf8103`.
+Its executable SHA-256 was
+`1d227f827419b55b15f74e2dc175e7d9b5ab21e1cc4a7e343fcb4380c5e1bd41`.
+The generated C contains the title check. The source inputs at sealing
+included the change while the checkout's head was `752ea3530`. The build
+input digest was identical after the feature commit. The LibJS headless
+smoke check passed.
+
+### Matched control on the stylesheet build
+
+Both variants used the same executable and the clock-pinned World News
+protocol. `VOX_DISABLE_TOKENIZED_NAVIGATION_PRELOADS=1` selected full
+discovery for the control. It bypasses the unsuccessful tokenized scan
+that the earlier build attempted. In a separate instrumented pair, all
+ten stylesheet requests reached replay at 77.43–88.64 ms with the feature
+and 126.62–140.21 ms with full discovery. The first script request started
+at 125.12 ms and 148.90 ms, respectively. Both visits ran LibJS, matched
+the fixed PNG and completed all five author scripts.
+
+| Pair | Overlapped instructions | Full discovery instructions | Overlapped elapsed (ms) | Full discovery elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,715,270,620 | 5,822,528,732 | 2011.948 | 2062.133 |
+| 2 | 5,733,253,926 | 5,812,939,829 | 2037.287 | 2094.005 |
+| 3 | 5,770,980,834 | 5,788,471,807 | 2050.089 | 2101.363 |
+| 4 | 5,749,384,709 | 5,846,034,707 | 2070.592 | 2094.839 |
+| 5 | 5,773,205,160 | 5,809,142,994 | 2100.057 | 2118.438 |
+| 6 | 5,726,024,040 | 5,872,404,320 | 2148.170 | 2177.783 |
+| 7 | 5,754,911,774 | 5,815,791,729 | 2188.087 | 2242.157 |
+| Median | 5,749,384,709 | 5,815,791,729 | 2070.592 | 2101.363 |
+
+Overlap saved **30.77 ms** between the medians and **1.14%** of median
+observed instructions. Both measures improved in every pair. The
+median paired time savings was 50.18 ms. Both variants received all
+five scripts, showed all 25 posts in order and matched the fixed Vox
+reference. All browser, driver and guard exits were zero. No final
+sample was missing. Each variant's last complete samples preceded
+capture by 7.10–7.66 ms and 5.20–7.67 ms, respectively. The 12 GiB
+guard adopted all 14 browser roots and sampled a peak aggregate RSS
+of 781,926,400 bytes. Host one-minute load was 7.00–8.38 on 18 cores
+from 09:39:54 to 09:40:31 UTC+03.
+
+### Production comparison with overlapped stylesheets
+
+Seven fresh alternating pairs used the fixed-clock archive, exact
+references, private profiles, empty HTTP caches and a 1024×768
+scale-1 viewport with 1.4 s settling. Vox's two LibJS code caches
+were disabled. OS filesystem and shader caches were retained.
+Every visit reached a complete document with all 25 posts in
+order, all five original scripts and its engine's fixed pixels.
+Vox verified LibJS execution with JavaScriptCore uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,721,725,835 | 11,807,836,173 | 2192.565 | 2261.177 |
+| 2 | 5,760,333,524 | 11,844,257,412 | 2154.656 | 2178.033 |
+| 3 | 5,708,105,232 | 11,996,234,257 | 2117.460 | 2167.904 |
+| 4 | 5,788,287,575 | 11,765,917,244 | 2237.761 | 2184.997 |
+| 5 | 5,759,247,154 | 11,823,378,441 | 2262.445 | 2269.334 |
+| 6 | 5,760,765,720 | 11,793,485,186 | 2210.231 | 2209.893 |
+| 7 | 5,791,954,703 | 11,781,121,917 | 2139.171 | 2162.510 |
+| Median | 5,760,333,524 | 11,807,836,173 | 2192.565 | 2184.997 |
+
+Vox used **51.22% fewer median observed instructions**. Its highest
+count was **49.23%** of Brave's lowest. Brave led by **7.57 ms**
+between the elapsed medians. Vox won five pairs, and the median
+of the paired differences was 23.34 ms in Vox's favor.
+
+Both polled process trees supply lower bounds and omit GPU and
+external service work. The final complete samples preceded capture
+by 6.72–7.78 ms for Vox and 2.80–7.57 ms for Brave. Vox reported
+zero missing final samples. Brave reported 2, 2, 1, 2, 2, 1 and 3.
+The browser roots, driver and guard exited zero. The 12 GiB guard
+adopted all 14 roots and sampled a peak aggregate RSS of 788,856,832
+bytes. Host one-minute load was 8.43–9.67 from 09:40:34 to 09:41:15
+UTC+03. A fresh direct visit redirected to Reddit's login page
+with zero posts and two script diagnostics. The browser and guard
+exited zero.
