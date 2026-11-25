@@ -469,9 +469,14 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 		state.subtree_layout_decisions_[u64(voidptr(box))] = .fresh
 		retained.finish()
 	}
-	relayout_before := if records_relayout_root { layout_record_snapshot(box_state) } else { empty_layout_record_snapshot }
+	mut relayout_record := empty_relayout_record
+	if records_relayout_root {
+		relayout_record.before = layout_record_snapshot(box_state)
+	}
 	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state, box, mut box_state, layout_mode, available_space)
-	relayout_after := if records_relayout_root { layout_record_snapshot(box_state) } else { empty_layout_record_snapshot }
+	if records_relayout_root {
+		relayout_record.after = layout_record_snapshot(box_state)
+	}
 	if box.has_size_containment() {
 		// Every formatting context reports the sizes produced by its contents
 		// through this result. Replace both physical axes at that shared boundary.
@@ -490,7 +495,7 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 		record_text_control_inner_layout(mut state, box, text_control_before, available_space, result)
 	}
 	if records_relayout_root {
-		record_relayout_root(mut state, box, relayout_before, relayout_after, available_space, result)
+		record_relayout_root(mut state, box, relayout_record, available_space, result)
 	}
 	return result
 }

@@ -56,8 +56,6 @@ pub fn incremental_layout_verification_mismatch_count() u64 {
 // space and the result.
 struct RelayoutRecord {
 	node   &Node = unsafe { nil }
-	before UsedValues
-	after  UsedValues
 	space  AvailableSpace
 	result FormattingContextResult
 	// measurement_subtree_reuse.v: the pass that recorded or carried this
@@ -65,6 +63,9 @@ struct RelayoutRecord {
 	serial        u64
 	baselines     TextControlBaselines
 	has_baselines bool
+mut:
+	before UsedValues
+	after  UsedValues
 }
 
 enum SubtreeLayoutDecision as u8 {
@@ -91,19 +92,19 @@ fn relayout_root_candidate(box &Node) bool {
 		&& box.as_node_with_style() != none
 }
 
-const empty_layout_record_snapshot = UsedValues{}
+const empty_relayout_record = RelayoutRecord{}
 
 fn layout_record_snapshot(values &UsedValues) UsedValues {
 	return UsedValues{
 		...*values
-		line_boxes: empty_layout_record_snapshot.line_boxes
+		line_boxes: empty_relayout_record.before.line_boxes
 		line_boxes_are_shared_: false
 		rare_: if rare := values.rare_ { rare.clone() } else { none }
 		rare_is_shared_: false
 	}
 }
 
-fn record_relayout_root(mut state LayoutState, box &Node, before UsedValues, after UsedValues,
+fn record_relayout_root(mut state LayoutState, box &Node, snapshots RelayoutRecord,
 	space AvailableSpace, result FormattingContextResult) {
 	styled := box.as_node_with_style() or { return }
 	index := styled.layout_index()
@@ -114,9 +115,8 @@ fn record_relayout_root(mut state LayoutState, box &Node, before UsedValues, aft
 	mut retained := retain_geometry_allocations()
 	defer { retained.finish() }
 	state.relayout_records_[index] = RelayoutRecord{
+		...snapshots
 		node:          box
-		before:        before
-		after:         after
 		space:         space
 		result:        result
 		serial:        state.pass_serial_
