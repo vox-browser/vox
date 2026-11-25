@@ -66,6 +66,11 @@ mut:
 	declaration_kind            int // 0=none, 1=var, 2=let, 3=const
 }
 
+struct PendingIdentifierGroup {
+	key   string
+	group IdentifierGroup
+}
+
 struct HoistableFunction {
 mut:
 	name             Utf16String
@@ -833,21 +838,22 @@ fn (mut sc ScopeCollector) analyze_as_dynamic_function() {
 
 fn (mut sc ScopeCollector) analyze_inner(initiated_by_eval bool, suppress_globals bool) {
 	if sc.records.len > 0 {
-		sc.analyze_recursive(0, initiated_by_eval, suppress_globals)
+		mut pending := []PendingIdentifierGroup{}
+		sc.analyze_recursive(0, initiated_by_eval, suppress_globals, mut pending)
 	}
 }
 
-fn (mut sc ScopeCollector) analyze_recursive(index int, initiated_by_eval bool, suppress_globals bool) {
+fn (mut sc ScopeCollector) analyze_recursive(index int, initiated_by_eval bool, suppress_globals bool, mut pending []PendingIdentifierGroup) {
 	// Process children first (bottom-up traversal).
 	children := sc.records[index].children.clone()
 	for child_index in children {
-		sc.analyze_recursive(child_index, initiated_by_eval, suppress_globals)
+		sc.analyze_recursive(child_index, initiated_by_eval, suppress_globals, mut pending)
 	}
 
 	// 1. Propagate eval() flags from children to parent.
 	sc.propagate_eval_poisoning(index)
 	// 2. Match identifier references to declarations; optimize as locals.
-	sc.resolve_identifiers(index, initiated_by_eval, suppress_globals)
+	sc.resolve_identifiers(index, initiated_by_eval, suppress_globals, mut pending)
 	// 3. Annex B: hoist block-scoped functions to enclosing function scope.
 	sc.hoist_functions(index)
 
@@ -876,14 +882,10 @@ fn (mut sc ScopeCollector) propagate_eval_poisoning(index int) {
 	}
 }
 
-fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool, suppress_globals bool) {
+fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool, suppress_globals bool, mut pending []PendingIdentifierGroup) {
 	// V maps retain insertion order, matching upstream's IndexMap. Local
 	// variable indices follow the first registration, including propagated uses.
-	mut propagate_to_parent := []string{}
-	mut propagate_groups := []IdentifierGroup{}
-
-	// The loop updates identifier nodes and the parent scope. It leaves this
-	// map intact until its keys and references have been propagated.
+	// Defer regular propagation until after explicit parent capture markers.
 	for key, original_group in sc.records[index].identifier_groups {
 		mut group := original_group
 
@@ -1092,18 +1094,19 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 				}
 			}
 
-			propagate_to_parent << key
-			propagate_groups << group
+			pending << PendingIdentifierGroup{key, group}
 		}
 	}
 
 	parent_index := sc.records[index].parent
 	if parent_index >= 0 {
-		for pi in 0 .. propagate_to_parent.len {
-			sc.records[parent_index].merge_identifier_group(propagate_to_parent[pi],
-				propagate_groups[pi])
+		for entry in pending {
+			sc.records[parent_index].merge_identifier_group(entry.key, entry.group)
 		}
 	}
+	// Resolution runs after the children have returned, so every scope can
+	// reuse this buffer once its entries have been merged into its parent.
+	pending.clear()
 	sc.records[index].identifier_groups = map[string]IdentifierGroup{}
 }
 
