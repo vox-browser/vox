@@ -3288,3 +3288,167 @@ render took 3.54 ms within the filter stage. The interval includes the
 input tail and the timings include logging overhead. Browser PID 48840,
 driver and guard exited 0, with 1,269,465,088 B peak guard RSS and
 one-minute host load 4.97→5.74.
+
+## Sharing completed stylesheet response text
+
+A fresh control on the `d8ef4fda` executable pinned the same bundle and
+used a private profile and HTTP cache at 1024×768 and backing scale two.
+An allocator probe checked the running Mach-O UUID, the header record
+layout in sealed C, and the exact header allocation return address.
+It tracked main-thread creations and all observed header retirements,
+then sampled live mapped blocks on the main queue with `mincore`.
+
+| Seconds after executable startup | Live blocks | Allocation cursor bytes | Resident bytes |
+| ---: | ---: | ---: | ---: |
+| 8.17 | 297 | 293,930,192 B | 313,393,152 B |
+| 27.30 | 290 | 304,446,287 B | 324,435,968 B |
+| 36.75 | 290 | 304,461,359 B | 324,452,352 B |
+
+The last snapshot followed 111,609 header creations and 111,319
+retirements, with zero invalid or dropped entries. The largest arena
+was the main navigation document, with 208,306,176 resident bytes across
+193 blocks. Unscoped blocks accounted for 75,415,552 resident bytes.
+Allocation stacks show where each block first grew. Subsequent allocations
+also occupy those pages. A block holding 3,309,568 resident bytes grew
+while completing a script-inserted link stylesheet with `bytestr()`.
+
+The fresh document passed the full content audit at 23.06 seconds. Its
+settled process-tree footprint was 621,268,784 B and its sampled peak
+was 1,073,697,328 B. The diagnostic `vmmap -summary` identified 330.3 MiB
+of dirty untagged mappings, 110.1 MiB of dirty WebKit Malloc and 75.9 MiB
+across IOSurface and graphics accelerator mappings. Browser PID 54817,
+vmmap, driver and 3 GiB guard exited 0. Peak guard RSS was 945,111,040 B.
+One-minute host load was 4.57→6.80 on 18 CPUs.
+
+`12b1e926e` gives the link model and CSS parser the same
+immutable response text. The script-stylesheet response map can share
+an already retained fetch result. Other responses acquire one owned
+copy. The HTML byte-response API converts its mutable input once and
+shares that text with parsing. MIME and redirect handling continue
+through the existing link completion path.
+
+The control's main stylesheet was 1,648,921 B, with the same SHA-256 as
+the font-rule fixture above. On a connected script-inserted link, the
+earlier path cloned the script response, converted it to a byte array
+and constructed two strings. Sharing removes four payload-sized
+allocations for a retained response or three for a temporary response.
+For these bytes that is 6,595,684 B or 4,946,763 B of payload copying
+respectively. These counts describe the exercised ownership paths.
+
+Eleven focused cases passed in the C-backend preallocated browser test
+executable, both normally and with the temporary stylesheet source poisoned
+at retirement. They checked byte-input ownership, browser-cache and temporary
+responses, pointer identity between the script response and link, CSSOM
+behavior, load events, and rejected replacements. The compile and two
+runtime guards exited 0 with peak RSS of 6,461,472,768 B, 97,550,336 B and
+95,371,264 B. The first standalone browser-test invocation lacked the
+bundled adblock snapshot path and exited 1. It passed with the canonical
+assets selected. The direct HTML module test compiles reached the aggregate
+12 GiB guard in Boehm and preallocation configurations. The browser runner
+exercised the mutable byte-response API along with the normal link path.
+
+The preceding production browser matched four 800×600 references
+pixel-exactly. The fixtures cover paths relative to linked and imported
+sheets, case-insensitive stylesheet MIME handling and same-size SVG image
+replacement. Its comparison driver and 3 GiB guard exited 0 at 200,622,080 B
+peak RSS.
+
+### Published browser
+
+Single-unit C `-prod` receipt `20261126-010909-fb10a9dd` sealed
+`12b1e926e` and includes the separate change for compositor raster chunk
+bounds from `7e952cef9`. The executable SHA-256 was
+`08f9c5c9d9171d72ab10184f76d497df2cf8916bf135c331cbdfd1d879f99c45`.
+The frozen compiler inputs exercised the retained-text completion path.
+The executable build and startup smoke guards exited 0 at 7,766,147,072 B
+and 133,447,680 B peak RSS. Earlier production attempts failed with
+no space left on the device during compiler object or linker output.
+The shared worker retried through its coalesced requests.
+
+### Live memory
+
+Two fresh `Vox --window-width 1024 --window-height 880` processes opened
+the live patch with `VOX_TEST_WINDOW=1`, private profiles and HTTP caches,
+direct HTTPS and retained OS caches. The audit used
+`VOX_NATIVE_OBSERVATION_DELAY_MS=22000` and confirmed the visible,
+complete 1024×768 page at scale two with loaded fonts, 133 images, and
+the same digest of 15,620 UTF-8 text bytes. Both caches contained the
+previously identified 1,648,921-byte stylesheet. The native helper
+and runtime resource hashes matched the control.
+
+| Trial | PID | Full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Vox 1 | 81675 | 23.03 s | 618,418,016 B | 1,075,434,008 B | 52 |
+| Vox 2 | 84186 | 23.04 s | 608,669,488 B | 1,070,567,936 B | 52 |
+
+The process tree was sampled every 50 ms from launch. Settled footprint
+is the median of the last three seconds of a 12-second observation
+after the successful audit. Browser, driver and 3 GiB guard exits were
+0, with sampled guard RSS peaks of 925,794,304 B and 910,508,032 B.
+One-minute host load was 3.17→4.12 and 3.76→4.59 on 18 CPUs.
+
+These observations are 12.8–23.3 MB below the preceding production
+browser's two memory readings. The executable includes the compositor
+change and the live trials have run-to-run variation. The installed
+Brave executable and framework matched the identities pinned above.
+Vox used 1.82–1.85 times its earlier 333,717,376 B settled measurement.
+
+### Native input
+
+The 3 GiB guard ran `tools/measure_precise_scroll.py` with
+`--width 1024 --height 768 --chrome-height 112 --script-policy automatic`,
+`--inputs 720 --delta 16 --input-hz 60 --target-hz 60 --reverse-every 360`,
+and `--settle-seconds 23 --timeout 66 --require-title 'Dota Patch Notes - 7.42a'`.
+Both fresh launches used the same live URL, viewport, profiles and cache
+policy as the memory trials and passed the complete patch audit. The
+endpoint was completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Vox 1 | 21.77 | 46.77 / 69.63 / 122.57 ms | 262/283 | 720 / 320 | 55.31 Hz | 85.75 / 9.06 ms |
+| Vox 2 | 20.07 | 49.99 / 77.00 / 128.45 ms | 247/267 | 720 / 304 | 54.05 Hz | 67.46 / 7.80 ms |
+
+The input windows lasted 13.000 and 13.302 seconds. Maximum scroll
+positions were 12,064.5 and 12,066.5 CSS pixels, with final positions
+of 0 and 2.5. Browser PIDs were 83027 and 84901. Both browser, driver
+and guard exits were 0. Peak guard RSS was 1,241,219,072 B and
+1,233,715,200 B, with one-minute host load of 4.19→3.76 and 4.59→5.57.
+The prior production browser measured 22.11 and 21.82 scroll-changing
+publications per second. The two new trials were slower, and roughly
+93% of intervals exceeded the 60 Hz frame budget.
+
+### Readiness and pixels
+
+Two fresh launches using `VOX_NATIVE_OBSERVATION_INTERVAL_MS=250`
+first confirmed the full patch at 3.98 and 7.17 seconds. Browser PIDs
+were 87032 and 87145. Both browser, driver and guard exits were 0, at
+728,416,256 B and 915,931,136 B peak guard RSS. The previous two
+launches confirmed it at 5.67 and 5.40 seconds.
+
+All four candidate reference comparisons were pixel-exact. The actual
+PNGs also matched their respective control PNGs byte for byte. Both
+comparison drivers and guards exited 0. The candidate comparison
+sampled 212,533,248 B peak guard RSS.
+
+### Candidate allocation trace
+
+A separate instrumented launch passed the complete audit at 23.01 s.
+Its settled footprint was 659,443,504 B and its sampled peak was
+1,111,593,520 B. At 36.01 seconds the probe accounted for 318 live blocks
+with 337,677,394 allocation cursor bytes and 359,219,200 resident bytes.
+It observed 123,120 header creations and 122,802 retirements, with zero
+invalid or dropped records. The largest document owner accounted for
+234,897,408 resident bytes and unscoped storage accounted for 77,922,304 B.
+
+The largest document growth stacks included restoring flex measurement
+geometry, recording display commands and converting deferred style rules.
+Unscoped growth stacks included native JPEG decoding, UTF-16 conversion
+for script strictness metadata, and a streamed Fetch result map insertion.
+The first allocation of a block identifies its growth stack. Its final
+resident bytes can include later allocations by other callers.
+
+The `vmmap -summary` snapshot reported 363.5 MiB of dirty untagged
+mappings and 109.7 MiB of dirty WebKit Malloc. Browser PID 87338, vmmap,
+driver and guard exited 0, with peak guard RSS of 989,118,464 B and
+one-minute host load 4.87→5.00. This diagnostic and the instrumented control
+had different retained arena sizes and settled footprints.
