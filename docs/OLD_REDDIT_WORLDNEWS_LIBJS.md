@@ -236,3 +236,66 @@ production Vox visit separately reached the
 `Welcome to Reddit` login page. The login page reported two unsupported
 module script URLs. The browser and guard exited zero. Live listing
 performance remains unverified.
+
+## Skipping impossible arrow parameter parses
+
+`0c5ad43e2` checks the opening tokens of a parenthesized expression before
+LibJS opens a speculative arrow scope. A debugger verified that the
+check rejected a prefix while parsing the archived main Reddit bundle.
+The formal parameter parser still handles destructuring, rest parameters,
+defaults and contextual identifiers. Focused arrow grammar, lexer and
+scope rollback tests and all 100 upstream AST fixtures pass under Boehm
+and `-gc none` with the C backend. The default full package commands
+stopped at the same FastC code-generation errors in both heap modes.
+
+The standalone benchmark parses each of the five pinned author script
+bodies five times per fresh process. Both builds use optimized single-unit
+C. The table reports process instructions through exit, covering all five
+repetitions, and the elapsed time for one set of five scripts, averaged
+over the repetitions. Every attempt and both guards exited zero. The
+controller collected the final process sample on every run.
+
+| Pair | Prealloc control instructions | Prealloc candidate instructions | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 4,903,671,325 | 4,815,535,835 | 165.86 | 210.31 |
+| 2 | 4,839,825,241 | 4,747,718,408 | 242.62 | 186.83 |
+| 3 | 4,838,121,467 | 4,755,436,591 | 236.64 | 224.60 |
+| 4 | 4,841,356,887 | 4,755,665,401 | 222.60 | 205.53 |
+| 5 | 4,838,606,163 | 4,748,643,116 | 220.79 | 275.96 |
+| 6 | 4,842,469,475 | 4,747,799,859 | 246.96 | 213.84 |
+| 7 | 4,839,536,774 | 4,746,441,102 | 201.75 | 203.34 |
+| Median | 4,839,825,241 | 4,748,643,116 | 222.60 | 210.31 |
+
+With Vox's production allocator flags, `-prealloc -gc none`, observed
+instructions fell **1.88%** at the median and fell in all seven pairs.
+The median difference is 18.24 million instructions per set of five
+scripts. Median process CPU time fell from 675.5 to 661.0 ms across
+all five repetitions. Parse elapsed time improved in four pairs. The
+18-core host's one-minute load was 121.21–125.32. The control executable
+SHA-256 was `c1a8504b8b3942af6d5ab08c661b086c801e983da435a789dd988af2c12e533b`
+and the candidate was
+`e55a4c428bfac45365d7f385a83d12343eafd9d28137174109b7bbfde3aba51b`.
+
+The earlier Boehm cohort on the same script bytes had a one-minute load of
+120.95–126.90. Median observed instructions fell 4.75% and median process
+CPU time fell from 1471.0 to 1400.3 ms. Median elapsed parse time increased
+16.09%, with substantial variation in both control and candidate trials.
+
+| Pair | Boehm control instructions | Boehm candidate instructions | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 9,738,518,053 | 9,293,292,676 | 629.21 | 793.24 |
+| 2 | 8,591,825,224 | 8,975,354,305 | 502.91 | 476.46 |
+| 3 | 8,141,750,105 | 8,360,068,733 | 576.47 | 597.53 |
+| 4 | 9,121,507,629 | 8,118,262,102 | 509.60 | 513.52 |
+| 5 | 9,139,337,968 | 8,688,263,529 | 581.73 | 675.35 |
+| 6 | 8,643,140,294 | 8,485,868,495 | 631.54 | 784.88 |
+| 7 | 9,164,216,306 | 8,806,516,076 | 678.78 | 807.69 |
+| Median | 9,121,507,629 | 8,688,263,529 | 581.73 | 675.35 |
+
+The Boehm control SHA-256 was
+`d59405122a1bc1030737534b56e1cdc2569c422a483061e08284ed0a0fba6913`
+and the candidate was
+`da19a9a41b68cb937252a7d5af4739f11cd2b233dd33cc68fa0d2a2d618e6223`.
+The latest completed production bundle at the component check had the
+previous lexer lookahead change. Browser validation of the arrow prefilter
+and the Brave pixel gate remain open.
