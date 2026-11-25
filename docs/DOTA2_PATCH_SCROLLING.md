@@ -949,3 +949,106 @@ Of these, 289 waited in the event loop and five included a repeating timer
 calling UI2 element rendering. The sampler and guard exited 0. The stack
 sample measures active calls at that moment. Historical allocations cannot
 be attributed from it.
+
+### Tab-loading animation retention
+
+`4debe2649` updates the existing UI2 AppKit vector path for each visible
+loading tab. The frame geometry lives in a temporary arena. The native path
+takes its own copy of the coordinates before that arena retires. The timer
+still reconciles load completion through the regular chrome update.
+
+The mounted AppKit fixture retained 2,256,000 B in the persistent arena
+over 600 frames before the change and 0 B after it. The updated fixture
+verified changing icon pixels, native control identity, and restoration
+of the normal icon on completion. The browser integration fixture also
+retained 0 B over 600 timer callbacks. It verified address and document
+paint stability and timer stop and restart behavior. Both candidate fixtures
+passed with `VOX_ARENA_NO_REUSE='tab loading vector'`, which protects retired
+frame storage. All C-backend preallocation compile and runtime guards exited
+0. The integration compile guard sampled 6,470,533,120 B of peak RSS and
+its 3 GiB runtime guard sampled 51,576,832 B. The fixture reproduced a
+specific source of growth during loading. The older session's historical
+allocations remain unattributed.
+
+### Live RAM before the animation fix
+
+The fresh Brave–Vox pair used direct HTTPS, empty private profiles and HTTP
+caches, retained OS caches, and a visible 1024×768 document at backing scale
+2. Both audited the complete patch at 23.01 and 23.13 seconds with loaded
+fonts, 133 image elements and 15,620 bytes of matching normalized React-root
+text. Each final three-second window contained 51 measurements, ending
+twelve seconds after the audit.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 324,378,568 B | 882,204,616 B | 0 |
+| Vox | 731,991,928 B | 1,182,634,616 B | 0 |
+
+The verified single-unit C `-prod` Vox executable SHA-256 was
+`f55877b838c33d7a1d5ffedca5ef2bd64eab9d7851bb153f5235cb080cfc4efb`
+from receipt `20261125-181318-8c447b81`. Brave reported Chromium
+`158.0.8127.42` with executable SHA-256
+`91891e4e395cb799e755f9ec5ee501f380560b4365959de0a15b5123ca0aacd5`.
+Native libraries, frameworks and helpers stayed fixed. The driver and 3 GiB
+guard exited 0. The guard sampled a 1,059,258,368 B peak RSS. One-minute
+host load on 18 CPUs was 4.09→4.33 and 4.33→3.65. Vox used 2.26 times
+Brave's settled footprint in this pair. The measured bundle predates the
+animation fix.
+
+### Live RAM on the animation-fix build
+
+The shared worker published single-unit C `-prod` receipt
+`20261125-182146-d7d3e0ef` with executable SHA-256
+`f9c2c07f29c6e7efa43f38735cf65a67dcc56da8ffc6c79dd5bf05fd2e4905ca`.
+The frozen generated C contains the scratch vector update and the timer
+call site. The production compile and headless smoke guards exited 0.
+Their peak RSS was 7,686,914,048 B and 102,563,840 B respectively.
+
+A fresh pair repeated the same viewport, scale, network, profiles and
+audit criteria. Brave and Vox passed complete content audits after 23.00
+and 23.12 seconds. The final windows held 51 and 52 observations.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 330,555,312 B | 853,057,384 B | 0 |
+| Vox | 729,141,064 B | 1,169,756,696 B | 0 |
+
+Brave's executable, framework and helper identities remained fixed across
+the two pairs. Vox's native helper and library were pinned within each
+pair. The driver and 3 GiB guard exited 0. The guard sampled
+1,030,389,760 B peak RSS. One-minute host load on 18 CPUs was 5.05→5.80
+and 5.80→6.36. Vox still used 2.21 times Brave's settled footprint. The
+spinner test measures allocations during loading. The live pair measures
+the entire browser and includes other bundled changes and network variation.
+
+### Native wheel scrolling on the animation-fix build
+
+Two fresh launches used the same production executable and pinned AVIF
+library and adblock helper. Separate private profiles and HTTP caches
+used direct live HTTPS and retained OS caches. Each audit at 22.79 and
+22.76 seconds confirmed the complete patch, 133 images, 15,620 bytes
+of matching normalized text, and a 1024×768 viewport at backing scale 2.
+The native driver waited 23 seconds after the title matched and sent 720
+precise wheel inputs at a nominal 60 Hz with delta 16. It reversed direction
+after 360 inputs.
+
+| Trial | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 22.90 | 43.97 / 67.50 / 118.64 ms | 276/300 | 720 / 336 | 54.88 Hz | 60.44 / 2.74 ms |
+| 2 | 22.51 | 45.68 / 69.53 / 120.24 ms | 269/293 | 720 / 331 | 55.24 Hz | 60.78 / 9.03 ms |
+
+Rates cover the full 13.102- and 13.017-second input windows. The endpoint
+was completed native frame installation after outer view paint. Scroll
+positions reached 12,092.5 and 12,062.5 CSS pixels and returned toward the
+top. One-minute load on 18 CPUs was 6.17→6.44 and 6.44→6.39. Both browsers
+and drivers exited 0. The 3 GiB guard exited 0 and sampled 1,358,151,680 B
+peak RSS. Roughly 92% of scroll intervals in each trial exceeded the 60 Hz
+frame budget.
+
+The guarded driver ran `tools/measure_precise_scroll.py` with
+`VOX_TEST_WINDOW=1`, `--script-policy automatic`, `--width 1024 --height 768`,
+`--inputs 720 --delta 16 --reverse-every 360 --settle-seconds 23`, and
+`--require-title 'Dota Patch Notes - 7.42a'`. It set the native audit delay
+to 22 seconds. These are two observations of the published build under live
+conditions. Isolating the effect of the animation change on scrolling
+would require matched controls.
