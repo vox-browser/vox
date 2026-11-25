@@ -2,7 +2,6 @@ module css
 
 import dom
 import fetch
-import gfxfont
 import math
 import mimesniff
 import os
@@ -4193,7 +4192,7 @@ pub fn (loader &FontLoader) family_name() string {
 pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) !&PlatformTypeface {
 	mime := loader.try_load_font_mime_type_essence(response, bytes)
 	if requires_off_thread_vector_font_preparation(bytes, mime) {
-		return font_typeface_from_prepared_bytes(gfxfont.convert_woff2_to_sfnt(bytes)!, loader.family_name_)
+		return vector_font_typeface(bytes, loader.family_name_, .woff2)
 	}
 	return try_load_vector_font(bytes, mime, loader.family_name_)
 }

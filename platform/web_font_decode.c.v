@@ -45,12 +45,20 @@ pub fn prepare_font_data(data []u8) ?string {
 	if is_sfnt_font_data(data) {
 		return cache_prepared_font_data(data)
 	}
+	scratch := begin_thread_scratch('web font file preparation')
+	defer { scratch.finish() }
 	prepared := if data[..4].bytestr() == 'wOF2' {
 		gfxfont.convert_woff2_to_sfnt(data) or { return none }
 	} else {
 		gfxfont.convert_woff_to_sfnt(data) or { return none }
 	}
-	return cache_prepared_font_data(prepared)
+	path := cache_prepared_font_data(prepared) or { return none }
+	$if prealloc {
+		scratch.leave()
+		return path.clone()
+	} $else {
+		return path
+	}
 }
 
 pub fn prepare_font_file(path string) ?string {

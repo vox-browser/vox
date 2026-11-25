@@ -56,14 +56,7 @@ fn prepare_vector_font_data_for_storage(data []u8, on_complete fn (PreparedVecto
 	platform.leave_persistent(persistent)
 	queue_storage := platform.enter_persistent()
 	pool.submit(fn [data, callback_id, invoker] () {
-		mut prepared := PreparedVectorFontData{}
-		if converted := gfxfont.convert_woff2_to_sfnt(data) {
-			prepared = PreparedVectorFontData{ data: converted }
-		} else {
-			prepared = PreparedVectorFontData{
-				error_message: err.msg()
-			}
-		}
+		prepared := convert_woff2_for_font_completion(data)
 		invoker.deferred_invoke(fn [callback_id, prepared] () {
 			vector_font_preparation_callbacks_mutex_.lock()
 			callback := vector_font_preparation_callbacks_[callback_id] or {
@@ -79,6 +72,26 @@ fn prepare_vector_font_data_for_storage(data []u8, on_complete fn (PreparedVecto
 	return true
 }
 
+fn convert_woff2_for_font_completion(data []u8) PreparedVectorFontData {
+	scratch := platform.begin_thread_scratch('font worker decoding')
+	defer { scratch.finish() }
+	converted := gfxfont.convert_woff2_to_sfnt(data) or {
+		$if prealloc {
+			scratch.leave()
+			return PreparedVectorFontData{error_message: err.msg().clone()}
+		} $else {
+			return PreparedVectorFontData{error_message: err.msg()}
+		}
+	}
+	$if prealloc {
+		// Keep only the result in the worker's durable handoff storage.
+		scratch.leave()
+		return PreparedVectorFontData{data: converted.clone()}
+	} $else {
+		return PreparedVectorFontData{data: converted}
+	}
+}
+
 pub fn requires_off_thread_vector_font_preparation(data []u8, mime_type_essence ?string) bool {
 	if mime := mime_type_essence {
 		if mime in ['font/woff2', 'application/font-woff2'] { return true }
@@ -88,10 +101,45 @@ pub fn requires_off_thread_vector_font_preparation(data []u8, mime_type_essence 
 }
 
 fn font_typeface_from_prepared_bytes(data []u8, family_name string) !&PlatformTypeface {
-	if !gfxfont.typeface_data_is_valid(data, 0) { return error('Failed to load font') }
-	path := platform.cache_prepared_font_data(data) or {
+	return vector_font_typeface(data, family_name, .sfnt)
+}
+
+enum VectorFontFormat {
+	sfnt
+	woff
+	woff2
+}
+
+fn decode_vector_font(data []u8, format VectorFontFormat) ![]u8 {
+	return match format {
+		.sfnt { data }
+		.woff { gfxfont.convert_woff_to_sfnt(data)! }
+		.woff2 { gfxfont.convert_woff2_to_sfnt(data)! }
+	}
+}
+
+fn vector_font_typeface(data []u8, family_name string, format VectorFontFormat) !&PlatformTypeface {
+	// Conversion and validation borrow the bytes. The prepared file is the
+	// only result used by the typeface after this scope is retired.
+	scratch := platform.begin_thread_scratch('vector font preparation')
+	defer { scratch.finish() }
+	decoded := decode_vector_font(data, format) or {
+		$if prealloc {
+			scratch.leave()
+			return error_with_code(err.msg().clone(), err.code())
+		} $else {
+			return err
+		}
+	}
+	if !gfxfont.typeface_data_is_valid(decoded, 0) {
+		scratch.leave()
+		return error('Failed to load font')
+	}
+	path := platform.cache_prepared_font_data(decoded) or {
+		scratch.leave()
 		return error('Failed to retain prepared font')
 	}
+	scratch.leave()
 	return &PlatformTypeface{
 		family_name: family_name.clone()
 		source_path: path.clone()
@@ -105,23 +153,17 @@ pub fn try_load_vector_font(data []u8, mime_type_essence ?string, family_name st
 				return font_typeface_from_prepared_bytes(data, family_name)
 			}
 			'font/woff', 'application/font-woff', 'font/x-woff' {
-				return font_typeface_from_prepared_bytes(gfxfont.convert_woff_to_sfnt(data)!,
-					family_name)
+				return vector_font_typeface(data, family_name, .woff)
 			}
 			'font/woff2', 'application/font-woff2' {
-				return font_typeface_from_prepared_bytes(gfxfont.convert_woff2_to_sfnt(data)!,
-					family_name)
+				return vector_font_typeface(data, family_name, .woff2)
 			}
 			else {}
 		}
 	} else {
 		if result := font_typeface_from_prepared_bytes(data, family_name) { return result }
-		if converted := gfxfont.convert_woff_to_sfnt(data) {
-			if result := font_typeface_from_prepared_bytes(converted, family_name) { return result }
-		}
-		if converted := gfxfont.convert_woff2_to_sfnt(data) {
-			if result := font_typeface_from_prepared_bytes(converted, family_name) { return result }
-		}
+		if result := vector_font_typeface(data, family_name, .woff) { return result }
+		if result := vector_font_typeface(data, family_name, .woff2) { return result }
 	}
 	return error('Automatic format detection failed')
 }
