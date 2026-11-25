@@ -1052,3 +1052,112 @@ The guarded driver ran `tools/measure_precise_scroll.py` with
 to 22 seconds. These are two observations of the published build under live
 conditions. Isolating the effect of the animation change on scrolling
 would require matched controls.
+
+### Settled memory owners
+
+Two separate instrumented launches used fresh profiles and HTTP caches,
+direct live HTTPS, and the 1024×768 viewport at backing scale 2. Each
+confirmed the complete patch at the 23-second audit with 133 images and
+15,620 bytes of matching normalized React-root text. The pinned production
+executable was
+`d64a7059bb505fa4b7fe8ae4ecccaaa4e9aa278f19a65ac5da7a247f64ba6b72`.
+The AVIF library and adblock helper stayed fixed during each run.
+
+The first valid probe invoked cleanup on the native main thread at 30, 35,
+and 40 seconds. It used the executable image slide and validated the resolved
+symbols against that binary. Malloc pressure relief and Core Image cache
+cleanup each changed the immediate task footprint by 0 B. The Core Image
+hardware context existed and the software context was absent. Releasing
+the shaping cache returned 1,064,960 B immediately. Three-second footprint
+medians ending at 29, 34, 39, and 45 seconds were 709,676,920 B, 709,554,040 B,
+709,611,384 B, and 708,530,040 B. Browser, driver, and guard exited 0. The
+guard observed 1,025,769,472 B peak RSS. A preliminary run on the previous
+executable had a successful page audit and browser exit 0. Shared publication
+changed its executable identity during the trial, so the driver and guard
+exited 1.
+
+The second probe matched the allocator's block-header allocation symbol
+range, tracked recycled header lifetimes, and read live allocation cursors
+at 38 seconds. It observed 110,040 block creations, 109,528 retirements,
+and 512 live headers with zero drops. The main document arena used
+285.93 MiB and unscoped allocations used 101.87 MiB. CSS selector parsing,
+invalidation graph merges, layout recording, DOM attribute state and
+external-script source copies grew document blocks. An unscoped growth
+stack ran through the image response decoder and the deferred PNG array
+clone. Its blocks held 15.49 MiB across all allocations they served.
+Block-growth stacks identify the allocating call when the block was added.
+Their final use includes later allocations in the same block. The sampler's
+39-second median was 723,849,104 B. Browser, driver and guard exited 0.
+The guard observed 1,058,390,016 B peak RSS. A separate byte-copy-counting
+probe aborted at browser startup with exit −6 and supplied no copy counts.
+Its driver and guard exited 1.
+
+### Reuse of retained image response bytes
+
+`b743bb6e8` gives the synchronous image decoders a read-only view of the
+response body. A deferred PNG shares the encoded bytes when the fetch
+worker or cache has already placed them in process-lifetime storage.
+Scope-owned responses still copy the encoded bytes once for the deferred
+pixel read. The CORS request path preserves its existing owned copy.
+
+The focused 59,912 B PNG fixture used the original allocating path as its
+control. Retained arena use fell from 122,446 B to 784 B for the
+process-owned response. A temporary response used 60,736 B. The preallocated
+C-backend test produced the same counts normally and with the request scope
+poisoned. The C-backend `-gc none` test verified exact decoded pixels for
+both response paths. The passing compile guards sampled 6,493,061,120 B
+and 6,431,883,264 B of peak RSS. Both 3 GiB runtime guards exited 0.
+The fixture establishes the encoded-copy reduction with matching image
+semantics. Seven local CORS image cases also passed, covering pixel readback,
+redirects, origin and credential checks, CSP, cancellation and deduplication.
+Their 3 GiB runtime guard exited 0 and sampled 216,465,408 B peak RSS. The
+first standalone CORS run pointed the unbundled asset override at bundled
+filenames. The rerun supplied the expected asset names and passed.
+
+### Live RAM before the image-response change
+
+The last published single-unit C `-prod` build before the image-response
+change was receipt `20261125-183352-aa7514a2` with executable SHA-256
+`6f5a192bf9c9e338f41af173ac5c83b23e98db548ba4f4ea629c8b6c1bc625bb`.
+A fresh pair used uninstrumented per-process footprint sampling at 50 ms,
+direct HTTPS, private profiles and HTTP caches, and retained OS caches.
+Both pages passed the full 1024×768 scale-2 patch audit. The settled
+medians used 51 samples per browser from the final three of twelve
+seconds after the audit. The elapsed audit times were 23.01 seconds for
+Brave and 23.17 seconds for Vox.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 336,552,048 B | 877,584,448 B | 0 |
+| Vox | 727,273,312 B | 1,164,071,328 B | 0 |
+
+The Brave executable and framework stayed fixed on Chromium
+`158.0.8127.42`. Both executables, renderer helpers, and native-library
+hashes stayed fixed. The driver and 3 GiB guard exited 0. The guard
+observed 1,015,742,464 B of peak RSS. One-minute load on 18 CPUs was
+7.29→5.70 and 5.70→5.71. Vox used 2.16 times Brave's settled footprint.
+
+### Live RAM on the image-response build
+
+The production worker published single-unit C `-prod` receipt
+`20261125-184341-9bfe537b` with executable SHA-256
+`ff12fde05da780fe335310d7df448bc913dae54ea5e775b95a7cab749b4ac5c0`.
+The frozen C passes the response byte view and ownership flag into the
+decoder. The production compile and headless smoke guards exited 0 with
+peak RSS of 7,677,771,776 B and 101,924,864 B respectively.
+
+The next pair started Vox first and repeated the same memory and content
+protocol. Vox and Brave passed the full patch audits at 23.17 and 23.01
+seconds. The final windows held 52 and 53 samples respectively.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Vox | 714,510,224 B | 1,161,466,440 B | 0 |
+| Brave | 332,603,336 B | 879,091,608 B | 0 |
+
+The native AVIF library, adblock helper and all pinned Brave binaries
+matched the preceding pair. The driver and 3 GiB guard exited 0. The guard
+observed 1,022,558,208 B peak RSS. One-minute host load on 18 CPUs was
+3.32→5.38 and 5.38→5.73. Vox used 2.15 times Brave's settled footprint.
+The live results include other bundled changes and network variation.
+The controlled PNG fixture isolates the allocation effect of the change.
