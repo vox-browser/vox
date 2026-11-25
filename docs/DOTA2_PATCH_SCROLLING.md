@@ -1735,3 +1735,137 @@ and 23.06 seconds after launch, respectively.
 Both browsers, driver and 3 GiB guard exited 0. The guard sampled
 1,001,652,224 B peak RSS. One-minute host load was 7.44→7.66 and
 7.66→7.40 on 18 CPUs. Vox used 2.10 times Brave's settled footprint.
+
+### Releasing relayout record maps by layout pass
+
+`65fcdbef5` gives the last-call, first-call and text-control record maps a
+native layout-state arena. The maps copy their values when a pass carries or
+clones records. Referenced geometry retains document ownership. Replacing
+the published state, rejecting a candidate pass and retiring the document
+release the corresponding map buffers. A suspended page keeps its active
+records until its layout publisher retires.
+
+Nine focused cases passed through the browser module, both normally and with
+`relayout records` and `document geometry` arenas poisoned at retirement.
+The native case checked three viewport layouts, record slot ownership,
+preserved snapshot data, and rejection of a cloned incremental attempt.
+It verified zero capacity in the old record arena after each of two
+replacement layouts and after deactivation. The suite also covered first-call
+flex answers, retained line painting, and native document retirement.
+The test compile and 3 GiB runtime guards exited 0 with 6,481,870,848 B
+and 2,736,128 B peak sampled RSS.
+
+An initial lifetime assertion used document destruction as the deactivation
+boundary. The fixture now uses the document's inactive-layout hook and tests
+the suspended case before deactivation. An expanded browser test run
+hit SIGBUS while the nested textarea fixture resolved its focused cursor.
+The same test and cursor stack reproduced on a separately compiled control
+with the record arena changes reverted. Both runs and their 3 GiB guards
+exited 138. This leaves the full browser typing check unresolved.
+
+### Live RAM and readiness before relayout map recycling
+
+The installed single-unit C `-prod` executable remained
+`3f021777d017a95715131e6fc059e865a6b70b41431a4151f508653daddd7a1c`.
+A fresh Vox–Brave pair held executable, helper and resource hashes fixed
+through the same direct HTTPS, private profile and cache protocol. Both
+confirmed the complete patch at 23.04 and 23.05 seconds, respectively.
+
+| Browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Vox | 669,339,560 B | 1,121,522,344 B | 56 |
+| Brave | 354,492,360 B | 881,811,376 B | 56 |
+
+Both browsers, driver and 3 GiB guard exited 0. The guard sampled
+1,031,471,104 B peak RSS. One-minute load was 6.44→6.20 and 6.20→5.63
+on 18 CPUs.
+
+A separate Vox diagnostic observed the full patch at 4.16 seconds using a
+250 ms repeating native audit. The timing log recorded 28 document layout
+passes through shutdown, 14 with tree rebuilds. The logged layout calls
+totaled 359.68 ms inclusive of 34.98 ms of style time. The browser, driver
+and 3 GiB guard exited 0, with 993,394,688 B peak RSS and one-minute load
+6.30→6.07. This startup observation includes audit and timing instrumentation.
+
+### Live RAM on the relayout map build
+
+The shared single-unit C `-prod` build `20261125-205113-4a675b7f` compiled
+from `b669cbb35` with the relayout record arena implementation in the
+working directory. The generated C contains the arena retirement and the
+inline snapshots from `fd28b1093`. The installed executable SHA-256 was
+`b27e26e3422e1d900dffe0347b9dce7ff99cd10bddac6bd42578e2e6c456b9cf`.
+The production compile and headless smoke guards exited 0 with peak RSS
+of 7,703,642,112 B and 79,757,312 B.
+
+The first comparison stopped when Brave's native window stayed hidden.
+The second ran Vox first and its full patch passed at 23.05 seconds.
+Vox's settled footprint was 735,022,944 B across 52 samples, with a peak of
+1,175,507,576 B and one-minute host load 6.42→4.87. The Brave retry also
+stayed hidden after a targeted activation attempt. Both Brave runs reached
+the expected text, images and viewport. The browser processes exited 0.
+The drivers and 3 GiB guards exited 1, with peak guard RSS of 781,598,720 B
+and 1,057,423,360 B. The higher Vox observation spans shared build changes
+and live-launch variation. The candidate runs establish no matched RAM
+comparison against Brave.
+
+The production arena diagnostic audited the full patch at 3.95 seconds.
+It observed 29 retirements totaling 10,680,360 B of allocation cursor usage
+and 30,388,480 B of reserved capacity, including the retired state's map
+storage at shutdown. The largest retired pass used 1,518,496 B. These
+figures sum the arena allocations through the launch. The instrumented
+browser, driver and 3 GiB guard exited 0. The guard sampled 1,003,667,456 B
+peak RSS and one-minute load was 3.92→3.86.
+
+### Native scrolling on the relayout map build
+
+Both fresh launches completed the full native wheel protocol and the live
+patch audit. The viewport, backing scale, settle period and input schedule
+match the preceding runs. The AVIF library and adblock helper SHA-256 hashes
+also match. All nine SVG source-switch and paint-server comparisons were
+pixel-exact at 800×600 with executable, helper and reference pins intact.
+The capture, comparison and 3 GiB guard exited 0 with 181,059,584 B peak RSS.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 21.58 | 46.30 / 72.63 / 126.53 ms | 262/282 | 720 / 287 | 55.02 Hz | 56.73 / 3.86 ms |
+| 2 | 22.99 | 43.44 / 67.39 / 122.08 ms | 278/297 | 720 / 302 | 55.66 Hz | 57.11 / 4.91 ms |
+
+The input windows lasted 13.069 and 12.918 seconds. The document reached
+12,065.5 and 12,061 CSS pixels before returning to 4.5 and 0 CSS pixels.
+The endpoint was completed native frame installation. Both browsers,
+drivers and the 3 GiB guard exited 0, with 1,365,590,016 B peak guard RSS.
+One-minute host load was 3.71→3.26 and 3.26→3.60 on 18 CPUs. Roughly 93%
+of scroll intervals exceeded 16.67 ms. Host load and other shared
+build changes prevent attributing the higher observed rate to record storage.
+
+### Resident pages in the free-block pool
+
+The next production receipt `20261125-205709-4a1ea4df` installed executable
+SHA-256 `f5fc8b33a6626ba4e16fdb3902c1754c05c6a8ccee0346f3332d3cb43c36b29f`.
+A diagnostic resolved the allocator pool symbol in that executable,
+checked its generated C field layout, and verified the UUID and slide
+of the loaded Mach-O executable. It sampled the locked pool with `mincore`
+while Vox loaded and showed the complete live patch.
+
+At the final sample, around 34 seconds after launch, the 44 free blocks
+reserved 46,420,928 B. Their resident pages totaled 2,752,512 B.
+All 34 samples accounted for every block. Sampled residency peaked at
+51,707,904 B earlier in the launch. The small settled pool residency
+accounts for little of the diagnostic's 682,610,552 B settled footprint.
+The browser, driver and 3 GiB guard exited 0 with a 990,625,792 B peak
+guard RSS and one-minute host load 3.63→4.43.
+
+The first browser launch also passed the content audit and exited 0.
+Its probe rejected block lengths that ended within a page, so the driver
+and guard exited 1. The successful probe rounded the page count for those
+mappings and still accounted for their exact logical sizes.
+
+A separate uninstrumented launch of the same executable confirmed the
+full patch at 23.01 seconds. It settled at 667,668,344 B over 52 samples,
+with a sampled peak of 1,115,640,440 B and one-minute load 3.43→3.39.
+Brave completed the expected patch in a normal native window, but reported
+hidden document visibility through 59.70 seconds. Restoring and activating
+that private window did not restore visible document state. Both browsers
+exited 0. The driver and its 3 GiB guard exited 1 with 969,228,288 B peak
+guard RSS. The Vox observation is valid on its own. The last complete
+Brave comparison remains the control at 354,492,360 B.
