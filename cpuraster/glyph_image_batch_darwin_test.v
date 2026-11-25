@@ -110,6 +110,29 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
 		assert prefetched == serial
 
+		native_positions := []f64{len: run.positions.len, init: f64(run.positions[index]) + 0.015625}
+		origin := [f32(0.375), f32(-0.125)]!
+		mut folded := []f32{len: native_positions.len}
+		prepare_retained_glyph_positions(native_positions, mut folded, origin[0], origin[1], true)
+		prepared_run := GlyphFramePrefetchRun{...expect[0], run: CanvasGlyphRun{...run, positions: folded}}
+		raw_run := GlyphFramePrefetchRun{
+			...expect[0]
+			run: CanvasGlyphRun{...run, positions: []f32{}}
+			raw_positions: native_positions
+			raw_origin: origin
+			fold_origin: true
+		}
+		prepared_cache := new_glyph_cache()
+		raw_cache := new_glyph_cache()
+		finish_glyph_frame_prefetch(start_glyph_frame_prefetch(prepared_cache, [prepared_run]), prepared_cache)
+		finish_glyph_frame_prefetch(start_glyph_frame_prefetch(raw_cache, [raw_run]), raw_cache)
+		assert raw_cache.strikes.len == prepared_cache.strikes.len && raw_cache.strikes.len == 1
+		for key, expected in prepared_cache.strikes {
+			actual := raw_cache.strikes[key] or { panic('missing raw position strike') }
+			assert actual.glyphs == expected.glyphs
+		}
+		assert start_glyph_frame_prefetch(raw_cache, [raw_run]) == unsafe { nil }
+
 		mut split_cache := new_glyph_cache()
 		if glyph_frame_prefetch_can_split(split_cache) {
 			wave_runs := [expect[0], expect[0], expect[1]]

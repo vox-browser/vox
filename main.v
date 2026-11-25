@@ -9,6 +9,7 @@ import browserjs
 import browserhistory
 import browserbookmarks
 import cachepolicy
+import cpuraster
 import crypto.sha256
 import css
 import dom
@@ -7749,6 +7750,7 @@ fn (mut app BrowserApp) draw() {
 			mut culling := PaintCanvasCulling{}
 			mut bounds_lanes := 0
 			mut canvas_bounds := PaintCanvasBoundsBatch{}
+			mut frame_glyph_prefetch := voidptr(0)
 			$if macos {
 				culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
 				if culling.enabled && app.page_zoom == 1 {
@@ -7758,6 +7760,10 @@ fn (mut app BrowserApp) draw() {
 						canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
 							f64(page_y), f64(window.width), f64(window.height))
 						canvas_bounds.submit()
+						$if !cpuraster_freetype ? {
+							frame_glyph_prefetch = app.start_early_document_glyph_prefetch(page_y, window.width,
+								window.height)
+						}
 						bounds_scratch.leave_for_frame_setup()
 					}
 				}
@@ -7836,10 +7842,15 @@ fn (mut app BrowserApp) draw() {
 			}
 			leaf_canvas_bounds := canvas_bounds.finish(!scroll_damage.reused)
 			has_glyph_geometry := leaf_canvas_bounds.len > 0 && canvas_bounds.glyph_geometry.len > 0
-			mut frame_glyph_prefetch := voidptr(0)
 			mut frame_glyph_prefetch_at := 0
 			$if macos && !cpuraster_freetype ? {
-				if has_glyph_geometry {
+				if frame_glyph_prefetch != unsafe { nil } {
+					cpuraster.mark_glyph_frame_prefetch_setup_finished(frame_glyph_prefetch)
+					if scroll_damage.reused {
+						discard_document_glyph_prefetch(frame_glyph_prefetch)
+						frame_glyph_prefetch = unsafe { nil }
+					}
+				} else if has_glyph_geometry {
 					frame_glyph_prefetch = app.start_document_glyph_prefetch(canvas_bounds.glyph_geometry, page_y)
 				}
 			}

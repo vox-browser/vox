@@ -103,13 +103,15 @@ pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun, options
 pub fn prepare_retained_glyph_positions(source []f64, mut positions []f32,
 	baseline_x f32, baseline_y f32, fold_origin bool) Rect {
 	for i in 0 .. positions.len {
-		positions[i] = if fold_origin {
-			f32(source[i]) + if i % 2 == 0 { baseline_x } else { baseline_y }
-		} else {
-			f32(source[i])
-		}
+		positions[i] = retained_glyph_coordinate(source[i],
+			if i % 2 == 0 { baseline_x } else { baseline_y }, fold_origin)
 	}
 	return glyph_positions_bounds(positions)
+}
+
+@[inline]
+fn retained_glyph_coordinate(value f64, origin f32, fold_origin bool) f32 {
+	return if fold_origin { f32(value) + origin } else { f32(value) }
 }
 
 fn cached_canvas_run_strike(cache &GlyphCache, face_key string, run &CanvasGlyphRun,

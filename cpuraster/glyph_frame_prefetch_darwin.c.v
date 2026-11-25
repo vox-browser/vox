@@ -17,6 +17,10 @@ $if !cpuraster_freetype ? {
 		run       CanvasGlyphRun
 		transform [6]f32
 		color     u32
+		// Native replay can borrow these before the prepared positions exist.
+		raw_positions []f64
+		raw_origin    [2]f32
+		fold_origin   bool
 	}
 
 	@[params]
@@ -71,9 +75,8 @@ $if !cpuraster_freetype ? {
 	}
 
 	struct GlyphFrameRunPlan {
-		slot int
-		glyphs []u16
-		positions []f32
+		slot     int
+		source   &GlyphFramePrefetchRun
 		rounding SkAffine
 	}
 
@@ -106,6 +109,7 @@ $if !cpuraster_freetype ? {
 		tail_ticket  voidptr
 		tail_lanes   int
 		owner_start  u64
+		setup_finished_ns u64
 		has_cold_strike bool
 		prepare_strikes bool
 		planner_thread u64
@@ -133,7 +137,8 @@ $if !cpuraster_freetype ? {
 	fn (mut batch GlyphFrameWork) collect(run_spec &GlyphFramePrefetchRun, cache &GlyphCache,
 		defer_font bool) {
 		run := &run_spec.run
-		if run.glyphs.len == 0 || run.positions.len != run.glyphs.len * 2
+		positions := if run_spec.raw_positions.len > 0 { run_spec.raw_positions.len } else { run.positions.len }
+		if run.glyphs.len == 0 || positions != run.glyphs.len * 2
 			|| !run.retained || !run.chromium_coverage || run.font_path == '' { return }
 		device := pre_translate(canvas_affine(run_spec.transform), run.translation[0], run.translation[1])
 		if !affine_is_finite(device) || glyphs_draw_as_paths(run.font_size, device) { return }
@@ -186,8 +191,7 @@ $if !cpuraster_freetype ? {
 			tx: device.tx + if strike.snap_x { f32(0.5) } else { glyph_subpixel_round }
 			ty: device.ty + if strike.snap_y { f32(0.5) } else { glyph_subpixel_round }
 		}
-		batch.runs << GlyphFrameRunPlan{slot: slot, glyphs: run.glyphs,
-			positions: run.positions, rounding: rounding}
+		batch.runs << GlyphFrameRunPlan{slot: slot, source: unsafe { run_spec }, rounding: rounding}
 	}
 
 	fn open_glyph_frame_fonts(context voidptr, first i32, end i32) {
@@ -257,10 +261,17 @@ $if !cpuraster_freetype ? {
 		}
 		for run in runs {
 			mut slot := &batch.strikes[run.slot]
-			for index, id in run.glyphs {
+			source := run.source
+			for index, id in source.run.glyphs {
 				if batch.job_count == limit { return }
-				point := map_point_affine(run.rounding,
-					Point{run.positions[index * 2], run.positions[index * 2 + 1]})
+				offset := index * 2
+				position := if source.raw_positions.len > 0 {
+					Point{retained_glyph_coordinate(source.raw_positions[offset], source.raw_origin[0], source.fold_origin),
+						retained_glyph_coordinate(source.raw_positions[offset + 1], source.raw_origin[1], source.fold_origin)}
+				} else {
+					Point{source.run.positions[offset], source.run.positions[offset + 1]}
+				}
+				point := map_point_affine(run.rounding, position)
 				if !is_finite_f32(point.x) || !is_finite_f32(point.y) { continue }
 				glyph := glyph_mask_key_at_position(id, &slot.strike, point)
 				if !slot.schedule_key(glyph) { continue }
@@ -293,6 +304,13 @@ $if !cpuraster_freetype ? {
 	pub fn glyph_frame_prefetch_can_split(cache &GlyphCache) bool {
 		return cache != unsafe { nil } && cache.strikes.len == 0 && !sync_glyph_frame_strikes
 			&& !sync_glyph_frame_planning
+	}
+
+	pub fn mark_glyph_frame_prefetch_setup_finished(context voidptr) {
+		if glyph_frame_prefetch_diagnostics && context != unsafe { nil } {
+			mut batch := unsafe { &GlyphFrameWork(context) }
+			batch.setup_finished_ns = time.sys_mono_now()
+		}
 	}
 
 	// The batch owns its CoreText strikes and carries no borrowed cache entry
@@ -425,7 +443,9 @@ $if !cpuraster_freetype ? {
 			for thread_id in batch.font_threads {
 				if thread_id != 0 && thread_id !in font_threads { font_threads << thread_id }
 			}
-			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strike_count} lanes=${batch.lanes} published=${batch.front_published + tail_published} ready_at_join=${batch.front_ready} owner_overlap=${batch.front_overlap} planned_off_thread=${planned_off_thread} strikes_off_thread=${batch.prepare_strikes && planned_off_thread} font_lanes=${batch.font_lanes} font_threads=${font_threads.len} font_open_ns=${batch.font_open_ns} font_fallback=${batch.font_fallback} front_jobs=${batch.front_jobs} front_published=${batch.front_published} tail_jobs=${batch.job_count - batch.front_jobs} tail_lanes=${batch.tail_lanes} tail_published=${tail_published} tail_ready=${tail_ready} tail_overlap=${tail_overlap}')
+			setup_jobs := batch.jobs[..batch.job_count].count(it.image.rendered > batch.owner_start
+				&& it.image.started < batch.setup_finished_ns)
+			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strike_count} lanes=${batch.lanes} published=${batch.front_published + tail_published} ready_at_join=${batch.front_ready} owner_overlap=${batch.front_overlap} planned_off_thread=${planned_off_thread} strikes_off_thread=${batch.prepare_strikes && planned_off_thread} font_lanes=${batch.font_lanes} font_threads=${font_threads.len} font_open_ns=${batch.font_open_ns} font_fallback=${batch.font_fallback} front_jobs=${batch.front_jobs} front_published=${batch.front_published} tail_jobs=${batch.job_count - batch.front_jobs} tail_lanes=${batch.tail_lanes} tail_published=${tail_published} tail_ready=${tail_ready} tail_overlap=${tail_overlap} early_setup=${batch.setup_finished_ns > 0} setup_jobs=${setup_jobs}')
 		}
 	}
 }
