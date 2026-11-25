@@ -18,6 +18,7 @@ struct StylesheetRuleEntry {
 	input   string
 	rules   []Rule
 	nodes   int
+	retained_bytes i64
 	storage &platform.RetainedArena = unsafe { nil }
 	// Never reused: sheets converted from entries with equal ids have equal
 	// source bytes (duplicate_style_sheets.v).
@@ -40,11 +41,13 @@ struct StylesheetRuleCache {
 	max_entries      int = 24
 	max_source_bytes int = 4 * 1_048_576
 	max_nodes        int = 262_144
+	max_retained_bytes i64 = 16 * 1_048_576
 mut:
 	mutex        &sync.Mutex = sync.new_mutex()
 	entries      []&StylesheetRuleEntry
 	source_bytes int
 	nodes        int
+	retained_bytes i64
 	serial       u64
 	reported_hit bool
 	next_id      u64
@@ -139,11 +142,6 @@ fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) u64 {
 	for entry in cache.entries {
 		if entry.input == input { return entry.id }
 	}
-	for cache.entries.len > 0 && (cache.entries.len >= cache.max_entries
-		|| cache.source_bytes + input.len > cache.max_source_bytes
-		|| cache.nodes + nodes > cache.max_nodes) {
-		cache.evict_oldest()
-	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut storage := unsafe { &platform.RetainedArena(nil) }
@@ -156,18 +154,38 @@ fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) u64 {
 	mut owned_rules := []Rule{cap: rules.len}
 	for rule in rules { owned_rules << own_transient_rule_tree(rule) }
 	allocation_scope.finish()
+	mut retained_bytes := i64(0)
+	$if prealloc {
+		// Decoded strings, immutable token payloads and allocator overhead
+		// can make a short source occupy many times its text size.
+		retained_bytes = storage.arena.usage().capacity
+		if retained_bytes > cache.max_retained_bytes {
+			// The cache never published this arena, so it has no borrowers.
+			storage.arena.reset()
+			storage.release()
+			return 0
+		}
+	}
+	for cache.entries.len > 0 && (cache.entries.len >= cache.max_entries
+		|| cache.source_bytes + input.len > cache.max_source_bytes
+		|| cache.nodes + nodes > cache.max_nodes
+		|| cache.retained_bytes + retained_bytes > cache.max_retained_bytes) {
+		cache.evict_oldest()
+	}
 	cache.serial++
 	cache.next_id++
 	cache.entries << &StylesheetRuleEntry{
 		input:     owned_input
 		rules:     owned_rules
 		nodes:     nodes
+		retained_bytes: retained_bytes
 		storage:   storage
 		id:        cache.next_id
 		last_used: cache.serial
 	}
 	cache.source_bytes += input.len
 	cache.nodes += nodes
+	cache.retained_bytes += retained_bytes
 	return cache.next_id
 }
 
@@ -181,6 +199,7 @@ fn (mut cache StylesheetRuleCache) evict_oldest() {
 	entry := cache.entries[oldest]
 	cache.source_bytes -= entry.input.len
 	cache.nodes -= entry.nodes
+	cache.retained_bytes -= entry.retained_bytes
 	last := cache.entries.len - 1
 	cache.entries[oldest] = cache.entries[last]
 	cache.entries[last] = unsafe { nil }
@@ -198,4 +217,5 @@ fn (mut cache StylesheetRuleCache) release_unused() {
 	cache.entries = []&StylesheetRuleEntry{}
 	cache.source_bytes = 0
 	cache.nodes = 0
+	cache.retained_bytes = 0
 }
