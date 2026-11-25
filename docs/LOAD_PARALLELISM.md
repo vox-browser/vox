@@ -916,6 +916,48 @@ and `5aaabee0fdf3d5a16bdc859cd1b83405257403a96ba40713210df34665b1091c`.
 The binaries, captured inputs and fonts stayed pinned. A separate probe
 observed 17 striped batches, with four on four threads, seven on three
 and six on two. The timing ranges overlap and the previous blend was
-faster in six rounds. The production cohort above measures the earlier
-mask workers. Production timing for striped blending requires the next
-bundle.
+faster in six rounds.
+
+### Production Hacker News captures with striped blending
+
+Production receipt `20261125-070646-a45fd477` published the single-C-unit
+V `-prod` executable
+`1bb154684a1fcd711cec033152c86c1f62ce2d173d8139d3e465c15c555a9e29`.
+The request started at `0c9a50a26`. The sealed C includes the striped blend
+and the published executable logged 17 batches with two to four threads.
+The diagnostic matched all 30 archived story IDs and the reference PNG.
+
+Both seven-pair cohorts used fresh Vox processes and the same executable,
+alternated default blending with `VOX_SERIAL_GLYPH_BLEND=1`, and timed
+launch through encoded document PNG at 1024×768 CSS pixels and 2× scale.
+JavaScriptCore, the offline archive, the executable and the native library
+stayed fixed. OS filesystem caches were retained. Every browser and benchmark
+driver exited zero, and all 28 PNG files matched the established reference
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+
+| Pair | Serial, ms | Striped, ms | Repeat serial, ms | Repeat striped, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 493.548 | 516.316 | 481.704 | 464.244 |
+| 2 | 470.222 | 481.186 | 470.126 | 466.136 |
+| 3 | 486.807 | 533.583 | 486.574 | 478.959 |
+| 4 | 475.440 | 440.499 | 467.481 | 439.772 |
+| 5 | 470.764 | 458.171 | 463.582 | 497.515 |
+| 6 | 470.455 | 470.491 | 455.285 | 456.481 |
+| 7 | 470.434 | 514.491 | 466.623 | 451.013 |
+| Median | 470.764 | 481.186 | 467.481 | 464.244 |
+
+The seven valid pairs reproduced the same seven HTTP request and
+status/body-hash records in every process, including a favicon 404.
+Striping increased median wall time by 2.2% and lowered median main-thread
+CPU time from 282.479 to 279.241 ms. The one-minute host load ranged from
+34.67 to 39.82 on 18 CPUs. The repeat's guard returned 1 because striped
+trial 4 and serial trial 7 each fetched `y18.svg` twice. Its host load
+ranged from 29.52 to 32.00. The valid cohort shows a small wall-time
+regression under these conditions, with overlapping trial ranges.
+
+The diagnostic and valid cohort passed the 3 GiB guard. The cohort peaked
+at 410,927,104 bytes of sampled aggregate RSS. The native AVIF library SHA
+was `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+Use the load benchmark command above with
+`--ready-selector tr.athing --repeat 7 --screenshot-scale 2 --js-engine javascriptcore --control-env VOX_SERIAL_GLYPH_BLEND=1`.
+The diagnostic used `VOX_GLYPH_BLEND_DIAGNOSTICS=1` in its own launch.
