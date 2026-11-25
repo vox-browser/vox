@@ -35,15 +35,19 @@ fn attachment_parent_user_select(root &Node) css.UserSelect {
 
 // Attach populated LayoutNode placeholders onto the DOM for the laid-out tree rooted at `root_box`.
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, unsafe { nil })
+	return attach_dom_layout_tree(root_box, none, true, false, unsafe { nil })
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, unsafe { nil })
+	return attach_dom_layout_tree(root_box, state, true, false, unsafe { nil })
+}
+
+fn attach_dom_layout_tree(root &Node, state ?&LayoutState, collect_text_chunks bool,
+	retain_live_nodes bool, provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
+	mut workspace := DOMLayoutAttachmentWorkspace.new(root)
+	defer { workspace.finish() }
+	return attach_layout_node_recursive(root, none, state, attachment_parent_user_select(root),
+		collect_text_chunks, mut workspace, retain_live_nodes, provider)
 }
 
 // Formatting needs the complete DOM/layout association before geometry is
@@ -64,10 +68,7 @@ $if test {
 fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 	stage := processmetrics.begin_thread_instruction_substage('layout_attach_prepare')
 	defer { stage.finish() }
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	root := attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), false, mut placeholders,
-		mut inline_pieces, true, unsafe { nil })
+	root := attach_dom_layout_tree(root_box, none, false, true, unsafe { nil })
 	return PreparedDOMLayoutAttachment{
 		root: root
 	}
@@ -85,15 +86,10 @@ fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared Pre
 	} else {
 		unsafe { &dom.LayoutVisualLinesProvider(nil) }
 	}
-	// Keep a separate traversal map so continuation and containing-block links
-	// follow the same tree order as a fresh attachment.
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	// Every box's absolute offset, memoized as projection does; without the
 	// session each box walks its whole containing block chain.
 	coordinates := begin_paint_coordinate_session(state)
-	root := attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
-		mut inline_pieces, true, provider)
+	root := attach_dom_layout_tree(root_box, state, true, true, provider)
 	coordinates.finish()
 	return root
 }
@@ -387,7 +383,9 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders DOMLayoutAttachmentIndex, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool, visual_lines_provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState,
+	parent_user_select css.UserSelect, collect_text_chunks bool, mut workspace DOMLayoutAttachmentWorkspace,
+	retain_live_nodes bool, visual_lines_provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -471,10 +469,10 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 		placeholder.set_rendered_text_chunks(chunks)
 	}
-	placeholders.set(box, placeholder)
+	workspace.set(box, placeholder)
 	if metrics := box.as_node_with_style_and_box_model_metrics() {
 		if previous := metrics.continuation_of_node() {
-			if previous_placeholder := placeholders.get(unsafe { &Node(previous) }) {
+			if previous_placeholder := workspace.get(unsafe { &Node(previous) }) {
 				rare = dom.LayoutNodeRareData{ ...rare, continuation_of_node: previous_placeholder }
 				mut mutable_previous_placeholder := unsafe { &dom.LayoutNode(previous_placeholder) }
 				mutable_previous_placeholder.set_continuation_next(placeholder)
@@ -483,7 +481,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	}
 	placeholder.set_rare_data(rare)
 	if containing_block := box.containing_block() {
-		if containing_block_placeholder := placeholders.get(unsafe { &Node(containing_block) }) {
+		if containing_block_placeholder := workspace.get(unsafe { &Node(containing_block) }) {
 			placeholder.containing_block_ = containing_block_placeholder
 		}
 	}
@@ -496,7 +494,8 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			}
 		}
 		if box.is_inline_node() {
-			if geometry := inline_box_absolute_geometry_cached(box, layout_state, mut inline_pieces) {
+			if geometry := inline_box_absolute_geometry_cached(box, layout_state,
+				mut workspace.inline_pieces, workspace.arena) {
 				placeholder.has_geometry_ = true
 				placeholder.border_box_ = dom.Rect{
 					x: geometry.border_rect.x.to_double()
@@ -568,7 +567,8 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes, visual_lines_provider)
+		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks,
+			mut workspace, retain_live_nodes, visual_lines_provider)
 	}
 	return placeholder
 }
