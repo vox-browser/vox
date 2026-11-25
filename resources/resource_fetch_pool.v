@@ -73,7 +73,7 @@ fn fetch_resource_jobs(jobs []ResourceFetchJob, source_url string, wake bool, re
 fn fetch_resource_jobs_with_scope(jobs []ResourceFetchJob, source_url string, wake bool,
 	results chan PreloadedResource, scope &browsernet.RequestScope) {
 	platform.retain_thread_allocations()
-	for job in jobs {
+	for index, job in jobs {
 		scope.check() or { return }
 		resource := fetch_resource_job(job, source_url, scope)
 		if !publish_resource_result(resource, results, scope) { return }
@@ -81,6 +81,24 @@ fn fetch_resource_jobs_with_scope(jobs []ResourceFetchJob, source_url string, wa
 			$if macos {
 				C.native_wake_browser()
 			}
+		}
+		// The response and its wakeup must be visible before speculative parsing.
+		// Use the end of this worker's batch so no queued request waits for it.
+		if index == jobs.len - 1 && job.request_type == 'stylesheet'
+			&& resource.error == '' && !scope.is_cancelled() {
+			prepare_delivered_stylesheet(resource)
+		}
+	}
+}
+
+fn prepare_delivered_stylesheet(resource PreloadedResource) {
+	scratch := platform.begin_thread_scratch('stylesheet response headers')
+	defer { scratch.finish() }
+	for header in resource.response_headers {
+		if header.name.to_lower() == 'content-type'
+			&& header.value.all_before(';').trim_space().to_lower() == 'text/css' {
+			css.prepare_preloaded_stylesheet_syntax(resource.body)
+			return
 		}
 	}
 }
@@ -114,15 +132,6 @@ fn fetch_resource_job(job ResourceFetchJob, source_url string, scope &browsernet
 		}
 	}
 	if resource_fetch_log_path != '' { log_resource_fetch(job, started_us, resource) }
-	if job.request_type == 'stylesheet' && resource.error == '' && !scope.is_cancelled() {
-		for header in resource.response_headers {
-			if header.name.to_lower() == 'content-type'
-				&& header.value.all_before(';').trim_space().to_lower() == 'text/css' {
-				css.prepare_preloaded_stylesheet_syntax(resource.body)
-				break
-			}
-		}
-	}
 	$if prealloc {
 		// Filtering can return the same cache entry. Its original owner
 		// already keeps the immutable result alive after this request.
