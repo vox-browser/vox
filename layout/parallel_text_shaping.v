@@ -12,8 +12,18 @@ const sync_ascii_layout_shaping = os.getenv('VOX_SYNC_ASCII_LAYOUT_SHAPING') == 
 const two_lane_ascii_layout_shaping = os.getenv('VOX_TWO_LANE_ASCII_LAYOUT_SHAPING') == '1'
 const prepare_short_ascii_layout_shapes = os.getenv('VOX_PREPARE_SHORT_ASCII_LAYOUT_SHAPES') == '1'
 const wait_ascii_layout_shaping_by_range = os.getenv('VOX_WAIT_ASCII_SHAPING_RANGE') == '1'
+const document_order_ascii_layout_shaping = prepare_short_ascii_layout_shapes
+	&& os.getenv('VOX_ASCII_SHAPING_DOCUMENT_ORDER') == '1'
 const ascii_layout_shaping_jobs = 64
 const ascii_layout_short_candidates = 128
+
+struct FirstLayoutASCIIRequests {
+mut:
+	long_runs []platform.ASCIIShapeRequest
+	short_runs []platform.ASCIIShapeRequest
+	long_positions []int
+	short_positions []int
+}
 
 fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platform.ASCIIShapeScope {
 	$if macos && prealloc {
@@ -24,16 +34,19 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 		}
 		stage := processmetrics.begin_thread_instruction_substage('layout_ascii_shape_preparation')
 		defer { stage.finish() }
-		mut requests := []platform.ASCIIShapeRequest{cap: ascii_layout_shaping_jobs}
-		mut short_requests := []platform.ASCIIShapeRequest{}
-		collect_first_layout_ascii_shapes(root, mut requests, mut short_requests)
-		// Keep long runs first. The job limit is applied after cache hits and
-		// duplicate requests have been removed.
-		if short_requests.len > 0 {
-			requests << short_requests
+		mut requests := FirstLayoutASCIIRequests{
+			long_runs: []platform.ASCIIShapeRequest{cap: ascii_layout_shaping_jobs}
 		}
-		if requests.len < 8 { return platform.ASCIIShapeScope{} }
-		jobs := platform.prepare_ascii_shape_jobs(requests, maximum_jobs: ascii_layout_shaping_jobs)
+		collect_first_layout_ascii_shapes(root, mut requests)
+		// Select long runs first. Restore document order only after selecting
+		// the eligible requests that fit in the batch.
+		if requests.short_runs.len > 0 {
+			requests.long_runs << requests.short_runs
+			requests.long_positions << requests.short_positions
+		}
+		if requests.long_runs.len < 8 { return platform.ASCIIShapeScope{} }
+		jobs := platform.prepare_ascii_shape_jobs(requests.long_runs, maximum_jobs: ascii_layout_shaping_jobs,
+			request_positions: requests.long_positions)
 		if jobs.len < 8 { return platform.ASCIIShapeScope{} }
 		// Keep the dispatch overhead bounded for small cold batches.
 		lanes := if two_lane_ascii_layout_shaping || jobs.len < 16 {
@@ -68,8 +81,7 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 	return platform.ASCIIShapeScope{}
 }
 
-fn collect_first_layout_ascii_shapes(node &Node, mut requests []platform.ASCIIShapeRequest,
-	mut short_requests []platform.ASCIIShapeRequest) {
+fn collect_first_layout_ascii_shapes(node &Node, mut requests FirstLayoutASCIIRequests) {
 	if text := node.as_text_node() {
 		source := text.source_text_
 		if source.len < 8 || source.len > 160 { return }
@@ -77,7 +89,7 @@ fn collect_first_layout_ascii_shapes(node &Node, mut requests []platform.ASCIISh
 		starts_with_letter := (first >= `A` && first <= `Z`) || (first >= `a` && first <= `z`)
 		short := source.len < 20
 		if short {
-			if !prepare_short_ascii_layout_shapes || short_requests.len >= ascii_layout_short_candidates
+			if !prepare_short_ascii_layout_shapes || requests.short_runs.len >= ascii_layout_short_candidates
 				|| (!starts_with_letter && (first < `0` || first > `9`)) {
 				return
 			}
@@ -95,15 +107,23 @@ fn collect_first_layout_ascii_shapes(node &Node, mut requests []platform.ASCIISh
 			text: context.text
 			font: text.Node.first_available_font()
 		}
+		if document_order_ascii_layout_shaping {
+			position := requests.long_runs.len + requests.short_runs.len
+			if short {
+				requests.short_positions << position
+			} else {
+				requests.long_positions << position
+			}
+		}
 		if short {
-			short_requests << request
+			requests.short_runs << request
 		} else {
-			requests << request
+			requests.long_runs << request
 		}
 		return
 	}
 	for child in node.children() {
-		if requests.len >= ascii_layout_shaping_jobs { return }
-		collect_first_layout_ascii_shapes(child, mut requests, mut short_requests)
+		if requests.long_runs.len >= ascii_layout_shaping_jobs { return }
+		collect_first_layout_ascii_shapes(child, mut requests)
 	}
 }

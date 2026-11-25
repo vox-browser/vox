@@ -66,6 +66,10 @@ pub:
 pub struct ASCIIShapePreparationOptions {
 pub:
 	maximum_jobs int = max_int
+	// Optional destination position for each request. Positions form a
+	// permutation of the input indices. Eligibility and the limit still
+	// use the input order.
+	request_positions []int
 }
 
 fn active_ascii_shape_batch() &ASCIIShapeBatch {
@@ -231,11 +235,16 @@ pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest, options ASCIIShape
 	limit := if options.maximum_jobs < requests.len { options.maximum_jobs } else { requests.len }
 	if limit <= 0 { return []ASCIIShapeJob{} }
 	mut jobs := []ASCIIShapeJob{cap: limit}
+	mut jobs_by_position := []int{}
+	if options.request_positions.len != 0 {
+		assert options.request_positions.len == requests.len
+		jobs_by_position = []int{len: requests.len}
+	}
 	mut seen := map[string]bool{}
 	mut strikes := map[string]ChromiumNativeStrike{}
 	mut cache := shared_shaping_cache()
 	params := ShapeParams.new(.ltr, 0, 0)
-	for request in requests {
+	for index, request in requests {
 		if jobs.len == limit { break }
 		font := request.font
 		if font.font_rendering_policy != .chromium || font.source_path != ''
@@ -272,6 +281,11 @@ pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest, options ASCIIShape
 			}
 		}
 		seen[identity] = true
+		if jobs_by_position.len != 0 {
+			position := options.request_positions[index]
+			assert jobs_by_position[position] == 0
+			jobs_by_position[position] = jobs.len + 1
+		}
 		jobs << ASCIIShapeJob{
 			request: request
 			font_key: key
@@ -283,7 +297,14 @@ pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest, options ASCIIShape
 			glyphs: glyphs
 		}
 	}
-	return jobs
+	if jobs_by_position.len == 0 { return jobs }
+	mut ordered := []ASCIIShapeJob{cap: jobs.len}
+	for job_index in jobs_by_position {
+		if job_index != 0 {
+			ordered << jobs[job_index - 1]
+		}
+	}
+	return ordered
 }
 
 // Each worker reads the immutable font and writes its own native buffer,
