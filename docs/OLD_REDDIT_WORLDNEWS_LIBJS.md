@@ -79,3 +79,61 @@ include harness polling and use the two documented capture boundaries.
 Local snapshots, references, the failed Brave image and the controller are in
 `~/Library/Caches/Vox/benchmarks/old-reddit-worldnews-20261107/`. The controller
 uses the repository's existing instruction observer and replay proxy.
+
+## Lexer lookahead reuse
+
+`16f2f74bf` reuses the token and lexer position computed by ordinary parser
+lookahead. Template literals keep their stack snapshots, and lexer rewind,
+slash reinterpretation and comment-mode changes invalidate a pending token.
+The original production sample showed LibJS parsing and executing page scripts
+before the first native presentation. The two instrumented visits reached that
+submission in 576.0 and 560.7 ms from launch.
+
+The isolated frontend diagnostic parses all five unchanged external script
+bodies with the browser's recursion limit. It runs five complete parses of
+each body per fresh process and reports the total parse time divided by five.
+Both binaries use optimized single-unit C with Boehm. The parse timings exclude
+process setup and file reads and include scope analysis. A separate debugger
+run reached the cache population branch during arrow-function lookahead in
+the archived main Reddit bundle.
+
+| Pair | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: |
+| 1 | 201.02 | 243.41 |
+| 2 | 188.00 | 211.18 |
+| 3 | 196.69 | 179.72 |
+| 4 | 170.20 | 159.84 |
+| 5 | 174.04 | 173.14 |
+| 6 | 188.93 | 165.46 |
+| 7 | 192.95 | 174.72 |
+| Median | 188.93 | 174.72 |
+
+Median parse time fell 7.5%. Median process CPU time for the five repetitions
+fell from 962 to 903 ms, and the candidate was slower in the first two pairs.
+One-minute host loads ranged from 7.70 to 8.20 on 18 cores. All 14 timed
+processes and the memory guard exited zero. The preliminary full AST dump
+of the archived bundles hit its watchdog before timing began. All 100 upstream
+AST fixtures match exactly, and five focused test files pass with each of Boehm
+and `-gc none` under the C backend. The full package commands stopped at
+FastC code-generation errors in both collector modes. A C-backend follow-up
+passed the absent-property test and hit the 3 GiB guard compiling the accessor
+test. A separate accessor compile was stopped during heavy host contention.
+
+Seven additional unprofiled control visits of production `16d70983e` matched
+the fixed Vox image. Counts through capture and process exit were
+6,092,779,420, 6,034,147,357, 6,033,995,553, 6,053,624,266, 6,047,967,313,
+6,053,087,744 and 6,076,662,305. The median elapsed observation was 2076.5 ms.
+These control visits ran before the rebuild, with one-minute loads from 4.12
+to 5.23. The browser exits and guard exit were zero.
+
+The managed single-unit C production build for `16f2f74bf` remained in
+compilation and linking at the end of this check, with a one-minute host load
+of 137.55. The latest published bundle at that point was `d2e369ed7`,
+executable SHA-256
+`1125f0c2048b30e85dbcb0c58d7c26c3684fc6596e2b65cee9d60b1038e86c57`.
+Production validation of lookahead reuse and an updated Brave comparison
+remain open. The prepared comparison controller
+`benchmark_worldnews_png_boundary.py` uses the same fixed references and
+records both engines from fresh process launch through the observer's receipt
+of a complete document PNG. The earlier Vox elapsed observations in this
+report extend through browser exit.
