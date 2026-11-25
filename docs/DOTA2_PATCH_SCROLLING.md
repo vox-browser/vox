@@ -2749,3 +2749,246 @@ controls and 1,285,111,808 B for the candidate. One-minute host load
 was 4.24→4.30, 4.30→4.62, 4.20→3.99 and 3.99→3.88. The later
 candidate observations were slower in build order, with most frames
 missing the 60 Hz deadline on both builds.
+
+## Reusing response bodies in raster lookups
+
+`ac35b01f1` lets read-only raster callers borrow a filtered image response
+whose body already has process-lifetime storage. Temporary responses still
+copy. Script and favicon callers keep their owning byte arrays. The JPEG
+and profiled WebP keys hash bytes directly, and profiled WebP shares one
+digest between its native-size and raster-scope keys.
+
+The focused C-backend preallocation executable ran nine cases normally and
+with temporary response storage poisoned on retirement. The existing
+Skia-dependent WebP case skipped in both runs. The cases checked 16 reads
+of a 256 KiB body. Each read reused the original pointer, removing 4 MiB
+of payload copies from that loop and keeping caller-arena growth below
+128 KiB. The tests also checked independently writable owned bytes,
+same-URL replacement, temporary-body retirement, and sampled PNG and WebP
+pixel ownership. The compile and 3 GiB runtime guards exited 0 at
+6,468,796,416 B, 52,658,176 B and 73,891,840 B peak RSS.
+
+### Live raster diagnostic
+
+The control used single-unit C `-prod` receipt
+`20261125-234627-f55241b8`, executable SHA-256
+`f6013547f1bf1dbd210c61c23f2d3d50e9f3b7fe63191d41e8dd3157d0521a5d`.
+A separate injected probe checked the executing Mach-O UUID, the cached
+reply branch and its compiled frame layout. It observed retained body
+lengths after filtering. Of the 445 successful cached reads, seven raster
+reads before input copied 634,223 B. One favicon read copied 1,150 B.
+During the input window, 67 background image reads copied 2,954,738 B and
+370 PNG sampling reads copied 6,634,230 B. The probe matched the input
+clock and reported zero errors or drops. These counts are copying volume.
+Retained footprint depends on which caller owns each allocation.
+
+The first probe encoded the last six UUID bytes incorrectly and supplied
+no counts. Both probe launches passed the live page audit, and both
+browsers, drivers and 3 GiB guards exited 0. The guards sampled
+1,258,864,640 B and 1,292,337,152 B peak RSS. In a separate fresh launch
+the macOS `sample` command could not attach and exited 255. That browser,
+driver and guard exited 0.
+
+### Published browser
+
+Single-unit C `-prod` receipt `20261125-235806-5ecefa76` sealed
+`1dbc0e20a` with the image change and separate text shaping changes.
+The executable SHA-256 was
+`166774cee9a288781560cfd3ad53a15a4ed06835a3ffdb67765fe3ffadc09751`.
+The build and headless smoke guards exited 0 at 7,674,789,888 B and
+89,210,880 B peak RSS. The AVIF library, adblock helper and adblock assets
+were identical across the two bundles. An intervening build of older
+sources was superseded while a control run held its reader lease.
+
+### Live memory
+
+Each fresh process used a private profile and HTTP cache, retained OS
+caches, used direct HTTPS and author JavaScript, and showed the document
+in a 1024×768 native viewport at backing scale two. CDP adjusted the real
+Brave window before navigation. The audits checked the visible completed
+patch, loaded fonts, 133 patch images, 15,620 UTF-8 text bytes and the
+established normalized text digest. The browser process trees were sampled
+from launch every 50 ms. Settled footprint uses the last three seconds of
+the 12-second window following the passing patch audit.
+
+| Trial | First full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Vox control 1 | 23.05 s | 640,700,280 B | 1,094,586,784 B | 56 |
+| Vox control 2 | 23.02 s | 658,263,928 B | 1,092,079,600 B | 55 |
+| Brave 1 | 23.00 s | 333,635,456 B | 858,398,400 B | 53 |
+| Brave 2 | 23.00 s | 345,841,536 B | 842,964,864 B | 52 |
+| Vox candidate 1 | 23.04 s | 638,029,616 B | 1,103,630,848 B | 51 |
+| Vox candidate 2 | 23.04 s | 614,223,640 B | 1,071,731,176 B | 51 |
+
+All browser, driver and 3 GiB guard exits were 0. Peak guard RSS was
+946,487,296 B, 934,395,904 B, 919,552,000 B, 893,763,584 B, 943,652,864 B
+and 926,711,808 B in table order. One-minute load on 18 CPUs was
+5.83→5.49, 5.45→5.34, 4.66→3.89, 4.84→4.87, 4.79→4.95 and 5.07→4.12.
+Brave 158.1.100.59 reported Chromium 158.0.8127.92. Its executable
+and framework matched the hashes in the device-coordinate cache check
+above, and all helper binaries stayed fixed during both trials.
+
+The candidate settled 3–44 MB below the two current controls and used
+1.78–1.91 times Brave's observed settled footprint. Its peak footprint
+overlapped the two controls. Both Vox cohorts ran in build order.
+The shared shaping changes and live workload variation limit attribution.
+
+A separate control memory observation settled at 645,992,264 B. Its
+`vmmap -summary` reported 358.2 MiB of dirty untagged memory, 109.1 MiB
+of dirty WebKit Malloc, 41.3 MiB of dirty IOSurface and 34.6 MiB of dirty
+IOAccelerator graphics memory. The browser, mapping command, driver and
+guard exited 0 with guard peak RSS of 974,176,256 B.
+
+The same mapping check on the candidate settled at 668,864,328 B. Its
+dirty untagged mappings were 372.8 MiB and dirty WebKit Malloc was
+111.4 MiB. IOSurface and IOAccelerator graphics matched the control.
+The browser, mapping command, driver and guard exited 0 with peak guard
+RSS of 975,159,296 B.
+
+### Native input and reference pixels
+
+The wheel benchmark used 23 seconds of settling after the title matched,
+then 720 events at nominal 60 Hz, delta 16, reversing at 360. It counts
+changed native frame installations over the full input window. Each
+browser completed the patch audit.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 22.09 | 45.82 / 70.44 / 119.74 ms | 269/292 | 720 / 330 | 54.40 Hz | 60.78 / 6.71 ms |
+| Control 2 | 22.21 | 45.88 / 70.87 / 125.61 ms | 262/288 | 720 / 328 | 55.44 Hz | 60.00 / 3.19 ms |
+| Candidate 1 | 23.03 | 43.82 / 67.01 / 114.46 ms | 278/301 | 720 / 341 | 55.02 Hz | 57.90 / 3.93 ms |
+| Candidate 2 | 22.47 | 44.67 / 67.53 / 123.99 ms | 272/294 | 720 / 331 | 54.95 Hz | 57.81 / 7.78 ms |
+
+Input windows lasted 13.217, 12.969, 13.069 and 13.085 seconds. Maximum
+scroll positions were 12,030.5, 12,028, 12,060.5 and 12,097.5 CSS pixels.
+The final positions were 1.5, 1, 0 and 0.5. All four browser, driver and
+3 GiB guard runs exited 0. Peak guard RSS was 1,277,263,872 B,
+1,267,073,024 B, 1,225,719,808 B and 1,264,680,960 B. One-minute host load
+was 5.34→5.33, 5.38→4.87, 4.95→5.07 and 4.12→4.66. Both builds missed
+most 60 Hz deadlines.
+
+The candidate lookup probe independently verified the compiled borrow flag,
+retained result, frame layout and executing UUID. It counted 463 borrowed
+bodies in the input window, covering 10,189,597 B of encoded data. Four more
+borrowed bodies before input covered 618,450 B. One favicon still received
+an owning copy of 1,150 B. The probe recorded zero errors or drops and
+confirmed the full patch audit. Browser, driver and guard exited 0 at
+1,276,788,736 B peak guard RSS.
+
+At 800×600, the five JPEG, CSS background, PNG and WebP captures and two
+upstream cases matched across builds byte for byte. SVG source replacement
+matched its reference exactly on both. `inline-node` differed from its
+reference by 6,106 pixels on both. That existing difference caused the
+comparison drivers and guards to exit 1. The five independent image
+captures exited 0 on both builds. The guards sampled 191,299,584 B and
+212,418,560 B of peak RSS.
+
+A separate 250 ms repeating audit first confirmed the full patch at
+4.26 seconds on the control and 3.41 seconds on the candidate. Each
+browser, driver and 3 GiB guard exited 0 with peak guard RSS of
+768,983,040 B and 671,744,000 B. These launches supply individual
+readiness observations.
+
+## Retiring PNG color-profile inflation storage
+
+`b03f447c2` gives the PNG ICC inflater a temporary workspace for its
+Huffman tables, decoded history and callback collector. The only data
+leaving that workspace is the existing native-owned output. Both accepted
+and rejected profiles retire their temporary allocations.
+
+A live control's private HTTP cache contained 112 distinct PNGs. Of those,
+64 embedded one ICC profile in three distinct zlib streams, with frequencies
+60, 2 and 2. A separate live launch of executable
+`166774cee9a288781560cfd3ad53a15a4ed06835a3ffdb67765fe3ffadc09751`
+also matched the patch audit. An injected probe validated its loaded UUID
+and the inflater's output allocation site, recording 62 successful
+allocations of 3,144 B. That browser, driver and 3 GiB guard exited 0 at
+931,856,384 B peak guard RSS.
+
+The staged C-backend preallocation fixture inflated the three live streams
+at their observed frequencies and verified all 64 decoded profiles
+byte for byte. The earlier routine left 1,586,461 B in the caller's arena.
+The scoped routine left zero. Both runs reproduced those counts with the
+inflation arena poisoned on retirement. The compile and two 3 GiB guards
+exited 0 at 394,723,328 B, 32,768 B and 4,915,200 B peak RSS.
+
+Four focused browser tests passed in ordinary and poisoned preallocation
+runs. They cover native pixel and profile parity for local and fetched PNGs,
+bounded inflation, malformed input, and independent native lifetime
+after scope retirement. The compile and 3 GiB runtime guards exited 0
+at 6,467,960,832 B, 29,179,904 B and 245,760 B peak RSS.
+
+### Remaining resident allocations
+
+A separate launch of the preceding raster build passed the patch audit
+at 23.02 seconds and settled at 640,044,824 B. Its main-thread allocation
+probe checked the executing UUID, compiler-emitted block layout and native
+allocation callsite. At about 32 seconds, 293 live blocks held
+344,965,120 resident bytes across 328,403,607 B of allocation cursor use.
+The probe recorded 110,117 creations and 109,824 retirements, with zero
+invalid or dropped entries. The largest document arena held 232,570,880
+resident bytes across 211 blocks. Unscoped main-thread blocks held
+76,496,896 B.
+
+In that document arena, groups opened by selector compound parsing and
+by style invalidation union array and map clones held 7,995,392 B and
+12,091,392 B respectively. Outside the document arena, one growth stack
+ran through URL parsing for the dynamic stylesheet scan. The block held
+16,613,376 B of resident pages. Growth stacks identify the allocation
+that opened a block. Other callers can contribute bytes to the same block.
+The browser, driver and guard exited 0 with peak guard RSS of
+957,333,504 B and one-minute load 3.97→3.31 on 18 CPUs.
+
+### Published browser
+
+Single-unit C `-prod` receipt `20261126-000936-6b00b0bd` sealed
+`45ec1215e` with the PNG workspace change. Executable SHA-256 was
+`677caf7dfe22fe7d78187901fe46878159b330a530859c30028a98afacd67ef4`.
+The build and headless smoke guards exited 0 with 7,763,542,016 B and
+101,220,352 B peak RSS. All pinned native helpers and resources matched
+the preceding raster build.
+
+The two fresh live memory runs used the same audit, viewport, cache
+conditions and sampling endpoint as the preceding raster cohort.
+
+| Trial | First full audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| PNG workspace 1 | 23.02 s | 651,317,112 B | 1,111,593,544 B | 51 |
+| PNG workspace 2 | 23.05 s | 622,481,176 B | 1,080,185,176 B | 51 |
+
+Browsers, drivers and 3 GiB guards exited 0. Peak guard RSS was
+968,900,608 B and 938,065,920 B. One-minute load on 18 CPUs was
+4.07→4.17 and 4.52→4.17. Settled and peak footprints overlapped the
+preceding Vox cohort. Both runs remained above Brave's observed
+333,635,456–345,841,536 B settled footprint.
+
+The build's seven 800×600 captures matched the preceding raster build
+byte for byte. SVG source replacement remained pixel-exact, and the
+existing 6,106-pixel `inline-node` difference remained. The comparison
+driver and guard exited 1 with 189,956,096 B peak guard RSS. The five
+independent image captures exited 0. A separate 250 ms audit first saw
+the complete live patch at 4.50 seconds. Its browser, driver and guard
+exited 0 with 882,245,632 B peak guard RSS.
+
+One fresh scrolling attempt reached the patch title and 133 images but
+had 15,236 bytes of patch text, with normalized digest
+`bcab9ef7b9ba49bdfcf6464c929aebb3696c84479a65ae4371bd21421e9825a3`.
+It delivered all 720 inputs and produced 255 completed publications.
+The native browser exited 0. The audit driver and guard exited 1 at
+1,264,943,104 B peak guard RSS. Its 19.35 scroll publications per second
+describes the incomplete document.
+
+Two complete unprofiled launches used the same wheel schedule and native
+frame installation endpoint as the preceding cohort.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| PNG workspace 1 | 21.54 | 47.21 / 69.05 / 126.68 ms | 260/280 | 720 / 317 | 55.31 Hz | 58.77 / 6.88 ms |
+| PNG workspace 2 | 20.92 | 49.29 / 74.09 / 126.98 ms | 249/272 | 720 / 309 | 55.31 Hz | 61.27 / 8.65 ms |
+
+Both input windows lasted about 13.00 seconds. Maximum scroll positions
+were 12,066.5 and 12,064.5 CSS pixels, ending at 1 and 0. The browsers,
+drivers and 3 GiB guards exited 0 with 1,329,905,664 B and 1,268,891,648 B
+peak guard RSS. One-minute host load was 4.17→4.56 and 4.96→5.49. These
+build-order trials were slower than the preceding cohort, and most
+frames on both bundles exceeded the 60 Hz budget.
