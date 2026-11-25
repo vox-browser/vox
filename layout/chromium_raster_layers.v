@@ -1,5 +1,6 @@
 module layout
 
+import cpuraster
 import dom
 import math
 import painting
@@ -100,6 +101,7 @@ struct ChromiumRasterPlanScratch {
 mut:
 	properties         []ChromiumRasterPropertyState
 	chunks             []ChromiumRasterChunk
+	command_bounds     []LayoutRect
 	layer_states       []ChromiumRasterPropertyState
 	composited_scrolls map[int]bool
 	composited_stickies map[int]bool
@@ -545,6 +547,13 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.compositor_fixed_raster_owners.clear()
 	scratch.compositor_unbounded_animations.clear()
 	setup_stage := processmetrics.begin_thread_instruction_substage('raster_plan_setup')
+	root_scroll_y := if cull != none { document.viewport_rect().y } else { 0.0 }
+	mut bounds_work := ChromiumRasterBoundsWork{
+		commands: commands
+		paint_order: result.paint_order
+		root_scroll_y: root_scroll_y
+	}
+	bounds_ticket, bounds_lanes := scratch.start_command_bounds(mut bounds_work)
 	candidates := if disable_viewport_entry_candidates {
 		[]int{len: result.paint_order.len, init: index}
 	} else {
@@ -624,8 +633,12 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			break
 		}
 	}
+	// Candidate discovery and property inheritance read the same immutable
+	// paint inputs. Finish the worker batch before grouping or returning on
+	// invalid command state.
+	bounds_ready := cpuraster.join_background_raster_range(bounds_ticket)
+	mut worker_bounds_used := 0
 	mut index := 0
-	root_scroll_y := if cull != none { document.viewport_rect().y } else { 0.0 }
 	for index < commands.len {
 		first := index
 		mut end := index + 1
@@ -804,6 +817,9 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 					transform[5] += viewport.y
 				}
 				command_bounds = chromium_raster_chunk_bounds_in_space(box, command, viewport.y, transform)
+			} else if bounds_lanes > 0 {
+				command_bounds = scratch.command_bounds[position]
+				if raster_chunk_bounds_diagnostics { worker_bounds_used++ }
 			} else {
 				command_bounds = chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y)
 			}
@@ -836,6 +852,9 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			}
 		}
 		index = end
+	}
+	if raster_chunk_bounds_diagnostics {
+		eprintln('VOX_RASTER_CHUNK_BOUNDS commands=${commands.len} lanes=${bounds_lanes} used=${worker_bounds_used} ready=${bounds_ready}')
 	}
 	chunks_stage.finish()
 	if scratch.compositor_scopes.len > 0 {
