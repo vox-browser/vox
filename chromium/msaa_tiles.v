@@ -476,12 +476,12 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	device_viewport_width int, device_viewport_height int, scroll_y f64, scale f64,
 	root_extent ?layout.LayoutRect) {
 	tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(viewport_height) * scale)))
-	storage.collect_triggers(commands, ChromiumMSAAViewport{
+	storage.queue_triggers(commands, ChromiumMSAAViewport{
 		scroll_y: scroll_y
 		height: f64(viewport_height)
 		fringe: f64(tile_rows) / scale
 	}, !chromium_serial_msaa_paths)
-	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
+	tail := storage.path_work.submit_tail()
 	for storage.by_layer.len < plan.layers.len {
 		storage.by_layer << []ChromiumMSAATrigger{}
 		storage.tiles << []i32{}
@@ -492,6 +492,8 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	for index in 0 .. plan.layers.len {
 		storage.raster_parents[index] = chromium_opacity_raster_parent(commands, plan, index)
 	}
+	storage.path_work.finish(mut storage.triggers, tail)
+	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
 	for trigger in storage.triggers {
 		if trigger.command_index >= 0 && trigger.command_index < plan.command_layers.len {
 			layer := plan.command_layers[trigger.command_index]

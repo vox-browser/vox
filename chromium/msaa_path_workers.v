@@ -8,6 +8,7 @@ import platform
 
 const chromium_serial_msaa_paths = os.getenv('VOX_SERIAL_MSAA_PATHS') == '1'
 const chromium_sync_msaa_paths = os.getenv('VOX_SYNC_MSAA_PATHS') == '1'
+const chromium_serial_msaa_path_tail = os.getenv('VOX_SERIAL_MSAA_PATH_TAIL') == '1'
 const chromium_msaa_paths_per_lane = 16
 const chromium_msaa_background_paths = 2 * chromium_msaa_paths_per_lane
 const chromium_msaa_max_path_jobs = 256
@@ -61,10 +62,10 @@ fn (mut work ChromiumMSAAPathWork) add(job ChromiumMSAAPathJob, mut triggers []C
 			chromium_msaa_path_range)
 		if work.ticket != unsafe { nil } { work.running = work.count }
 	}
-	if work.count == chromium_msaa_max_path_jobs { work.finish(mut triggers) }
+	if work.count == chromium_msaa_max_path_jobs { work.finish(mut triggers, unsafe { nil }) }
 }
 
-fn (mut storage ChromiumMSAAStorage) collect_triggers(commands []layout.PaintCommand,
+fn (mut storage ChromiumMSAAStorage) queue_triggers(commands []layout.PaintCommand,
 	viewport ?ChromiumMSAAViewport, batch_paths bool) {
 	storage.triggers.clear()
 	if !batch_paths || commands.len < chromium_msaa_background_paths {
@@ -75,28 +76,49 @@ fn (mut storage ChromiumMSAAStorage) collect_triggers(commands []layout.PaintCom
 		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, true,
 			mut storage.path_work, mut storage.triggers)
 	}
-	storage.path_work.finish(mut storage.triggers)
 }
 
-fn (mut work ChromiumMSAAPathWork) finish(mut triggers []ChromiumMSAATrigger) {
+fn (work &ChromiumMSAAPathWork) tail_lanes() int {
+	lanes := (work.count - work.running) / chromium_msaa_paths_per_lane
+	return if work.running > 0 && lanes > 3 { 3 } else { lanes }
+}
+
+// The last paths can run while the caller prepares raster parents. The
+// retained source scenes and both job ranges live through the finish call.
+fn (work &ChromiumMSAAPathWork) submit_tail() voidptr {
+	lanes := work.tail_lanes()
+	if lanes < 1 || chromium_serial_msaa_path_tail || chromium_sync_msaa_paths {
+		return unsafe { nil }
+	}
+	remaining := work.count - work.running
+	jobs := unsafe { &work.jobs[work.running] }
+	if lanes == 1 {
+		return cpuraster.start_background_raster_range(jobs, i32(remaining), chromium_msaa_path_range)
+	}
+	ticket, _ := cpuraster.start_background_raster_ranges(jobs, remaining, lanes,
+		chromium_msaa_path_range)
+	return ticket
+}
+
+fn (mut work ChromiumMSAAPathWork) finish(mut triggers []ChromiumMSAATrigger, tail voidptr) {
 	count := work.count
 	if count == 0 { return }
 	remaining := count - work.running
-	mut lanes := remaining / chromium_msaa_paths_per_lane
-	if work.running > 0 && lanes > 3 { lanes = 3 }
 	mut used_lanes := 0
-	if remaining > 0 {
+	if remaining > 0 && tail == unsafe { nil } {
 		used_lanes = cpuraster.run_raster_ranges(unsafe { &work.jobs[work.running] }, remaining,
-			lanes, chromium_msaa_path_range)
+			work.tail_lanes(), chromium_msaa_path_range)
 	}
 	ready := cpuraster.join_background_raster_range(work.ticket)
+	tail_ready := cpuraster.join_background_raster_range(tail)
 	if chromium_msaa_tile_diagnostics {
 		caller := platform.native_thread_identity()
 		mut off_thread := 0
 		for index in 0 .. count {
 			if work.jobs[index].thread_id != caller { off_thread++ }
 		}
-		eprintln('VOX_MSAA_PATH_BATCH jobs=${count} tail_lanes=${used_lanes} background=${work.running} off_thread=${off_thread} ready_at_join=${ready}')
+		background_tail := if tail == unsafe { nil } { 0 } else { remaining }
+		eprintln('VOX_MSAA_PATH_BATCH jobs=${count} tail_lanes=${used_lanes} background=${work.running} off_thread=${off_thread} ready_at_join=${ready} background_tail=${background_tail} tail_ready_at_join=${tail_ready}')
 	}
 	// Publish after the join. Merge in place so no placeholder or rejected
 	// path can change the order of triggers produced by either thread.
