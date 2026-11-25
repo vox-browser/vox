@@ -275,3 +275,82 @@ small comparisons. Both descendant and sibling tests verified that reversed
 detected. The focused C-backend executable and its guard exited 0. The shared
 production build still needs to publish this change before measuring its
 effect on the live page.
+
+## Follow-up with the CSS comparison change in production
+
+The single-unit C production bundle at `8f0de4a0f` contains both the
+measurement storage and the CSS comparison changes. Its executable SHA-256
+was `3b23dceb917896c9fe16aa8d6b5485dfb53786ed4ef3d1cd07d8104777c4327a`.
+The Brave executable and comparison method were the same as above. Each
+audited document was visible at 1024×768, scale 2, with loaded fonts and 133
+images. The test checked the complete 15,620-byte patch text with generated
+UUIDs normalized. The settled value is the median sampled physical footprint
+of the browser process tree over the last 3 seconds of a 12-second observation
+after the readiness check. Each launch used live HTTPS, a fresh private
+profile and cache, and retained OS caches.
+
+| Earliest check | Trial order | Settled footprint | Sampled peak | Browser exit |
+| --- | --- | ---: | ---: | ---: |
+| 9 s | Vox 1 | Incomplete patch, 5 images | — | −15 |
+| 9 s | Brave 1 | Incomplete patch, 5 images, hidden | — | 0 |
+| 9 s | Brave 2 | 385,621,912 B | 801,104,680 B | 0 |
+| 9 s | Vox 2 | 834,523,048 B | 1,288,278,696 B | 0 |
+| 23 s | Vox 1 | 934,023,176 B | 1,366,266,632 B | 0 |
+| 23 s | Brave 1 | 333,570,160 B | 886,464,504 B | 0 |
+| 23 s | Brave 2 | 329,899,952 B | 851,255,216 B | 0 |
+| 23 s | Vox 2 | Missing item and neutral item text, 133 images | — | −15 |
+
+Both drivers and guards exited 1 because of the rejected trials. The
+respective 3 GiB guards observed peaks of 1,154,695,168 and 1,240,727,552 B of
+RSS. One-minute load at launch ranged from 32.79 to 54.24 on the 18-CPU host.
+The successful pairs remain useful diagnostics and both still favor Brave on
+settled footprint. A separate 23-second diagnostic with the stylesheet rule
+cache disabled omitted the same item text, so it provided no matched memory
+estimate. Its browser exited −15 after rejection and its guard exited 1.
+
+A separate successful allocation trace at 38 seconds showed 402.8 MiB used
+in the native document arena and 42.7 MiB of cached stylesheet syntax. Large
+document-arena growth sites included the compact DOM bridge's element
+response and attribute maps, and line boxes copied from measurement results
+into committed layout. The trace samples the allocation stacks where each
+arena block grew. Other allocations can share those blocks.
+
+`08729cfc0` limits the stylesheet rule cache to 16 MiB of retained arena
+capacity. Cached syntax still converts to independent CSSOM objects, and
+over-budget trees still go through ordinary conversion. Its focused
+C-backend tests passed normally and with the syntax cache arena poisoned.
+`b2d54c0b1` shares the previous pass's published line boxes when replaying a
+measurement produces exactly the same lines. Focused FastC tests passed
+normally and with the measurement arena poisoned. The tests verified that
+changed line boxes survive arena release and that later writes detach from
+shared lines. The FastC test used the same scratch compiler workaround
+described above.
+
+`e402b6490` gives individual compact element query responses a temporary
+workspace. The response graph and encoded JSON stay live through the
+JavaScript copy. Element identities, attributes, and lazily initialized
+control models keep their native owners. After FastC rejected an existing
+script test expression, the focused C build and both runtime checks passed.
+The second runtime check poisoned the reply workspace on retirement. The
+measured production bundle predates all three changes. Automatic rebuilds
+are queued on the shared worker.
+
+### Native scrolling on the measured bundle
+
+Two fresh launches of the same bundle ran 240 precise wheel events at a
+nominal 60 Hz with delta 8, reversing every 80 inputs. Input began 23 seconds
+after the title matched. Both pre-input audits confirmed the full patch
+text, 133 images, and the viewport and live network conditions above. Rates
+use the full first-to-last input window and count only completed native
+frame installations with changed scroll positions. The probe measures Cocoa
+publications. Physical display scanout was unmeasured.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 35.28 | 17.57 / 71.89 / 228.15 ms | 87/152 | 240 / 249 | 55.47 Hz | 85.13 / 0.32 ms |
+| 2 | 34.14 | 17.34 / 78.28 / 234.88 ms | 88/149 | 240 / 243 | 54.76 Hz | 95.95 / 17.16 ms |
+
+One-minute host load was 43.11→43.00 and 42.68→42.91. Both browsers and
+drivers exited 0. The 3 GiB guard exited 0 and peaked at 1,462,337,536 B RSS.
+These trials show that the page still misses many frame deadlines after
+loading. They establish baseline behavior for the later memory changes.
