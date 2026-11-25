@@ -3923,3 +3923,82 @@ The worker diagnostics verified the URL, complete ready state, viewport
 and all 30 ordered story IDs. Executable, native library, helper, archive
 and driver hashes stayed pinned. All browsers, the driver and the 3 GiB
 guard exited zero. The guard observed a peak of 389,218,304 bytes.
+
+### Prepare selector invalidation inputs on the startup worker
+
+Commit `cb78c91bc` projects the parsed default stylesheet selectors into the
+groups the invalidation builder reads, including nested pseudo-class and
+slotted selectors. The groups live with the worker-built selector graphs.
+Rule-cache construction uses them to build each document's own invalidation
+plans in sheet order. Tests covered plan equivalence, overlapping merges,
+and ownership after the worker's scratch arena retired. The focused suites
+passed with arena poisoning, the startup tests passed under ThreadSanitizer,
+and the invalidation workspace tests passed without preallocation.
+
+Receipt `20261125-181318-8c447b81` verified that commit, passed startup
+smoke and published a single-C-unit V `-prod` build. In this executable,
+`VOX_SYNC_UA_SELECTOR_INVALIDATION=1` selected browser-thread projection.
+Both schedules kept raw syntax, the syntax cache, and selector-list parsing
+on the worker.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `f55877b838c33d7a1d5ffedca5ef2bd64eab9d7851bb153f5235cb080cfc4efb` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Two diagnostic pairs found the startup worker ready at the join. In each
+candidate launch, three rule-cache builds reused 421 prepared selectors
+apiece. Separate browser-thread counters measured four rule-cache scope
+calls per launch. The enclosing style-update scope ran 12 times in both
+controls, 14 times in the first candidate and 12 in the second.
+
+| Pair | Serial rule cache | Worker rule cache | Serial style update | Worker style update | Serial default stylesheet | Worker default stylesheet |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 58,297,226 | 57,262,552 | 347,226,538 | 346,157,577 | 1,039,011 | 1,040,670 |
+| 2 | 58,293,851 | 57,355,289 | 347,808,919 | 345,687,409 | 1,031,619 | 1,038,688 |
+
+The rule-cache scope used 1.77% and 1.61% fewer browser-thread instructions
+with worker projection. Its counts are inclusive within style update.
+
+The two unprofiled cohorts each alternated seven pairs of fresh launches
+through completed document PNG. The reversed cohort started with serial
+projection. Both used JavaScriptCore, a 1024×768 CSS-pixel viewport at 2×
+scale, private empty profiles and HTTP caches, retained OS filesystem
+caches, and a 60 ms replay delay per logo response.
+
+| Pair | Serial projection, ms | Worker projection, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 292.820 | 321.557 | 286.851 | 317.854 |
+| 2 | 298.169 | 319.089 | 328.429 | 324.938 |
+| 3 | 316.118 | 308.793 | 298.039 | 303.883 |
+| 4 | 321.255 | 303.427 | 293.152 | 316.434 |
+| 5 | 311.000 | 328.403 | 307.525 | 297.335 |
+| 6 | 305.182 | 340.293 | 321.353 | 301.773 |
+| 7 | 313.996 | 294.459 | 299.394 | 317.281 |
+| Median | 311.000 | 319.089 | 299.394 | 316.434 |
+
+Paired median launch-to-PNG changes were +17.404 and +5.844 ms, with
+three worker wins in each cohort. Sampled browser-thread CPU medians
+were 161.714 → 165.481 ms and 163.143 → 162.453 ms. One-minute host load
+was 4.74–5.32 and 4.74–5.16 on 18 CPUs.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced the same eight replay records, including the favicon miss.
+The worker diagnostics verified the URL, complete ready state, viewport
+and all 30 ordered story IDs. Executable, native library, helper, archive
+and driver hashes stayed pinned. All browsers, the driver and the 3 GiB
+guard exited zero. The guard observed a peak of 397,131,776 bytes.
+
+The slower launch-to-PNG medians led to commit `8f046d3eb`, which makes the
+worker projection an opt-in via `VOX_PREPARE_UA_SELECTOR_INVALIDATION=1`.
+Startup tests passed in both modes with arena poisoning. Receipt
+`20261125-182146-d7d3e0ef` passed startup smoke and published Vox SHA-256
+`f9c2c07f29c6e7efa43f38735cf65a67dcc56da8ffc6c79dd5bf05fd2e4905ca`.
+Two further diagnostic pairs on that executable recorded zero projections
+in default mode and three reuses of 421 selectors in each opt-in launch.
+The four captures matched the same PNG, content and replay records. All
+browser and guard exits were zero, with peak RSS of 369,197,056 bytes under
+the 3 GiB guard.
