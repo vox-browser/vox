@@ -25,6 +25,7 @@ static void vox_test_gg_metal_upload(id<MTLCommandBuffer> commands, bool joined)
 #include VOX_SOKOL_HEADER
 
 static sg_pipeline make_pipeline(void) {
+    sg_v_mtl_set_shader_compile_options(2, 3, true);
     sg_shader shader = sg_make_shader(&(sg_shader_desc){
         .vs.source = "#include <metal_stdlib>\nusing namespace metal;\n"
             "vertex float4 main0(uint v [[vertex_id]]) {"
@@ -35,6 +36,7 @@ static sg_pipeline make_pipeline(void) {
         .fs.entry = "main0",
         .fs.uniform_blocks[0].size = 16,
     });
+    sg_v_mtl_set_shader_compile_options(0, 0, false);
     assert(sg_query_shader_state(shader) == SG_RESOURCESTATE_VALID);
     sg_pipeline pipeline = sg_make_pipeline(&(sg_pipeline_desc){
         .shader = shader,
@@ -44,6 +46,20 @@ static sg_pipeline make_pipeline(void) {
     });
     assert(sg_query_pipeline_state(pipeline) == SG_RESOURCESTATE_VALID);
     return pipeline;
+}
+
+static void check_shader_compile_failure(void) {
+    sg_v_mtl_set_shader_compile_options(2, 3, true);
+    sg_shader shader = sg_make_shader(&(sg_shader_desc){
+        .vs.source = "#include <metal_stdlib>\nusing namespace metal;\n"
+            "vertex float4 main0() { return float4(0); }",
+        .vs.entry = "main0",
+        .fs.source = "fragment invalid Metal source",
+        .fs.entry = "main0",
+    });
+    sg_v_mtl_set_shader_compile_options(0, 0, false);
+    assert(sg_query_shader_state(shader) == SG_RESOURCESTATE_FAILED);
+    sg_destroy_shader(shader);
 }
 
 static void render(sg_attachments attachments, sg_pipeline pipeline, int frame) {
@@ -65,6 +81,7 @@ static void exercise(id<MTLDevice> device, bool retained) {
         },
     });
     assert(sg_isvalid());
+    check_shader_compile_failure();
     sg_pipeline pipeline = make_pipeline();
     const int width = 37, height = 29, pitch = (width + 5) * 4;
     sg_image image = sg_make_image(&(sg_image_desc){

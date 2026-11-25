@@ -164,6 +164,13 @@ fn patch_sokol_metal(text string, helper string) !string {
 	return text[..first] + body.replace_once('_sg_v_mtl_transfer(', '_sg_v_mtl_transfer_separate(') + '\n#include ' + json.encode(real(helper)) + text[last..]
 }
 
+fn patch_sokol_metal_shaders(text string, helper string) !string {
+	marker := '_SOKOL_PRIVATE id<MTLLibrary> _sg_mtl_library_from_bytecode('
+	included := replace_once(text, marker, '#include ' + json.encode(real(helper)) + '\n\n' + marker)!
+	pair := '        vs_lib = _sg_mtl_compile_library(desc->vs.source);\n        fs_lib = _sg_mtl_compile_library(desc->fs.source);'
+	return replace_once(included, pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);')
+}
+
 fn prepare_sokol(modules string, vlib string) !string {
 	d3d11_helper := join(root_dir(), 'native/include/native_gg_d3d11_transfer.h')
 	source := join(os.dir(vlib), 'thirdparty/sokol/sokol_gfx.h')
@@ -174,8 +181,10 @@ fn prepare_sokol(modules string, vlib string) !string {
 	mut helpers := [d3d11_helper]
 	$if macos {
 		metal_helper := join(root_dir(), 'native/include/native_gg_metal_transfer.h')
+		shader_helper := join(root_dir(), 'native/include/native_gg_metal_shaders.h')
 		header = patch_sokol_metal(header, metal_helper)!
-		helpers << metal_helper
+		header = patch_sokol_metal_shaders(header, shader_helper)!
+		helpers << [metal_helper, shader_helper]
 	}
 	patches := json.parse($embed_file('gg_patches.json').to_string())!.as_map()
 	d3d11_patches := patches['prepare_sokol_d3d11_transfers'] or { return error('Missing Sokol D3D11 transfer patches') }

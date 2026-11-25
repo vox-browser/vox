@@ -24,6 +24,17 @@ def patch_header(source, helper):
     return source[:first] + body + '\n#include ' + json.dumps(str(helper.resolve())) + source[last:]
 
 
+def patch_shader_compilation(source, helper):
+    marker = '_SOKOL_PRIVATE id<MTLLibrary> _sg_mtl_library_from_bytecode('
+    pair = ('        vs_lib = _sg_mtl_compile_library(desc->vs.source);\n'
+            '        fs_lib = _sg_mtl_compile_library(desc->fs.source);')
+    if source.count(marker) != 1 or source.count(pair) != 1:
+        raise RuntimeError('Unsupported Sokol Metal shader compiler')
+    include = '#include ' + json.dumps(str(helper.resolve()))
+    return source.replace(marker, include + '\n\n' + marker, 1).replace(
+        pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);', 1)
+
+
 def patch_d3d11_transfers(source, helper):
     patches = json.loads(Path(__file__).with_name('buildtools').joinpath('gg_patches.json').read_text())
     for operation in patches['prepare_sokol_d3d11_transfers']:
@@ -38,14 +49,15 @@ def patch_d3d11_transfers(source, helper):
 def prepare_sokol_metal(modules, vlib, output_root=None, *, d3d11=False):
     repo = Path(__file__).resolve().parents[1]
     helper = repo / 'native/include/native_gg_metal_transfer.h'
+    shader_helper = repo / 'native/include/native_gg_metal_shaders.h'
     source = vlib.parent / 'thirdparty/sokol/sokol_gfx.h'
     declaration = vlib / 'sokol/c/declaration.c.v'
     original = declaration.read_text()
     include = '#include "sokol_gfx.h"'
     if original.count(include) != 1:
         raise RuntimeError('Unsupported Sokol native include declaration')
-    header = patch_header(source.read_text(), helper)
-    helpers = [helper]
+    header = patch_shader_compilation(patch_header(source.read_text(), helper), shader_helper)
+    helpers = [helper, shader_helper]
     if d3d11:
         d3d11_helper = repo / 'native/include/native_gg_d3d11_transfer.h'
         header = patch_d3d11_transfers(header, d3d11_helper)
