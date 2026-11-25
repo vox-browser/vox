@@ -776,3 +776,59 @@ comparison using `--control-env VOX_SERIAL_GLYPH_MASKS=1`.
 The focused mask tests, production-mode browser type check and the pinned
 glyph differential check passed. The browser bundle used above predates the
 glyph change. Its replacement was still building when these checks finished.
+
+### Glyph bounds and alpha conversion on raster workers
+
+The worker batch now measures glyph bounds, draws each bitmap and converts the
+bitmap to a packed A8 mask. Each worker uses private native bitmap storage.
+The browser thread copies completed masks into its cache after the workers
+join and composites the text in glyph order. Small batches give each lane
+at least two keys.
+
+A fresh capture against the same production bundle and archive reproduced
+the documented PNG and glyph input hashes. Two optimized replay executables
+used the same compiler flags. One used the original worker code and one
+used the new pipeline. Each executable ran with parallel masks enabled and
+with `VOX_SERIAL_GLYPH_MASKS=1`. The four variants rotated over 12 rounds,
+with a fresh process and a fresh glyph cache for each of the 48 runs.
+Glyph bounds, bitmap drawing and gamma conversion are inside the timed
+interval. Input reading, font registration and hashing stay outside.
+
+All times are milliseconds.
+
+| Round | Previous serial | Previous parallel | New serial | New parallel |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 28.974 | 29.997 | 30.705 | 28.114 |
+| 2 | 23.530 | 69.627 | 23.857 | 26.460 |
+| 3 | 27.094 | 23.210 | 24.065 | 21.811 |
+| 4 | 26.792 | 28.652 | 26.546 | 33.120 |
+| 5 | 27.757 | 21.212 | 29.633 | 25.474 |
+| 6 | 32.774 | 27.001 | 29.241 | 27.006 |
+| 7 | 23.086 | 22.775 | 24.314 | 24.096 |
+| 8 | 23.591 | 25.674 | 30.333 | 25.326 |
+| 9 | 26.004 | 23.353 | 31.093 | 21.852 |
+| 10 | 29.932 | 23.313 | 24.134 | 25.647 |
+| 11 | 33.411 | 32.191 | 24.463 | 23.273 |
+| 12 | 23.057 | 31.900 | 32.561 | 25.154 |
+| Median | 26.943 | 26.338 | 27.893 | 25.400 |
+
+The new parallel mode ran faster in nine of 12 rounds compared with its
+serial control and seven of 12 compared with the previous parallel mode.
+The ranges overlap at a one-minute host load of 212.81–214.10 on 18 CPUs.
+Median CPU time for the entire process, including the input and hashing
+work, was 88.754, 91.180, 86.673 and 90.727 ms respectively.
+
+All runs produced the same 332-draw RGBA digest as the previous cohort.
+Every process and the 3 GiB memory guard exited zero. Both executables, input
+files and fonts kept their hashes throughout. The previous executable SHA-256
+was `0723616c7ac9159ca9c7eb0b1ad78c12c0b3a133f03b8d0f7b74f5b66e78a37f`.
+The new SHA-256 was
+`9b1b642bffe50fceb6b348dc0b8683330b9ff930272f7a07d22d3847e3a4f2eb`.
+An untimed candidate probe observed 249 keys in 34 batches. Ten batches
+ran across four threads, nine across three, 13 across two and two on a
+single thread.
+
+The shared production attempt `20261125-063523-f43f35ba` rejected changed
+repository inputs before C preprocessing. The production comparisons
+remain pending while the shared worker retries. The timings above measure
+retained text replay with the captured inputs.

@@ -14670,6 +14670,11 @@ no-GC run exceeded the 12 GiB guard and exited 137. The Boehm retry was
 stopped with exit 143 after the input snapshot changed. The workload and
 full timing observations are in the [Hacker News report](LOAD_PARALLELISM.md#parallel-glyph-masks-on-hacker-news).
 
+The follow-up measures bounds and packs alpha masks on the raster workers.
+The padded in-place conversion, retained-text reference and ThreadSanitizer
+tests passed. The pinned 2,500-draw glyph check again completed with 2,459 exact
+draws and 41 declines. The 3 GiB guard exited zero. [Replay timings](LOAD_PARALLELISM.md#glyph-bounds-and-alpha-conversion-on-raster-workers)
+
 ### Parallel CPU image scaling
 
 Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to
