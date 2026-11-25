@@ -3441,6 +3441,16 @@ preprocessing in receipts `20261125-150441-f2cbf788` and
 `20261125-150715-cc7fa132`, and retained the published baseline.
 
 Production receipt `20261125-151032-18513f19` sealed the candidate
-inputs. The shared guard was still occupied by its link step under
-host load above 200 on 18 CPUs. The available bundle predates the
-shorter caller range, so the full-page comparison is pending.
+inputs, then failed verification because its preprocessed C file
+disappeared during the link. Receipt cleanup could remove older
+compiler inputs even while the guard held the receipt log open.
+Commit `3f70f84f9` makes both pruning tools preserve in-use receipts
+and covers reclamation after the log closes. The focused V tests and
+12 Python pruning tests passed under the 3 GiB guard.
+
+Receipt `20261125-153205-c781deaf` rejected checkout changes before
+C preprocessing. Receipt `20261125-155026-9db2f7bb` captured its
+input inventory before the pruning fix and rejected the edit to
+`tools/buildtools/prune.v`. The coalesced single-C-unit V `-prod`
+request includes the fix. The available bundle still predates the
+shorter caller range. Full-page timings remain pending.
