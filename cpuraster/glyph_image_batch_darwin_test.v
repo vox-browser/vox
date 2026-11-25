@@ -71,7 +71,7 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		mut entry := CachedGlyphStrike{}
 		rounding := SkAffine{ ...device, tx: device.tx + glyph_subpixel_round, ty: device.ty + 0.5 }
 		entry.prepare_glyph_masks(mut strike, mut lazy, run, []GlyphRoute{len: run.glyphs.len},
-			0, rounding, false)
+			0, rounding, false, false)
 		assert entry.glyphs.len >= glyph_batch_min
 		mut bytes := 0
 		for key, parallel in entry.glyphs {
@@ -80,6 +80,29 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 			bytes += parallel.image.len
 		}
 		assert bytes == entry.bytes
+		routes := []GlyphRoute{len: run.glyphs.len}
+		mut streamed_entry := CachedGlyphStrike{}
+		_, abandoned := streamed_entry.prepare_glyph_masks(mut strike, mut lazy, run, routes,
+			0, rounding, false, true)
+		assert abandoned != unsafe { nil }
+		assert streamed_entry.glyphs.len == 0
+		first_mask_key := glyph_run_mask_key(run, &strike, rounding, 0)
+		streamed_entry.consume_streamed_glyph_mask(abandoned, first_mask_key)
+		assert streamed_entry.glyphs.len == 1
+		assert streamed_entry.glyphs[first_mask_key] == entry.glyphs[first_mask_key]
+		finish_streamed_glyph_masks(abandoned)
+		assert streamed_entry.glyphs.len == 1
+
+		_, stream := streamed_entry.prepare_glyph_masks(mut strike, mut lazy, run, routes,
+			0, rounding, false, true)
+		assert stream != unsafe { nil }
+		for i in 0 .. run.glyphs.len {
+			streamed_entry.consume_streamed_glyph_mask(stream, glyph_run_mask_key(run, &strike,
+				rounding, i))
+		}
+		finish_streamed_glyph_masks(stream)
+		assert streamed_entry.glyphs == entry.glyphs
+		assert streamed_entry.bytes == bytes
 		// The full draw still composites repeated and overlapping glyphs in order.
 		mut serial := []u8{len: 256 * 48 * 4, init: 255}
 		mut parallel := serial.clone()
@@ -305,8 +328,8 @@ fn test_short_retained_glyph_mask_batches_match_serial_masks() {
 			defer { lazy.release() }
 			mut entry := CachedGlyphStrike{}
 			rounding := SkAffine{tx: glyph_subpixel_round, ty: 0.5}
-			next := entry.prepare_glyph_masks(mut strike, mut lazy, run,
-				[]GlyphRoute{len: count}, 0, rounding, false)
+			next, _ := entry.prepare_glyph_masks(mut strike, mut lazy, run,
+				[]GlyphRoute{len: count}, 0, rounding, false, false)
 			assert next == count
 			assert entry.glyphs.len == if glyph_mask_batch_min_four { 0 } else { count }
 			for key, glyph in entry.glyphs {
@@ -338,16 +361,17 @@ fn test_later_glyph_mask_windows_use_workers_and_match_serial_pixels() {
 		mut entry := CachedGlyphStrike{}
 		routes := []GlyphRoute{len: count}
 		rounding := SkAffine{tx: glyph_subpixel_round, ty: 0.5}
-		first := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, 0, rounding, false)
+		first, _ := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, 0, rounding, false, false)
 		assert entry.glyphs.len == 0
 		if single_glyph_mask_batch {
 			assert first == count
 		} else {
 			assert first == glyph_batch_lookahead
-			second := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, first, rounding, true)
+			second, _ := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, first, rounding, true, false)
 			assert second == first + glyph_batch_max
 			assert entry.glyphs.len == glyph_batch_max
-			assert entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, second, rounding, true) == count
+			last, _ := entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, second, rounding, true, false)
+			assert last == count
 			assert entry.glyphs.len == 25
 		}
 

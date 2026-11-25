@@ -19,6 +19,7 @@ $if !cpuraster_freetype ? {
 	const glyph_batch_diagnostics = os.getenv('VOX_GLYPH_BATCH_DIAGNOSTICS') == '1'
 	const glyph_mask_dispatch_apply = os.getenv('VOX_GLYPH_MASK_DISPATCH_APPLY') == '1'
 	const glyph_mask_caller_last = os.getenv('VOX_GLYPH_MASK_CALLER_LAST') == '1'
+	const stream_glyph_masks = os.getenv('VOX_STREAM_GLYPH_MASKS') == '1'
 
 	struct GlyphImageJob {
 		key u32
@@ -42,6 +43,15 @@ $if !cpuraster_freetype ? {
 	struct GlyphMaskWindow {
 	mut:
 		next int
+	}
+
+	@[heap]
+	struct GlyphMaskStream {
+	mut:
+		batch    GlyphImageBatch
+		ticket   voidptr
+		consumed int
+		waited   int
 	}
 
 	@[heap]
@@ -164,6 +174,10 @@ $if !cpuraster_freetype ? {
 			entry.publish_glyph_image(job)
 		}
 		glyph_cache_leave(entry.owner)
+		batch.log_completion()
+	}
+
+	fn (batch &GlyphImageBatch) log_completion() {
 		if batch.diagnostics {
 			mut caller := u64(0)
 			C.pthread_threadid_np(unsafe { nil }, &caller)
@@ -193,15 +207,53 @@ $if !cpuraster_freetype ? {
 
 	fn (mut entry CachedGlyphStrike) prepare_glyph_masks(mut strike GlyphStrike,
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, start int,
-		rounding SkAffine, followup bool) int {
+		rounding SkAffine, followup bool, stream_masks bool) (int, voidptr) {
 		mut window := GlyphMaskWindow{}
 		minimum_jobs := if glyph_mask_batch_min_four { glyph_batch_min } else { 2 }
 		mut batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, start, rounding,
-			minimum_jobs, mut window) or { return window.next }
+			minimum_jobs, mut window) or { return window.next, unsafe { nil } }
 		batch.followup = followup
-		if !batch.draw() { return window.next }
-		entry.publish_glyph_image_batch(&batch)
-		return window.next
+		if stream_masks {
+			mut stream := &GlyphMaskStream{batch: batch}
+			ticket, _ := start_background_raster_ranges(&stream.batch, batch.jobs.len,
+				math.max(2, batch.jobs.len / 2), draw_glyph_image_jobs, wait_by_item: true)
+			if ticket != unsafe { nil } {
+				stream.ticket = ticket
+				return window.next, stream
+			}
+		}
+		if batch.draw() { entry.publish_glyph_image_batch(&batch) }
+		return window.next, unsafe { nil }
+	}
+
+	// The scan records each missing key at its first occurrence in paint order.
+	// Only wait for the current glyph. Workers keep drawing into private
+	// masks while the caller blends earlier results.
+	fn (mut entry CachedGlyphStrike) consume_streamed_glyph_mask(context voidptr, key u32) {
+		if context == unsafe { nil } { return }
+		mut stream := unsafe { &GlyphMaskStream(context) }
+		index := stream.consumed
+		if index == stream.batch.jobs.len || stream.batch.jobs[index].key != key { return }
+		ready := wait_background_raster_range_for_index(stream.ticket, index)
+		if stream.batch.diagnostics && !ready { stream.waited++ }
+		stream.consumed++
+		glyph_cache_enter(entry.owner)
+		entry.publish_glyph_image(stream.batch.jobs[index])
+		glyph_cache_leave(entry.owner)
+	}
+
+	fn finish_streamed_glyph_masks(context voidptr) {
+		if context == unsafe { nil } { return }
+		stream := unsafe { &GlyphMaskStream(context) }
+		ready := join_background_raster_range(stream.ticket)
+		for index in stream.consumed .. stream.batch.jobs.len {
+			mask := stream.batch.jobs[index].mask
+			if mask != unsafe { nil } { C.free(mask) }
+		}
+		if stream.batch.diagnostics {
+			stream.batch.log_completion()
+			eprintln('VOX_STREAMED_GLYPH_MASKS jobs=${stream.batch.jobs.len} consumed=${stream.consumed} waited=${stream.waited} ready_at_join=${ready}')
+		}
 	}
 
 	fn (mut entry CachedGlyphStrike) start_glyph_backdrop_batch(mut strike GlyphStrike,

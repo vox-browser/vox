@@ -337,6 +337,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	mut prepared_entry := unsafe { &CachedGlyphStrike(nil) }
 	mut next_mask_batch := 0
 	mut pending_masks := voidptr(0)
+	mut streamed_masks := voidptr(0)
 	$if macos && !cpuraster_freetype ? {
 		if has_backdrop && backdrop.pipeline_masks && run.retained && !strike.color && !draw_as_paths
 			&& (strike.font != unsafe { nil } || strike.deferred) {
@@ -348,6 +349,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	defer {
 		$if macos && !cpuraster_freetype ? {
+			if stream_glyph_masks { finish_streamed_glyph_masks(streamed_masks) }
 			finish_glyph_backdrop_batch(pending_masks, false)
 		}
 	}
@@ -475,15 +477,20 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		} else {
 			packed_subpixel(mapped.y)
 		}
+		key := packed_glyph_key(id, sub_x, sub_y)
 		mut glyph := StrikeGlyph{}
-		if known := entry.glyphs[packed_glyph_key(id, sub_x, sub_y)] {
+		if known := entry.glyphs[key] {
 			glyph = known
 		} else {
 			$if macos && !cpuraster_freetype ? {
 				if run.retained && i >= next_mask_batch {
 					// Resume at the first miss beyond the last bounded scan.
-					next_mask_batch = entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, i,
-						rounding, next_mask_batch > 0)
+					if stream_glyph_masks { finish_streamed_glyph_masks(streamed_masks) }
+					next_mask_batch, streamed_masks = entry.prepare_glyph_masks(mut strike, mut lazy,
+						run, routes, i, rounding, next_mask_batch > 0, stream_glyph_masks)
+				}
+				if stream_glyph_masks {
+					entry.consume_streamed_glyph_mask(streamed_masks, key)
 				}
 			}
 			glyph = entry.glyph(mut strike, mut lazy, id, sub_x, sub_y) or { return true }
