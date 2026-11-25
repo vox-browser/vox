@@ -4,6 +4,42 @@ import math
 import os
 import sokol.gfx
 
+$if macos {
+	fn C.vox_gg_metal_begin_shader_libraries() bool
+	fn C.vox_gg_metal_submit_shader_library(&char)
+	fn C.vox_gg_metal_end_shader_libraries()
+
+	const parallel_document_shader_libraries = os.getenv('VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES') == '1'
+		&& os.getenv('VOX_SERIAL_GG_METAL_SHADERS') == ''
+
+	// All solid programs use the same source builder as GPU shader creation.
+	// The native queue deduplicates identical source submissions.
+	pub fn submit_document_shader_libraries() bool {
+		if !parallel_document_shader_libraries { return false }
+		gfx.mtl_set_shader_compile_options(graphite_msl_major, graphite_msl_minor, true)
+		submitted := C.vox_gg_metal_begin_shader_libraries()
+		gfx.mtl_set_shader_compile_options(0, 0, false)
+		if !submitted { return false }
+		$for entry in RenderStep.values {
+			step := RenderStep(entry.value)
+			for clipped in [false, true] {
+				vs, fs := solid_shader_sources(step, clipped)
+				C.vox_gg_metal_submit_shader_library(&char(vs.str))
+				if writes_color(step) {
+					C.vox_gg_metal_submit_shader_library(&char(fs.str))
+				}
+			}
+		}
+		source := load_msaa_from_resolve.to_string()
+		C.vox_gg_metal_submit_shader_library(&char(source.str))
+		return true
+	}
+
+	pub fn finish_document_shader_libraries() {
+		C.vox_gg_metal_end_shader_libraries()
+	}
+}
+
 // Map the distance from the common center to the interval between the
 // two circles before the shader applies repeat or mirror tiling.
 fn concentric_tile_gradient(start_radius f32, end_radius f32, center Point, g Gradient) !Gradient {

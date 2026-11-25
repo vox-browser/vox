@@ -87,6 +87,44 @@ static void check_shader_compile_failure(void) {
     sg_destroy_shader(shader);
 }
 
+static void check_queued_shader_libraries(void) {
+    sg_v_mtl_set_shader_compile_options(2, 3, true);
+    if (!vox_gg_metal_begin_shader_libraries()) {
+        sg_v_mtl_set_shader_compile_options(0, 0, false);
+        return;
+    }
+    const char source[] = "#include <metal_stdlib>\nusing namespace metal;\n"
+        "vertex float4 vx() { return float4(0); }\n"
+        "fragment float4 fx() { return float4(1); }";
+    char temporary[sizeof source];
+    memcpy(temporary, source, sizeof source);
+    vox_gg_metal_submit_shader_library(temporary);
+    memset(temporary, 0, sizeof temporary);
+    vox_gg_metal_submit_shader_library(source);
+    const char invalid_source[] = "fragment invalid Metal source";
+    vox_gg_metal_submit_shader_library(invalid_source);
+
+    sg_v_mtl_set_shader_compile_options(2, 3, false);
+    assert(vox_gg_metal_prepared_shader_library(source) == NULL);
+    sg_v_mtl_set_shader_compile_options(2, 3, true);
+    sg_shader_desc desc = {.vs.source = source, .vs.entry = "vx",
+                           .fs.source = source, .fs.entry = "fx"};
+    sg_shader paired = sg_make_shader(&desc);
+    assert(sg_query_shader_state(paired) == SG_RESOURCESTATE_VALID);
+    desc.fs.source = invalid_source;
+    sg_shader invalid = sg_make_shader(&desc);
+    assert(sg_query_shader_state(invalid) == SG_RESOURCESTATE_FAILED);
+    desc.fs.source = NULL;
+    desc.fs.entry = NULL;
+    sg_shader vertex_only = sg_make_shader(&desc);
+    assert(sg_query_shader_state(vertex_only) == SG_RESOURCESTATE_VALID);
+    vox_gg_metal_end_shader_libraries();
+    sg_v_mtl_set_shader_compile_options(0, 0, false);
+    sg_destroy_shader(vertex_only);
+    sg_destroy_shader(invalid);
+    sg_destroy_shader(paired);
+}
+
 static void render(sg_attachments attachments, sg_pipeline pipeline, int frame) {
     sg_begin_pass(&(sg_pass){.attachments = attachments});
     sg_apply_pipeline(pipeline);
@@ -107,6 +145,7 @@ static void exercise(id<MTLDevice> device, bool retained) {
     });
     assert(sg_isvalid());
     check_shader_compile_failure();
+    check_queued_shader_libraries();
     sg_pipeline pipeline = make_pipeline();
     const int width = 37, height = 29, pitch = (width + 5) * 4;
     sg_image image = sg_make_image(&(sg_image_desc){

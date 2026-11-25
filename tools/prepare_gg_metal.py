@@ -28,11 +28,15 @@ def patch_shader_compilation(source, helper):
     marker = '_SOKOL_PRIVATE id<MTLLibrary> _sg_mtl_library_from_bytecode('
     pair = ('        vs_lib = _sg_mtl_compile_library(desc->vs.source);\n'
             '        fs_lib = _sg_mtl_compile_library(desc->fs.source);')
-    if source.count(marker) != 1 or source.count(pair) != 1:
+    vertex = ('        vs_lib = _sg_mtl_compile_library(desc->vs.source);\n'
+              '        if (nil == vs_lib) {')
+    if source.count(marker) != 1 or source.count(pair) != 1 or source.count(vertex) != 1:
         raise RuntimeError('Unsupported Sokol Metal shader compiler')
     include = '#include ' + json.dumps(str(helper.resolve()))
-    return source.replace(marker, include + '\n\n' + marker, 1).replace(
+    patched = source.replace(marker, include + '\n\n' + marker, 1).replace(
         pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);', 1)
+    return patched.replace(vertex, '        vs_lib = vox_gg_metal_compile_vertex_source(desc);\n'
+                           '        if (nil == vs_lib) {', 1)
 
 
 def patch_pipeline_compilation(source, helper):

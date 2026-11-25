@@ -33,7 +33,8 @@ def main():
         return {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     pins = hashes()
     (output / 'inputs.json').write_text(json.dumps(pins, indent=2) + '\n')
-    worker_env = dict(os.environ, VOX_PARALLEL_GG_METAL_PIPELINES='1')
+    worker_env = dict(os.environ, VOX_PARALLEL_GG_METAL_PIPELINES='1',
+                      VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES='1')
     worker_env.pop('VOX_SERIAL_GG_METAL_SHADERS', None)
     records = []
     try:
@@ -51,7 +52,8 @@ def main():
                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 print(result.stdout, flush=True)
                 records.append({'command': step,
-                                'env': {'VOX_PARALLEL_GG_METAL_PIPELINES': '1'},
+                                'env': {'VOX_PARALLEL_GG_METAL_PIPELINES': '1',
+                                        'VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES': '1'},
                                 'exit': result.returncode, 'output': result.stdout})
                 assert hashes() == pins, 'inputs changed during ' + mode
                 if result.returncode:
@@ -63,7 +65,8 @@ def main():
         records.append({'command': step, 'env': {'VOX_GG_READBACK_DIAGNOSTICS': '1',
                                                  'VOX_GG_METAL_SHADER_DIAGNOSTICS': '1',
                                                  'VOX_GG_METAL_PIPELINE_DIAGNOSTICS': '1',
-                                                 'VOX_PARALLEL_GG_METAL_PIPELINES': '1'},
+                                                 'VOX_PARALLEL_GG_METAL_PIPELINES': '1',
+                                                 'VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES': '1'},
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
         assert result.stdout.count('VOX_GG_READBACK ') == 128, 'diagnostics must be bounded'
@@ -71,6 +74,11 @@ def main():
         assert len(pairs) == 4 and all('off_thread=1' in line for line in pairs), pairs
         assert sum('vertex=1 fragment=1' in line for line in pairs) == 2, pairs
         print('Both passing and failing fragment compiles ran on a worker', flush=True)
+        libraries = [line for line in result.stdout.splitlines()
+                     if line.startswith('VOX_GG_METAL_SHADER_LIBRARIES ')]
+        assert len(libraries) == 2 and all(
+            'submitted=2 off_thread=2 valid=1 reused=5 ' in line for line in libraries), libraries
+        print('Queued shader libraries matched owned sources and compile options', flush=True)
         batches = [line for line in result.stdout.splitlines()
                    if line.startswith('VOX_GG_METAL_PIPELINE_BATCH ')]
         assert len(batches) == 2 and all('submitted=3' in line and 'valid=1' in line
@@ -85,6 +93,7 @@ def main():
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
         assert 'VOX_GG_METAL_SHADER_PAIR ' not in result.stdout
+        assert 'VOX_GG_METAL_SHADER_LIBRARIES ' not in result.stdout
         assert 'VOX_GG_METAL_PIPELINE_BATCH ' not in result.stdout
         print('Serial shader and pipeline control passed the same pixel and failure checks', flush=True)
     finally:

@@ -168,7 +168,9 @@ fn patch_sokol_metal_shaders(text string, helper string) !string {
 	marker := '_SOKOL_PRIVATE id<MTLLibrary> _sg_mtl_library_from_bytecode('
 	included := replace_once(text, marker, '#include ' + json.encode(real(helper)) + '\n\n' + marker)!
 	pair := '        vs_lib = _sg_mtl_compile_library(desc->vs.source);\n        fs_lib = _sg_mtl_compile_library(desc->fs.source);'
-	return replace_once(included, pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);')
+	patched := replace_once(included, pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);')!
+	vertex := '        vs_lib = _sg_mtl_compile_library(desc->vs.source);\n        if (nil == vs_lib) {'
+	return replace_once(patched, vertex, '        vs_lib = vox_gg_metal_compile_vertex_source(desc);\n        if (nil == vs_lib) {')
 }
 
 fn patch_sokol_metal_pipelines(text string, helper string) !string {

@@ -73,8 +73,12 @@ fn (mut state GpuState) initialize() ! {
 	}
 	canvas.prepare_document_shader_resources()
 	mut ctx := canvas.new_gpu_context()!
+	batched_shaders := canvas.submit_document_shader_libraries()
 	state.pipelines_pending = C.vox_gg_metal_begin_pipeline_batch()
 	ctx.precompile()
+	if batched_shaders {
+		canvas.finish_document_shader_libraries()
+	}
 	if state.pipelines_pending {
 		C.vox_gg_metal_close_pipeline_submissions()
 	}
