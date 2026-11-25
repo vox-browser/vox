@@ -1,11 +1,12 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **51.16% fewer median observed CPU instructions**
+Production Vox with LibJS used **52.21% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
 their respective screenshot references. Median launch-to-PNG time was
-**1.992 s for Vox and 1.996 s for Brave**, with Vox ahead in five of the
-seven pairs. A fresh live Vox visit reached Reddit's login page.
-[Current comparison](#production-comparison-with-early-script-delivery)
+**1.998 s for Vox and 1.986 s for Brave**, with Vox ahead in three of seven
+pairs. An earlier build led at the median by 3.91 ms. A fresh live Vox visit
+reached Reddit's login page.
+[Current comparison](#production-comparison-with-the-scan-and-integer-changes)
 
 ## Workload and execution
 
@@ -1843,3 +1844,171 @@ The fresh live visit in this bundle redirected to Reddit's login page.
 It reached `complete` with zero posts and two script diagnostics.
 The browser and guard exited zero. The elapsed result covers the
 archived listing.
+
+## Skip speculative scans without a fetch hook
+
+Commit `7387b1aa4` retains the parser's paused state while a blocking
+script loads. It materializes the pending HTML and scans for speculative
+URLs when a fetch hook can use them. Vox's browser leaves that hook unset.
+The native parser request and lifecycle tests passed with
+preallocation and `-gc none`. The new case checks that a trailing image
+stays unscanned during the pause and the ordinary parser clears the
+marker on resume. Both compile and runtime exits were zero.
+
+The first published bundle containing the scan change, managed build
+`20261125-100138-8f85c7ac`, had executable SHA-256
+`3c076193b9310e4ffbfc48068516e66459a4b9685053772b3f9349c8a778a9ac`.
+The initial pair produced identical images in both arms, each differing
+from the fixed reference in 34,682 RGB pixels with maximum channel error
+255. The browser roots exited zero. The driver and guard exited 1.
+
+| Pair arm | Observed instructions | Elapsed (ms) | RGB hash |
+| --- | ---: | ---: | --- |
+| Scan skipped | 5,598,938,536 | 2017.110 | `bba1473be297f1d2e5314f2545c7f97f7d7d5044e3dacee47fcc981a9a0854fe` |
+| Scan forced | 5,708,967,746 | 1981.371 | `bba1473be297f1d2e5314f2545c7f97f7d7d5044e3dacee47fcc981a9a0854fe` |
+
+A separate instrumented pair on the same bundle passed the original
+pixel check with `VOX_SERIAL_PAINT_CANVAS_BOUNDS=1` in both arms. Both
+visited the complete listing and served all five scripts. The trace
+recorded zero speculative scans with the optimization and five when
+`VOX_SCAN_SPECULATIVE_HTML_WITHOUT_FETCH_HOOK=1` forced them, totaling
+114,129,137 instructions on the tracing thread. The roots, driver and
+guard exited zero. These visits used serial culling and stage tracing
+and supply eligibility evidence. Commit `37dd07d70` corrected the
+worker's canvas classification storage before the default path was
+measured again.
+
+### Matched control on the corrected build
+
+Managed build `20261125-100755-8cb4b858` contained the scan change, the
+canvas classification fix and the decimal integer change below. The
+single-unit `-prod` C receipt sealed the preprocessed compilation unit
+with SHA-256 `5b824e5fa51c1c250708c5794019054093c5ce42e15a96bcf84da2931f3ac230`.
+The executable SHA-256 was
+`86238581844e719d3ba1c5e58f24d77a397781cb0409923bddf6f8eeb6119ebd`.
+The LibJS headless smoke passed. A separately traced pair with default
+culling matched the fixed screenshot in both arms. It recorded zero
+scans in the candidate and five totaling 113,878,514 instructions in
+the control. Both ran LibJS with JavaScriptCore uninitialized.
+
+The seven unprofiled pairs varied only the scan control. Every visit
+used the standard clock-pinned archive, matched the fixed Vox PNG,
+reached `complete`, served the five original scripts and showed the 25
+ordered posts. JavaScriptCore stayed uninitialized in all 14 runs.
+
+| Pair | Scan skipped instructions | Scan forced instructions | Scan skipped elapsed (ms) | Scan forced elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,615,691,845 | 5,747,014,158 | 1989.386 | 1990.885 |
+| 2 | 5,607,937,423 | 5,720,873,913 | 1994.316 | 1969.197 |
+| 3 | 5,578,876,079 | 5,778,676,818 | 2014.600 | 1961.486 |
+| 4 | 5,604,403,947 | 5,761,771,782 | 1974.111 | 2004.938 |
+| 5 | 5,631,443,013 | 5,711,890,661 | 1997.429 | 2030.354 |
+| 6 | 5,627,505,598 | 5,772,217,396 | 2029.663 | 1988.110 |
+| 7 | 5,669,709,431 | 5,796,615,439 | 1990.297 | 1981.070 |
+| Median | 5,615,691,845 | 5,761,771,782 | 1994.316 | 1988.110 |
+
+Skipping the scan saved **146,079,937 median observed instructions
+(2.54%)** and retired fewer instructions in every pair. It finished
+sooner in three pairs and took **6.21 ms longer** between the medians.
+Both arms reported zero missing final samples. Last complete samples
+preceded capture by 5.61–7.59 ms with scanning skipped and 5.93–7.66 ms
+with scanning forced. All browser roots, the driver and the guard exited
+zero. The 12 GiB guard adopted 14 roots and sampled 781,287,424 bytes at
+peak. Host one-minute load was 4.02–4.71 from 10:14:15 to 10:14:52
+UTC+03.
+
+## Parse small LibJS decimal integers directly
+
+Commit `1df2954bc` converts one to fifteen decimal digits directly to a
+Number. Fifteen decimal digits fit exactly in the binary64 integer range.
+Longer literals, multi-digit leading-zero spellings, radix prefixes,
+separators, fractions and exponents continue through the general parser.
+An LLDB check stopped at the direct integer conversion in the archived
+main bundle's parse.
+
+A standalone C `-prod -prealloc -gc none` diagnostic loaded the five
+unchanged author scripts from archive manifest SHA-256
+`b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+Each fresh process parsed all five eight times, checked every result
+for errors and measured the loop with the process instruction and
+monotonic clocks. The control and candidate executable hashes were
+`6ab1b6d3f7860e484b2e0d611879768b2699b620195559e2a44f0334646eb54e`
+and `fe82513895c0e825e8cfb9a506ce8466dcb45e0b529ef66c180ed8fa1e9ecd43`.
+Both binaries and all input hashes were pinned throughout.
+
+| Pair | Control instructions | Candidate instructions | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,264,881,236 | 6,182,433,879 | 56.096 | 56.501 |
+| 2 | 6,264,088,070 | 6,181,529,338 | 56.472 | 55.873 |
+| 3 | 6,273,227,526 | 6,181,425,805 | 56.565 | 56.166 |
+| 4 | 6,262,902,519 | 6,181,407,151 | 57.076 | 56.652 |
+| 5 | 6,273,288,342 | 6,190,452,363 | 57.895 | 56.099 |
+| 6 | 6,263,704,493 | 6,181,696,733 | 57.024 | 55.785 |
+| 7 | 6,263,922,302 | 6,182,563,207 | 57.946 | 58.272 |
+| Median | 6,264,088,070 | 6,181,696,733 | 57.024 | 56.166 |
+
+The candidate retired **1.32% fewer median instructions** and took
+0.86 ms less between the parse medians. It retired fewer instructions
+in all seven pairs and finished sooner in five. All process, driver and
+guard exits were zero. The guard sampled 2,234,843,136 bytes at peak.
+Host one-minute load was 5.87–6.12 on 18 cores.
+
+The frontend, numeric property key and destructuring literal key tests
+passed under C with both Boehm and `-gc none`. The upstream AST corpus
+matched exactly in both modes (100/100 each). The default FastC package
+runs stopped at the existing generated C error `expression expected
+before '?'` while compiling `absent_property_set_test.v`, with no test
+binary produced. That test executed successfully under C in both heap
+modes.
+
+## Production comparison with the scan and integer changes
+
+The seven alternating pairs used managed build `20261125-100755-8cb4b858`
+and the same Brave 158.1.100.58 executable and framework as the previous
+comparison. Both browsers started in fresh processes with private profiles
+and empty HTTP caches, and loaded the five original author scripts in the
+clock-pinned archive. Each completed a 1024×768 scale-1 document PNG after
+the fixed 1.4 s settle interval, reached `complete`, and displayed the 25
+ordered posts. Every capture matched its browser's fixed pixel reference.
+Vox used its LibJS interpreter with both code caches disabled. Its execution
+generation was 141, 147, 155, 155, 143, 141 and 141, and JavaScriptCore
+remained uninitialized. OS filesystem and shader caches were retained.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,559,899,187 | 11,822,843,997 | 2013.028 | 2040.657 |
+| 2 | 5,576,378,317 | 11,808,444,941 | 1945.100 | 2002.807 |
+| 3 | 5,671,675,738 | 11,673,215,907 | 1979.667 | 1974.877 |
+| 4 | 5,651,743,849 | 11,824,582,908 | 1968.508 | 1976.771 |
+| 5 | 5,621,806,092 | 12,058,102,981 | 1999.200 | 1987.556 |
+| 6 | 5,643,116,900 | 11,784,413,945 | 1998.375 | 1985.955 |
+| 7 | 5,649,992,245 | 11,742,038,828 | 2022.537 | 1976.036 |
+| Median | 5,643,116,900 | 11,808,444,941 | 1998.375 | 1985.955 |
+
+Vox used **52.21% fewer median observed instructions**. Its highest count
+was 48.59% of Brave's lowest and met the observed-count gate. Brave finished
+**12.42 ms sooner** between the elapsed medians and won four pairs. The median
+paired difference was 4.79 ms in Brave's favor. The previous build's 3.91 ms
+Vox lead is preserved above. Across the two cohorts, the elapsed lead changed
+hands while the instruction advantage persisted.
+
+The polled process-tree counts are lower bounds and exclude GPU and external
+service work. Final complete samples preceded PNG observation by 6.00–7.64 ms
+for Vox and 0.45–6.76 ms for Brave. Vox reported zero missing final samples.
+Brave reported 2, 1, 1, 2, 2, 3 and 3. The driver and guard exited zero, as
+did all 14 browser roots. The 12 GiB guard adopted all 14 roots and sampled
+789,544,960 bytes at peak. Host one-minute load was 4.65–5.84 on 18 cores
+from 10:14:53 to 10:15:31 UTC+03.
+
+The executable, native dependency, Brave helper, archive body and fixed PNG
+digests were verified during the cohort. The fixed reference manifest SHA-256
+was `43127bf982ad8573282bb302f80f6debbc1d2e8411a3ed9483d8b3634882d9`.
+The guarded archive, comparison observer, bundle lease and memory guard
+tests passed (99 total across the system Python with Pillow and Homebrew
+Python with `hashlib.file_digest`). The initial single-interpreter attempt
+reported four errors because the system Python lacked `hashlib.file_digest`.
+
+A fresh live launch with the same executable and an empty private profile
+redirected to Reddit's login page. It completed with zero posts and two
+script diagnostics. The browser and guard exited zero. The timed claim
+covers the archived listing.
