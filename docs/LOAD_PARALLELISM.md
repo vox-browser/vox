@@ -1957,3 +1957,74 @@ All 32 launches produced identical eight-record request and response
 fingerprints, including the favicon miss. Executable, native library,
 archive and driver hashes stayed pinned. All browser, driver and 3 GiB
 guard exits were zero. Peak aggregate timing RSS was 383,270,912 bytes.
+
+### Reserve glyph positions by worker range
+
+Commit `5e7891ca6` removes the two command scans on the browser thread
+that sized and packed the glyph buffer. The browser thread reserves
+bounded scratch storage. Each worker gets a disjoint slice proportional
+to its command range and assigns positions as it visits the commands.
+The worker skips off-canvas text. A draw that needs that text inside an
+effect, or has a run that exceeds the worker's slice, computes its
+geometry during replay.
+
+The production type check and arena-poisoned culling tests passed
+with both worker strategies.
+They cover uneven ranges, an oversized glyph run followed by a fitting
+run, and text outside the canvas. The same-executable comparison uses
+`VOX_PACKED_RETAINED_GLYPH_GEOMETRY=1` for the previous packing strategy
+and `VOX_SERIAL_RETAINED_GLYPH_GEOMETRY=1` for on-demand glyph geometry.
+Both controls keep canvas bounds preparation on workers.
+
+Production receipt `20261125-104407-2f48c8c6` sealed `5e7891ca6` in
+single-C-unit V `-prod` mode, passed startup smoke and published
+executable SHA `d28f00de0a653a9fd4884ae70fa45ff069b99fd01b5014e67e25d513e5112664`.
+The preceding attempt stopped when the source changed before C
+preprocessing. The build worker retried from the committed revision.
+
+On the archived Hacker News homepage, four worker lanes prepared 332
+glyph runs and replay used all 332. The previous strategy prepared
+373 runs and replay used 332. Both batches were ready at the join,
+and the four diagnostic launches preserved all 30 ordered story IDs.
+
+In a separate instrumented pair without per-run logging, browser-thread
+glyph buffer reservation fell from 75,856 to 30,931 instructions.
+Main-thread text replay measured 145,446,620 instructions with packed
+geometry and 144,550,918 with per-range storage. Inclusive native
+raster replay measured 284,069,760 and 282,882,390 instructions,
+respectively.
+
+Four seven-pair cohorts alternated the per-range mode with either packed
+or serial geometry on the same executable. The reversed cohorts started
+with the control. Each trial measured from fresh launch through the
+completed document PNG at 1024×768 CSS pixels and 2× scale, with
+JavaScriptCore, empty private profiles and HTTP caches, and a replayed
+60 ms delay on each logo response. OS filesystem caches were retained.
+Times below are milliseconds.
+
+| Pair | Packed | Per-range | Reversed packed | Reversed per-range | Serial | Per-range | Reversed serial | Reversed per-range |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 310.476 | 327.799 | 315.464 | 312.449 | 339.131 | 344.140 | 299.149 | 315.600 |
+| 2 | 339.581 | 331.637 | 329.628 | 369.372 | 320.510 | 341.902 | 310.456 | 314.875 |
+| 3 | 312.734 | 322.568 | 305.958 | 329.378 | 323.138 | 343.153 | 320.156 | 317.695 |
+| 4 | 332.344 | 336.409 | 324.892 | 321.831 | 288.678 | 309.197 | 303.613 | 315.855 |
+| 5 | 337.407 | 316.665 | 306.945 | 326.362 | 307.715 | 311.253 | 297.861 | 296.610 |
+| 6 | 342.180 | 311.051 | 313.281 | 297.744 | 297.892 | 321.479 | 299.723 | 291.287 |
+| 7 | 330.847 | 313.889 | 305.179 | 309.081 | 311.094 | 330.719 | 313.283 | 302.572 |
+| Median | 332.344 | 322.568 | 313.281 | 321.831 | 311.094 | 330.719 | 303.613 | 314.875 |
+
+Median paired changes against packed geometry were −7.944 ms and
++3.902 ms, with per-range storage winning four and three pairs. The
+changes against serial were +20.014 ms and −1.250 ms, with per-range
+storage winning zero and four pairs. Host loads on 18 CPUs were
+6.92–7.99 and 7.16–7.44 for packed controls, and 7.91–8.24 and
+7.39–8.14 for serial controls. Launch-to-capture timings showed no
+consistent speedup. The first serial cohort was slower with per-range
+storage in every pair.
+
+All 56 timing captures and six diagnostic captures matched reference PNG
+SHA `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight-record request and response fingerprints matched in every
+launch, including the favicon miss. Executable, native library,
+archive and driver hashes stayed pinned. Browser, driver and 3 GiB
+guard exits were zero. Peak aggregate timing RSS was 376,258,560 bytes.
