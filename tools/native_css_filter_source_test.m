@@ -11,11 +11,7 @@ static int native_font_compositing_transparency_depth;
 static CGFloat native_svg_mask_backing_scale(void) { return 2; }
 #include "native_document_canvas_entry_points.inc"
 
-static NSData *render_pixels(CIImage *input, CGRect bounds) {
-    CIImage *blurred = native_apply_css_blur(input, 1.25);
-    CGImageRef image = [native_css_filter_ci_context createCGImage:blurred
-        fromRect:bounds format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
-    assert(image);
+static NSData *pack_pixels(CGImageRef image) {
     CFDataRef bytes = CGDataProviderCopyData(CGImageGetDataProvider(image));
     size_t width = CGImageGetWidth(image), height = CGImageGetHeight(image);
     size_t pitch = CGImageGetBytesPerRow(image);
@@ -24,8 +20,17 @@ static NSData *render_pixels(CIImage *input, CGRect bounds) {
         memcpy((uint8_t *)packed.mutableBytes + y * width * 4,
             CFDataGetBytePtr(bytes) + y * pitch, width * 4);
     CFRelease(bytes);
-    CGImageRelease(image);
     return packed;
+}
+
+static NSData *render_pixels(CIImage *input, CGRect bounds) {
+    CIImage *blurred = native_apply_css_blur(input, 1.25);
+    CGImageRef image = [native_css_filter_ci_context createCGImage:blurred
+        fromRect:bounds format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+    assert(image);
+    NSData *pixels = pack_pixels(image);
+    CGImageRelease(image);
+    return pixels;
 }
 
 static void check_formats_and_ownership(void) {
@@ -102,6 +107,39 @@ static void check_backdrop_snapshot_ownership(void) {
     assert([expected isEqualToData:render_pixels(input, area)]);
 }
 
+static void check_completed_bitmap_ownership(void) {
+    const size_t width = 61, height = 47, pitch = width * 4 + 28;
+    CGRect bounds = CGRectMake(0, 0, width, height);
+    for (int bgra = 0; bgra <= 1; ++bgra) for (int wide = 0; wide <= 1; ++wide) {
+        CIImage *candidate;
+        NSData *expected;
+        @autoreleasepool {
+            CGColorSpaceRef color = CGColorSpaceCreateWithName(wide
+                ? kCGColorSpaceDisplayP3 : kCGColorSpaceSRGB);
+            CGBitmapInfo info = bgra ? kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little
+                : kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big;
+            CGContextRef context = CGBitmapContextCreate(NULL, width, height, 8, pitch, color, info);
+            assert(context);
+            CGContextSetRGBFillColor(context, .15, .78, .42, .73);
+            CGContextFillEllipseInRect(context, CGRectMake(1.25, 2.5, 53, 42));
+            CGContextSetRGBFillColor(context, .84, .55, .36, .61);
+            CGContextFillRect(context, CGRectMake(9, 10.5, 17, 25));
+            CGImageRef old_source = native_take_bitmap_image(CGContextRetain(context));
+            assert(old_source);
+            expected = render_pixels(native_css_filter_source_image(old_source), bounds);
+            CGImageRelease(old_source);
+            candidate = native_css_filter_completed_bitmap(context);
+            assert(candidate && CGRectEqualToRect(candidate.extent, bounds));
+            CGContextRelease(context);
+            CGColorSpaceRelease(color);
+        }
+        @autoreleasepool {
+            assert([expected isEqualToData:render_pixels(candidate, bounds)]);
+        }
+    }
+    fprintf(stderr, "PASS completed bitmap pixels and lifetime for padded RGBA/BGRA in sRGB and P3\n");
+}
+
 static void check_svg_turbulence(void) {
     const size_t width = 317;
     const int32_t height = 257;
@@ -151,6 +189,36 @@ static void paint_filtered_frame(id view, SEL selector, NSRect rect) {
     native_end_font_compositing_layer();
 }
 
+static int spatial_filter_kind;
+
+static void paint_spatial_filtered_frame(id view, SEL selector, NSRect rect) {
+    (void)view; (void)selector; (void)rect;
+    CGContextRef destination = NSGraphicsContext.currentContext.CGContext;
+    CGContextSaveGState(destination);
+    CGContextClipToRect(destination, CGRectMake(21, 22, 710, 681));
+    native_begin_css_filter_layer(1280, 900);
+    CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+    CGContextSetRGBFillColor(context, .28, .64, .31, .78);
+    CGContextFillEllipseInRect(context, CGRectMake(19.25, 10.75, 750, 601));
+    native_add_css_filter_operation(spatial_filter_kind, 2.5, -1.75, 1.25,
+        (gg__Color){104, 39, 222, 177});
+    native_end_css_filter_layer();
+    CGContextRestoreGState(destination);
+}
+
+static void check_spatial_filter_pixels(NSView *view) {
+    for (spatial_filter_kind = 0; spatial_filter_kind <= 1; ++spatial_filter_kind) @autoreleasepool {
+        setenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP", "1", 1);
+        CGImageRef expected = native_layer_raster_frame(view, 2, (IMP)paint_spatial_filtered_frame);
+        unsetenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP");
+        CGImageRef actual = native_layer_raster_frame(view, 2, (IMP)paint_spatial_filtered_frame);
+        assert(actual && expected && [pack_pixels(actual) isEqualToData:pack_pixels(expected)]);
+        CGImageRelease(actual);
+        CGImageRelease(expected);
+    }
+    fprintf(stderr, "PASS exact clipped publication for completed bitmap blur and drop-shadow\n");
+}
+
 static uint64_t resident_bytes(void) {
     task_vm_info_data_t info = {0};
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
@@ -158,16 +226,12 @@ static uint64_t resident_bytes(void) {
     return info.resident_size;
 }
 
-int main(void) { @autoreleasepool {
-    native_initialize_css_filter_renderer();
-    check_formats_and_ownership();
-    check_backdrop_snapshot_ownership();
-    check_svg_turbulence();
-    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 1280, 900)];
+static void check_repeated_frames(NSView *view, IMP paint, const char *label) {
     uint64_t warm = 0, peak = 0;
     for (int frame = 0; frame < 200; ++frame) {
         @autoreleasepool {
-            CGImageRef image = native_layer_raster_frame(view, 2, (IMP)paint_filtered_frame);
+            spatial_filter_kind = frame % 2;
+            CGImageRef image = native_layer_raster_frame(view, 2, paint);
             assert(image);
             CGImageRelease(image);
         }
@@ -177,7 +241,19 @@ int main(void) { @autoreleasepool {
         if (frame >= 60) assert(bytes <= warm + 64ull * 1024 * 1024);
     }
     assert(peak < 1024ull * 1024 * 1024);
-    fprintf(stderr, "PASS 200 filtered Retina frames: warm=%llu peak=%llu final=%llu bytes RSS\n",
-        (unsigned long long)warm, (unsigned long long)peak, (unsigned long long)resident_bytes());
+    fprintf(stderr, "PASS 200 %s Retina frames: warm=%llu peak=%llu final=%llu bytes RSS\n",
+        label, (unsigned long long)warm, (unsigned long long)peak, (unsigned long long)resident_bytes());
+}
+
+int main(void) { @autoreleasepool {
+    native_initialize_css_filter_renderer();
+    check_formats_and_ownership();
+    check_backdrop_snapshot_ownership();
+    check_completed_bitmap_ownership();
+    check_svg_turbulence();
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 1280, 900)];
+    check_spatial_filter_pixels(view);
+    check_repeated_frames(view, (IMP)paint_filtered_frame, "SVG-filtered");
+    check_repeated_frames(view, (IMP)paint_spatial_filtered_frame, "spatial CSS-filtered");
     return 0;
 } }

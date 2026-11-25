@@ -4087,6 +4087,36 @@ static CIImage *native_css_filter_source_image(CGImageRef image) {
 	return [CIImage imageWithCGImage:image];
 }
 
+// The caller has finished painting this private bitmap. Keep its allocation
+// alive for Core Image's deferred reads, without importing a CGImage or copying
+// the rows through a data provider.
+static CIImage *native_css_filter_completed_bitmap(CGContextRef context) {
+	CIFormat format = native_css_filter_bitmap_format(CGBitmapContextGetBitsPerComponent(context),
+		CGBitmapContextGetBitsPerPixel(context), CGBitmapContextGetBitmapInfo(context));
+	CGColorSpaceRef color = CGBitmapContextGetColorSpace(context);
+	size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+	size_t pitch = CGBitmapContextGetBytesPerRow(context);
+	if (!format || !color || CGColorSpaceGetModel(color) != kCGColorSpaceModelRGB
+		|| !width || !height || width > SIZE_MAX / 4 || pitch < width * 4
+		|| height > SIZE_MAX / pitch) return nil;
+	CGContextFlush(context);
+	void *pixels = CGBitmapContextGetData(context);
+	if (!pixels) return nil;
+	CGContextRetain(context);
+	NSData *bytes = [[NSData alloc] initWithBytesNoCopy:pixels length:pitch * height
+		deallocator:^(void *data, NSUInteger size) {
+			(void)data;
+			(void)size;
+			CGContextRelease(context);
+		}];
+	CIImage *source = [CIImage imageWithBitmapData:bytes bytesPerRow:pitch
+		size:CGSizeMake(width, height) format:format colorSpace:color];
+#if !__has_feature(objc_arc)
+	[bytes release];
+#endif
+	return source;
+}
+
 static CIImage *native_apply_css_filter_operations(NativeCSSFilterLayer const *layer,
 	CIImage *output) {
 	for (NSInteger index = (NSInteger)layer->operation_count - 1;
@@ -4362,14 +4392,15 @@ static CIContext *native_css_filter_render_context(NativeCSSFilterLayer const *l
 }
 
 static CGImageRef native_render_css_filter_image(NativeCSSFilterLayer const *layer,
-    CGImageRef input, CGRect bounds, BOOL allow_software) {
+    CGImageRef input, CIImage *bitmap_source, CGRect bounds, BOOL allow_software) {
     BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
     double started = timing ? CACurrentMediaTime() : 0;
     native_initialize_css_filter_renderer();
     CIContext *renderer = allow_software
         ? native_css_filter_render_context(layer, input) : native_css_filter_ci_context;
     double selected = timing ? CACurrentMediaTime() : 0;
-    CIImage *filtered = native_apply_css_filter_layer(layer, input);
+    CIImage *source = bitmap_source ?: native_css_filter_source_image(input);
+    CIImage *filtered = native_apply_css_filter_operations(layer, source);
     double applied = timing ? CACurrentMediaTime() : 0;
     CGImageRef image = [renderer createCGImage:filtered fromRect:bounds
         format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
@@ -4635,6 +4666,16 @@ static int native_try_gpu_css_filter_image(CGContextRef destination, CGImageRef 
     return 0;
 }
 
+static CIImage *native_css_filter_spatial_bitmap(NativeCSSFilterLayer const *layer) {
+	if (!layer->destination || layer->operation_count != 1 || layer->graph_node_count
+		|| layer->borrows_fresh_frame || layer->copies_to_fresh_frame
+		|| layer->gradient_blur_recording || layer->svg_filter_recording
+		|| layer->sparse_input_pixels || getenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP")) return nil;
+	int kind = layer->operations[0].kind;
+	if (kind != 0 && kind != 1) return nil;
+	return native_css_filter_completed_bitmap(layer->context);
+}
+
 void native_end_css_filter_layer(void) {
 	BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
 	double timing_start = timing ? CACurrentMediaTime() : 0;
@@ -4696,38 +4737,44 @@ void native_end_css_filter_layer(void) {
     BOOL grayscale_identity = !grayscale_image
         && native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
 	double timing_input = timing ? CACurrentMediaTime() : 0;
-	CGImageRef source_image;
-	if (layer.borrows_fresh_frame) {
-		// A filter attached to the enclosing layer still needs an isolated source.
-		// Quartz snapshots retain their pixels when the fresh target is cleared.
-		source_image = CGBitmapContextCreateImage(layer.context);
-		CGContextRestoreGState(layer.context);
-		CGContextRelease(layer.context);
-	} else {
-		source_image = layer.operation_count == 0 && layer.graph_node_count == 0
-			? native_take_bitmap_image_for_destination(layer.context, layer.destination)
-			: native_take_bitmap_image(layer.context);
-	}
-	[NSGraphicsContext restoreGraphicsState];
-	double timing_source = timing ? CACurrentMediaTime() : 0;
-	if (layer.borrows_fresh_frame)
-		CGContextClearRect(layer.destination,
-			CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
-
-	if (source_image == NULL) {
-		if (compact_input) CGImageRelease(compact_input);
-		if (grayscale_image) CGImageRelease(grayscale_image);
-		free(layer.operations);
-		native_free_svg_filter_graph(&layer);
-		return;
-	}
-	double timing_filter = timing_source, timing_draw = timing_source;
+	double timing_source = 0, timing_filter = 0, timing_draw = 0;
 	@autoreleasepool {
-		CGRect source_rect = CGRectMake(0, 0,
+		CIImage *bitmap_source = native_css_filter_spatial_bitmap(&layer);
+		CGImageRef source_image = NULL;
+		if (bitmap_source) {
+			CGContextRelease(layer.context);
+			if (timing) fprintf(stderr,
+				"VOX_CSS_FILTER_DIRECT_SOURCE kind=%d width=%.0f height=%.0f\n",
+				layer.operations[0].kind, bitmap_source.extent.size.width, bitmap_source.extent.size.height);
+		} else if (layer.borrows_fresh_frame) {
+			// Quartz snapshots retain their pixels when the fresh target is cleared.
+			source_image = CGBitmapContextCreateImage(layer.context);
+			CGContextRestoreGState(layer.context);
+			CGContextRelease(layer.context);
+		} else {
+			source_image = layer.operation_count == 0 && layer.graph_node_count == 0
+				? native_take_bitmap_image_for_destination(layer.context, layer.destination)
+				: native_take_bitmap_image(layer.context);
+		}
+		[NSGraphicsContext restoreGraphicsState];
+		timing_source = timing ? CACurrentMediaTime() : 0;
+		if (layer.borrows_fresh_frame)
+			CGContextClearRect(layer.destination,
+				CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
+		if (!source_image && !bitmap_source) {
+			if (compact_input) CGImageRelease(compact_input);
+			if (grayscale_image) CGImageRelease(grayscale_image);
+			free(layer.operations);
+			native_free_svg_filter_graph(&layer);
+			return;
+		}
+		CGRect source_rect = bitmap_source ? bitmap_source.extent : CGRectMake(0, 0,
 			CGImageGetWidth(source_image), CGImageGetHeight(source_image));
 		CGImageRef filtered_image = NULL;
 		CGRect filtered_rect = source_rect;
-		if (grayscale_image) {
+		if (bitmap_source) {
+			filtered_image = native_render_css_filter_image(&layer, NULL, bitmap_source, source_rect, NO);
+		} else if (grayscale_image) {
 			filtered_image = grayscale_image;
 			filtered_rect = identity_rect;
 		} else if (layer.operation_count == 0 && layer.graph_node_count == 0) {
@@ -4749,7 +4796,7 @@ void native_end_css_filter_layer(void) {
 			} else if (compact_input && (filtered_image = native_cached_css_color_filter_image(&layer, input))) {
 				// The immutable cached result uses the same Core Image arithmetic.
 			} else {
-				filtered_image = native_render_css_filter_image(&layer, input,
+				filtered_image = native_render_css_filter_image(&layer, input, nil,
                     cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
                         filtered_rect.size.height) : source_rect, compact_input != NULL);
 			}
@@ -4772,8 +4819,8 @@ void native_end_css_filter_layer(void) {
 			CGImageRelease(filtered_image);
 		}
 		timing_draw = timing ? CACurrentMediaTime() : 0;
+		if (source_image) CGImageRelease(source_image);
 	}
-	CGImageRelease(source_image);
 	if (compact_input) CGImageRelease(compact_input);
 	free(layer.operations);
 	native_free_svg_filter_graph(&layer);
