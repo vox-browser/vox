@@ -460,14 +460,18 @@ pub fn (s &StaticNodeList) item(index int) ?&Node {
 
 // --- HTMLCollection ---
 pub fn HTMLCollection.create(root &ParentNode, scope HTMLCollectionScope, filter fn(&Element) bool, sort fn(&Element, &Element) bool) &HTMLCollection {
-	mut collection := &HTMLCollection{
+	collection := HTMLCollection.create_without_cache(root, scope, filter, sort)
+	collection.update_cache_if_needed()
+	return collection
+}
+
+fn HTMLCollection.create_without_cache(root &ParentNode, scope HTMLCollectionScope, filter fn(&Element) bool, sort fn(&Element, &Element) bool) &HTMLCollection {
+	return &HTMLCollection{
 		root: root
 		scope: scope
 		filter: filter
 		sort: sort
 	}
-	collection.update_cache_if_needed()
-	return collection
 }
 
 fn sort_elements_with_comparator(mut elements []&Element, sort fn(&Element, &Element) bool) {
@@ -612,8 +616,26 @@ pub fn (c &HTMLCollection) length() int {
 // https://dom.spec.whatwg.org/#dom-htmlcollection-item
 pub fn (c &HTMLCollection) item(index int) ?&Element {
 	// The item(index) method steps are to return the indexth element in the collection. If there is no indexth element in the collection, then the method must return null.
+	if index < 0 {
+		return none
+	}
+	// Unsorted tag queries start without a cache. An index-zero read only
+	// needs the first match in tree order. Other readers can build the cache.
+	if index == 0 && !c.cache_initialized && c.root != unsafe { nil }
+		&& c.scope == .descendants && voidptr(c.sort) == voidptr(never_sort_elements) {
+		root := c.root.as_node()
+		mut node := root.first_child() or { return none }
+		for {
+			if element := node.as_element() {
+				if c.filter(element) {
+					return element
+				}
+			}
+			node = node.next_in_pre_order(root) or { return none }
+		}
+	}
 	c.update_cache_if_needed()
-	if index < 0 || index >= c.cached_elements.len {
+	if index >= c.cached_elements.len {
 		return none
 	}
 	return c.cached_elements[index]
@@ -2013,13 +2035,14 @@ pub fn (mut p ParentNode) children_collection() &HTMLCollection {
 pub fn (mut p ParentNode) get_elements_by_tag_name(qualified_name string) &HTMLCollection {
 	// 1. If qualifiedName is "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches only descendant elements.
 	if qualified_name == '*' {
-		return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+		return HTMLCollection.create_without_cache(&p, .descendants, always_accept_element,
+			never_sort_elements)
 	}
 	root_node := p.as_node()
 	// 2. Otherwise, if root's node document is an HTML document, return a HTMLCollection rooted at root, whose filter matches the following descendant elements:
 	if root_node.document().document_type() == .html {
 		qualified_name_in_ascii_lowercase := to_ascii_lowercase(qualified_name)
-		return HTMLCollection.create(&p, .descendants, fn [qualified_name, qualified_name_in_ascii_lowercase] (element &Element) bool {
+		return HTMLCollection.create_without_cache(&p, .descendants, fn [qualified_name, qualified_name_in_ascii_lowercase] (element &Element) bool {
 			// - Whose namespace is the HTML namespace and whose qualified name is qualifiedName, in ASCII lowercase.
 			if element.namespace_uri() or { '' } == namespace_html_uri {
 				return element.qualified_name_str() == qualified_name_in_ascii_lowercase
@@ -2029,7 +2052,7 @@ pub fn (mut p ParentNode) get_elements_by_tag_name(qualified_name string) &HTMLC
 		}, never_sort_elements)
 	}
 	// 3. Otherwise, return a HTMLCollection rooted at root, whose filter matches descendant elements whose qualified name is qualifiedName.
-	return HTMLCollection.create(&p, .descendants, fn [qualified_name] (element &Element) bool {
+	return HTMLCollection.create_without_cache(&p, .descendants, fn [qualified_name] (element &Element) bool {
 		return element.qualified_name_str() == qualified_name
 	}, never_sort_elements)
 }

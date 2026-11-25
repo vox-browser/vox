@@ -1,10 +1,11 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **49.94% fewer median observed CPU instructions**
+Production Vox with LibJS used **49.17% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. Median launch-to-PNG time
-was **2.052 s for Vox and 2.003 s for Brave**. Brave finished sooner in
-five of seven pairs, and one Brave capture differed from its fixed reference.
-A fresh live Vox visit reached Reddit's login page. [Current comparison](#production-cohort-with-ascii-identifier-scanning)
+across all seven attempts was **2.272 s for Vox and 2.297 s for Brave**.
+One Brave capture differed from its fixed reference, leaving the acceptance
+gate open. A fresh live Vox visit reached Reddit's login page.
+[Current comparison](#production-cohort-with-scope-and-first-tag-read-optimizations)
 
 ## Workload and execution
 
@@ -600,3 +601,113 @@ the guard exited zero, and every trial captured the final process sample.
 The control and candidate executable SHA-256 values were
 `c16d50f24aceb79bc42cfa6b728230f64a3dadc6f801d389203af1d6235b24fc`
 and `8f3a8688950945fba5d0c745ca31bc82b4528f5c763237ac08796652454ba60b`.
+
+## Reading the first element of a live tag collection
+
+A separate archived Vox run under LLDB reached
+`document.getElementsByTagName("body")` 25 times on the same document.
+The archived Reddit initializer reads index zero while measuring fonts.
+The previous binding walked the entire document to construct the collection.
+Tag collections now populate their cache on demand. An initial index-zero
+read stops at the first matching descendant in tree order. The full collection
+is still available for operations such as `length` and `namedItem()`.
+
+The component benchmark parsed the archived listing HTML before timing. Each
+fresh process ran 1,000 `document.getElementsByTagName("body")[0]` reads through
+LibJS and checked each result against `document.body`. Each executable used
+single-unit `-prod` C and `-prealloc -gc none`. The standalone VM used its
+interpreter with both compiler caches disabled. The candidate also compiled
+the concurrently landed native-tier sources from `d12694fd9`.
+
+| Pair | Control thread instructions | Candidate thread instructions | Control elapsed (ms) | Candidate elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 228,522,423 | 18,347,259 | 15.839 | 1.205 |
+| 2 | 227,670,285 | 17,686,128 | 15.874 | 1.071 |
+| 3 | 227,658,183 | 17,657,267 | 15.392 | 1.069 |
+| 4 | 227,707,826 | 17,650,584 | 14.648 | 1.069 |
+| 5 | 227,650,281 | 17,672,705 | 15.194 | 1.033 |
+| 6 | 227,663,405 | 17,681,443 | 15.795 | 1.034 |
+| 7 | 227,745,357 | 17,691,259 | 14.915 | 1.021 |
+| Median | 227,670,285 | 17,681,443 | 15.392 | 1.069 |
+
+The median thread instruction count fell **92.23%** in this isolated workload.
+Scaling the difference to 25 reads gives 5.25 million instructions. Each of the
+14 processes and the 3 GiB guard exited zero. The host reported a one-minute
+load of 46.09 on 18 cores during the seven alternating pairs.
+
+The archive HTML SHA-256 was
+`6e556f7935de9bd9fc55b40129dc721d7b463ca6b5c7fa4d16dc9bd45cc98414`.
+The control and candidate executable SHA-256 values were
+`15408348571461699e94b067f5c627b096eca9c45f83c5feb6871c67cf39298b`
+and `663925dba327e57e532ec85c8af91a2fec710b09af8b92a56da2ccf40842acca`.
+The executable used for the LLDB observation had SHA-256
+`dc25eab492d3658b87caab0ba56e9c7021ab1573b18822fc95477c88b4f534af`.
+
+The focused native collection tests passed. A fresh LibJS visit to a local
+fixture in the production build verified uppercase HTML tag matching, indexed
+reads after insertions and removals, length and named lookup. The audit showed
+execution generation 20, zero diagnostics and an uninitialized JavaScriptCore
+context. The guarded standalone LibJS binding test compilation exceeded its
+memory limit.
+
+## Production cohort with scope and first tag read optimizations
+
+Managed build `20261125-065539-e305edb5` verified `4aad4baa6` with the
+first-tag-read change in the canonical checkout. The sealed single-unit
+`-prod` C source includes both optimizations. Its SHA-256 was
+`13405f5831bbee11871abcc8fce4abeaa5b6f3056956f599d17f452890ab90cf`.
+The published executable SHA-256 was
+`2bf74b5de62aaf33a0b2e1c538bab9bda8afe89fecb8af683dd218d42e2b3849`.
+The fresh LibJS headless smoke check passed. The build also includes other
+changes since the ASCII identifier cohort, including the glyph worker changes.
+
+The seven alternating pairs used the same 1024×768 clock-pinned replay,
+scale 1, 1.4 s settle period, fresh private profiles and empty HTTP caches.
+Both browsers retained OS filesystem and shader caches. Vox's endpoint was
+observer confirmation of a complete native document PNG. Brave's endpoint
+was receipt of the first complete CDP screenshot response. The driver verified
+browser, native library, observer, archive and reference identities. The
+replay manifest SHA-256 was
+`b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+Brave reported Chromium 158.0.8127.42. Its executable and framework hashes
+matched the ASCII identifier cohort.
+
+Each document reached `complete` with all 25 ordered posts, and replay served
+the five original author scripts on each visit. Vox reported LibJS execution
+generation 145 or 147, zero JavaScript diagnostics and an uninitialized
+JavaScriptCore context. All seven Vox PNGs matched the fixed reference.
+Brave pair 5 differed in 2,522 pixels, with a maximum channel error of 6.
+The PNG is retained locally as `references/brave-first-tag-read-pair-5.png`.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,994,371,590 | 11,743,294,466 | 2348.7 | 2238.6 |
+| 2 | 5,965,255,240 | 11,779,174,886 | 2296.5 | 2296.8 |
+| 3 | 5,936,885,549 | 11,761,810,992 | 2272.1 | 2355.3 |
+| 4 | 5,978,203,492 | 11,723,355,049 | 2322.7 | 2307.0 |
+| 5 | 5,968,918,701 | 11,840,704,921 | 2263.6 | 2499.7 |
+| 6 | 5,932,192,785 | 11,674,538,330 | 2264.3 | 2265.0 |
+| 7 | 5,980,936,837 | 11,661,255,519 | 2208.8 | 2186.8 |
+| Median | 5,968,918,701 | 11,743,294,466 | 2272.1 | 2296.8 |
+
+Vox's largest observed instruction count was 51.40% of Brave's smallest.
+Vox finished 24.7 ms sooner at the median across all seven attempts and
+finished sooner in four pairs. Among the six pairs with matching reference
+pixels, median launch-to-PNG time was 2284.3 ms for Vox and 2280.9 ms for
+Brave. The seven-pair comparison failed the fixed-pixel acceptance gate.
+Host one-minute load at trial start ranged from 29.72 to 45.47 on 18 cores.
+The cohort ran from 07:01:59 to 07:02:47 UTC+03 on November 25, 2026.
+
+The counts are process-tree lower bounds. Sampling excludes GPU execution
+and external services such as WindowServer. The last complete sample preceded
+the PNG boundary by 5.86–10.40 ms for Vox and 2.17–7.04 ms for Brave. Vox
+reported zero missing final samples. Brave reported 1, 1, 3, 1, 1, 1 and 1.
+All 14 browser roots exited zero and were adopted by the 12 GiB guard, which
+observed a peak aggregate RSS of 795,246,592 bytes. The driver and guard
+exited 1 on the fixed-reference mismatch.
+
+A separate direct visit with the published executable and an empty private
+profile reached `complete` at Reddit's login page, `Welcome to Reddit`.
+It exposed zero listing posts and reported two unsupported `data:` script
+URLs. The browser and guard exited zero. Live listing performance remains
+unverified.
