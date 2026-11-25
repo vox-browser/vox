@@ -1,10 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **49.43% fewer median observed CPU instructions**
+Production Vox with LibJS used **49.94% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. Median launch-to-PNG time
-was **2.052 s for Vox and 1.984 s for Brave**, with Brave finishing sooner in
-all seven pairs. Two Brave captures differed from their fixed reference.
-A fresh live Vox visit reached Reddit's login page. [Current comparison](#production-cohort-with-arrow-lookahead)
+was **2.052 s for Vox and 2.003 s for Brave**. Brave finished sooner in
+five of seven pairs, and one Brave capture differed from its fixed reference.
+A fresh live Vox visit reached Reddit's login page. [Current comparison](#production-cohort-with-ascii-identifier-scanning)
 
 ## Workload and execution
 
@@ -491,3 +491,64 @@ The control executable SHA-256 was
 `2b47a10bf76f15d4f0013194e137ced36ace13803a83117c6896b79de64c7337`.
 The candidate executable SHA-256 was
 `4244bc906a7c747ba2c672be65be1d3dff4e893c9f33f0b20396cce9c4a7454f`.
+
+## Production cohort with ASCII identifier scanning
+
+The managed single-unit `-prod` C build verified `7094b0381`. The executable
+SHA-256 was `2f2e0b29a4748117a40a4f021935f112438f123fdc9d9efac8be5841a1b5ee40`
+and the sealed C input SHA-256 was
+`0a778cf1b6369c72c030448ccb91fedec3ac3ed4ef3d7e21266e551861ac0346`.
+The sealed code contains the new identifier scan. The fresh LibJS
+headless smoke check passed. The full LibJS test commands stopped in
+`absent_property_set_test.v` with a FastC-generated C error in both GC
+modes. That test passed separately with the C backend.
+
+The seven alternating pairs use the earlier clock-pinned launch-to-PNG
+protocol, 1024×768 at scale 1, 1.4 s settling, private profiles and
+empty HTTP caches. Both engines retained OS filesystem and shader caches.
+The driver verified the pinned executable, native libraries, replay
+bodies, observer files and references throughout. The replay manifest
+SHA-256 was `b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+Brave reported Chromium 158.0.8127.42. Its executable and framework
+SHA-256 values were
+`91891e4e395cb799e755f9ec5ee501f380560b4365959de0a15b5123ca0aacd5`
+and `2b4ab29cf5e450acf54858cbd2bc9a6eec93a678924be32f6076fcf7d8f39ea5`.
+
+Both engines reached the complete document with all 25 ordered posts.
+Replay served the five original author scripts on each visit. Each Vox
+audit reported LibJS execution generation 145, zero JavaScript
+diagnostics and an uninitialized JavaScriptCore context. All seven Vox
+PNGs matched the fixed Vox reference. Brave pair 2 differed from its
+fixed reference across 430,133 pixels. The maximum channel error was
+255. The capture is retained locally as
+`references/brave-ascii-identifiers-pair-2.png`.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,966,713,153 | 12,710,829,037 | 2069.2 | 2189.3 |
+| 2 | 5,913,699,422 | 11,737,044,757 | 2039.7 | 2091.8 |
+| 3 | 5,946,899,669 | 11,904,436,863 | 2051.7 | 1978.9 |
+| 4 | 5,906,606,763 | 11,687,070,942 | 2038.7 | 1951.0 |
+| 5 | 5,921,687,888 | 11,650,220,405 | 2049.3 | 1958.8 |
+| 6 | 5,942,072,583 | 12,114,624,812 | 2310.9 | 2082.5 |
+| 7 | 5,949,276,697 | 11,870,581,502 | 2218.0 | 2003.3 |
+| Median | 5,942,072,583 | 11,870,581,502 | 2051.7 | 2003.3 |
+
+Vox's highest observed instruction count was 51.22% of Brave's lowest.
+Vox reached the capture 48.4 ms later at the median. The host one-minute
+load ranged from 10.98 to 15.65 on 18 cores. The cohort ran from
+05:52:26 to 05:53:04 UTC+03 on November 25, 2026.
+
+Both totals are process-tree lower bounds. The last complete samples
+preceded the PNG boundary by 5.20–6.47 ms for Vox and 1.21–6.86 ms for
+Brave. Vox reported zero missing final samples. Brave reported 1, 2, 2,
+2, 1, 3 and 1. The 12 GiB guard adopted all 14 browser roots, with a
+sampled peak aggregate RSS of 859,471,872 bytes. All browser roots exited
+zero. The driver and guard exited 1 on the Brave pixel mismatch. The
+fixed-pixel acceptance gate remains open.
+
+A separate fresh direct visit using this same production build and a
+private empty profile reached `Welcome to Reddit` at the login redirect.
+The page reached `complete`, exposed zero listing posts and reported two
+scripts with unsupported `data:` URLs. The browser and guard exited zero.
+Live listing performance remains unverified.
