@@ -6,8 +6,10 @@ fewer median observed CPU instructions** than Brave on the frozen
 Median launch-to-PNG time was **1.975 s for Vox and 1.988 s for Brave**,
 with Vox ahead in four pairs. The later LibJS punctuator change reduced
 median parser instructions by 0.96% across the five archived scripts.
-Its browser cohort failed the fixed Brave pixel check. A fresh live
-Vox visit reached Reddit's login page.
+Scanning strings in ASCII spans reduced median parser instructions by
+another 0.59%. Both later browser cohorts failed the fixed Brave pixel
+check because of thumbnail variation. A fresh live Vox visit reached
+Reddit's login page.
 [Qualifying comparison](#published-comparison-before-the-punctuator-change)
 
 ## Workload and execution
@@ -2546,3 +2548,134 @@ The separate live check used the candidate executable and a fresh
 profile. Reddit redirected to its login page, which completed with
 zero listing posts and two script diagnostics. The browser and guard
 exited zero.
+
+## Scan ASCII string text in spans
+
+The lexer now scans ordinary ASCII between a string's opening quote and
+the next quote, escape, line break, or non-ASCII unit. It advances the
+cursor and column together across that span. Existing handling for
+escapes and Unicode still determines decoded values and source positions.
+
+Two guarded parser-only comparisons used the five original author
+scripts from the clock-pinned archive. Each fresh process read the
+bodies before collecting current-task instructions and elapsed time
+across eight passes. Every pass parsed all five scripts, with a
+recursion limit of 256, and checked for parser errors. The controls
+and candidates used single-unit C with `-prod -prealloc -gc none`.
+Each cohort ran seven alternating pairs under a 3 GiB guard.
+The manifest SHA-256 was
+`b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+
+| Candidate | Pair | Control instructions | Candidate instructions | Control ms/pass | Candidate ms/pass |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Spans and token flag | 1 | 6,235,482,692 | 6,212,144,501 | 57.675 | 57.347 |
+| Spans and token flag | 2 | 6,248,517,327 | 6,208,466,898 | 57.807 | 59.138 |
+| Spans and token flag | 3 | 6,233,967,867 | 6,187,892,157 | 57.594 | 56.331 |
+| Spans and token flag | 4 | 6,214,736,705 | 6,193,619,727 | 56.182 | 56.577 |
+| Spans and token flag | 5 | 6,221,598,461 | 6,202,664,138 | 56.703 | 57.197 |
+| Spans and token flag | 6 | 6,278,048,961 | 6,242,472,885 | 59.119 | 59.337 |
+| Spans and token flag | 7 | 6,279,631,190 | 6,251,437,791 | 61.559 | 58.959 |
+| Spans only | 1 | 6,255,650,286 | 6,218,685,670 | 58.471 | 58.821 |
+| Spans only | 2 | 6,249,306,473 | 6,218,525,079 | 62.101 | 61.398 |
+| Spans only | 3 | 6,255,470,370 | 6,227,670,098 | 62.286 | 64.263 |
+| Spans only | 4 | 6,255,142,631 | 6,217,460,535 | 64.200 | 63.277 |
+| Spans only | 5 | 6,251,658,376 | 6,215,437,558 | 61.765 | 63.075 |
+| Spans only | 6 | 6,273,071,000 | 6,234,615,421 | 63.243 | 61.693 |
+| Spans only | 7 | 6,268,659,372 | 6,219,710,493 | 64.208 | 64.393 |
+
+The first version added a token flag to skip a second scan for
+backslashes when decoding a string. Its median instruction count
+fell by 0.43% and its median elapsed time fell from 57.675 to 57.347
+ms per pass. It finished sooner in three pairs. The spans-only
+version is the one kept. Its median fell by **0.59%**, approximately
+4.60 million instructions per pass. It reduced instructions in all
+seven pairs. Median time increased from 62.286 to 63.075 ms per
+pass, and the median paired change was a 0.185 ms increase.
+
+Control, flag candidate and spans-only executable SHA-256 values
+were `5d03f9fdd98d26ea7940c50d9b2d74acb48b4f133f6b5b621c7128a80eeb1d7f`,
+`77ac3dd732b354f876e4a0ca5f9b69843443a27b98c4eeb9c82eda7a38bd3767`
+and `7ae790b3d3b8529c9e39208c46197d109eb1e011df4be8f5738b96e7e4221bb1`.
+The 18-core host's one-minute load ranged from 6.70 to 7.02
+at 11:26:25–11:26:33 UTC+03 and 6.81 to 7.01 at 11:29:21–11:29:29.
+Both guards and all 28 measured processes exited zero. Peak sampled
+aggregate RSS was 2,183,380,992 and 2,190,753,792 bytes.
+A separate LLDB run of the spans-only executable reached
+`Lexer.consume_ascii_string_run` from `Parser.consume_token` on the
+archived main script. That process and the debugger's guard exited zero.
+
+The change is in `a66938381`. The source-position, frontend, directive
+prologue, lexer lookahead and tagged-template tests passed using C
+with Boehm and `-gc none`. All 100 upstream AST fixtures matched in
+each mode. Both full-package FastC runs stopped at the existing
+generated C error `expression expected before '?'` in
+`absent_property_set_test.v`. The same test passed with the C
+backend in both heap modes.
+
+### Production comparison with ASCII string spans
+
+The shared production receipt `20261125-112907-e1cdc0cc` identified
+source commit `3cf41a0ca` and included the string scanner in its
+sealed single-unit `-prod` C. The sealed C SHA-256 was
+`e3b4e8c02cd9104981613d2a859a2156ca804c32d2d8ec04d254a1fde1d1fda0`.
+The installed Vox executable SHA-256 was
+`dbb1b17055a337e9df61052415be512683bccd11c24394828fe10504b972b903`.
+The controller verified 185 workload and binary input hashes and 14
+observer, Brave helper and reference hashes. The Brave executable and
+framework hashes matched the earlier comparison. A guarded LibJS
+headless smoke passed bytecode execution, DOM mutation and click events.
+
+The clock-pinned driver ran seven alternating fresh pairs with the
+same original-origin replay, fresh private profiles and HTTP caches,
+1024×768 scale-1 document viewport and 1.4 s settle setting. The
+first complete native PNG for Vox and first complete CDP PNG response
+for Brave ended the respective launch-to-capture intervals. The
+interpreter, frontend and native-cache settings matched the prior
+cohort. OS filesystem and shader caches were retained.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,657,908,725 | 11,556,243,309 | 1947.936 | 2018.795 | Alternate thumbnails |
+| 2 | 5,709,508,319 | 11,584,564,289 | 1995.501 | 1988.793 | Alternate thumbnails |
+| 3 | 5,685,173,152 | 11,543,412,172 | 1955.774 | 2007.342 | Alternate thumbnails |
+| 4 | 5,673,526,968 | 11,543,599,775 | 1975.957 | 1969.954 | Alternate thumbnails |
+| 5 | 5,667,499,969 | 11,657,047,328 | 1969.883 | 1981.945 | Alternate thumbnails |
+| 6 | 5,699,133,186 | 11,625,746,548 | 1967.453 | 1975.890 | Alternate thumbnails |
+| 7 | 5,617,763,519 | 11,721,333,168 | 1963.168 | 1970.573 | Exact |
+| Median | 5,673,526,968 | 11,584,564,289 | 1967.453 | 1981.945 | Six failures |
+
+Every Vox PNG matched its fixed reference. Both browsers completed all
+25 ordered posts and served all five original scripts on every visit.
+The LibJS execution generations were 145, 141, 151, 155, 153, 155 and
+155. JavaScriptCore stayed uninitialized. The first six Brave PNGs
+reproduced the alternate thumbnail image with SHA-256
+`b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`.
+It differs in 13,902 RGB pixels in x=83–153 and y=400–762, with
+maximum channel error 83. Replay logs had the same 44 archived URL
+and body-hash pairs for all seven Brave visits. The required author
+handlers loaded, and the page reported zero script exceptions.
+
+The observed median elapsed gap was 14.49 ms and Vox led five pairs.
+The median paired lead was 8.44 ms. Its median observed instruction
+count was 51.03% lower, and its highest observed count was 49.46%
+of Brave's lowest. The six Brave reference failures invalidate these
+measurements for a new acceptance claim. The previous qualifying
+cohort remains the catalog result.
+
+All browser roots exited zero. The driver and 12 GiB guard exited 1
+on the Brave reference failures. The guard adopted all 14 roots
+and sampled 787,120,128 bytes peak aggregate RSS. Vox reported zero
+missing final samples. Brave reported 2, 1, 2, 2, 3, 1 and 2.
+Final samples preceded capture by 5.96–7.69 ms for Vox and
+1.89–7.83 ms for Brave. Both sets of process-tree totals are lower
+bounds and exclude GPU and external services. One-minute host load
+ranged from 4.11 to 5.08 on 18 cores from 11:34:52 to 11:35:28 UTC+03.
+The shared worker was active.
+
+A separate guarded, sampled capture reached the LibJS lexer and parser
+in the installed executable and rendered the archived listing. The
+capture recorded LibJS execution generation 147, no JavaScriptCore
+context and zero script diagnostics. The browser and guard exited
+zero. A fresh direct live visit with the same executable reached the
+Reddit sign-in page with zero listing posts and two unsupported
+`data:` script diagnostics. Its browser and guard exited zero.
