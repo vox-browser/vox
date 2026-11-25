@@ -1624,26 +1624,6 @@ pub fn http_redirect_fetch(params &FetchParams, response &Response, host &FetchH
 	return main_fetch(params, host)
 }
 
-pub struct IncrementalReadLoopReadRequest {
-pub:
-	body          &Body
-	process_chunk BodyChunkCallback @[required]
-	process_end   BodyEndCallback   @[required]
-	process_error BodyErrorCallback @[required]
-}
-
-pub fn (request &IncrementalReadLoopReadRequest) on_chunk(chunk []u8) {
-	request.process_chunk(chunk.clone())
-}
-
-pub fn (request &IncrementalReadLoopReadRequest) on_close() {
-	request.process_end()
-}
-
-pub fn (request &IncrementalReadLoopReadRequest) on_error(reason string) {
-	request.process_error(reason)
-}
-
 pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost, create_response_body_transfer_lease CreateResponseBodyTransferLease) &FetchController {
 	return fetch_with_parallel_queue(request, algorithms, host, .no, create_response_body_transfer_lease)
 }

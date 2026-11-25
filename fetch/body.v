@@ -8,6 +8,7 @@ module fetch
 import encoding
 import mimesniff
 import streams
+import webidl
 import x.json2
 
 pub type SniffBytesCallback = fn ([]u8)
@@ -180,35 +181,56 @@ pub fn cancel_incremental_read(mut reader streams.ReadableStreamDefaultReader) {
 }
 
 pub fn (mut body Body) incrementally_read_loop(reader &streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
-	mut mutable_reader := unsafe { &streams.ReadableStreamDefaultReader(reader) }
-	read := mutable_reader.read()
-	if read.state() == .pending {
-		mut mutable_read := unsafe { &streams.ReadPromise(read) }
-		mutable_read.upon_settlement(fn [mut body, reader, process_chunk, process_end, process_error] (result streams.ReadResult) {
-			body.process_incremental_read_result(reader, result, process_chunk, process_end, process_error)
-		}, fn [process_error] (reason string) {
-			process_error(reason)
-		})
-		return
+	mut request := &IncrementalReadLoopReadRequest{
+		body: body
+		reader: reader
+		process_chunk: process_chunk
+		process_end: process_end
+		process_error: process_error
 	}
-	if read.state() == .rejected {
-		process_error(read.reason())
-		return
-	}
-	body.process_incremental_read_result(reader, read.result(), process_chunk, process_end, process_error)
+	request.read_next_chunk()
 }
 
-fn (mut body Body) process_incremental_read_result(reader &streams.ReadableStreamDefaultReader, result streams.ReadResult, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
-	if result.done {
-		process_end()
+// Fetch consumes bytes directly. A default-reader Promise would also build a
+// WebIDL read result and a Uint8Array copy that no Fetch callback consumes.
+@[heap]
+pub struct IncrementalReadLoopReadRequest {
+pub:
+	body          &Body
+	reader        &streams.ReadableStreamDefaultReader
+	process_chunk BodyChunkCallback @[required]
+	process_end   BodyEndCallback   @[required]
+	process_error BodyErrorCallback @[required]
+}
+
+fn (mut request IncrementalReadLoopReadRequest) read_next_chunk() {
+	mut reader := request.reader
+	if reader.reader_stream() == none {
+		request.process_error('TypeError: Reader has no associated stream')
 		return
 	}
-	if result.value.kind != .bytes {
-		process_error('TypeError: Body stream produced a non-byte chunk')
+	streams.readable_stream_default_reader_read_request(mut reader, mut request)
+}
+
+pub fn (request &IncrementalReadLoopReadRequest) read_request_identity() voidptr {
+	return voidptr(request)
+}
+
+pub fn (mut request IncrementalReadLoopReadRequest) on_chunk(chunk streams.Value) {
+	if chunk.kind != .bytes {
+		request.process_error('TypeError: Body stream produced a non-byte chunk')
 		return
 	}
-	process_chunk(result.value.bytes_.clone())
-	body.incrementally_read_loop(reader, process_chunk, process_end, process_error)
+	request.process_chunk(chunk.bytes_.clone())
+	request.read_next_chunk()
+}
+
+pub fn (mut request IncrementalReadLoopReadRequest) on_close() {
+	request.process_end()
+}
+
+pub fn (mut request IncrementalReadLoopReadRequest) on_error(reason webidl.Value) {
+	request.process_error(streams.callback_reason(reason))
 }
 
 pub struct BodyWithType {

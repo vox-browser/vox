@@ -32,7 +32,8 @@ fn rejected_callback_exception(realm StreamRealm, exception IError) &webidl.Prom
 	return webidl.create_rejected_promise_for(realm.promise_context(), webidl.exception_value(exception))
 }
 
-fn callback_reason(reason webidl.Value) string {
+// The typed diagnostic used by native consumers of stream rejections.
+pub fn callback_reason(reason webidl.Value) string {
 	if reason.kind == .runtime_value { return '[native JavaScript rejection value]' }
 	if exception := reason.simple_exception_ { return exception.name() + ': ' + exception.message }
 	return webidl.to_string(reason) or { 'TypeError: Cannot convert callback rejection reason' }
