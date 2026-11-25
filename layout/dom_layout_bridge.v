@@ -78,9 +78,8 @@ fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared Pre
 	stage := processmetrics.begin_thread_instruction_substage('layout_attach_commit')
 	defer { stage.finish() }
 	assert prepared.root.layout_handle == voidptr(root_box)
-	// One immutable provider per commit retains the geometry context, without
-	// adding a closure or allocation to every text node. It belongs to the same
-	// retained document storage as the state and the projections that use it.
+	// One provider per commit reads its line geometry without adding a
+	// closure or allocation to every text node.
 	provider := if root_box.is_viewport() {
 		dom.LayoutVisualLinesProvider.new(voidptr(state), materialize_dom_text_visual_lines)
 	} else {
@@ -92,6 +91,23 @@ fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared Pre
 	root := attach_dom_layout_tree(root_box, state, true, true, provider)
 	coordinates.finish()
 	return root
+}
+
+struct VisualLineGeometry {
+	node  &NodeWithStyle
+	lines []LineBox
+}
+
+fn (state &LayoutState) visual_line_geometry(node &NodeWithStyle) ?VisualLineGeometry {
+	if used := state.try_get(node) {
+		if voidptr(used.node_) == voidptr(node) {
+			return VisualLineGeometry{node: node, lines: used.line_boxes}
+		}
+		return none
+	}
+	geometry := state.retired_visual_line_geometry_[node.layout_index()] or { return none }
+	if voidptr(geometry.node) != voidptr(node) { return none }
+	return geometry
 }
 
 fn collect_dom_text_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
@@ -112,8 +128,7 @@ fn materialize_dom_text_visual_lines(layout_handle voidptr, geometry_context voi
 	state := unsafe { &LayoutState(geometry_context) }
 	containing := box.containing_block() or { return []dom.VisualLine{} }
 	styled := unsafe { &Node(containing) }.as_node_with_style() or { return []dom.VisualLine{} }
-	used := state.try_get(styled) or { return []dom.VisualLine{} }
-	if voidptr(used.node_) != voidptr(styled) { return []dom.VisualLine{} }
+	if state.visual_line_geometry(styled) == none { return []dom.VisualLine{} }
 	return collect_dom_text_visual_lines(box, state)
 }
 
@@ -270,7 +285,7 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	containing_styled := containing_node.as_node_with_style() or {
 		return []dom.VisualLine{}
 	}
-	used := state.try_get(containing_styled) or { return []dom.VisualLine{} }
+	geometry := state.visual_line_geometry(containing_styled) or { return []dom.VisualLine{} }
 	text_length := if source_node := box.dom_node() {
 		source_node.length()
 	} else {
@@ -279,7 +294,7 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	mut projections := []VisualLineProjection{}
 	mut can_own_following_empty_line := false
 	mut empty_line_offset := 0
-	for physical_line_index, line in used.line_boxes {
+	for physical_line_index, line in geometry.lines {
 		mut matching_fragments := []LineBoxFragment{}
 		for fragment in line.fragments_ {
 			if !fragment.is_fully_truncated() && !fragment.is_block_ellipsis()

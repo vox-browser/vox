@@ -207,7 +207,7 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 		collect_layout_subtree_indices(control, mut skipped)
 	}
 	mut state := LayoutState.new()
-	state.enable_relayout_record_storage(document)
+	state.enable_native_layout_pass_storage(document)
 	unsafe {
 		state.previous_inline_layouts_ = previous.inline_layouts_
 		state.previous_block_layouts_ = previous.block_layouts_
@@ -316,7 +316,7 @@ fn relayout_dirty_text_controls(document &dom.Document, root &Node, previous &La
 	if !accepted {
 		geometry_scratch.finish()
 		state.previous_state_ = unsafe { nil }
-		state.release_relayout_record_storage()
+		state.release_native_layout_pass_storage()
 		return none
 	}
 	coordinates := begin_paint_coordinate_session(state)

@@ -7,7 +7,7 @@ pub fn retire_native_document_layout(handle voidptr) {
 	if handle == unsafe { nil } { return }
 	mut result := unsafe { &DocumentLayoutResult(handle) }
 	mut state := result.state
-	if state != unsafe { nil } { state.release_relayout_record_storage() }
+	if state != unsafe { nil } { state.retire_native_layout_pass_storage(result.document) }
 	mut scene_pool := result.scene_pool
 	if scene_pool != unsafe { nil } {
 		scene_pool.retired = true

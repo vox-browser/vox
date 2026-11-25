@@ -26,6 +26,28 @@ fn native_retirement_test_close(mut document dom.Document) {
 	document.release_native_storage()
 }
 
+fn test_native_layout_pass_retirement_keeps_copied_lazy_text_geometry() {
+	$if !prealloc { return }
+	mut document := native_retirement_test_document('<!doctype html><p id="text" style="width:240px">A prior text projection keeps the line wraps from the layout where it was created.</p>')
+	defer { native_retirement_test_close(mut document) }
+	_ = run_document_layout(document, 320, 200) or { panic('missing layout') }
+	initial := document_layout_result(document) or { panic('missing initial layout') }
+	mut paragraph := document.get_element_by_id('text') or { panic('missing paragraph') }
+	node := paragraph.as_node().first_child() or { panic('missing text') }
+	mirror := node.layout_node() or { panic('missing mirror') }
+	assert mirror.visual_lines_provider_ != unsafe { nil }
+	copied := *mirror
+	typed := unsafe { &Node(mirror.real_layout_handle()) }
+	expected := collect_uncached_dom_visual_lines(typed, initial.state)
+	assert expected.len > 0
+
+	paragraph.set_attribute_value('style', 'width:60px')
+	document.update_layout(.debugging)
+	assert initial.state.used_values_store.pages.len == 0
+	assert copied.visual_lines() == expected
+	assert dom.collect_visual_lines(unsafe { &dom.Text(node) }).len > expected.len
+}
+
 fn test_native_child_deactivation_retires_its_publisher_before_losing_the_handle() {
 	$if !prealloc { return }
 	mut parent := native_retirement_test_document('<!doctype html><iframe id="frame" style="width:180px;height:80px"></iframe>')

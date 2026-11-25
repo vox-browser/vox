@@ -116,6 +116,8 @@ fn layout_record_snapshot(values &UsedValues, share_scalar_geometry bool) UsedVa
 		...*values
 		line_boxes: empty_relayout_record.before.line_boxes
 		line_boxes_are_shared_: false
+		// Replay binds to the containing block of the destination pass.
+		containing_block_used_values_: none
 		rare_: snapshot_rare
 		rare_is_shared_: shared
 	}
@@ -354,7 +356,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 		collect_layout_subtree_indices(relayout_root, mut skipped)
 	}
 	mut state := LayoutState.new()
-	state.enable_relayout_record_storage(document)
+	state.enable_native_layout_pass_storage(document)
 	unsafe {
 		state.previous_inline_layouts_ = previous.inline_layouts_
 		state.previous_block_layouts_ = previous.block_layouts_
@@ -400,7 +402,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			geometry_scratch.finish()
 			state.previous_state_ = unsafe { nil }
 			state.subtree_reuse_source_ = unsafe { nil }
-			state.release_relayout_record_storage()
+			state.release_native_layout_pass_storage()
 			return IncrementalRelayoutAttempt{
 				failed: relayout_root
 			}

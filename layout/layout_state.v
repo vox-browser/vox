@@ -1182,9 +1182,9 @@ fn (mut arena MeasurementUsedValuesArena) begin_pool_lease() {
 	arena.pool_lease_active_ = true
 }
 
-// Committed geometry needs the same stable, scanned slots as intrinsic probes,
-// but its pointers can escape into paintables. Keep these chunks GC-owned for
-// their full lifetime; only the separate measurement arena is explicitly freed.
+// Committed geometry needs stable slots like intrinsic probes. The native
+// publisher owns these chunks for one layout pass. General layout callers
+// keep their snapshots under the ambient allocator's lifetime.
 @[heap]
 struct RetainedUsedValuesArena {
 mut:
@@ -1309,6 +1309,7 @@ mut:
 	pages []&UsedValuesPage
 	measurement_arena ?&MeasurementUsedValuesArena
 	retained_arena &RetainedUsedValuesArena = unsafe { nil }
+	layout_pass_arena &platform.Arena = unsafe { nil }
 }
 
 fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
@@ -1317,6 +1318,8 @@ fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
 	if required_page_count <= old_length {
 		return
 	}
+	mut allocations := enter_layout_pass_allocations(store.layout_pass_arena)
+	defer { allocations.finish() }
 	// grow_len leaves the new slots uninitialized. Fill them before exposing
 	// the directory to a lookup, allocation, or traversal.
 	unsafe { store.pages.grow_len(required_page_count - old_length) }
@@ -1353,12 +1356,12 @@ fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
 }
 
 fn (mut store UsedValuesPagedStore) allocate_with_source(index u32, source &UsedValues) &UsedValues {
-	mut retained_scope := retain_geometry_allocations()
-	defer { retained_scope.finish() }
 	page_index := int(index >> layout_state_page_bits)
 	if page_index >= store.pages.len {
 		store.ensure_capacity(index + 1)
 	}
+	mut allocations := enter_layout_pass_allocations(store.layout_pass_arena)
+	defer { allocations.finish() }
 	mut page := store.pages[page_index]
 	if page == unsafe { nil } {
 		page = UsedValuesPage.new()
@@ -1375,8 +1378,8 @@ fn (mut store UsedValuesPagedStore) allocate_with_source(index u32, source &Used
 		} else {
 			store.retained_arena.storage.allocate_populated(source)
 		}
-		// A retained paintable can outlive the state. Its scalar snapshot stays
-		// GC-owned without retaining every other arena chunk through a back edge.
+		// Retained snapshots can outlive this slot. Store their inline-end
+		// positions independently of the slot chunks.
 		retained.inline_end_snapshot_arena_ = unsafe { nil }
 		retained
 	}
@@ -1433,6 +1436,7 @@ mut:
 	block_paint_owners_ map[u64]&RetainedBlockLayout
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
+	retired_visual_line_geometry_ map[u32]VisualLineGeometry
 	paint_coordinates_ &PaintCoordinateSession = unsafe { nil }
 	measurement_scratch_ MeasurementScratchScope
 	// Text-control relayout (text_control_relayout.v): the final inner layout
@@ -1446,7 +1450,6 @@ mut:
 	// of each box that can bound a relayout, each replaced box's natural size,
 	// and the layout invalidations recorded against this pass.
 	relayout_records_ map[u32]RelayoutRecord
-	relayout_record_arena_ &platform.Arena = unsafe { nil }
 	replaced_sizes_ map[u32]ReplacedSizeEntry
 	layout_invalidation_origins_ []&Node
 	layout_invalidation_unbounded_ bool
@@ -1548,8 +1551,6 @@ fn (mut state LayoutState) release_measurement() {
 }
 
 pub fn (mut state LayoutState) ensure_capacity(node_count u32) {
-	mut retained_scope := retain_geometry_allocations()
-	defer { retained_scope.finish() }
 	state.used_values_store.ensure_capacity(node_count)
 }
 

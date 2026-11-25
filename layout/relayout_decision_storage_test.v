@@ -71,7 +71,7 @@ fn test_subtree_layout_comparison_reuses_empty_rare_inputs() {
 	assert arena.usage().used == before
 }
 
-fn test_native_relayout_record_maps_retire_on_relayout_and_navigation() {
+fn test_native_layout_pass_slots_and_maps_retire_on_relayout_and_navigation() {
 	$if !prealloc { return }
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.enable_native_storage()
@@ -87,29 +87,53 @@ fn test_native_relayout_record_maps_retire_on_relayout_and_navigation() {
 	mut previous := unsafe { &LayoutState(nil) }
 	for width in [420, 380, 460] {
 		previous_arena := if previous != unsafe { nil } {
-			previous.relayout_record_arena_
+			previous.used_values_store.layout_pass_arena
 		} else {
 			unsafe { &platform.Arena(nil) }
 		}
 		_ = layout_document_typed_in_viewport(document, width, 400)
 		result := document_layout_result(document) or { panic('missing document layout') }
 		state := result.state
-		arena := state.relayout_record_arena_
+		arena := state.used_values_store.layout_pass_arena
 		assert arena != unsafe { nil }
+		assert arena.contains(state.used_values_store.pages.data)
+		assert arena.contains(state.used_values_store.retained_arena)
+		assert state.used_values_store.retained_arena.storage.chunks.len > 0
+		assert arena.contains(state.used_values_store.retained_arena.storage.chunks[0])
+		assert state.used_values_store.pages.any(it != unsafe { nil } && arena.contains(it))
+		mut containing_blocks := 0
+		for page in state.used_values_store.pages {
+			if page == unsafe { nil } { continue }
+			for slot in page.entries {
+				if slot == unsafe { nil } { continue }
+				assert arena.contains(slot)
+				values := unsafe { &UsedValues(slot) }
+				if containing := values.containing_block_used_values_ {
+					assert arena.contains(containing)
+					containing_blocks++
+				}
+			}
+		}
+		assert containing_blocks > 0
 		assert state.relayout_records_.len > 0
 		assert state.text_control_layouts_.len > 0
 		for index, record in state.relayout_records_ {
 			assert arena.contains(unsafe { &state.relayout_records_[index] })
+			assert record.before.containing_block_used_values_ == none
+			assert record.after.containing_block_used_values_ == none
 			if rare := record.before.rare_ {
 				assert !arena.contains(rare)
 			}
 		}
-		for index, _ in state.text_control_layouts_ {
+		for index, record in state.text_control_layouts_ {
 			assert arena.contains(unsafe { &state.text_control_layouts_[index] })
+			assert record.before.containing_block_used_values_ == none
 		}
 		if previous != unsafe { nil } {
-			assert previous.relayout_record_arena_ == unsafe { nil }
+			assert previous.used_values_store.layout_pass_arena == unsafe { nil }
 			assert previous_arena.usage().capacity == 0
+			assert previous.used_values_store.pages.len == 0
+			assert previous.used_values_store.retained_arena == unsafe { nil }
 			assert previous.relayout_records_.len == 0
 			assert previous.first_relayout_records_.len == 0
 			assert previous.text_control_layouts_.len == 0
@@ -125,13 +149,15 @@ fn test_native_relayout_record_maps_retire_on_relayout_and_navigation() {
 		assert arena.usage().used > 0
 		previous = state
 	}
-	final_arena := previous.relayout_record_arena_
+	final_arena := previous.used_values_store.layout_pass_arena
 	document.retains_layout_while_inactive = true
 	document.did_stop_being_active_document_in_navigable()
-	assert voidptr(previous.relayout_record_arena_) == voidptr(final_arena)
+	assert voidptr(previous.used_values_store.layout_pass_arena) == voidptr(final_arena)
+	assert previous.used_values_store.pages.len > 0
 	document.retains_layout_while_inactive = false
 	document.did_stop_being_active_document_in_navigable()
-	assert previous.relayout_record_arena_ == unsafe { nil }
+	assert previous.used_values_store.layout_pass_arena == unsafe { nil }
+	assert previous.used_values_store.pages.len == 0
 	assert final_arena.usage().capacity == 0
 	document.destroy_a_document_and_its_descendants()
 	document.finalize()
