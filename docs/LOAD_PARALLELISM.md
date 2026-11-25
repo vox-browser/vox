@@ -4799,3 +4799,119 @@ the drawing thread and reduced that thread's fill instruction counts.
 The measured first gradient took slightly longer, while the unprofiled
 whole-page paired medians fell by varying amounts. Pipeline creation
 and native draw submission still run on the drawing thread.
+
+### Batch Metal render pipeline compilation during GG precompile
+
+The first GG draw precompiles 42 render pipelines. Commit `53352a46b`
+submits their independent render pipeline descriptors through Metal's
+asynchronous compiler. The drawing thread prepares each descriptor and
+depth-stencil state, then joins and publishes completed pipeline states
+before the first draw. The scope is limited to eager GG precompilation.
+The benchmark build uses `VOX_SERIAL_GG_METAL_PIPELINES=1` for the
+same-executable synchronous control. [Metal pipeline state creation](https://developer.apple.com/documentation/metal/pipeline-state-creation?language=objc)
+
+The native Metal tests exercised a valid pipeline, an incompatible
+fragment output and a destroyed slot reused by another pipeline before
+the join. Draws in both schedules passed all 128 render-and-readback
+cases. Address, undefined-behavior and thread sanitizer checks passed,
+as did non-ARC compilation and the staged Sokol header comparison.
+Commit `f2ecdb7f4` uses the shared native-state declaration for split C
+builds. The focused native tests passed again, and the GG leaf-region
+suite passed in both modes using the production-staged header. Its
+batch diagnostic recorded 42 successful off-thread completions.
+
+#### Matched homepage captures
+
+Production receipt `20261125-212159-e36f0a83` verified `f2ecdb7f4`
+and passed startup smoke in single-C-unit V `-prod` mode. Both
+schedules used the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `2b3e7efd95a6e874743f6d486907d231b7d02e9d7fb3cde110c060d84e39649b` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both batch diagnostics submitted 42 pipeline states and published all
+42 successfully after off-thread completions. Each batch still had
+work pending at the join. The synchronous control recorded zero
+batch submissions. Separate counter captures recorded 25 fill leaves,
+one dispatch and three native raster replay scopes per launch.
+
+| Inclusive drawing-thread instructions | Pair 1 serial | Pair 1 batch | Pair 2 serial | Pair 2 batch |
+| --- | ---: | ---: | ---: | ---: |
+| Fill leaves | 57,944,124 | 52,655,631 | 57,126,706 | 51,898,552 |
+| Paint command dispatch | 229,355,637 | 225,297,861 | 228,706,639 | 224,063,605 |
+| Native raster replay | 256,187,374 | 252,150,775 | 255,507,696 | 250,802,953 |
+
+Two unprofiled seven-pair cohorts alternated which schedule ran first.
+The timer spans fresh launch through completed document PNG at
+1024×768 CSS pixels and 2× scale. Captures used JavaScriptCore,
+empty private profiles and HTTP caches, retained OS filesystem and
+shader caches, `tr.athing` readiness, and a 60 ms replay delay per
+logo response.
+
+| Pair | Serial, ms | Batch, ms | Reversed serial, ms | Reversed batch, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 292.098 | 318.923 | 290.072 | 291.795 |
+| 2 | 298.642 | 318.047 | 284.832 | 298.985 |
+| 3 | 295.805 | 317.161 | 294.891 | 302.519 |
+| 4 | 290.146 | 303.081 | 294.181 | 287.220 |
+| 5 | 300.514 | 303.556 | 302.445 | 292.358 |
+| 6 | 297.290 | 305.608 | 281.684 | 289.233 |
+| 7 | 307.285 | 285.136 | 300.721 | 288.039 |
+| Median | 297.290 | 305.608 | 294.181 | 291.795 |
+
+The median paired changes were +12.935 and +1.724 ms, with one and
+three batch wins. Sampled main-thread CPU medians rose from 154.962
+to 158.149 ms and from 150.113 to 152.593 ms. One-minute host load
+was 3.73–4.15 and 3.45–3.90 on 18 CPUs.
+
+#### First gradient wall time
+
+Two additional seven-pair cohorts used the same build and replay
+with leaf timing enabled. The first gradient was command 2. Its
+replay interval covers initial context creation, eager precompile
+and the first draw.
+
+| Pair | Serial, µs | Batch, µs | Reversed serial, µs | Reversed batch, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 15,395 | 14,882 | 16,590 | 15,435 |
+| 2 | 16,388 | 14,967 | 15,236 | 14,054 |
+| 3 | 14,972 | 14,856 | 16,232 | 14,432 |
+| 4 | 14,812 | 14,714 | 15,699 | 15,576 |
+| 5 | 15,334 | 15,639 | 15,079 | 16,050 |
+| 6 | 15,453 | 14,634 | 15,739 | 15,592 |
+| 7 | 15,976 | 16,180 | 16,275 | 15,126 |
+| Median | 15,395 | 14,882 | 15,739 | 15,435 |
+
+Median paired changes were −116 and −1,149 µs, with five and six
+batch wins. One-minute host load was 3.45–3.78 and 3.53–3.71.
+
+All 64 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the
+favicon miss. The batch diagnostics verified the document URL,
+ready state, viewport and all 30 ordered story IDs. Executable,
+helper, library, archive and harness inputs stayed pinned. All
+browser, driver and guard exits were zero. Peak RSS was 391,118,848 bytes.
+
+#### Opt-in schedule
+
+Commit `33a62c747` makes synchronous creation the default based on
+the launch-to-PNG timings. Set `VOX_PARALLEL_GG_METAL_PIPELINES=1`
+to batch pipeline compilation. The focused Metal and GG leaf-region
+checks passed with the final switch in both settings. The opt-in
+leaf-region run again recorded 42 successful off-thread completions.
+
+Production receipt `20261125-212936-1293ba54` verified `33a62c747`,
+passed startup smoke in single-C-unit V `-prod` mode and published
+Vox SHA-256
+`29080a84257991cb8e599d92a2fc2b0e36c08bad7df0add03d9e78862ba04a11`.
+Two diagnostic pairs recorded zero batch submissions in default mode
+and 42 successful off-thread completions per opt-in capture. All four
+matched the reference PNG, the eight replay records and all 30 ordered
+story IDs. Executable, helper, library, archive and harness hashes stayed
+pinned. Browser, driver and guard exits were zero. Peak guard RSS was
+366,428,160 bytes.
