@@ -11,7 +11,6 @@ import browsernet
 
 const max_browser_script_fetches = 8
 const defer_script_responses_until_rendering = os.getenv('VOX_DEFER_SCRIPT_RESPONSES_UNTIL_RENDERING') == '1'
-const disable_deferred_script_layout_coalescing = os.getenv('VOX_DISABLE_DEFERRED_SCRIPT_LAYOUT_COALESCING') == '1'
 
 type BrowserScriptFetch = fn (string, string, chan PreloadedResource, &browsernet.RequestScope)
 
@@ -372,12 +371,6 @@ fn (mut app BrowserApp) poll_blocking_script_responses_on_deferred_frame() {
 	if load_frame_throttle_diagnostics {
 		eprintln('VOX_LOAD_RENDER_THROTTLE delivering script responses')
 	}
-	// Adopt script effects now, with the same layout coalescing as a regular
-	// frame. The throttle's timer supplies the frame that commits geometry.
-	// Synchronous DOM geometry queries still update layout in the document.
-	depth := app.frame_preparation_depth
-	if !disable_deferred_script_layout_coalescing { app.begin_frame_preparation() }
-	defer { app.frame_preparation_depth = depth }
 	app.poll_browser_script_requests()
 }
 
