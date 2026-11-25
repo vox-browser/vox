@@ -52,38 +52,20 @@ fn (p &Parser) match_unary_prefixed_expression() bool {
 	}
 }
 
-fn (p &Parser) match_secondary_expression(forbidden &ForbiddenTokens) bool {
-	tt := p.current_token_type()
-	if !forbidden.allows(tt) {
-		return false
-	}
-	return match tt {
-		.period, .bracket_open, .paren_open, .question_mark_period {
-			true
-		}
-		.plus_plus, .minus_minus {
-			!p.current_token.trivia_has_line_terminator
-		}
-		.double_asterisk, .asterisk, .slash, .percent, .plus, .minus, .shift_left, .shift_right,
-		.unsigned_shift_right, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
-		.in_kw, .instanceof_kw, .equals_equals, .exclamation_mark_equals, .equals_equals_equals,
-		.exclamation_mark_equals_equals, .ampersand, .caret, .pipe, .double_question_mark,
-		.double_ampersand, .double_pipe {
-			true
-		}
-		.question_mark {
-			true
-		}
-		.equals, .plus_equals, .minus_equals, .double_asterisk_equals, .asterisk_equals,
-		.slash_equals, .percent_equals, .shift_left_equals, .shift_right_equals,
-		.unsigned_shift_right_equals, .ampersand_equals, .caret_equals, .pipe_equals,
-		.double_ampersand_equals, .double_pipe_equals, .double_question_mark_equals {
-			true
-		}
-		else {
-			false
+const secondary_operator_precedences = build_secondary_operator_precedences()
+
+fn build_secondary_operator_precedences() []u8 {
+	mut table := []u8{len: int(TokenType.yield_kw) + 1}
+	for index in 0 .. table.len {
+		token := unsafe { TokenType(index) }
+		precedence := operator_precedence(token)
+		// The parser handles comma, yield, prefix operators and new separately.
+		if precedence > precedence_assignment && precedence != precedence_unary
+			&& token != .new_kw {
+			table[index] = u8(precedence)
 		}
 	}
+	return table
 }
 
 fn (mut p Parser) parse_expression_any() Expression {
@@ -149,12 +131,17 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 	mut expression := expression_
 	mut lhs_is_parenthesized := p.last_primary_was_parenthesized
 	p.last_primary_was_parenthesized = false
-	for p.match_secondary_expression(&forbidden) {
-		new_precedence := operator_precedence(p.current_token_type())
-		if new_precedence < min_precedence {
+	for {
+		token := p.current_token_type()
+		new_precedence := int(unsafe { secondary_operator_precedences[int(token)] })
+		if new_precedence == 0 || new_precedence < min_precedence {
 			break
 		}
 		if new_precedence == min_precedence && associativity == .left {
+			break
+		}
+		if !forbidden.allows(token)
+			|| (p.current_token.trivia_has_line_terminator && token in [.plus_plus, .minus_minus]) {
 			break
 		}
 
