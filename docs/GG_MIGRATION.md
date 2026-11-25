@@ -14694,6 +14694,12 @@ thread identities and exact ordered blending. ThreadSanitizer and the
 pinned 2,000-case glyph differential passed.
 [Hacker News measurements](LOAD_PARALLELISM.md#dispatch-retained-glyph-stripes-explicitly)
 
+Retained macOS text dispatches short batches of two or three cold A8
+masks across the caller and a raster worker. Focused and ThreadSanitizer
+checks matched the serial masks. The pinned 2,000-case glyph
+differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#draw-short-cold-glyph-mask-batches-on-workers)
+
 Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
 tests matched serial glyphs and preserved masks added before the join. The
 pinned V `-prod` glyph differential check returned 1,962 exact draws and 38

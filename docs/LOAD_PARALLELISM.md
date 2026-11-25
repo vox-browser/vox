@@ -3099,3 +3099,124 @@ Every trial reproduced eight request and response records, including the
 favicon miss. Executable, native library, helper, archive and driver
 hashes stayed fixed. Browser, driver and 3 GiB guard exits were zero.
 Peak aggregate RSS was 398,606,336 bytes.
+
+### Draw short cold glyph-mask batches on workers
+
+Commit `20ce6a8d6` allows retained macOS text replay to batch two or
+three distinct cold A8 masks. A raster worker draws the first range
+and the caller draws the rest. The caller joins before publishing
+to the strike cache and blending in glyph order. Larger batches keep
+their two-key-per-lane minimum. The optional backdrop pipeline keeps
+its four-key entry threshold. `VOX_GLYPH_MASK_BATCH_MIN_FOUR=1`
+selects the previous ordinary-replay policy.
+
+The focused test checks two- and three-key windows against the serial
+CoreText masks at fractional positions. Nine arena-poisoned tests,
+the four-key control, ThreadSanitizer and the production browser
+type check passed. The pinned glyph differential found 1,963 exact
+cases and 37 declines under the 3 GiB guard.
+
+#### Hacker News retained text replay
+
+Production executable `e6de499528e97…7405` captured 332 retained draws
+and matched the archived homepage reference. The captured input log
+had SHA-256
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+Both replay modes used the same single-C-unit V `-prod` executable
+with SHA-256 `137cdbe5d2643d7d2c21967cad743dce15add67737a88a9804e1e56d62c05709`.
+Every process started with a fresh strike cache and arena poisoning.
+
+The four-key policy dispatched 277 masks in 37 batches. The two-key
+policy dispatched 391 masks in 84 batches. There were 27 new two-key
+and 20 new three-key batches, including two later windows in their runs.
+All 47 additional batches used two threads. All 30 pinned replays and
+the separate diagnostic pilot matched RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+
+| Pair | Four keys, ms | Two keys, ms | Reversed four keys, ms | Reversed two keys, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 15.933 | 16.478 | 16.159 | 12.692 |
+| 2 | 18.207 | 14.760 | 15.141 | 11.973 |
+| 3 | 14.155 | 14.168 | 16.330 | 15.989 |
+| 4 | 16.596 | 15.451 | 14.139 | 11.923 |
+| 5 | 15.589 | 16.440 | 12.022 | 15.415 |
+| 6 | 16.946 | 14.478 | 16.663 | 15.788 |
+| 7 | 13.900 | 15.672 | 14.491 | 16.909 |
+| Median | 15.933 | 15.451 | 15.141 | 15.415 |
+
+The paired medians were +0.013 and −0.875 ms with three and five
+wins. One-minute host load ranged from 19.93 to 20.70 on 18 CPUs.
+The changes in replay time varied across pairs under this contention.
+Executable, driver, fixture and font hashes remained fixed in the
+pinned runs. All replay processes and 3 GiB guards exited zero.
+Peak aggregate RSS was 59,719,680 bytes.
+
+Two more cohorts used the same executable and capture at one-minute
+host load 9.52–9.65. Their paired medians were +0.656 and −0.131 ms,
+with three and four wins. All 30 captures were exact again, including
+the diagnostic pair. The executable, inputs and driver stayed pinned
+through these runs. Replay and guard exits were zero. Peak
+aggregate RSS was 59,424,768 bytes.
+
+| Pair | Four keys, ms | Two keys, ms | Reversed four keys, ms | Reversed two keys, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 11.653 | 10.688 | 13.445 | 11.165 |
+| 2 | 12.577 | 12.365 | 13.170 | 14.752 |
+| 3 | 11.004 | 14.894 | 13.534 | 14.183 |
+| 4 | 11.680 | 13.356 | 13.158 | 12.869 |
+| 5 | 11.245 | 11.900 | 11.997 | 11.491 |
+| 6 | 11.406 | 12.943 | 12.471 | 12.340 |
+| 7 | 20.567 | 15.424 | 12.252 | 12.466 |
+| Median | 11.653 | 12.943 | 13.158 | 12.466 |
+
+#### Matched production captures
+
+The managed builder retained the previous bundle when shared source
+inputs changed before C preprocessing in receipts
+`20261125-135632-45f410ad` and `20261125-140017-37790127`. Receipt
+`20261125-140406-fd3faa82` sealed `d0282c4b7` with the short batches,
+passed startup smoke and published single-C-unit V `-prod` executable
+SHA-256 `0a575bf30871e915614c76e2390bcad07866431fb07297b366b8a97f33a0f311`.
+
+Two diagnostic pairs reproduced 37 batches and 277 jobs in the
+four-key control, and 84 batches and 391 jobs with the two-key minimum.
+All 47 additional batches used two threads in both launches.
+The page URL, ready state, viewport and all 30 ordered story IDs
+matched in the worker and instruction diagnostics.
+
+Two separate browser-thread counter pairs ran with mask logging disabled.
+
+| Diagnostic pair | Four-key text instructions | Two-key text instructions | Four-key native raster instructions | Two-key native raster instructions |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 137,710,695 | 131,766,581 | 280,376,865 | 278,533,202 |
+| 2 | 137,821,297 | 132,292,158 | 279,225,241 | 274,067,593 |
+
+The unprofiled trials ran from fresh launch through the completed
+1024×768 CSS-pixel document PNG at 2× scale. They used JavaScriptCore,
+private empty profiles and HTTP caches, retained OS filesystem caches
+and a 60 ms delay per replayed logo response. Each cohort alternated the
+two settings on the same executable. The reversed cohort started with
+the four-key control.
+
+| Pair | Four keys, ms | Two keys, ms | Reversed four keys, ms | Reversed two keys, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 307.340 | 310.273 | 330.835 | 293.077 |
+| 2 | 305.926 | 285.195 | 328.017 | 315.557 |
+| 3 | 297.889 | 300.458 | 293.239 | 337.145 |
+| 4 | 314.979 | 323.104 | 307.823 | 304.292 |
+| 5 | 315.649 | 332.202 | 307.486 | 308.260 |
+| 6 | 301.530 | 289.307 | 321.880 | 316.897 |
+| 7 | 303.663 | 297.371 | 314.590 | 309.112 |
+| Median | 305.926 | 300.458 | 314.590 | 309.112 |
+
+Paired median changes were +2.568 and −4.983 ms, with three and five
+wins. Sampled browser-thread CPU medians were 156.91 → 160.02 ms and
+167.92 → 166.03 ms. One-minute load ranged from 3.76 to 3.90 and 3.54
+to 4.09 on 18 CPUs. The elapsed changes varied between cohorts.
+
+All 28 timed and eight diagnostic captures matched the unchanged PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+Every launch reproduced eight request and response records, including the
+favicon miss. Executable, library, helper, archive and driver hashes
+stayed fixed. All browsers, the driver and the 3 GiB guard exited zero.
+Peak aggregate RSS was 397,934,592 bytes.
