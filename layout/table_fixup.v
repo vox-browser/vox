@@ -6,7 +6,12 @@ module layout
 
 import css
 import dom
+import layout.tablecoverage
+import os
 import platform
+import processmetrics
+
+const legacy_table_cell_fixup = os.getenv('VOX_LEGACY_TABLE_CELL_FIXUP') == '1'
 
 fn table_track_group(display css.Display) bool {
 	return display.is_table_row_group() || display.is_table_header_group()
@@ -296,7 +301,32 @@ fn append_missing_table_cells(mut table Node, document &dom.Document) {
 	if column_count == 0 {
 		return
 	}
+	stage := processmetrics.begin_thread_instruction_substage('table_missing_cell_fixup')
+	defer { stage.finish() }
+	mut coverage := []bool{}
+	mut scratch := platform.ThreadScratchScope{}
+	if !legacy_table_cell_fixup && tablecoverage.use_dense_coverage(rows.len, column_count) {
+		scratch = platform.begin_thread_scratch('table cell coverage')
+		coverage_stage := processmetrics.begin_thread_instruction_substage('table_cell_coverage')
+		spans := placements.map(tablecoverage.CellSpan{row: it.row, column: it.column,
+			row_span: it.row_span, column_span: it.column_span})
+		coverage = tablecoverage.build(spans, rows.len, column_count)
+		coverage_stage.finish()
+		// The new anonymous cells belong to the layout tree, outside scratch.
+		scratch.leave()
+	}
+	defer { scratch.finish() }
 	for row_index, row in rows {
+		mut mutable_row := unsafe { &Node(row) }
+		if coverage.len != 0 {
+			offset := row_index * column_count
+			for column in 0 .. column_count {
+				if !coverage[offset + column] {
+					append_missing_table_cell(mut mutable_row, document)
+				}
+			}
+			continue
+		}
 		mut occupied := map[int]bool{}
 		for placement in placements {
 			if row_index >= placement.row && row_index < placement.row + placement.row_span {
@@ -305,22 +335,24 @@ fn append_missing_table_cells(mut table Node, document &dom.Document) {
 				}
 			}
 		}
-		mut mutable_row := unsafe { &Node(row) }
 		for column in 0 .. column_count {
 			if occupied[column] {
 				continue
 			}
-			mut cell := anonymous_table_box(document, row, css.Display.from_internal(.table_cell), .cell)
-			cell.set_is_missing_table_cell(true)
-			// Upstream missing-cells fixup explicitly centers a zero-height cell so
-			// its used border box grows symmetrically to the row height.
-			if styled := cell.as_node_with_style() {
-				mut computed := unsafe { &css.MutableComputedValues(styled.computed_values()) }
-				computed.set_vertical_align(.middle)
-			}
-			mutable_row.append_child(cell)
+			append_missing_table_cell(mut mutable_row, document)
 		}
 	}
+}
+
+fn append_missing_table_cell(mut row Node, document &dom.Document) {
+	mut cell := anonymous_table_box(document, row, css.Display.from_internal(.table_cell), .cell)
+	cell.set_is_missing_table_cell(true)
+	// Upstream centers a zero-height missing cell in its row.
+	if styled := cell.as_node_with_style() {
+		mut computed := unsafe { &css.MutableComputedValues(styled.computed_values()) }
+		computed.set_vertical_align(.middle)
+	}
+	row.append_child(cell)
 }
 
 fn fix_missing_cells_in_tables(mut node Node, document &dom.Document) {
