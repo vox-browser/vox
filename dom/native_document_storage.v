@@ -119,6 +119,7 @@ fn (mut d Document) retire_native_layout() {
 // can still keep the payload arena alive afterwards.
 pub fn (mut d Document) release_native_storage() {
 	d.retire_native_layout()
+	d.release_pending_style_invalidation_storage()
 	d.rule_selector_memo_handle_ = unsafe { nil }
 	mut storage := d.native_storage_
 	d.native_storage_ = unsafe { nil }

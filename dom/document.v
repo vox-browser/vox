@@ -1783,7 +1783,9 @@ pub:
 
 pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
 
-pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+// A supplied arena may hold plan payloads until the DOM invalidator drains
+// them. Cached style rules and other scope state keep their original owner.
+pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope, &platform.Arena) InvalidationPlan
 
 // (css handle, element, attribute name, old present, old value, new present, new value, scope)
 pub type StyleComputerAttributeChangeKeepsSelectorsCallback = fn (voidptr, &Element, string, bool, string, bool, string, &StyleScope) bool
@@ -2935,6 +2937,8 @@ pub struct StyleInvalidator {
 pub mut:
 	pending_invalidations           map[UniqueNodeID][]PendingDescendantInvalidation
 	active_descendant_invalidations []PendingDescendantInvalidation
+mut:
+	pending_plan_arena &platform.Arena = unsafe { nil }
 }
 
 pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
@@ -10305,6 +10309,7 @@ pub fn (mut d Document) destroy() {
 		d.scripts_ = unsafe { nil }
 		d.all_ = unsafe { nil }
 		d.parser = unsafe { nil }
+		d.release_pending_style_invalidation_storage()
 		d.style_invalidator_ = unsafe { nil }
 		d.adopted_style_sheets = []
 		d.media_query_lists = []

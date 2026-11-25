@@ -279,7 +279,7 @@ fn style_computer_invalidation_property_used_in_has_callback(target voidptr, pro
 	return style_computer.invalidation_property_used_in_has_selector(invalidation_property_from_dom(property), scope)
 }
 
-fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.InvalidationProperty, dom_scope &dom.StyleScope) dom.InvalidationPlan {
+fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.InvalidationProperty, dom_scope &dom.StyleScope, storage &platform.Arena) dom.InvalidationPlan {
 	if dom_scope.css_handle == unsafe { nil } {
 		return dom.InvalidationPlan{}
 	}
@@ -289,6 +289,16 @@ fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.In
 	// Rebuild its invalidation plans before a subsequent attribute starts
 	// matching a newly installed rule.
 	scope.build_rule_cache_if_needed()
+	mut plan_storage := unsafe { &platform.Arena(storage) }
+	mut entry := platform.ArenaEntry{}
+	if plan_storage != unsafe { nil } {
+		entry = plan_storage.enter()
+	}
+	defer {
+		if plan_storage != unsafe { nil } {
+			plan_storage.leave(entry)
+		}
+	}
 	css_properties := properties.map(invalidation_property_from_dom(it))
 	return invalidation_plan_to_dom(style_computer.invalidation_plan_for_properties(css_properties, scope))
 }

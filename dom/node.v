@@ -1890,7 +1890,10 @@ pub fn (d &Document) style_computer() &StyleComputer {
 
 pub fn (mut d Document) style_invalidator() &StyleInvalidator {
 	if d.style_invalidator_ == unsafe { nil } {
+		mut owner := d.native_storage()
+		mut scope := if owner != unsafe { nil } { owner.enter_nested() } else { platform.RetainedArenaScope{} }
 		d.style_invalidator_ = &StyleInvalidator{}
+		scope.finish()
 	}
 	return d.style_invalidator_
 }
@@ -2134,15 +2137,26 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	if options.invalidate_self {
 		n.set_needs_style_update(true)
 	}
+	style_computer := doc.style_computer()
+	if style_computer.invalidation_plan_callback == unsafe { nil }
+		|| style_computer.css_handle == unsafe { nil } {
+		return
+	}
 	mut document := unsafe { &Document(doc) }
 	mut invalidator := document.style_invalidator()
-	plan := doc.style_computer().invalidation_plan_for_properties(properties, style_scope)
-	if invalidator.enqueue_invalidation_plan(&n, reason, *plan) {
+	storage := invalidator.plan_storage_for_document(document)
+	// Self-only plans and sibling plans that found no reader can be discarded
+	// even when this mutation does not schedule a style pass.
+	defer { invalidator.reset_consumed_plan_storage() }
+	plan := style_computer.invalidation_plan_callback(style_computer.css_handle, properties,
+		style_scope, storage)
+	if invalidator.enqueue_invalidation_plan(&n, reason, plan) {
 		return
 	}
 	for additional_scope in additional_scopes {
-		additional_plan := doc.style_computer().invalidation_plan_for_properties(properties, additional_scope)
-		if invalidator.enqueue_invalidation_plan(&n, reason, *additional_plan) {
+		additional_plan := style_computer.invalidation_plan_callback(style_computer.css_handle,
+			properties, additional_scope, storage)
+		if invalidator.enqueue_invalidation_plan(&n, reason, additional_plan) {
 			return
 		}
 	}
@@ -5558,7 +5572,7 @@ pub fn (sc &StyleComputer) invalidation_property_used_in_has_selector(property I
 
 pub fn (sc &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, style_scope &StyleScope) &InvalidationPlan {
 	if sc.invalidation_plan_callback != unsafe { nil } && sc.css_handle != unsafe { nil } {
-		plan := sc.invalidation_plan_callback(sc.css_handle, properties, style_scope)
+		plan := sc.invalidation_plan_callback(sc.css_handle, properties, style_scope, unsafe { nil })
 		return &plan
 	}
 	return &InvalidationPlan{}
