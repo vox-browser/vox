@@ -2,9 +2,21 @@ module cpuraster
 
 import runtime
 
+fn test_weighted_glyph_stripes_split_concentrated_mask_pixels() {
+	for columns in [true, false] {
+		bounds := if columns { IRect{7, 7, 263, 27} } else { IRect{7, 7, 27, 263} }
+		dense := if columns { IRect{7, 7, 47, 27} } else { IRect{7, 7, 27, 47} }
+		outlier := if columns { IRect{259, 7, 263, 27} } else { IRect{7, 259, 27, 263} }
+		mut blits := []GlyphMaskBlit{len: 8, init: GlyphMaskBlit{Mask{}, dense}}
+		blits << GlyphMaskBlit{Mask{}, outlier}
+		assert glyph_blend_stripe_edges(blits, bounds, 4, false) == [7, 71, 135, 199, 263]!
+		assert glyph_blend_stripe_edges(blits, bounds, 4, true) == [7, 17, 27, 37, 263]!
+	}
+}
+
 fn test_two_glyph_stripes_run_on_caller_and_worker() {
 	$if !cpuraster_freetype ? {
-		if runtime.nr_cpus() < 2 || glyph_blend_dispatch_apply { return }
+		if runtime.nr_cpus() < 2 || glyph_blend_dispatch_apply || C.vox_scan_workers_disabled() { return }
 		width, height := 241, 20
 		mut pixels := []u8{len: width * height * 4}
 		blitter := new_pipeline_blitter(mut pixels, width * 4, 0xff123456, 1, .src_over)
@@ -70,7 +82,7 @@ fn test_short_retained_run_blends_large_overlapping_masks_in_paint_order() {
 }
 
 fn test_glyph_mask_stripes_match_ordered_blends_in_both_directions() {
-	if runtime.nr_cpus() < 2 { return }
+	if runtime.nr_cpus() < 2 || C.vox_scan_workers_disabled() { return }
 	for size in [[211, 63]!, [63, 211]!] {
 		width, height := size[0], size[1]
 		pitch := width * 4 + 12
