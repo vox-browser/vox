@@ -17,11 +17,12 @@ mut:
 	thread_id u64
 }
 
-// These kinds only inspect retained command geometry. Image preparation,
-// nested viewport replay and diagnostic SVG border handling use the caller.
+// These kinds only inspect retained command geometry, including replaced
+// images' clip radii. SVG backgrounds and nested viewport replay can prepare
+// resources, and SVG borders can log diagnostics, so they use the caller.
 fn chromium_msaa_worker_leaf(command &layout.PaintCommand) bool {
 	return command.kind in ['draw_text', 'fill_rect', 'fill_rounded_rect',
-		'stroke_rounded_rect', 'paint_uniform_border']
+		'stroke_rounded_rect', 'paint_uniform_border', 'draw_replaced_image']
 }
 
 fn chromium_msaa_leaf_range(context voidptr, first i32, end i32) {

@@ -474,6 +474,17 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 			layout.PaintCommand{kind: 'draw_text', has_clip: true}
 		}
 	}
+	radius := painting.BorderRadiusData{4.5, 10}
+	short_commands << layout.PaintCommand{
+		kind: 'draw_replaced_image'
+		has_clip: true
+		clip_width: 9
+		clip_height: 20
+		image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{16, 260, 9, 20}
+			border_radii: painting.BorderRadiiData{radius, radius, radius, radius}
+		}
+	}
 	oversized_suffix := []layout.PaintCommand{len: chromium_msaa_path_overlap_commands + 7}
 	bounded_end, bounded_leaves := chromium_msaa_collection_ranges(oversized_suffix, none, true)
 	assert bounded_end == 7 && bounded_leaves == oversized_suffix.len
@@ -483,7 +494,8 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 		viewport := ChromiumMSAAViewport{scroll_y: if short { 0 } else { 85 }, height: 2100, fringe: 7}
 		expected := chromium_msaa_triggers_for_viewport(visible_commands, viewport)
 		if short {
-			assert expected.len == 119
+			assert expected.len == 120
+			assert expected.last().command_index == visible_commands.len - 1
 			visible_path_end, visible_leaves := chromium_msaa_collection_ranges(visible_commands, viewport, true)
 			unclipped_path_end, _ := chromium_msaa_collection_ranges(visible_commands, none, false)
 			assert visible_path_end == 53 && visible_leaves == leaf_start
