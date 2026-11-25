@@ -9,6 +9,7 @@ import processmetrics
 
 const serial_paint_canvas_bounds = os.getenv('VOX_SERIAL_PAINT_CANVAS_BOUNDS') == '1'
 const sync_paint_canvas_bounds = os.getenv('VOX_SYNC_PAINT_CANVAS_BOUNDS') == '1'
+const stream_paint_canvas_bounds = os.getenv('VOX_STREAM_PAINT_CANVAS_BOUNDS') == '1'
 const paint_canvas_bounds_worker_diagnostics = os.getenv('VOX_PAINT_CANVAS_BOUNDS_WORKER_DIAGNOSTICS') == '1'
 const paint_canvas_bounds_commands_per_lane = 96
 
@@ -83,6 +84,10 @@ struct PaintCanvasBoundsBatch {
 mut:
 	ticket           voidptr
 	background_lanes int
+	replay_ranges    bool
+	range_end        int
+	ranges_observed  int
+	ranges_waited    int
 }
 
 fn paint_canvas_bounds_lanes(count int) int {
@@ -134,13 +139,53 @@ fn (app &BrowserApp) can_submit_canvas_bounds_during_setup() bool {
 	return !sync_paint_canvas_bounds && !app.scroll_raster_keys.valid
 }
 
-fn (mut batch PaintCanvasBoundsBatch) submit() {
+fn paint_canvas_bounds_can_stream() bool {
+	if !stream_paint_canvas_bounds || sync_paint_canvas_bounds { return false }
+	$if macos {
+		$if !cpuraster_freetype ? {
+			// Frame glyph prefetch can read positions beyond the next range.
+			return !prefetch_frame_glyph_masks
+		}
+		return true
+	}
+	return false
+}
+
+@[params]
+struct PaintCanvasBoundsSubmission {
+	replay_ranges bool
+}
+
+fn (mut batch PaintCanvasBoundsBatch) submit(options PaintCanvasBoundsSubmission) {
 	stage := processmetrics.begin_thread_instruction_substage('paint_canvas_bounds_submission')
 	defer { stage.finish() }
 	ticket, lanes := cpuraster.start_background_raster_ranges(batch.work, batch.bounds.len,
-		batch.lanes, prepare_paint_canvas_bounds_range)
+		batch.lanes, prepare_paint_canvas_bounds_range, wait_by_index: options.replay_ranges)
 	batch.ticket = ticket
 	batch.background_lanes = lanes
+	batch.replay_ranges = options.replay_ranges && ticket != unsafe { nil }
+}
+
+fn (mut batch PaintCanvasBoundsBatch) begin_replay(use_bounds bool) bool {
+	if use_bounds && batch.replay_ranges { return true }
+	return batch.finish(use_bounds).len > 0
+}
+
+// Replay visits command indices in order. A skipped range needs no wait
+// until teardown, because none of its geometry was read.
+@[inline]
+fn (mut batch PaintCanvasBoundsBatch) replay_bounds_at(index int) PaintLeafCanvasBounds {
+	if batch.replay_ranges && index >= batch.range_end {
+		ready := cpuraster.wait_background_raster_range_for_index(batch.ticket, index)
+		count := batch.bounds.len
+		lanes := batch.background_lanes
+		// Invert the floor-division split in vox_scan_worker_range.
+		lane := ((i64(index) + 1) * lanes - 1) / count
+		batch.range_end = int((lane + 1) * count / lanes)
+		batch.ranges_observed++
+		if !ready { batch.ranges_waited++ }
+	}
+	return unsafe { PaintLeafCanvasBounds(batch.bounds[index]) }
 }
 
 fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
@@ -148,11 +193,13 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 	stage := processmetrics.begin_thread_instruction_substage('paint_canvas_bounds_preparation')
 	defer { stage.finish() }
 	background := batch.ticket != unsafe { nil }
+	replay_ranges := batch.replay_ranges
 	mut used_lanes := batch.background_lanes
 	mut ready := false
 	if background {
 		ready = cpuraster.join_background_raster_range(batch.ticket)
 		batch.ticket = unsafe { nil }
+		batch.replay_ranges = false
 	} else {
 		used_lanes = cpuraster.run_raster_ranges_with_caller(batch.work, batch.bounds.len, batch.lanes,
 			prepare_paint_canvas_bounds_range)
@@ -164,6 +211,9 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 		prepared := batch.threads.count(it != 0)
 		outside := batch.bounds.count(it == u8(PaintLeafCanvasBounds.outside))
 		eprintln('VOX_PAINT_CANVAS_BOUNDS_BATCH commands=${batch.bounds.len} prepared=${prepared} lanes=${used_lanes} off_thread=${off_thread} outside=${outside} background=${background} ready_at_join=${ready}')
+		if replay_ranges {
+			eprintln('VOX_PAINT_CANVAS_BOUNDS_REPLAY ranges=${batch.ranges_observed} waited=${batch.ranges_waited}')
+		}
 	}
 	if retained_glyph_geometry_diagnostics && batch.glyph_geometry.len > 0 {
 		caller := platform.native_thread_identity()

@@ -7772,6 +7772,7 @@ fn (mut app BrowserApp) draw() {
 			mut bounds_lanes := 0
 			mut canvas_bounds := PaintCanvasBoundsBatch{}
 			mut frame_glyph_prefetch := voidptr(0)
+			stream_canvas_bounds := paint_canvas_bounds_can_stream()
 			$if macos {
 				culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
 				if culling.enabled && app.page_zoom == 1 {
@@ -7780,7 +7781,7 @@ fn (mut app BrowserApp) draw() {
 						mut bounds_scratch := app.begin_native_replay_scratch()
 						canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
 							f64(page_y), f64(window.width), f64(window.height))
-						canvas_bounds.submit()
+						canvas_bounds.submit(replay_ranges: stream_canvas_bounds)
 						$if !cpuraster_freetype ? {
 							frame_glyph_prefetch = app.start_early_document_glyph_prefetch(page_y, window.width,
 								window.height)
@@ -7839,6 +7840,19 @@ fn (mut app BrowserApp) draw() {
 					scroll_damage = app.begin_scroll_raster()
 					app.scroll_profile.scroll_raster_reused = scroll_damage.reused
 				}
+				if stream_canvas_bounds && !scroll_damage.reused && bounds_lanes >= 2
+					&& canvas_bounds.lanes == 0 {
+					// A prior key frame deferred submission until the reuse
+					// decision. Prepare geometry during the clear and GPU setup.
+					mut bounds_scratch := app.begin_native_replay_scratch()
+					canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
+						f64(page_y), f64(window.width), f64(window.height))
+					canvas_bounds.submit(replay_ranges: true)
+					if paint_canvas_bounds_worker_diagnostics && canvas_bounds.replay_ranges {
+						eprintln('VOX_PAINT_CANVAS_BOUNDS_LATE_SUBMIT')
+					}
+					bounds_scratch.leave_for_frame_setup()
+				}
 			}
 			// Reused frames already contain overlapping document pixels. The native
 			// damage clip limits this clear and subsequent replay to the exposed strip.
@@ -7866,8 +7880,8 @@ fn (mut app BrowserApp) draw() {
 				canvas_bounds = new_paint_canvas_bounds_batch(app.paint_commands, bounds_lanes,
 					f64(page_y), f64(window.width), f64(window.height))
 			}
-			leaf_canvas_bounds := canvas_bounds.finish(!scroll_damage.reused)
-			has_glyph_geometry := leaf_canvas_bounds.len > 0 && canvas_bounds.glyph_geometry.len > 0
+			has_canvas_bounds := canvas_bounds.begin_replay(!scroll_damage.reused)
+			has_glyph_geometry := has_canvas_bounds && canvas_bounds.glyph_geometry.len > 0
 			mut frame_glyph_prefetch_at := 0
 			$if macos && !cpuraster_freetype ? {
 				if frame_glyph_prefetch != unsafe { nil } {
@@ -7909,8 +7923,8 @@ fn (mut app BrowserApp) draw() {
 					mut projected := app.zoomed_paint_command(*command)
 					command = &projected
 				}
-				bounds := if leaf_canvas_bounds.len > 0 {
-					unsafe { PaintLeafCanvasBounds(leaf_canvas_bounds[command_index]) }
+				bounds := if has_canvas_bounds {
+					canvas_bounds.replay_bounds_at(command_index)
 				} else {
 					PaintLeafCanvasBounds.unprepared
 				}
@@ -8062,7 +8076,7 @@ fn (mut app BrowserApp) draw() {
 				glyph_geometry := if has_glyph_geometry && command.kind == 'draw_text' {
 					unsafe { &canvas_bounds.glyph_geometry[command_index] }
 				} else { unsafe { &RetainedGlyphReplayGeometry(nil) } }
-				screen_geometry := if leaf_canvas_bounds.len > 0 {
+				screen_geometry := if has_canvas_bounds {
 					canvas_bounds.screen_geometry_at(command_index)
 				} else { unsafe { &PaintCommandScreenGeometry(nil) } }
 				$if macos && !cpuraster_freetype ? {
@@ -8093,6 +8107,9 @@ fn (mut app BrowserApp) draw() {
 							command_index, app.scroll_y))
 					}
 				}
+			}
+			if canvas_bounds.ticket != unsafe { nil } {
+				canvas_bounds.finish(true)
 			}
 			$if macos && !cpuraster_freetype ? {
 				discard_document_glyph_prefetch(frame_glyph_prefetch)

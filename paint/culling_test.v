@@ -334,4 +334,30 @@ $if macos {
 		app.release_native_replay_scratch()
 		assert setup.last() == 4095
 	}
+
+	fn test_canvas_bounds_replay_can_skip_a_worker_range() {
+		if runtime.nr_cpus() < 3 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
+			|| serial_paint_screen_geometry { return }
+		visible := layout.PaintCommand{kind: 'fill_rect', width: 20, height: 20}
+		outside := layout.PaintCommand{...visible, y: 250}
+		commands := []layout.PaintCommand{len: 11, init: if index % 2 == 0 { visible } else { outside }}
+		mut batch := new_paint_canvas_bounds_batch(commands, 3, 0, 100, 100)
+		batch.submit(replay_ranges: true)
+		assert batch.background_lanes == 3
+		assert batch.begin_replay(true)
+		assert batch.replay_bounds_at(0) == .retain
+		assert batch.range_end == 3 && batch.ranges_observed == 1
+		assert batch.replay_bounds_at(2) == .retain
+		assert batch.screen_geometry_at(2).ready
+		assert batch.ranges_observed == 1
+		assert batch.replay_bounds_at(7) == .outside
+		assert batch.replay_bounds_at(8) == .retain
+		assert batch.screen_geometry_at(8).ready
+		assert batch.range_end == 11 && batch.ranges_observed == 2
+		assert batch.ticket != unsafe { nil }
+		bounds := batch.finish(true)
+		assert batch.ticket == unsafe { nil } && !batch.replay_ranges
+		assert bounds[4] == u8(PaintLeafCanvasBounds.retain)
+		assert bounds[5] == u8(PaintLeafCanvasBounds.outside)
+	}
 }
