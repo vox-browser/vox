@@ -28,3 +28,39 @@ fn test_lexer_restarts_at_the_authored_code_unit_column() {
 	assert token.line_column == 4
 	assert token.value_start == 3
 }
+
+fn test_ascii_punctuators_preserve_token_and_eof_positions() {
+	for spelling, kind in {
+		';': TokenType.semicolon
+		'=': TokenType.equals
+		'=>': TokenType.arrow
+		'===': TokenType.equals_equals_equals
+		'>>>=': TokenType.unsigned_shift_right_equals
+	} {
+		mut lexer := Lexer.new(utf16(spelling), 1, 0)
+		token := lexer.next()
+		assert token.token_type == kind
+		assert token.line_column == 1
+		assert token.value_len == u32(spelling.len)
+		eof := lexer.next()
+		assert eof.token_type == .eof
+		assert eof.value_start == u32(spelling.len)
+		assert eof.line_column == u32(spelling.len + 1)
+	}
+}
+
+fn test_ascii_punctuator_keeps_crlf_trivia_and_the_following_unicode_unit() {
+	mut lexer := Lexer.new(utf16(';\r\n>>>=λ'), 1, 0)
+	assert lexer.next().token_type == .semicolon
+	operator := lexer.next()
+	assert operator.token_type == .unsigned_shift_right_equals
+	assert operator.trivia_has_line_terminator
+	assert operator.line_number == 2
+	assert operator.line_column == 1
+	assert operator.value_start == 3
+	identifier := lexer.next()
+	assert identifier.token_type == .identifier
+	assert identifier.line_number == 2
+	assert identifier.line_column == 5
+	assert identifier.value_start == 7
+}

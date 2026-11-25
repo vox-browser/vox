@@ -468,6 +468,22 @@ fn (mut l Lexer) consume() {
 	l.position += 1
 }
 
+// The lookup already proved that this many ASCII punctuator code units
+// remain. Advance the column and position together.
+@[inline]
+@[direct_array_access]
+fn (mut l Lexer) consume_ascii_punctuator(width int) {
+	next := l.position + width - 1
+	l.line_column += u32(width)
+	l.position = next + 1
+	if next == l.source.len {
+		l.eof = true
+		l.current_code_unit = 0
+	} else {
+		l.current_code_unit = l.source[next]
+	}
+}
+
 fn (l &Lexer) current_code_point() u32 {
 	if l.position == 0 {
 		return 0xFFFD
@@ -1150,16 +1166,13 @@ fn (mut l Lexer) lex_token() Token {
 			if lex_single_only_punctuator(l.current_code_unit) {
 				found_token = true
 				token_type = single_char_token(l.current_code_unit)
-				l.consume()
+				l.consume_ascii_punctuator(1)
 			}
 
 			if !found_token && l.match4(ch(u8(`>`)), ch(u8(`>`)), ch(u8(`>`)), ch(u8(`=`))) {
 				found_token = true
 				token_type = .unsigned_shift_right_equals
-				l.consume()
-				l.consume()
-				l.consume()
-				l.consume()
+				l.consume_ascii_punctuator(4)
 			}
 
 			if !found_token && l.position + 1 < l.source_len() {
@@ -1170,9 +1183,7 @@ fn (mut l Lexer) lex_token() Token {
 				if tt != .invalid {
 					found_token = true
 					token_type = tt
-					l.consume()
-					l.consume()
-					l.consume()
+					l.consume_ascii_punctuator(3)
 				}
 			}
 
@@ -1185,8 +1196,7 @@ fn (mut l Lexer) lex_token() Token {
 						&& lex_is_ascii_digit(l.source[l.position + 1])) {
 						found_token = true
 						token_type = tt
-						l.consume()
-						l.consume()
+						l.consume_ascii_punctuator(2)
 					}
 				}
 			}
@@ -1196,7 +1206,7 @@ fn (mut l Lexer) lex_token() Token {
 				if tt != .invalid {
 					found_token = true
 					token_type = tt
-					l.consume()
+					l.consume_ascii_punctuator(1)
 				}
 			}
 
