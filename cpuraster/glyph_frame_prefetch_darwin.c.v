@@ -8,6 +8,7 @@ $if !cpuraster_freetype ? {
 	const glyph_frame_prefetch_diagnostics = os.getenv('VOX_GLYPH_FRAME_PREFETCH_DIAGNOSTICS') == '1'
 	const sync_glyph_frame_planning = os.getenv('VOX_SYNC_FRAME_GLYPH_PLANNING') == '1'
 	const sync_glyph_frame_strikes = os.getenv('VOX_SYNC_FRAME_GLYPH_STRIKES') == '1'
+	const serial_glyph_frame_font_opens = os.getenv('VOX_SERIAL_FRAME_GLYPH_FONT_OPENS') == '1'
 	const glyph_frame_prefetch_strikes = 4
 	const glyph_frame_prefetch_jobs = 128
 
@@ -55,6 +56,13 @@ $if !cpuraster_freetype ? {
 		keys [256]u32
 	}
 
+	fn (mut slot GlyphFrameStrike) open_font() bool {
+		mut lazy := LazyGlyphFace{path: slot.spec.path, index: slot.spec.index}
+		defer { lazy.release() }
+		face := lazy.get() or { return false }
+		return !face.color_glyphs && slot.strike.ensure_font(mut lazy)
+	}
+
 	struct GlyphFrameRunPlan {
 		slot int
 		glyphs []u16
@@ -84,6 +92,10 @@ $if !cpuraster_freetype ? {
 		has_cold_strike bool
 		prepare_strikes bool
 		planner_thread u64
+		font_lanes int
+		font_threads [glyph_frame_prefetch_strikes]u64
+		font_open_ns u64
+		font_fallback bool
 	}
 
 	fn draw_glyph_frame_jobs(context voidptr, first i32, end i32) {
@@ -95,7 +107,8 @@ $if !cpuraster_freetype ? {
 		}
 	}
 
-	fn (mut batch GlyphFrameWork) collect(run_spec &GlyphFramePrefetchRun, cache &GlyphCache) {
+	fn (mut batch GlyphFrameWork) collect(run_spec &GlyphFramePrefetchRun, cache &GlyphCache,
+		defer_font bool) {
 		run := &run_spec.run
 		if run.glyphs.len == 0 || run.positions.len != run.glyphs.len * 2
 			|| !run.retained || !run.chromium_coverage || run.font_path == '' { return }
@@ -124,28 +137,23 @@ $if !cpuraster_freetype ? {
 		}
 		if slot < 0 {
 			if batch.strike_count >= glyph_frame_prefetch_strikes { return }
-			mut lazy := LazyGlyphFace{path: run.font_path, index: run.face_index}
-			defer { lazy.release() }
 			mut planned := unsafe { &batch.strikes[batch.strike_count] }
-			mut face_key := ''
-			if cache == unsafe { nil } {
-				face := lazy.get() or { return }
-				if face.color_glyphs { return }
-			} else {
-				face_key = glyph_face_key(spec.path, spec.index)
-				info := glyph_face_info(cache, face_key, mut lazy) or { return }
-				if info.color_glyphs { return }
-			}
+			planned.spec = spec
 			planned.strike = *strike
-			if !planned.strike.ensure_font(mut lazy) { return }
 			if cache != unsafe { nil } {
+				mut lazy := LazyGlyphFace{path: spec.path, index: spec.index}
+				defer { lazy.release() }
+				face_key := glyph_face_key(spec.path, spec.index)
+				info := glyph_face_info(cache, face_key, mut lazy) or { return }
+				if info.color_glyphs || !planned.strike.ensure_font(mut lazy) { return }
 				planned.key = spec.cache_key(face_key, strike)
 				if entry := cache.strikes[planned.key] {
 					planned.cached = map[u32]bool{}
 					for glyph, _ in entry.glyphs { planned.cached[glyph] = true }
 				}
+			} else if !defer_font && !planned.open_font() {
+				return
 			}
-			planned.spec = spec
 			batch.has_cold_strike = batch.has_cold_strike || planned.cached.len == 0
 			slot = batch.strike_count
 			batch.strike_count++
@@ -157,6 +165,47 @@ $if !cpuraster_freetype ? {
 		}
 		batch.runs << GlyphFrameRunPlan{slot: slot, glyphs: run.glyphs,
 			positions: run.positions, rounding: rounding}
+	}
+
+	fn open_glyph_frame_fonts(context voidptr, first i32, end i32) {
+		mut batch := unsafe { &GlyphFrameWork(context) }
+		for index in first .. end {
+			if glyph_frame_prefetch_diagnostics {
+				C.pthread_threadid_np(unsafe { nil }, &batch.font_threads[index])
+			}
+			mut slot := unsafe { &batch.strikes[index] }
+			slot.open_font()
+		}
+	}
+
+	fn (mut batch GlyphFrameWork) prepare_cold_strikes() {
+		for index in 0 .. batch.input.len {
+			batch.collect(unsafe { &batch.input[index] }, unsafe { nil }, true)
+		}
+		if batch.strike_count == 0 { return }
+		start := if glyph_frame_prefetch_diagnostics { time.sys_mono_now() } else { u64(0) }
+		if !serial_glyph_frame_font_opens {
+			batch.font_lanes = run_raster_ranges_with_caller(batch, batch.strike_count,
+				batch.strike_count, open_glyph_frame_fonts)
+		}
+		if batch.font_lanes == 0 {
+			open_glyph_frame_fonts(batch, 0, i32(batch.strike_count))
+			batch.font_lanes = 1
+		}
+		if glyph_frame_prefetch_diagnostics { batch.font_open_ns = time.sys_mono_now() - start }
+		for index in 0 .. batch.strike_count {
+			batch.font_fallback = batch.font_fallback || batch.strikes[index].strike.font == unsafe { nil }
+		}
+		if batch.font_fallback {
+			// Retry in run order so a failed face can't occupy a slot that a
+			// later usable strike would otherwise fill. No keys exist yet.
+			for index in 0 .. batch.strike_count { batch.strikes[index].strike.release() }
+			batch.strike_count = 0
+			batch.runs.clear()
+			for index in 0 .. batch.input.len {
+				batch.collect(unsafe { &batch.input[index] }, unsafe { nil }, false)
+			}
+		}
 	}
 
 	fn (mut slot GlyphFrameStrike) schedule_key(key u32) bool {
@@ -193,11 +242,7 @@ $if !cpuraster_freetype ? {
 
 	fn plan_and_draw_glyph_frame(context voidptr, _ i32, _ i32) {
 		mut batch := unsafe { &GlyphFrameWork(context) }
-		if batch.prepare_strikes {
-			for index in 0 .. batch.input.len {
-				batch.collect(unsafe { &batch.input[index] }, unsafe { nil })
-			}
-		}
+		if batch.prepare_strikes { batch.prepare_cold_strikes() }
 		batch.plan_keys()
 		if batch.job_count >= 8 {
 			batch.lanes = run_raster_ranges(batch, batch.job_count, batch.job_count / 4,
@@ -226,7 +271,7 @@ $if !cpuraster_freetype ? {
 		if batch.ticket == unsafe { nil } {
 			batch.prepare_strikes = false
 			for index in 0 .. runs.len {
-				batch.collect(unsafe { &runs[index] }, cache)
+				batch.collect(unsafe { &runs[index] }, cache, false)
 			}
 			if batch.has_cold_strike && !sync_glyph_frame_planning {
 				batch.ticket = start_background_raster_range(batch, 1, plan_and_draw_glyph_frame)
@@ -282,7 +327,11 @@ $if !cpuraster_freetype ? {
 			mut caller := u64(0)
 			C.pthread_threadid_np(unsafe { nil }, &caller)
 			planned_off_thread := batch.planner_thread != 0 && batch.planner_thread != caller
-			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strike_count} lanes=${batch.lanes} published=${published} ready_at_join=${ready} owner_overlap=${overlap} planned_off_thread=${planned_off_thread} strikes_off_thread=${batch.prepare_strikes && planned_off_thread}')
+			mut font_threads := []u64{cap: glyph_frame_prefetch_strikes}
+			for thread_id in batch.font_threads {
+				if thread_id != 0 && thread_id !in font_threads { font_threads << thread_id }
+			}
+			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strike_count} lanes=${batch.lanes} published=${published} ready_at_join=${ready} owner_overlap=${overlap} planned_off_thread=${planned_off_thread} strikes_off_thread=${batch.prepare_strikes && planned_off_thread} font_lanes=${batch.font_lanes} font_threads=${font_threads.len} font_open_ns=${batch.font_open_ns} font_fallback=${batch.font_fallback}')
 		}
 	}
 }

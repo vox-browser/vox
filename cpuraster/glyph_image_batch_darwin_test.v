@@ -119,15 +119,34 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		assert fill_canvas_glyphs_cached(mut growing_cache, mut before_join, 256, 48, 1024,
 			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
 		first_key := growing_cache.order[0]
+		first_strike := growing_cache.strikes[first_key] or { panic('missing replay strike') }
 		mut used_before_join := map[u32]StrikeGlyph{}
-		for key, glyph in growing_cache.strikes[first_key].glyphs { used_before_join[key] = glyph }
+		for key, glyph in first_strike.glyphs { used_before_join[key] = glyph }
 		finish_glyph_frame_prefetch(pending, growing_cache)
 		assert before_join == serial
+		retained_strike := growing_cache.strikes[first_key] or { panic('lost replay strike') }
 		for key, glyph in used_before_join {
-			retained := growing_cache.strikes[first_key].glyphs[key]
+			retained := retained_strike.glyphs[key] or { panic('lost replay mask') }
 			assert voidptr(glyph.image.data) == voidptr(retained.image.data)
 		}
 		assert start_glyph_frame_prefetch(growing_cache, expect) == unsafe { nil }
+
+		// An unavailable early face must leave room for all four usable
+		// strikes, including one beyond the first four candidates.
+		missing := CanvasGlyphRun{...run, font_path: '/nonexistent/vox-frame-prefetch-test.ttf'}
+		with_missing := [
+			GlyphFramePrefetchRun{...expect[0], run: missing},
+			expect[0],
+			expect[1],
+			GlyphFramePrefetchRun{...expect[0], run: CanvasGlyphRun{...run, font_size: 17}},
+			GlyphFramePrefetchRun{...expect[0], run: CanvasGlyphRun{...run, font_size: 18}},
+		]
+		fallback_cache := new_glyph_cache()
+		fallback := start_glyph_frame_prefetch(fallback_cache, with_missing)
+		assert fallback != unsafe { nil }
+		finish_glyph_frame_prefetch(fallback, fallback_cache)
+		assert fallback_cache.strikes.len == glyph_frame_prefetch_strikes
+		assert start_glyph_frame_prefetch(fallback_cache, with_missing) == unsafe { nil }
 
 		finite_keys_only := new_glyph_cache()
 		invalid_positions := []f32{len: run.positions.len, init: f32(math.nan())}
