@@ -160,3 +160,42 @@ fn test_canvas_culling_discards_empty_effect_clips_outside_resource_inputs() {
 		assert !culling.skip(outside, 0, 60, 800, 660)
 	}
 }
+
+fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
+	offscreen := layout.PaintCommand{kind: 'fill_rect', x: 300, y: 300, width: 20, height: 20}
+	translated := layout.PaintCommand{
+		...offscreen
+		transform: [f64(1), 0, 0, 1, -290, -290]!
+	}
+	commands := [
+		offscreen,
+		layout.PaintCommand{kind: 'begin_css_filter_layer'},
+		offscreen,
+		layout.PaintCommand{kind: 'end_css_filter_layer'},
+		layout.PaintCommand{kind: 'begin_css_effect_layer', has_clip: true, clip_x: 300, clip_y: 300,
+			clip_width: 20, clip_height: 20},
+		translated,
+		layout.PaintCommand{kind: 'end_css_effect_layer'},
+		translated,
+		layout.PaintCommand{kind: 'draw_video'},
+	]
+	mut bounds := []PaintLeafCanvasBounds{len: commands.len}
+	work := PaintCanvasBoundsWork{
+		commands: commands
+		bounds: unsafe { &PaintLeafCanvasBounds(bounds.data) }
+		width: 100
+		height: 100
+	}
+	prepare_paint_canvas_bounds_range(&work, 0, i32(commands.len))
+	assert bounds[0] == .outside && bounds[2] == .outside
+	assert bounds[1] == .unprepared && bounds[8] == .unprepared
+	assert bounds[5] == .retain && bounds[7] == .retain
+	mut serial := PaintCanvasCulling{enabled: true}
+	mut prepared := PaintCanvasCulling{enabled: true}
+	for index in 0 .. commands.len {
+		command := unsafe { &commands[index] }
+		assert prepared.skip_with_leaf_bounds(command, 0, 0, 100, 100, bounds[index]) ==
+			serial.skip(command, 0, 0, 100, 100)
+	}
+	assert prepared.depth == 0 && prepared.resource_depth == 0 && prepared.skipped_depth == 0
+}

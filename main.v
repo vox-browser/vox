@@ -7814,6 +7814,12 @@ fn (mut app BrowserApp) draw() {
 			mut raster_layer := -1
 			mut text_scroll_layer := false
 			mut replay_scratch := app.begin_native_replay_scratch()
+			leaf_canvas_bounds := if culling.enabled && app.page_zoom == 1 && !scroll_damage.reused {
+				prepare_paint_canvas_bounds(app.paint_commands, f64(page_y), f64(window.width),
+					f64(window.height))
+			} else {
+				[]PaintLeafCanvasBounds{}
+			}
 			app.portable_background_clip_replay = PortableBackgroundClipReplay{
 				active: portable_background_clip_reuse && !app.ctx.native_rendering
 			}
@@ -7843,7 +7849,13 @@ fn (mut app BrowserApp) draw() {
 					mut projected := app.zoomed_paint_command(*command)
 					command = &projected
 				}
-				if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
+				bounds := if leaf_canvas_bounds.len > 0 {
+					leaf_canvas_bounds[command_index]
+				} else {
+					PaintLeafCanvasBounds.unprepared
+				}
+				if culling.skip_with_leaf_bounds(command, 0, f64(page_y), f64(window.width),
+					f64(window.height), bounds) {
 					if command.kind == 'draw_video' {
 						app.invalidate_culled_video_backdrop(command)
 					}
