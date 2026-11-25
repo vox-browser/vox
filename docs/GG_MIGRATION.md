@@ -14706,6 +14706,12 @@ compared all four masks with the serial CoreText path. The focused
 tests, ThreadSanitizer and pinned glyph differential passed.
 [Hacker News measurements](LOAD_PARALLELISM.md#submit-larger-cold-glyph-mask-ranges-explicitly)
 
+Uneven cold-mask batches give the caller the shorter range. The
+focused checks covered even and uneven batches, caller and worker
+ownership, and exact serial masks. ThreadSanitizer and the pinned
+glyph differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#give-the-browser-thread-the-shorter-range-in-uneven-mask-batches)
+
 Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
 tests matched serial glyphs and preserved masks added before the join. The
 pinned V `-prod` glyph differential check returned 1,962 exact draws and 38

@@ -3383,3 +3383,64 @@ Every launch reproduced the same eight request and response records,
 including the favicon miss. The executable, native library, helper,
 archive, and driver hashes stayed pinned. The browser, driver and
 3 GiB guard exited zero. Peak aggregate RSS was 406,093,824 bytes.
+
+### Give the browser thread the shorter range in uneven mask batches
+
+Commit `409314086` assigns the first range to the caller when the
+mask count does not divide evenly among the available lanes. That
+range rounds down, while the previous final range rounded up.
+Worker ranges remain disjoint and join before cache publication.
+Evenly sized batches use their final range on the caller.
+`VOX_GLYPH_MASK_CALLER_LAST=1` selects the previous assignment with
+the same explicit dispatch and lane budget.
+
+The scan worker test covered every item of an uneven workload
+with either assignment and verified the caller thread identity.
+The glyph test checked batches of three, four and five at fractional
+origins and compared all published masks with serial CoreText.
+All 15 focused arena-poisoned tests, the caller-last control,
+ThreadSanitizer and the production type check passed. The pinned
+glyph differential returned 1,963 exact cases and 37 declines.
+
+#### Hacker News retained text replay
+
+Published executable `4812830ce191…26bc` captured 332 retained draws
+from the archived homepage and reproduced the reference PNG.
+The input log SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+Each replay used a fresh glyph cache and arena poisoning on one
+single-C-unit V `-prod` executable, SHA-256
+`a37eb8dfd43e8741b21b65beac30e6c946937c0b549faa6294e3dd8990ab8edd`.
+
+Both modes drew 391 masks in 84 batches. The new assignment moved
+39 masks off the browser thread. The larger batches moved from
+101 to 82 caller masks, and the two- and three-mask batches moved
+from 67 to 47. Every batch used multiple threads in the diagnostics.
+All 30 isolated replays matched reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+
+| Pair | Previous, ms | Shorter range, ms | Reversed previous, ms | Reversed shorter range, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 8.450 | 8.913 | 11.017 | 9.602 |
+| 2 | 8.988 | 9.403 | 9.888 | 10.542 |
+| 3 | 8.798 | 8.766 | 10.997 | 10.148 |
+| 4 | 8.588 | 8.723 | 10.178 | 10.544 |
+| 5 | 8.672 | 8.865 | 11.362 | 10.674 |
+| 6 | 9.825 | 9.430 | 10.734 | 9.851 |
+| 7 | 9.443 | 10.070 | 12.076 | 11.257 |
+| Median | 8.798 | 8.913 | 10.997 | 10.542 |
+
+Paired median changes were +0.193 and −0.819 ms, with two and five
+wins. One-minute host load was 14.66–15.59 on 18 CPUs. Executable,
+fixture, font and driver hashes stayed fixed. Every replay and the
+3 GiB guard exited zero. Peak aggregate RSS was 58,507,264 bytes.
+
+Production attempt `20261125-145936-9b37066e` ended before publishing.
+The resumed worker rejected changed checkout inputs before C
+preprocessing in receipts `20261125-150441-f2cbf788` and
+`20261125-150715-cc7fa132`, and retained the published baseline.
+
+Production receipt `20261125-151032-18513f19` sealed the candidate
+inputs. The shared guard was still occupied by its link step under
+host load above 200 on 18 CPUs. The available bundle predates the
+shorter caller range, so the full-page comparison is pending.
