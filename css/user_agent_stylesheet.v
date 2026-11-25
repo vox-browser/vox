@@ -25,6 +25,7 @@ const sync_user_agent_syntax = os.getenv('VOX_SYNC_UA_STYLESHEET_SYNTAX') == '1'
 const sync_user_agent_rule_cache = os.getenv('VOX_SYNC_UA_STYLESHEET_RULE_CACHE') == '1'
 const sync_user_agent_selectors = os.getenv('VOX_SYNC_UA_STYLESHEET_SELECTORS') == '1'
 const prepare_user_agent_selector_invalidation = os.getenv('VOX_PREPARE_UA_SELECTOR_INVALIDATION') == '1'
+const parallel_user_agent_companion_sheets = os.getenv('VOX_PARALLEL_UA_COMPANION_SHEETS') == '1'
 const early_user_agent_stylesheet_join = os.getenv('VOX_EARLY_UA_STYLESHEET_JOIN') == '1'
 const user_agent_syntax_diagnostics = os.getenv('VOX_UA_STYLESHEET_DIAGNOSTICS') == '1'
 const deferred_user_agent_startup = use_deferred_user_agent_startup()
@@ -47,6 +48,8 @@ struct UserAgentSyntaxPreparation {
 	ready chan PreparedUserAgentSyntax
 	consumed chan bool
 	worker thread
+	source string
+	companion bool
 }
 
 struct PreparedUserAgentSyntax {
@@ -61,18 +64,50 @@ mut:
 }
 
 struct PreparedStyleRuleSelectors {
+	namespaces map[string]bool
 mut:
 	lists map[voidptr]SelectorList
 }
 
+fn (prepared &PreparedStyleRuleSelectors) matches_namespaces(namespaces map[string]bool) bool {
+	if prepared.namespaces.len != namespaces.len { return false }
+	for prefix, declared in prepared.namespaces {
+		current := namespaces[prefix] or { return false }
+		if current != declared { return false }
+	}
+	return true
+}
+
 fn prepare_user_agent_selector_lists(rules []Rule) (&PreparedStyleRuleSelectors, platform.DetachedThreadScratch) {
+	return prepare_user_agent_selector_lists_with_namespaces(rules, map[string]bool{})
+}
+
+fn prepare_user_agent_selector_lists_with_namespaces(rules []Rule, namespaces map[string]bool) (&PreparedStyleRuleSelectors, platform.DetachedThreadScratch) {
 	scratch := platform.begin_thread_scratch('user agent stylesheet selectors')
-	mut prepared := &PreparedStyleRuleSelectors{}
-	mut parser := RuleSelectorParser{is_ua_style_sheet: .yes}
+	mut prepared := &PreparedStyleRuleSelectors{namespaces: namespaces.clone()}
+	mut parser := RuleSelectorParser{is_ua_style_sheet: .yes, declared_namespaces: prepared.namespaces}
 	for rule in rules {
 		parser.prepare_user_agent_selector_list(rule, mut prepared)
 	}
 	return prepared, scratch.detach()
+}
+
+// Read the embedded companion sheets' leading namespace declarations.
+// Conversion checks the exact prefix set before reusing a list.
+// CSSOM still owns namespace URI resolution, ordering and error reporting.
+fn user_agent_leading_namespaces(rules []Rule) map[string]bool {
+	mut namespaces := map[string]bool{}
+	for rule in rules {
+		if rule is AtRule {
+			if equals_ignoring_ascii_case(rule.name, 'namespace') {
+				prefix, _ := stylesheet_namespace_declaration(rule) or { break }
+				namespaces[prefix or { '' }] = true
+				continue
+			}
+		}
+		break
+	}
+	return namespaces
 }
 
 fn (mut parser RuleSelectorParser) prepare_user_agent_selector_list(rule Rule, mut prepared PreparedStyleRuleSelectors) {
@@ -104,7 +139,8 @@ fn user_agent_selector_worker_available() bool {
 		&& !borrowed_selector_span_diagnostics
 }
 
-fn prepare_user_agent_syntax(source string, max_cache_nodes int, prepare_selectors bool, ready chan PreparedUserAgentSyntax, consumed chan bool) {
+fn prepare_user_agent_syntax(source string, max_cache_nodes int, prepare_selectors bool, companion bool,
+	ready chan PreparedUserAgentSyntax, consumed chan bool) {
 	scratch := platform.begin_thread_scratch('user agent stylesheet worker')
 	defer { scratch.finish() }
 	// Parse raw grammar and prepare an independent cache copy. The caller owns
@@ -120,7 +156,11 @@ fn prepare_user_agent_syntax(source string, max_cache_nodes int, prepare_selecto
 		StylesheetRulePayload{}, platform.DetachedThreadScratch{}
 	}
 	selectors, selector_storage := if prepare_selectors {
-		prepare_user_agent_selector_lists(rules)
+		if companion {
+			prepare_user_agent_selector_lists_with_namespaces(rules, user_agent_leading_namespaces(rules))
+		} else {
+			prepare_user_agent_selector_lists(rules)
+		}
 	} else {
 		empty := unsafe { &PreparedStyleRuleSelectors(nil) }
 		empty, platform.DetachedThreadScratch{}
@@ -153,6 +193,12 @@ fn use_deferred_user_agent_startup() bool {
 }
 
 fn load_companion_user_agent_stylesheets() UserAgentStyleSheets {
+	if parallel_user_agent_companion_sheets && user_agent_syntax_worker_available() {
+		mathml := start_user_agent_sheet_preparation(user_agent_mathml_stylesheet_source, true)
+		svg := start_user_agent_sheet_preparation(user_agent_svg_stylesheet_source, true)
+		quirks := parse_shared_user_agent_stylesheet(user_agent_quirks_mode_stylesheet_source)
+		return UserAgentStyleSheets{quirks: quirks, mathml: mathml.convert(), svg: svg.convert()}
+	}
 	return UserAgentStyleSheets{
 		quirks: parse_shared_user_agent_stylesheet(user_agent_quirks_mode_stylesheet_source)
 		mathml: parse_shared_user_agent_stylesheet(user_agent_mathml_stylesheet_source)
@@ -176,19 +222,22 @@ fn load_user_agent_stylesheets() UserAgentStyleSheets {
 }
 
 fn start_user_agent_syntax_preparation() &UserAgentSyntaxPreparation {
+	return start_user_agent_sheet_preparation(user_agent_cascade_stylesheet_source, false)
+}
+
+fn start_user_agent_sheet_preparation(source string, companion bool) &UserAgentSyntaxPreparation {
 	// Establish the owner arena before the tokenizer enters worker scratch.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	ready := chan PreparedUserAgentSyntax{cap: 1}
 	consumed := chan bool{}
-	source := user_agent_cascade_stylesheet_source
-	max_cache_nodes := if !sync_user_agent_rule_cache && !disable_stylesheet_rule_cache
+	max_cache_nodes := if !companion && !sync_user_agent_rule_cache && !disable_stylesheet_rule_cache
 		&& stylesheet_rule_cache_.eligible(source) {
 		stylesheet_rule_cache_.max_nodes
 	} else { 0 }
 	worker := spawn prepare_user_agent_syntax(source, max_cache_nodes,
-		user_agent_selector_worker_available(), ready, consumed)
-	return &UserAgentSyntaxPreparation{ready: ready, consumed: consumed, worker: worker}
+		user_agent_selector_worker_available(), companion, ready, consumed)
+	return &UserAgentSyntaxPreparation{ready: ready, consumed: consumed, worker: worker, source: source, companion: companion}
 }
 
 fn (preparation &UserAgentSyntaxPreparation) release() {
@@ -211,18 +260,24 @@ fn (preparation &UserAgentSyntaxPreparation) convert() &CSSStyleSheet {
 	mut prepared := <-preparation.ready
 	if user_agent_syntax_diagnostics {
 		off_thread := prepared.thread_id != platform.native_thread_identity()
-		eprintln('VOX_UA_STYLESHEET_SYNTAX rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= join_started} worker_cache_nodes=${prepared.cache_payload.nodes}')
+		if preparation.companion {
+			eprintln('VOX_UA_COMPANION_SYNTAX bytes=${preparation.source.len} rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= join_started}')
+		} else {
+			eprintln('VOX_UA_STYLESHEET_SYNTAX rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= join_started} worker_cache_nodes=${prepared.cache_payload.nodes}')
+		}
 	}
 	css_stage := processmetrics.begin_instruction_stage('css_parsing')
 	defer { css_stage.finish() }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	source := user_agent_cascade_stylesheet_source
+	source := preparation.source
 	deferred := os.getenv('VOX_EAGER_USER_AGENT_DECLARATIONS') == ''
 	if stylesheet_parse_diagnostics {
 		eprintln('VOX_CSS_PARSE location=- bytes=${source.len} deferred=${deferred} cached=false rule_context=0')
 	}
-	id := if !sync_user_agent_rule_cache {
+	id := if preparation.companion {
+		u64(0)
+	} else if !sync_user_agent_rule_cache {
 		stylesheet_rule_cache_.store_prepared(prepared.cache_payload, mut prepared.cache_storage)
 	} else if !disable_stylesheet_rule_cache {
 		stylesheet_rule_cache_.store(source, prepared.rules)

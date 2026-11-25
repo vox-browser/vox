@@ -167,3 +167,26 @@ fn test_prepared_user_agent_selectors_allow_namespace_and_nested_fallback() {
 		}
 	}
 }
+
+fn test_companion_user_agent_selectors_keep_namespace_context_after_workers_retire() {
+	if !user_agent_syntax_worker_available() || !user_agent_selector_worker_available() { return }
+	mathml := start_user_agent_sheet_preparation(user_agent_mathml_stylesheet_source, true)
+	svg := start_user_agent_sheet_preparation(user_agent_svg_stylesheet_source, true)
+	for preparation in [mathml, svg] {
+		actual := preparation.convert()
+		expected := parse_shared_user_agent_stylesheet(preparation.source)
+		storage := actual.user_agent_selector_storage_
+		assert storage != unsafe { nil }
+		assert actual.process_lifetime
+		assert actual.rules.length() == expected.rules.length()
+		mut retained_selectors := 0
+		for index, rule in actual.rules.rules {
+			assert rule.css_text() == expected.rules.rules[index].css_text()
+			for selector in rule.selectors.selectors {
+				assert storage.arena.contains(voidptr(selector.data_))
+				retained_selectors++
+			}
+		}
+		assert retained_selectors > 0
+	}
+}

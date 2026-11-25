@@ -1304,7 +1304,7 @@ fn (parser RuleSelectorParser) parent_for_style_nesting(nested ParserNested) Sty
 
 fn (mut parser RuleSelectorParser) style_rule_selectors(prelude []ComponentValue, nested ParserNested) ?SelectorList {
 	if parser.prepared_rule_selectors != unsafe { nil } && nested == .no
-		&& parser.declared_namespaces.len == 0 {
+		&& parser.prepared_rule_selectors.matches_namespaces(parser.declared_namespaces) {
 		if selectors := parser.prepared_rule_selectors.lists[prelude.data] {
 			parser.prepared_rule_selector_hits++
 			return selectors
@@ -1607,7 +1607,7 @@ fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested Par
 		nested, declaration_rule_kind)))
 }
 
-fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSRule {
+fn stylesheet_namespace_declaration(rule AtRule) ?(?string, string) {
 	mut tokens := ParserTokenStream.from_values(rule.prelude)
 	if rule.is_block_rule || rule.prelude.len == 0 {
 		return none
@@ -1623,6 +1623,11 @@ fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSR
 	if tokens.has_next_token() {
 		return none
 	}
+	return prefix, namespace_uri
+}
+
+fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSRule {
+	prefix, namespace_uri := stylesheet_namespace_declaration(rule) or { return none }
 	return CSSRule.create_namespace(prefix, namespace_uri)
 }
 
