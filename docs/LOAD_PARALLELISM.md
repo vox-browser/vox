@@ -1351,3 +1351,69 @@ host load was 20.12–21.92 and 19.30–20.32 on 18 CPUs. Whole-page
 latency had no demonstrated improvement. All timing and diagnostic
 browsers, drivers and 3 GiB guards exited zero. The larger timing peak
 was 390,709,248 bytes of aggregate RSS.
+
+#### Parallel Core Text strike advances on Hacker News
+
+Commit `94e2ce428` moves eligible Core Text strike advance calculations
+into the existing initial-layout HarfBuzz jobs. The browser thread
+resolves the font file or registered face once per shaping key and
+allocates the output arrays. The job computes the untracked native
+widths and applies the same fixed-point HarfBuzz adjustments as the
+on-demand path. The browser thread decodes glyphs and publishes the
+cache. The on-demand path also handles longer runs and native failures.
+[Core Text threading](https://developer.apple.com/documentation/coretext/)
+
+Production receipt `20261125-083356-91b96f1e` sealed the change and passed
+the startup smoke. It published the single-C-unit V `-prod` executable
+`0ba5789de96871a2397864d66264528b2977d9481e1f2c8d8a33cddfdb166796`.
+The AVIF library SHA was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+Two seven-pair cohorts alternated the default with
+`VOX_SERIAL_ASCII_STRIKE_ADVANCES=1` on this executable. The control
+still shaped 14 HarfBuzz runs on the worker and calculated native
+advances as the browser thread consumed each buffer. The launch-to-
+encoded-PNG endpoint used 1024×768 CSS pixels, 2× scale, JavaScriptCore,
+private empty profiles and HTTP caches, and the 60 ms replay delay for
+each logo response. OS filesystem caches were retained. All 28 timing
+launches and two diagnostic launches preserved the reference PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and the same eight request and response records. The diagnostics also
+verified all 30 ordered story IDs and complete document readiness.
+The executable, native library, archive, and tool hashes stayed pinned.
+
+| Pair | Control, ms | Worker advances, ms | Repeat control, ms | Repeat worker advances, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 340.312 | 376.170 | 422.088 | 392.737 |
+| 2 | 351.609 | 330.756 | 428.468 | 421.477 |
+| 3 | 353.783 | 335.862 | 360.707 | 359.915 |
+| 4 | 343.445 | 342.818 | 320.780 | 329.942 |
+| 5 | 359.780 | 359.905 | 434.201 | 367.839 |
+| 6 | 344.228 | 354.093 | 471.792 | 481.180 |
+| 7 | 352.258 | 346.706 | 440.952 | 454.968 |
+| Median | 351.609 | 346.706 | 428.468 | 392.737 |
+
+Worker advances were faster in four pairs in each cohort. The median
+paired changes were −0.626 ms and −0.793 ms. One-minute host load was
+8.33–8.54 and 8.50–11.54 on 18 CPUs. The variation between launches
+leaves the whole-page speedup unconfirmed. All browsers, drivers and
+3 GiB guards exited zero. The highest timing peak was 375,799,808 bytes
+of aggregate RSS.
+
+In the separate diagnostic pair, both modes consumed all 28 buffers.
+The candidate prepared the native advances for all 28 runs, including
+14 on the worker. Exclusive main-thread instructions in flow layout
+fell from 156,353,669 to 154,892,144. The preparation scope rose from
+837,948 to 2,762,957 and inclusive geometry rose from 178,822,650 to
+179,352,691. These instruction scopes include instrumentation overhead.
+The change establishes off-thread strike work on this page. Style
+resolution, line placement, glyph publication, and native frame
+submission still execute on the browser thread.
+
+Focused checks passed for shape equivalence, the long-run fallback,
+context metrics, strike rounding and safe-break widths. The parallel
+shaping tests also passed under ThreadSanitizer and with preallocation
+and arena poisoning. The whole-browser production type check passed.
+Two optional layout-only benchmark compilation attempts reached the
+12 GiB guard before producing an executable. The production benchmark
+used the published bundle.
