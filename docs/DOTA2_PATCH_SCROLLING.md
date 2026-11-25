@@ -771,3 +771,112 @@ Work began before frame 1 and ended after frame 200. Each fixture and the
 The timings overlap and the peak differences are below 1 MB on this fixture.
 The managed production build was still pending. The live scrolling effect
 and the RAM comparison with Brave remain open.
+
+### Live scrolling with and without the bitmap copy
+
+The next single-unit C `-prod` bundle had executable SHA-256
+`e9c5258ec283f042913e0f1dbfa7e0a4b19063ed1b75b7ee8107cd295816fb5e`.
+Its frozen source receipt included `d28c30a42`. The AVIF library retained
+the `ebde1494` hash above. The Adblock worker SHA-256 was
+`8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4`.
+
+The separate `VOX_CSS_FILTER_STAGE_TIMES=1` launch used the same live page
+and input schedule as the timing trials. It logged 376 direct imports of
+2048×1760 single drop-shadow bitmaps between `SCROLL_POSITION` and the final
+record dump, with zero before input setup. Filter completion in that span
+totaled 4.102 seconds and the post-input tail was 0.262 seconds. The native
+probe prints input records as a batch at completion, so their log positions
+cannot isolate the tail. The accumulated time establishes that the direct
+path ran during input. The browser and native driver exited 0. An initial
+wrapper used the request commit instead of the frozen source commit and
+aborted before launch. The next wrapper interpreted the batched input log
+incorrectly and exited 1. The preserved diagnostic passed the full content
+audit and its guard observed 1,410,662,400 B of peak RSS.
+
+Four fresh unprofiled launches used the corrected 720-input schedule, with
+`VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP=1` on the copied trials. Each complete
+patch matched 15,620 bytes of text, the normalized checksum, and 133 images
+before scrolling. The viewport was 1024×768 at backing scale 2. The input
+reversed after 360 events with delta 16. It began 23 seconds after the title
+matched. The driver used direct HTTPS, fresh private profiles and caches,
+automatic scripting, and retained OS caches. All trials stayed above the
+bottom of the document.
+
+| Source | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Copied | 17.56 | 61.45 / 88.84 / 161.55 ms | 219/241 | 720 / 275 | 52.39 Hz | 64.47 / 0.27 ms |
+| Direct | 19.56 | 52.71 / 80.00 / 133.97 ms | 229/250 | 720 / 285 | 56.24 Hz | 64.02 / 10.24 ms |
+| Copied | 17.95 | 57.28 / 85.95 / 161.73 ms | 222/240 | 720 / 270 | 53.77 Hz | 67.76 / 0.17 ms |
+| Direct | 17.95 | 57.77 / 85.42 / 163.86 ms | 219/242 | 720 / 276 | 53.34 Hz | 68.22 / 18.91 ms |
+
+Throughput counts scroll-changing native frame installations after outer view
+paint over 13.724, 12.784, 13.372 and 13.479 seconds of input. This endpoint
+leaves physical scanout unmeasured. Maximum gaps between all completed
+publications were 159.08, 131.78, 159.31 and 161.81 ms. One-minute host load
+on 18 CPUs was 9.27→8.36, 8.50→7.45, 7.09→7.04 and 7.04→7.59. All browsers,
+drivers and the 3 GiB guard exited 0. The guard observed 1,432,338,432 B of
+peak RSS. The faster first direct trial did not repeat, and over 90% of
+scroll intervals exceeded 16.67 ms in all four trials.
+
+### Dynamic link stylesheet storage
+
+A caller-checked V arena probe on the previous `4087f965` executable identified
+296.81 MiB of document allocation cursors in 279 blocks, with 302.99 MiB of
+capacity. The unscoped arenas used 108.41 MiB across 163 blocks. The 38-second
+snapshot tracked 107,417 block header allocations and 106,902 retirements
+with zero dropped or incomplete records. The main document owner was stable
+between 27 and 38 seconds. The fresh patched-page launch passed the complete
+audit and was terminated by the driver after the sample window. Browser,
+driver and guard exits were −15, 0 and 0. The guard observed 1,100,693,504 B
+of peak RSS. This diagnostic includes probe overhead.
+
+One unscoped arena block grew while copying a script-inserted stylesheet to
+the CSS bridge's process-wide cache. That stack identifies the allocation
+that grew the block. Later allocations can share the block's bytes. The
+browser already retained the response in its document session for late link
+owners. `a00120094` lets fallback synchronization use that document-owned
+text. It clears the fallback entry after a failed replacement and keeps
+UTF-16 BOM decoding and the redirect base URL.
+
+The focused CSS fixture verified that a 1 MiB response retains the same text
+pointer in the fallback, stays invisible to a second document, and disappears
+after a failed response. Browser integration exercised asynchronously supplied
+and disk-cached script-inserted sheets. Both C-backend binaries passed with
+preallocation and with arena poisoning enabled. Runtime guards exited 0 and
+peaked at 24,608,768 B and 100,679,680 B. A first integration compile omitted
+the prepared GG and UI2 modules and exited 1. The retried compile used the
+browser's module overlays and exited 0. The scoped stylesheet change still
+needs isolated same-build memory attribution.
+
+### Live RAM on the stylesheet-response build
+
+An initial Brave–Vox pair passed both content audits and both browsers exited
+0. The shared bundle was replaced before the final hash check, so the driver
+and guard rejected the pair with exit 1. The sampled settled and peak
+footprints were 333,373,432 B and 867,753,904 B for Brave, and 749,260,664 B
+and 1,192,464,920 B for the displaced Vox bundle. The guard sampled a peak
+1,051,230,208 B of process-tree RSS.
+
+The replacement single-unit C `-prod` bundle had executable SHA-256
+`0737ebafdaf1a4203c80452b21a583040e9126d1b7da71183a63ba7b8ad477a2`.
+The frozen generated C contained both the document-response bridge and
+the native adapter call sites from the stylesheet change. Brave remained on
+Chromium `158.0.8127.42`. The executable, native-library, framework and
+helper hashes remained fixed in the rerun.
+
+Both browsers opened fresh private profiles with direct live HTTPS and
+retained OS caches. They audited the complete patch at 23.01 and 23.18
+seconds respectively at 1024×768 and backing scale 2. The process-tree
+footprint sampler took 55 observations in each final three-second window,
+twelve seconds after the audit.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 331,981,008 B | 812,146,608 B | 0 |
+| Vox | 733,122,424 B | 1,175,654,792 B | 0 |
+
+One-minute host load was 4.22→4.29 and 4.29→4.51 on 18 CPUs. The driver and
+3 GiB guard exited 0. The guard observed 1,095,204,864 B of peak RSS. Vox
+used 2.21 times Brave's settled footprint on this pair. The bundle also
+contains other engine changes, so the comparison measures total browser
+memory on the live patch.
