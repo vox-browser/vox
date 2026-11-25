@@ -33,6 +33,7 @@ mut:
 	trailing_whitespace TrailingWhitespace
 	thread_id u64
 	next_for_text int
+	taken bool
 }
 
 @[heap]
@@ -42,6 +43,7 @@ struct ASCIIShapeBatch {
 	font_generation u64
 	previous        &ASCIIShapeBatch
 	join_workers    fn (voidptr) bool = unsafe { nil }
+	wait_worker_range fn (voidptr, int) bool = unsafe { nil }
 mut:
 	staged          int
 	worker_ticket   voidptr
@@ -57,6 +59,7 @@ pub struct ASCIIShapeStageOptions {
 pub:
 	worker_ticket voidptr
 	join_workers  fn (voidptr) bool = unsafe { nil }
+	wait_worker_range fn (voidptr, int) bool = unsafe { nil }
 }
 
 @[params]
@@ -70,13 +73,14 @@ fn active_ascii_shape_batch() &ASCIIShapeBatch {
 }
 
 fn (job &ASCIIShapeJob) prepared() bool {
-	return job.glyph_count > 0 || job.buffer != unsafe { nil }
+	return !job.taken && (job.glyph_count > 0 || job.buffer != unsafe { nil })
 }
 
 fn (mut job ASCIIShapeJob) take() ASCIIShapeJob {
 	result := *job
 	job.buffer = unsafe { nil }
-	job.glyph_count = 0
+	// Keep the decode count for diagnostics at the final join.
+	job.taken = true
 	return result
 }
 
@@ -91,7 +95,7 @@ fn (batch &ASCIIShapeBatch) report_jobs() int {
 	mut threads := map[u64]bool{}
 	for index in 0 .. batch.jobs.len {
 		job := unsafe { &batch.jobs[index] }
-		if !job.prepared() { continue }
+		if !job.taken && !job.prepared() { continue }
 		staged++
 		threads[job.thread_id] = true
 		if job.thread_id != caller { off_thread++ }
@@ -108,8 +112,8 @@ fn (batch &ASCIIShapeBatch) report_jobs() int {
 	return staged
 }
 
-// The layout owns the inputs until finish(). With a worker ticket, only read
-// the immutable keys until the first matching cache miss joins the workers.
+// The layout owns the inputs until finish(). With a worker ticket, read only
+// immutable keys until the job's range or the entire batch has joined.
 pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob, options ASCIIShapeStageOptions) ASCIIShapeScope {
 	assert options.worker_ticket == unsafe { nil } || (jobs.len > 0 && options.join_workers != unsafe { nil })
 	mut first_by_text := map[string]int{}
@@ -131,6 +135,7 @@ pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob, options ASCIIShapeStageOptio
 		staged: staged
 		worker_ticket: options.worker_ticket
 		join_workers: options.join_workers
+		wait_worker_range: options.wait_worker_range
 	}
 	if parallel_ascii_shape_diagnostics && options.worker_ticket == unsafe { nil } {
 		batch.report_jobs()
@@ -146,6 +151,18 @@ fn (mut batch ASCIIShapeBatch) join_pending_workers(reason string) {
 	if parallel_ascii_shape_diagnostics {
 		batch.staged = batch.report_jobs()
 		eprintln('VOX_LAYOUT_ASCII_SHAPE_JOIN reason=${reason} ready=${ready}')
+	}
+}
+
+fn (mut batch ASCIIShapeBatch) wait_for_job(index int) {
+	if batch.worker_ticket == unsafe { nil } { return }
+	if batch.wait_worker_range == unsafe { nil } {
+		batch.join_pending_workers('first_use')
+		return
+	}
+	ready := batch.wait_worker_range(batch.worker_ticket, index)
+	if parallel_ascii_shape_diagnostics {
+		eprintln('VOX_LAYOUT_ASCII_SHAPE_RANGE_JOIN index=${index} ready=${ready}')
 	}
 }
 
@@ -190,7 +207,7 @@ fn take_ascii_shape_job(font_key string, text string, params ShapeParams) ?ASCII
 	for link > 0 {
 		mut job := unsafe { &batch.jobs[link - 1] }
 		if job.font_key == font_key {
-			batch.join_pending_workers('first_use')
+			batch.wait_for_job(link - 1)
 			if job.prepared() { return job.take() }
 		}
 		link = job.next_for_text

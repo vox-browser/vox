@@ -3,6 +3,8 @@ module cpuraster
 import os
 import platform
 import runtime
+import sync
+import time
 
 const serial_cpu_raster = 'VOX_SERIAL_CPU_RASTER'
 
@@ -44,6 +46,51 @@ $if macos && !cpuraster_freetype ? {
 		assert range.first == 0
 		assert range.end == 32
 		assert range.thread_id != 0 && range.thread_id != caller
+	}
+
+	struct IndexedRasterTest {
+		release_tail &sync.Semaphore
+		finished_tail &sync.Semaphore
+	mut:
+		values [11]i32
+	}
+
+	fn record_indexed_raster_range(context voidptr, first i32, end i32) {
+		mut work := unsafe { &IndexedRasterTest(context) }
+		if first != 0 {
+			mut release := work.release_tail
+			release.timed_wait(2 * time.second)
+		}
+		for index in first .. end {
+			work.values[index] = first + 1
+		}
+		if first != 0 {
+			mut finished := work.finished_tail
+			finished.post()
+		}
+	}
+
+	fn test_index_wait_does_not_join_an_unrelated_uneven_range() {
+		if runtime.nr_cpus() < 2 { return }
+		previous := os.getenv_opt(serial_cpu_raster)
+		defer { restore_serial_raster_setting(previous) }
+		assert os.unsetenv(serial_cpu_raster) == 0
+
+		mut release := sync.new_semaphore()
+		mut finished := sync.new_semaphore()
+		mut work := IndexedRasterTest{release_tail: release, finished_tail: finished}
+		ticket, lanes := start_background_raster_ranges(&work, work.values.len, 2,
+			record_indexed_raster_range, wait_by_index: true)
+		assert lanes == 2 && ticket != unsafe { nil }
+		defer { join_background_raster_range(ticket) }
+		wait_background_raster_range_for_index(ticket, 4)
+		assert work.values[4] == 1
+		assert !finished.try_wait()
+		assert wait_background_raster_range_for_index(ticket, 0)
+		release.post()
+		wait_background_raster_range_for_index(ticket, 5)
+		assert work.values[5] == 6 && work.values[10] == 6
+		assert finished.try_wait()
 	}
 
 	struct JoinedRasterTestRanges {
@@ -109,17 +156,22 @@ $if macos && !cpuraster_freetype ? {
 			expected << shaped.glyph_run.glyphs().clone()
 			whitespace << shaped.trailing_whitespace
 		}
-		for background in [false, true] {
+		for mode in ['caller', 'batch', 'range'] {
 			platform.release_unused_text_shaping()
 			jobs := platform.prepare_ascii_shape_jobs(phrases.map(platform.ASCIIShapeRequest{it, font}))
 			assert jobs.len == phrases.len
-			mut batch := if background {
+			mut batch := if mode != 'caller' {
 				ticket, lanes := start_background_raster_ranges(jobs.data, jobs.len, 4,
-					platform.shape_ascii_job_range)
+					platform.shape_ascii_job_range, wait_by_index: mode == 'range')
 				assert lanes >= 2 && ticket != unsafe { nil }
 				platform.stage_ascii_shape_jobs(jobs,
 					worker_ticket: ticket
 					join_workers: join_background_raster_range
+					wait_worker_range: if mode == 'range' {
+						wait_background_raster_range_for_index
+					} else {
+						unsafe { nil }
+					}
 				)
 			} else {
 				assert run_raster_ranges_with_caller(jobs.data, jobs.len, 4, platform.shape_ascii_job_range) >= 2

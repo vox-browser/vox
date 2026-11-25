@@ -252,6 +252,58 @@ fn test_pending_ascii_scopes_join_before_font_cache_retirement() {
 	assert !inner_jobs[0].prepared() && !outer_jobs[0].prepared()
 }
 
+struct TestIndexedASCIIShapeTicket {
+	jobs []ASCIIShapeJob
+mut:
+	first_waited bool
+	joins int
+}
+
+fn wait_test_ascii_shape_range(ticket voidptr, index int) bool {
+	mut work := unsafe { &TestIndexedASCIIShapeTicket(ticket) }
+	assert index == 0 && !work.first_waited
+	work.first_waited = true
+	shape_ascii_job_range(work.jobs.data, 0, 1)
+	return false
+}
+
+fn join_test_indexed_ascii_shapes(ticket voidptr) bool {
+	mut work := unsafe { &TestIndexedASCIIShapeTicket(ticket) }
+	work.joins++
+	assert work.first_waited
+	shape_ascii_job_range(work.jobs.data, 1, i32(work.jobs.len))
+	return false
+}
+
+fn test_ascii_range_wait_consumes_one_job_before_retiring_other_ranges() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}
+	text := 'Retained paragraph text'
+	expected := shape_text_uncached(0, 0, 0, text, font, .ltr)
+	jobs := prepare_ascii_shape_jobs([
+		ASCIIShapeRequest{text, font},
+		ASCIIShapeRequest{'127 points', font},
+	])
+	assert jobs.len == 2
+	mut work := TestIndexedASCIIShapeTicket{jobs: jobs}
+	mut scope := stage_ascii_shape_jobs(jobs,
+		worker_ticket: &work
+		join_workers: join_test_indexed_ascii_shapes
+		wait_worker_range: wait_test_ascii_shape_range
+	)
+	defer { scope.finish() }
+	shape_text_with_spacing(0, 0, 0, 'Other text', font, .ltr)
+	assert !work.first_waited && work.joins == 0
+	actual := shape_text_with_spacing(0, 0, 0, text, font, .ltr)
+	assert work.first_waited && work.joins == 0
+	assert actual.glyph_run.glyphs_ == expected.glyph_run.glyphs_
+	assert !jobs[0].prepared() && !jobs[1].prepared()
+	release_unused_text_shaping()
+	assert work.joins == 1 && jobs[1].prepared()
+	scope.finish()
+	assert work.joins == 1 && !jobs[1].prepared()
+}
+
 fn test_unused_pending_ascii_shapes_join_and_release_at_scope_exit() {
 	platform_shaping_cache = &ShapingCache{}
 	font := &Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}

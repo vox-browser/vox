@@ -13,7 +13,8 @@ fn C.vox_scan_workers_disabled() bool
 $if macos {
 	fn C.vox_scan_workers_with_caller(voidptr, i32, i32, fn (voidptr, i32, i32)) bool
 	fn C.vox_scan_workers_with_caller_range(voidptr, i32, i32, bool, fn (voidptr, i32, i32)) bool
-	fn C.vox_scan_worker_start(voidptr, i32, i32, fn (voidptr, i32, i32)) voidptr
+	fn C.vox_scan_worker_start(voidptr, i32, i32, bool, fn (voidptr, i32, i32)) voidptr
+	fn C.vox_scan_worker_wait_index(voidptr, i32) bool
 	fn C.vox_scan_worker_join(voidptr) bool
 }
 
@@ -98,24 +99,41 @@ fn raster_range_lanes(lines int, requested_lanes int) int {
 pub fn start_background_raster_range(context voidptr, lines i32, scan fn (voidptr, i32, i32)) voidptr {
 	$if macos {
 		if lines > 0 && !C.vox_scan_workers_disabled() && runtime.nr_cpus() > 1 {
-			return C.vox_scan_worker_start(context, lines, 1, scan)
+			return C.vox_scan_worker_start(context, lines, 1, false, scan)
 		}
 	}
 	return unsafe { nil }
 }
 
+@[params]
+pub struct BackgroundRasterRangeOptions {
+pub:
+	wait_by_index bool
+}
+
 // Submit every range to a worker. The caller can do independent work before
-// joining with join_background_raster_range.
+// joining with join_background_raster_range. With wait_by_index the caller
+// can read one completed range early.
 pub fn start_background_raster_ranges(context voidptr, lines int, requested_lanes int,
-	scan fn (voidptr, i32, i32)) (voidptr, int) {
+	scan fn (voidptr, i32, i32), options BackgroundRasterRangeOptions) (voidptr, int) {
 	$if macos {
 		lanes := raster_range_lanes(lines, requested_lanes)
 		if lanes >= 2 {
-			ticket := C.vox_scan_worker_start(context, i32(lines), i32(lanes), scan)
+			ticket := C.vox_scan_worker_start(context, i32(lines), i32(lanes), options.wait_by_index, scan)
 			if ticket != unsafe { nil } { return ticket, lanes }
 		}
 	}
 	return unsafe { nil }, 0
+}
+
+// Wait for the range containing index and report whether it was already
+// finished. The ticket stays live until join_background_raster_range.
+// The caller must provide an index from the submitted range.
+pub fn wait_background_raster_range_for_index(ticket voidptr, index int) bool {
+	$if macos {
+		return C.vox_scan_worker_wait_index(ticket, i32(index))
+	}
+	return false
 }
 
 // Join the range and report whether it was already finished at the join.

@@ -78,44 +78,73 @@ static bool vox_scan_workers_with_caller(void *context, int32_t lines, int32_t l
 
 typedef struct {
     VoxRasterScanBatch batch;
-    void *group;
+    void *groups[VOX_SCAN_WORKERS_MAX];
+    int32_t group_count;
     VoxRasterScanWorker workers[VOX_SCAN_WORKERS_MAX];
 } VoxRasterBackgroundScan;
 
-static void *vox_scan_worker_start(void *context, int32_t lines, int32_t lanes, VoxRasterScan scan) {
-    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)malloc(sizeof *work);
-    if (!work) return NULL;
-    dispatch_group_t group = dispatch_group_create();
-    if (!group) {
-        free(work);
-        return NULL;
-    }
+// Consuming a group makes later reads of that range cheap. Only the ticket
+// owner can wait for or release groups.
+static bool vox_scan_worker_wait_group(VoxRasterBackgroundScan *work, int32_t slot) {
+    if (!work->groups[slot]) return true;
 #if __has_feature(objc_arc)
-    work->group = (__bridge_retained void *)group;
+    dispatch_group_t group = (__bridge_transfer dispatch_group_t)work->groups[slot];
 #else
-    work->group = (void *)group;
+    dispatch_group_t group = (dispatch_group_t)work->groups[slot];
 #endif
-    work->batch = (VoxRasterScanBatch){context, lines, lanes, scan, fegetround()};
-    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
-    for (int32_t lane = 0; lane < lanes; ++lane) {
-        work->workers[lane] = (VoxRasterScanWorker){&work->batch, lane};
-        dispatch_group_async_f(group, queue, &work->workers[lane], vox_scan_worker_joined_dispatch);
-    }
-    return work;
-}
-
-static bool vox_scan_worker_join(void *ticket) {
-    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)ticket;
-#if __has_feature(objc_arc)
-    dispatch_group_t group = (__bridge_transfer dispatch_group_t)work->group;
-#else
-    dispatch_group_t group = (dispatch_group_t)work->group;
-#endif
+    work->groups[slot] = NULL;
     bool ready = dispatch_group_wait(group, DISPATCH_TIME_NOW) == 0;
     if (!ready) dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 #if !__has_feature(objc_arc)
     dispatch_release(group);
 #endif
+    return ready;
+}
+
+static void *vox_scan_worker_start(void *context, int32_t lines, int32_t lanes, bool by_range,
+    VoxRasterScan scan) {
+    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)malloc(sizeof *work);
+    if (!work) return NULL;
+    work->group_count = by_range ? lanes : 1;
+    for (int32_t slot = 0; slot < work->group_count; ++slot) {
+        dispatch_group_t group = dispatch_group_create();
+        if (!group) {
+            for (int32_t created = 0; created < slot; ++created) vox_scan_worker_wait_group(work, created);
+            free(work);
+            return NULL;
+        }
+#if __has_feature(objc_arc)
+        work->groups[slot] = (__bridge_retained void *)group;
+#else
+        work->groups[slot] = (void *)group;
+#endif
+    }
+    work->batch = (VoxRasterScanBatch){context, lines, lanes, scan, fegetround()};
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
+    for (int32_t lane = 0; lane < lanes; ++lane) {
+        work->workers[lane] = (VoxRasterScanWorker){&work->batch, lane};
+#if __has_feature(objc_arc)
+        dispatch_group_t group = (__bridge dispatch_group_t)work->groups[by_range ? lane : 0];
+#else
+        dispatch_group_t group = (dispatch_group_t)work->groups[by_range ? lane : 0];
+#endif
+        dispatch_group_async_f(group, queue, &work->workers[lane], vox_scan_worker_joined_dispatch);
+    }
+    return work;
+}
+
+static bool vox_scan_worker_wait_index(void *ticket, int32_t index) {
+    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)ticket;
+    // Invert the floor division used by vox_scan_worker_range().
+    int32_t slot = ((int64_t)(index + 1) * work->group_count - 1) / work->batch.lines;
+    return vox_scan_worker_wait_group(work, slot);
+}
+
+static bool vox_scan_worker_join(void *ticket) {
+    VoxRasterBackgroundScan *work = (VoxRasterBackgroundScan *)ticket;
+    bool ready = true;
+    for (int32_t slot = 0; slot < work->group_count; ++slot)
+        ready &= vox_scan_worker_wait_group(work, slot);
     free(work);
     return ready;
 }

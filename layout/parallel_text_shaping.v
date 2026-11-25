@@ -11,6 +11,7 @@ const eager_ascii_layout_shaping = os.getenv('VOX_EAGER_ASCII_LAYOUT_SHAPING') =
 const sync_ascii_layout_shaping = os.getenv('VOX_SYNC_ASCII_LAYOUT_SHAPING') == '1'
 const two_lane_ascii_layout_shaping = os.getenv('VOX_TWO_LANE_ASCII_LAYOUT_SHAPING') == '1'
 const prepare_short_ascii_layout_shapes = os.getenv('VOX_PREPARE_SHORT_ASCII_LAYOUT_SHAPES') == '1'
+const wait_ascii_layout_shaping_by_range = os.getenv('VOX_WAIT_ASCII_SHAPING_RANGE') == '1'
 const ascii_layout_shaping_jobs = 64
 const ascii_layout_short_candidates = 128
 
@@ -44,11 +45,16 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 		}
 		if !eager_ascii_layout_shaping && !sync_ascii_layout_shaping {
 			ticket, _ := cpuraster.start_background_raster_ranges(jobs.data, jobs.len, lanes,
-				platform.shape_ascii_job_range)
+				platform.shape_ascii_job_range, wait_by_index: wait_ascii_layout_shaping_by_range)
 			if ticket != unsafe { nil } {
 				return platform.stage_ascii_shape_jobs(jobs,
 					worker_ticket: ticket
 					join_workers: cpuraster.join_background_raster_range
+					wait_worker_range: if wait_ascii_layout_shaping_by_range {
+						cpuraster.wait_background_raster_range_for_index
+					} else {
+						unsafe { nil }
+					}
 				)
 			}
 		}
