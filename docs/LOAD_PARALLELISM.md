@@ -9,9 +9,9 @@ deferred loading frame renders once the page is quiet, layout keeps its boxes
 and inline layout on Retina displays, and identical leaf draws are not
 repeated. A comparison with Brave follows: after two more waits were removed,
 Hacker News and old Reddit load faster in Vox, and GitHub still takes more
-than twice as long. The pipeline is still single-threaded; the changes
-remove main-thread work and idle waiting rather than moving work to other
-cores.
+than twice as long. Those changes remove main-thread work and idle waiting.
+The later [glyph mask benchmark](#parallel-glyph-masks-on-hacker-news) measures
+work dispatched to CPU workers during retained text rasterization.
 
 ## Measurement
 
@@ -647,3 +647,132 @@ both exited 1. Input verification caught concurrent changes to
 the second. The second compiler consumed the image scheduling sources. The
 published executable still predates that change, so its effect on capture time
 and the 20% margin remain open.
+
+## Parallel glyph masks on Hacker News
+
+Retained macOS text now prepares uncached A8 glyph masks in batches of up to
+16. Up to four CPU lanes draw into private CoreGraphics bitmaps using a
+retained immutable font. The renderer joins the batch, updates the glyph cache
+on its owning thread, and composites glyphs in display-list order. Warm
+strikes look up masks as before. Set `VOX_SERIAL_GLYPH_MASKS=1` for a control
+that affects only this dispatch.
+
+### Browser baseline
+
+On 25 November 2026, seven fresh production browser processes rendered the
+archived Hacker News homepage at a 1024×768 CSS viewport and 2× scale, through
+the loopback replay proxy with JavaScriptCore and private profiles and caches.
+The seven launch-to-written-PNG observations were 582.18, 578.18, 638.44,
+629.91, 637.75, 695.81 and 641.59 ms (median 637.75 ms). Sampled browser CPU
+time had medians of 478.81 ms total and 363.27 ms on the main thread. The
+main-thread share had a median of 75.24%, with 16.59 ms of sampled wall time
+having two or more busy threads. The sampler polls every 2 ms. Its browser
+process totals omit GPU execution and helper processes, and its per-thread
+counts are polling lower bounds.
+
+All seven loads issued the same seven replay requests. The archive returned a
+404 for the unarchived `/favicon.ico` fallback, and all seven document PNGs
+matched the unchanged reference at all 3,145,728 pixels. A separate canonical
+capture also verified all 30 story IDs in order. Its guarded run adopted both
+browser and filter-worker PIDs and exited zero. The first canonical attempt
+was rejected before launch because of ambient proxy and dynamic-loader
+environment variables. The successful run cleared those variables and used a
+fresh pixel-diff executable. Host load during the timed cohort was
+161.23–161.72 on 18 CPUs. OS filesystem and shader caches were retained.
+
+The production receipt is `20261125-055539-3e972e5b` at `4b4019fcc`
+(single C unit, V `-prod`). The executable SHA-256 is
+`dc25eab492d3658b87caab0ba56e9c7021ab1573b18822fc95477c88b4f534af`.
+The bundled AVIF library SHA-256 is
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The archive manifest SHA-256 is
+`e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0`.
+The document PNG SHA-256 is
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The capture processes and the 3 GiB sampling guard exited zero.
+
+One separately traced browser load put about 193 million main-thread
+instructions in text replay. The frame also records fills, images and
+compositing in display-list order. Style, layout, display-list construction
+and native frame publication still run on the main thread. The mask workers
+parallelize the independent CoreGraphics draws within their stage.
+
+### Retained text replay
+
+A separate browser launch with `VOX_TEXT_RASTER_DUMP` recorded 332 retained
+draws, with their positions, transforms, colors and original backdrops.
+[The glyph benchmark](../tools/benchmark_hn_glyphs.v) executes those draws
+with a fresh strike cache. The timer covers the CPU glyph renderer and
+excludes fixture reading, font registration, output hashing, Quartz
+compositing, and the rest of the browser load.
+
+Each cohort alternated two modes in nine fresh-process pairs using the same
+optimized single-unit C executable within the cohort. The first used
+`VOX_SERIAL_CPU_RASTER=1` for the control. The final cohort used the
+glyph-only control `VOX_SERIAL_GLYPH_MASKS=1`. Times are milliseconds.
+
+| Pair | First serial | First parallel | Final serial | Final parallel |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 27.478 | 23.890 | 25.093 | 21.106 |
+| 2 | 32.026 | 22.447 | 23.703 | 26.708 |
+| 3 | 27.320 | 23.881 | 24.960 | 26.239 |
+| 4 | 24.452 | 22.309 | 23.383 | 22.738 |
+| 5 | 25.761 | 22.744 | 22.730 | 22.641 |
+| 6 | 25.012 | 25.263 | 28.395 | 20.493 |
+| 7 | 27.778 | 27.804 | 38.349 | 27.679 |
+| 8 | 22.553 | 20.268 | 27.221 | 118.276 |
+| 9 | 24.488 | 24.314 | 64.013 | 150.185 |
+| Median | 25.761 | 23.881 | 25.093 | 26.239 |
+
+The parallel mode was faster in seven of nine pairs in the first cohort and
+five of nine in the final cohort. Host load rose from 173.20–174.30 in the
+first cohort to 203.05–203.45 in the final cohort. The timing ranges overlap
+and the final cohort includes two large parallel stalls. These observations
+establish pixel equality and worker activity. The latency effect is unresolved
+under this level of contention.
+
+Every captured text buffer matched between settings. The concatenated RGBA
+SHA-256 was `66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`
+in all 36 trials. Both executable fingerprints and the captured-input and
+font fingerprints stayed fixed within their cohorts. The executable SHA-256
+values were
+`2e22519b82f824149e26a52e23b7348d0c66f735b9a2ec88fc21abb5bc820691` and
+`0723616c7ac9159ca9c7eb0b1ad78c12c0b3a133f03b8d0f7b74f5b66e78a37f`.
+The captured `runs.jsonl` SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+An untimed diagnostic observed 238 mask draws in 33 batches. Fifteen batches
+used four threads, 17 used three, and one used two. All replay processes and
+3 GiB guards exited zero.
+
+### Reproduce the measurements
+
+```sh
+archive=Tests/Browser/Brave/hn-home-instructions
+job=Build/hn-glyphs-UNIQUE
+sh tools/run_v_tool.sh run_memory_bounded --lock "$job-capture.lock" \
+  --report "$job-capture-guard.json" --limit-gib 3 -- \
+  python3 tools/measure_load_parallelism.py --archive "$archive" \
+    --output "$job" --repeat 1 --screenshot-scale 2 \
+    --ready-selector tr.athing --env "VOX_TEXT_RASTER_DUMP=$job/glyphs"
+sh tools/run_v_tool.sh run_memory_bounded --lock "$job-compile.lock" \
+  --report "$job-compile-guard.json" --limit-gib 3 -- \
+  v -b c -cc clang -prod -enable-globals -prealloc -gc none \
+    -memory-limit 10G -o "$job/glyph_benchmark" tools/benchmark_hn_glyphs.v
+sh tools/run_v_tool.sh run_memory_bounded --lock "$job-replay.lock" \
+  --report "$job-replay-guard.json" --limit-gib 3 -- sh -eu -c '
+  for round in 1 2 3 4 5 6 7 8 9; do
+    if [ $((round % 2)) = 1 ]; then modes="1 0"; else modes="0 1"; fi
+    for serial in $modes; do
+      VOX_SERIAL_GLYPH_MASKS=$serial "$1/glyph_benchmark" "$1/glyphs"
+    done
+  done
+' sh "$job"
+```
+
+For the browser baseline, omit the dump and set `--repeat 7`. A production
+bundle that contains the glyph change is needed for the matched full-page
+comparison using `--control-env VOX_SERIAL_GLYPH_MASKS=1`.
+
+The focused mask tests, production-mode browser type check and the pinned
+glyph differential check passed. The browser bundle used above predates the
+glyph change. Its replacement was still building when these checks finished.

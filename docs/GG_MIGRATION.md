@@ -14659,6 +14659,17 @@ threads covering all rows at the caller's rounding mode.
 The pinned raster differential suite passes with its default count and seed,
 including 10,000 pixel-exact blurred Canvas2D shadow draws.
 
+### Parallel retained text glyph masks on macOS
+
+The focused test matches serial subpixel masks and overlapping glyph pixels
+with production preallocation. The existing retained-glyph reference tests
+and the focused ThreadSanitizer run passed. The pinned glyph differential
+check returned 2,459 exact comparisons and 41 declines in 2,500 draws.
+Both the glyph check and its 3 GiB guard exited zero. The broad 20,000-input
+no-GC run exceeded the 12 GiB guard and exited 137. The Boehm retry was
+stopped with exit 143 after the input snapshot changed. The workload and
+full timing observations are in the [Hacker News report](LOAD_PARALLELISM.md#parallel-glyph-masks-on-hacker-news).
+
 ### Parallel CPU image scaling
 
 Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to
