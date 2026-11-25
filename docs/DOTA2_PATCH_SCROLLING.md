@@ -3601,3 +3601,116 @@ for 12 seconds after the first full audit. They matched that audit at
 5.42 and 8.67 seconds and quit cleanly. Browser PIDs were 23009 and
 23612. Browser, driver and guard exits were 0 at 931,233,792 B and
 945,733,632 B peak guard RSS. The readiness results varied across launches.
+
+## Quitting during a paint checkpoint
+
+`57f27c8d5` defers AppKit termination while cooperative browser work is
+active. The request returns to the event pump, and the draw can leave its
+native replay arena. When the last work scope ends, the main queue delivers
+the original termination call with its sender. A later nested pump waits
+for its own work scope to finish before delivering a queued request.
+
+All six `browserwindow` test files passed under the 3 GiB guard at
+271,400,960 B peak RSS. The new test uses a fake AppKit receiver to verify
+idle delivery, nested work scopes, duplicate requests, and sender lifetime.
+The production-allocator test runner executed 17 navigation and native
+replay test entries and exited 0. Its compile and runtime guards exited 0
+at 6,474,743,808 B and 188,792,832 B peak RSS.
+
+Two managed build attempts hit local disk exhaustion. Single-unit C
+`-prod` receipt `20261126-015740-597770fb` used the low-space build workflow
+and published the fix along with `c76812e93`'s canvas ink bounds change.
+It sealed `57f27c8d5` and produced executable SHA-256
+`a3717126c6efe558bf46fd431d017b2acaff5f0f4dc181f713fa9c00f8a73fe9`.
+Production and startup smoke guards exited 0 at 7,751,991,296 B and
+98,631,680 B peak RSS. Both bundles used AVIF library SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The checks also pinned the adblock helper and runtime resource hashes.
+
+An injected regression probe sent `terminate:nil` from the published
+browser's `CFRunLoopRunInMode` call during command replay. For each
+executable, disassembly identified the call to the cooperative checkpoint
+after the replay scratch entry. The probe checked the actual `MH_EXECUTE`
+image and return address. Control PID 37569 reached offset `0x1623c4` and
+exited 1 with the arena panic. Candidate PID 48635 reached `0x161d58`,
+returned to the draw after requesting quit, and exited 0. Both drivers
+and 3 GiB guards exited 0 because each observed its expected browser exit.
+Their guard RSS peaks were 575,422,464 B and 590,462,976 B. These are
+instrumented regression runs, separate from live readiness measurements.
+
+Two ordinary live launches of the earlier executable passed the first
+complete audit at 6.43 and 5.42 seconds. They exited 0 after AppKit quit
+requests. The prior failures and these clean exits show that early quit
+depends on timing. The patched executable passed the first complete audit
+at 3.15 and 7.66 seconds, then quit cleanly in both cases. The native
+audits ran every 250 ms and checked the 1024×768 viewport at scale two,
+a visible complete patch with loaded fonts, 133 images, and the
+established digest of the 15,620-byte patch text. The audits saw an
+initialized JavaScriptCore runtime. Control PIDs were 34904 and 35122.
+Patched PIDs were 48735 and 48825. All quit requests, browsers, drivers
+and guards exited 0. Peak guard RSS was 842,694,656 B for the control
+pair and 1,029,439,488 B for the patched pair.
+
+### Settled footprint
+
+Fresh native processes opened the live patch over direct HTTPS with
+empty private profiles and HTTP caches and retained OS caches. Vox used
+`--window-width 1024 --window-height 880` and `VOX_TEST_WINDOW=1`.
+Brave set the actual window's content size through CDP before navigation.
+Both audited the visible 1024×768 viewport at scale two with the same
+complete patch text and image counts. The scheduled audit started at
+22 seconds using `VOX_NATIVE_OBSERVATION_DELAY_MS=22000` in Vox. Each
+audit was followed by 12 seconds of observation. The median of 50 ms
+process-tree physical-footprint samples in the last three seconds of
+that observation is the settled value.
+
+| Trial | PID | Scheduled audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Earlier Vox 1 | 41327 | 22.22 s | 601,902,920 B | 1,060,294,496 B | 51 |
+| Earlier Vox 2 | 42216 | 22.17 s | 597,053,184 B | 1,050,988,984 B | 50 |
+| Brave | 47767 | 22.04 s | 373,841,840 B | 844,292,016 B | 51 |
+| Patched Vox 1 | 49108 | 22.18 s | 625,037,128 B | 1,072,500,432 B | 52 |
+| Patched Vox 2 | 49895 | 22.17 s | 604,737,328 B | 1,061,573,144 B | 51 |
+
+Browser, driver and 3 GiB guard exits were 0 throughout. Peak guard RSS
+was 994,541,568 B for the earlier Vox pair, 1,190,576,128 B for Brave,
+and 1,012,973,568 B for patched Vox. One-minute host load across the
+18 CPUs was 4.39→3.87, 3.29→3.55 and 3.44→2.50 respectively. All Vox
+caches contained the same 1,648,921-byte stylesheet with SHA-256
+`f86324bf8ffa19d8af396df2ac7bee29796aff93ccd50deee4fda952ebd79545`.
+Brave 158.1.100.59 reported Chromium 158.0.8127.92 and matched the
+executable and framework hashes in the preceding comparisons.
+
+The patched production bundle used 231–251 MB more than the fresh Brave
+process tree. It also measured above the earlier Vox controls in this
+cohort. The two production bundles include different renderer code and
+the live measurements vary across launches, which limits attribution.
+
+### Native wheel input
+
+The 3 GiB guard ran two trials with `tools/measure_precise_scroll.py`
+on the live page. Both passed the complete patch audit. The settings
+were `--width 1024 --height 768 --chrome-height 112 --script-policy automatic`,
+`--inputs 720 --delta 16 --input-hz 60 --target-hz 60 --reverse-every 360`,
+and `--settle-seconds 23 --timeout 66 --require-title 'Dota Patch Notes - 7.42a'`.
+Both used the same viewport, network and cache policy as the memory
+runs. The endpoint was completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Vox 1 | 21.37 | 47.22 / 75.83 / 131.61 ms | 250/275 | 720 / 311 | 55.88 Hz | 64.53 / 9.59 ms |
+| Vox 2 | 21.69 | 47.08 / 71.82 / 124.69 ms | 260/282 | 720 / 318 | 55.31 Hz | 61.20 / 10.42 ms |
+
+The rates use the full 12.867- and 13.000-second input windows. The
+scroll positions reached 12,028.5 and 12,095.5 CSS pixels and returned
+to zero. Browser PIDs were 50333 and 51248. Both browsers, both drivers
+and the guard exited 0 at 1,266,401,280 B peak guard RSS. One-minute
+host load was 2.54→3.23 and 3.21→4.45. The previous build measured
+22.06 and 22.41 scroll-changing publications/s. About 91–92% of the
+updated build's scroll intervals exceeded the 60 Hz budget.
+
+`compare_screenshots.sh` passed `svg-image-source-switch-same-size`,
+`selection-focus-between-text-controls` and `selection-moves-between-subtrees`
+on both bundles with zero pixel differences. The actual and reference
+PNGs agreed byte for byte across builds. Both comparison drivers and
+their 3 GiB guards exited 0 at 240,680,960 B and 241,057,792 B peak RSS.
