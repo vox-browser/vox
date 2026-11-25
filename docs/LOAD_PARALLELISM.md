@@ -1161,3 +1161,103 @@ with a 391,495,680-byte peak. On 18 CPUs with one-minute load
 four pairs. The timing ranges overlap and the effect on whole-page latency
 remains inconclusive. The production probes establish off-thread path
 evaluation under both replay policies.
+
+### Shape independent Latin text runs during initial layout
+
+The first native Chromium-policy layout collects up to 64 ordinary ASCII
+text contexts with installed fonts. The browser thread resolves the usual
+font and cache keys and skips warm entries. It sends half of a sufficiently
+large cold batch to a worker and shapes the other half itself. The worker
+owns its HarfBuzz buffers and borrows immutable native fonts. After the
+join, the existing glyph decoder publishes results under the ordinary
+shaping-cache keys. `VOX_SERIAL_ASCII_LAYOUT_SHAPING=1` selects ordinary
+on-demand shaping. [HarfBuzz object lifetimes](https://harfbuzz.github.io/object-model-lifecycle.html)
+
+The focused replay used the archived Hacker News HTML at 1024×768 CSS
+pixels, with its stylesheet inlined and archived images registered under
+their original URLs. Author scripts were idle. A separate probe prepared
+28 entries, ran 14 jobs on a worker, and recorded 56 hits on the prepared
+entries. Every replay produced the same 554 command geometries and 483
+glyph runs. Their positions and glyph indices produced the same
+checksum `961d99c633fd8923`.
+
+Each measurement launched a fresh process with the same non-`-prod` C
+executable and used `-prealloc -gc none`. The timer spans the first
+typed layout call, including style resolution and geometry. It excludes
+HTML parsing, display-list recording, and PNG encoding.
+
+| Pair | Serial, ms | Parallel, ms | Repeat serial, ms | Repeat parallel, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 125.736 | 134.327 | 104.308 | 107.348 |
+| 2 | 130.737 | 137.263 | 105.116 | 104.290 |
+| 3 | 121.591 | 118.193 | 107.188 | 102.514 |
+| 4 | 107.775 | 116.030 | 108.772 | 105.485 |
+| 5 | 108.861 | 116.821 | 107.132 | 104.169 |
+| 6 | 139.729 | 131.928 | 105.540 | 103.898 |
+| 7 | 127.350 | 116.032 | 108.668 | 107.009 |
+| 8 | 104.036 | 114.298 | 106.753 | 107.707 |
+| 9 | 111.875 | 112.415 | 104.545 | 108.901 |
+| Median | 121.591 | 116.821 | 106.753 | 105.485 |
+
+The median paired change was +6.526 ms in the first cohort and −1.642 ms
+in the repeat. Parallel was faster in three and six pairs, respectively.
+One-minute host load was 16.59–16.90 and 10.46–10.58 on 18 CPUs. The
+direction of the layout timing effect varies between cohorts. All 36
+replay processes and both 3 GiB guards exited zero. The peak RSS was
+144,130,048 bytes. The fixture manifest and replay executable stayed pinned
+at `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0`
+and `bd8b54b2b9f912340facc4a8102c38ae05c11d9b4feac3fe1e4e3a943038b310`.
+
+The focused shaping checks passed, including exact glyph equality and
+trailing whitespace after the join. ThreadSanitizer passed the worker
+test. The UTF-16, bidi, safe-break and Chromium advance tests passed.
+The focused layout checksum also matched with arena poisoning and with
+raster workers disabled. The whole-browser production-mode type check
+passed.
+
+#### Production layout shaping on Hacker News
+
+Receipt `20261125-080258-26aa2838` sealed `6f917d517` in a
+single-C-unit V `-prod` build and passed the startup smoke. The
+first build attempt ended before C preprocessing because repository inputs
+changed during compilation. The published executable SHA was
+`ebc1426818e108c8208c3d33209b68c3db600d381deb292bdb915e79c031b0ef`.
+The AVIF library SHA matched the preceding production cohort.
+
+A fresh diagnostic reproduced the focused 28 prepared shapes, 14
+off-thread jobs and 56 cache hits. The serial control skipped the batch.
+Both matched the reference PNG and all 30 archived story IDs. A separate
+instrumented launch in each setting measured calling-thread instructions
+through the encoded PNG. Exclusive flow layout changed from
+157,090,135 to 152,125,735 instructions. The parallel prepare and publish
+scope took 5,971,166 instructions, and the inclusive layout geometry
+scope changed from 178,616,823 to 179,689,519. The scopes include
+instrumentation overhead and the inclusive total covers its subscopes.
+
+Two seven-pair cohorts alternated the default with
+`VOX_SERIAL_ASCII_LAYOUT_SHAPING=1` on the same published executable.
+Every launch used a fresh private profile and HTTP cache, 1024×768 CSS
+pixels at 2× scale, and JavaScriptCore. The timer ended at the encoded
+document PNG. The replay applied the preceding cohort's fixed 60 ms
+delay on each `y18.svg` response. All 28 launches matched the same
+eight request and response records and reference PNG. Executable,
+native library, archive and tooling hashes remained pinned. OS
+filesystem caches were retained.
+
+| Pair | Serial, ms | Parallel, ms | Repeat serial, ms | Repeat parallel, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 358.740 | 337.592 | 338.732 | 352.840 |
+| 2 | 340.844 | 392.580 | 353.420 | 354.544 |
+| 3 | 357.323 | 336.007 | 343.588 | 340.194 |
+| 4 | 355.782 | 348.285 | 346.530 | 338.614 |
+| 5 | 334.991 | 340.988 | 348.905 | 371.340 |
+| 6 | 352.211 | 346.000 | 352.424 | 371.470 |
+| 7 | 358.397 | 350.501 | 357.510 | 366.556 |
+| Median | 355.782 | 346.000 | 348.905 | 354.544 |
+
+Parallel was faster in five pairs in the first cohort and two in the
+repeat. Median paired changes were −7.497 ms and +9.046 ms at one-minute
+host loads of 11.80–13.50 and 14.39–17.02, respectively, on 18 CPUs.
+Launch latency remains inconclusive. The timing and diagnostic browsers,
+drivers and 3 GiB guards all exited zero. The larger timing peak was
+389,513,216 bytes of aggregate RSS.
