@@ -3536,3 +3536,86 @@ viewport and all 30 ordered story IDs. Executable, library, helper,
 archive body and driver hashes stayed fixed. All browser processes,
 the benchmark driver and the 3 GiB guard exited zero. Peak aggregate
 RSS was 388,055,040 bytes.
+
+### Overlap initial layout with text shaping
+
+Two archived homepage profiles on executable `16c404942668…14caa`
+put 348.8–348.9 million browser-thread instructions in style update and
+149.6–150.4 million in flow layout. The browser previously waited for its
+initial ASCII shaping batch to complete before entering flow layout.
+
+Commit `8d75c72a2` submits all ranges to background workers and lets
+layout continue. Font keys are visible to the owner while the native
+buffer and glyph outputs remain private to their workers. The first
+matching shaping-cache miss joins the batch. Scope exit and font-cache
+retirement join any outstanding work before releasing storage and
+native font handles. Cache publication still runs on the owner.
+`VOX_SYNC_ASCII_LAYOUT_SHAPING=1` restores the previous synchronous
+schedule. Failed submission uses the existing fallback.
+
+The focused tests compare the glyphs and trailing whitespace with
+ordinary shaping through synchronous and background dispatch. They
+also cover unrelated cache requests, a single join on first use,
+unconsumed results and nested font-cache retirement. The tests passed
+with arena poisoning, and the native worker test passed ThreadSanitizer.
+
+#### Production captures with background shaping
+
+Receipt `20261125-163110-4ed1a3a8` sealed `8d75c72a2`, passed startup
+smoke and published a single-C-unit V `-prod` build. Both modes used
+that executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `019c5ad01af7e0a0047cfa7e61aa5304b3ec7a6df7a5d33c10bb17e71179d276` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both diagnostic pairs prepared and consumed 28 jobs in each mode.
+The synchronous path shaped, measured and decoded 21 jobs off the
+browser thread. Background dispatch moved all 28 jobs to workers.
+Four distinct threads contributed in each mode. Both background
+batches were complete at the first matching cache miss.
+
+Main-thread instruction counts came from separate diagnostic launches
+with shaping diagnostics disabled. Counts are inclusive within each
+listed scope. Preparation instructions dropped about 83%, while
+inclusive layout geometry varied across the two pairs.
+
+| Pair | Sync preparation | Background preparation | Sync flow layout | Background flow layout | Sync layout geometry | Background layout geometry |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1,662,504 | 288,499 | 150,374,754 | 150,747,866 | 175,485,173 | 173,940,371 |
+| 2 | 1,647,488 | 288,312 | 149,284,730 | 150,660,509 | 173,060,172 | 175,466,519 |
+
+Two unprofiled cohorts alternated fresh launches through the
+completed document PNG, reversing the starting mode in the second
+cohort. All launches used JavaScriptCore, a 1024×768 CSS-pixel viewport
+at 2× scale, a private empty profile and HTTP cache, retained OS
+filesystem caches and the 60 ms delay per archived logo response.
+
+| Pair | Sync, ms | Background, ms | Reversed sync, ms | Reversed background, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 308.310 | 313.435 | 324.701 | 311.379 |
+| 2 | 302.042 | 300.353 | 297.514 | 313.085 |
+| 3 | 309.032 | 300.464 | 303.701 | 325.837 |
+| 4 | 310.374 | 302.610 | 316.239 | 314.455 |
+| 5 | 337.485 | 297.365 | 336.295 | 329.710 |
+| 6 | 320.748 | 327.365 | 338.101 | 323.647 |
+| 7 | 332.576 | 312.054 | 333.135 | 343.038 |
+| Median | 310.374 | 302.610 | 324.701 | 323.647 |
+
+Paired median changes were −7.764 and −1.783 ms, with five and four
+background wins. Sampled browser-thread CPU medians moved from
+180.100 to 171.764 ms and from 183.579 to 186.494 ms. The browser
+thread still accounted for about 69% of sampled process CPU time.
+One-minute load was 5.09–5.32 and 5.32–7.16 on 18 CPUs.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and the same eight replay records, including the favicon miss.
+The eight diagnostic captures verified the URL, ready state,
+viewport and all 30 ordered story IDs. Executable, native library,
+helper, archive and driver hashes stayed pinned. The browser
+processes, driver and 3 GiB guard exited zero. Peak aggregate RSS
+was 391,675,904 bytes.
