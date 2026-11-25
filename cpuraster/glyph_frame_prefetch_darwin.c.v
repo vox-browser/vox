@@ -5,6 +5,7 @@ import time
 
 $if !cpuraster_freetype ? {
 	const glyph_frame_prefetch_diagnostics = os.getenv('VOX_GLYPH_FRAME_PREFETCH_DIAGNOSTICS') == '1'
+	const sync_glyph_frame_planning = os.getenv('VOX_SYNC_FRAME_GLYPH_PLANNING') == '1'
 	const glyph_frame_prefetch_strikes = 4
 	const glyph_frame_prefetch_jobs = 128
 
@@ -17,9 +18,19 @@ $if !cpuraster_freetype ? {
 
 	struct GlyphFrameStrike {
 		key string
+		cached map[u32]bool
 	mut:
 		strike GlyphStrike
-		keys   map[u32]bool
+		// A frame admits at most 128 keys across all strikes. Keep this
+		// table at no more than half full without growing it on a worker.
+		keys [256]u32
+	}
+
+	struct GlyphFrameRunPlan {
+		slot int
+		glyphs []u16
+		positions []f32
+		rounding SkAffine
 	}
 
 	struct GlyphFrameJob {
@@ -32,10 +43,14 @@ $if !cpuraster_freetype ? {
 	struct GlyphFrameWork {
 	mut:
 		strikes      []GlyphFrameStrike
+		runs         []GlyphFrameRunPlan
 		jobs         []GlyphFrameJob
+		job_count    int
 		ticket       voidptr
 		lanes        int
 		owner_start  u64
+		has_cold_strike bool
+		planner_thread u64
 	}
 
 	fn draw_glyph_frame_jobs(context voidptr, first i32, end i32) {
@@ -78,25 +93,61 @@ $if !cpuraster_freetype ? {
 			defer { lazy.release() }
 			info := glyph_face_info(cache, face_key, mut lazy) or { return }
 			if info.color_glyphs || !strike.ensure_font(mut lazy) { return }
+			mut cached := map[u32]bool{}
+			if entry := cache.strikes[key] {
+				for glyph, _ in entry.glyphs { cached[glyph] = true }
+			}
+			batch.has_cold_strike = batch.has_cold_strike || cached.len == 0
 			slot = batch.strikes.len
-			batch.strikes << GlyphFrameStrike{key: key, strike: strike}
+			batch.strikes << GlyphFrameStrike{key: key, cached: cached, strike: strike}
 		}
-		mut owner := &batch.strikes[slot]
-		entry := cache.strikes[key] or { unsafe { &CachedGlyphStrike(nil) } }
 		rounding := SkAffine{
 			...device
 			tx: device.tx + if strike.snap_x { f32(0.5) } else { glyph_subpixel_round }
 			ty: device.ty + if strike.snap_y { f32(0.5) } else { glyph_subpixel_round }
 		}
-		for index in 0 .. run.glyphs.len {
-			if batch.jobs.len == glyph_frame_prefetch_jobs { break }
-			point := map_point_affine(rounding,
-				Point{run.positions[index * 2], run.positions[index * 2 + 1]})
-			if !is_finite_f32(point.x) || !is_finite_f32(point.y) { continue }
-			glyph := glyph_mask_key_at_position(run.glyphs[index], &strike, point)
-			if glyph in owner.keys || (entry != unsafe { nil } && glyph in entry.glyphs) { continue }
-			owner.keys[glyph] = true
-			batch.jobs << GlyphFrameJob{slot: slot, image: GlyphImageJob{key: glyph}}
+		batch.runs << GlyphFrameRunPlan{slot: slot, glyphs: run.glyphs,
+			positions: run.positions, rounding: rounding}
+	}
+
+	fn (mut slot GlyphFrameStrike) schedule_key(key u32) bool {
+		if key in slot.cached { return false }
+		// Glyph keys occupy 20 bits. Reserve zero for an empty slot.
+		stored := key + 1
+		mut index := int(((key >> 4) ^ (key << 4)) & 255)
+		for slot.keys[index] != 0 {
+			if slot.keys[index] == stored { return false }
+			index = (index + 1) & 255
+		}
+		slot.keys[index] = stored
+		return true
+	}
+
+	fn (mut batch GlyphFrameWork) plan_keys() {
+		if glyph_frame_prefetch_diagnostics {
+			C.pthread_threadid_np(unsafe { nil }, &batch.planner_thread)
+		}
+		for run in batch.runs {
+			mut slot := &batch.strikes[run.slot]
+			for index, id in run.glyphs {
+				if batch.job_count == glyph_frame_prefetch_jobs { return }
+				point := map_point_affine(run.rounding,
+					Point{run.positions[index * 2], run.positions[index * 2 + 1]})
+				if !is_finite_f32(point.x) || !is_finite_f32(point.y) { continue }
+				glyph := glyph_mask_key_at_position(id, &slot.strike, point)
+				if !slot.schedule_key(glyph) { continue }
+				batch.jobs[batch.job_count] = GlyphFrameJob{slot: run.slot, image: GlyphImageJob{key: glyph}}
+				batch.job_count++
+			}
+		}
+	}
+
+	fn plan_and_draw_glyph_frame(context voidptr, _ i32, _ i32) {
+		mut batch := unsafe { &GlyphFrameWork(context) }
+		batch.plan_keys()
+		if batch.job_count >= 8 {
+			batch.lanes = run_raster_ranges(batch, batch.job_count, batch.job_count / 4,
+				draw_glyph_frame_jobs)
 		}
 	}
 
@@ -106,20 +157,27 @@ $if !cpuraster_freetype ? {
 		if runs.len == 0 || serial_glyph_masks || C.vox_scan_workers_disabled() { return unsafe { nil } }
 		mut batch := &GlyphFrameWork{
 			strikes: []GlyphFrameStrike{cap: glyph_frame_prefetch_strikes}
-			jobs: []GlyphFrameJob{cap: glyph_frame_prefetch_jobs}
+			runs: []GlyphFrameRunPlan{cap: runs.len}
+			jobs: []GlyphFrameJob{len: glyph_frame_prefetch_jobs}
 		}
 		for run_spec in runs {
 			batch.collect(run_spec, cache)
-			if batch.jobs.len == glyph_frame_prefetch_jobs { break }
 		}
-		ticket, lanes := start_background_raster_ranges(batch, batch.jobs.len, batch.jobs.len / 4,
-			draw_glyph_frame_jobs)
-		if ticket == unsafe { nil } {
+		if batch.has_cold_strike && !sync_glyph_frame_planning {
+			batch.ticket = start_background_raster_range(batch, 1, plan_and_draw_glyph_frame)
+		}
+		if batch.ticket == unsafe { nil } {
+			// Warm frames can detect an empty plan without waking a worker.
+			batch.plan_keys()
+			ticket, lanes := start_background_raster_ranges(batch, batch.job_count,
+				batch.job_count / 4, draw_glyph_frame_jobs)
+			batch.ticket = ticket
+			batch.lanes = lanes
+		}
+		if batch.ticket == unsafe { nil } {
 			for mut slot in batch.strikes { slot.strike.release() }
 			return unsafe { nil }
 		}
-		batch.ticket = ticket
-		batch.lanes = lanes
 		if glyph_frame_prefetch_diagnostics { batch.owner_start = time.sys_mono_now() }
 		return batch
 	}
@@ -132,11 +190,13 @@ $if !cpuraster_freetype ? {
 		mut published := 0
 		for slot_index, mut slot in batch.strikes {
 			slot.strike.release()
-			mut entry := if cache != unsafe { nil } { glyph_cache_strike(cache, slot.key) }
-				else { unsafe { &CachedGlyphStrike(nil) } }
-			if entry != unsafe { nil } { glyph_cache_enter(entry.owner) }
-			for job in batch.jobs {
+			mut entry := unsafe { &CachedGlyphStrike(nil) }
+			for job in batch.jobs[..batch.job_count] {
 				if job.slot != slot_index || !job.image.ready { continue }
+				if entry == unsafe { nil } && cache != unsafe { nil } {
+					entry = glyph_cache_strike(cache, slot.key)
+					glyph_cache_enter(entry.owner)
+				}
 				if entry != unsafe { nil } && job.image.key !in entry.glyphs {
 					entry.publish_glyph_image(job.image)
 					published++
@@ -147,8 +207,11 @@ $if !cpuraster_freetype ? {
 			if entry != unsafe { nil } { glyph_cache_leave(entry.owner) }
 		}
 		if glyph_frame_prefetch_diagnostics {
-			overlap := batch.jobs.count(it.image.rendered > batch.owner_start && it.image.started < before_join)
-			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.jobs.len} strikes=${batch.strikes.len} lanes=${batch.lanes} published=${published} ready_at_join=${ready} owner_overlap=${overlap}')
+			overlap := batch.jobs[..batch.job_count].count(it.image.rendered > batch.owner_start && it.image.started < before_join)
+			mut caller := u64(0)
+			C.pthread_threadid_np(unsafe { nil }, &caller)
+			planned_off_thread := batch.planner_thread != 0 && batch.planner_thread != caller
+			eprintln('VOX_GLYPH_FRAME_PREFETCH jobs=${batch.job_count} strikes=${batch.strikes.len} lanes=${batch.lanes} published=${published} ready_at_join=${ready} owner_overlap=${overlap} planned_off_thread=${planned_off_thread}')
 		}
 	}
 }
