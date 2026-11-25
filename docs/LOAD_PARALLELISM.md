@@ -6885,3 +6885,136 @@ unchanged reference. Executable, native library, helper, font
 inputs, archive, receipt and harness identity stayed pinned.
 Browser, driver and 3 GiB guards exited zero, with peak sampled
 RSS of 355,713,024 bytes.
+
+### Balance retained glyph blend stripes by clipped mask pixels
+
+Commit `cd0a7d60a` adds the opt-in macOS schedule
+`VOX_BALANCE_GLYPH_BLEND_STRIPES=1`. The rasterizer uses a 16-cell
+histogram on the stripe axis to approximate equal clipped mask work.
+Each lane still owns a disjoint pixel stripe and blends the glyphs
+that touch it in paint order. The worker count continues to come from
+the existing pixel budget. The histogram counts each overlapping mask
+because the shared destination pixels must be blended once per mask.
+
+The focused tests passed with ThreadSanitizer and arena poisoning in
+both schedules. They include a pixel-heavy cluster with a distant thin
+mask, horizontal and vertical splits, overlap in both raster precision
+modes, clipping and row padding. The previous dispatch scheduler and
+serial raster controls also passed. The pinned Canvas2D differential
+passed 1,963 comparisons under its existing pixel tolerances and
+reported 37 declines. That suite exercises Canvas2D glyphs. The focused
+test and archived retained-text replay exercise worker blending.
+Guarded runtime RSS peaked at 88,309,760 bytes for the focused tests
+and at 1,044,676,608 bytes for differential compilation and testing.
+
+#### Hacker News retained-text replay
+
+The published Vox executable
+`a3717126c6efe558bf46fd431d017b2acaff5f0f4dc181f713fa9c00f8a73fe9`
+captured 332 retained draws at 1024×768 CSS pixels and 2× scale from the
+archived homepage. Its document PNG matched the established reference.
+The captured `runs.jsonl` SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The replay executable was built from `tools/benchmark_hn_glyphs.v` in
+single-C-unit V `-prod` mode, SHA-256
+`49712ed547c9ca86f356779e6346cf4ef20c86313b0f07c1feeb4c973c666e24`.
+The timer covers CPU glyph rasterization, including mask creation and
+blending. Each replay started a fresh process with an empty strike
+cache and arena poisoning.
+
+Both schedules handled 277,052 clipped mask pixels in 25 parallel batches.
+Summing the busiest stripe in each batch gives 81,430 pixels with equal
+stripe widths and 78,648 pixels with balancing, a 3.4% decrease. The two
+separately instrumented runs reported no empty stripe. This count measures assigned pixels and excludes dispatch cost and
+per-pixel timing.
+
+| Pair | Equal 1, ms | Balanced 1, ms | Equal 2, ms | Balanced 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 10.469 | 10.267 | 9.187 | 9.255 |
+| 2 | 9.328 | 9.136 | 9.603 | 9.883 |
+| 3 | 9.308 | 9.118 | 9.585 | 11.543 |
+| 4 | 11.111 | 9.267 | 10.696 | 9.739 |
+| 5 | 9.819 | 10.440 | 9.408 | 9.104 |
+| 6 | 9.106 | 9.810 | 9.189 | 9.886 |
+| 7 | 9.494 | 9.668 | 12.553 | 9.274 |
+| 8 | 9.688 | 11.190 | 9.399 | 9.625 |
+| 9 | 11.783 | 10.297 | 9.404 | 9.562 |
+| 10 | 9.683 | 9.893 | 9.283 | 10.194 |
+| 11 | 9.239 | 9.571 | 9.097 | 11.059 |
+| 12 | 10.532 | 11.242 | 11.915 | 9.336 |
+| 13 | 9.345 | 8.919 | 9.288 | 9.522 |
+| 14 | 9.145 | 10.036 | 9.229 | 9.389 |
+| 15 | 10.597 | 9.079 | 10.715 | 9.525 |
+| 16 | 9.352 | 11.589 | 10.398 | 11.878 |
+| 17 | 10.046 | 9.205 | 9.120 | 10.355 |
+| 18 | 9.819 | 9.881 | 9.544 | 9.543 |
+| 19 | 9.231 | 9.957 | 9.516 | 9.327 |
+| 20 | 11.244 | 9.673 | 11.171 | 9.788 |
+| 21 | 9.732 | 9.380 | 10.309 | 11.813 |
+| Median | 9.688 | 9.810 | 9.516 | 9.625 |
+
+Paired median changes were +0.062 ms and +0.161 ms. Balanced mode
+finished first in 10 and 8 of 21 pairs. The second cohort started with
+balanced mode. One-minute system load was 7.06–7.15 on 18 CPUs. Every
+replay returned the same concatenated RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+The executable, captured inputs, archive and font hashes stayed pinned.
+All processes and guards exited zero. Peak replay RSS was 47,431,680 bytes.
+The replay shows a smaller work imbalance and a small median time increase.
+
+#### Matched staged production captures
+
+Receipt `20261126-023537-7c87c4c6` completed the single-C-unit V `-prod`
+compile containing `cd0a7d60a`. The worker stopped before writing its
+publication receipt. The completed staged bundle passed strict
+signature verification and a fresh guarded headless startup smoke.
+The benchmark held its artifact lease and used the staged executable
+in place. The canonical bundle still had the earlier publication.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `dfcb6f000153dab67b9f9c296d73375d8110a962b744b78796f76abb67424408` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Each timing trial ran from fresh process launch through the completed
+1024×768 CSS-pixel document PNG at 2× scale, with nominal 1 ms polling.
+Both settings used JavaScriptCore, empty private profiles and HTTP
+caches, retained OS filesystem and shader caches, and original-origin
+archive replay with a 60 ms delay on the logo. The two cohorts
+alternated seven pairs each. The second cohort started with balancing.
+The diagnostic pair reproduced the exact stripe counts and pixel work
+from the isolated replay. Stripe diagnostics were disabled for timing.
+
+| Pair | Equal 1, ms | Balanced 1, ms | Equal 2, ms | Balanced 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 343.079 | 320.636 | 287.992 | 291.840 |
+| 2 | 307.289 | 298.558 | 345.666 | 324.892 |
+| 3 | 297.923 | 311.755 | 303.393 | 311.495 |
+| 4 | 314.174 | 316.223 | 306.903 | 302.914 |
+| 5 | 310.199 | 304.712 | 296.333 | 325.418 |
+| 6 | 281.653 | 330.064 | 330.807 | 312.722 |
+| 7 | 313.081 | 309.907 | 328.995 | 325.467 |
+| Median | 310.199 | 311.755 | 306.903 | 312.722 |
+
+Paired median changes were −3.173 and −3.528 ms, with four balanced
+wins in each cohort. The per-mode launch medians increased by 1.556
+and 5.819 ms. One-minute system load was 3.12–3.41 and 3.27–3.49 on
+18 CPUs. The launch timings and isolated replay leave the overall time
+effect unresolved, so the scheduler remains opt-in.
+
+All 30 captures passed the URL, viewport, readiness and 30-story order
+audits, and reproduced the same eight replay records, including the
+favicon miss. Every PNG reproduced SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+Both separately instrumented PNGs matched all 3,145,728 reference
+pixels. An initial diagnostic produced the same PNG and exited zero,
+then the comparison tool failed to load its Boehm dependency. A focused
+`-gc none` build of the canonical comparison tool verified that PNG
+and ran the subsequent diagnostic pair. Browser, driver and 3 GiB guard
+exits were zero for the completed cohorts. The first comparison attempt
+exited 1. The successful guard run peaked at 309,657,600 bytes of sampled
+aggregate RSS. Executable, library, helper, font, fixture, reference
+and harness hashes stayed pinned.
