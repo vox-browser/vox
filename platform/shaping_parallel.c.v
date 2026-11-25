@@ -59,6 +59,12 @@ pub:
 	join_workers  fn (voidptr) bool = unsafe { nil }
 }
 
+@[params]
+pub struct ASCIIShapePreparationOptions {
+pub:
+	maximum_jobs int = max_int
+}
+
 fn active_ascii_shape_batch() &ASCIIShapeBatch {
 	return unsafe { &ASCIIShapeBatch(C.vox_ascii_shape_batch_get()) }
 }
@@ -204,13 +210,16 @@ fn ascii_harfbuzz_decode_params(text string, font &Font) HarfBuzzDecodeParams {
 
 // Resolve the normal cache and native font keys on the owner thread. The
 // batch borrows font handles until the worker group joins.
-pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest) []ASCIIShapeJob {
-	mut jobs := []ASCIIShapeJob{cap: requests.len}
+pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest, options ASCIIShapePreparationOptions) []ASCIIShapeJob {
+	limit := if options.maximum_jobs < requests.len { options.maximum_jobs } else { requests.len }
+	if limit <= 0 { return []ASCIIShapeJob{} }
+	mut jobs := []ASCIIShapeJob{cap: limit}
 	mut seen := map[string]bool{}
 	mut strikes := map[string]ChromiumNativeStrike{}
 	mut cache := shared_shaping_cache()
 	params := ShapeParams.new(.ltr, 0, 0)
 	for request in requests {
+		if jobs.len == limit { break }
 		font := request.font
 		if font.font_rendering_policy != .chromium || font.source_path != ''
 			|| !request.text.is_ascii() || request.text.len == 0

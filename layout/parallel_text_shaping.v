@@ -10,7 +10,9 @@ const serial_ascii_layout_shaping = os.getenv('VOX_SERIAL_ASCII_LAYOUT_SHAPING')
 const eager_ascii_layout_shaping = os.getenv('VOX_EAGER_ASCII_LAYOUT_SHAPING') == '1'
 const sync_ascii_layout_shaping = os.getenv('VOX_SYNC_ASCII_LAYOUT_SHAPING') == '1'
 const two_lane_ascii_layout_shaping = os.getenv('VOX_TWO_LANE_ASCII_LAYOUT_SHAPING') == '1'
+const prepare_short_ascii_layout_shapes = os.getenv('VOX_PREPARE_SHORT_ASCII_LAYOUT_SHAPES') == '1'
 const ascii_layout_shaping_jobs = 64
+const ascii_layout_short_candidates = 128
 
 fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platform.ASCIIShapeScope {
 	$if macos && prealloc {
@@ -22,9 +24,15 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 		stage := processmetrics.begin_thread_instruction_substage('layout_ascii_shape_preparation')
 		defer { stage.finish() }
 		mut requests := []platform.ASCIIShapeRequest{cap: ascii_layout_shaping_jobs}
-		collect_first_layout_ascii_shapes(root, mut requests)
+		mut short_requests := []platform.ASCIIShapeRequest{}
+		collect_first_layout_ascii_shapes(root, mut requests, mut short_requests)
+		// Keep long runs first. The job limit is applied after cache hits and
+		// duplicate requests have been removed.
+		if short_requests.len > 0 {
+			requests << short_requests
+		}
 		if requests.len < 8 { return platform.ASCIIShapeScope{} }
-		jobs := platform.prepare_ascii_shape_jobs(requests)
+		jobs := platform.prepare_ascii_shape_jobs(requests, maximum_jobs: ascii_layout_shaping_jobs)
 		if jobs.len < 8 { return platform.ASCIIShapeScope{} }
 		// Keep the dispatch overhead bounded for small cold batches.
 		lanes := if two_lane_ascii_layout_shaping || jobs.len < 16 {
@@ -54,29 +62,42 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 	return platform.ASCIIShapeScope{}
 }
 
-fn collect_first_layout_ascii_shapes(node &Node, mut requests []platform.ASCIIShapeRequest) {
+fn collect_first_layout_ascii_shapes(node &Node, mut requests []platform.ASCIIShapeRequest,
+	mut short_requests []platform.ASCIIShapeRequest) {
 	if text := node.as_text_node() {
 		source := text.source_text_
-		// The normal Chromium run takes the same cache key for a complete
-		// simple text context. Long and complex contexts stay with the iterator.
-		if source.len < 20 || source.len > 160 || !source.is_ascii() || !source.contains(' ')
-			|| !((source[0] >= `A` && source[0] <= `Z`) || (source[0] >= `a` && source[0] <= `z`)) {
+		if source.len < 8 || source.len > 160 { return }
+		first := source[0]
+		starts_with_letter := (first >= `A` && first <= `Z`) || (first >= `a` && first <= `z`)
+		short := source.len < 20
+		if short {
+			if !prepare_short_ascii_layout_shapes || short_requests.len >= ascii_layout_short_candidates
+				|| (!starts_with_letter && (first < `0` || first > `9`)) {
+				return
+			}
+		} else if !starts_with_letter || !source.contains(' ') {
 			return
 		}
+		if !source.is_ascii() { return }
 		rendered := text.text_for_rendering()
 		if rendered != source { return }
 		for byte in source {
 			if byte < 32 || byte == 127 { return }
 		}
 		context := chromium_collapsed_context_text(text, rendered)
-		requests << platform.ASCIIShapeRequest{
+		request := platform.ASCIIShapeRequest{
 			text: context.text
 			font: text.Node.first_available_font()
+		}
+		if short {
+			short_requests << request
+		} else {
+			requests << request
 		}
 		return
 	}
 	for child in node.children() {
 		if requests.len >= ascii_layout_shaping_jobs { return }
-		collect_first_layout_ascii_shapes(child, mut requests)
+		collect_first_layout_ascii_shapes(child, mut requests, mut short_requests)
 	}
 }

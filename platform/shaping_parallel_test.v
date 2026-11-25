@@ -55,6 +55,30 @@ fn test_long_ascii_jobs_resolve_strike_advances_when_consumed() {
 	assert actual.trailing_whitespace == expected.trailing_whitespace
 }
 
+fn test_short_ascii_jobs_fill_the_batch_after_long_runs_and_duplicate_keys() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}
+	long_text := 'Retained paragraph text'
+	short_text := '127 points'
+	requests := [long_text, long_text, short_text, 'Other short text'].map(ASCIIShapeRequest{it, font})
+	jobs := prepare_ascii_shape_jobs(requests, maximum_jobs: 2)
+	assert jobs.len == 2
+	assert jobs[0].request.text == long_text
+	assert jobs[1].request.text == short_text
+	worker := spawn shape_ascii_job_range(jobs.data, 0, 2)
+	worker.wait()
+	mut scope := stage_ascii_shape_jobs(jobs)
+	defer { scope.finish() }
+	for text in [long_text, short_text] {
+		expected := shape_text_uncached(0, 0, 0, text, font, .ltr)
+		actual := shape_text_with_spacing(0, 0, 0, text, font, .ltr)
+		assert actual.glyph_run.glyphs_ == expected.glyph_run.glyphs_
+		assert actual.trailing_whitespace == expected.trailing_whitespace
+	}
+	assert !jobs[0].prepared()
+	assert !jobs[1].prepared()
+}
+
 fn test_staged_ascii_shapes_are_consumed_only_by_matching_cache_requests() {
 	platform_shaping_cache = &ShapingCache{}
 	font := &Font{ family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium }
