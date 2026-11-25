@@ -24,3 +24,10 @@ fn test_captured_names_do_not_reorder_remaining_locals() {
 	assert ast_text.contains('Identifier "alpha" [variable:1]'), ast_text
 	assert !ast_text.contains('Identifier "captured" [variable:'), ast_text
 }
+
+fn test_forward_references_and_child_references_share_the_declared_local() {
+	parsed := parse_source('function f() { name; let name = 1; { name; name; } { name; name; } return name; }',
+		.script)
+	ast_text := parsed.dump_ast()!
+	assert ast_text.count('Identifier "name" [variable:0] (let)') == 7, ast_text
+}

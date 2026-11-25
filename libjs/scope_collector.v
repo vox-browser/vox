@@ -561,20 +561,34 @@ fn (mut sc ScopeCollector) register_identifier_key(id &Identifier, key string, d
 		return
 	}
 	dk_int := if dk := declaration_kind { dk } else { 0 }
-	if key in sc.records[index].identifier_groups {
-		unsafe {
-			sc.records[index].identifier_groups[key].identifiers << id
-			if declaration_kind != none
-				&& sc.records[index].identifier_groups[key].declaration_kind == 0 {
-				sc.records[index].identifier_groups[key].declaration_kind = dk_int
+	// Borrow the value on a hit. Insertion on a miss can move map storage.
+	mut group := unsafe {
+		&sc.records[index].identifier_groups[key] or {
+			sc.records[index].identifier_groups[key] = IdentifierGroup{
+				identifiers:      [id]
+				declaration_kind: dk_int
 			}
-		}
-	} else {
-		sc.records[index].identifier_groups[key] = IdentifierGroup{
-			identifiers:      [id]
-			declaration_kind: dk_int
+			return
 		}
 	}
+	group.identifiers << id
+	if dk_int != 0 && group.declaration_kind == 0 {
+		group.declaration_kind = dk_int
+	}
+}
+
+fn (mut record ScopeRecord) merge_identifier_group(key string, incoming IdentifierGroup) {
+	mut group := unsafe {
+		&record.identifier_groups[key] or {
+			record.identifier_groups[key] = incoming
+			return
+		}
+	}
+	group.identifiers << incoming.identifiers
+	group.captured_by_nested_function = group.captured_by_nested_function
+		|| incoming.captured_by_nested_function
+	group.used_inside_with_statement = group.used_inside_with_statement
+		|| incoming.used_inside_with_statement
 }
 
 // === Function parameters ===
@@ -1086,23 +1100,8 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 	parent_index := sc.records[index].parent
 	if parent_index >= 0 {
 		for pi in 0 .. propagate_to_parent.len {
-			pkey := propagate_to_parent[pi]
-			pgroup := propagate_groups[pi]
-			unsafe {
-				if pkey in sc.records[parent_index].identifier_groups {
-					for pid in pgroup.identifiers {
-						sc.records[parent_index].identifier_groups[pkey].identifiers << pid
-					}
-					if pgroup.captured_by_nested_function {
-						sc.records[parent_index].identifier_groups[pkey].captured_by_nested_function = true
-					}
-					if pgroup.used_inside_with_statement {
-						sc.records[parent_index].identifier_groups[pkey].used_inside_with_statement = true
-					}
-				} else {
-					sc.records[parent_index].identifier_groups[pkey] = pgroup
-				}
-			}
+			sc.records[parent_index].merge_identifier_group(propagate_to_parent[pi],
+				propagate_groups[pi])
 		}
 	}
 	sc.records[index].identifier_groups = map[string]IdentifierGroup{}

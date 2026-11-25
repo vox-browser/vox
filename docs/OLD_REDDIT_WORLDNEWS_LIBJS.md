@@ -552,3 +552,51 @@ private empty profile reached `Welcome to Reddit` at the login redirect.
 The page reached `complete`, exposed zero listing posts and reported two
 scripts with unsupported `data:` URLs. The browser and guard exited zero.
 Live listing performance remains unverified.
+
+## Identifier groups share a map lookup
+
+LibJS now updates an existing identifier group through one map lookup.
+When it merges child-scope references into a parent group, it appends the
+references together and preserves both capture flags. The focused
+regression checks that forward references and references from two child
+blocks keep the declaration and local index of their shared binding.
+All six focused test files and all 100 upstream AST fixtures passed
+under Boehm and `-gc none`. The full-package checks in both modes
+stopped at the existing FastC-generated C error in
+`absent_property_set_test.v`.
+
+Two instrumented production visits reached the first native layer
+submission after 585.8 and 653.0 ms. The unmodified production executable
+had SHA-256
+`2f2e0b29a4748117a40a4f021935f112438f123fdc9d9efac8be5841a1b5ee40`.
+A separate sample reached scope collection while the archived page parsed.
+A debugger run on the standalone candidate reached the branch that
+updates an existing group in Reddit's main bundle.
+
+The standalone benchmark uses the prior five-script protocol with
+eight repetitions per process. Both binaries used single-unit `-prod`
+C with `-prealloc -gc none`. The benchmark times parsing and scope
+analysis after reading the scripts. Counters cover the process through
+exit. The times are divided by eight.
+
+| Pair | Control observed instructions | Candidate observed instructions | Control elapsed (ms) | Candidate elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,177,072,832 | 5,999,443,817 | 113.592 | 106.087 |
+| 2 | 6,110,049,580 | 5,925,992,363 | 116.906 | 107.389 |
+| 3 | 6,117,289,761 | 5,933,169,150 | 108.108 | 103.854 |
+| 4 | 6,117,466,110 | 5,937,266,616 | 109.410 | 108.051 |
+| 5 | 6,116,890,937 | 5,931,032,622 | 115.830 | 119.200 |
+| 6 | 6,114,810,254 | 5,933,567,444 | 119.404 | 120.071 |
+| 7 | 6,113,617,505 | 5,938,708,090 | 124.457 | 161.277 |
+| Median | 6,116,890,937 | 5,933,567,444 | 115.830 | 108.051 |
+
+Observed instructions fell by **3.00%** at the median and fell in all seven
+pairs. This corresponds to 22.92 million instructions per set of five
+scripts. Median parser-thread CPU time fell from 101.57 to 99.27 ms per
+set. The candidate was slower in three elapsed comparisons. One-minute
+host load ranged from 49.40 to 57.12 on 18 cores. All 14 processes and
+the guard exited zero, and every trial captured the final process sample.
+
+The control and candidate executable SHA-256 values were
+`c16d50f24aceb79bc42cfa6b728230f64a3dadc6f801d389203af1d6235b24fc`
+and `8f3a8688950945fba5d0c745ca31bc82b4528f5c763237ac08796652454ba60b`.
