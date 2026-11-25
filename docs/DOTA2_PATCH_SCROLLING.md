@@ -1869,3 +1869,123 @@ that private window did not restore visible document state. Both browsers
 exited 0. The driver and its 3 GiB guard exited 1 with 969,228,288 B peak
 guard RSS. The Vox observation is valid on its own. The last complete
 Brave comparison remains the control at 354,492,360 B.
+
+### Releasing the DOM attachment workspace
+
+`59b3c7a53` scopes the dense DOM mirror table, fallback identity map and
+inline-fragment cache to one attachment traversal. The published mirrors,
+text, caret provider and paintable geometry keep their document lifetime.
+Copies of a published mirror can still materialize its earlier visual lines.
+
+Nine attachment fixtures passed through the browser module. Both the normal
+run and a run with the `DOM layout attachment` and `inline box pieces`
+arenas poisoned passed. The native fixture rebuilt the workspace eight
+times, checked ownership of the dense slots, fallback entry and pieces,
+and kept document-arena growth below 12 KiB. Published text and visual
+lines remained readable. The compile and 3 GiB runtime guards exited 0
+with 6,487,408,640 B and 36,012,032 B peak sampled RSS.
+
+### Live control before releasing attachment storage
+
+Single-unit C `-prod` receipt `20261125-210603-b2c6160e` published executable
+SHA-256 `217ed8355ca8144364a5a96da3786ccdeb0898d635aacd38546c1f7f23d86a44`.
+Vox passed the full patch audit at 23.01 seconds. Its settled footprint
+was 671,879,032 B across 52 samples, with a 1,121,702,328 B sampled peak.
+Brave loaded the expected title, text, images and viewport, but its
+document visibility remained hidden through 59.72 seconds. Its first
+activation attempt reported the private process still inactive. Both
+browsers exited 0. The driver and 3 GiB guard exited 1 with 978,337,792 B
+peak guard RSS. One-minute host load was 5.51→6.12 and 6.12→5.15.
+
+A distinct Brave trial used LaunchServices to open a fresh native instance.
+The guard adopted the signed browser PID from the private registry. The
+patch text and all 133 images appeared, but at 59.67 seconds the document
+still reported hidden visibility and an empty title. The launcher and
+browser exited 0. The driver and guard exited 1, with 1,352,269,824 B peak
+guard RSS and one-minute host load 3.29→4.58.
+
+### JavaScriptCore collection diagnostic
+
+Four instrumented launches used the same control executable, with a
+250 ms native content audit. The probe checked the main Mach-O executable's
+UUID, tracked context creation and release, and sampled one live context
+group on the main queue about 25 seconds after launch. Each browser passed
+the full patch audit before and after its observation window.
+
+The public `JSGarbageCollect` call took 6 µs. The sampled footprint
+was 732,778,408 B both immediately before and immediately after the call.
+The observation-only run also held steady across its sample. The group
+was live in both runs. Upstream implements that public call by reporting
+an abandoned object graph. [WebKit JavaScriptCore API implementation](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/JavaScriptCore/API/JSBase.cpp)
+
+A second pinned probe used JavaScriptCore's synchronous debugging collector
+and its heap statistics. Heap usage fell from 57,170,359 B to 51,788,125 B
+in 5.15 ms. Protected objects stayed at 3,957. Process footprint changed
+from 700,338,016 B to 700,518,240 B immediately after collection and was
+700,436,320 B one second later. The observation-only run retained its
+56,995,816 B sampled heap across the same point. All four browsers,
+their drivers and the 3 GiB guards exited 0. The guards sampled
+1,017,856,000 B and 996,179,968 B peak RSS. These diagnostic launches
+changed the audit cadence and JavaScriptCore calls, so their absolute
+footprints vary with instrumentation and live state.
+
+### Live RAM on the attachment workspace build
+
+Single-unit C `-prod` receipt `20261125-212159-e36f0a83` includes
+`59b3c7a53` at sealed revision `f2ecdb7f4`. Its executable SHA-256 was
+`2b3e7efd95a6e874743f6d486907d231b7d02e9d7fb3cde110c060d84e39649b`.
+The production compile and headless smoke guards exited 0, with
+7,668,629,504 B and 103,972,864 B peak RSS. Earlier shared attempts
+stopped after checkout inputs changed before C preprocessing.
+
+The fresh Vox window confirmed the full patch at 23.03 seconds. It
+settled at 721,735,568 B over 52 samples and peaked at 1,180,439,136 B.
+Brave completed the full patch but stayed hidden through 59.69 seconds.
+Both browsers exited 0. The driver and 3 GiB guard exited 1, with
+1,016,971,264 B peak guard RSS. One-minute host load was 3.59→3.50
+and 3.50→3.26 on 18 CPUs. The two production builds included other
+shared changes and the observations varied across launches.
+
+A separate live diagnostic observed the complete patch at 3.22 seconds.
+It logged 46 attachment workspaces totaling 295,648 B of cursor use.
+The largest used 11,696 B, with 1,417 dense slots. The live document
+created zero inline-fragment cache entries in these traversals.
+The browser, driver and 3 GiB guard exited 0, with 963,575,808 B peak
+guard RSS and one-minute host load 3.26→3.29. The workspace total
+measures released allocation cursors over the launch.
+
+### Native scrolling on the attachment workspace build
+
+Two fresh launches passed the complete patch audit at 1024×768 and scale 2.
+They used direct HTTPS, private profiles and caches, automatic JavaScript,
+and 720 precise wheels at nominal 60 Hz with delta 16. Input began 23 seconds
+after the matching title and reversed at event 360. Both runs pinned the
+same AVIF and adblock helper hashes as the relayout map trials.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 22.87 | 44.06 / 68.32 / 120.36 ms | 267/292 | 720 / 295 | 56.31 Hz | 56.44 / 10.36 ms |
+| 2 | 22.65 | 44.87 / 67.62 / 122.90 ms | 275/296 | 720 / 301 | 55.02 Hz | 62.13 / 6.74 ms |
+
+The input windows lasted 12.769 and 13.069 seconds. The document reached
+12,061 and 12,062.5 CSS pixels, then returned to 0 and 3.5. The endpoint
+was completed native frame installation. Both browsers, drivers and the
+3 GiB guard exited 0, with 1,354,563,584 B peak guard RSS. One-minute host
+load was 3.74→4.81 and 4.81→3.86 on 18 CPUs. The observed rates were within
+the prior relayout map build's range and missed most 60 Hz deadlines.
+
+All nine SVG source-switch and paint-server reftests were pixel-exact at
+800×600. The pinned build, helpers and reference files stayed unchanged.
+The capture, comparison and 3 GiB guard exited 0 with 185,024,512 B peak RSS.
+
+### Footprint regions on the attachment workspace build
+
+Another fresh launch of the same executable passed the full patch audit at
+23.02 seconds. It settled at 784,912,272 B across 54 samples and peaked at
+1,236,832,912 B. A macOS `footprint` snapshot after the 12-second observation
+reported the same settled total for the main process. The largest dirty
+categories were 509,853,696 B of untagged mappings, 104,267,776 B of WebKit
+Malloc and 103,956,480 B across IOSurface, IOAccelerator and unmapped
+graphics allocations. The memory tool, browser, driver and 3 GiB guard
+exited 0. The guard sampled 1,097,170,944 B peak RSS. One-minute host
+load was 4.16→5.22 on 18 CPUs.
