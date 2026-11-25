@@ -103,7 +103,7 @@ fn test_worker_user_agent_syntax_retires_before_the_published_sheet_is_used() {
 			selector := first.selectors.selectors[0]
 			assert storage.arena.contains(voidptr(selector.data_))
 			assert selector.text() == 'html'
-			assert selector.has_invalidation_projection() == !sync_user_agent_selector_invalidation
+			assert selector.has_invalidation_projection() == prepare_user_agent_selector_invalidation
 			if selector.has_invalidation_projection() {
 				groups := selector_groups_for_invalidation(selector)
 				assert storage.arena.contains(groups.data)

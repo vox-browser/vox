@@ -24,7 +24,7 @@ const user_agent_svg_stylesheet = user_agent_stylesheets.svg
 const sync_user_agent_syntax = os.getenv('VOX_SYNC_UA_STYLESHEET_SYNTAX') == '1'
 const sync_user_agent_rule_cache = os.getenv('VOX_SYNC_UA_STYLESHEET_RULE_CACHE') == '1'
 const sync_user_agent_selectors = os.getenv('VOX_SYNC_UA_STYLESHEET_SELECTORS') == '1'
-const sync_user_agent_selector_invalidation = os.getenv('VOX_SYNC_UA_SELECTOR_INVALIDATION') == '1'
+const prepare_user_agent_selector_invalidation = os.getenv('VOX_PREPARE_UA_SELECTOR_INVALIDATION') == '1'
 const early_user_agent_stylesheet_join = os.getenv('VOX_EARLY_UA_STYLESHEET_JOIN') == '1'
 const user_agent_syntax_diagnostics = os.getenv('VOX_UA_STYLESHEET_DIAGNOSTICS') == '1'
 const deferred_user_agent_startup = use_deferred_user_agent_startup()
@@ -82,7 +82,7 @@ fn (mut parser RuleSelectorParser) prepare_user_agent_selector_list(rule Rule, m
 			// Invalid lists stay on the normal path to report the same error.
 			mut stream := ParserTokenStream.from_values(rule.prelude)
 			if selectors := parser.parse_a_selector_list(mut stream, .standalone, .standard) {
-				if !sync_user_agent_selector_invalidation {
+				if prepare_user_agent_selector_invalidation {
 					for selector in selectors.selectors { prepare_selector_invalidation_projection(selector) }
 				}
 				prepared.lists[rule.prelude.data] = selectors
