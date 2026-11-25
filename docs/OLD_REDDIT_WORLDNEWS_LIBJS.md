@@ -1,10 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **49.62% fewer median observed CPU instructions**
-than Brave on the frozen `/r/worldnews/` listing. Median launch-to-PNG time was
-**2.472 s for Vox and 2.506 s for Brave**. The seven-pair cohort remains
-provisional because two Brave captures differed from their fixed reference.
-A fresh live Vox visit reached Reddit's login page. [Current comparison](#launch-through-complete-png)
+Production Vox with LibJS used **49.43% fewer median observed CPU instructions**
+than Brave on the frozen `/r/worldnews/` listing. Median launch-to-PNG time
+was **2.052 s for Vox and 1.984 s for Brave**, with Brave finishing sooner in
+all seven pairs. Two Brave captures differed from their fixed reference.
+A fresh live Vox visit reached Reddit's login page. [Current comparison](#production-cohort-with-arrow-lookahead)
 
 ## Workload and execution
 
@@ -299,3 +299,79 @@ and the candidate was
 The latest completed production bundle at the component check had the
 previous lexer lookahead change. Browser validation of the arrow prefilter
 and the Brave pixel gate remain open.
+
+## Production cohort with arrow lookahead
+
+The managed single-unit `-prod` C build verified source `ec6782604`, which
+includes the arrow prefilter from `0c5ad43e2`. Executable SHA-256 is
+`9cc4ca67053d5b1ee2717d553c63ae935e7b4e54aad19d296fc6422f272c09dd`.
+The preprocessed C unit contains the prefilter and its call sites and hashes
+to `0fec83b89f2d0d88f8d53dc65e6f396a0dea9657b172fbf89ee86df4e1575791`.
+Both the production LibJS smoke check and the separate archived diagnostic
+passed. The archive produced execution generation 145 with zero JavaScript
+diagnostics and no JavaScriptCore context.
+
+The seven pairs use the clock-pinned launch-to-PNG protocol above, the
+same five original scripts, the same fixed per-engine references, private
+profiles and empty HTTP caches. The viewport and capture are 1024×768 at
+scale 1 with 1.4 s settling and retained OS filesystem and shader caches.
+All fourteen visits completed the 25-post audit, served the five pinned
+script bodies and exited zero. All seven Vox PNGs match exactly.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Pixel check |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,965,950,189 | 11,730,350,047 | 2083.6 | 1996.0 | Both exact |
+| 2 | 5,968,109,353 | 11,655,618,701 | 2048.3 | 1953.6 | Brave thumbnail |
+| 3 | 5,942,335,510 | 11,815,394,506 | 2051.6 | 1995.2 | Both exact |
+| 4 | 5,927,787,719 | 11,830,316,378 | 2031.0 | 1984.0 | Brave scroll offset |
+| 5 | 5,939,118,166 | 11,843,929,295 | 2065.9 | 1962.5 | Both exact |
+| 6 | 5,914,129,170 | 11,665,672,331 | 2069.6 | 2026.5 | Both exact |
+| 7 | 5,960,955,765 | 11,751,767,030 | 2041.0 | 1972.4 | Both exact |
+| Median | 5,942,335,510 | 11,751,767,030 | 2051.6 | 1984.0 | |
+
+Vox's highest observed instruction count was 51.20% of Brave's lowest.
+Vox's median elapsed time was 67.6 ms higher and Brave finished sooner
+in all seven pairs. The host one-minute load ranged from 6.33 to 7.92,
+substantially below the preceding cohort's 56.86–62.53. The difference
+in host contention prevents attributing the change in elapsed time to
+the prefilter. The new cohort ran from 04:41:29 to 04:42:06 UTC+03 on
+November 25, 2026.
+
+Both engines' counters remain process-tree lower bounds. The last samples
+preceded PNG observation by 5.69–6.37 ms for Vox and 0.35–6.27 ms for Brave.
+Vox reported no missing final samples. Brave reported 1, 2, 1, 2, 2, 2 and
+2 missing final samples. No sampled process was unidentified, and no counter
+reads were denied. All 14 browser roots were adopted by the 12 GiB guard,
+with 825,540,608 bytes of sampled peak aggregate RSS. The driver and guard
+exited 1 on the two Brave pixel failures. The fixed pixel gate remains open.
+
+Pair 2's Brave PNG differs in one thumbnail at x=83–153 and y=478–516,
+with 2,267 different pixels and a maximum channel error of 10. Pair 4
+is the same document image scrolled down by 535 pixels. Every pixel in
+the overlapping region matches the reference at that displacement. The
+two files are retained in the local cache as
+`references/brave-arrow-prefilter-pair-2.png` and
+`references/brave-arrow-prefilter-pair-4.png`.
+
+In a separate seven-launch Brave diagnostic, the five reference-matching
+captures had zero scroll offset. Two captures recorded DOM scroll offsets
+of 271 and 1 pixels and missed the same fixed reference. All seven visits
+replayed identical URL and body-hash sets. Both CSS viewports remained
+1024×768 at scale 1. The nonzero-offset images are retained as
+`references/brave-geometry-scroll-271.png` and
+`references/brave-geometry-scroll-1.png`. The diagnostic browser exits
+were all zero and its guard exited 1. The post-capture geometry audit
+serves as a rendering diagnostic.
+
+The earlier thumbnail-only variant included the PNG thumbnail as well as
+four JPEGs, and adjacent-pixel channel differences were smaller inside
+all five thumbnails. Offline sampling of the same source bytes favored
+prefiltering for the alternate pixels. The exact Brave sampling path
+remains unresolved.
+
+Two separate instrumented Vox loads sampled first native submission at
+538.5 and 559.4 ms after launch. Their JavaScript execution and bindings
+stages totaled 107.4 and 108.5 ms to that point. Both diagnostic visits
+and the guard exited zero. The fresh direct production visit reached
+`Welcome to Reddit` at the login redirect and exited normally, so live
+listing performance remains unverified.
