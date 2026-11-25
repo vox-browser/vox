@@ -2,6 +2,50 @@ module libjs
 
 import platform
 
+fn test_array_like_arguments_keep_getter_order_and_release_workspaces_after_throws() {
+	defer { set_call_argument_workspaces_for_testing(true) }
+	for enabled in [false, true] {
+		set_call_argument_workspaces_for_testing(enabled)
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		mut script := Script.parse('
+			function add(a,b){return this.base+a+b}
+			var reads="", receiver={base:1};
+			var args={
+				get length(){reads+="L";return 2},
+				get 0(){reads+="A";this[1]=Reflect.apply(add,receiver,[2,3]);return 35},
+				1:0
+			};
+			var result=add.apply(receiver,args);
+			var packed=Reflect.apply(add,receiver,[17,24]);
+			var sparse=[17,,0];
+			Object.setPrototypeOf(sparse,{get 1(){reads+="B";sparse[2]=24;return 0}});
+			var afterHole=(function(a,b,c){return a+b+c+1}).apply(null,sparse);
+			var reordered=[];
+			reordered[1]=24;
+			reordered[0]=17;
+			var afterReorder=add.apply(receiver,reordered);
+			function mapped(a,b){a=17;return add.apply(receiver,arguments)}
+			var caught=false;
+			try { Reflect.apply(add,receiver,{length:2,0:{},get 1(){throw 42}}) }
+			catch(e){caught=e===42}
+			var overLimit=false;
+			try { add.apply(receiver,{length:4294967296,get 0(){reads+="!"}}) }
+			catch(e){overLimit=true}
+			var long=(function(){return arguments[8]}).apply(null,[0,1,2,3,4,5,6,7,42]);
+			result===42&&packed===42&&afterHole===42&&afterReorder===42&&mapped(0,24)===42
+				&&reads==="LAB"&&caught&&overLimit&&long===42
+				&&Reflect.apply(add,receiver,[17,24])===42;
+		', vm.realm(), 'array-like-workspace.js', unsafe { nil })!
+		assert vm.run(mut script)!.as_bool()
+		stack := vm.interpreter_stack()
+		assert stack.call_argument_depth == 0
+		for workspace in stack.call_argument_workspaces {
+			assert workspace.values.all(it.is_undefined())
+		}
+	}
+}
+
 fn test_call_argument_workspaces_do_not_accumulate_per_call_buffers() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

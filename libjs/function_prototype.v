@@ -74,8 +74,7 @@ fn function_prototype_apply(mut vm VM) !Value {
 	this_argument := vm.argument(0)
 	argument_array := vm.argument(1)
 	if argument_array.is_nullish() { return call(mut vm, function, this_argument, []Value{}) }
-	call_arguments := create_argument_list_from_array_like(mut vm, argument_array)!
-	return call(mut vm, function, this_argument, call_arguments)
+	return vm.call_with_array_like_arguments(function, this_argument, argument_array)
 }
 
 fn function_prototype_call(mut vm VM) !Value {

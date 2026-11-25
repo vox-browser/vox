@@ -23,6 +23,18 @@ fn forwarding_eval(mut vm VM, source string) !Value {
 	return vm.run_with_limits(mut script, ExecutionLimits{max_instructions: 100000})
 }
 
+fn test_array_like_apply_keeps_independent_arguments_for_custom_callees() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut keeper := &ForwardingKeeper{}
+	mut object := Object.create(vm.realm(), vm.realm().function_prototype)
+	object.callable = FunctionObject(keeper)
+	mut global := vm.global_object()
+	global.define_direct_property(PropertyName.from_str('keeper'), Value.from_object(object), 7)
+	assert forwarding_eval(mut vm, 'keeper.apply(null,[42]);Reflect.apply(function(x){return x},null,[99])')!.number == 99
+	assert keeper.retained.len == 1 && keeper.retained[0].number == 42
+}
+
 fn test_forwarded_call_arguments_keep_custom_retention_and_native_views_independent() {
 	for enabled in [false, true] {
 		set_call_argument_forwarding_for_testing(enabled)
