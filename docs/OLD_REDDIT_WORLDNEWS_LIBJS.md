@@ -1,10 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **47.86% fewer median observed CPU instructions**
-than Brave on the frozen `/r/worldnews/` listing. The cohort is provisional.
-One Brave capture differed from its fixed reference, and the median elapsed
-observation was 2.198 s for Vox versus 2.128 s for Brave. A fresh live Vox visit
-reached Reddit's login page.
+Production Vox with LibJS used **49.62% fewer median observed CPU instructions**
+than Brave on the frozen `/r/worldnews/` listing. Median launch-to-PNG time was
+**2.472 s for Vox and 2.506 s for Brave**. The seven-pair cohort remains
+provisional because two Brave captures differed from their fixed reference.
+A fresh live Vox visit reached Reddit's login page. [Current comparison](#launch-through-complete-png)
 
 ## Workload and execution
 
@@ -28,7 +28,7 @@ visits. Audits preserved all 25 post IDs in order, a complete document and a
 1024×768 viewport at scale 1. Every Vox visit reported LibJS activity and zero
 JavaScriptCore contexts.
 
-## Seven alternating pairs
+## Earlier comparison through browser exit for Vox
 
 | Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
 | --- | ---: | ---: | ---: | ---: |
@@ -62,7 +62,7 @@ macOS 27.2 host had one-minute loads from 8.59 to 12.58. The guarded comparison
 recorded a sampled aggregate peak of 829,865,984 bytes. The elapsed observations
 include harness polling and use the two documented capture boundaries.
 
-## Identities and checks
+## Earlier identities and checks
 
 - Vox `16d70983e`, single-unit production C with literal `-prod`.
   Executable SHA-256 `779ac025dae475d5b290bda4baf5a0637118b7daefcbd70fdb76c2b297f67205`.
@@ -137,3 +137,102 @@ remain open. The prepared comparison controller
 records both engines from fresh process launch through the observer's receipt
 of a complete document PNG. The earlier Vox elapsed observations in this
 report extend through browser exit.
+
+## Launch through complete PNG
+
+The earlier comparison included Vox teardown while Brave stopped at the CDP
+PNG response. This scope instead ends when each observer has a complete
+document PNG. Vox uses the first poll that finds the PNG end chunk. Brave
+uses the completed CDP response, including delivery before its post-capture
+audit. Both use the last complete counter sample before the endpoint.
+
+An older-build preflight at the corrected boundary changed 1,086 Vox pixels
+because Reddit's relative-time labels advanced. The renderer produced the
+complete 25-post listing with all five original scripts. Its capture took
+2647.6 ms and 6,200,726,804 observed instructions. Vox exited zero and the
+guard exited 1 on the pixel mismatch. That PNG is preserved as
+`references/libjs-wall-clock-040252.png` in the local benchmark cache.
+
+The clock-pinned controller uses the reference set's recorded time,
+`1795567024000` milliseconds since the Unix epoch. Vox uses its native LibJS
+replay clock. Brave installs a Date-only shim before navigation. Both clocks
+advance with real monotonic elapsed time. Timer scheduling, archived response
+bodies, the two fixed pixel references and their exact comparison are
+preserved. The local driver is `benchmark_worldnews_pinned_clock.py`.
+The separate older-build preflight then matched both references
+exactly, with all five scripts and the 25 ordered posts. Vox observed
+6,100,017,553 instructions in 2529.6 ms and Brave observed 11,741,154,999 in
+2645.1 ms. Both browsers and the guard exited zero. This diagnostic ran on
+production `d2e369ed7` with one-minute host load between 80.23 and 82.53.
+
+### Production cohort
+
+The compared Vox executable comes from commit `16f2f74bf`, single-unit C with
+literal `-prod`. Its SHA-256 is
+`be46f82d9b97db8bdafd201d7b70a06b3612f88fe0e04fed758cc9354d3fe2b5`.
+Brave remained 158.1.100.58, Chromium 158.0.8127.42, with the executable and
+framework hashes listed above. The fixture, resource body hashes and exact
+per-engine reference images were unchanged. The comparison pinned packaged
+Vox native libraries, its adblock worker and the Brave helper executables.
+The 15-entry SHA-256 map, serialized as compact JSON sorted by path relative
+to the checkout or `/Applications`, hashes to
+`781b02faac22fdf87826527bf729f97a8113897612a6b30dd715321a40ce473f`.
+The archived interpreter runs with both LibJS caches disabled. The production
+LibJS smoke check passed, and a separate archived visit recorded execution
+generation 145 with zero script diagnostics and no JavaScriptCore context.
+All 93 benchmark, counter and archive helper tests passed with the system Python.
+
+Seven fresh alternating pairs used private profiles, empty HTTP caches, a
+1024×768 document viewport at scale 1 and the same 1.4 s settle period.
+OS filesystem and shader caches were retained. All visits served the same
+five author scripts and audited the 25 post IDs in order, the expected title
+and complete readiness. All seven Vox images and five Brave images exactly
+match their respective reference pixels.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Pixel check |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,969,611,799 | 12,246,817,770 | 2451.8 | 2572.8 | Both exact |
+| 2 | 6,024,090,614 | 11,958,332,241 | 2482.2 | 2479.5 | Both exact |
+| 3 | 6,001,961,071 | 12,074,076,340 | 2548.1 | 2459.2 | Both exact |
+| 4 | 6,067,675,878 | 11,863,175,260 | 2472.0 | 2538.6 | Brave thumbnails differ |
+| 5 | 6,053,229,640 | 12,055,354,388 | 2459.9 | 2506.5 | Both exact |
+| 6 | 6,014,174,928 | 11,855,943,352 | 2437.7 | 2581.3 | Brave thumbnails differ |
+| 7 | 6,072,785,963 | 11,839,084,469 | 2507.1 | 2480.5 | Both exact |
+| Median | 6,024,090,614 | 11,958,332,241 | 2472.0 | 2506.5 | |
+
+The highest observed Vox count was 51.29% of the lowest observed Brave count.
+Vox's median elapsed time was 34.5 ms lower, and Vox finished first in four
+pairs. The 18-core macOS 27.2 host had one-minute load averages from 56.86 to
+62.53. Trials ran from 04:18:19 through 04:19:12 UTC+03 on November 25, 2026.
+Elapsed observations include browser and window startup, navigation,
+settlement, and the engine's PNG path plus observer polling or CDP delivery.
+The time advantage varied by pair.
+
+Both instruction counts are observed process-tree lower bounds from macOS
+`proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions`. GPU execution, outside
+services and observer work are excluded. The 5 ms sampler's last completed
+passes preceded PNG observation by 5.17–8.42 ms for Vox and 1.47–7.54 ms for
+Brave. Vox reported no missing final samples. Brave reported 2, 1, 1, 3, 1,
+3 and 1 missing final samples, with one transient descendant recorded by PID
+only. No counter reads were denied. The 12 GiB memory guard adopted all 14
+browser roots without error and sampled a peak aggregate RSS of 858,177,536
+bytes. All browser exits were zero. The driver and guard exited 1 on the
+Brave pixel checks.
+
+Brave pairs 4 and 6 produced the same PNG. They differ from the fixed Brave
+reference by 13,902 pixels, with a maximum channel difference of 83, confined
+to five thumbnails at x=83–153. The replayed resource URL sets and body
+hashes match pair 1. The shared alternate PNG has SHA-256
+`b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`
+and is preserved as `references/brave-clock-pinned-pairs-4-and-6.png`
+in the local benchmark cache. The reference and exact comparison are
+unchanged. The pixel gate remains open.
+
+A separate diagnostic took three screenshots per fresh Brave process at
+capture, 0.5 seconds later and 2 seconds later. All nine screenshots match
+the fixed reference and all five visible thumbnails were loaded. All three
+browser exits and the diagnostic guard exit were zero. A fresh direct
+production Vox visit separately reached the
+`Welcome to Reddit` login page. The login page reported two unsupported
+module script URLs. The browser and guard exited zero. Live listing
+performance remains unverified.
