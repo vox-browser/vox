@@ -2227,6 +2227,18 @@ fn token_to_assignment_op(tt TokenType) AssignmentOp {
 }
 
 fn parse_numeric_value(value []u16) f64 {
+	// Up to 15 decimal digits fit exactly in a Number. Handle them directly
+	// while leaving leading-zero spellings to the radix and legacy-octal logic.
+	if value.len > 0 && value.len <= 15 && (value.len == 1 || value[0] != u16(`0`)) {
+		mut integer := u64(0)
+		mut digits := 0
+		for unit in value {
+			if unit < u16(`0`) || unit > u16(`9`) { break }
+			integer = integer * 10 + u64(unit - u16(`0`))
+			digits++
+		}
+		if digits == value.len { return f64(integer) }
+	}
 	// Filter underscores and convert to ASCII string.
 	mut buf := []u8{cap: value.len}
 	for c in value {

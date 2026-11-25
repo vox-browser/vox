@@ -128,6 +128,29 @@ fn test_parse_numeric_literal() {
 	assert expr.kind.numeric_value == 42.0
 }
 
+fn test_parse_decimal_integers_and_other_numeric_spellings() {
+	for spelling, expected in {
+		'0': 0.0
+		'9': 9.0
+		'105': 105.0
+		'999999999999999': 999999999999999.0
+		'9007199254740993': 9007199254740992.0
+		'010': 8.0
+		'09': 9.0
+		'0b1010': 10.0
+		'0o77': 63.0
+		'0xFF': 255.0
+		'10_002': 10002.0
+		'1.25e2': 125.0
+	} {
+		parsed := parse_source(spelling, .script)
+		assert !parsed.has_errors(), spelling
+		expression := parsed.program.kind.program_data?.scope.children[0].kind.expression?
+		assert expression.kind.tag == .numeric_literal
+		assert expression.kind.numeric_value == expected, spelling
+	}
+}
+
 fn test_parse_string_literal() {
 	program, _ := parse_script('"hello";')
 
