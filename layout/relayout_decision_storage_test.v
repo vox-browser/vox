@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 fn test_fresh_subtree_decisions_survive_geometry_workspace_retirement_and_growth() {
 	$if !prealloc { return }
@@ -44,4 +45,23 @@ fn test_fresh_subtree_decisions_survive_geometry_workspace_retirement_and_growth
 	allocations.finish()
 	document.finalize()
 	document.release_native_storage()
+}
+
+fn test_subtree_layout_comparison_reuses_empty_rare_inputs() {
+	missing := &UsedValues{}
+	empty := &UsedValues{rare_: &UsedValuesRareData{}}
+	margin := &UsedValues{rare_: &UsedValuesRareData{collapsed_flow_margin_bottom_: CSSPixels.new(4)}}
+	mut arena := platform.new_arena('subtree input comparison fixture')
+	defer { arena.release() }
+	entry := arena.enter()
+	defer { arena.leave(entry) }
+	before := arena.usage().used
+	for _ in 0 .. 256 {
+		assert subtree_layout_inputs_match(missing, missing)
+		assert subtree_layout_inputs_match(missing, empty)
+		assert subtree_layout_inputs_difference(missing, empty) == ''
+		assert !subtree_layout_inputs_match(margin, missing)
+		assert subtree_layout_inputs_difference(margin, missing) == 'collapsed-margin'
+	}
+	assert arena.usage().used == before
 }

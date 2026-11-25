@@ -761,6 +761,8 @@ fn subtree_height_is_not_an_input(a &UsedValues, b &UsedValues) bool {
 	return !retain_indefinite_height_input && !a.has_definite_height_ && !b.has_definite_height_
 }
 
+const empty_subtree_layout_inputs = &UsedValuesRareData{}
+
 // The values a parent sets before FormattingContext::layout_inside() that the
 // inner layout reads. Offsets and margins only place the box.
 fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
@@ -774,8 +776,8 @@ fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
 		|| a.border_top != b.border_top || a.border_bottom != b.border_bottom {
 		return false
 	}
-	x := a.rare_ or { &UsedValuesRareData{} }
-	y := b.rare_ or { &UsedValuesRareData{} }
+	x := a.rare_ or { empty_subtree_layout_inputs }
+	y := b.rare_ or { empty_subtree_layout_inputs }
 	if x.override_borders_data_ != none || y.override_borders_data_ != none {
 		return false
 	}
@@ -807,8 +809,8 @@ fn subtree_layout_inputs_difference(a &UsedValues, b &UsedValues) string {
 		|| a.border_bottom != b.border_bottom {
 		return 'border'
 	}
-	x := a.rare_ or { &UsedValuesRareData{} }
-	y := b.rare_ or { &UsedValuesRareData{} }
+	x := a.rare_ or { empty_subtree_layout_inputs }
+	y := b.rare_ or { empty_subtree_layout_inputs }
 	if x.override_borders_data_ != none || y.override_borders_data_ != none { return 'override-borders' }
 	if x.static_position_rect_ != y.static_position_rect_ { return 'static-position' }
 	if !subtree_optional_pixels_equal(x.box_model_percentage_basis_, y.box_model_percentage_basis_) {
