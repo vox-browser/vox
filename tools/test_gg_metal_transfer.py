@@ -24,6 +24,7 @@ def main():
     paths = [Path(__file__), root / 'tools/prepare_gg_metal.py', root / 'tools/prepare_ui2.py',
              root / 'native/include/native_gg_metal_transfer.h',
              root / 'native/include/native_gg_metal_shaders.h',
+             root / 'native/include/native_gg_metal_pipelines.h',
              root / 'cpuraster/scan_workers.h',
              root / 'tools/native_gg_metal_transfer_test.m',
              staged / 'sokol_gfx.h', staged / 'manifest.json',
@@ -51,12 +52,14 @@ def main():
                 if result.returncode:
                     raise SystemExit(result.returncode)
         env = dict(os.environ, VOX_GG_READBACK_DIAGNOSTICS='1',
-                   VOX_GG_METAL_SHADER_DIAGNOSTICS='1')
+                   VOX_GG_METAL_SHADER_DIAGNOSTICS='1', VOX_GG_METAL_PIPELINE_DIAGNOSTICS='1')
         env.pop('VOX_SERIAL_GG_METAL_SHADERS', None)
+        env.pop('VOX_SERIAL_GG_METAL_PIPELINES', None)
         step = [str(output / 'optimized')]
         result = subprocess.run(step, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         records.append({'command': step, 'env': {'VOX_GG_READBACK_DIAGNOSTICS': '1',
-                                                 'VOX_GG_METAL_SHADER_DIAGNOSTICS': '1'},
+                                                 'VOX_GG_METAL_SHADER_DIAGNOSTICS': '1',
+                                                 'VOX_GG_METAL_PIPELINE_DIAGNOSTICS': '1'},
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
         assert result.stdout.count('VOX_GG_READBACK ') == 128, 'diagnostics must be bounded'
@@ -64,15 +67,23 @@ def main():
         assert len(pairs) == 4 and all('off_thread=1' in line for line in pairs), pairs
         assert sum('vertex=1 fragment=1' in line for line in pairs) == 2, pairs
         print('Both passing and failing fragment compiles ran on a worker', flush=True)
+        batches = [line for line in result.stdout.splitlines()
+                   if line.startswith('VOX_GG_METAL_PIPELINE_BATCH ')]
+        assert len(batches) == 2 and all('submitted=3' in line and 'valid=1' in line
+                                         for line in batches), batches
+        print('Metal pipeline batches rejected a failed pipeline and a retired slot', flush=True)
         print('Bounded readback diagnostics: 128 markers', flush=True)
 
         env['VOX_SERIAL_GG_METAL_SHADERS'] = '1'
+        env['VOX_SERIAL_GG_METAL_PIPELINES'] = '1'
         result = subprocess.run(step, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        records.append({'command': step, 'env': {'VOX_SERIAL_GG_METAL_SHADERS': '1'},
+        records.append({'command': step, 'env': {'VOX_SERIAL_GG_METAL_SHADERS': '1',
+                                                 'VOX_SERIAL_GG_METAL_PIPELINES': '1'},
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
         assert 'VOX_GG_METAL_SHADER_PAIR ' not in result.stdout
-        print('Serial shader control passed the same pixel and failure checks', flush=True)
+        assert 'VOX_GG_METAL_PIPELINE_BATCH ' not in result.stdout
+        print('Serial shader and pipeline control passed the same pixel and failure checks', flush=True)
     finally:
         (output / 'results.json').write_text(json.dumps(records, indent=2) + '\n')
 

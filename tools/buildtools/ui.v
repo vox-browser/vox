@@ -171,6 +171,35 @@ fn patch_sokol_metal_shaders(text string, helper string) !string {
 	return replace_once(included, pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);')
 }
 
+fn patch_sokol_metal_pipelines(text string, helper string) !string {
+	start := '_SOKOL_PRIVATE sg_resource_state _sg_mtl_create_pipeline('
+	end := '_SOKOL_PRIVATE void _sg_mtl_discard_pipeline('
+	if text.count(start) != 1 || text.count(end) != 1 {
+		return error('Unsupported Sokol Metal pipeline builder')
+	}
+	first := text.index(start) or { return error('Missing Sokol Metal pipeline builder') }
+	last := text.index_after(end, first) or { return error('Missing Sokol Metal pipeline teardown') }
+	body := text[first..last]
+	render := '    NSError* err = NULL;\n    id<MTLRenderPipelineState> mtl_rps = '
+	depth := '    // depth-stencil-state'
+	create_depth := '    id<MTLDepthStencilState> mtl_dss = '
+	render_start := body.index(render) or { return error('Missing Sokol Metal render pipeline') }
+	depth_start := body.index_after(depth, render_start) or { return error('Missing Sokol Metal depth descriptor') }
+	depth_end := body.index_after(create_depth, depth_start) or { return error('Missing Sokol Metal depth state') }
+	replacement := '#include ' + json.encode(real(helper)) + '\n\n' + body[..render_start] +
+		body[depth_start..depth_end] + '    return vox_gg_metal_create_pipeline_states(pip, rp_desc, ds_desc);\n}\n\n'
+	init := '_SOKOL_PRIVATE void _sg_init_pipeline('
+	mut patched := replace_once(text[..first] + replacement + text[last..], init,
+		'#ifndef VOX_GG_METAL_PIPELINE_PENDING\n#define VOX_GG_METAL_PIPELINE_PENDING(pip) false\n#endif\n\n' + init)!
+	for separator, count in {'||': 1, ' || ': 2} {
+		assertion := '(pip->slot.state == SG_RESOURCESTATE_VALID)${separator}(pip->slot.state == SG_RESOURCESTATE_FAILED)'
+		original := 'SOKOL_ASSERT(${assertion});'
+		if patched.count(original) != count { return error('Unsupported Sokol pipeline state assertion') }
+		patched = patched.replace(original, 'SOKOL_ASSERT(${assertion} || VOX_GG_METAL_PIPELINE_PENDING(pip));')
+	}
+	return patched
+}
+
 fn prepare_sokol(modules string, vlib string) !string {
 	d3d11_helper := join(root_dir(), 'native/include/native_gg_d3d11_transfer.h')
 	source := join(os.dir(vlib), 'thirdparty/sokol/sokol_gfx.h')
@@ -182,9 +211,11 @@ fn prepare_sokol(modules string, vlib string) !string {
 	$if macos {
 		metal_helper := join(root_dir(), 'native/include/native_gg_metal_transfer.h')
 		shader_helper := join(root_dir(), 'native/include/native_gg_metal_shaders.h')
+		pipeline_helper := join(root_dir(), 'native/include/native_gg_metal_pipelines.h')
 		header = patch_sokol_metal(header, metal_helper)!
 		header = patch_sokol_metal_shaders(header, shader_helper)!
-		helpers << [metal_helper, shader_helper]
+		header = patch_sokol_metal_pipelines(header, pipeline_helper)!
+		helpers << [metal_helper, shader_helper, pipeline_helper]
 	}
 	patches := json.parse($embed_file('gg_patches.json').to_string())!.as_map()
 	d3d11_patches := patches['prepare_sokol_d3d11_transfers'] or { return error('Missing Sokol D3D11 transfer patches') }

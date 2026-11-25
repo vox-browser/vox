@@ -135,6 +135,7 @@ class VBuildMigrationTest(unittest.TestCase):
         if os.uname().sysname == 'Darwin':
             header = metal.patch_header(header, ROOT / 'native/include/native_gg_metal_transfer.h')
             header = metal.patch_shader_compilation(header, ROOT / 'native/include/native_gg_metal_shaders.h')
+            header = metal.patch_pipeline_compilation(header, ROOT / 'native/include/native_gg_metal_pipelines.h')
         actual_header = (modules / 'sokol/c/declaration.c.v').resolve().with_name('sokol_gfx.h')
         self.assertEqual(actual_header.read_text(), metal.patch_d3d11_transfers(
             header, ROOT / 'native/include/native_gg_d3d11_transfer.h'))

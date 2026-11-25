@@ -38,13 +38,32 @@ static sg_pipeline make_pipeline(void) {
     });
     sg_v_mtl_set_shader_compile_options(0, 0, false);
     assert(sg_query_shader_state(shader) == SG_RESOURCESTATE_VALID);
-    sg_pipeline pipeline = sg_make_pipeline(&(sg_pipeline_desc){
+    sg_pipeline_desc desc = {
         .shader = shader,
         .colors[0].pixel_format = SG_PIXELFORMAT_BGRA8,
         .depth.pixel_format = SG_PIXELFORMAT_NONE,
         .sample_count = 1,
-    });
+    };
+    bool batched = vox_gg_metal_begin_pipeline_batch();
+    sg_pipeline cancelled = sg_make_pipeline(&desc);
+    assert(sg_query_pipeline_state(cancelled) ==
+        (batched ? SG_RESOURCESTATE_ALLOC : SG_RESOURCESTATE_VALID));
+    sg_destroy_pipeline(cancelled);
+    sg_pipeline pipeline = sg_make_pipeline(&desc);
+    assert(pipeline.id != cancelled.id);
+    assert(sg_query_pipeline_state(pipeline) ==
+        (batched ? SG_RESOURCESTATE_ALLOC : SG_RESOURCESTATE_VALID));
+    // Metal rejects a floating-point fragment output on an integer attachment.
+    desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8UI;
+    sg_pipeline invalid = sg_make_pipeline(&desc);
+    if (batched) {
+        assert(sg_query_pipeline_state(invalid) == SG_RESOURCESTATE_ALLOC);
+        vox_gg_metal_end_pipeline_batch();
+    }
+    assert(sg_query_pipeline_state(invalid) == SG_RESOURCESTATE_FAILED);
+    assert(sg_query_pipeline_state(cancelled) == SG_RESOURCESTATE_INVALID);
     assert(sg_query_pipeline_state(pipeline) == SG_RESOURCESTATE_VALID);
+    sg_destroy_pipeline(invalid);
     return pipeline;
 }
 

@@ -18,6 +18,8 @@ const diagnostics = os.getenv('VOX_GG_DIAGNOSTICS') == '1'
 #include "@DIR/../native/include/native_graphite_bridge.h"
 
 fn C.pthread_main_np() i32
+fn C.vox_gg_metal_begin_pipeline_batch() bool
+fn C.vox_gg_metal_end_pipeline_batch()
 
 @[typedef]
 pub struct C.VoxGraphiteShape {
@@ -71,7 +73,11 @@ fn context() !&canvas.GpuContext {
 		}
 		canvas.prepare_document_shader_resources()
 		mut ctx := canvas.new_gpu_context()!
+		batched := C.vox_gg_metal_begin_pipeline_batch()
 		ctx.precompile()
+		if batched {
+			C.vox_gg_metal_end_pipeline_batch()
+		}
 		state.ctx = ctx
 	}
 	return state.ctx

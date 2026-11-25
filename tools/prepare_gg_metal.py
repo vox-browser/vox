@@ -35,6 +35,36 @@ def patch_shader_compilation(source, helper):
         pair, '        vox_gg_metal_compile_shader_sources(desc, &vs_lib, &fs_lib);', 1)
 
 
+def patch_pipeline_compilation(source, helper):
+    start = '_SOKOL_PRIVATE sg_resource_state _sg_mtl_create_pipeline('
+    end = '_SOKOL_PRIVATE void _sg_mtl_discard_pipeline('
+    if source.count(start) != 1 or source.count(end) != 1:
+        raise RuntimeError('Unsupported Sokol Metal pipeline builder')
+    first, last = source.index(start), source.index(end)
+    body = source[first:last]
+    render = body.index('    NSError* err = NULL;\n    id<MTLRenderPipelineState> mtl_rps = ')
+    depth = body.index('    // depth-stencil-state', render)
+    create_depth = body.index('    id<MTLDepthStencilState> mtl_dss = ', depth)
+    include = '#include ' + json.dumps(str(helper.resolve()))
+    replacement = (include + '\n\n' + body[:render] + body[depth:create_depth]
+                   + '    return vox_gg_metal_create_pipeline_states(pip, rp_desc, ds_desc);\n}\n\n')
+    patched = source[:first] + replacement + source[last:]
+    marker = '_SOKOL_PRIVATE void _sg_init_pipeline('
+    if patched.count(marker) != 1:
+        raise RuntimeError('Missing Sokol pipeline initialization')
+    patched = patched.replace(marker, '#ifndef VOX_GG_METAL_PIPELINE_PENDING\n'
+                              '#define VOX_GG_METAL_PIPELINE_PENDING(pip) false\n#endif\n\n' + marker, 1)
+    for separator, count in [('||', 1), (' || ', 2)]:
+        condition = ('(pip->slot.state == SG_RESOURCESTATE_VALID)' + separator
+                     + '(pip->slot.state == SG_RESOURCESTATE_FAILED)')
+        assertion = f'SOKOL_ASSERT({condition});'
+        if patched.count(assertion) != count:
+            raise RuntimeError('Unsupported Sokol pipeline state assertion')
+        patched = patched.replace(assertion,
+                                  f'SOKOL_ASSERT({condition} || VOX_GG_METAL_PIPELINE_PENDING(pip));')
+    return patched
+
+
 def patch_d3d11_transfers(source, helper):
     patches = json.loads(Path(__file__).with_name('buildtools').joinpath('gg_patches.json').read_text())
     for operation in patches['prepare_sokol_d3d11_transfers']:
@@ -50,6 +80,7 @@ def prepare_sokol_metal(modules, vlib, output_root=None, *, d3d11=False):
     repo = Path(__file__).resolve().parents[1]
     helper = repo / 'native/include/native_gg_metal_transfer.h'
     shader_helper = repo / 'native/include/native_gg_metal_shaders.h'
+    pipeline_helper = repo / 'native/include/native_gg_metal_pipelines.h'
     source = vlib.parent / 'thirdparty/sokol/sokol_gfx.h'
     declaration = vlib / 'sokol/c/declaration.c.v'
     original = declaration.read_text()
@@ -57,7 +88,8 @@ def prepare_sokol_metal(modules, vlib, output_root=None, *, d3d11=False):
     if original.count(include) != 1:
         raise RuntimeError('Unsupported Sokol native include declaration')
     header = patch_shader_compilation(patch_header(source.read_text(), helper), shader_helper)
-    helpers = [helper, shader_helper]
+    header = patch_pipeline_compilation(header, pipeline_helper)
+    helpers = [helper, shader_helper, pipeline_helper]
     if d3d11:
         d3d11_helper = repo / 'native/include/native_gg_d3d11_transfer.h'
         header = patch_d3d11_transfers(header, d3d11_helper)
