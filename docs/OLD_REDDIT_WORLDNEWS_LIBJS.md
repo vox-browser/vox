@@ -1,10 +1,10 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **49.05% fewer median observed CPU instructions**
+Production Vox with LibJS used **49.73% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
 their respective screenshot references. Median launch-to-PNG time was
-**2.302 s for Vox and 2.292 s for Brave**. A fresh live Vox visit reached
-Reddit's login page. [Current comparison](#pixel-exact-production-comparison-on-the-glyph-worker-build)
+**2.061 s for Vox and 2.007 s for Brave**. A fresh live Vox visit reached
+Reddit's login page. [Current comparison](#production-comparison-with-ascii-identifier-starts)
 
 ## Workload and execution
 
@@ -879,7 +879,8 @@ lengths for ASCII, supplementary, escaped and private names, and checks
 that an escaped digit cannot start an identifier.
 The five focused test files and all 100 upstream AST fixtures passed under
 Boehm and `-gc none`. Both default full-package runs stopped at the existing
-FastC-generated C error in `absent_property_set_test.v`.
+FastC-generated C error in `absent_property_set_test.v`. That file passed
+separately with the C backend in both heap modes.
 
 Both standalone cohorts used single-unit `-prod` C, `-prealloc -gc none`,
 and the production parser recursion limit. The driver verified the five
@@ -923,3 +924,87 @@ One-minute load was 23.94–25.30, and all processes and the guard exited zero.
 | 6 | 6,771,545,373 | 6,691,941,724 | 58.273 | 59.496 |
 | 7 | 6,772,595,677 | 6,691,447,190 | 58.843 | 58.384 |
 | Median | 6,772,837,988 | 6,695,108,872 | 59.149 | 60.813 |
+
+## Production comparison with ASCII identifier starts
+
+Managed build `20261125-074137-dde245c0` verified `9c2cd16ba`, which
+contains the lexer change and a subsequent SVG scheduling change. The sealed
+single-unit `-prod` C input contains both lexer paths and had SHA-256
+`81d0990604f113b04a5917cec757eb6e3da440b269ab48f1464571a9d5437175`.
+The executable SHA-256 was
+`280d23619019e06b7147a470b816f6a183b79265829a80bc09e07c10fa60451d`.
+The fresh LibJS headless smoke check passed.
+
+Seven alternating fresh pairs used the same clock-pinned 1024×768 archive,
+capture scale 1, 1.4 s settle period, private empty HTTP caches and profiles,
+and retained OS filesystem and shader caches. Vox ended at observer
+confirmation of a complete native document PNG. Brave ended at receipt
+of the complete CDP screenshot response. Browser, native-library, replay,
+observer and reference identities were verified throughout. Brave's executable
+and framework and the replay manifest matched the glyph-worker cohort.
+
+All 14 PNGs matched their browser's fixed reference. Both browsers reached
+`complete` with all 25 posts in order and replay served all five author
+scripts on each visit. Vox reported LibJS execution generation 145 with no
+diagnostics and JavaScriptCore uninitialized. Per-engine reference stability
+applies to the separate rendering baselines.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,906,532,112 | 11,667,791,466 | 2068.7 | 2057.9 |
+| 2 | 5,908,422,689 | 11,676,260,096 | 2046.9 | 2006.9 |
+| 3 | 5,849,626,526 | 11,737,890,239 | 2075.4 | 2016.6 |
+| 4 | 5,900,316,141 | 11,646,680,632 | 2047.2 | 2007.0 |
+| 5 | 5,839,917,198 | 11,746,247,287 | 2060.9 | 2001.0 |
+| 6 | 5,863,735,128 | 11,787,697,194 | 2061.7 | 1989.0 |
+| 7 | 5,900,531,038 | 11,758,956,875 | 2057.7 | 2007.5 |
+| Median | 5,900,316,141 | 11,737,890,239 | 2060.9 | 2007.0 |
+
+Vox used **49.73% fewer median observed instructions**. Its highest observed
+count was 50.73% of Brave's lowest and met the 10% observed-count gate. Brave
+finished sooner in every pair, with a 53.9 ms median lead. The end-to-end
+comparison covers the complete published build. The isolated lexer comparison
+above measures the LibJS change itself. Host one-minute load was 20.32–24.08
+on 18 cores. The cohort ran from 07:47:15 to 07:47:53 UTC+03 on November 25.
+
+The process-tree counters are lower bounds and exclude GPU execution and
+external services such as WindowServer. The last complete sample preceded
+the PNG boundary by 6.03–7.62 ms for Vox and 1.39–7.04 ms for Brave. Vox
+reported zero missing final samples. Brave reported 3, 2, 2, 2, 4, 2 and 2.
+All browser roots, the driver and the 12 GiB guard exited zero. The guard
+adopted all 14 roots and sampled a peak aggregate RSS of 797,114,368 bytes.
+
+A fresh direct visit in this build reached `Welcome to Reddit` at the login
+redirect with zero posts and two unsupported `data:` script URLs. The
+browser and guard exited zero. Live listing performance remains unverified.
+
+## Rejected arrow suffix prefilter
+
+A standalone experiment skipped speculative arrow parameter parsing when
+the character immediately after `)` ruled out `=>`. The focused arrow
+grammar check passed. Seven alternating pairs measured the same five
+archived scripts eight times per process against the committed lexer, using
+single-unit `-prod` C and `-prealloc -gc none`. Both binaries and all five
+script hashes were verified throughout. Host one-minute load was 17.49–17.88
+on 18 cores. Every process and the memory guard exited zero.
+
+| Pair | Control instructions | Prefilter instructions | Control ms per set | Prefilter ms per set |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,645,615,150 | 6,644,932,646 | 58.168 | 57.643 |
+| 2 | 6,664,022,950 | 6,645,199,484 | 58.154 | 59.211 |
+| 3 | 6,664,125,603 | 6,668,694,012 | 59.349 | 60.697 |
+| 4 | 6,647,608,515 | 6,655,416,165 | 59.608 | 58.301 |
+| 5 | 6,654,139,383 | 6,645,383,683 | 59.619 | 58.390 |
+| 6 | 6,644,884,862 | 6,649,347,957 | 57.742 | 58.109 |
+| 7 | 6,646,297,167 | 6,644,014,727 | 59.031 | 57.405 |
+| Median | 6,647,608,515 | 6,645,383,683 | 59.031 | 58.301 |
+
+The change saved 0.033% at the median and raised instruction counts in
+three pairs. The prefilter was reverted.
+
+A separate archived production run with stage counters and a 1 ms stack
+sampler recorded about 1.47 billion main-thread instructions across the
+JavaScript and binding stages. The sample reached ordinary function
+frames, native calls and the bytecode interpreter as well as parsing.
+The sampler, browser and guard exited zero. These instrumented observations
+identify active paths and were collected separately from the comparison.
