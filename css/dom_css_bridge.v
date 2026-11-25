@@ -510,10 +510,16 @@ struct DocumentStyleSource {
 }
 
 fn resolve_stylesheet_url(reference string, base_url string) ?string {
+	// Stylesheet lookups keep the serialized key. The parsed base, URL
+	// record and temporary components have no readers after serialization.
+	scratch := platform.begin_thread_scratch('stylesheet URL resolution')
+	defer { scratch.finish() }
 	resolved := dom.dom_url_parse(reference, dom.URL{
 		value: base_url
 	}, 'utf-8') or { return none }
-	return resolved.to_string()
+	serialized := resolved.to_string()
+	scratch.leave()
+	return serialized.clone()
 }
 
 fn local_path_for_stylesheet_url(serialized string) ?string {

@@ -1,6 +1,31 @@
 module css
 
 import dom
+import platform
+
+fn test_stylesheet_url_resolution_retains_only_the_serialized_keys() {
+	base := 'https://styles.test/news/patch.html?old=1'
+	long_path := 'nested-directory/'.repeat(64)
+	reference := '../${long_path}main.css?lang=日本語#tag'
+	expected := 'https://styles.test/${long_path}main.css?lang=%E6%97%A5%E6%9C%AC%E8%AA%9E#tag'
+	mut storage := platform.new_arena('stylesheet URL results')
+	defer { storage.release() }
+	entry := storage.enter()
+	defer { storage.leave(entry) }
+	before := storage.usage().used
+	mut keys := []string{cap: 64}
+	for _ in 0 .. 64 {
+		keys << link_style_sheet_url(reference, base) or { panic('failed to resolve stylesheet') }
+	}
+	growth := storage.usage().used - before
+	$if prealloc {
+		assert growth < i64(keys.len) * (expected.len + 96), '${growth} retained stylesheet URL bytes'
+	}
+	assert link_style_sheet_url('//STYLE.test/../font.css', base)? == 'https://style.test/font.css'
+	assert link_style_sheet_url('sub.css', 'file:///test/document.html')? == 'file:///test/sub.css'
+	assert link_style_sheet_url('sub.css', 'http://[') == none
+	for key in keys { assert key == expected }
+}
 
 // Ladybird 70df302eeebc40488afc780ca53a7307f24fe5f0. Reusing a cached
 // response must enforce the same MIME decision as the link fetch completion.
