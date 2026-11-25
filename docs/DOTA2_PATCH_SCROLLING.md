@@ -2105,3 +2105,120 @@ At 800×600, `nth-child-of-class` and `nth-child-of-has` matched their
 upstream pixel references for both builds. Each case produced identical
 actual PNG bytes across builds. Both comparison and guard runs exited 0
 with 163,627,008 B and 177,291,264 B peak guard RSS.
+
+## Releasing temporary image probe allocations
+
+`369394d25` gives layout's intrinsic-size and isolated SVG source probes
+a temporary allocator scope. Intrinsic size returns numeric fields.
+Isolated SVG parsing runs in the image document's own storage while the
+source probe remains readable. Remote probes use the already parsed URL
+and remove its fragment only when looking up the fetch response.
+
+Four focused C-backend preallocation cases passed normally and with
+`VOX_ARENA_NO_REUSE='layout image probe'`. The native case read a 256 KiB
+extensionless SVG response and probed a missing URL eight times without
+advancing the document arena cursor. It checked the parsed SVG's retained
+URL, view box and relative child URL after the probe retired. The compile,
+standard runtime and poisoned runtime guards exited 0 at sampled peak RSS
+of 6,453,919,744 B, 21,381,120 B and 262,144 B.
+
+### Live control
+
+Single-unit C `-prod` receipt `20261125-215649-36a0ec39` published
+SHA-256 `14f76a2a6e63d0d8b2de5b88f4c65d6a92cf54a1b283b5ea16cd1e34231de3cb`.
+A fresh shared publication superseded the previous planned control before
+its launcher started a browser. That attempt exited 1 at the identity check.
+
+The live launches used the 1024×768 viewport at scale 2, direct HTTPS and
+fresh private profiles and caches. Both passed the full patch audit with
+133 images, 15,620 UTF-8 text bytes and the established normalized digest.
+The endpoint was the
+median browser process-tree physical footprint over the final three seconds
+of a 12-second window after the first passing audit.
+
+| Vox control | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Standard launch | 23.02 s | 673,419,152 B | 1,090,195,344 B | 51 |
+| Allocation tracing | 23.05 s | 699,502,480 B | 1,128,632,232 B | 52 |
+
+The diagnostic checked the running Mach-O UUID, sealed allocator header
+layout and symbol address ranges. It tracked main-thread V allocator block
+creation and retirement under the intrinsic-size and SVG document probes.
+At about 35 seconds, 18 intrinsic-size growth blocks held 18,874,368 B of
+resident pages. One SVG document growth block held 1,048,576 B. Together
+the two paths accounted for 7,088 tracked creations and 7,069 retirements.
+`mincore` reported resident pages for every live mapping. The tracker
+dropped zero records. A growth stack attributes the block to its first allocation.
+Other allocations can use the same block.
+
+Both fresh processes, their drivers and the 3 GiB guards exited 0 with
+929,382,400 B and 963,608,576 B peak guard RSS. One-minute host load was
+5.01→5.04 and 4.40→5.73 on 18 CPUs.
+
+### Published build and live memory
+
+Single-unit C `-prod` receipt `20261125-220515-c448ff98` sealed
+`6638b0783`, which includes `369394d25`. The executable SHA-256 was
+`05da72a103b91f93c7a80af2955f8655c8e058a574f91b4929b7c73b216dea64`.
+The sealed C and executable contained the two probe paths. The compile
+and headless smoke guards exited 0 with 7,673,004,032 B and 131,072,000 B
+peak RSS. An earlier shared attempt stopped before C preprocessing
+after checkout inputs changed. The AVIF library, adblock helper and
+adblock asset hashes matched the controls.
+
+| Vox candidate | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Standard launch | 23.01 s | 684,543,888 B | 1,095,258,000 B | 52 |
+| Allocation tracing | 23.05 s | 677,711,784 B | 1,096,257,400 B | 52 |
+
+The diagnostic counted all 5,248 tracked intrinsic-size blocks and 700
+tracked SVG document blocks as retired at the sample. It dropped zero
+records. The control still had 19 blocks totaling 19,922,944 resident
+bytes whose growth began in these paths. Both candidate processes, their
+drivers and the 3 GiB guard exited 0 at a guard peak of 949,125,120 B.
+One-minute host load was 3.91→4.60 and 4.31→3.06 on 18 CPUs.
+
+The live trace confirms the shorter allocation lifetime. The standard
+candidate measured 11,124,736 B above its standard control. Whole-browser
+results include other shared changes and live-load variation. Brave's
+last valid visible observation was 354,492,360 B. The macOS session
+reported a locked screen for this cohort, so a fresh visible Brave
+comparison remains pending.
+
+### Native scrolling and reference pixels
+
+Both builds passed the live full-patch audit on each of two fresh
+`tools/measure_precise_scroll.py` launches. The 1024×768 document used a
+scale of 2 and default 112-pixel chrome. The runs used direct HTTPS,
+private profiles and HTTP caches, retained OS caches and automatic
+JavaScript. After 23 seconds from the matching title, each run sent
+720 precise wheel events at nominal 60 Hz with delta 16 and reversal at
+event 360. The endpoint was completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 21.72 | 46.42 / 73.11 / 138.52 ms | 257/281 | 720 / 285 | 55.58 Hz | 58.14 / 5.34 ms |
+| Control 2 | 21.91 | 45.10 / 70.50 / 130.71 ms | 263/287 | 720 / 290 | 54.88 Hz | 57.63 / 8.85 ms |
+| Candidate 1 | 24.36 | 41.26 / 62.68 / 123.18 ms | 297/320 | 720 / 324 | 54.74 Hz | 62.74 / 10.82 ms |
+| Candidate 2 | 22.68 | 43.82 / 68.19 / 119.40 ms | 273/293 | 720 / 301 | 55.66 Hz | 54.30 / 3.18 ms |
+
+The first-to-last input windows lasted 12.935, 13.101, 13.135 and
+12.919 seconds. The document reached 12,095.5, 12,063, 12,054.5 and
+12,028 CSS pixels and returned to 0, 0.5, 0 and 0. All browsers,
+drivers and 3 GiB guards exited 0. The guards sampled 1,319,960,576 B
+and 1,320,419,328 B peak RSS. One-minute host load on 18 CPUs was
+4.06→4.56, 4.56→4.70, 3.06→2.37 and 2.26→3.74. The cohorts ran in
+build order and the candidate had lower host load. Most frame intervals
+missed the 60 Hz budget.
+
+The nine SVG source-switch and paint-server reftests were pixel-exact
+on both builds at 800×600. All corresponding actual PNGs matched byte
+for byte across builds. Reference inputs and runtime hashes stayed pinned.
+Both comparison and 3 GiB guard runs exited 0, with sampled peak RSS
+of 235,143,168 B and 255,787,008 B.
+
+A separate candidate launch used a repeating 250 ms native audit. It
+first observed the complete visible patch at 3.81 seconds. Its browser,
+driver and 3 GiB guard exited 0 with 950,255,616 B peak guard RSS and
+one-minute host load 4.55→4.20. This diagnostic uses an earlier and more
+frequent audit than the RAM cohort.
