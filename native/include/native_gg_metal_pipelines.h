@@ -12,15 +12,17 @@ typedef struct {
     id<MTLDepthStencilState> depth;
     NSError *error;
     bool off_thread;
+    bool depth_off_thread;
 } VoxGGMetalPipelineCompile;
 
-// The drawing thread owns the batch and the Sokol slots. Each Metal
-// completion writes only to its own job until the group has joined.
+// The drawing thread owns the batch and the Sokol slots. The render
+// completion and depth worker write separate fields until the group joins.
 typedef struct {
     dispatch_group_t group;
     size_t count;
     pthread_t owner;
     bool collecting;
+    bool parallel_depth;
     VoxGGMetalPipelineCompile jobs[VOX_GG_METAL_PIPELINE_BATCH_CAPACITY];
 } VoxGGMetalPipelineBatch;
 
@@ -35,6 +37,8 @@ bool vox_gg_metal_begin_pipeline_batch(void) {
         || !enabled || strcmp(enabled, "1") != 0) return false;
     vox_gg_metal_pipeline_batch.group = dispatch_group_create();
     vox_gg_metal_pipeline_batch.collecting = true;
+    const char *parallel_depth = getenv("VOX_PARALLEL_GG_METAL_DEPTH_STATES");
+    vox_gg_metal_pipeline_batch.parallel_depth = parallel_depth && strcmp(parallel_depth, "1") == 0;
     vox_gg_metal_pipeline_batch.owner = getenv("VOX_GG_METAL_PIPELINE_DIAGNOSTICS")
         ? pthread_self() : NULL;
     return true;
@@ -82,7 +86,15 @@ static sg_resource_state vox_gg_metal_create_pipeline_states(_sg_pipeline_t *pip
                 job->off_thread = owner && !pthread_equal(owner, pthread_self());
                 dispatch_group_leave(group);
             }];
-        job->depth = [device newDepthStencilStateWithDescriptor:depth];
+        if (vox_gg_metal_pipeline_batch.parallel_depth) {
+            dispatch_group_async(group, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+                job->depth = [device newDepthStencilStateWithDescriptor:depth];
+                job->depth_off_thread = owner && !pthread_equal(owner, pthread_self());
+            });
+        } else {
+            job->depth = [device newDepthStencilStateWithDescriptor:depth];
+            job->depth_off_thread = false;
+        }
         _SG_OBJC_RELEASE(depth);
         return SG_RESOURCESTATE_ALLOC;
     }
@@ -106,7 +118,7 @@ void vox_gg_metal_end_pipeline_batch(void) {
     bool ready = diagnostics && dispatch_group_wait(group, DISPATCH_TIME_NOW) == 0;
     if (!ready) dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
     size_t count = vox_gg_metal_pipeline_batch.count;
-    size_t off_thread = 0, valid = 0;
+    size_t off_thread = 0, depth_off_thread = 0, valid = 0;
     for (size_t index = 0; index < count; ++index) {
         VoxGGMetalPipelineCompile *job = &vox_gg_metal_pipeline_batch.jobs[index];
         _sg_pipeline_t *pipeline = job->pipeline;
@@ -116,6 +128,7 @@ void vox_gg_metal_end_pipeline_batch(void) {
             valid += pipeline->slot.state == SG_RESOURCESTATE_VALID;
         }
         off_thread += job->off_thread;
+        depth_off_thread += job->depth_off_thread;
         _SG_OBJC_RELEASE(job->descriptor);
         _SG_OBJC_RELEASE(job->render);
         _SG_OBJC_RELEASE(job->depth);
@@ -124,7 +137,7 @@ void vox_gg_metal_end_pipeline_batch(void) {
     vox_gg_metal_pipeline_batch.count = 0;
     _SG_OBJC_RELEASE(vox_gg_metal_pipeline_batch.group);
     if (diagnostics) {
-        fprintf(stderr, "VOX_GG_METAL_PIPELINE_BATCH submitted=%zu completed_off_thread=%zu valid=%zu ready_at_join=%d\n",
-            count, off_thread, valid, ready);
+        fprintf(stderr, "VOX_GG_METAL_PIPELINE_BATCH submitted=%zu completed_off_thread=%zu valid=%zu ready_at_join=%d depth_off_thread=%zu\n",
+            count, off_thread, valid, ready, depth_off_thread);
     }
 }

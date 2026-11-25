@@ -34,6 +34,7 @@ def main():
     pins = hashes()
     (output / 'inputs.json').write_text(json.dumps(pins, indent=2) + '\n')
     worker_env = dict(os.environ, VOX_PARALLEL_GG_METAL_PIPELINES='1',
+                      VOX_PARALLEL_GG_METAL_DEPTH_STATES='1',
                       VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES='1')
     worker_env.pop('VOX_SERIAL_GG_METAL_SHADERS', None)
     records = []
@@ -53,6 +54,7 @@ def main():
                 print(result.stdout, flush=True)
                 records.append({'command': step,
                                 'env': {'VOX_PARALLEL_GG_METAL_PIPELINES': '1',
+                                        'VOX_PARALLEL_GG_METAL_DEPTH_STATES': '1',
                                         'VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES': '1'},
                                 'exit': result.returncode, 'output': result.stdout})
                 assert hashes() == pins, 'inputs changed during ' + mode
@@ -66,6 +68,7 @@ def main():
                                                  'VOX_GG_METAL_SHADER_DIAGNOSTICS': '1',
                                                  'VOX_GG_METAL_PIPELINE_DIAGNOSTICS': '1',
                                                  'VOX_PARALLEL_GG_METAL_PIPELINES': '1',
+                                                 'VOX_PARALLEL_GG_METAL_DEPTH_STATES': '1',
                                                  'VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES': '1'},
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
@@ -82,9 +85,20 @@ def main():
         batches = [line for line in result.stdout.splitlines()
                    if line.startswith('VOX_GG_METAL_PIPELINE_BATCH ')]
         assert len(batches) == 2 and all('submitted=3' in line and 'valid=1' in line
-                                         for line in batches), batches
-        print('Metal pipeline batches rejected a failed pipeline and a retired slot', flush=True)
+                                         and 'depth_off_thread=3' in line for line in batches), batches
+        print('Metal pipeline batches built depth states off-thread and rejected failed and retired slots',
+              flush=True)
         print('Bounded readback diagnostics: 128 markers', flush=True)
+
+        del env['VOX_PARALLEL_GG_METAL_DEPTH_STATES']
+        result = subprocess.run(step, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        records.append({'command': step, 'env': {'VOX_PARALLEL_GG_METAL_PIPELINES': '1',
+                                                 'VOX_GG_METAL_PIPELINE_DIAGNOSTICS': '1'},
+                        'exit': result.returncode, 'output': result.stdout})
+        assert result.returncode == 0 and hashes() == pins
+        batches = [line for line in result.stdout.splitlines()
+                   if line.startswith('VOX_GG_METAL_PIPELINE_BATCH ')]
+        assert len(batches) == 2 and all('depth_off_thread=0' in line for line in batches), batches
 
         env['VOX_SERIAL_GG_METAL_SHADERS'] = '1'
         del env['VOX_PARALLEL_GG_METAL_PIPELINES']
