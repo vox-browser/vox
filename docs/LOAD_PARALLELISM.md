@@ -4680,3 +4680,122 @@ miss. Worker diagnostics verified the URL, complete ready state, viewport
 and all 30 ordered story IDs. The executable, helper, library, archive and
 harness inputs stayed pinned. All browser, driver and guard exits were
 zero. Peak RSS was 384,909,312 bytes under the 3 GiB guard.
+
+### Compile Metal shader stages concurrently
+
+Two leaf-timing captures on the previous production build
+(`b27e26e3422e…9cf`) placed the first gradient draw at 11.663 and
+11.876 ms. The first draw sets up the GG Metal context and precompiles
+its solid pipelines. Two separate counter captures attributed 68,388,250
+and 65,281,123 main-thread instructions to the 25 fill leaves.
+These diagnostic captures replayed the archive without an added logo
+response delay and matched the reference PNG.
+
+Commit `99dd612f7` sends the fragment library compile to a worker
+while the drawing thread compiles the vertex library. The drawing
+thread joins before reporting shader errors, looking up Metal functions
+or registering objects in the Sokol pool. The worker gets the same
+Metal device and a private copy of the compile options. The worker path
+applies to GG canvas programs with both stages supplied as source and
+an explicit Metal shader language version. `VOX_SERIAL_GG_METAL_SHADERS=1`
+selects serial stage compilation on the same executable.
+
+The native Metal checks passed in both modes, including 128 exact
+render-and-readback cases and a deliberately invalid fragment shader.
+The worker diagnostics recorded valid and invalid fragment compiles
+off the drawing thread. The native checks also passed with address,
+undefined-behavior and thread sanitizers. A separate non-ARC syntax
+check passed. The staged Sokol header matched the Python staging
+oracle and preserved the other adapters. The GG leaf-region suite
+passed with both schedules using the production-staged Sokol header.
+
+#### Matched homepage captures
+
+Production receipt `20261125-210603-b2c6160e` verified `300816b71`,
+which includes the shader change, and passed startup smoke in
+single-C-unit V `-prod` mode. Both settings used the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `217ed8355ca8144364a5a96da3786ccdeb0898d635aacd38546c1f7f23d86a44` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Each worker diagnostic recorded 16 successful fragment compiles off
+the drawing thread. The fragments were already ready at two joins in
+the first worker launch and one in the second. Both serial controls
+recorded zero worker compiles. The first gradient took 14.311 and
+14.426 ms in the serial launches and 15.884 and 15.499 ms with worker
+logging enabled.
+
+Separate counter captures recorded 25 fill leaves, one command
+dispatch and three native replay scopes per launch. The drawing
+thread's inclusive fill instructions fell 16.8% and 18.0%.
+
+| Scope | Pair 1 serial | Pair 1 worker | Pair 2 serial | Pair 2 worker |
+| --- | ---: | ---: | ---: | ---: |
+| Fill leaves | 69,983,945 | 58,218,725 | 70,473,491 | 57,811,665 |
+| Paint command dispatch | 241,237,029 | 228,872,346 | 241,596,625 | 228,596,036 |
+| Native raster replay | 268,099,580 | 255,611,842 | 268,432,019 | 255,259,476 |
+
+Two unprofiled seven-pair cohorts alternated settings and reversed
+the first mode. Timing ran from fresh process launch through the
+completed document PNG at 1024×768 CSS pixels and 2× scale. Captures
+used JavaScriptCore, empty private profiles and HTTP caches, retained
+OS filesystem and shader caches, `tr.athing` readiness, and a 60 ms
+replay delay per logo response.
+
+| Pair | Serial, ms | Worker, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 290.438 | 283.439 | 309.133 | 301.898 |
+| 2 | 284.229 | 286.324 | 294.074 | 297.897 |
+| 3 | 304.854 | 294.366 | 302.349 | 295.154 |
+| 4 | 307.965 | 303.564 | 305.384 | 303.484 |
+| 5 | 292.635 | 296.157 | 287.074 | 286.561 |
+| 6 | 310.846 | 294.129 | 286.955 | 302.890 |
+| 7 | 323.380 | 304.054 | 296.396 | 297.508 |
+| Median | 304.854 | 294.366 | 296.396 | 297.897 |
+
+Paired median changes were −6.999 and −0.513 ms, with five and four
+worker wins. Sampled main-thread CPU medians went from 156.065 to
+155.587 ms and from 155.461 to 155.916 ms. One-minute load was
+4.66–4.89 and 4.58–4.69 on 18 CPUs.
+
+All 36 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced the same eight request and response records, including the
+favicon miss. The shader diagnostics verified the document URL, ready
+state, viewport and all 30 ordered story IDs. Executable, helper, library,
+archive and harness inputs stayed pinned. All browser, driver and guard
+exits were zero. Peak RSS was 398,983,168 bytes under the 3 GiB guard.
+
+#### First gradient wall time
+
+Two more seven-pair cohorts used the same build, replay and alternating
+schedule with only leaf timing enabled. The first visible gradient was
+command 2 in every trial. Its replay interval includes the cold GG Metal
+context, shader and pipeline initialization, and the first draw.
+
+| Pair | Serial, µs | Worker, µs | Reversed serial, µs | Reversed worker, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 15,438 | 15,464 | 15,146 | 14,958 |
+| 2 | 15,169 | 15,529 | 14,772 | 15,012 |
+| 3 | 14,481 | 15,173 | 14,280 | 15,169 |
+| 4 | 14,708 | 14,747 | 15,582 | 14,904 |
+| 5 | 14,442 | 16,049 | 14,760 | 15,675 |
+| 6 | 15,366 | 15,220 | 14,589 | 16,688 |
+| 7 | 15,195 | 15,368 | 14,846 | 15,299 |
+| Median | 15,169 | 15,368 | 14,772 | 15,169 |
+
+Paired median changes were +173 and +453 µs, with one and two worker
+wins. One-minute load ranged from 4.85 to 5.27 and from 5.27 to 5.86.
+All 28 captures matched the same reference PNG and replay records.
+Executable and fixture hashes stayed pinned. All browser, driver and
+guard exits were zero. Peak RSS was 367,443,968 bytes.
+
+Worker compilation stays enabled. It moved 16 fragment compiles off
+the drawing thread and reduced that thread's fill instruction counts.
+The measured first gradient took slightly longer, while the unprofiled
+whole-page paired medians fell by varying amounts. Pipeline creation
+and native draw submission still run on the drawing thread.
