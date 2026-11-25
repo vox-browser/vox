@@ -245,6 +245,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if snapshot := request.snapshot {
 		mut messages := []string{}
 		result := replay_compact_dom_snapshot(binding.document, snapshot, binding.runtime, mut messages)
+		defer { result.workspace.finish() }
 		// Console output stays in the script snapshot for its normal consumer;
 		// only DOM replay failures can reject this selector operation.
 		mut log_count := request.log_count
@@ -255,7 +256,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		for key, element in result.elements {
 			binding.elements[key] = element
-			binding.keys[voidptr(element)] = key
+			if (binding.keys[voidptr(element)] or { '' }) != key {
+				binding.keys[voidptr(element)] = key.clone()
+			}
 		}
 	}
 	if compact_query_diagnostics { diag_replay_ns = time.sys_mono_now() - diag_replay_started }

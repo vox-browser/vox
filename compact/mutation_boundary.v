@@ -58,7 +58,8 @@ fn settle_compact_dom_reactions(document &dom.Document, runtime &browserjs.Runti
 			state.finish()
 			return
 		}
-		replay_compact_dom_snapshot(document, state.value, runtime, mut messages)
+		result := replay_compact_dom_snapshot(document, state.value, runtime, mut messages)
+		result.workspace.finish()
 		state.finish()
 	}
 }

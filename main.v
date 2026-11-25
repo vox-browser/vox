@@ -2481,10 +2481,16 @@ $if test {
 		state := javascript_replay_state(encoded, mut messages) or { return none }
 		return apply_decoded_javascript_state(document, state, canvas_elements, mut messages)
 	}
+
+	fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2.Any,
+		canvas_elements map[string]&dom.Element, mut messages []string) ?string {
+		mut elements := canvas_elements.clone()
+		return apply_decoded_javascript_state_with_bindings(document, state, mut elements, mut messages)
+	}
 }
 
-fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2.Any,
-	canvas_elements map[string]&dom.Element, mut messages []string) ?string {
+fn apply_decoded_javascript_state_with_bindings(document &dom.Document, state map[string]json2.Any,
+	mut element_by_bridge_key map[string]&dom.Element, mut messages []string) ?string {
 	if model := html.NavigableModel.navigable_with_active_document(document) {
 		mut mutable_model := unsafe { &html.NavigableModel(model) }
 		mutable_model.set_force_dark_enabled(json_bool_property(state, 'forceDarkEnabled'))
@@ -2524,7 +2530,6 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 			body_node.set_text_content(body_text) or { messages << err.msg() }
 		}
 	}
-	mut element_by_bridge_key := canvas_elements.clone()
 	if element_values := state['elements'] {
 		if element_values is map[string]json2.Any {
 			for _, item in element_values as map[string]json2.Any {
@@ -2543,9 +2548,10 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 						has_initial_elements = true
 					}
 					if element_index < 0 || element_index >= initial_elements.len { continue }
-					initial_elements[element_index]
+					legacy_element := initial_elements[element_index]
+					element_by_bridge_key[bridge_key] = legacy_element
+					legacy_element
 				}
-				element_by_bridge_key[bridge_key] = element
 				if (element.is_html_element() && element.local_name() == 'meta'
 					&& json_bool_property(element_state, 'attributesDirty'))
 					|| json_bool_property(element_state, 'innerHTMLDirty')
