@@ -152,18 +152,21 @@ fn test_parse_decimal_integers_and_other_numeric_spellings() {
 }
 
 fn test_parse_string_literal() {
-	program, _ := parse_script('"hello";')
-
-	pd := program.kind.program_data or { panic('no program_data') }
-	children := pd.scope.children
-	assert children.len == 1
-
-	stmt := children[0]
-	assert stmt.kind.tag == .expression_stmt
-
-	expr := stmt.kind.expression or { panic('no expression') }
-	assert expr.kind.tag == .string_literal
-	assert expr.kind.literal_string().str() == 'hello'
+	for spelling, expected in {
+		'"hello"': 'hello'
+		'""': ''
+		'"World News includes λ and 🙂"': 'World News includes λ and 🙂'
+		'"one\u2028two"': 'one\u2028two'
+		r'"prefix \"quoted\" and \x41"': 'prefix "quoted" and A'
+		r'"abc\101def"': 'abcAdef'
+		'"part\\\r\ntwo"': 'parttwo'
+	} {
+		parsed := parse_source(spelling, .script)
+		assert !parsed.has_errors(), spelling
+		expr := parsed.program.kind.program_data?.scope.children[0].kind.expression?
+		assert expr.kind.tag == .string_literal
+		assert expr.kind.literal_string().str() == expected, spelling
+	}
 }
 
 fn test_parse_boolean_true() {

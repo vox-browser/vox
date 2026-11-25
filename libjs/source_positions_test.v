@@ -64,3 +64,28 @@ fn test_ascii_punctuator_keeps_crlf_trivia_and_the_following_unicode_unit() {
 	assert identifier.line_column == 5
 	assert identifier.value_start == 7
 }
+
+fn test_string_spans_keep_unicode_lines_and_lookahead_positions() {
+	mut lexer := Lexer.new(utf16('"ASCII 🙂λ\u2028body" next'), 1, 0)
+	preview := lexer.peek()
+	assert preview.token_type == .string_literal
+	assert preview.value_len == 16
+	assert lexer.next().value_len == preview.value_len
+	identifier := lexer.next()
+	assert identifier.token_type == .identifier
+	assert identifier.line_number == 2
+	assert identifier.line_column == 7
+	assert identifier.value_start == 17
+}
+
+fn test_string_spans_stop_at_escapes_and_eof() {
+	mut escaped := Lexer.new(utf16(r'"ordinary \"quoted\" text"'), 1, 0)
+	token := escaped.next()
+	assert token.token_type == .string_literal
+	assert token.value_len == 26
+	mut unfinished := Lexer.new(utf16('"ordinary text through EOF'), 1, 0)
+	invalid := unfinished.next()
+	assert invalid.token_type == .unterminated_string_literal
+	assert invalid.value_len == 26
+	assert unfinished.next().token_type == .eof
+}

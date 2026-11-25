@@ -468,11 +468,11 @@ fn (mut l Lexer) consume() {
 	l.position += 1
 }
 
-// The lookup already proved that this many ASCII punctuator code units
-// remain. Advance the column and position together.
+// The caller has identified a span of ASCII code units without line breaks.
+// Advance the column and position together.
 @[inline]
 @[direct_array_access]
-fn (mut l Lexer) consume_ascii_punctuator(width int) {
+fn (mut l Lexer) consume_ascii_code_units(width int) {
 	next := l.position + width - 1
 	l.line_column += u32(width)
 	l.position = next + 1
@@ -482,6 +482,20 @@ fn (mut l Lexer) consume_ascii_punctuator(width int) {
 	} else {
 		l.current_code_unit = l.source[next]
 	}
+}
+
+// The current code unit is already known to be ordinary ASCII string text.
+@[direct_array_access]
+fn (mut l Lexer) consume_ascii_string_run(quote u16) {
+	mut end := l.position
+	for end < l.source.len {
+		unit := l.source[end]
+		if unit >= 128 || unit == quote || unit == u16(`\\`) || unit == u16(`\r`) || unit == u16(`\n`) {
+			break
+		}
+		end++
+	}
+	l.consume_ascii_code_units(end - l.position + 1)
 }
 
 fn (l &Lexer) current_code_point() u32 {
@@ -1132,22 +1146,25 @@ fn (mut l Lexer) lex_token() Token {
 			}
 		} else if l.current_code_unit == ch(u8(`"`)) || l.current_code_unit == ch(u8(`'`)) {
 			stop_char := l.current_code_unit
-			l.consume()
+			l.consume_ascii_code_units(1)
 			for l.current_code_unit != stop_char && l.current_code_unit != ch(u8(`\r`))
 				&& l.current_code_unit != ch(u8(`\n`)) && !l.is_eof() {
 				if l.current_code_unit == ch(u8(`\\`)) {
-					l.consume()
+					l.consume_ascii_code_units(1)
 					if l.current_code_unit == ch(u8(`\r`)) && l.position < l.source_len()
 						&& l.source[l.position] == ch(u8(`\n`)) {
 						l.consume()
 					}
+				} else if l.current_code_unit < 128 {
+					l.consume_ascii_string_run(stop_char)
+					continue
 				}
 				l.consume()
 			}
 			if l.current_code_unit != stop_char {
 				token_type = .unterminated_string_literal
 			} else {
-				l.consume()
+				l.consume_ascii_code_units(1)
 				token_type = .string_literal
 			}
 		} else if l.current_code_unit == ch(u8(`/`)) && !l.slash_means_division() {
@@ -1166,13 +1183,13 @@ fn (mut l Lexer) lex_token() Token {
 			if lex_single_only_punctuator(l.current_code_unit) {
 				found_token = true
 				token_type = single_char_token(l.current_code_unit)
-				l.consume_ascii_punctuator(1)
+				l.consume_ascii_code_units(1)
 			}
 
 			if !found_token && l.match4(ch(u8(`>`)), ch(u8(`>`)), ch(u8(`>`)), ch(u8(`=`))) {
 				found_token = true
 				token_type = .unsigned_shift_right_equals
-				l.consume_ascii_punctuator(4)
+				l.consume_ascii_code_units(4)
 			}
 
 			if !found_token && l.position + 1 < l.source_len() {
@@ -1183,7 +1200,7 @@ fn (mut l Lexer) lex_token() Token {
 				if tt != .invalid {
 					found_token = true
 					token_type = tt
-					l.consume_ascii_punctuator(3)
+					l.consume_ascii_code_units(3)
 				}
 			}
 
@@ -1196,7 +1213,7 @@ fn (mut l Lexer) lex_token() Token {
 						&& lex_is_ascii_digit(l.source[l.position + 1])) {
 						found_token = true
 						token_type = tt
-						l.consume_ascii_punctuator(2)
+						l.consume_ascii_code_units(2)
 					}
 				}
 			}
@@ -1206,7 +1223,7 @@ fn (mut l Lexer) lex_token() Token {
 				if tt != .invalid {
 					found_token = true
 					token_type = tt
-					l.consume_ascii_punctuator(1)
+					l.consume_ascii_code_units(1)
 				}
 			}
 
