@@ -127,14 +127,42 @@ fn stylesheet_declaration_nodes(declarations []Declaration) int {
 	return nodes
 }
 
+struct StylesheetRulePayload {
+	input string
+	rules []Rule
+	nodes int
+}
+
+fn stylesheet_rule_tree_nodes(rules []Rule) int {
+	mut nodes := rules.len
+	for rule in rules { nodes += stylesheet_rule_nodes(rule) }
+	return nodes
+}
+
+fn copy_stylesheet_rule_payload(input string, rules []Rule, nodes int) StylesheetRulePayload {
+	owned_input := input.clone()
+	mut owned_rules := []Rule{cap: rules.len}
+	for rule in rules { owned_rules << own_transient_rule_tree(rule) }
+	return StylesheetRulePayload{input: owned_input, rules: owned_rules, nodes: nodes}
+}
+
+// A startup worker can build the same independent payload as store() without
+// touching cache state. The owner adopts its storage after the handoff.
+fn prepare_stylesheet_rule_payload(input string, rules []Rule, max_nodes int) (StylesheetRulePayload, platform.DetachedThreadScratch) {
+	nodes := stylesheet_rule_tree_nodes(rules)
+	if nodes > max_nodes { return StylesheetRulePayload{}, platform.DetachedThreadScratch{} }
+	scratch := platform.begin_thread_scratch('stylesheet rule cache')
+	payload := copy_stylesheet_rule_payload(input, rules, nodes)
+	return payload, scratch.detach()
+}
+
 // Called after ordinary syntax parsing, so an oversized candidate never
 // causes a second parse. No parser or author callback runs under the lock.
 // Returns the stored (or already published) entry's id, or 0 when the source
 // is not cached.
 fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) u64 {
 	if !cache.eligible(input) { return 0 }
-	mut nodes := rules.len
-	for rule in rules { nodes += stylesheet_rule_nodes(rule) }
+	nodes := stylesheet_rule_tree_nodes(rules)
 	if nodes > cache.max_nodes { return 0 }
 	cache.mutex.lock()
 	defer { cache.mutex.unlock() }
@@ -150,41 +178,63 @@ fn (mut cache StylesheetRuleCache) store(input string, rules []Rule) u64 {
 		storage = platform.new_retained_arena('stylesheet rule cache')
 		allocation_scope = storage.enter_nested()
 	}
-	owned_input := input.clone()
-	mut owned_rules := []Rule{cap: rules.len}
-	for rule in rules { owned_rules << own_transient_rule_tree(rule) }
+	payload := copy_stylesheet_rule_payload(input, rules, nodes)
 	allocation_scope.finish()
+	return cache.publish(payload, storage)
+}
+
+fn (mut cache StylesheetRuleCache) store_prepared(payload StylesheetRulePayload, mut detached platform.DetachedThreadScratch) u64 {
+	mut storage := detached.adopt('stylesheet rule cache')
+	if storage == unsafe { nil } { return 0 }
+	if !cache.eligible(payload.input) || payload.nodes > cache.max_nodes {
+		storage.release()
+		return 0
+	}
+	cache.mutex.lock()
+	defer { cache.mutex.unlock() }
+	for entry in cache.entries {
+		if entry.input == payload.input {
+			storage.release()
+			return entry.id
+		}
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	return cache.publish(payload, storage)
+}
+
+// Caller holds the cache mutex and owns the payload's initial arena lease.
+fn (mut cache StylesheetRuleCache) publish(payload StylesheetRulePayload, storage &platform.RetainedArena) u64 {
 	mut retained_bytes := i64(0)
 	$if prealloc {
 		// Decoded strings, immutable token payloads and allocator overhead
 		// can make a short source occupy many times its text size.
 		retained_bytes = storage.arena.usage().capacity
 		if retained_bytes > cache.max_retained_bytes {
-			// The cache never published this arena, so it has no borrowers.
-			storage.arena.reset()
-			storage.release()
+			mut rejected := storage
+			rejected.release()
 			return 0
 		}
 	}
 	for cache.entries.len > 0 && (cache.entries.len >= cache.max_entries
-		|| cache.source_bytes + input.len > cache.max_source_bytes
-		|| cache.nodes + nodes > cache.max_nodes
+		|| cache.source_bytes + payload.input.len > cache.max_source_bytes
+		|| cache.nodes + payload.nodes > cache.max_nodes
 		|| cache.retained_bytes + retained_bytes > cache.max_retained_bytes) {
 		cache.evict_oldest()
 	}
 	cache.serial++
 	cache.next_id++
 	cache.entries << &StylesheetRuleEntry{
-		input:     owned_input
-		rules:     owned_rules
-		nodes:     nodes
+		input:     payload.input
+		rules:     payload.rules
+		nodes:     payload.nodes
 		retained_bytes: retained_bytes
 		storage:   storage
 		id:        cache.next_id
 		last_used: cache.serial
 	}
-	cache.source_bytes += input.len
-	cache.nodes += nodes
+	cache.source_bytes += payload.input.len
+	cache.nodes += payload.nodes
 	cache.retained_bytes += retained_bytes
 	return cache.next_id
 }

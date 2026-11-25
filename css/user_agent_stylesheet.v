@@ -22,6 +22,7 @@ const user_agent_quirks_mode_stylesheet = user_agent_stylesheets.quirks
 const user_agent_mathml_stylesheet = user_agent_stylesheets.mathml
 const user_agent_svg_stylesheet = user_agent_stylesheets.svg
 const sync_user_agent_syntax = os.getenv('VOX_SYNC_UA_STYLESHEET_SYNTAX') == '1'
+const sync_user_agent_rule_cache = os.getenv('VOX_SYNC_UA_STYLESHEET_RULE_CACHE') == '1'
 const early_user_agent_stylesheet_join = os.getenv('VOX_EARLY_UA_STYLESHEET_JOIN') == '1'
 const user_agent_syntax_diagnostics = os.getenv('VOX_UA_STYLESHEET_DIAGNOSTICS') == '1'
 const deferred_user_agent_startup = use_deferred_user_agent_startup()
@@ -48,22 +49,32 @@ struct UserAgentSyntaxPreparation {
 
 struct PreparedUserAgentSyntax {
 	rules []Rule
+	cache_payload StylesheetRulePayload
 	thread_id u64
 	ready_ns u64
+mut:
+	cache_storage platform.DetachedThreadScratch
 }
 
-fn prepare_user_agent_syntax(source string, ready chan PreparedUserAgentSyntax, consumed chan bool) {
+fn prepare_user_agent_syntax(source string, max_cache_nodes int, ready chan PreparedUserAgentSyntax, consumed chan bool) {
 	scratch := platform.begin_thread_scratch('user agent stylesheet worker')
 	defer { scratch.finish() }
-	// Tokenize and parse raw grammar only. The caller owns the shared caches,
-	// CSSOM construction and any document-dependent value parsing.
+	// Parse raw grammar and prepare an independent cache copy. The caller owns
+	// cache publication, CSSOM construction and document-dependent parsing.
 	mut parser := RuleSelectorParser{
 		token_stream: ParserTokenStream.from_transient_source(source, 'utf-8')
 		is_ua_style_sheet: .yes
 	}
 	rules := parser.parse_a_stylesheet(none).rules
+	payload, storage := if max_cache_nodes > 0 {
+		prepare_stylesheet_rule_payload(source, rules, max_cache_nodes)
+	} else {
+		StylesheetRulePayload{}, platform.DetachedThreadScratch{}
+	}
 	ready <- PreparedUserAgentSyntax{
 		rules: rules
+		cache_payload: payload
+		cache_storage: storage
 		thread_id: if user_agent_syntax_diagnostics { platform.native_thread_identity() } else { u64(0) }
 		ready_ns: if user_agent_syntax_diagnostics { time.sys_mono_now() } else { u64(0) }
 	}
@@ -114,7 +125,12 @@ fn start_user_agent_syntax_preparation() &UserAgentSyntaxPreparation {
 	defer { platform.leave_persistent(persistent) }
 	ready := chan PreparedUserAgentSyntax{cap: 1}
 	consumed := chan bool{}
-	worker := spawn prepare_user_agent_syntax(user_agent_cascade_stylesheet_source, ready, consumed)
+	source := user_agent_cascade_stylesheet_source
+	max_cache_nodes := if !sync_user_agent_rule_cache && !disable_stylesheet_rule_cache
+		&& stylesheet_rule_cache_.eligible(source) {
+		stylesheet_rule_cache_.max_nodes
+	} else { 0 }
+	worker := spawn prepare_user_agent_syntax(source, max_cache_nodes, ready, consumed)
 	return &UserAgentSyntaxPreparation{ready: ready, consumed: consumed, worker: worker}
 }
 
@@ -123,25 +139,33 @@ fn (preparation &UserAgentSyntaxPreparation) release() {
 	preparation.worker.wait()
 }
 
+fn (preparation &UserAgentSyntaxPreparation) discard() {
+	mut prepared := <-preparation.ready
+	mut storage := prepared.cache_storage.adopt('stylesheet rule cache')
+	if storage != unsafe { nil } { storage.release() }
+	preparation.release()
+}
+
 fn (preparation &UserAgentSyntaxPreparation) convert() &CSSStyleSheet {
 	defer { preparation.release() }
 	join_started := if user_agent_syntax_diagnostics { time.sys_mono_now() } else { u64(0) }
-	prepared := <-preparation.ready
+	mut prepared := <-preparation.ready
 	if user_agent_syntax_diagnostics {
 		off_thread := prepared.thread_id != platform.native_thread_identity()
-		eprintln('VOX_UA_STYLESHEET_SYNTAX rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= join_started}')
+		eprintln('VOX_UA_STYLESHEET_SYNTAX rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= join_started} worker_cache_nodes=${prepared.cache_payload.nodes}')
 	}
 	css_stage := processmetrics.begin_instruction_stage('css_parsing')
 	defer { css_stage.finish() }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	source := user_agent_cascade_stylesheet_source
-	cache_rules := !disable_stylesheet_rule_cache && stylesheet_rule_cache_.eligible(source)
 	deferred := os.getenv('VOX_EAGER_USER_AGENT_DECLARATIONS') == ''
 	if stylesheet_parse_diagnostics {
 		eprintln('VOX_CSS_PARSE location=- bytes=${source.len} deferred=${deferred} cached=false rule_context=0')
 	}
-	id := if cache_rules {
+	id := if !sync_user_agent_rule_cache {
+		stylesheet_rule_cache_.store_prepared(prepared.cache_payload, mut prepared.cache_storage)
+	} else if !disable_stylesheet_rule_cache {
 		stylesheet_rule_cache_.store(source, prepared.rules)
 	} else { u64(0) }
 	mut default_sheet := convert_transient_stylesheet_rules(ParsingParams{is_ua_style_sheet: .yes},
@@ -180,7 +204,7 @@ pub fn discard_user_agent_stylesheet_startup() {
 	preparation := user_agent_startup_work
 	user_agent_startup_work = unsafe { nil }
 	user_agent_startup_mutex.unlock()
-	if preparation != unsafe { nil } { preparation.release() }
+	if preparation != unsafe { nil } { preparation.discard() }
 }
 
 fn default_user_agent_stylesheet() &CSSStyleSheet {
@@ -197,7 +221,7 @@ fn default_user_agent_stylesheet() &CSSStyleSheet {
 	}
 	user_agent_startup_mutex.unlock()
 	if current != unsafe { nil } {
-		if preparation != unsafe { nil } { preparation.release() }
+		if preparation != unsafe { nil } { preparation.discard() }
 		return current
 	}
 	stage := processmetrics.begin_instruction_stage('user_agent_default_stylesheet')

@@ -94,7 +94,25 @@ fn test_process_lifetime_ua_declarations_outlive_the_materializing_document_aren
 fn test_worker_user_agent_syntax_retires_before_the_published_sheet_is_used() {
 	$if macos && prealloc && !vox_css_diagnostics ? {
 		if bulk_css_input_probe_diagnostics { return }
+		release_unused_stylesheet_syntax()
 		actual := load_user_agent_stylesheets_with_worker()
+		if !disable_stylesheet_rule_cache && stylesheet_rule_cache_.eligible(user_agent_cascade_stylesheet_source) {
+			entry := stylesheet_rule_cache_.lookup(user_agent_cascade_stylesheet_source) or {
+				panic('missing startup syntax cache entry')
+			}
+			assert entry.id == actual.default_sheet.source_syntax_id_
+			assert entry.storage.arena.contains(entry.rules.data)
+			// Convert a fresh sheet from the entry after the worker's raw
+			// parser arena and thread have both been retired.
+			warm := parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
+			assert warm.source_syntax_id_ == entry.id
+			assert warm.rules.length() == actual.default_sheet.rules.length()
+			entry.release()
+			release_unused_stylesheet_syntax()
+			for index, rule in warm.rules.rules {
+				assert rule.css_text() == actual.default_sheet.rules.rules[index].css_text()
+			}
+		}
 		serial := parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
 		// The worker has already released its input. Serializing every rule
 		// also forces lazy values to read their retained source spelling.
