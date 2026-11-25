@@ -5035,3 +5035,114 @@ favicon miss. The six path checks verified the URL, ready state,
 viewport and all 30 ordered story IDs. Executable, helper, library,
 archive and harness inputs stayed pinned. All browser, driver and
 guard exits were zero. Peak RSS was 396,247,040 bytes.
+
+### Queue GG shader libraries before pipeline precompile
+
+Commit `6638b0783` adds an opt-in batch of GG's solid shader library
+requests. The source builder supplies the same MSL used by ordinary
+shader creation. The queue deduplicates exact source bytes, snapshots
+the compile options, and copies its inputs before dispatch. Workers
+submit the libraries asynchronously, including requests whose
+completion can run inline on a cache hit. The drawing thread waits
+for the matching library at each shader's first use and registers
+the shader with Sokol. [Metal library compilation](https://developer.apple.com/documentation/metal/mtldevice/makelibrary%28source%3Aoptions%3Acompletionhandler%3A%29)
+
+`VOX_PARALLEL_GG_METAL_SHADER_LIBRARIES=1` selects the queue.
+The default compiles the stages of each shader together at first use.
+Both settings preserve the same source, MSL version and fast-math
+selection.
+
+The native tests checked identical source reuse, transient source
+buffers, mismatched compiler options, invalid source, paired and
+vertex-only shaders, and 128 exact render-and-readback cases.
+Address, undefined-behavior and thread sanitizer runs passed.
+The GG leaf-region tests passed in both settings. The opt-in run
+queued 23 libraries off-thread, reused them for 35 shader stages
+and found 34 ready at use. The Sokol staging comparison passed.
+The broader UI2 staging comparison expects `vox_path_math.m` from
+the Python stager, while the V stager wraps only Darwin-named
+headers in that step.
+
+#### Matched production captures
+
+Receipt `20261125-220515-c448ff98` verified `6638b0783` and passed
+startup smoke in single-C-unit V `-prod` mode. The same executable ran
+both settings.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `05da72a103b91f93c7a80af2955f8655c8e058a574f91b4929b7c73b216dea64` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both queue diagnostics requested and compiled 23 distinct libraries
+off-thread. Each reused those libraries for 35 shader stages, with
+33 and 34 instances ready at use. The usual per-shader schedule
+reported 16 stage pairs per launch. The queue launches reported
+one pair for a shader created outside solid precompile. In another
+diagnostic pair, early pipeline compilation published all 42 pipeline
+states in both settings. The shader queue handled all 35 stage lookups
+with early pipeline compilation enabled.
+
+Separate counter runs recorded 25 fills, one dispatch and three
+native raster replay scopes per launch.
+
+| Inclusive drawing-thread instructions | Pair 1 per shader | Pair 1 queue | Pair 2 per shader | Pair 2 queue |
+| --- | ---: | ---: | ---: | ---: |
+| Fill leaves | 55,941,553 | 54,209,501 | 55,959,855 | 54,301,275 |
+| Paint dispatch | 228,125,603 | 227,109,433 | 227,093,518 | 227,691,867 |
+| Native raster replay | 254,824,734 | 254,014,836 | 253,961,722 | 254,582,436 |
+
+Two unprofiled seven-pair cohorts alternated settings and reversed
+their starting mode. Both timed fresh launch through completed
+document PNG at 1024×768 CSS pixels and 2× scale. They used
+JavaScriptCore, fresh private profiles and HTTP caches, retained
+OS filesystem and shader caches, `tr.athing` readiness and a 60 ms
+delay per replayed logo response.
+
+| Pair | Per shader, ms | Queue, ms | Reversed per shader, ms | Reversed queue, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 301.771 | 293.379 | 287.145 | 298.917 |
+| 2 | 307.750 | 293.518 | 281.645 | 298.176 |
+| 3 | 312.681 | 310.437 | 294.892 | 298.036 |
+| 4 | 295.999 | 300.115 | 308.813 | 294.078 |
+| 5 | 306.666 | 296.780 | 305.544 | 299.866 |
+| 6 | 296.865 | 315.975 | 293.147 | 301.267 |
+| 7 | 289.887 | 283.883 | 296.936 | 290.863 |
+| Median | 301.771 | 296.780 | 294.892 | 298.176 |
+
+Median paired changes were −6.004 and +3.144 ms, with five and three
+queue wins. Sampled main-thread CPU medians went from 155.153 to
+156.327 ms and from 152.447 to 152.843 ms. One-minute load ranged
+from 4.51 to 4.55 and from 4.26 to 4.56 on 18 CPUs. The queue stays
+opt-in based on the mixed end-to-end result.
+
+#### First gradient replay
+
+Two additional seven-pair cohorts enabled timing for individual
+paint commands. The first gradient's interval includes GG context
+creation, solid shader and pipeline precompile, and the first draw.
+
+| Pair | Per shader, µs | Queue, µs | Reversed per shader, µs | Reversed queue, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 14,883 | 14,849 | 15,094 | 15,022 |
+| 2 | 15,293 | 13,118 | 15,401 | 13,764 |
+| 3 | 15,012 | 13,949 | 15,471 | 14,567 |
+| 4 | 15,451 | 14,947 | 14,878 | 14,199 |
+| 5 | 14,736 | 13,986 | 14,526 | 14,399 |
+| 6 | 15,549 | 15,560 | 14,428 | 14,289 |
+| 7 | 15,517 | 13,941 | 14,485 | 14,433 |
+| Median | 15,293 | 13,986 | 14,878 | 14,399 |
+
+Median paired changes were −750 and −139 µs, with six and seven
+queue wins. One-minute load ranged from 4.31 to 4.60 and from
+3.88 to 4.04 on 18 CPUs.
+
+All 66 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced the same eight replay records, including the favicon
+miss. The six path diagnostics also verified the URL, readiness,
+viewport and all 30 ordered story IDs. Executable, helper, library,
+archive and harness hashes stayed pinned. All browser, driver and
+guard exits were zero. Peak sampled RSS was 392,757,248 bytes.
