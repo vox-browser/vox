@@ -1417,3 +1417,77 @@ and arena poisoning. The whole-browser production type check passed.
 Two optional layout-only benchmark compilation attempts reached the
 12 GiB guard before producing an executable. The production benchmark
 used the published bundle.
+
+#### Parallel glyph decoding on Hacker News
+
+Commits `69a787ba2` and `06ff0e9be` let initial-layout shaping jobs
+decode eligible HarfBuzz buffers into glyph positions, clusters, safe-break
+flags, and trailing whitespace. The decoder writes into arrays allocated
+by the browser thread and releases each successfully decoded buffer in
+its shaping job. The ordinary decoder uses the same glyph calculations.
+Cache publication copies the worker results into its own arena. Width,
+context-metric, and safe-break queries can publish glyphs without building
+a temporary playback run. A full run owns a mutable copy in its caller's
+arena. The generated C reads the HarfBuzz buffer length without allocating
+a V output variable on the worker.
+[HarfBuzz buffer implementation](https://raw.githubusercontent.com/harfbuzz/harfbuzz/15.1.0/src/hb-buffer.cc)
+
+Focused checks covered bidi, the original glyph producer, default-ignorable
+characters, native strike rounding, spacing, ligatures, nonzero baselines,
+safe breaks, and arena retirement. The prepared-shape checks also passed
+with ThreadSanitizer, arena poisoning, and serial decoding.
+
+The first shared production build, receipt `20261125-084749-76c57369`,
+contained the worker decoder before the buffer metadata allocation fix.
+One diagnostic pair compared it with all ASCII batching disabled. The
+default decoded 14 of 28 runs off-thread and consumed all 28. Both
+launches exited zero, preserved the same eight replay requests, matched the
+reference PNG, and returned all 30 story IDs in order.
+
+Receipt `20261125-085341-c890ddce` sealed the allocation fix and passed
+the native startup smoke. This single-C-unit V `-prod` build published
+executable SHA `bce49bde115317102cf6f8e48569a1b94ab12f2a5aca19fa63580a306667eae5`.
+The AVIF library SHA was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+Three seven-pair cohorts alternated worker decoding and
+`VOX_SERIAL_ASCII_GLYPH_DECODE=1` on that executable. The third cohort
+started with the serial setting to change which mode went first in the
+odd-numbered pairs. Both settings kept HarfBuzz shaping and Core Text
+strike calculation in the existing parallel batch. Every launch used
+JavaScriptCore, a private empty profile and HTTP cache, a 1024×768 CSS
+pixel viewport at 2× scale, and a 60 ms delay on replayed logo responses.
+OS filesystem caches were retained. The timer starts at process launch
+and ends when the document PNG is complete.
+
+| Pair | Serial, ms | Worker, ms | Repeat serial, ms | Repeat worker, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 366.808 | 398.219 | 410.113 | 335.762 | 327.831 | 324.557 |
+| 2 | 369.579 | 346.102 | 326.887 | 338.730 | 334.624 | 344.583 |
+| 3 | 349.981 | 362.450 | 350.720 | 340.728 | 335.274 | 343.156 |
+| 4 | 353.296 | 374.746 | 331.921 | 364.795 | 345.921 | 315.207 |
+| 5 | 363.314 | 342.121 | 352.921 | 372.731 | 348.394 | 336.511 |
+| 6 | 341.013 | 341.066 | 333.723 | 349.317 | 351.563 | 322.887 |
+| 7 | 338.291 | 376.018 | 331.697 | 329.730 | 330.697 | 348.815 |
+| Median | 353.296 | 362.450 | 333.723 | 340.728 | 335.274 | 336.511 |
+
+Median paired changes were +12.469 ms, +11.842 ms, and −3.274 ms.
+Worker decoding was faster in two, three, and four pairs, respectively.
+One-minute load was 5.79–5.97, 5.97–6.05, and 5.79–6.93 on 18 CPUs.
+These timings leave the whole-page speedup unconfirmed. All 42 timing
+launches and both diagnostic launches had identical eight-record request
+and response fingerprints and matched the reference PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The executable, native library, archive, and tool hashes stayed constant.
+The browsers, drivers, and 3 GiB guards exited zero. The largest timing
+peak was 377,225,216 bytes of aggregate RSS.
+
+The separate diagnostic pair verified full readiness and all 30 ordered
+story IDs in both settings. Both consumed all 28 prepared runs. The
+default decoded 14 off-thread and 14 on the browser thread. The control
+decoded all 28 on the browser thread when requested. Main-thread
+instructions for flow layout fell from 150,384,792 to 150,232,088.
+Preparation rose from 2,770,698 to 2,953,751, and inclusive geometry fell
+from 174,917,384 to 174,850,467. These scopes include tracing overhead.
+Style resolution, line placement, glyph publication, and native frame
+submission still execute on the browser thread.
