@@ -1,4 +1,5 @@
 // Included inside the staged Sokol Metal implementation.
+#include "../../platform/native_state.h"
 #include <pthread.h>
 
 enum { VOX_GG_METAL_PIPELINE_BATCH_CAPACITY = 64 };
@@ -15,12 +16,14 @@ typedef struct {
 
 // The drawing thread owns the batch and the Sokol slots. Each Metal
 // completion writes only to its own job until the group has joined.
-static struct {
+typedef struct {
     dispatch_group_t group;
     size_t count;
     pthread_t owner;
     VoxGGMetalPipelineCompile jobs[VOX_GG_METAL_PIPELINE_BATCH_CAPACITY];
-} vox_gg_metal_pipeline_batch;
+} VoxGGMetalPipelineBatch;
+
+VOX_NATIVE_STATE VoxGGMetalPipelineBatch vox_gg_metal_pipeline_batch;
 
 #define VOX_GG_METAL_PIPELINE_PENDING(pip) \
     ((pip)->slot.state == SG_RESOURCESTATE_ALLOC && vox_gg_metal_pipeline_batch.group != NULL)
