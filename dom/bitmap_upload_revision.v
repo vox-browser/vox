@@ -5,7 +5,7 @@ import sync.stdatomic
 
 const bitmap_dirty_revision = u64(1)
 
-__global bitmap_upload_revisions stdatomic.AtomicVal[u64]
+__global bitmap_upload_revisions u64
 
 // Mark new or changed pixels for texture upload. Zero is reserved for
 // bitmaps whose pixels are not tracked for reuse.
@@ -21,12 +21,12 @@ pub fn (bitmap &Bitmap_) upload_revision() u64 {
 	}
 	mut mutable_bitmap := unsafe { &Bitmap_(bitmap) }
 	for {
-		previous := bitmap_upload_revisions.load()
+		previous := stdatomic.load_u64(&bitmap_upload_revisions)
 		if previous == u64(0xfffffffffffffffe) {
 			mutable_bitmap.upload_revision_ = 0
 			return 0
 		}
-		if bitmap_upload_revisions.compare_and_swap(previous, previous + 1) {
+		if advance_bitmap_upload_revision(previous) {
 			mutable_bitmap.upload_revision_ = previous + 2
 			return previous + 2
 		}
