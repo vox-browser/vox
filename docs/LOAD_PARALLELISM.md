@@ -2180,3 +2180,88 @@ launch, including the favicon miss. The executable, native library,
 archive and driver hashes stayed pinned throughout. Browser, driver
 and 3 GiB guard exits were zero. Peak aggregate timing RSS was
 378,798,080 bytes.
+
+### Prefetch glyph masks across replay commands
+
+Commit `3cf41a0ca` schedules a single cold A8 mask batch across the
+first eligible text runs. The browser thread plans the keys and opens
+the strikes before command dispatch. Workers draw privately while the
+browser thread paints the preceding commands. The browser thread joins
+and publishes before its first ordinary text draw. Unused batches are
+joined and discarded before replay scratch resets.
+
+`VOX_PREFETCH_FRAME_GLYPH_MASKS=1` enables the experiment on native
+Chromium-style sRGB replay at integral 1× or 2× scale. It draws from
+prepared horizontal glyph positions and examines up to 160 commands,
+with a limit of 32 runs, four strikes and 128 cold keys. The normal
+draw resolves the actual strike and glyph key. A prediction that misses
+uses the ordinary mask path.
+
+The first production diagnostic, receipt `20261125-112907-e1cdc0cc`,
+matched the Hacker News reference but submitted no jobs. It stopped
+before the timing cohorts. The eligibility trace showed a 0.5 layout
+transform on text in the 2× capture. Commit `277998efd` composes
+positive axis-aligned layout scales with the device scale when
+computing the candidate strike.
+
+The scale-corrected diagnostic, receipt `20261125-113701-933c444e`,
+published all 107 masks from four strikes before the first ordinary
+text draw. Ninety-eight jobs overlapped earlier paint commands.
+The default ran 34 per-run mask batches and the prefetch ran 27.
+Both captures matched the reference PNG.
+
+The production type check and arena-poisoned glyph tests passed. The
+focused test prepares two strikes, verifies that publication happens at
+the join, and matches the serial pixels. A warm repeat finds the
+required keys in the cache. The CPU glyph raster suite passed its Skia
+pixel comparisons. Commit `18e410c53` skips nonfinite projected glyphs
+before building a subpixel key. The focused test verifies that invalid
+transforms and positions produce no prefetch jobs.
+
+Production receipt `20261125-114306-cc5fb4cc` sealed `09d2753be` with
+the finite-coordinate guard in single-C-unit V `-prod` mode. It passed
+startup smoke and published executable SHA
+`b8666c1b92278aec0e78486c9f187841ab360a2f6d37bc6b43d3617e9ebf307c`.
+The final diagnostic reproduced all 107 publications and 98
+overlapping jobs across four lanes. Ordinary per-run mask work went
+from 249 jobs in 34 batches to 192 jobs in 27 batches. Both launches
+matched all 30 ordered story IDs.
+
+In a separate instrumented pair, main-thread text replay went from
+146,293,193 to 127,305,572 instructions. Prefetch submission and join
+together took 3,875,262 instructions. The inclusive native raster
+scope, which includes both, went from 292,965,417 to 274,590,281
+instructions.
+
+The timing comparison used two seven-pair cohorts on the same
+executable. The reversed cohort started with the default. Each trial
+measured fresh launch through completion of the 1024×768 CSS-pixel
+document PNG at 2× scale, with JavaScriptCore, empty private profiles
+and HTTP caches, and a replayed 60 ms delay on each logo response.
+OS filesystem caches were retained.
+
+| Pair | Default, ms | Prefetch, ms | Reversed default, ms | Reversed prefetch, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 290.834 | 294.680 | 295.313 | 299.067 |
+| 2 | 300.776 | 315.453 | 310.146 | 292.409 |
+| 3 | 314.448 | 311.067 | 316.778 | 300.676 |
+| 4 | 321.805 | 312.138 | 302.462 | 303.090 |
+| 5 | 302.809 | 329.975 | 306.145 | 299.639 |
+| 6 | 318.573 | 350.003 | 309.987 | 304.335 |
+| 7 | 302.583 | 320.394 | 315.268 | 294.699 |
+| Median | 302.809 | 315.453 | 309.987 | 299.639 |
+
+Median paired changes were +14.677 ms and −6.506 ms, with prefetch
+finishing first in two and five pairs. Host load was 4.49–5.34 and
+5.31–5.85 on 18 CPUs. Sampled main-thread CPU medians were
+171.41 → 174.72 ms and 161.33 → 165.50 ms. Launch-to-capture timings
+showed no consistent speedup, so prefetch remains opt-in.
+
+All 28 timed launches and four diagnostic launches on the final
+build matched reference PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight-record request and response fingerprints matched for all
+32 launches, including the favicon miss. Executable, native library,
+archive and driver hashes stayed pinned throughout. Browser, driver
+and 3 GiB guard exits were zero. Peak aggregate timing RSS was
+367,067,136 bytes.
