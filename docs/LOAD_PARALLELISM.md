@@ -975,7 +975,8 @@ Before the change, a production capture of the archived Hacker News homepage
 identified 56 root-layer triggers from SVG backgrounds. The focused replay
 then used the archived HTML with its archived stylesheet inlined, registered
 the archived images under their original URLs, and recorded at 1024×768 CSS
-pixels. The resulting list contained 554 commands and 57 triggers. A separate
+pixels with author scripts idle. The resulting list contained 554 commands
+and 57 triggers. A separate
 diagnostic scheduled 54 path jobs in three lanes, with 36 jobs off the caller
 in its first batch. The serial and parallel trigger lists matched exactly.
 
@@ -1008,9 +1009,50 @@ the replay executable SHA was
 All 23 focused multisampling tests passed. The batch test preserved
 clipping and trigger order across a 256-job batch with 192 off-thread
 jobs and a 28-job tail. The shared raster scan worker tests also passed.
-Production receipt `20261125-072247-4031dc62` sealed the new source and
-was compiling at the end of the focused measurements. For the full-page
-comparison, use the load benchmark command with
+Two extra attempts to compile the stand-alone static SVG layout tests
+exceeded the 12 GiB guard, including a retry with serial C generation.
+
+#### Production page captures
+
+Receipt `20261125-072247-4031dc62` passed the production startup smoke
+and published executable
+`8937b44ce64f1559096c0af2c202c720cfa9858df5982a622d0c00a0de7cb36a`.
+The single-C-unit V `-prod` inputs were sealed at `b92bb2bda`.
+The native AVIF library had the same SHA as in the striped-blend cohorts.
+Eight fresh diagnostics matched the reference PNG and all 30 story IDs.
+Each scheduled 54 jobs in three lanes and observed zero off-thread jobs
+at one-minute host loads from 30.99 to 88.85. The browser and driver exits
+were zero. The diagnostic wrappers and guards returned 1 because they
+required actual off-thread work.
+
+Two seven-pair cohorts timed fresh launches through encoded document PNG
+at 1024×768 CSS pixels and 2× scale with JavaScriptCore and the offline
+archive. Default and serial settings alternated. All 28 browser
+processes and both drivers exited zero, and all PNGs matched the same
+established reference. Executable, native library, fixture and tools stayed
+pinned. OS filesystem caches were retained.
+
+| Pair | Serial, ms | Default, ms | Repeat serial, ms | Repeat default, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 453.365 | 464.208 | 404.220 | 422.445 |
+| 2 | 519.727 | 462.433 | 422.664 | 456.279 |
+| 3 | 446.921 | 470.149 | 464.403 | 462.811 |
+| 4 | 504.618 | 460.706 | 413.947 | 416.410 |
+| 5 | 464.009 | 476.022 | 423.048 | 425.565 |
+| 6 | 448.545 | 448.811 | 418.440 | 457.987 |
+| 7 | 449.694 | 467.003 | 478.169 | 453.299 |
+| Median | 453.365 | 464.208 | 422.664 | 453.299 |
+
+Default trial 5 fetched `y18.svg` twice in the first cohort, so its
+request-parity guard returned 1. Host load was 64.09–73.08 on 18 CPUs.
+In the repeat, all seven request records matched across the 14 launches.
+Its guard exited zero with a 412,450,816-byte peak, and host load was
+47.33–52.61. The repeat's default median was 7.2% slower. Timing ranges
+overlapped, and the diagnostic showed no worker overlap on this production
+page. The observed launch difference cannot be attributed to off-thread
+path evaluation.
+
+For the full-page comparison, use the load benchmark command with
 `--ready-selector tr.athing --repeat 7 --screenshot-scale 2 --js-engine javascriptcore --control-env VOX_SERIAL_MSAA_PATHS=1`.
 Use `VOX_MSAA_TILE_DIAGNOSTICS=1` in a separate diagnostic to verify activity.
 Batches of independent path geometry now use workers. Raster submission
