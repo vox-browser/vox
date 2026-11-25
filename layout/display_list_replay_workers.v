@@ -56,6 +56,7 @@ struct CachedVisualLeafWork {
 	contexts []CompatibilityFlattenedVisualContext
 	output   &PaintCommand
 	threads  &u64
+	raster_bounds &RecordedRasterBound = unsafe { nil }
 }
 
 @[heap]
@@ -80,6 +81,15 @@ fn materialize_cached_visual_leaf_range(context voidptr, first i32, end i32) {
 		unsafe { *command = *step.command }
 		apply_cached_visual_leaf_state(mut command, step.box, step.opacity_scale, state, state.transform)
 		apply_cached_visual_context_clip(mut command, state)
+		if work.raster_bounds != unsafe { nil } && command.visual_layer_data == none
+			&& !chromium_raster_chunk_has_empty_clip(command) {
+			unsafe {
+				work.raster_bounds[step.output_index] = RecordedRasterBound{
+					extent: chromium_raster_chunk_extent(step.box, command, step.box.paint_transform)
+					ready: true
+				}
+			}
+		}
 		if thread_id != 0 { unsafe { work.threads[index] = thread_id } }
 	}
 }
@@ -93,7 +103,8 @@ fn materialize_cached_visual_leaf_prefix(context voidptr, first i32, end i32) {
 }
 
 fn submit_cached_visual_leaf_prefix(plan []CompatibilityCachedVisualReplayStep,
-	contexts []CompatibilityFlattenedVisualContext, output []PaintCommand) &CachedVisualLeafPrefix {
+	contexts []CompatibilityFlattenedVisualContext, output []PaintCommand,
+	bounds &RecordedRasterBounds) &CachedVisualLeafPrefix {
 	// The prefix already has output indices. The caller writes only later
 	// plan entries and output slots, all in buffers reserved before dispatch.
 	mut threads := []u64{}
@@ -104,6 +115,7 @@ fn submit_cached_visual_leaf_prefix(plan []CompatibilityCachedVisualReplayStep,
 			contexts: contexts
 			output: unsafe { &PaintCommand(output.data) }
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
+			raster_bounds: bounds.slot_data()
 		}
 		threads: threads
 	}
@@ -116,6 +128,7 @@ fn submit_cached_visual_leaf_prefix(plan []CompatibilityCachedVisualReplayStep,
 @[params]
 struct CachedVisualLeafProjectionOptions {
 	prefix &CachedVisualLeafPrefix = unsafe { nil }
+	bounds RecordedRasterBounds
 }
 
 fn materialize_cached_visual_leaves(plan []CompatibilityCachedVisualReplayStep,
@@ -137,6 +150,7 @@ fn materialize_cached_visual_leaves(plan []CompatibilityCachedVisualReplayStep,
 		contexts: contexts
 		output: unsafe { &PaintCommand(output.data) }
 		threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
+		raster_bounds: options.bounds.slot_data()
 	}
 	prefix_lanes := int(background)
 	prefix_leaves := prefix_lanes * display_list_replay_prefix_leaves

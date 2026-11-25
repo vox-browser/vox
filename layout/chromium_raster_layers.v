@@ -442,9 +442,18 @@ fn chromium_raster_chunk_bounds_with_root_scroll(box &BlockBox, command &PaintCo
 
 fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
 	root_scroll_y f64, transform [6]f64) LayoutRect {
-	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) {
+	if chromium_raster_chunk_has_empty_clip(command) {
 		return LayoutRect{}
 	}
+	return chromium_clip_raster_chunk(command, root_scroll_y,
+		chromium_raster_chunk_extent(box, command, transform))
+}
+
+fn chromium_raster_chunk_has_empty_clip(command &PaintCommand) bool {
+	return command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0)
+}
+
+fn chromium_raster_chunk_extent(box &BlockBox, command &PaintCommand, transform [6]f64) LayoutRect {
 	mut rect := box.border_box()
 	// Canvas backgrounds cover the viewport and scrollable overflow, rather
 	// than only the root box. Layer merging must see that painted extent too;
@@ -486,7 +495,10 @@ fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
 			height: command.height + 2 * outset
 		})
 	}
-	mut mapped := compatibility_affine_map_rect(transform, rect)
+	return compatibility_affine_map_rect(transform, rect)
+}
+
+fn chromium_clip_raster_chunk(command &PaintCommand, root_scroll_y f64, mapped LayoutRect) LayoutRect {
 	if command.has_clip {
 		// Flattened clips include the live root scroll, while retained box
 		// geometry remains in document space. Restore that translation before
@@ -497,7 +509,7 @@ fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
 		// at the sparsity threshold, especially under a rotated overflow clip.
 		x := math.max(mapped.x, command.clip_x)
 		y := math.max(mapped.y, clip_y)
-		mapped = LayoutRect{
+		return LayoutRect{
 			x:      x
 			y:      y
 			width:  math.max(0.0, math.min(mapped.x + mapped.width,
@@ -548,12 +560,13 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.compositor_unbounded_animations.clear()
 	setup_stage := processmetrics.begin_thread_instruction_substage('raster_plan_setup')
 	root_scroll_y := if cull != none { document.viewport_rect().y } else { 0.0 }
+	recorded_bounds_slots := recorded_chromium_raster_bounds(result, commands)
 	mut bounds_work := ChromiumRasterBoundsWork{
 		commands: commands
 		paint_order: result.paint_order
 		root_scroll_y: root_scroll_y
 	}
-	bounds_ticket, bounds_lanes := scratch.start_command_bounds(mut bounds_work)
+	bounds_ticket, bounds_lanes := scratch.start_command_bounds(mut bounds_work, recorded_bounds_slots.len > 0)
 	candidates := if disable_viewport_entry_candidates {
 		[]int{len: result.paint_order.len, init: index}
 	} else {
@@ -638,6 +651,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	// invalid command state.
 	bounds_ready := cpuraster.join_background_raster_range(bounds_ticket)
 	mut worker_bounds_used := 0
+	mut recorded_bounds_used := 0
 	mut index := 0
 	for index < commands.len {
 		first := index
@@ -817,6 +831,10 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 					transform[5] += viewport.y
 				}
 				command_bounds = chromium_raster_chunk_bounds_in_space(box, command, viewport.y, transform)
+			} else if recorded_bounds_slots.len > 0 && recorded_bounds_slots[position].ready {
+				command_bounds = chromium_clip_raster_chunk(command, root_scroll_y,
+					recorded_bounds_slots[position].extent)
+				if raster_chunk_bounds_diagnostics { recorded_bounds_used++ }
 			} else if bounds_lanes > 0 {
 				command_bounds = scratch.command_bounds[position]
 				if raster_chunk_bounds_diagnostics { worker_bounds_used++ }
@@ -854,7 +872,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 		index = end
 	}
 	if raster_chunk_bounds_diagnostics {
-		eprintln('VOX_RASTER_CHUNK_BOUNDS commands=${commands.len} lanes=${bounds_lanes} used=${worker_bounds_used} ready=${bounds_ready}')
+		eprintln('VOX_RASTER_CHUNK_BOUNDS commands=${commands.len} lanes=${bounds_lanes} used=${worker_bounds_used} ready=${bounds_ready} recorded=${recorded_bounds_used}')
 	}
 	chunks_stage.finish()
 	if scratch.compositor_scopes.len > 0 {

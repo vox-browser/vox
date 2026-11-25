@@ -214,9 +214,10 @@ fn test_masked_recording_matches_filtered_steps_across_scene_reuse() {
 			result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
 			result.scroll_state_snapshot, false)
 		mut scratch := CompatibilityRecordScratch{}
+		mut bounds := RecordedRasterBounds{}
 		actual := record_cached_paint_commands_with_visual_context_into(result.paint_steps,
 			selected, result.paint_phase_commands, result.paint_phase_command_count,
-			&result.visual_context_tree, result.scroll_state_snapshot, false, mut scratch)
+			&result.visual_context_tree, result.scroll_state_snapshot, false, mut scratch, mut bounds)
 		assert actual.len == expected.len
 		for index in 0 .. actual.len {
 			a, b := &actual[index], &expected[index]

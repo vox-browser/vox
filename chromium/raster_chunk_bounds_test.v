@@ -40,23 +40,28 @@ fn test_raster_chunk_workers_preserve_layer_geometry_after_root_scroll() {
 			os.unsetenv('VOX_SERIAL_CPU_RASTER')
 		}
 	}
-	os.setenv('VOX_SERIAL_CPU_RASTER', '1', true)
-	mut serial_plan := layout.ChromiumRasterLayerPlan{}
-	layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 2, viewport,
-		mut serial_plan)
-	assert serial_plan.layers.len > 1
+	// A separate command vector must decline the recording's bounds even
+	// when every command is equal. Scale one enables root paint culling.
+	control_commands := commands.clone()
+	for scale in [f64(1), 2.0] {
+		os.setenv('VOX_SERIAL_CPU_RASTER', '1', true)
+		mut serial_plan := layout.ChromiumRasterLayerPlan{}
+		layout.update_chromium_raster_layer_plan_for_viewport(document, control_commands, scale,
+			viewport, mut serial_plan)
+		assert serial_plan.layers.len > 1
 
-	os.unsetenv('VOX_SERIAL_CPU_RASTER')
-	mut worker_plan := layout.ChromiumRasterLayerPlan{}
-	layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 2, viewport,
-		mut worker_plan)
-	assert worker_plan.layers.len == serial_plan.layers.len
-	assert worker_plan.command_layers == serial_plan.command_layers
-	for index, layer in worker_plan.layers {
-		expected := serial_plan.layers[index]
-		assert layer.bounds == expected.bounds
-		assert layer.compositor_origin == expected.compositor_origin
-		assert layer.compositor_size == expected.compositor_size
-		assert layer.command_indices == expected.command_indices
+		os.unsetenv('VOX_SERIAL_CPU_RASTER')
+		mut worker_plan := layout.ChromiumRasterLayerPlan{}
+		layout.update_chromium_raster_layer_plan_for_viewport(document, commands, scale, viewport,
+			mut worker_plan)
+		assert worker_plan.layers.len == serial_plan.layers.len
+		assert worker_plan.command_layers == serial_plan.command_layers
+		for index, layer in worker_plan.layers {
+			expected := serial_plan.layers[index]
+			assert layer.bounds == expected.bounds
+			assert layer.compositor_origin == expected.compositor_origin
+			assert layer.compositor_size == expected.compositor_size
+			assert layer.command_indices == expected.command_indices
+		}
 	}
 }

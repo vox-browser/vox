@@ -5,8 +5,41 @@ import os
 
 const parallel_raster_chunk_bounds = os.getenv('VOX_PARALLEL_RASTER_CHUNK_BOUNDS') == '1'
 const raster_chunk_bounds_diagnostics = os.getenv('VOX_RASTER_CHUNK_BOUNDS_DIAGNOSTICS') == '1'
+const record_raster_chunk_bounds = os.getenv('VOX_RECORD_RASTER_CHUNK_BOUNDS') == '1'
 const raster_chunk_bounds_min_commands = 256
 const raster_chunk_bounds_max_commands = 4096
+
+struct RecordedRasterBound {
+	extent LayoutRect
+	ready  bool
+}
+
+// Slots belong to the same scene as the projected commands. Clip intersection
+// still uses the root-scroll policy chosen by the layer planner.
+struct RecordedRasterBounds {
+	paint_order voidptr
+	revision u64
+mut:
+	slots []RecordedRasterBound
+}
+
+fn (bounds &RecordedRasterBounds) slot_data() &RecordedRasterBound {
+	return unsafe { if bounds.slots.len > 0 { &RecordedRasterBound(bounds.slots.data) } else { nil } }
+}
+
+fn recorded_chromium_raster_bounds(result &DocumentLayoutResult, commands []PaintCommand) []RecordedRasterBound {
+	if record_raster_chunk_bounds && !result.needs_repaint {
+		if recording := display_list_recording(result.display_list) {
+			bounds := &recording.raster_bounds
+			if recording.commands.data == commands.data && bounds.slots.len == commands.len
+				&& bounds.paint_order == result.paint_order.data
+				&& bounds.revision == result.document.paint_content_revision() {
+				return bounds.slots
+			}
+		}
+	}
+	return []
+}
 
 struct ChromiumRasterBoundsWork {
 	commands      []PaintCommand
@@ -32,10 +65,11 @@ fn calculate_chromium_raster_bounds_range(context voidptr, first i32, end i32) {
 	}
 }
 
-fn (mut scratch ChromiumRasterPlanScratch) start_command_bounds(mut work ChromiumRasterBoundsWork) (voidptr, int) {
+fn (mut scratch ChromiumRasterPlanScratch) start_command_bounds(mut work ChromiumRasterBoundsWork,
+	has_recorded_bounds bool) (voidptr, int) {
 	$if macos {
 		count := work.commands.len
-		if parallel_raster_chunk_bounds && count >= raster_chunk_bounds_min_commands
+		if !has_recorded_bounds && parallel_raster_chunk_bounds && count >= raster_chunk_bounds_min_commands
 			&& count <= raster_chunk_bounds_max_commands {
 			if scratch.command_bounds.len == 0 {
 				scratch.command_bounds = []LayoutRect{len: raster_chunk_bounds_max_commands}
