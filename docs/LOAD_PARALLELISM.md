@@ -4207,3 +4207,83 @@ miss. The worker diagnostics verified the URL, complete ready state,
 viewport and all 30 ordered story IDs. The executable, helper, library,
 archive and harness inputs stayed pinned. All browser, driver and guard
 exits were zero. The 3 GiB guard observed peak RSS of 403,292,160 bytes.
+
+### Overlap the remaining SVG MSAA paths with raster layer setup
+
+The Hacker News diagnostic on the previous executable (`99d6e859…eae5`)
+found 54 retained SVG path jobs during multisample tile preparation.
+The first 32 ran off the browser thread and the final 22 ran on it.
+
+Commit `91d2a0961` submits the final range when it has at least 16 paths.
+The workers read immutable, resource-owned SVG scenes and write their
+assigned result slots. The browser thread prepares raster parents and per-layer
+storage during that interval. Both ranges join before the ordered trigger
+merge and tile selection. Small tails and unavailable worker tickets use
+the synchronous path. `VOX_SERIAL_MSAA_PATH_TAIL=1` restores synchronous
+tail processing for the same-executable control.
+
+All 23 focused MSAA tests passed under ThreadSanitizer and arena poisoning
+with the new schedule, the synchronous tail, the synchronous path scheduler
+and raster workers disabled. The expanded test checks a 32-path prefix and
+22-path tail, then reuses the same buffer across a larger batch that crosses
+its capacity. Both cases match the serial trigger list in order, including
+transparent paths and clipped results.
+
+Production receipt `20261125-192653-2cd495a0` verified `d767892ff`, which
+contains the scheduler change, and passed startup smoke in single-C-unit
+V `-prod` mode. Both settings used the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `cdecff67a9324189ef24b4dba842efcaf1995ff8ce820ad8304e0e87c1349712` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+In both diagnostic pairs, the control ran 32 of 54 paths off-thread and
+the new schedule ran all 54 off-thread. The prefix was ready at the join
+in every launch. Both worker launches still waited for the tail at the
+join. The raster grids, selected tiles and reported triggers matched
+between modes.
+
+Separate counter captures recorded one tile setup, one frame setup and
+three native raster replay scopes per launch. Inclusive browser-thread
+instruction counts varied between pairs.
+
+| Scope | Pair 1 control | Pair 1 worker | Pair 2 control | Pair 2 worker |
+| --- | ---: | ---: | ---: | ---: |
+| Raster tile setup | 4,476,168 | 4,443,914 | 4,451,242 | 4,520,616 |
+| Raster frame setup | 5,308,610 | 5,318,163 | 5,286,077 | 5,356,302 |
+| Native raster replay | 263,591,096 | 265,404,656 | 264,493,079 | 263,309,543 |
+
+Two unprofiled seven-pair timing cohorts alternated the settings and
+reversed which setting went first. Each trial measured a fresh launch
+through completed document PNG at 1024×768 CSS pixels and 2× scale,
+using JavaScriptCore, private empty profiles and HTTP caches, retained OS
+filesystem caches, `tr.athing` readiness and a 60 ms replay delay per logo
+response.
+
+| Pair | Control, ms | Worker, ms | Reversed control, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 322.977 | 333.034 | 305.068 | 299.914 |
+| 2 | 296.359 | 303.433 | 325.912 | 305.493 |
+| 3 | 312.993 | 293.916 | 316.509 | 304.691 |
+| 4 | 292.853 | 305.481 | 313.967 | 315.936 |
+| 5 | 299.139 | 316.517 | 305.694 | 309.184 |
+| 6 | 332.895 | 315.383 | 318.129 | 318.093 |
+| 7 | 297.666 | 301.357 | 291.365 | 313.956 |
+| Median | 299.139 | 305.481 | 313.967 | 309.184 |
+
+Median paired changes were +7.074 ms and −0.036 ms, with two and four
+worker wins. Sampled browser-thread CPU medians changed from 161.350
+to 164.605 ms and from 163.033 to 161.345 ms. One-minute host load ranged
+from 7.46 to 7.99 and from 7.54 to 7.83 on 18 CPUs. The launch-to-PNG
+results show no consistent speedup.
+
+All 36 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the favicon
+miss. Diagnostics verified the URL, complete ready state, viewport and
+all 30 ordered story IDs. Executable, helper, library, archive and harness
+hashes stayed pinned. All browser, driver and guard exits were zero. The
+3 GiB guard observed peak RSS of 389,660,672 bytes.
