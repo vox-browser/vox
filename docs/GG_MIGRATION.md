@@ -14682,6 +14682,12 @@ ThreadSanitizer and the pinned 2,500-draw glyph check passed. The archived
 Hacker News replay confirmed worker activity and byte-for-byte output.
 [Striped blend measurements](LOAD_PARALLELISM.md#retained-glyph-blending-across-pixel-stripes)
 
+Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
+tests matched serial glyphs and preserved masks added before the join. The
+pinned V `-prod` glyph differential check returned 1,962 exact draws and 38
+declines in 2,000 cases. The check and its 3 GiB guard exited zero.
+[Hacker News measurements](LOAD_PARALLELISM.md#prepare-cold-frame-glyph-strikes-on-a-worker)
+
 ### Parallel SVG background multisampling bounds
 
 Raster workers compute path bounds from resource-owned SVG scenes in

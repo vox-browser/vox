@@ -2375,3 +2375,109 @@ The eight-record replay fingerprints matched in every launch, including
 the favicon miss. The executable, AVIF library, adblock helper, archive
 and driver hashes stayed pinned. Browser, driver and 3 GiB guard exits
 were zero. Peak aggregate timing RSS was 368,984,064 bytes.
+
+### Prepare cold frame glyph strikes on a worker
+
+Commit `780cfb16b` passes the frame's immutable glyph runs to the
+coordinator when the document strike cache is empty. The worker
+resolves CoreText strikes, groups equivalent runs and selects masks
+before handing the draws to raster lanes. The browser thread allocates
+the bounded plan before dispatch and constructs the cache keys for
+publication at the join. Only the browser thread accesses the document cache.
+Frames with existing cache entries keep caller-side strike preparation
+and snapshot the cached glyph keys as before.
+
+`VOX_SYNC_FRAME_GLYPH_STRIKES=1` keeps strike preparation on the caller
+and still lets the coordinator select cold glyph keys. Both benchmark
+settings enable `VOX_PREFETCH_FRAME_GLYPH_MASKS=1`.
+
+The production type check passed. Arena-poisoned tests passed with
+worker strikes, caller strikes and fully synchronous planning. They
+compare serial pixels, cover empty and warm plans, and keep masks
+that ordinary replay publishes while prefetch is in flight.
+
+#### Retained Hacker News text replay
+
+The published `20261125-120409-e0083ee7` browser reproduced the
+archived homepage at 1024×768 CSS pixels and 2× scale. Its 332 retained
+text draws matched the previous fixture log SHA-256
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The standalone V `-prod` replay used the canonical fixture loader,
+the first 32 eligible runs for prefetch, and `VOX_ARENA_POISON=1`.
+It joins immediately and times all 332 draws. This scope excludes
+page layout, preceding paint commands and the native window.
+
+The diagnostic pair published 107 masks from four strikes on four
+lanes in each mode. Both selected glyph keys off-thread. The candidate
+also prepared the strikes off-thread. Seven timed pairs alternated
+the modes in fresh processes using the same executable SHA-256
+`c6c25989bf381cb5f5fab9d69da68613aeb3a7a190ac968fd6e703833a4a64f2`.
+
+| Pair | Caller submit CPU, ms | Worker submit CPU, ms | Caller raster wall, ms | Worker raster wall, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 1.382 | 0.011 | 10.208 | 9.494 |
+| 2 | 1.619 | 0.011 | 9.621 | 8.273 |
+| 3 | 1.432 | 0.012 | 9.811 | 9.101 |
+| 4 | 1.407 | 0.009 | 9.569 | 9.086 |
+| 5 | 1.392 | 0.009 | 9.436 | 10.446 |
+| 6 | 1.341 | 0.009 | 8.493 | 8.123 |
+| 7 | 1.391 | 0.018 | 9.196 | 8.934 |
+| Median | 1.392 | 0.011 | 9.569 | 9.086 |
+
+Median join CPU on the caller was 0.023 → 0.025 ms. The median paired
+raster wall change was −0.483 ms and six pairs favored worker strikes.
+Host load was 7.27 on 18 CPUs. All 16 replays matched reference RGBA
+SHA-256 `66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+Executable and all 333 captured input hashes stayed pinned. Each
+process and the 3 GiB replay guard exited zero. Peak aggregate RSS
+was 47,349,760 bytes.
+
+#### Matched production captures
+
+Receipt `20261125-121959-2712ca82` sealed `780cfb16b`, passed startup
+smoke and published single-C-unit V `-prod` executable SHA-256
+`1b46b97d7f8d7bc2ba4ef14dd5360a42888005a93959eeb89284dc717de069d1`.
+The diagnostic confirmed worker strike preparation on the archived
+homepage. Both modes published 107 masks from four strikes across
+four lanes. All masks were ready at the join, and 98 overlapped
+preceding paint commands. Ordinary text ran 192 jobs in 27 batches.
+Both captures matched all 30 ordered story IDs.
+
+A separate instrumented pair measured 3,522,391 → 289,107
+main-thread instructions for frame prefetch submission and
+266,378 → 248,804 for the join. Inclusive native raster replay
+measured 276,403,511 → 269,198,018 main-thread instructions. Both
+variants use the same run grouping and retain the same per-glyph
+raster worker path.
+
+The timing cohorts used fresh launches through the encoded 1024×768
+CSS-pixel PNG at 2× scale with JavaScriptCore. Each trial used empty
+private profiles and HTTP caches, retained OS filesystem caches and
+replayed a 60 ms delay on each logo response. The first cohort began
+with worker strikes and the reversed cohort began with caller strikes.
+
+| Pair | Caller, ms | Worker, ms | Reversed caller, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 302.686 | 291.837 | 281.761 | 295.017 |
+| 2 | 312.328 | 309.240 | 310.637 | 296.432 |
+| 3 | 299.835 | 283.315 | 301.960 | 301.305 |
+| 4 | 317.191 | 296.091 | 285.185 | 346.626 |
+| 5 | 341.815 | 333.893 | 308.207 | 299.024 |
+| 6 | 317.337 | 296.702 | 291.645 | 297.696 |
+| 7 | 293.801 | 298.559 | 318.263 | 303.378 |
+| Median | 312.328 | 296.702 | 301.960 | 299.024 |
+
+Paired median changes were −10.849 ms and −0.655 ms. The worker
+finished first in six and four pairs. Host load ranged from 5.35 to
+5.53 and from 5.25 to 5.53 on 18 CPUs. Sampled main-thread CPU
+medians changed from 167.64 to 164.58 ms and from 163.13 to 165.72 ms,
+respectively. The second cohort has a smaller wall effect and a
+61.44 ms regression in one pair. Frame prefetch remains opt-in.
+
+All 28 timed and four diagnostic launches matched reference PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All eight request and response records matched in each launch,
+including the favicon miss. The executable, AVIF library, worker
+helper, archive and driver hashes stayed pinned. Browser, driver
+and 3 GiB guard exits were zero. Peak aggregate timing RSS was
+378,142,720 bytes.
