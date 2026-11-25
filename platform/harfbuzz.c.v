@@ -698,44 +698,20 @@ pub fn (font &Font) chromium_strike_glyph_width(code_point u32) ?f32 {
 		font.variations(), system_font_matching_supported(), font.tracking_size()) or { return none }
 	mut glyph := u32(0)
 	if C.hb_font_get_nominal_glyph(hb_font, code_point, &glyph) == 0 { return none }
-	if !harfbuzz_face_is_bitmap_face(face) && !(font.source_path == '' && font.variations().len > 0) {
-		info := C.hb_glyph_info_t{ codepoint: glyph }
-		widths := chromium_native_face_widths(font, &info, 1)
-		if widths.len == 1 { return widths[0] }
+	if strike := chromium_native_strike(font, face, false) {
+		glyph_id := u16(glyph)
+		mut width := f32(0)
+		if strike.read_widths(&glyph_id, 1, &width) { return width }
 	}
 	// HarfBuzz's nominal advance also excludes the shaping-time tracking.
 	return f32(f64(C.hb_font_get_glyph_h_advance(hb_font, glyph)) / f64(resolution))
 }
 
-// Blink's HarfBuzz font functions also take an outline face's advances from
-// its native strike, truncated to 16.16 fixed point, and HarfBuzz adds its GPOS
-// adjustments at the same scale. HarfBuzz's own scaling rounds the design
-// advance instead, which differs by 1/65536px for about half the glyphs and
-// moves glyphs late in a line across a quarter-pixel raster position.
-fn chromium_outline_face_advances(font &Font, face voidptr, hb_font voidptr, infos &C.hb_glyph_info_t,
-	positions &C.hb_glyph_position_t, count int) []f32 {
-	if font.font_rendering_policy != .chromium || count <= 0 || harfbuzz_face_is_bitmap_face(face)
-		|| (font.source_path == '' && font.variations().len > 0) {
-		return []f32{}
-	}
-	widths := if font.replay_face() != none {
-		chromium_native_face_widths(font, infos, count)
-	} else {
-		chromium_native_face_widths(font, infos, count)
-	}
-	if widths.len != count {
-		return []f32{}
-	}
-	mut advances := []f32{len: count}
-	for index in 0 .. count {
-		position := unsafe { positions[index] }
-		if position.x_advance == 0 {
-			continue
-		}
-		nominal := C.hb_font_get_glyph_h_advance(hb_font, unsafe { infos[index] }.codepoint)
-		advances[index] = chromium_harfbuzz_advance(widths[index], position.x_advance, nominal)
-	}
-	return advances
+struct ChromiumNativeStrike {
+	path       string
+	face_index int
+	point_size f32
+	bitmap     bool
 }
 
 // Blink's SkiaScalarToHarfBuzzPosition() truncates a strike width to 16.16
@@ -746,35 +722,79 @@ fn chromium_harfbuzz_advance(strike_width f32, x_advance int, nominal_advance in
 	return f32(f64(width + i64(x_advance) - i64(nominal_advance)) / 65536)
 }
 
-fn chromium_bitmap_face_advances(font &Font, face voidptr, infos &C.hb_glyph_info_t, count int) []f32 {
-	if font.font_rendering_policy != .chromium || count <= 0 || !harfbuzz_face_is_bitmap_face(face) {
-		return []f32{}
-	}
-	return chromium_native_face_widths(font, infos, count)
-}
-
-// CoreText supplies the same untracked strike widths used by glyph rasterization.
-fn chromium_native_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
+// Resolve and register the face on the owner thread before borrowing its
+// strike parameters in a shaping job.
+fn chromium_native_strike(font &Font, hb_face voidptr, include_bitmap bool) ?ChromiumNativeStrike {
 	$if macos {
-		mut path := font.font_path() or { return []f32{} }
+		if font.font_rendering_policy != .chromium { return none }
+		bitmap := harfbuzz_face_is_bitmap_face(hb_face)
+		if bitmap {
+			if !include_bitmap { return none }
+		} else if font.source_path == '' && font.variations().len > 0 {
+			return none
+		}
+		mut path := font.font_path() or { return none }
 		if face := font.replay_face() {
 			key := face.replay_key()
 			tags := face.variations.map(it.tag)
 			values := face.variations.map(it.value)
 			if C.cpuraster_ct_register_face(key.str, face.path.str, face.postscript_name.str,
 				tags.data, values.data, tags.len) == 0 {
-				return []f32{}
+				return none
 			}
 			path = key
 		}
-		glyphs := []u16{len: count, init: u16(unsafe { infos[index] }.codepoint)}
-		mut widths := []f32{len: count}
-		if C.cpuraster_ct_advances(path.str, font.face_index(), font.point_size,
-			glyphs.data, count, widths.data) != 0 {
-			return widths
+		return ChromiumNativeStrike{
+			path: path
+			face_index: font.face_index()
+			point_size: font.point_size
+			bitmap: bitmap
 		}
 	}
-	return []f32{}
+	return none
+}
+
+// CoreText supplies the same untracked strike widths used by glyph rasterization.
+fn (strike ChromiumNativeStrike) read_widths(glyphs &u16, count int, widths &f32) bool {
+	$if macos {
+		return C.cpuraster_ct_advances(strike.path.str, strike.face_index, strike.point_size,
+			glyphs, count, widths) != 0
+	}
+	return false
+}
+
+// Both callers supply glyph IDs and advances with space for count elements.
+fn (strike ChromiumNativeStrike) shape_advances(hb_font voidptr, infos &C.hb_glyph_info_t,
+	positions &C.hb_glyph_position_t, count int, glyphs &u16, advances &f32) bool {
+	for index in 0 .. count {
+		unsafe { glyphs[index] = u16(infos[index].codepoint) }
+	}
+	if !strike.read_widths(glyphs, count, advances) { return false }
+	if strike.bitmap { return true }
+	for index in 0 .. count {
+		x_advance := unsafe { positions[index].x_advance }
+		unsafe {
+			advances[index] = if x_advance == 0 {
+				f32(0)
+			} else {
+				nominal := C.hb_font_get_glyph_h_advance(hb_font, infos[index].codepoint)
+				chromium_harfbuzz_advance(advances[index], x_advance, nominal)
+			}
+		}
+	}
+	return true
+}
+
+fn chromium_native_shape_advances(font &Font, face voidptr, hb_font voidptr,
+	infos &C.hb_glyph_info_t, positions &C.hb_glyph_position_t, count int) []f32 {
+	if count <= 0 { return [] }
+	strike := chromium_native_strike(font, face, true) or { return [] }
+	mut glyphs := []u16{len: count}
+	mut advances := []f32{len: count}
+	if !strike.shape_advances(hb_font, infos, positions, count, glyphs.data, advances.data) {
+		return []
+	}
+	return advances
 }
 
 // Chromium-policy text uses the platform's fallback face, such as Apple Color
@@ -918,14 +938,15 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	}
 	C.hb_shape(hb_font, buffer, &features[0], feature_count)
 	return decode_harfbuzz_shape(buffer, face, hb_font, initial_x, letter_spacing, word_spacing,
-		text, font, text_type, utf16_units, text_length_in_code_units, is_ascii, uses_emoji)
+		text, font, text_type, utf16_units, text_length_in_code_units, is_ascii, uses_emoji, [])
 }
 
 // Decode while the buffer is owned by the caller, then release it. The cache
 // batch and the normal shaper use the same glyph, advance and cluster handling.
 fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_x f32,
 	letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType,
-	utf16_units []u16, text_length_in_code_units int, is_ascii bool, uses_emoji bool) ShapedText {
+	utf16_units []u16, text_length_in_code_units int, is_ascii bool, uses_emoji bool,
+	prepared_advances []f32) ShapedText {
 	resolution := f64(font.shaping_resolution())
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
@@ -946,9 +967,10 @@ fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_
 			previous = cluster
 		}
 	}
-	mut native_advances := chromium_bitmap_face_advances(font, face, infos, int(glyph_count))
-	if native_advances.len == 0 {
-		native_advances = chromium_outline_face_advances(font, face, hb_font, infos, positions, int(glyph_count))
+	native_advances := if prepared_advances.len > 0 {
+		prepared_advances
+	} else {
+		chromium_native_shape_advances(font, face, hb_font, infos, positions, int(glyph_count))
 	}
 	resolved_letter_spacing := font.quantized_shaping_spacing(letter_spacing)
 	resolved_word_spacing := font.quantized_shaping_spacing(word_spacing)

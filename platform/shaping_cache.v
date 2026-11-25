@@ -410,8 +410,9 @@ fn shaped_text_with_baseline(shape CachedShape, baseline_start_x f32, font &Font
 
 fn (mut cache ShapingCache) publish_ascii_shape_job(job ASCIIShapeJob, font_key string, text string,
 	font &Font, params ShapeParams) ShapedText {
+	advances := if job.advance_count > 0 { job.advances[..job.advance_count] } else { []f32{} }
 	shaped := decode_harfbuzz_shape(job.buffer, job.face, job.hb_font, 0, 0, 0, text, font,
-		.ltr, [], text.len, true, false)
+		.ltr, [], text.len, true, false, advances)
 	cache.store(font_key, text, params, CachedShape{
 		...cached_shape_from(shaped)
 		parallel_prepared: parallel_ascii_shape_diagnostics

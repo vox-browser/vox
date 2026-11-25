@@ -9,6 +9,16 @@ fn test_prepared_ascii_shapes_match_the_existing_shaping_cache() {
 	worker := spawn shape_ascii_job_range(jobs.data, 0, 1)
 	shape_ascii_job_range(jobs.data, 1, i32(jobs.len))
 	worker.wait()
+	$if macos {
+		for job in jobs {
+			if serial_ascii_strike_advances {
+				assert job.advance_count == 0
+			} else {
+				assert job.advance_count > 0
+				assert job.advance_count <= job.request.text.len
+			}
+		}
+	}
 	assert store_ascii_shape_jobs(jobs) == 2
 	for text in texts {
 		cached := shape_text_with_spacing(0, 0, 0, text, font, .ltr)
@@ -18,6 +28,22 @@ fn test_prepared_ascii_shapes_match_the_existing_shaping_cache() {
 		assert cached.glyph_run.glyphs_ == expected.glyph_run.glyphs_
 	}
 	assert prepare_ascii_shape_jobs(texts.map(ASCIIShapeRequest{it, font})).len == 0
+}
+
+fn test_long_ascii_jobs_resolve_strike_advances_when_consumed() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{ family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium }
+	text := 'AV office file '.repeat(16)
+	jobs := prepare_ascii_shape_jobs([ASCIIShapeRequest{text, font}])
+	assert jobs.len == 1
+	shape_ascii_job_range(jobs.data, 0, 1)
+	assert jobs[0].advance_count == 0
+	mut scope := stage_ascii_shape_jobs(jobs)
+	defer { scope.finish() }
+	actual := shape_text_with_spacing(0, 0, 0, text, font, .ltr)
+	expected := shape_text_uncached(0, 0, 0, text, font, .ltr)
+	assert actual.glyph_run.glyphs_ == expected.glyph_run.glyphs_
+	assert actual.trailing_whitespace == expected.trailing_whitespace
 }
 
 fn test_staged_ascii_shapes_are_consumed_only_by_matching_cache_requests() {
