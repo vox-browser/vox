@@ -1103,11 +1103,11 @@ struct StrikeGlyph {
 // CoreText's font at the text size, fTransform (MatrixToCGAffineTransform()
 // of the remaining matrix) and the rec's pre-blend table.
 struct GlyphStrike {
+mut:
 	transform  [6]f64
 	invertible bool
 	// The CoreText font's size when it is made on first need.
 	text_size f64
-mut:
 	font      voidptr
 	deferred  bool
 	table     []u8
@@ -1132,19 +1132,27 @@ fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?G
 
 // A CoreText strike whose font is made by ensure_font().
 fn glyph_strike_template(size f32, device SkAffine, luminance int) ?GlyphStrike {
+	mut strike := GlyphStrike{}
+	if !strike.set_template(size, device, luminance) {
+		return none
+	}
+	return strike
+}
+
+// Fill the scaler fields of a fresh strike without allocating its glyph map.
+fn (mut strike GlyphStrike) set_template(size f32, device SkAffine, luminance int) bool {
 	m := glyph_strike_matrices(size, device)
 	if !m.invertible {
 		// A singular matrix zeroes fTransform: every glyph is empty.
-		return none
+		return false
 	}
 	r := m.remaining
-	return GlyphStrike{
-		transform:  [f64(r.sx), -f64(r.ky), -f64(r.kx), f64(r.sy), f64(r.tx), f64(r.ty)]!
-		invertible: m.invertible
-		text_size:  f64(m.text_size)
-		table:      mask_gamma_tables[luminance]
-		deferred:   true
-	}
+	strike.transform = [f64(r.sx), -f64(r.ky), -f64(r.kx), f64(r.sy), f64(r.tx), f64(r.ty)]!
+	strike.invertible = m.invertible
+	strike.text_size = f64(m.text_size)
+	strike.table = mask_gamma_tables[luminance]
+	strike.deferred = true
+	return true
 }
 
 // Makes a deferred strike's font from the face; false when there is none.

@@ -110,6 +110,25 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
 		assert prefetched == serial
 
+		// Replay can cache a glyph before frame publication. Keep that mask and
+		// publish only the missing masks from the worker-owned batch.
+		mut growing_cache := new_glyph_cache()
+		pending := start_glyph_frame_prefetch(growing_cache, expect)
+		assert pending != unsafe { nil }
+		mut before_join := []u8{len: serial.len, init: 255}
+		assert fill_canvas_glyphs_cached(mut growing_cache, mut before_join, 256, 48, 1024,
+			2, run, transform, 0xff123456, none, 1, .src_over, [], none)
+		first_key := growing_cache.order[0]
+		mut used_before_join := map[u32]StrikeGlyph{}
+		for key, glyph in growing_cache.strikes[first_key].glyphs { used_before_join[key] = glyph }
+		finish_glyph_frame_prefetch(pending, growing_cache)
+		assert before_join == serial
+		for key, glyph in used_before_join {
+			retained := growing_cache.strikes[first_key].glyphs[key]
+			assert voidptr(glyph.image.data) == voidptr(retained.image.data)
+		}
+		assert start_glyph_frame_prefetch(growing_cache, expect) == unsafe { nil }
+
 		finite_keys_only := new_glyph_cache()
 		invalid_positions := []f32{len: run.positions.len, init: f32(math.nan())}
 		invalid := start_glyph_frame_prefetch(finite_keys_only, [
