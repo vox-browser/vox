@@ -5402,3 +5402,102 @@ readiness, viewport and all 30 ordered story IDs. The executable,
 helper, library, archive and harness stayed pinned. All browser,
 driver and guard exits were zero. Peak sampled RSS was
 437,370,880 bytes.
+
+### Batch missing table cell coverage by row range
+
+Commit `d3504d0a7` replaces the repeated placement scan for bounded
+tables of at least 32 rows with a scratch grid. Each placement covers
+its row and column span. The optional macOS worker path divides the
+grid into disjoint row ranges, including spans that cross range
+boundaries. The browser appends anonymous missing cells in the
+original order after joining. The grid has a one-million-slot limit.
+Small and oversized tables use the ordinary row scan.
+
+`VOX_PARALLEL_TABLE_CELL_FIXUP=1` enables workers.
+`VOX_LEGACY_TABLE_CELL_FIXUP=1` selects the original scan for the
+same-executable control. The default uses the dense grid on the
+browser thread.
+
+The focused occupancy tests compared every slot with the original
+span predicate. They covered overlaps, a row span clipped by the
+table boundary, size limits, and disabled raster workers. All
+settings passed with arena poisoning and ThreadSanitizer. Compiling
+the full layout test binary exceeded the 12 GiB process-tree guard.
+The scoped tests ran from the table coverage module. The production
+integration used headless layout trees for three 77-row fixtures
+with a colspan, a rowspan across worker ranges and a script-updated
+rowspan after the first layout. All four configurations produced identical
+trees per fixture, including the fallback with raster workers disabled.
+Poisoning targeted the table coverage scratch arena. The earlier bundle
+hit a separate `paint tree projections` access under global poisoning
+in the scripted fixture.
+
+#### Matched production captures
+
+Receipt `20261125-224616-908c6971` verified `802c8ee36` and
+passed startup smoke in single-C-unit V `-prod` mode. All three
+schedules used the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `c589c77625fdea080723c8e1a24b916f4236a6ed3d933b7982eff4ac89491df5` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+The 92-row, three-column story table had 152 cell placements. Both
+worker diagnostics processed it in four ranges, three off-thread. It
+was the sole table eligible for the grid on this page.
+
+Separate counter diagnostics measured inclusive browser-thread scopes.
+
+| Scope | Old 1 | Serial grid 1 | Worker grid 1 | Old 2 | Serial grid 2 | Worker grid 2 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Missing-cell fixup | 9,876,003 | 8,847,790 | 9,716,305 | 9,894,814 | 8,813,150 | 8,682,462 |
+| Grid construction | — | 32,457 | 60,774 | — | 32,369 | 57,402 |
+| Layout tree construction | 68,247,076 | 66,298,970 | 68,083,192 | 68,305,829 | 66,206,337 | 65,702,799 |
+
+The serial grid reduced main-thread instructions for missing-cell
+fixup by 10.4% and 10.9%. Dispatch increased the main-thread cost of
+grid construction from about 32,000 to 57,000–61,000 instructions.
+
+Two unprofiled cohorts used seven triplets each, running all six
+orders before repeating the first and reversing those orders in the
+second cohort. The timer spans fresh launch through completed
+document PNG at 1024×768 CSS pixels and 2× scale. Captures used
+JavaScriptCore, fresh private profiles and HTTP caches, retained OS
+filesystem and shader caches, `tr.athing` readiness and a 60 ms
+replayed delay per logo response.
+
+| Triplet | Old, ms | Serial grid, ms | Workers, ms | Reversed old, ms | Reversed serial, ms | Reversed workers, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 311.016 | 326.223 | 296.235 | 305.611 | 294.627 | 306.781 |
+| 2 | 300.883 | 288.619 | 299.911 | 304.437 | 295.102 | 307.805 |
+| 3 | 307.255 | 292.110 | 309.102 | 302.824 | 297.976 | 301.035 |
+| 4 | 294.666 | 294.481 | 298.062 | 331.799 | 300.518 | 362.759 |
+| 5 | 327.340 | 359.808 | 287.947 | 304.525 | 305.652 | 310.148 |
+| 6 | 300.710 | 300.952 | 352.068 | 308.232 | 295.964 | 305.155 |
+| 7 | 312.918 | 314.338 | 313.909 | 312.924 | 305.252 | 300.663 |
+| Median | 307.255 | 300.952 | 299.911 | 305.611 | 297.976 | 306.781 |
+
+Median within-triplet changes for the serial grid versus the old scan
+were +0.242 and −9.335 ms with three and six wins.
+For the worker grid versus the serial grid, the changes were
++3.581 and +9.190 ms with three and one wins.
+Sampled main-thread CPU medians in schedule order were
+165.418, 163.517, 165.122 ms and
+164.016, 157.899, 161.757 ms.
+One-minute host load was 6.22–6.73
+and 6.73–7.31 on 18 CPUs.
+
+The serial grid remains the default. The worker schedule remains
+opt-in based on its launch-to-PNG cost on this page.
+
+All 54 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+All 12 diagnostic captures verified the document URL, complete ready
+state, viewport and 30 ordered story IDs. Executable, native library,
+helper, fixture and harness hashes stayed pinned. Browser, driver and
+guard exits were zero. Peak sampled benchmark RSS was
+435,208,192 bytes.
