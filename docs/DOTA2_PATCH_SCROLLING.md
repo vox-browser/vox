@@ -2622,3 +2622,130 @@ A fresh 250 ms repeating audit verified the full patch after 4.17 seconds.
 The browser, driver and guard exited 0, with sampled peak guard RSS of
 855,490,560 B and one-minute host load 6.34→6.87. This was a single
 load diagnostic.
+
+## Retiring web font decode workspaces
+
+`2456dfcb0` gives WOFF and WOFF2 conversion a temporary allocation
+scope. The synchronous CSS loader validates the converted font and
+writes the prepared file before releasing the workspace. The platform
+file loader keeps the prepared path. The WOFF2 worker copies its final
+bytes or error message for the existing asynchronous handoff.
+
+The live control loaded four WOFF faces from Steam's CDN. It followed
+the browser's cancellable native HTTP transport. The font audit
+identified three Radiance weights and Reaver Semibold. The focused
+allocator-header probe captured a complete load at 23.02 seconds.
+It settled at 654,561,096 B across 52 samples with a 1,105,072,688 B
+sampled peak. The browser, driver and 3 GiB guard exited 0 with
+1,015,431,168 B peak guard RSS. One-minute host load was 2.85→3.72.
+
+The fixture downloaded those four declared WOFF files and matched each
+prepared SFNT SHA-256 to the corresponding live audit. The downloaded
+inputs were pinned by these SHA-256 hashes.
+
+| Font | WOFF bytes | SHA-256 |
+| --- | ---: | --- |
+| Radiance | 56,932 | `f2b1132830303932306b66581b95eab185f970710b3ebc058476d4e8713dc9bc` |
+| Radiance Bold | 62,296 | `b6cd5bf2884df0ae14852f107ddf3681dcef6172f8b2379859800788829d1de4` |
+| Radiance Semibold | 64,084 | `08047e308ef23a87ba3ae1a7bc6cfbb9f4490ad165e5771bc9aaa5d063d41f3e` |
+| Reaver Semibold | 57,700 | `7d4c12d932d57afacf58b862fa34f67f6d2183c7d38a12535de64796745b6304` |
+
+With one conversion of each font, the earlier body retained 2,934,649 B
+in the caller's arena. The scoped CSS loader retained 1,020 B and
+produced the same prepared files. Both fixture runs also matched with
+the scratch arena poisoned at retirement. The compile and 3 GiB
+runtime guards exited 0 at 2,356,264,960 B and 17,612,800 B peak RSS.
+
+Seven CSS font tests and two platform decode tests passed normally
+and with retired font workspaces poisoned. They cover format dispatch,
+preservation of WOFF and WOFF2 files, bounded caller-arena growth,
+worker results and errors, and deferred delivery after document
+retirement. The compile and runtime guards exited 0 with
+2,227,093,504 B and 26,116,096 B peak RSS.
+
+### Published browser
+
+The control was single-unit C `-prod` receipt
+`20261125-231123-8745b241`, executable SHA-256
+`62a038841ae78ebfe515f47d2d4b514866aab1de87ed917bc8373563ff025513`.
+The matching candidate mode used receipt `20261125-232916-2c643a96`
+at sealed revision `2456dfcb0`. Its executable SHA-256 was
+`130dfc955e7acca1feccacdced2695561a7765069c9684b437a986ad4ae4ab9f`.
+It also contains a separate cold text-shaping change. The
+production and headless smoke guards exited 0 at 7,681,245,184 B and
+116,752,384 B peak RSS. A preceding shared build rejected changed
+source inputs before preprocessing.
+
+All five 800×600 browser captures matched between the two builds
+byte for byte. Font-weight range matched its upstream reference
+exactly. SVG text font fallback differed by eight pixels and passed
+the existing tolerance. Unicode range, first available font including
+whitespace, and space glyph width differed from their references
+by 4,883, 4,039 and 5,007 pixels respectively on both builds. The
+comparison drivers and guards exited 1 for both groups, with
+159,252,480 B and 185,237,504 B peak guard RSS.
+
+The first two memory launches and the initial repeating load audit
+returned navigation-error documents. All three browsers exited −15
+after their audit watchdogs.
+The two scrolling browsers timed out waiting for the patch title
+and exited −9. The four driver groups and guards exited 1, with
+309,313,536 B, 370,573,312 B, 313,868,288 B and 313,016,320 B peak
+guard RSS in that order. Those attempts do not measure the patch.
+A subsequent fresh launch of the same executable passed the full
+audit at 4.16 seconds with a 250 ms observer. The diagnostic browser,
+driver and 3 GiB guard exited 0 at 866,664,448 B peak guard RSS.
+
+### Audited live memory and scrolling
+
+The accepted native launches used fresh processes and private profiles
+and HTTP caches, direct HTTPS, automatic author JavaScript, retained
+OS caches, and a 1024×768 document at backing scale two. The complete
+patch audit matched title, visible activity, readiness, loaded fonts,
+133 images, 15,620 UTF-8 patch text bytes and the established normalized
+text digest. The four prepared SFNT digests matched across both builds.
+
+Physical footprint was sampled from launch at 50 ms. Settled memory is
+the final three-second median of the 12-second window following the
+first passing audit.
+
+| Trial | Full patch audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Vox control | 23.03 s | 653,479,704 B | 1,095,290,936 B | 51 |
+| Vox candidate 1 | 23.03 s | 614,764,408 B | 1,066,045,664 B | 52 |
+| Vox candidate 2 | 23.02 s | 631,623,472 B | 1,074,123,000 B | 51 |
+
+All three browsers, drivers and 3 GiB guards exited 0. Peak guard RSS
+was 1,013,039,104 B, 978,862,080 B and 970,850,304 B. One-minute host
+load was 4.77→4.24, 3.90→4.78 and 4.78→4.31 on 18 CPUs. The candidate
+settled 22–39 MB below the control in these launches. The adblock
+helper changed from
+`31dfe96b534e9bf5f14ff05f6f5db53b2f9a0bb2001fb27f9060f92bc034da14`
+to `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416`.
+The AVIF library and adblock asset hashes stayed equal. The shared
+changes and direct live loads limit attribution of the total
+difference. Vox still uses 1.82–1.87 times the most recent audited
+Brave footprint of 338,255,792 B.
+
+The native scroll checks used `tools/measure_precise_scroll.py` with
+`VOX_TEST_WINDOW=1`, 112 pixels of browser chrome, 23 seconds of settling
+after the title matched, and 720 wheel events at nominal 60 Hz. Each
+wheel event moved by 16 with reversal at event 360. All four launches
+passed the patch audit. The endpoint was completed native frame
+installation, and throughput spans the whole input window.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 23.00 | 44.25 / 66.89 / 125.12 ms | 276/299 | 720 / 336 | 55.31 Hz | 58.72 / 10.19 ms |
+| Control 2 | 22.82 | 44.40 / 67.40 / 122.17 ms | 277/299 | 720 / 335 | 54.88 Hz | 59.94 / 9.98 ms |
+| Candidate 1 | 21.78 | 46.05 / 73.60 / 123.94 ms | 262/286 | 720 / 322 | 54.74 Hz | 61.00 / 10.26 ms |
+| Candidate 2 | 22.43 | 44.91 / 68.58 / 120.92 ms | 268/292 | 720 / 328 | 55.24 Hz | 63.43 / 5.09 ms |
+
+The input windows were 13.000, 13.100, 13.134 and 13.017 seconds.
+The document reached 12,061.5, 12,025.5, 12,064.5 and 12,065 CSS
+pixels and returned to 0, 0, 1 and 3.5. All browsers, drivers and
+3 GiB guards exited 0. Peak guard RSS was 1,262,583,808 B for the
+controls and 1,285,111,808 B for the candidate. One-minute host load
+was 4.24→4.30, 4.30→4.62, 4.20→3.99 and 3.99→3.88. The later
+candidate observations were slower in build order, with most frames
+missing the 60 Hz deadline on both builds.
