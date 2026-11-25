@@ -56,8 +56,9 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 @[params]
 pub struct CanvasGlyphBackdrop {
 pub:
-	context voidptr
-	read    fn (voidptr) bool = unsafe { nil }
+	context        voidptr
+	read           fn (voidptr) bool = unsafe { nil }
+	pipeline_masks bool
 }
 
 // fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
@@ -109,6 +110,13 @@ pub fn prepare_retained_glyph_positions(source []f64, mut positions []f32,
 		}
 	}
 	return glyph_positions_bounds(positions)
+}
+
+fn cached_canvas_run_strike(cache &GlyphCache, face_key string, run &CanvasGlyphRun,
+	position_matrix SkAffine, strike &GlyphStrike, smooth_luminance int, luminance int) &CachedGlyphStrike {
+	strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
+	return glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
+		strike, smooth_luminance, luminance))
 }
 
 fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache, backdrop CanvasGlyphBackdrop) bool {
@@ -276,6 +284,24 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if paint_draws_nothing(mode, paint_alpha_byte(alpha), filter) {
 		return true
 	}
+	mut prepared_entry := unsafe { &CachedGlyphStrike(nil) }
+	mut prepared_masks := false
+	mut pending_masks := voidptr(0)
+	$if macos && !cpuraster_freetype ? {
+		if has_backdrop && backdrop.pipeline_masks && run.retained && !strike.color && !draw_as_paths
+			&& (strike.font != unsafe { nil } || strike.deferred) {
+			prepared_entry = cached_canvas_run_strike(cache, face_key, run, position_matrix,
+				&strike, smooth_luminance, luminance)
+			pending_masks = prepared_entry.start_glyph_backdrop_batch(mut strike, mut lazy, run,
+				routes, rounding, true)
+			prepared_masks = pending_masks != unsafe { nil }
+		}
+	}
+	defer {
+		$if macos && !cpuraster_freetype ? {
+			finish_glyph_backdrop_batch(pending_masks, false)
+		}
+	}
 	rc := canvas_raster_clip(width, height, clips)
 	// SkCanvas::onDrawGlyphRunList()'s quick reject with the blob's
 	// conservative bounds: the glyph positions expanded by the typeface's
@@ -299,16 +325,15 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if rc.is_empty {
 		return true
 	}
-	mut prepared_entry := unsafe { &CachedGlyphStrike(nil) }
-	mut prepared_masks := false
 	if has_backdrop {
 		mut loaded := false
 		$if macos && !cpuraster_freetype ? {
-			if run.retained && !strike.color && !draw_as_paths
+			if backdrop.pipeline_masks {
+				loaded = read_pending_glyph_backdrop(pending_masks, backdrop)
+			} else if run.retained && !strike.color && !draw_as_paths
 				&& (strike.font != unsafe { nil } || strike.deferred) {
-				strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
-				prepared_entry = glyph_cache_strike(cache, glyph_strike_key(strike_face,
-					run.font_size, position_matrix, &strike, smooth_luminance, luminance))
+				prepared_entry = cached_canvas_run_strike(cache, face_key, run, position_matrix,
+					&strike, smooth_luminance, luminance)
 				prepared_masks, loaded = prepared_entry.prepare_glyph_masks_over_backdrop(mut strike,
 					mut lazy, run, routes, rounding, backdrop)
 			} else {
@@ -343,9 +368,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	mut entry := if prepared_entry != unsafe { nil } {
 		prepared_entry
 	} else {
-		strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
-		glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
-			&strike, smooth_luminance, luminance))
+		cached_canvas_run_strike(cache, face_key, run, position_matrix, &strike, smooth_luminance,
+			luminance)
 	}
 	if entry.empty {
 		return true
@@ -374,6 +398,12 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	defer {
 		if batch_blend { mask_batch.flush(mut wrapped) }
+	}
+	$if macos && !cpuraster_freetype ? {
+		if pending_masks != unsafe { nil } {
+			finish_glyph_backdrop_batch(pending_masks, true)
+			pending_masks = unsafe { nil }
+		}
 	}
 	mut prepare_masks := $if macos && !cpuraster_freetype ? { run.retained && !prepared_masks } $else { false }
 	for i, id in run.glyphs {

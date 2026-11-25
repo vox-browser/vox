@@ -34,6 +34,19 @@ $if !cpuraster_freetype ? {
 		jobs []GlyphImageJob
 	}
 
+	@[heap]
+	struct PendingGlyphBackdropBatch {
+		entry    &CachedGlyphStrike
+		pipeline bool
+	mut:
+		batch         GlyphImageBatch
+		ticket        voidptr
+		lanes         int
+		owner_started u64
+		read_started  u64
+		read_finished u64
+	}
+
 	fn glyph_run_mask_key(run &CanvasGlyphRun, strike &GlyphStrike, rounding SkAffine,
 		index int) u32 {
 		mapped := map_point_affine(rounding,
@@ -145,35 +158,67 @@ $if !cpuraster_freetype ? {
 		entry.publish_glyph_image_batch(&batch)
 	}
 
-	fn (mut entry CachedGlyphStrike) prepare_glyph_masks_over_backdrop(mut strike GlyphStrike,
+	fn (mut entry CachedGlyphStrike) start_glyph_backdrop_batch(mut strike GlyphStrike,
 		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, rounding SkAffine,
-		backdrop CanvasGlyphBackdrop) (bool, bool) {
+		pipeline bool) voidptr {
 		// Keep warm starts on the ordinary loop. It can discover a later miss
 		// without a second scan of the warm prefix.
 		if routes[0].kind != .mask || glyph_run_mask_key(run, &strike, rounding, 0) in entry.glyphs {
-			return false, backdrop.read(backdrop.context)
+			return unsafe { nil }
 		}
-		mut batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, 0, rounding) or {
-			return false, backdrop.read(backdrop.context)
+		batch := entry.glyph_image_batch(mut strike, mut lazy, run, routes, 0, rounding) or {
+			return unsafe { nil }
 		}
-		ticket, lanes := start_background_raster_ranges(&batch, batch.jobs.len, batch.jobs.len / 2,
+		mut pending := &PendingGlyphBackdropBatch{
+			entry: &entry
+			pipeline: pipeline
+			batch: batch
+		}
+		ticket, lanes := start_background_raster_ranges(&pending.batch, batch.jobs.len, batch.jobs.len / 2,
 			draw_glyph_image_jobs)
-		if lanes == 0 { return false, backdrop.read(backdrop.context) }
-		read_started := if batch.diagnostics { time.sys_mono_now() } else { u64(0) }
+		if lanes == 0 { return unsafe { nil } }
+		pending.ticket = ticket
+		pending.lanes = lanes
+		if batch.diagnostics { pending.owner_started = time.sys_mono_now() }
+		return pending
+	}
+
+	fn read_pending_glyph_backdrop(context voidptr, backdrop CanvasGlyphBackdrop) bool {
+		if context == unsafe { nil } { return backdrop.read(backdrop.context) }
+		mut pending := unsafe { &PendingGlyphBackdropBatch(context) }
+		if pending.batch.diagnostics { pending.read_started = time.sys_mono_now() }
 		loaded := backdrop.read(backdrop.context)
-		read_finished := if batch.diagnostics { time.sys_mono_now() } else { u64(0) }
-		ready := join_background_raster_range(ticket)
-		if loaded {
-			entry.publish_glyph_image_batch(&batch)
+		if pending.batch.diagnostics { pending.read_finished = time.sys_mono_now() }
+		return loaded
+	}
+
+	fn finish_glyph_backdrop_batch(context voidptr, publish bool) {
+		if context == unsafe { nil } { return }
+		pending := unsafe { &PendingGlyphBackdropBatch(context) }
+		batch := &pending.batch
+		join_started := if batch.diagnostics { time.sys_mono_now() } else { u64(0) }
+		ready := join_background_raster_range(pending.ticket)
+		if publish {
+			mut entry := unsafe { pending.entry }
+			entry.publish_glyph_image_batch(batch)
 		} else {
 			for job in batch.jobs {
 				if job.mask != unsafe { nil } { C.free(job.mask) }
 			}
 		}
 		if batch.diagnostics {
-			overlap := batch.jobs.count(it.rendered > read_started && it.started < read_finished)
-			eprintln('VOX_GLYPH_BACKDROP_BATCH jobs=${batch.jobs.len} lanes=${lanes} loaded=${loaded} ready_at_join=${ready} overlap=${overlap}')
+			overlap := batch.jobs.count(it.rendered > pending.read_started && it.started < pending.read_finished)
+			setup_overlap := batch.jobs.count(it.rendered > pending.owner_started && it.started < join_started)
+			eprintln('VOX_GLYPH_BACKDROP_BATCH jobs=${batch.jobs.len} lanes=${pending.lanes} published=${publish} ready_at_join=${ready} overlap=${overlap} owner_overlap=${setup_overlap} pipeline=${pending.pipeline}')
 		}
-		return true, loaded
+	}
+
+	fn (mut entry CachedGlyphStrike) prepare_glyph_masks_over_backdrop(mut strike GlyphStrike,
+		mut lazy LazyGlyphFace, run &CanvasGlyphRun, routes []GlyphRoute, rounding SkAffine,
+		backdrop CanvasGlyphBackdrop) (bool, bool) {
+		pending := entry.start_glyph_backdrop_batch(mut strike, mut lazy, run, routes, rounding, false)
+		loaded := read_pending_glyph_backdrop(pending, backdrop)
+		finish_glyph_backdrop_batch(pending, loaded)
+		return pending != unsafe { nil }, loaded
 	}
 }

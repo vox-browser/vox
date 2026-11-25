@@ -119,6 +119,7 @@ const retain_covered_glyph_clip_draws = os.getenv('VOX_RETAIN_COVERED_GLYPH_CLIP
 // skipped draw's result.
 const verify_covered_glyph_clip_draws = os.getenv('VOX_VERIFY_COVERED_GLYPH_CLIP_DRAWS') != ''
 const overlap_glyph_backdrop = os.getenv('VOX_OVERLAP_GLYPH_BACKDROP') == '1'
+const pipeline_glyph_masks = os.getenv('VOX_PIPELINE_GLYPH_MASKS') == '1'
 
 struct DocumentGlyphBackdrop {
 	pixels   &u8
@@ -274,7 +275,7 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		height := int(geometry[3])
 		backdrop := geometry[4] != 0
 		mut pixels := []u8{len: width * height * 4}
-		deferred_backdrop := backdrop && overlap_glyph_backdrop && glyphs.len >= 4
+		deferred_backdrop := backdrop && (pipeline_glyph_masks || overlap_glyph_backdrop) && glyphs.len >= 4
 			&& clip_bounds == none && !extended_blend && document_glyph_raster_dump == ''
 		if backdrop && !deferred_backdrop && C.native_document_text_raster_read_backdrop(pixels.data,
 			geometry[0], geometry[1], i32(width), i32(height), scale) == 0 {
@@ -337,7 +338,11 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				scale: scale
 			}
 			loader := if deferred_backdrop {
-				cpuraster.CanvasGlyphBackdrop{context: &destination, read: read_document_glyph_backdrop}
+				cpuraster.CanvasGlyphBackdrop{
+					context: &destination
+					read: read_document_glyph_backdrop
+					pipeline_masks: pipeline_glyph_masks
+				}
 			} else {
 				cpuraster.CanvasGlyphBackdrop{}
 			}
