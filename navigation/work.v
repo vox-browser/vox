@@ -68,6 +68,7 @@ fn (mut app BrowserApp) begin_navigation_work() NavigationWorkScope {
 	app.navigation_work_depth++
 	$if macos {
 		if app.navigation_work_depth == 1 { C.vox_set_navigation_work_active(1) }
+		browserwindow.begin_cooperative_application_work()
 	}
 	return NavigationWorkScope{
 		app:  &app
@@ -91,6 +92,9 @@ fn (mut scope NavigationWorkScope) finish() {
 				C.native_wake_browser()
 			}
 		}
+	}
+	$if macos {
+		browserwindow.end_cooperative_application_work()
 	}
 }
 
