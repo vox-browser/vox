@@ -26,9 +26,11 @@ fn test_fresh_subtree_decisions_survive_geometry_workspace_retirement_and_growth
 		for node in nodes[batch * 16 .. (batch + 1) * 16] {
 			mut values := state.get_mutable(node)
 			values.set_content_width(CSSPixels.new(160))
+			values.set_had_clearance(true)
 			box := unsafe { &Node(node) }
 			_ = layout_inside_independent_formatting_context_with_mode(mut state, box,
 				mut values, .normal, space)
+			values.set_had_clearance(false)
 			key := u64(voidptr(box))
 			assert state.subtree_layout_decisions_[key] == .fresh
 			assert owner.arena.contains(unsafe { &state.subtree_layout_decisions_[key] })
@@ -39,6 +41,8 @@ fn test_fresh_subtree_decisions_survive_geometry_workspace_retirement_and_growth
 			assert state.subtree_layout_decisions_[key] == .fresh
 			record := state.relayout_records_[node.layout_index()] or { panic('missing relayout record') }
 			assert record.space == space
+			assert record.before.had_clearance()
+			assert record.after.had_clearance()
 		}
 	}
 	assert state.subtree_layout_decisions_.len == nodes.len

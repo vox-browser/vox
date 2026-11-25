@@ -91,18 +91,19 @@ fn relayout_root_candidate(box &Node) bool {
 		&& box.as_node_with_style() != none
 }
 
+const empty_layout_record_snapshot = UsedValues{}
+
 fn layout_record_snapshot(values &UsedValues) UsedValues {
-	mut snapshot := *values
-	snapshot.line_boxes = []LineBox{}
-	snapshot.line_boxes_are_shared_ = false
-	if rare := values.rare_ {
-		snapshot.rare_ = rare.clone()
-		snapshot.rare_is_shared_ = false
+	return UsedValues{
+		...*values
+		line_boxes: empty_layout_record_snapshot.line_boxes
+		line_boxes_are_shared_: false
+		rare_: if rare := values.rare_ { rare.clone() } else { none }
+		rare_is_shared_: false
 	}
-	return snapshot
 }
 
-fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, after &UsedValues,
+fn record_relayout_root(mut state LayoutState, box &Node, before UsedValues, after UsedValues,
 	space AvailableSpace, result FormattingContextResult) {
 	styled := box.as_node_with_style() or { return }
 	index := styled.layout_index()
@@ -114,8 +115,8 @@ fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, af
 	defer { retained.finish() }
 	state.relayout_records_[index] = RelayoutRecord{
 		node:          box
-		before:        layout_record_snapshot(before)
-		after:         layout_record_snapshot(after)
+		before:        before
+		after:         after
 		space:         space
 		result:        result
 		serial:        state.pass_serial_
