@@ -65,14 +65,15 @@ fn mark_viewport_invisible_blocks_parallel(order []PaintOrderEntry, cache &Viewp
 	$if macos {
 		block_count := cache.blocks.len
 		if serial_viewport_culling || disable_direct_viewport_rect_culling
-			|| viewport_rect_culling_diagnostics || block_count < 2 * viewport_cull_blocks_per_lane
-			|| memo.tree.nodes.len > block_count {
+			|| viewport_rect_culling_diagnostics || block_count < 2 * viewport_cull_blocks_per_lane {
 			return false
 		}
-		// Avoid eager flattening for context-heavy documents. For small trees,
-		// resolve on the owner so workers never touch the memo's mutable arena.
-		for index in 1 .. memo.tree.nodes.len {
-			memo.resolve(index)
+		// Resolve the contexts used for ink tests on the owner. Unbounded
+		// entries can leave their contexts unresolved.
+		for index, testable in cache.testable {
+			if testable {
+				memo.resolve(order[index].box.accumulated_visual_context_index)
+			}
 		}
 		mut threads := []u64{}
 		if viewport_cull_worker_diagnostics { threads = []u64{len: block_count} }
