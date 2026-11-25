@@ -2310,3 +2310,142 @@ endpoint was completed native frame installation. Both browsers,
 drivers and the 3 GiB guard exited 0, with 1,279,967,232 B peak guard
 RSS. One-minute host load was 9.25→6.87 and 6.87→5.79. The cohort
 missed most 60 Hz deadlines.
+
+## Recyclable paint projections for native scripted pages
+
+`1915526ed` uses the native projection owner for scripted documents that
+opt into recyclable paint trees. The renderer keeps its current projection
+and scene through their usual leases. It skips the additional document-
+lifetime box and inline-line templates for these documents.
+
+The static and scripted C-backend preallocation fixtures passed normally
+and with the projection arenas poisoned on retirement. The scripted fixture
+rebuilt the projection eight times. Growth stayed below 4 KiB in both the
+document and base arenas. It exercised the empty template indexes, a text
+replacement and an older scene kept readable after the update and after
+document retirement. The compile and 3 GiB runtime guards exited 0, at
+6,445,432,832 B, 37,421,056 B and 245,760 B sampled peak RSS.
+
+### Live controls
+
+Single-unit C `-prod` receipt `20261125-222108-2ad23468` published
+SHA-256 `d61519f126aea5c731df5e1f46b86de4959dde6eb405c812b5a88b28f5313ca4`.
+The next completed control was receipt `20261125-223156-8e7b835f`,
+SHA-256 `8c500c1fcb804fe33add55c1220e4e82ebef25f8e62d365a02a62474345393ab`.
+Its sealed predicate still retained templates on native scripted documents.
+
+Each live launch used a fresh private profile and HTTP cache, direct HTTPS,
+and a 1024×768 document at scale 2 with automatic JavaScript. The first
+passing audit verified the visible, active patch, loaded fonts, 133 images,
+15,620 UTF-8 text bytes and the normalized text checksum. The settled
+metric is the median process-tree physical footprint in the last three
+seconds of the 12-second window after the first passing audit.
+
+| Vox control | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Earlier bundle, standard | 23.04 s | 671,829,808 B | 1,085,116,208 B | 51 |
+| Current control, standard | 23.02 s | 687,034,304 B | 1,107,382,208 B | 51 |
+| Current control, allocation trace | 23.01 s | 672,993,096 B | 1,093,521,224 B | 51 |
+
+The allocation probe checked the running Mach-O UUID, allocator header
+layout and symbol addresses. It tracked main-thread V allocation-block
+creation and retirement and sampled resident pages with `mincore` at
+about 35 seconds. Thirteen blocks first allocated by the box projection
+held 6,193,152 resident bytes. Eight additional general tree projection
+blocks held 2,899,968 resident bytes. The rebase-specific groups observed
+zero block creations. A block may contain allocations from several paths
+after the initial growth. The tracker dropped no records and received
+resident page counts for every live block it classified.
+
+The browsers, drivers and 3 GiB guards exited 0, with sampled peak RSS of
+930,316,288 B, 945,487,872 B and 943,243,264 B in table order. One-minute
+host load on 18 CPUs was 12.77→9.01, 4.36→3.49 and 5.21→4.48.
+
+### Published candidate
+
+Single-unit C `-prod` receipt `20261125-223742-eabc2c0f` sealed
+`5f35fdbd7`, including `1915526ed`. The executable SHA-256 was
+`a107b70532e2de398eb471e48b20cd8a3e923ab5a3fd784c06dbf029551ef29e`.
+The sealed C checked native projection recycling in the template policy.
+The production and headless smoke guards exited 0 with 7,703,117,824 B
+and 137,641,984 B peak RSS.
+
+| Vox candidate | First passing audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Standard launch | 23.04 s | 698,355,600 B | 1,106,382,712 B | 54 |
+| Allocation tracing | 23.02 s | 671,911,752 B | 1,093,062,496 B | 53 |
+
+The candidate trace classified ten box projection blocks with
+5,095,424 resident bytes and eight other tree projection blocks with
+3,997,696 resident bytes. Both traces therefore attributed 9,093,120 B
+to these growth stacks. The two candidate browsers, drivers and shared
+3 GiB guard exited 0. The guard sampled 964,657,152 B peak RSS. One-minute
+host load was 4.84→4.57 and 4.57→4.38.
+
+The standard candidate measured 11,321,296 B above the latest standard
+control. The figures include shared build changes and live variation.
+The last valid visible Brave result remains 354,492,360 B. The macOS
+session was locked during these live trials.
+
+### Native scrolling and reference pixels
+
+The completed native wheel runs passed the full patch audit. Each sent
+720 precise wheel events at nominal 60 Hz, delta 16 and reversal at
+event 360. Input started 23 seconds after the matching title. The
+1024×768 document used scale 2 and 112 pixels of chrome with direct
+HTTPS, automatic JavaScript, fresh profiles and fresh HTTP caches.
+The endpoint was completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 21.53 | 46.94 / 73.19 / 130.12 ms | 253/277 | 720 / 282 | 55.88 Hz | 57.79 / 6.17 ms |
+| Candidate 1 | 21.77 | 46.87 / 71.76 / 125.82 ms | 258/282 | 720 / 288 | 55.51 Hz | 53.78 / 0.18 ms |
+| Candidate 2 | 22.74 | 44.14 / 69.29 / 119.89 ms | 274/293 | 720 / 300 | 55.80 Hz | 56.66 / 0.11 ms |
+
+The second control never emitted a scroll start. The driver killed it at
+66 seconds and recorded browser exit −9. The control driver group and
+3 GiB guard exited 1 with sampled peak RSS of 1,282,686,976 B. Both
+candidate browsers, drivers and the 3 GiB guard exited 0 at
+1,280,212,992 B peak RSS. One-minute host load for the four attempts
+was 3.49→3.83, 3.83→5.45, 4.38→4.35 and 4.35→3.86. The complete input
+periods were 12.867, 12.952 and 12.886 seconds. The page reached 12,030.5,
+12,066 and 12,029 CSS pixels and returned to 0, 2 and 1.5. Most scroll
+intervals missed the 60 Hz budget.
+
+All twelve screenshot reftests matched their upstream references at
+800×600 on both builds. They covered nine SVG cases and three live
+selection cases. Each actual PNG also matched its counterpart byte
+for byte across builds. Both comparison runs and guards exited 0,
+with sampled peak RSS of 254,099,456 B and 255,688,704 B.
+
+A 250 ms repeating audit on a fresh candidate first observed the
+complete patch at 3.72 seconds. The browser, driver and guard exited 0
+at 942,751,744 B peak guard RSS and one-minute host load 4.47→4.63.
+The corresponding control audit was rejected after a shared executable
+publication changed the input identity before verification. Its browser
+exited 0 and its driver and guard exited 1.
+
+### Remaining resident allocation owners
+
+A separate fresh candidate launch audited the full page at 23.02 seconds.
+It settled at 669,880,184 B across 51 samples, with a 1,087,164,280 B peak.
+The main-thread allocator inventory validated the same binary and block
+header layout. It observed 117,135 block creations, 116,798 retirements
+and zero dropped records. The 337 live blocks held 370,606,080 resident
+bytes. The main navigation document's arena accounted for 262,209,536 B
+in 237 blocks. The main thread's unscoped blocks accounted for another
+80,953,344 B.
+
+The largest document growth callsites by resident block bytes were device-
+coordinate computed style projections at 15,728,640 B, measurement slot
+allocation at 11,288,576 B, map insertion at 8,388,608 B, and committed
+layout values lookup at 7,618,560 B. Outside the document, growth callsites
+included native JPEG decoding, URLPattern matching and Huffman table
+construction. These are block allocations grouped by their growth stacks.
+Later allocations can share the same blocks.
+
+The macOS footprint summary reported 375 MB of dirty untagged mappings,
+105 MB of dirty WebKit Malloc and 41 MB of dirty IOSurface memory in the
+tool's display units. The browser, footprint command, driver and 3 GiB
+guard exited 0. The guard sampled 911,720,448 B peak RSS. One-minute host
+load was 4.63→3.96.
