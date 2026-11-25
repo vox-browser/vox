@@ -1748,3 +1748,81 @@ the earlier production reference and verified the canvas pixel
 and `d9acc8f9908ab7eb7bc201b809cf18f1a1cbd7eb627cc17039a1f9cd43bf5f2e`.
 All four browsers and both guards exited zero. Paint ordering, layer
 effect bounds and frame publication still run on the browser thread.
+
+### Parallel canvas bounds before paint replay
+
+Commits `e777e5c10` and `37dd07d70` precompute the native-precision
+off-canvas test for ordinary paint commands on raster workers. The draw
+loop still walks group boundaries in paint order and decides whether each
+result applies. Resource and filter inputs may contribute visible pixels
+from outside the canvas. Videos, zoomed commands and frames reusing scroll
+damage use the existing serial tests. `VOX_SERIAL_PAINT_CANVAS_BOUNDS=1`
+selects the serial control.
+
+The whole-browser type check passed. The standalone culling test exposed a
+four-byte enum pointer store into a one-byte array in the intermediate
+build. The fix uses explicit byte storage, and the corrected culling tests
+passed with arena poisoning enabled. Disassembly confirmed a byte store.
+The scope test covers translated ink, a filter with off-canvas inputs,
+a skipped effect group, and the live video fallback.
+
+Production receipt `20261125-100755-8cb4b858` sealed `37dd07d70` with
+single-C-unit V `-prod`, passed startup smoke, and published executable SHA
+`86238581844e719d3ba1c5e58f24d77a397781cb0409923bddf6f8eeb6119ebd`.
+The native AVIF library SHA was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The sealed C included the byte store and its draw-loop consumer.
+
+In the Hacker News diagnostic, the four-lane batch computed canvas bounds
+for 443 commands, with 332 off the browser thread. The geometry test
+reported 60 commands outside the canvas. Both captures matched the prior
+reference and preserved all 30 ordered story IDs. In the single
+instrumented pair, the preparation stage used 129,636 main-thread
+instructions. Inclusive native raster replay measured 287,313,438
+instructions with serial culling and 292,045,356 with workers.
+
+The two seven-pair cohorts alternated workers and
+`VOX_SERIAL_PAINT_CANVAS_BOUNDS=1` on the same executable. The second
+cohort started with the serial setting. Each trial measured from fresh
+launch through the completed document PNG, at 1024×768 CSS pixels and
+2× scale with JavaScriptCore, private empty profiles and HTTP caches,
+and a 60 ms delay on each replayed logo response. OS filesystem caches
+were retained. The measurement used
+`tools/measure_load_parallelism.py` with a temporary replay wrapper
+that delayed the logo and verified input hashes before and after each trial.
+
+| Pair | Serial, ms | Workers, ms | Reversed serial, ms | Reversed workers, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 307.856 | 308.175 | 309.545 | 305.332 |
+| 2 | 306.713 | 322.241 | 319.244 | 323.044 |
+| 3 | 325.499 | 298.037 | 299.858 | 313.775 |
+| 4 | 307.791 | 335.806 | 318.867 | 295.983 |
+| 5 | 313.329 | 328.121 | 308.618 | 312.199 |
+| 6 | 304.758 | 294.968 | 329.150 | 311.084 |
+| 7 | 306.572 | 306.604 | 312.604 | 302.437 |
+| Median | 307.791 | 308.175 | 312.604 | 311.084 |
+
+Median paired changes were +0.320 ms and −4.213 ms, with workers
+finishing first in two and four pairs. Host load was 4.10–4.83 and
+4.68–4.87 on 18 CPUs. Sampled main-thread CPU medians were
+159.97 → 164.17 ms in the first cohort and 161.94 → 161.68 ms in
+the second. Launch-to-capture timing showed no consistent speedup.
+
+The 28 timing captures and both diagnostic captures matched the
+reference PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+Every launch had the same eight request and response fingerprints,
+including the replayed favicon miss. The executable, native library,
+archive and driver hashes stayed pinned. All browser, driver and 3 GiB
+guard exits were zero. Peak aggregate timing RSS was 368,377,856 bytes.
+
+A 160-row fixture with transforms, opacity, an overflow clip, and a
+drop-shadow filter exercised 644 off-thread bounds at the top and 655
+at a 740 CSS-pixel scroll offset. Each capture matched its serial
+control exactly and preserved all 160 ordered row IDs. The top capture
+also matched the preceding production reference. The two PNG SHAs were
+`933869e9973d6ad96c4476462b6cdd1e4c5e269545072285a31f29b316481b00`
+and `459894db09e97b4d456446e4f9e3419593c7238a631936711f15bce0ac37363d`.
+All four fixture browser exits and both guard exits were zero. Native
+paint dispatch, group transitions and frame publication still execute
+on the browser thread.
