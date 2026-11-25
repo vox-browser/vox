@@ -128,8 +128,7 @@ fn (sr &ScopeRecord) is_top_level() bool {
 	return sr.scope_level.is_top_level()
 }
 
-fn (mut sr ScopeRecord) variable(name []u16) &ScopeVariable {
-	key := string_from_utf16_lossy(name)
+fn (mut sr ScopeRecord) variable(key string) &ScopeVariable {
 	if key !in sr.variables {
 		sr.variables[key] = ScopeVariable{}
 	}
@@ -374,7 +373,7 @@ fn (mut sc ScopeCollector) open_function_scope(function_name ?Utf16String) {
 	if fn_name := function_name {
 		if fn_name.data.len > 0 {
 			index := sc.current
-			sc.records[index].variable(fn_name.data).flags |= var_flag_bound
+			sc.records[index].variable(string_from_utf16_lossy(fn_name.data)).flags |= var_flag_bound
 		}
 	}
 }
@@ -408,46 +407,41 @@ fn (mut sc ScopeCollector) open_class_declaration_scope(class_name ?Utf16String)
 	if cn := class_name {
 		if cn.data.len > 0 {
 			index := sc.current
-			sc.records[index].variable(cn.data).flags |= var_flag_bound
+			sc.records[index].variable(string_from_utf16_lossy(cn.data)).flags |= var_flag_bound
 		}
 	}
 }
 
 // === Declaration registration ===
 
-fn (mut sc ScopeCollector) add_lexical_declaration(name []u16, declaration_line u32, declaration_column u32) {
+fn (mut sc ScopeCollector) add_lexical_declaration(name InternedName, declaration_line u32, declaration_column u32) {
 	index := sc.current
 	if index < 0 {
 		return
 	}
-	flags := sc.records[index].variable(name).flags
-	if flags & (var_flag_var | var_flag_forbidden_lexical | var_flag_function | var_flag_lexical | var_flag_import) != 0 {
-		sc.already_declared_error(name, declaration_line, declaration_column)
+	mut variable := sc.records[index].variable(name.key)
+	if variable.flags & (var_flag_var | var_flag_forbidden_lexical | var_flag_function | var_flag_lexical | var_flag_import) != 0 {
+		sc.already_declared_error(name.text.data, declaration_line, declaration_column)
 	}
-	sc.records[index].variable(name).flags |= var_flag_lexical
+	variable.flags |= var_flag_lexical
 }
 
-fn (mut sc ScopeCollector) add_var_declaration(name []u16, id &Identifier, declaration_line u32, declaration_column u32, has_decl_kind bool) {
+fn (mut sc ScopeCollector) add_var_declaration(name InternedName, id &Identifier, declaration_line u32, declaration_column u32) {
 	index := sc.current
 	if index < 0 {
 		return
 	}
 
-	// Register the declaration identifier so it participates in scope analysis.
-	if has_decl_kind {
-		sc.register_identifier(id, name, int(DeclarationKind.var_kind))
-	} else {
-		sc.register_identifier(id, name, none)
-	}
+	sc.register_identifier_key(id, name.key, int(DeclarationKind.var_kind))
 
 	mut scope_index := index
 	for {
-		existing_flags := sc.records[scope_index].variable(name).flags
-		if existing_flags & (var_flag_lexical | var_flag_function | var_flag_forbidden_var | var_flag_import) != 0 {
-			sc.already_declared_error(name, declaration_line, declaration_column)
+		mut variable := sc.records[scope_index].variable(name.key)
+		if variable.flags & (var_flag_lexical | var_flag_function | var_flag_forbidden_var | var_flag_import) != 0 {
+			sc.already_declared_error(name.text.data, declaration_line, declaration_column)
 		}
-		sc.records[scope_index].variable(name).flags |= var_flag_var
-		sc.records[scope_index].variable(name).var_identifier = id
+		variable.flags |= var_flag_var
+		variable.var_identifier = id
 		if sc.records[scope_index].is_top_level() {
 			break
 		}
@@ -464,22 +458,19 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 		return
 	}
 	scope_level := sc.records[index].scope_level
+	key := string_from_utf16_lossy(fn_name.data)
 
 	// Register the name identifier so it participates in scope analysis.
 	if name_id := name_identifier {
-		sc.register_identifier(name_id, fn_name.data, none)
+		sc.register_identifier_key(name_id, key, none)
 	}
 
+	mut variable := sc.records[index].variable(key)
 	if scope_level != .not_top_level && scope_level != .module_top_level {
-		sc.records[index].variable(fn_name.data).flags |= var_flag_var | var_flag_function_declaration
-		sc.records[index].variable(fn_name.data).var_identifier = name_identifier
+		variable.flags |= var_flag_var | var_flag_function_declaration
+		variable.var_identifier = name_identifier
 	} else {
-		key := fn_name.str()
-		existing_flags := if v := sc.records[index].variables[key] {
-			v.flags
-		} else {
-			var_flag_empty
-		}
+		existing_flags := variable.flags
 
 		if existing_flags & (var_flag_var | var_flag_lexical | var_flag_import) != 0 {
 			sc.already_declared_error(fn_name.data, declaration_line, declaration_column)
@@ -489,7 +480,7 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 			if existing_flags & var_flag_function != 0 {
 				sc.already_declared_error(fn_name.data, declaration_line, declaration_column)
 			}
-			sc.records[index].variable(fn_name.data).flags |= var_flag_lexical
+			variable.flags |= var_flag_lexical
 			return
 		}
 
@@ -501,7 +492,7 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 			}
 		}
 
-		sc.records[index].variable(fn_name.data).flags |= var_flag_function
+		variable.flags |= var_flag_function
 	}
 }
 
@@ -509,11 +500,11 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 fn (mut sc ScopeCollector) add_import_binding(name []u16, declaration_line u32, declaration_column u32) {
 	index := sc.current
 	if index < 0 { return }
-	flags := sc.records[index].variable(name).flags
-	if flags & (var_flag_var | var_flag_function | var_flag_lexical | var_flag_import) != 0 {
+	mut variable := sc.records[index].variable(string_from_utf16_lossy(name))
+	if variable.flags & (var_flag_var | var_flag_function | var_flag_lexical | var_flag_import) != 0 {
 		sc.already_declared_error(name, declaration_line, declaration_column)
 	}
-	sc.records[index].variable(name).flags |= var_flag_import
+	variable.flags |= var_flag_import
 }
 
 fn (mut sc ScopeCollector) add_catch_parameter_pattern(name_slices [][]u16) {
@@ -522,7 +513,7 @@ fn (mut sc ScopeCollector) add_catch_parameter_pattern(name_slices [][]u16) {
 		return
 	}
 	for name in name_slices {
-		sc.records[index].variable(name).flags |= var_flag_forbidden_var | var_flag_bound | var_flag_catch_parameter
+		sc.records[index].variable(string_from_utf16_lossy(name)).flags |= var_flag_forbidden_var | var_flag_bound | var_flag_catch_parameter
 	}
 }
 
@@ -531,8 +522,9 @@ fn (mut sc ScopeCollector) add_catch_parameter_identifier(name []u16, id &Identi
 	if index < 0 {
 		return
 	}
-	sc.records[index].variable(name).flags |= var_flag_var | var_flag_bound | var_flag_catch_parameter
-	sc.records[index].variable(name).var_identifier = id
+	mut variable := sc.records[index].variable(string_from_utf16_lossy(name))
+	variable.flags |= var_flag_var | var_flag_bound | var_flag_catch_parameter
+	variable.var_identifier = id
 }
 
 // === Identifier registration ===
@@ -1130,7 +1122,6 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 	}
 
 	mut vars_to_initialize := []VarToInit{}
-	mut var_names := []Utf16String{}
 	mut has_function_named_arguments := false
 	mut has_lexically_declared_arguments := false
 	mut non_local_var_count := 0
@@ -1168,14 +1159,15 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 			continue
 		}
 
-		name := Utf16String.from_slice(string_to_u16(vname))
-		var_names << name.clone()
-
 		is_parameter := var_.flags & var_flag_forbidden_lexical != 0
 		is_function_name := vname in seen_function_names
 
+		mut name := Utf16String{}
 		mut local_info := ?LocalBinding(none)
 		if var_ident := var_.var_identifier {
+			// The identifier and the scope key describe the same declaration.
+			// Its parser-owned text remains valid through bytecode generation.
+			name = var_ident.name
 			if var_ident.is_local() {
 				local_info = LocalBinding{
 					local_type: if var_ident.local_type == 1 {
@@ -1186,6 +1178,8 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 					index:      var_ident.local_index
 				}
 			}
+		} else {
+			name = Utf16String{data: string_to_u16(vname)}
 		}
 
 		if local_info == none {
@@ -1213,15 +1207,7 @@ fn (mut sc ScopeCollector) build_function_scope_data(index int) {
 		}
 		return 0
 	})
-	var_names.sort_with_compare(fn (a &Utf16String, b &Utf16String) int {
-		if *a < *b {
-			return -1
-		}
-		if *b < *a {
-			return 1
-		}
-		return 0
-	})
+	var_names := vars_to_initialize.map(it.name)
 
 	arguments_key := 'arguments'
 	for fn_name, _ in seen_function_names {

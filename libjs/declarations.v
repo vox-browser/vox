@@ -158,23 +158,19 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 
 		target := if p.match_identifier() {
 			token := p.consume()
-			// One copy of the name, shared by the identifier and the scope
-			// records; names are never modified after parsing.
-			name := Utf16String.from_slice(p.token_value(token))
-			value := name.data
+			name := p.names.intern(p.token_value(token))
+			value := name.text.data
 			p.check_identifier_name_for_assignment_validity(value, false)
 			if kind != .var_kind && utf16_equals_ascii(value, 'let') {
 				p.syntax_error("Lexical binding may not be called 'let'")
 			}
-			id := p.make_identifier(declaration_start, name)
+			id := p.make_identifier(declaration_start, name.text)
 
 			if kind == .var_kind {
-				p.scope_collector.add_var_declaration(value, id, declaration_line,
-					declaration_column, true)
+				p.scope_collector.add_var_declaration(name, id, declaration_line, declaration_column)
 			} else {
-				p.scope_collector.add_lexical_declaration(value, declaration_line,
-					declaration_column)
-				p.scope_collector.register_identifier(id, value, int(kind))
+				p.scope_collector.add_lexical_declaration(name, declaration_line, declaration_column)
+				p.scope_collector.register_identifier_key(id, name.key, int(kind))
 			}
 
 			VariableDeclaratorTarget(IdentifierVarTarget{
@@ -206,14 +202,15 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			// Register bound names with scope collector.
 			if kind == .var_kind {
 				for bn in bound_names {
-					p.scope_collector.add_var_declaration(bn.name.data.clone(), bn.identifier,
-						declaration_line, declaration_column, true)
+					name := p.names.intern(bn.name.data)
+					p.scope_collector.add_var_declaration(name, bn.identifier, declaration_line,
+						declaration_column)
 				}
 			} else {
 				for bn in bound_names {
-					p.scope_collector.add_lexical_declaration(bn.name.data.clone(),
-						declaration_line, declaration_column)
-					p.scope_collector.register_identifier(bn.identifier, bn.name.data, int(kind))
+					name := p.names.intern(bn.name.data)
+					p.scope_collector.add_lexical_declaration(name, declaration_line, declaration_column)
+					p.scope_collector.register_identifier_key(bn.identifier, name.key, int(kind))
 				}
 			}
 
@@ -287,20 +284,18 @@ fn (mut p Parser) parse_using_declaration(is_for_loop bool) Statement {
 			break
 		}
 		token := p.consume()
-		// One copy of the name, shared by the identifier and the scope records.
-		owned_name := Utf16String.from_slice(p.token_value(token))
-		name := owned_name.data
+		binding_name := p.names.intern(p.token_value(token))
+		name := binding_name.text.data
 
 		p.check_identifier_name_for_assignment_validity(name, false)
 		if utf16_equals_ascii(name, 'let') {
 			p.syntax_error("Lexical binding may not be called 'let'")
 		}
 
-		id := p.make_identifier(declaration_start, owned_name)
+		id := p.make_identifier(declaration_start, binding_name.text)
 
-		p.scope_collector.add_lexical_declaration(name, declaration_line,
-			declaration_column)
-		p.scope_collector.register_identifier(id, name, none)
+		p.scope_collector.add_lexical_declaration(binding_name, declaration_line, declaration_column)
+		p.scope_collector.register_identifier_key(id, binding_name.key, none)
 
 		mut init := ?Expression(none)
 		if p.match_token(.equals) {
@@ -665,9 +660,9 @@ fn (mut p Parser) parse_class_declaration() Statement {
 	if class_expression.kind.tag == .class_expr {
 		if cd := class_expression.kind.class_data() {
 			if name_ident := cd.name {
-				p.scope_collector.add_lexical_declaration(name_ident.name.data.clone(), start.line,
-					start.column)
-				p.scope_collector.register_identifier(name_ident, name_ident.name.data, none)
+				name := p.names.intern(name_ident.name.data)
+				p.scope_collector.add_lexical_declaration(name, start.line, start.column)
+				p.scope_collector.register_identifier_key(name_ident, name.key, none)
 			}
 			return p.statement(start, StatementKind{
 				tag:        .class_declaration
