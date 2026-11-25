@@ -102,7 +102,7 @@ fn (mut storage ChromiumMSAAStorage) queue_triggers(commands []layout.PaintComma
 	$if macos {
 		if !chromium_late_msaa_path_tail && !chromium_serial_msaa_path_tail && !chromium_sync_msaa_paths {
 			path_end, leaf_start = chromium_msaa_collection_ranges(commands, viewport,
-				!chromium_serial_msaa_leaf_tail)
+				chromium_parallel_msaa_leaf_tail)
 		}
 	}
 	serial_end := storage.leaf_work.submit(commands, leaf_start)

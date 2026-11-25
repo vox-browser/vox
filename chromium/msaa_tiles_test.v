@@ -511,9 +511,11 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 					assert storage.path_work.running == 32
 					assert storage.path_work.count - storage.path_work.running == 22
 					assert tail != unsafe { nil }
-					if !chromium_serial_msaa_leaf_tail && !chromium_late_msaa_path_tail {
+					if chromium_parallel_msaa_leaf_tail && !chromium_late_msaa_path_tail {
 						assert storage.leaf_work.ticket != unsafe { nil }
 						assert storage.leaf_work.first == leaf_start
+					} else {
+						assert storage.leaf_work.ticket == unsafe { nil }
 					}
 				}
 			}

@@ -5,7 +5,7 @@ import layout
 import os
 import platform
 
-const chromium_serial_msaa_leaf_tail = os.getenv('VOX_SERIAL_MSAA_LEAF_TAIL') == '1'
+const chromium_parallel_msaa_leaf_tail = os.getenv('VOX_PARALLEL_MSAA_LEAF_TAIL') == '1'
 const chromium_msaa_min_leaf_tail = 96
 
 struct ChromiumMSAALeafWork {
