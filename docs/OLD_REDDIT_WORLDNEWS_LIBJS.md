@@ -1170,3 +1170,89 @@ and followed an extra frame preparation pass. The owner could receive its
 response before the first substantial layout and already had an execution
 task queued when layout returned. This blocked-delivery experiment was
 rejected.
+
+## Publishing the late script response before worker preparation
+
+The second experiment delivered the bytes and woke the parser before
+starting the worker parse. At execution, the document thread used the
+prepared syntax if it was ready for those exact bytes. A pending result
+left the owner free to parse immediately. The 14 lifecycle tests passed
+under both Boehm and preallocation, including the pending-result fallback
+and parser order. All six request tests passed under preallocation.
+
+The single-unit `-prod` executable from build `20261125-083356-91b96f1e`
+had SHA-256 `0ba5789de96871a2397864d66264528b2977d9481e1f2c8d8a33cddfdb166796`.
+Its sealed C SHA-256 was
+`68c70a3f9e767adfb6e3bd2f2edf56fd370ddcca3f68096b20329d3e826fdb5a`.
+The LibJS smoke check passed. A separate eligibility pair recorded one
+worker syntax hit and zero in the control, with execution generation 145
+in both. The same-binary cohort retained the above launch-to-PNG boundary,
+clock, reference, viewport, caches, private profiles and 1.4 s settling.
+
+| Pair | Worker observed instructions | Owner observed instructions | Worker elapsed (ms) | Owner elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,925,070,640 | 5,932,375,933 | 2279.179 | 2276.159 |
+| 2 | 5,885,376,196 | 5,921,023,777 | 2120.693 | 2135.447 |
+| 3 | 5,935,707,621 | 5,888,178,919 | 2056.177 | 2032.806 |
+| 4 | 5,898,266,875 | 5,889,273,017 | 2049.517 | 2055.980 |
+| 5 | 5,894,375,685 | 5,861,263,390 | 2036.860 | 2054.953 |
+| 6 | 5,898,414,273 | 5,869,694,631 | 2037.515 | 2069.419 |
+| 7 | 5,941,681,196 | 5,873,219,127 | 2056.493 | 2047.588 |
+| Median | 5,898,414,273 | 5,888,178,919 | 2056.177 | 2055.980 |
+
+Median observed instructions rose **0.17%** and median elapsed time rose
+**0.2 ms**. The worker won four elapsed pairs and two instruction pairs.
+All 14 captures matched the fixed reference and reached `complete` with
+all 25 posts, five author-script responses and zero diagnostics. The worker
+reused one syntax result per visit and the control reused zero. Generation
+was 145 across the control and six worker visits, and 147 in worker pair 7.
+JavaScriptCore remained uninitialized. All processes exited zero. The 12 GiB
+guard adopted all 14 roots and sampled peak aggregate RSS of 782,843,904
+bytes. Neither arm missed a final sample. The final complete samples preceded
+capture by 5.64–7.60 ms for the worker and 6.60–7.64 ms for the control.
+The host's one-minute load was 10.02–11.65 on 18 cores from 08:40:17 to
+08:40:54 UTC+03. The process-tree counts remain lower bounds.
+
+A separate instrumented pair saw the main bundle execute for 6.7 ms on the
+document thread with worker syntax, compared with 23.0 ms when the document
+thread parsed it. With prompt response delivery, the bundle ran immediately
+after the first substantial layout in both visits. The shorter JavaScript
+stage did not produce a reliable launch-to-PNG improvement across the
+uninstrumented pairs. The experiment was reverted.
+
+## Owner-thread recheck against Brave
+
+Seven more pairs compared the same `0ba5789d` executable with its classic
+worker disabled against the pinned Brave build. The standard archived
+launch-to-PNG protocol and both fixed references were unchanged. The Vox
+binary still contained the dormant experimental path, so this recheck
+describes its owner-thread control.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,894,093,145 | 11,774,579,957 | 2089.216 | 2076.893 |
+| 2 | 5,880,847,350 | 11,784,564,447 | 2030.381 | 1997.084 |
+| 3 | 5,888,663,408 | 11,657,755,173 | 2063.789 | 1961.846 |
+| 4 | 5,835,262,797 | 11,766,149,851 | 2022.050 | 1987.045 |
+| 5 | 5,844,801,966 | 11,752,161,893 | 2066.381 | 2002.609 |
+| 6 | 5,879,440,407 | 11,755,055,701 | 2058.535 | 1996.089 |
+| 7 | 5,880,996,761 | 11,848,759,056 | 2090.726 | 1982.880 |
+| Median | 5,880,847,350 | 11,766,149,851 | 2063.789 | 1996.089 |
+
+Vox used **50.02% fewer median observed instructions**. Its highest count
+was 50.56% of Brave's lowest and met the observed-count gate. Brave finished
+sooner in all seven pairs and led by **67.7 ms** at the median. Every visit
+matched its fixed reference, served all five scripts, and completed with
+all 25 posts in order and no script diagnostics. Every Vox visit recorded
+execution generation 145, zero worker hits and no JavaScriptCore context.
+
+The 12 GiB guard adopted all 14 roots and sampled peak RSS of 790,953,984
+bytes. All browser roots, the driver and the guard exited zero. Final complete
+samples preceded the capture boundary by 5.19–7.61 ms for Vox and 1.18–7.46 ms
+for Brave. Vox reported zero missing final samples and Brave reported 1, 1,
+1, 2, 2, 2 and 1. The process-tree counters are lower bounds. Host one-minute
+load on 18 cores was 5.84–6.67 from 08:42:58 to 08:43:35 UTC+03.
+
+A direct visit using this owner-thread configuration reached Reddit's login
+page with zero posts and two script diagnostics. The browser and guard
+exited zero. The archived comparison remains the listing measurement.
