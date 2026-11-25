@@ -14691,6 +14691,12 @@ shared raster scan worker tests passed. The archived Hacker News phase
 produced 57 identical triggers, with 54 jobs across three lanes.
 [Hacker News timings](LOAD_PARALLELISM.md#svg-background-multisampling-bounds)
 
+On macOS the browser now submits the first 32 retained path jobs during
+command collection. All 32 jobs in the production Hacker News diagnostic
+finished off the browser thread before the join. Layer grids and reference
+pixels matched exactly. The focused checks passed under ThreadSanitizer.
+[Overlap measurements](LOAD_PARALLELISM.md#overlap-svg-path-bounds-with-command-collection)
+
 ### Parallel CPU image scaling
 
 Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to

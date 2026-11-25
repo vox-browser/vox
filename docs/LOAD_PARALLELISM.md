@@ -1057,3 +1057,107 @@ For the full-page comparison, use the load benchmark command with
 Use `VOX_MSAA_TILE_DIAGNOSTICS=1` in a separate diagnostic to verify activity.
 Batches of independent path geometry now use workers. Raster submission
 and publication still depend on the browser thread.
+
+### Overlap SVG path bounds with command collection
+
+The macOS scheduler queues the first 32 retained path jobs as soon as
+they are available. Their fixed input and result slots stay valid while the
+browser thread prepares later paths. It can also evaluate the remaining
+range before joining the worker. The browser thread compacts the completed
+results in display-list order. `VOX_SYNC_MSAA_PATHS=1` defers dispatch
+until collection ends. `VOX_SERIAL_MSAA_PATHS=1` keeps the direct serial
+collector.
+
+The focused Hacker News replay used the same inlined archive and the same
+554 commands and 57 triggers as the earlier measurement. Its diagnostic
+observed 32 of 54 jobs on a background thread in both the first pass and
+the warm pass. The worker finished before the join in both passes.
+The timed cohort rotated all three settings over seven rounds on one
+non-`-prod` C executable with `-prealloc -gc none`. Each fresh process
+timed the first collection and 200 subsequent collections with the
+recording and SVG scenes retained. The first timed collection includes
+SVG scene preparation. The warm passes include trigger assembly and the
+worker join. All 21 processes produced identical ordered triggers and
+exited zero. The 3 GiB guard exited zero and peaked at 138,018,816 bytes.
+
+| Round | First serial, µs | First sync, µs | First overlap, µs | Warm serial, µs | Warm sync, µs | Warm overlap, µs |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1033.333 | 1063.709 | 935.042 | 100.246 | 109.077 | 96.851 |
+| 2 | 872.292 | 1120.916 | 1037.250 | 96.938 | 107.570 | 95.462 |
+| 3 | 1033.125 | 953.584 | 1154.459 | 95.148 | 110.623 | 98.024 |
+| 4 | 964.333 | 916.625 | 1230.833 | 100.666 | 106.557 | 99.578 |
+| 5 | 1036.583 | 1000.917 | 1191.667 | 94.643 | 110.931 | 105.058 |
+| 6 | 914.375 | 950.917 | 904.208 | 94.741 | 110.312 | 92.610 |
+| 7 | 886.208 | 900.583 | 909.958 | 96.034 | 109.052 | 95.771 |
+| Median | 964.333 | 953.584 | 1037.250 | 96.034 | 109.077 | 96.851 |
+
+Warm overlap reduced the synchronous median by 11.2%. The first-pass
+median increased by 83.7 µs. Host load was 14.85–15.70 on 18 CPUs. The
+replay executable SHA was
+`1587a8a95511de36c3908b1f541993b548a7dc222ed56ce8543b1b9d3b0a48eb`.
+The archive and all its response bodies stayed pinned.
+
+The 23 focused multisampling tests passed with overlap, synchronous
+dispatch, and raster workers disabled. The shared raster scan tests checked
+that the submitted range executes on a separate thread and joins before
+the caller uses its results. The focused multisampling and raster scan tests
+also passed under ThreadSanitizer.
+
+A separate instrumented launch on the synchronous production build
+`2cbf2dd3cb2de7340ec9cc02263902ae590ce378451f8fb27cbbbc29d2137b33`
+matched the Hacker News reference PNG. Through document encoding the
+calling thread retired 2.216 billion instructions. Flow layout accounted
+for 250.9 million exclusive instructions, text replay for 145.1 million,
+and raster tile setup for 4.5 million including its child scopes. The
+trace includes diagnostics overhead.
+
+#### Production SVG overlap on Hacker News
+
+Receipt `20261125-074137-dde245c0` sealed `9c2cd16ba` in a
+single-C-unit V `-prod` build and passed the startup smoke. Its published
+executable SHA was
+`280d23619019e06b7147a470b816f6a183b79265829a80bc09e07c10fa60451d`.
+The native AVIF library SHA matched the preceding production cohort.
+
+Fresh launch diagnostics checked all 30 story IDs and the reference PNG.
+In the overlap setting, 32 of 54 path jobs ran off the browser thread and
+finished before the join. In the synchronous setting, zero path jobs ran
+off the browser thread. Both settings selected the same ordered trigger
+positions and layer grids. A separate diagnostic reproduced these results
+with the paced replay used for timing. The diagnostic processes and
+their 3 GiB guards exited zero.
+
+Three seven-pair cohorts alternated default overlap and
+`VOX_SYNC_MSAA_PATHS=1`. Every process started with a private empty profile
+and HTTP cache. The timer spans launch through encoded document PNG at
+1024×768 CSS pixels, 2× scale, and JavaScriptCore. The executable, native
+library, archive, and driver hashes stayed fixed. OS filesystem caches
+were retained. All 42 browsers and all three benchmark drivers exited
+zero, and their PNGs matched the established reference exactly.
+
+| Pair | Sync, ms | Overlap, ms | Repeat sync, ms | Repeat overlap, ms | Paced sync, ms | Paced overlap, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 306.593 | 295.763 | 307.341 | 300.665 | 364.315 | 372.951 |
+| 2 | 298.989 | 282.122 | 293.338 | 295.220 | 329.022 | 345.006 |
+| 3 | 302.831 | 282.394 | 295.860 | 310.911 | 346.464 | 366.135 |
+| 4 | 299.762 | 307.547 | 304.367 | 303.563 | 366.116 | 326.168 |
+| 5 | 345.626 | 304.457 | 290.871 | 310.696 | 374.070 | 373.823 |
+| 6 | 294.666 | 289.080 | 298.111 | 290.899 | 364.310 | 354.244 |
+| 7 | 305.858 | 298.427 | 297.694 | 312.006 | 360.580 | 360.205 |
+| Median | 302.831 | 295.763 | 297.694 | 303.563 | 364.310 | 360.205 |
+
+The first two cohorts had an intermittent extra `y18.svg` request in
+six launches each, so their request-parity guards returned 1. In the
+first cohort, overlap trials 1, 2, 3, 5 and 6 and synchronous trial 6
+made the extra request. In the repeat, overlap trials 1, 2, and 6 and
+synchronous trials 2, 5 and 6 made it.
+
+The paced cohort used the same browser driver and delayed every replayed
+`GET https://news.ycombinator.com/y18.svg` response by 60 ms in
+`Replay.response_entry`. All 14 launches then received the same eight
+request and response records. The paced cohort passed the 3 GiB guard,
+with a 391,495,680-byte peak. On 18 CPUs with one-minute load
+22.15–23.82, overlap had a 1.1% lower median wall time and was faster in
+four pairs. The timing ranges overlap and the effect on whole-page latency
+remains inconclusive. The production probes establish off-thread path
+evaluation under both replay policies.
