@@ -49,3 +49,59 @@ V.js 1.44×. Brave's V8 `ScriptDuration` median was 194 ms.
   7–12), so wall times are noisier than instruction counts. This is a
   whole-browser observation, not an acceptance cohort or an isolated
   JavaScript benchmark.
+
+## Native compilation coverage · 2026-11-25
+
+Commit `d12694fd9` emits machine code for argument loads, Number remainder,
+exponentiation and bitwise operations, UTF-16 ordering, and selected primitive
+checks and conversions. Object coercion and exceptions use the existing runtime.
+The native cache records the number of emitted bytecode instructions and the
+subset with an inline path. An inline path can still require a runtime guard.
+
+A source-built C-backend LibJS probe compiled the function templates in two
+unchanged assets from the frozen `vlang/v` replay above. Each module was parsed
+with the browser depth limit and prepared in 128-template batches. The replay
+manifest SHA-256 was `37d4b28ac06f0c130e588d5110cf105258c79be4974cef9c2bae2adface379ed`.
+The live page still linked the same React DOM asset, and the live response body
+matched the replay SHA-256.
+
+| Asset | Cached bodies | Emitted instructions | Inline paths |
+|---|---:|---:|---:|
+| `repositories-a438beb69a24b971.js` | 156 | 5,754 | 3,057 |
+| `react-dom-client-35b308126995de85.js` | 761 | 47,427 | 33,529 |
+
+Inspection of the generated C found 755 instances of newly lowered instructions
+and 192 relational instructions with the added UTF-16 path. The probe and its
+3 GiB memory guard exited zero. The sampled aggregate peak was 776,798,208 bytes.
+
+A separate probe executed GitHub's unchanged
+`scheduler-58b860b049ca307c.js` with a fixed clock and a deterministic timer
+queue. Callback priority and cancellation matched Node. A fresh VM with
+`/usr/bin/false` as its compiler repeated the result with 27 cache hits, zero
+misses, 148 native entries, and 1,609 inline steps. The native-tier suite passed
+with default GC, `-gc none`, and `-prealloc -gc none`. The native primitive,
+generated-code cache, async and generator suites passed with default GC. The
+LibJS AST corpus matched all 100 upstream fixtures.
+
+The installed browser baseline (SHA-256
+`dc25eab492d3658b87caab0ba56e9c7021ab1573b18822fc95477c88b4f534af`)
+used fresh processes and private profiles. The frozen page rendered 33 rows,
+56 commit links and the latest-commit section, with 81 fulfilled modules.
+An earlier attempt with the 3 GiB focused-test guard stopped at 3,239,985,152
+bytes. The full-page diagnostics used the usual 12 GiB guard.
+
+Production receipt `20261125-065539-e305edb5` published executable SHA-256
+`2bf74b5de62aaf33a0b2e1c538bab9bda8afe89fecb8af683dd218d42e2b3849`.
+The seed and compiler-disabled reopen both rendered the same content and
+byte-identical 1024×768 PNGs as the baseline. Both evaluated all 81 modules
+without initializing JavaScriptCore or reporting a script error. The private
+native cache contained 72 verified entries in one library after the seed.
+The reopen recorded 72 cache hits, 8,464 native entries and 580,347 inline
+steps. The remaining 4,191 cache lookups missed and ran through LibJS. The
+intentionally disabled compiler returned exit 1 when asked to fill the misses.
+Both browser processes and memory guards exited zero.
+
+The direct live page on the rebuilt browser reused three cache entries and
+rendered 34 rows. Its modules hit the same missing `reportError` API as the
+baseline, before commit links or the latest-commit section appeared. Site-wide
+speedup is unmeasured.
