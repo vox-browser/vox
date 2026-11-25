@@ -5,10 +5,12 @@ import css
 import dom
 import html
 import mimesniff
+import os
 import platform
 import browsernet
 
 const max_browser_script_fetches = 8
+const defer_script_responses_until_rendering = os.getenv('VOX_DEFER_SCRIPT_RESPONSES_UNTIL_RENDERING') == '1'
 
 type BrowserScriptFetch = fn (string, string, chan PreloadedResource, &browsernet.RequestScope)
 
@@ -339,6 +341,35 @@ fn (mut app BrowserApp) poll_browser_script_requests() {
 	// Completion callbacks can insert another bundle before window.load.
 	if app.js_runtime != unsafe { nil } { app.poll_javascript_tasks() }
 	if voidptr(app.document) == voidptr(loader.document) { loader.discover() }
+}
+
+// The frame throttle reserves the main thread for loading. A buffered script
+// response must reach the HTML event loop even when that frame skips drawing.
+fn (mut app BrowserApp) poll_blocking_script_responses_on_deferred_frame() {
+	if defer_script_responses_until_rendering || app.document == unsafe { nil }
+		|| !app.document.has_pending_parsing_blocking_script() {
+		return
+	}
+	loader := app.script_request_loader or { return }
+	if loader.results.len == 0 || loader.cancelled || loader.polling
+		|| voidptr(loader.document) != voidptr(app.document) {
+		return
+	}
+	// The regular frame gives a replacing navigation priority over script
+	// completion on the outgoing document.
+	if app.has_navigation_fetch_in_flight() || app.pending_page_preload != none
+		|| app.pending_navigation != none || app.pending_native_navigation != none
+		|| app.deferred_navigation_input != none {
+		return
+	}
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+	defer { heap_scope.finish() }
+	if load_frame_throttle_diagnostics {
+		eprintln('VOX_LOAD_RENDER_THROTTLE delivering script responses')
+	}
+	app.poll_browser_script_requests()
 }
 
 fn copy_compact_script_started_state(original &dom.Node, copy &dom.Node) {

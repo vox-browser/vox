@@ -7647,7 +7647,10 @@ fn (mut app BrowserApp) draw() {
 	}
 	if app.navigation_work_depth > 0 { return }
 	frame_start := time.sys_mono_now()
-	if app.defer_loading_frame(frame_start) { return }
+	if app.defer_loading_frame(frame_start) {
+		app.poll_blocking_script_responses_on_deferred_frame()
+		return
+	}
 	defer { app.finish_loading_frame(frame_start) }
 	preparation_instructions := processmetrics.begin_instruction_stage('frame_preparation')
 	paint_before_frame := app.paint_generation

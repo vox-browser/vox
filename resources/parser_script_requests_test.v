@@ -4,6 +4,7 @@ import browserjs
 import browsernet
 import dom
 import html
+import time
 
 @[heap]
 struct ParserScriptRequestObservations {
@@ -78,6 +79,39 @@ fn test_parser_script_response_resumes_the_live_parser_without_a_runtime() {
 	assert parser_script_request_model(document, 'block').event_count('load') == 1
 	assert loader.requests.len == 0 && loader.active_fetches == 0
 	assert !document.anything_is_delaying_the_load_event()
+}
+
+fn test_throttled_frame_delivers_blocking_script_only_for_the_current_navigation() {
+	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+		'<!doctype html><script src="blocking.js"></script><p id="later">After</p>', {})
+	mut app := &BrowserApp{document: document, script_request_loader: loader, document_presented: true}
+	defer {
+		if app.load_frames.timer != unsafe { nil } { app.load_frames.timer.stop() }
+		loader.cancel()
+		document.finalize()
+	}
+	parser.run()
+	assert parser.paused() && document.has_pending_parsing_blocking_script()
+	parser_script_request_response(loader, 'blocking.js', 'blocking', '')
+	now := time.sys_mono_now()
+	app.load_frames.generation = app.navigation_generation
+	app.load_frames.presented_ns = now
+	app.load_frames.last_end_ns = now
+	app.load_frames.last_cost_ns = 100 * time.millisecond
+	app.pending_native_navigation = 'https://parser-requests.test/replacement'
+	app.draw()
+	assert app.load_frames.deferred_frames == 1
+	assert loader.results.len == 1 && observed.sources.len == 0
+
+	app.pending_native_navigation = none
+	app.load_frames.quiet_start_ns = 0
+	app.draw()
+	assert app.load_frames.deferred_frames == 2
+	assert loader.results.len == 0 && loader.requests.len == 0
+	parser_script_request_drain_tasks()
+	assert observed.sources == ['blocking']
+	assert observed.later_visible == [false]
+	assert document.get_element_by_id('later') != none
 }
 
 fn test_parser_async_requests_share_transport_but_complete_each_element_once() {
