@@ -125,7 +125,7 @@ fn run_closed_inline_layout(mut state LayoutState, containing_block &BlockContai
 	if !used.line_boxes_are_shared_ {
 		// Most passes lay unchanged text out to the same lines. Share the
 		// previous pass's immutable copy instead of publishing another one.
-		if previous := previous_pass_line_boxes(state, containing_block) {
+		if previous := previous_pass_line_boxes(state, unsafe { &NodeWithStyle(containing_block) }) {
 			if published_line_boxes_equal(previous, used.line_boxes) {
 				used.borrow_retained_line_boxes(previous)
 				return result

@@ -46,7 +46,12 @@ fn own_measurement_svg_path(path svg.Path) svg.Path {
 // Copy probe data into the caller's measurement cache before the probe retires.
 fn append_owned_measurement_values(mut snapshots []RetainedBlockValues,
 	node &NodeWithStyle, values &UsedValues) {
-	mut snapshot := *values
+	snapshots << RetainedBlockValues{
+		node: node
+		containing: retained_block_containing_node(values)
+		values: *values
+	}
+	mut snapshot := unsafe { &snapshots[snapshots.len - 1].values }
 	snapshot.containing_block_used_values_ = none
 	snapshot.line_boxes = clone_inline_layout_lines(values.line_boxes, false)
 	snapshot.line_boxes_are_shared_ = false
@@ -65,11 +70,6 @@ fn append_owned_measurement_values(mut snapshots []RetainedBlockValues,
 		snapshot.rare_ = rare
 		snapshot.rare_is_shared_ = false
 	}
-	snapshots << RetainedBlockValues{
-		node: node
-		containing: retained_block_containing_node(values)
-		values: snapshot
-	}
 }
 
 // Other probes may borrow immutable cache payloads. A committed consumer
@@ -83,7 +83,15 @@ fn (mut state LayoutState) restore_flex_grid_measurement_values(entry &RetainedB
 	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut values := state.restore_retained_values(entry.node, &entry.values, containing)
-	values.borrow_retained_line_boxes(clone_inline_layout_lines(entry.values.line_boxes, false))
+	// A hit on identical lines already owned by the document needs no copy.
+	// Every other result must survive retirement of the measurement cache.
+	previous := previous_pass_line_boxes(state, entry.node) or { []LineBox{} }
+	lines := if published_line_boxes_equal(previous, entry.values.line_boxes) {
+		previous
+	} else {
+		clone_inline_layout_lines(entry.values.line_boxes, false)
+	}
+	values.borrow_retained_line_boxes(lines)
 	if position := values.inline_end_static_position_rect() {
 		values.set_inline_end_static_position_rect(position)
 	}
