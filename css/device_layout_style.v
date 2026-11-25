@@ -11,7 +11,7 @@ struct DeviceLayoutStyleProjection {
 }
 
 pub fn (style &ComputedProperties) layout_coordinate_scale() f64 {
-	return style.computed_layout_cache().layout_coordinate_scale_
+	return if style.layout_coordinate_scale_ == 0 { 1.0 } else { style.layout_coordinate_scale_ }
 }
 
 // Anonymous table, button and fieldset styles also pass through the ordinary
@@ -20,7 +20,7 @@ pub fn (style &ComputedProperties) layout_coordinate_scale() f64 {
 fn (mut style ComputedProperties) inherit_layout_coordinate_context(source &ComputedProperties) {
 	scale := source.layout_coordinate_scale()
 	if scale == 1 { return }
-	style.ensure_computed_layout_cache().layout_coordinate_scale_ = scale
+	style.layout_coordinate_scale_ = scale
 	style.cached_computed_font_list_ = source.cached_computed_font_list_
 	style.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
 	style.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
@@ -485,12 +485,13 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 				mut target.property_store_, page_index, factor, mask)
 		}
 	}
-	target.ensure_computed_layout_cache().layout_coordinate_scale_ = scale
+	target.layout_coordinate_scale_ = scale
 	if source.mutation_revision() != 0 {
 		provenance := &ComputedGeometryProvenance{
 			token:                         source.computed_property_graph_token_
 			generation:                    source.mutation_revision()
 			viewport:                      source.viewport_rect_
+			layout_scale:                  current_scale
 			root_font_size:                source.root_font_size_px_
 			root_line_height:              source.root_line_height_px_
 			root_font_depends_on_viewport: source.root_font_metrics_depend_on_viewport_metrics_

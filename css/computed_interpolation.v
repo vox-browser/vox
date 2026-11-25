@@ -1709,6 +1709,8 @@ mut:
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
 	shared_geometry_provenance_ &ComputedGeometryProvenance = unsafe { nil }
 	shared_geometry_cache_ &ComputedLayoutCache = unsafe { nil }
+	// Density conversion precedes resolved geometry. Zero is the default scale of 1.
+	layout_coordinate_scale_ f64
 	// Density conversion is memoized independently of resolved layout values.
 	device_layout_projection_ &DeviceLayoutStyleProjection = unsafe { nil }
 	// Serial number pairing this style with the snapshots it may rewrite in

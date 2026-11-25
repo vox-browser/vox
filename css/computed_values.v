@@ -472,9 +472,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 			&& voidptr(source.font_computer) == voidptr(computed_style.cached_computed_font_list_owner_)
 			&& computed_style.font_geometry_generation_is_current(source.font_computer, source.font_generation, source.font_cascade_was_settled) {
 			resolved_anonymous_source = source.cache
-			layout_scale := computed_style.layout_coordinate_scale()
 			computed_style.computed_layout_cache_ = initial_anonymous_geometry_cache()
-			computed_style.computed_layout_cache_.layout_coordinate_scale_ = layout_scale
 		}
 	}
 	// An animation frame re-resolves its target from fresh samples. The arrays

@@ -184,7 +184,6 @@ mut:
 	rare_data_ &ComputedLayoutRareData = unsafe { nil }
 	rare_data_writable_ bool
 	resolution_provenance &ComputedGeometryProvenance = unsafe { nil }
-	layout_coordinate_scale_ f64 = 1.0
 	document_resolution_owner &dom.Document = unsafe { nil }
 	writable_owner_identity                        u64
 	// The style that created this snapshot, by address and serial number (an

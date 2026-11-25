@@ -24,6 +24,7 @@ fn test_density_projection_does_not_materialize_a_source_layout_cache() {
 	document.set_layout_coordinate_scale(2)
 	first := computed_style_in_layout_coordinates(source, document)
 	assert voidptr(source.computed_layout_cache_) == unsafe { nil }
+	assert voidptr(first.computed_layout_cache_) == unsafe { nil }
 	assert voidptr(first.device_layout_projection_) == unsafe { nil }
 	assert voidptr(computed_style_in_layout_coordinates(source, document)) == voidptr(first)
 	assert first.length_percentage_to_px(.width, 1600) or { panic('missing projected width') } == 14
@@ -33,6 +34,7 @@ fn test_density_projection_does_not_materialize_a_source_layout_cache() {
 	second := computed_style_in_layout_coordinates(source, document)
 	assert voidptr(first) != voidptr(second)
 	assert voidptr(source.computed_layout_cache_) == unsafe { nil }
+	assert voidptr(second.computed_layout_cache_) == unsafe { nil }
 	assert voidptr(second.device_layout_projection_) == unsafe { nil }
 	assert first.length_percentage_to_px(.width, 1600) or { panic('missing old width') } == 14
 	assert second.length_percentage_to_px(.width, 1600) or { panic('missing new width') } == 18
@@ -55,4 +57,30 @@ fn test_density_projection_preserves_an_existing_source_layout_snapshot() {
 	assert source.layout_coordinate_scale() == 1
 	assert projected.layout_coordinate_scale() == 2
 	assert voidptr(computed_style_in_layout_coordinates(source, document)) == voidptr(projected)
+}
+
+fn test_density_resolution_keeps_anonymous_geometry_at_its_own_scale() {
+	mut document, source := projection_storage_style()
+	defer { document.finalize() }
+	document.set_layout_coordinate_scale(2)
+	projected := computed_style_in_layout_coordinates(source, document)
+	resolved := resolve_computed_values_for_document(projected, document)
+	clone := resolved.clone_for_anonymous_block()
+	assert clone.layout_coordinate_scale() == 2
+	assert voidptr(clone.computed_layout_cache_) == unsafe { nil }
+	assert resolved.anonymous_computed_geometry_source(clone) != none
+	first := resolve_anonymous_block_values_for_document(resolved, document)
+	assert first.layout_coordinate_scale() == 2
+	assert first.resolved_font_size_px() == 34
+
+	document.set_layout_coordinate_scale(3)
+	zoomed := computed_style_in_layout_coordinates(source, document)
+	second := resolve_anonymous_block_values_for_document(
+		resolve_computed_values_for_document(zoomed, document), document)
+	assert second.layout_coordinate_scale() == 3
+	assert second.resolved_font_size_px() == 51
+	assert first.layout_coordinate_scale() == 2
+	assert first.resolved_font_size_px() == 34
+	different_scale := ComputedProperties{...*resolved, layout_coordinate_scale_: 3}
+	assert !resolved.geometry_provenance().matches(&different_scale)
 }
