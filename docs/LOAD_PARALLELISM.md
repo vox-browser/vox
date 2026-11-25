@@ -4915,3 +4915,123 @@ matched the reference PNG, the eight replay records and all 30 ordered
 story IDs. Executable, helper, library, archive and harness hashes stayed
 pinned. Browser, driver and guard exits were zero. Peak guard RSS was
 366,428,160 bytes.
+
+### Overlap GG pipeline compilation with frame setup
+
+Commit `079d9703e` submits the opt-in GG pipeline batch during native
+Chromium frame setup when the cold, unzoomed frame has an eligible
+visible gradient in its first 16 paint commands. The drawing thread
+closes submissions before setting up the font compositing layer and
+raster tiles. It joins and publishes the completed pipelines at first
+GG use. The replay loop also drains the batch if it skips that use.
+Set both `VOX_PARALLEL_GG_METAL_PIPELINES=1` and
+`VOX_EARLY_GG_METAL_PIPELINES=1` to select early submission. The
+parallel flag alone submits and joins at first GG use.
+
+The focused GG tests passed in all three settings. Early submission
+leaves the context pending, rejects duplicate submission and joins
+before first use. Both batched settings completed 42 states off-thread.
+The native Metal tests created a synchronous pipeline after submissions
+closed and before publishing the pending batch. The test also checks
+failed compiles, retired slots and exact draw pixels. Address,
+undefined-behavior and thread sanitizer runs passed. The early GG
+test also passed with production preallocation and arena poisoning.
+
+The comparison uses one executable for synchronous creation, batching at
+first GG use, and batching during frame setup. For timing, each of the
+two unprofiled cohorts uses seven triplets. Both traverse all six trial orders
+before repeating the first, and the second reverses each triplet's order.
+The timer runs from fresh process launch through the completed document
+PNG at 1024×768 CSS pixels and 2× scale. Captures use JavaScriptCore,
+empty private profiles and HTTP caches, retained OS filesystem and
+shader caches, `tr.athing` readiness and a 60 ms delay per archived
+logo response.
+
+#### Baseline from the previous bundle
+
+While the shared build retried, the bundle from
+`20261125-212936-1293ba54` supplied a fresh baseline. Its executable
+SHA-256 was `29080a84257991cb8e599d92a2fc2b0e36c08bad7df0add03d9e78862ba04a11`.
+In four separate diagnostic launches, both first-use batches completed
+42 states off-thread and both synchronous runs submitted zero.
+
+| Pair | Synchronous, ms | First-use batch, ms |
+| ---: | ---: | ---: |
+| 1 | 295.079 | 300.497 |
+| 2 | 303.027 | 299.885 |
+| 3 | 300.321 | 298.756 |
+| 4 | 303.376 | 299.733 |
+| 5 | 330.264 | 301.851 |
+| 6 | 308.663 | 372.664 |
+| 7 | 322.439 | 374.475 |
+| Median | 303.376 | 300.497 |
+
+The paired median change was −1.564 ms, with four batch wins. Sampled
+main-thread CPU medians were 162.351 and 163.163 ms. One-minute load
+ranged from 5.50 to 7.33 on 18 CPUs while the shared build was active.
+All 18 launches matched the reference PNG and eight replay records.
+The diagnostic launches also verified all 30 ordered story IDs.
+Browser, driver and guard exits were zero. Peak RSS was 365,150,208 bytes.
+
+#### Matched production comparison
+
+Receipt `20261125-214923-2508873f` verified `18c44dfcf`, which
+includes `079d9703e`. The single-C-unit V `-prod` build passed
+startup smoke. Three earlier attempts stopped at input verification
+after the shared checkout changed.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `80a967c9d87ada4663e9f3e2f874eb06812489f7c270a3dc51bbb6f3d58ae430` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both early diagnostics submitted the batch for paint command 2. All
+42 states completed off-thread and were ready at first GG use in
+both launches. Both first-use batches still had work outstanding
+at their joins. The synchronous launches submitted zero batches.
+
+The six counter captures each recorded 25 fill leaves, one raster
+frame setup scope and three native raster replay scopes. Early
+submission shifts about 27 million drawing-thread instructions
+from fill replay into frame setup. Native replay totals were
+similar for the two batch schedules.
+
+| Triplet | Schedule | Fill leaves | Raster frame setup | GG submission | Native raster replay |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 1 | Synchronous | 55,474,463 | 5,301,049 | — | 253,782,751 |
+| 1 | First use | 49,336,002 | 5,314,920 | — | 247,276,015 |
+| 1 | Early | 22,224,690 | 32,338,934 | 26,932,648 | 247,389,638 |
+| 2 | Synchronous | 54,946,863 | 5,326,870 | — | 253,028,435 |
+| 2 | First use | 49,266,632 | 5,560,810 | — | 247,231,318 |
+| 2 | Early | 21,965,950 | 33,021,112 | 27,638,692 | 247,175,696 |
+
+| Triplet | Synchronous, ms | First use, ms | Early, ms | Reversed synchronous, ms | Reversed first use, ms | Reversed early, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 307.247 | 307.813 | 310.341 | 297.551 | 319.028 | 295.082 |
+| 2 | 284.830 | 308.182 | 302.541 | 288.344 | 307.768 | 302.119 |
+| 3 | 292.471 | 304.796 | 303.384 | 306.444 | 295.048 | 295.498 |
+| 4 | 297.712 | 283.342 | 281.727 | 307.137 | 299.281 | 309.564 |
+| 5 | 298.166 | 308.136 | 301.229 | 312.514 | 308.727 | 301.499 |
+| 6 | 290.208 | 288.564 | 303.651 | 298.169 | 292.711 | 322.455 |
+| 7 | 296.576 | 300.801 | 292.251 | 299.068 | 289.135 | 303.452 |
+| Median | 296.576 | 304.796 | 302.541 | 299.068 | 299.281 | 302.119 |
+
+Early submission's median change within triplets was +3.095 and
++2.427 ms against synchronous creation, with two and three wins.
+Compared with batching at first use, it changed the medians by
+−1.615 and +0.450 ms, with five and three wins. Sampled main-thread
+CPU medians for synchronous, first-use and early schedules were
+153.444, 152.933 and 152.549 ms in the first cohort and 156.593,
+156.620 and 154.816 ms in the reversed cohort. One-minute host load
+was 5.22–5.77 and 4.80–5.37 on 18 CPUs. Early submission stays
+opt-in based on the end-to-end results.
+
+All 54 captures matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the
+favicon miss. The six path checks verified the URL, ready state,
+viewport and all 30 ordered story IDs. Executable, helper, library,
+archive and harness inputs stayed pinned. All browser, driver and
+guard exits were zero. Peak RSS was 396,247,040 bytes.
