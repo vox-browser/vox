@@ -6107,3 +6107,99 @@ exceeded their upstream bounds in both modes with 6,106, 2,345 and
 9,976 differing pixels respectively. Both upstream comparison runs
 exited 1. The direct pixel comparisons between modes exited zero
 under a 3 GiB guard.
+
+### Prepare preloaded author selector lists on fetch workers
+
+Commit `b35cd6138` extends response-first stylesheet preparation on
+macOS. With `VOX_PREPARE_PRELOADED_STYLESHEET_SELECTORS=1`, the fetch
+worker prepares validated standalone selector lists after delivering
+the response and waking the browser. It handles top-level style rules
+and standalone rules inside `@media`. The worker and owner identify
+each list by its exact raw prelude. The staged selector graphs share
+the existing four-slot cache and 4 MiB capacity bound with the raw
+syntax.
+
+The converter checks the active namespace prefix set, then copies
+accepted graphs into the stylesheet's owning allocation scope before
+retiring the worker arena. Nested selectors, lists with browser-specific
+aliases, invalid lists and namespace mismatches use ordinary conversion.
+A load that reaches conversion first also uses the ordinary parser.
+
+The focused preloaded-syntax and shared user-agent stylesheet tests
+passed with ThreadSanitizer and arena poisoning. They verified active
+namespace matching, nested fallback, rejection and pruning of Mozilla
+aliases in Chromium mode, exact CSSOM serialization after the worker
+and staging arenas retired, and concurrent publication and eviction.
+Both 3 GiB runtime guards exited zero.
+The Chromium selector policy tests also passed with `-gc none` and
+without preallocation.
+
+#### Matched production captures
+
+Receipt `20261126-001521-7e07b98a` verified the feature commit,
+compiled it in single-C-unit V `-prod` mode and passed headless startup
+smoke. Both modes used the same production bundle.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `9016aa335116c1a1eb5928a4e3ef9676042442d39c5e43cc45c8cc8156bd2976` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+All eight path diagnostics consumed the 7,418-byte sheet as 63 raw
+rules prepared on the fetch worker. In each of the four enabled
+captures, the converter used all 97 worker-prepared selector lists.
+
+Separate main-thread counter diagnostics measured inclusive scopes.
+The CSS parsing scope includes publication of the worker graphs and
+omits the work on the fetch worker.
+
+| Pair | Owner CSS parsing | Worker CSS parsing | Owner document install | Worker document install | Owner style update | Worker style update |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 32,506,656 | 31,858,559 | 627,432,364 | 626,639,265 | 345,191,302 | 346,137,024 |
+| 2 | 32,555,993 | 31,861,614 | 630,031,698 | 626,444,196 | 347,466,450 | 345,592,294 |
+| 3 | 32,545,791 | 31,918,833 | 627,089,231 | 630,639,721 | 346,025,588 | 347,291,414 |
+| 4 | 33,371,802 | 31,871,270 | 632,442,655 | 625,475,148 | 346,362,282 | 345,384,105 |
+
+The worker reduced main-thread CSS parsing by 0.63–1.50 million
+instructions per capture, or 1.9–4.5%. Style updates still used
+345–347 million main-thread instructions. The change prepares selector
+syntax. The style pass still matches those selectors and applies the
+cascade.
+
+Four unprofiled cohorts alternated seven fresh-launch pairs each.
+The second and fourth cohorts started with the worker. The timer
+ran through completed PNG at 1024×768 CSS pixels and 2× scale.
+Captures used JavaScriptCore, private empty profiles and HTTP caches,
+retained OS filesystem and shader caches, `tr.athing` readiness and
+a 60 ms replay delay per logo response.
+
+| Pair | Owner 1, ms | Worker 1, ms | Owner 2, ms | Worker 2, ms | Owner 3, ms | Worker 3, ms | Owner 4, ms | Worker 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 325.773 | 328.088 | 317.257 | 327.295 | 313.492 | 327.900 | 317.719 | 309.684 |
+| 2 | 317.512 | 310.197 | 306.872 | 306.976 | 308.433 | 312.805 | 316.147 | 334.376 |
+| 3 | 316.998 | 310.982 | 330.642 | 310.893 | 340.982 | 301.444 | 300.823 | 320.139 |
+| 4 | 316.015 | 325.423 | 318.964 | 317.474 | 319.995 | 318.662 | 342.188 | 327.232 |
+| 5 | 306.280 | 325.424 | 298.394 | 319.284 | 311.061 | 326.240 | 352.384 | 347.160 |
+| 6 | 318.204 | 300.241 | 334.526 | 309.705 | 318.578 | 328.230 | 323.007 | 304.005 |
+| 7 | 330.339 | 304.266 | 320.492 | 323.647 | 302.222 | 308.838 | 338.449 | 330.397 |
+| Median | 317.512 | 310.982 | 318.964 | 317.474 | 313.492 | 318.662 | 323.007 | 327.232 |
+
+Paired median changes were −6.017, +0.103, +6.616 and −8.035 ms,
+with four, three, two and five worker wins. Sampled main-thread
+CPU medians were 161.251 → 160.657, 158.444 → 158.217,
+160.901 → 164.178 and 162.648 → 164.514 ms. One-minute load on 18
+CPUs ranged from 4.25–4.92, 4.92–5.41, 4.55–4.79 and 4.57–4.84.
+Worker selector preparation stays opt-in because launch-to-PNG
+timing varied across cohorts.
+
+All 72 launches reproduced eight replay records including the favicon
+miss, and matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The 16 diagnostic captures verified URL, readiness, viewport and
+all 30 story IDs in order. The eight path diagnostics also compared
+all 3,145,728 pixels with the unchanged reference. Executable,
+library, helper, font, archive and driver hashes stayed pinned.
+All browser, driver and 3 GiB guard exits were zero. Peak sampled
+RSS was 435,552,256 bytes.
