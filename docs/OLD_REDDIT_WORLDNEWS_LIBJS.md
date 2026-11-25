@@ -3111,3 +3111,177 @@ listing with LibJS execution generation 147, zero script diagnostics
 and no JavaScriptCore context. A direct live visit reached Reddit's
 sign-in page with zero listing posts and three script diagnostics.
 Both visits and their guards exited zero.
+
+
+### Reusing small `apply` argument lists
+
+A sampled archive replay on `20261125-121959-2712ca82` reached
+`Function.prototype.apply` during nested DOM event callbacks and sampled
+array-like argument creation inside those calls. The capture matched the
+fixed Vox PNG and loaded all 25 posts with LibJS. This instrumented
+replay identifies an execution path. The measurements below use
+uninstrumented binaries.
+
+Both `Function.prototype.apply` and `Reflect.apply` now use the
+interpreter's existing argument workspaces for short lists. Each call
+keeps its slots across reentrant getters and clears them on both return
+and throw. Dense arrays copy verified own data elements directly.
+Holes, accessors and reordered elements use normal indexed lookup from
+the first such element onward. The tests cover a prototype getter that
+changes the next argument, live mapped arguments and a custom callable
+that retains its slice. Large lists and exhausted workspaces use the
+owned path, and custom callables receive an owned copy.
+
+The standalone workload warmed compilation and invocation before counting
+105,000 calls per process. It alternated seven fresh control/candidate
+pairs per version. The measured calls forwarded a mapped `arguments`
+object with `Function.prototype.apply`, reused a packed array with
+`Function.prototype.apply`, and reused the same array with `Reflect.apply`
+in equal proportions. Each batch verified its result. It used the same
+single-unit C `-prod -prealloc -gc none` compiler configuration on both
+sides and process instruction counters sampled around the invocation
+loop. The pinned control was built from `2751e4bff` and its executable
+SHA-256 was
+`2a6b5d6fa8b76c1ef896703e4e7aa19f55c15b9ae6ceb0ef240b12b46254ab3c`.
+The driver and workload hashes were
+`c77fc3fd1b929aff24a7399878ea0b507bd0b4b0e2b587e7edd1cc81f67513db` and
+`950532f6ce260fcb3fe5d1b4c0d5d9c2730c6a1025bae9506b3c5f312e46147b`.
+
+| Version | Median control instructions | Median candidate instructions | Median control time (ms) | Median candidate time (ms) | Candidate time wins |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Workspace | 876,031,020 | 865,905,878 | 38.817542 | 39.394667 | 4/7 |
+| Workspace and dense arrays | 876,490,331 | 848,275,415 | 40.848708 | 40.197541 | 5/7 |
+| Final, with the rooted pool limit | 876,340,760 | 848,107,289 | 38.236792 | 38.109583 | 5/7 |
+
+The final candidate used 3.22% fewer median instructions and was 0.13 ms
+faster at the median. Two final pairs ran slower. One-minute host load was
+6.85–6.92, 5.17, and 4.12–4.13 on 18 cores in the three cohorts, with
+concurrent production compiler activity during testing. All 42 runs and
+all three benchmark guards exited zero. Sampled peak RSS was at most
+275,857,408 bytes. The per-version reference is its paired control.
+
+**Workspace**
+
+Candidate executable SHA-256 `f9783c47405d623f59cff001e9de817a2137aa2778c6d8e15a95b37a235a4e55`.
+
+| Pair | Control instructions | Candidate instructions | Control time (ms) | Candidate time (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 876,031,020 | 864,148,117 | 38.380291 | 37.901583 |
+| 2 | 876,270,529 | 865,628,564 | 39.589584 | 37.908125 |
+| 3 | 874,553,399 | 865,905,878 | 41.220250 | 39.602291 |
+| 4 | 874,332,421 | 866,853,314 | 38.545541 | 40.769666 |
+| 5 | 876,559,694 | 865,790,382 | 38.817542 | 39.394667 |
+| 6 | 876,913,911 | 866,703,374 | 39.175750 | 38.260917 |
+| 7 | 875,809,038 | 867,049,181 | 38.424708 | 39.415625 |
+
+**Workspace and dense arrays**
+
+Candidate executable SHA-256 `d86207184b6cf71ccc8242fb59fdb127695c7f833ff7b4fd5e85573345507a32`.
+
+| Pair | Control instructions | Candidate instructions | Control time (ms) | Candidate time (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 876,912,247 | 848,061,439 | 38.995000 | 41.415709 |
+| 2 | 876,617,728 | 848,619,330 | 41.123333 | 39.727542 |
+| 3 | 876,490,331 | 848,354,957 | 40.848708 | 40.234292 |
+| 4 | 876,360,250 | 847,880,333 | 40.081417 | 39.089209 |
+| 5 | 876,624,175 | 848,275,415 | 43.877375 | 40.197541 |
+| 6 | 875,286,626 | 848,660,745 | 39.919834 | 42.651167 |
+| 7 | 876,476,975 | 847,620,199 | 42.329208 | 39.535958 |
+
+**Final**
+
+Candidate executable SHA-256 `00b6adcba7577ca05da222abd2bde035ce3e3e2f0aabb4e201295380ed5d3dc5`.
+
+| Pair | Control instructions | Candidate instructions | Control time (ms) | Candidate time (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 876,521,535 | 848,255,151 | 38.383083 | 38.289459 |
+| 2 | 876,311,215 | 848,107,289 | 38.236792 | 38.109583 |
+| 3 | 876,340,760 | 848,332,721 | 37.943459 | 38.537250 |
+| 4 | 876,946,739 | 848,352,349 | 38.262917 | 38.224709 |
+| 5 | 876,140,361 | 848,069,683 | 37.878500 | 38.107083 |
+| 6 | 876,456,042 | 847,992,820 | 38.149666 | 38.045583 |
+| 7 | 876,210,463 | 848,071,021 | 38.317417 | 37.665166 |
+
+The implementation is in `64f33a6c6`. Both changed test files passed
+with C in Boehm and `-gc none` mode. The C AST comparison matched all
+100 upstream fixtures in both modes. The two broad FastC runs stopped
+at `expression expected before '?'` in generated C for
+`absent_property_set_test.v`, the same first failure as the previous
+comparison. `array_like_test.v` and `argument_list_limit_test.v` passed
+with C in both heap modes. Building these tests exceeded the 3 GiB guard,
+so compilation ran under the 12 GiB guard and the resulting test binaries
+ran separately under the 3 GiB guard.
+
+### Production comparison with the `apply` workspaces
+
+Shared build `20261125-124006-34d950a7` used source commit `897fb8e52`
+and included the final implementation in the verified single-unit
+`-prod` C. The sealed C SHA-256 was
+`673f933a7889bd1500f80eac1f2d2bdf94b56e24f3f641728dcd67694db408e2`.
+The Vox executable SHA-256 was
+`89b78869ca99633a44de1264c83a2f35c1f30cd0009054ccaa7fc938919f6943`.
+The driver checked 185 workload and binary hashes and 14 observer,
+Brave helper and reference hashes. Brave reported Chromium 158.0.8127.42
+with executable SHA-256
+`91891e4e395cb799e755f9ec5ee501f380560b4365959de0a15b5123ca0aacd5`
+and framework SHA-256
+`2b4ab29cf5e450acf54858cbd2bc9a6eec93a678924be32f6076fcf7d8f39ea5`.
+
+The separate sampled capture matched the fixed Vox PNG, ran to LibJS
+execution generation 155, and had zero script diagnostics and no
+JavaScriptCore context. Multiple nested stacks showed the return PC at
+`call_with_array_like_arguments + 492`. Disassembly of the same executable
+placed that PC immediately after the call with borrowed workspace storage.
+The sample established workspace use. It provided no evidence about the
+dense-array branch on this page. LibJS headless smoke also passed bytecode
+execution, DOM mutation and click events. Both checks and their guards
+exited zero.
+
+Seven alternating fresh pairs replayed the same clock-pinned archive with
+an empty private profile and HTTP cache per launch, retained OS filesystem
+and shader caches, and a 1.4 s settle setting. They captured the 1024×768
+scale-1 document viewport. Vox used LibJS with native and frontend caches
+disabled. The endpoint was the first complete native PNG observed for Vox
+and the first complete CDP PNG response for Brave. The process-tree counter
+included startup and omitted GPU and external-service work, plus short-lived
+processes missed by sampling. Both browsers' counts are lower bounds.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,604,827,425 | 11,658,402,159 | 1967.761 | 2033.551 | Alternate thumbnails |
+| 2 | 5,632,553,375 | 11,746,705,853 | 1991.304 | 1988.414 | Alternate thumbnails |
+| 3 | 5,661,098,837 | 11,580,117,023 | 1971.129 | 1981.771 | Alternate thumbnails |
+| 4 | 5,600,515,980 | 11,719,099,849 | 1974.995 | 1981.020 | Alternate thumbnails |
+| 5 | 5,635,211,745 | 11,613,520,055 | 1982.296 | 1957.452 | Exact |
+| 6 | 5,592,620,088 | 11,658,503,409 | 1989.795 | 1974.948 | Alternate thumbnails |
+| 7 | 5,593,827,721 | 11,563,378,027 | 2024.091 | 1975.553 | Alternate thumbnails |
+| Median | 5,604,827,425 | 11,658,402,159 | 1982.296 | 1981.020 | Six failures |
+
+Every Vox PNG matched its fixed reference. All 14 visits completed with
+25 ordered posts and the five original scripts. Vox execution generations
+were 151, 155, 153, 153, 151, 151 and 163. JavaScriptCore stayed
+uninitialized. Brave reported the required author handlers and zero
+exceptions or author messages. Within each browser all replay logs showed
+identical sets of archived URL and response-body hashes, 43 in Vox and
+44 in Brave.
+
+The six Brave deviations reproduced PNG SHA-256
+`b4e45883ede67a862e36dfa29d4c9a202a7810811dfabbfe0a1f63e49c1c4c34`.
+It differs from the fixed reference in 13,902 RGB pixels at x=83–153 and
+y=400–762, with maximum channel error 83. The cohort therefore failed
+acceptance. Across the raw observations Vox's median elapsed time was
+1.28 ms slower, with three Vox pair wins and a median paired deficit of
+2.89 ms. Vox used 51.92% fewer median observed instructions, and its highest
+observed total was 48.96% of Brave's lowest. The catalog retains the earlier
+qualifying frozen comparison.
+
+All 14 browser exits were zero. The driver and the 12 GiB guard exited 1
+on the reference failures. The guard adopted all 14 roots and sampled
+822,001,664 bytes at peak. Final complete samples preceded capture by
+5.94–7.68 ms for Vox and 1.33–5.89 ms for Brave. Vox reported zero missing
+final samples. Brave reported 3, 1, 2, 0, 2, 2 and 2. One-minute host load
+ranged from 4.81 to 6.03 on 18 cores between 12:46:27 and 12:47:04 UTC+03.
+
+A separate live guest visit reached the Reddit sign-in page with zero
+listing posts and two unsupported URL scheme diagnostics. The browser and
+its guard exited zero.
