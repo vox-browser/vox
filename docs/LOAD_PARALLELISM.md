@@ -5306,3 +5306,99 @@ and reproduced eight replay records, including the favicon miss.
 Executable, library, helper, fixture and harness hashes stayed pinned.
 All browser, driver and guard exits were zero. Peak sampled RSS was
 426,508,288 bytes.
+
+### Prepare the MathML and SVG user-agent sheets concurrently
+
+Commit `a2611272e` starts independent workers for the embedded MathML
+and SVG stylesheets while the browser parses the quirks stylesheet.
+Each worker prepares the raw rules and validated selectors. Conversion
+compares the declaration prefixes it has accepted with the worker's
+prefix set before using the worker's selectors. CSSOM ownership,
+namespace URI resolution, nesting and error reporting stay on the
+browser thread. The shared sheets own the detached selector arenas.
+Set `VOX_PARALLEL_UA_COMPANION_SHEETS=1` to select this schedule.
+
+The preallocated user-agent tests passed in both modes with arena
+poisoning. ThreadSanitizer passed with the workers enabled. The tests
+serialized every companion rule after the workers exited, verified the
+selector graphs belonged to the retained arenas and exercised namespace
+and nested-selector fallback. Both serial fallback settings passed
+under ThreadSanitizer. The stylesheet parser suite passed without
+preallocation.
+
+Two preliminary counter captures on receipt `20261125-222108-2ad23468`
+measured 2,335,822 and 2,534,171 browser-thread instructions in
+companion initialization. Its executable SHA-256 was
+`d61519f126aea5c731df5e1f46b86de4959dde6eb405c812b5a88b28f5313ca4`.
+Both captures matched the PNG and all 30 stories.
+Two subsequent build attempts stopped when checkout inputs changed
+before C preprocessing. The matched comparison used the next verified
+bundle.
+
+#### Matched production captures
+
+Receipt `20261125-223156-8e7b835f` verified `a87aa19d6` and
+passed startup smoke in single-C-unit V `-prod` mode. Each variant used
+the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `8c500c1fcb804fe33add55c1220e4e82ebef25f8e62d365a02a62474345393ab` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+The two worker diagnostics parsed 23 MathML rules and seven SVG rules
+off-thread. The browser used all 22 prepared MathML selector lists
+and all five SVG lists. The serial controls reported no companion
+workers.
+SVG was ready at its join in both diagnostics. The browser thread
+waited for MathML in both.
+
+Separate counter diagnostics measured inclusive browser-thread scopes.
+
+| Scope | Pair 1 serial | Pair 1 workers | Pair 2 serial | Pair 2 workers |
+| --- | ---: | ---: | ---: | ---: |
+| Companion sheets | 2,394,084 | 1,011,734 | 2,405,396 | 1,085,163 |
+| CSS parsing | 32,492,247 | 30,937,557 | 32,567,503 | 31,019,354 |
+| Style update | 343,881,325 | 344,594,248 | 345,433,816 | 345,590,754 |
+
+Companion initialization used 58% and 55% fewer main-thread
+instructions. The style-update scope remained near 345 million in
+both variants.
+
+Two unprofiled seven-pair cohorts alternated the schedules, starting
+with a different mode in each cohort. The timer spans fresh launch
+through the completed document PNG at a 1024×768 CSS-pixel viewport
+and 2× scale. Captures used JavaScriptCore, empty private profiles and
+HTTP caches, retained OS filesystem and shader caches, `tr.athing`
+readiness and a 60 ms replay delay per logo response.
+
+| Pair | Serial, ms | Workers, ms | Reversed serial, ms | Reversed workers, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 291.338 | 300.834 | 294.232 | 284.371 |
+| 2 | 312.441 | 307.957 | 303.759 | 299.609 |
+| 3 | 288.493 | 308.753 | 319.492 | 305.107 |
+| 4 | 298.206 | 298.723 | 317.692 | 311.162 |
+| 5 | 301.448 | 311.931 | 323.248 | 312.161 |
+| 6 | 303.577 | 282.981 | 317.604 | 319.324 |
+| 7 | 290.673 | 299.536 | 325.279 | 306.969 |
+| Median | 298.206 | 300.834 | 317.692 | 306.969 |
+
+Median paired changes were +8.863 and −9.861 ms, with two and
+six worker wins.
+Sampled main-thread CPU medians went from 153.360 to
+150.340 ms and from 174.132 to 167.330 ms.
+One-minute load ranged from 5.86 to 6.64
+and from 5.71 to 6.20 on 18 CPUs.
+
+The schedule remains opt-in based on the mixed end-to-end times.
+
+All 36 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+The eight diagnostic launches verified the document URL, complete
+readiness, viewport and all 30 ordered story IDs. The executable,
+helper, library, archive and harness stayed pinned. All browser,
+driver and guard exits were zero. Peak sampled RSS was
+437,370,880 bytes.
