@@ -2107,3 +2107,76 @@ default ran zero asynchronous batches. Enabling the flag ran 27.
 Both fresh launches matched the reference PNG, the 30 ordered
 story IDs and the eight replay records. Browser and guard exits
 were zero.
+
+### Pipeline cold glyph masks through raster setup
+
+Commit `87d566731` widens the work that the browser thread can do while
+cold A8 masks render. The pipeline submits jobs before raster clip
+checks, reads the backdrop on the browser thread, and joins the batch
+after blitter setup. The browser thread publishes masks and blends in
+glyph order. An early clip rejection or a backdrop read failure joins
+the workers and releases their private bitmaps before returning.
+
+`VOX_PIPELINE_GLYPH_MASKS=1` enables the wider pipeline.
+`VOX_OVERLAP_GLYPH_BACKDROP=1` selects the backdrop-only experiment.
+The default reads the backdrop before dispatching the ordinary parallel
+mask batch. All three modes share the glyph cache and blitter.
+
+The production type check and arena-poisoned glyph batch tests passed.
+The tests compare both overlap modes with the synchronous image and
+verify that a failed read or clip rejection publishes no masks. The
+CPU glyph raster suite passed its Skia pixel comparisons.
+
+Production receipt `20261125-111304-0ff2a011` sealed `87d566731` in
+single-C-unit V `-prod` mode, passed startup smoke and published
+executable SHA `1554fdfd9008cf7cc017f0b1eb60e5ad9f1ef1a239aadc11fe9d54a006e399ac`.
+
+In the Hacker News diagnostic pair, both overlap modes submitted 27
+batches with 202 mask jobs on two to four lanes. Seven pipeline jobs
+overlapped browser-thread work across four batches, compared with
+three jobs across three backdrop-only batches. The count covers the
+interval between the end of submission and the join. Four pipeline
+jobs overlapped the read itself. The pipeline repeated against the
+default and recorded five overlapping jobs. Every overlap batch
+still had work in flight at the join. Each launch ran
+34 total parallel mask batches and preserved all 30 ordered story IDs.
+
+A separate instrumented pair measured 134,739,485 versus 135,465,706
+main-thread text replay instructions, and 288,407,664 versus
+289,107,505 inclusive native raster instructions, in backdrop-only
+and wider pipeline mode respectively.
+
+Four seven-pair cohorts alternated the wider pipeline with either
+backdrop-only overlap or the default on the same executable. The
+reversed cohorts started with the control. Trials measured fresh
+launch through the completed document PNG at 1024×768 CSS pixels and
+2× scale, with JavaScriptCore, empty private profiles and HTTP caches,
+and a replayed 60 ms delay on each logo response. OS filesystem
+caches were retained. Times are milliseconds.
+
+| Pair | Backdrop only | Pipeline | Reversed backdrop only | Reversed pipeline | Default | Pipeline | Reversed default | Reversed pipeline |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 340.688 | 348.401 | 316.167 | 320.973 | 318.400 | 326.531 | 291.508 | 300.104 |
+| 2 | 338.438 | 324.702 | 328.403 | 334.284 | 303.823 | 323.352 | 300.171 | 308.036 |
+| 3 | 321.837 | 315.380 | 324.683 | 293.159 | 312.649 | 296.770 | 293.275 | 292.912 |
+| 4 | 330.210 | 304.290 | 316.075 | 316.893 | 325.867 | 309.094 | 311.199 | 302.716 |
+| 5 | 314.377 | 308.436 | 292.947 | 295.741 | 312.691 | 336.055 | 300.186 | 325.639 |
+| 6 | 287.582 | 295.530 | 315.588 | 314.488 | 291.581 | 325.143 | 329.680 | 338.824 |
+| 7 | 330.180 | 308.622 | 317.575 | 313.514 | 294.131 | 312.694 | 330.266 | 316.385 |
+| Median | 330.180 | 308.622 | 316.167 | 314.488 | 312.649 | 323.352 | 300.186 | 308.036 |
+
+Median paired changes against backdrop-only overlap were −6.458 ms
+and +0.818 ms, with the pipeline finishing first in five and three
+pairs. Changes against the default were +18.563 ms and +7.866 ms,
+with the pipeline finishing first in two and three pairs. Host load
+on 18 CPUs was 5.77–6.10 and 5.26–7.12 for the backdrop-only
+cohorts, and 5.00–5.77 and 4.76–5.26 for the default cohorts.
+The wider pipeline remains opt-in.
+
+All 56 timing launches and six diagnostic launches matched reference
+PNG SHA `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight-record request and response fingerprints matched in every
+launch, including the favicon miss. The executable, native library,
+archive and driver hashes stayed pinned throughout. Browser, driver
+and 3 GiB guard exits were zero. Peak aggregate timing RSS was
+378,798,080 bytes.
