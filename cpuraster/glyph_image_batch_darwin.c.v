@@ -6,6 +6,7 @@ import runtime
 
 $if !cpuraster_freetype ? {
 	fn C.pthread_threadid_np(voidptr, &u64) i32
+	fn C.calloc(uint, uint) voidptr
 
 	const glyph_batch_min = 4
 	const glyph_batch_max = 16
@@ -15,13 +16,11 @@ $if !cpuraster_freetype ? {
 	const glyph_batch_diagnostics = os.getenv('VOX_GLYPH_BATCH_DIAGNOSTICS') == '1'
 
 	struct GlyphImageJob {
-		key    u32
-		bounds StrikeGlyph
-		width  int
-		height int
+		key u32
 	mut:
-		pixels []u32
-		drawn  bool
+		bounds GlyphMaskBounds
+		mask   voidptr
+		ready  bool
 		thread u64
 	}
 
@@ -37,15 +36,34 @@ $if !cpuraster_freetype ? {
 		strike := batch.strike
 		for index in first .. end {
 			mut job := unsafe { &batch.jobs[index] }
-			x := f32(-job.bounds.left) + f32((job.key >> 2) & 3) / 4
-			y := f32(job.bounds.top + job.bounds.height) - f32(job.key & 3) / 4
-			// The font is immutable and stays retained until the join. Each
-			// job has its own bitmap context and writes to its own storage.
-			job.drawn = C.cpuraster_ct_draw_glyph(strike.font, u16(job.key >> 4),
-				&strike.transform[0], int(strike.invertible), f64(x), f64(y), job.pixels.data,
-				job.width, job.height, job.bounds.width, job.bounds.height, 0, 0,
-				strike.smoothing) != 0
 			if batch.diagnostics { C.pthread_threadid_np(unsafe { nil }, &job.thread) }
+			// Workers share the immutable strike and use native memory for
+			// temporary bitmaps. The cache's V arena belongs to the caller.
+			id := u16(job.key >> 4)
+			sub_x := int((job.key >> 2) & 3)
+			sub_y := int(job.key & 3)
+			bounds := strike.glyph_mask_bounds(id, sub_x, sub_y)
+			job.bounds = bounds
+			if bounds.width == 0 || bounds.height == 0 || bounds.width >= glyph_max_width {
+				job.ready = true
+				continue
+			}
+			width := next_pow2(bounds.width)
+			height := next_pow2(bounds.height)
+			if i64(width) * height > glyph_batch_max_context_pixels { continue }
+			bitmap := C.calloc(uint(width * height), sizeof(u32))
+			if bitmap == unsafe { nil } { continue }
+			x := f32(-bounds.left) + f32(sub_x) / 4
+			y := f32(bounds.top + bounds.height) - f32(sub_y) / 4
+			if C.cpuraster_ct_draw_glyph(strike.font, id, &strike.transform[0],
+				int(strike.invertible), f64(x), f64(y), bitmap, width, height, bounds.width,
+				bounds.height, 0, 0, strike.smoothing) == 0 {
+				C.free(bitmap)
+				continue
+			}
+			strike.write_glyph_mask(bitmap, bitmap, bounds.width, bounds.height, width, height)
+			job.mask = bitmap
+			job.ready = true
 		}
 	}
 
@@ -73,36 +91,28 @@ $if !cpuraster_freetype ? {
 			if count == keys.len { break }
 		}
 		if count < glyph_batch_min || !strike.ensure_font(mut lazy) { return }
-		lanes := math.min(runtime.nr_cpus(), int(C.VOX_SCAN_WORKERS_MAX))
+		// Give each lane at least two keys to amortize its dispatch.
+		lanes := math.min(count / 2, math.min(runtime.nr_cpus(), int(C.VOX_SCAN_WORKERS_MAX)))
 		if lanes < 2 { return }
-		mut jobs := []GlyphImageJob{cap: count}
-		for key in keys[..count] {
-			bounds := strike.glyph_bounds(u16(key >> 4), int((key >> 2) & 3), int(key & 3))
-			if bounds.width == 0 || bounds.height == 0 || bounds.width >= glyph_max_width {
-				continue
-			}
-			width := next_pow2(bounds.width)
-			height := next_pow2(bounds.height)
-			if i64(width) * height > glyph_batch_max_context_pixels { continue }
-			jobs << GlyphImageJob{ key: key, bounds: bounds, width: width, height: height }
-		}
-		if jobs.len < glyph_batch_min { return }
-		for mut job in jobs {
-			job.pixels = []u32{len: job.width * job.height}
-		}
+		jobs := []GlyphImageJob{len: count, init: GlyphImageJob{ key: keys[index] }}
 		mut batch := GlyphImageBatch{
 			strike:      &strike
 			diagnostics: glyph_batch_diagnostics
 			jobs:        jobs
 		}
-		C.vox_scan_workers_run(&batch, i32(jobs.len), i32(math.min(lanes, jobs.len)),
-			draw_glyph_image_jobs)
+		C.vox_scan_workers_run(&batch, i32(jobs.len), i32(lanes), draw_glyph_image_jobs)
 		glyph_cache_enter(entry.owner)
 		for job in jobs {
-			if !job.drawn { continue }
-			glyph := strike.glyph_image(job.bounds, job.pixels, job.width, job.height)
-			entry.glyphs[job.key] = glyph
-			entry.bytes += glyph.image.len
+			if !job.ready { continue }
+			bounds := job.bounds
+			mut image := []u8{}
+			if job.mask != unsafe { nil } {
+				image = []u8{len: bounds.width * bounds.height}
+				unsafe { vmemcpy(image.data, job.mask, image.len) }
+				C.free(job.mask)
+			}
+			entry.glyphs[job.key] = StrikeGlyph{bounds.left, bounds.top, bounds.width, bounds.height, image}
+			entry.bytes += image.len
 		}
 		glyph_cache_leave(entry.owner)
 		if batch.diagnostics {

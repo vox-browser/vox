@@ -1115,22 +1115,39 @@ fn (s &GlyphStrike) glyph_image(g StrikeGlyph, cg []u32, context_width int, cont
 		}
 		return StrikeGlyph{g_left, g_top, g_width, g_height, image}
 	}
-	// RGBToA8<true>(): luminance of the inverted pixel through the table.
 	mut image := []u8{len: g_width * g_height}
-	for row in 0 .. g_height {
-		for column in 0 .. g_width {
-			p := cg[first + row * context_width + column]
-			red := 255 - (p >> 16 & 0xff)
-			green := 255 - (p >> 8 & 0xff)
-			blue := 255 - (p & 0xff)
-			image[row * g_width + column] = if s.smoothing == 1 {
-				if p & 255 < 128 { u8(255) } else { u8(0) }
-			} else {
-				s.table[compute_luminance(red, green, blue)]
+	s.write_glyph_mask(cg.data, image.data, g_width, g_height, context_width, context_height)
+	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+}
+
+// RGBToA8<true>(): luminance of the inverted pixel through the table. Rows
+// are processed forward, so the mask can occupy the front of the input
+// bitmap. Each output byte lands at or before the input pixel just read.
+fn (s &GlyphStrike) write_glyph_mask(cg &u32, image &u8, width int, height int,
+	context_width int, context_height int) {
+	first := (context_height - height) * context_width
+	unsafe {
+		for row in 0 .. height {
+			for column in 0 .. width {
+				p := cg[first + row * context_width + column]
+				red := 255 - (p >> 16 & 0xff)
+				green := 255 - (p >> 8 & 0xff)
+				blue := 255 - (p & 0xff)
+				image[row * width + column] = if s.smoothing == 1 {
+					if p & 255 < 128 { u8(255) } else { u8(0) }
+				} else {
+					s.table[compute_luminance(red, green, blue)]
+				}
 			}
 		}
 	}
-	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+}
+
+struct GlyphMaskBounds {
+	left   int
+	top    int
+	width  int
+	height int
 }
 
 // generateMetrics()'s bounds, rounded out, outset and saturated; zero for
@@ -1139,7 +1156,14 @@ fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) Strik
 	$if linux || windows || cpuraster_freetype ? {
 		return freetype_glyph_bounds(s, id, sub_x_field, sub_y_field)
 	}
-	metrics := glyph_metrics(s.font, id, s.transform) or { return StrikeGlyph{} }
+	bounds := s.glyph_mask_bounds(id, sub_x_field, sub_y_field)
+	return StrikeGlyph{bounds.left, bounds.top, bounds.width, bounds.height, []u8{}}
+}
+
+// Keep the worker's geometry free of V allocations. The caller can attach
+// a mask in the strike cache once the worker has joined.
+fn (s &GlyphStrike) glyph_mask_bounds(id u16, sub_x_field int, sub_y_field int) GlyphMaskBounds {
+	metrics := glyph_metrics(s.font, id, s.transform) or { return GlyphMaskBounds{} }
 	// SkFixedToFloat() of the subpixel field.
 	sub_x := f32(sub_x_field) / f32(4)
 	sub_y := f32(sub_y_field) / f32(4)
@@ -1161,9 +1185,9 @@ fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) Strik
 	g_width := saturate_u16(r - left)
 	g_height := saturate_u16(b - top)
 	if g_width == 0 || g_height == 0 {
-		return StrikeGlyph{}
+		return GlyphMaskBounds{}
 	}
-	return StrikeGlyph{g_left, g_top, g_width, g_height, []u8{}}
+	return GlyphMaskBounds{g_left, g_top, g_width, g_height}
 }
 
 fn saturate_i16(v i64) int {

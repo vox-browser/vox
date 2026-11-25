@@ -3,6 +3,21 @@ module cpuraster
 import os
 import runtime
 
+fn test_glyph_mask_converts_padded_bitmap_in_place() {
+	width, height := 5, 3
+	pitch, rows := 8, 4
+	mut pixels := []u32{len: pitch * rows, init: 0xff000000 | u32(index) * 0x030303}
+	expected := []u8{len: width * height, init: u8(255 - 3 * (pitch + index / width * pitch + index % width))}
+	strike := GlyphStrike{ table: identity_mask_gamma_table.clone() }
+	mut separate := []u8{len: expected.len}
+	strike.write_glyph_mask(pixels.data, separate.data, width, height, pitch, rows)
+	assert separate == expected
+	strike.write_glyph_mask(pixels.data, pixels.data, width, height, pitch, rows)
+	for index, value in expected {
+		assert unsafe { (&u8(pixels.data))[index] } == value
+	}
+}
+
 fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 	$if !cpuraster_freetype ? {
 		if runtime.nr_cpus() < 2 { return }
