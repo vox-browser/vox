@@ -99,3 +99,40 @@ fn test_remote_svg_rejects_declared_wrong_type_failed_responses_and_non_svg_docu
 	})
 	assert svg_image_document_for_source(document, 'https://svg-response.test:22/blocked.svg') == none
 }
+
+fn test_native_svg_image_probes_release_url_and_response_storage() {
+	$if prealloc {
+		mut resource_loader := remote_svg_test_loader()
+		resource_loader.register_network_response('https://svg-probe.test/assets/asset?revision=2', loader.NetworkResponse{
+			data:    ('<!--' + ' '.repeat(256 * 1024) + '-->' + remote_svg_source).bytes()
+			headers: [http.Header{ name: 'Content-Type', value: 'image/svg+xml' }]
+		})
+		mut document := dom.Document.create(dom.URL{ value: 'https://svg-probe.test/pages/index.html' })
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		defer {
+			owner.finish()
+			document.finalize()
+			document.release_native_storage()
+		}
+		source := '../assets/asset?revision=2#symbol'
+		before := document.native_storage().arena.usage().used
+		for _ in 0 .. 8 {
+			size := image_intrinsic_size_for_source(document, source) or { panic('missing size') }
+			width := size.width or { panic('missing width') }
+			height := size.height or { panic('missing height') }
+			assert width.to_double() == 32
+			assert height.to_double() == 16
+			assert image_intrinsic_size_for_source(document, '../absent.png') == none
+			assert svg_image_document_for_source(document, '../absent.png') == none
+		}
+		assert document.native_storage().arena.usage().used == before
+
+		image := svg_image_document_for_source(document, source) or { panic('missing SVG image') }
+		assert image.url.serialize() == 'https://svg-probe.test/assets/asset?revision=2#symbol'
+		root := image.document_element() or { panic('missing SVG root') }
+		assert root.get_attribute_value('viewBox') == '0 0 32 16'
+		resolved := image.encoding_parse_url('images/piece.png') or { panic('missing base URL') }
+		assert resolved.serialize() == 'https://svg-probe.test/assets/images/piece.png'
+	}
+}

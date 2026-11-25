@@ -471,12 +471,12 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	trimmed_source := source.trim_space()
 	parsed_url := document.encoding_parse_url(trimmed_source) or { return none }
 	if document.is_svg_image_document() && parsed_url.scheme() != 'data' { return none }
-	mut resource_url := parsed_url
-	resource_url.set_fragment(none)
-	serialized := resource_url.serialize()
 	if parsed_url.scheme() in ['http', 'https'] {
 		return remote_svg_image_source(document, parsed_url)
 	}
+	mut resource_url := parsed_url
+	resource_url.set_fragment(none)
+	serialized := resource_url.serialize()
 	if serialized.starts_with('data:') {
 		comma := serialized.index(',') or { return none }
 		metadata := serialized[..comma].to_lower()
@@ -524,7 +524,13 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 }
 
 fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Document {
+	if source.len == 0 { return none }
+	// Source probing owns URL records and response bytes only until decoding.
+	// Parse into the image document's owner with the probe still readable.
+	scratch := platform.begin_thread_scratch('layout image probe')
+	defer { scratch.finish() }
 	image_source := svg_image_source_for_source(document, source) or { return none }
+	scratch.leave()
 	return parse_svg_image_document(image_source, document.preferred_color_scheme(), document)
 }
 
@@ -599,10 +605,18 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	if source.len == 0 {
 		return none
 	}
+	// The sizing result contains only numbers. URL data, decoded file bytes
+	// and the registered loader response copy end with this probe.
+	scratch := platform.begin_thread_scratch('layout image probe')
+	defer { scratch.finish() }
 	trimmed_source := source.trim_space()
 	parsed_url := document.encoding_parse_url(trimmed_source) or { return none }
 	fragment := parsed_url.fragment() or { '' }
 	if document.is_svg_image_document() && parsed_url.scheme() != 'data' { return none }
+	if parsed_url.scheme() in ['http', 'https'] {
+		image_source := remote_svg_image_source(document, parsed_url) or { return none }
+		return svg_image_natural_size_with_fragment(image_source.source, fragment)
+	}
 	mut resource_url := parsed_url
 	resource_url.set_fragment(none)
 	serialized := resource_url.serialize()
@@ -652,9 +666,6 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	if serialized.starts_with('file://') {
 		record := url.parse(serialized) or { return none }
 		path = record.to_file_path() or { return none }
-	} else if serialized.starts_with('http://') || serialized.starts_with('https://') {
-		image_source := svg_image_source_for_source(document, source) or { return none }
-		return svg_image_natural_size_with_fragment(image_source.source, fragment)
 	} else if serialized.contains('://') {
 		return none
 	}
