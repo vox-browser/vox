@@ -6,6 +6,7 @@ import html
 import os
 import crypto.sha256
 import compress.deflate
+import platform
 
 fn test_native_local_non_icc_png_matches_the_fetched_pixels_and_profile_path() {
 	$if !macos { return }
@@ -82,4 +83,26 @@ fn test_native_png_icc_inflater_decodes_within_its_limit() {
 	mut corrupt := compressed.clone()
 	corrupt[corrupt.len - 1] ^= 1
 	assert isnil(png_icc_inflate_profile(corrupt.data, uint(corrupt.len), 1 << 20, &length))
+}
+
+fn test_png_icc_inflater_publishes_only_native_owned_bytes() {
+	profile := []u8{len: 70000, init: u8(index % 7)}
+	compressed := deflate.compress_zlib(profile)!
+	mut caller := platform.new_arena('PNG ICC caller test')
+	defer { caller.release() }
+	entry := caller.enter()
+	defer { caller.leave(entry) }
+	before := caller.usage().used
+	for _ in 0 .. 8 {
+		mut length := uint(0)
+		decoded := png_icc_inflate_profile(compressed.data, uint(compressed.len), 1 << 20, &length)
+		assert !isnil(decoded)
+		assert int(length) == profile.len
+		assert unsafe { decoded.vbytes(int(length)) } == profile
+		unsafe { C.free(decoded) }
+		assert isnil(png_icc_inflate_profile(compressed.data, uint(compressed.len), 40000, &length))
+	}
+	$if prealloc {
+		assert caller.usage().used == before
+	}
 }
