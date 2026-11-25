@@ -3299,8 +3299,87 @@ declines, with both the suite and guard exiting zero. An earlier
 focused attempt hit a full workspace volume before execution. The
 successful runs followed cleanup of the completed experiment artifacts.
 
-The full-page comparison is pending. The guard was occupied by
+The full-page comparison was deferred while the guard was occupied by
 single-C-unit production receipt `20261125-141127-f26f0f12`, which
 sealed before the scheduler change. The commit hook queued the new
 source for the shared builder. The available production executable
 served as the archived text capture baseline.
+
+#### Previous scheduler on the archived homepage
+
+The completed `20261125-141127-f26f0f12` executable, SHA-256
+`3b23dceb917896c9fe16aa8d6b5485dfb53786ed4ef3d1cd07d8104777c4327a`,
+reproduced the single-thread case. One of its 37 larger batches
+executed all four masks on one thread. The other 36 batches used two
+to four threads. The launch matched the 30 ordered story IDs, the eight
+replay records and the reference PNG. One-minute host load was 85.02 on
+18 CPUs. The browser and the 3 GiB guard exited zero. This diagnostic
+used the published baseline and supplies no cross-build timing result.
+
+The first build with the scheduling change, receipt
+`20261125-142907-1cde9348`, exited before linking after a compiler
+cache object was missing. The manager retained the previous published
+bundle and a new managed request used the same single-C-unit V `-prod`
+build options. Retry receipt `20261125-143707-1e48ee6c` rejected
+changed checkout inputs before C preprocessing. Neither receipt
+produced a timed browser.
+
+#### Matched production captures
+
+Receipt `20261125-144341-7c04b73d` sealed `ec597a062` with explicit
+dispatch, passed startup smoke and published single-C-unit V `-prod`
+executable SHA-256
+`4812830ce1912f8bb86e16b97dd4af79b5070c1857201732ad53f1cccd0d26bc`.
+The native AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+Both schedulers ran on that executable.
+
+Each diagnostic drew 391 glyph masks in 84 batches, including 277
+masks in 37 larger batches. One larger batch in the second control
+executed all four masks on the browser thread. Every explicit
+batch used two to four threads. The worker and instruction
+diagnostics verified the URL, ready state, viewport and all
+30 ordered story IDs.
+
+| Diagnostic pair | Previous single-thread large batches | Explicit single-thread large batches | Previous large masks on caller | Explicit large masks on caller |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 0 | 0 | 82 | 101 |
+| 2 | 1 | 0 | 84 | 101 |
+
+The browser-thread counters ran separately with glyph logging disabled.
+
+| Counter pair | Previous text instructions | Explicit text instructions | Previous native raster instructions | Explicit native raster instructions |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 134,029,397 | 135,240,087 | 277,828,236 | 278,085,695 |
+| 2 | 132,445,755 | 134,966,781 | 279,024,071 | 277,272,336 |
+
+The unprofiled cohorts alternated both modes on the same executable.
+The reversed cohort started with the previous scheduler. Each trial
+used JavaScriptCore, a private empty profile and HTTP cache, retained
+OS filesystem caches and a 60 ms delay per replayed logo response.
+Timing spans fresh launch through the completed 1024×768 CSS-pixel
+document PNG at 2× scale.
+
+| Pair | Previous, ms | Explicit, ms | Reversed previous, ms | Reversed explicit, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 458.128 | 500.406 | 420.497 | 492.684 |
+| 2 | 448.613 | 469.350 | 469.758 | 508.935 |
+| 3 | 466.803 | 467.815 | 497.541 | 474.518 |
+| 4 | 486.410 | 468.305 | 507.936 | 453.945 |
+| 5 | 476.355 | 485.854 | 538.958 | 487.501 |
+| 6 | 435.305 | 417.159 | 487.671 | 471.124 |
+| 7 | 422.232 | 440.215 | 424.774 | 437.075 |
+| Median | 458.128 | 468.305 | 487.671 | 474.518 |
+
+Paired median changes were +9.500 and −16.547 ms, with two and four
+wins. Sampled browser-thread CPU medians were 287.89 → 290.09 ms and
+290.92 → 293.59 ms. One-minute load ranged from 35.72 to 39.90 and
+33.01 to 35.72 on 18 CPUs. The cohorts showed mixed elapsed-time results
+under this contention.
+
+All 28 timed and eight diagnostic captures matched reference PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+Every launch reproduced the same eight request and response records,
+including the favicon miss. The executable, native library, helper,
+archive, and driver hashes stayed pinned. The browser, driver and
+3 GiB guard exited zero. Peak aggregate RSS was 406,093,824 bytes.
