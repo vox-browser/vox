@@ -109,6 +109,9 @@ fn (app &BrowserApp) native_frame_consumed_work() bool {
 		if loader := app.image_request_loader {
 			if loader.results.len > 0 { return false }
 		}
+		if loader := app.script_request_loader {
+			if loader.results.len > 0 { return false }
+		}
 		if app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state() {
 			return false
 		}

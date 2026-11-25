@@ -86,6 +86,17 @@ fn test_native_frame_consumes_preparation_wakes_but_retains_pending_document_wor
 	assert !app.native_frame_consumed_work()
 	_ = <-images.results
 	assert app.native_frame_consumed_work()
+	mut scripts := app.script_request_loader or { panic('missing script loader') }
+	scripts.active_fetches = 1
+	assert app.native_frame_consumed_work()
+	scripts.results <- PreloadedResource{url: 'https://frame-work.example/parser.js', request_type: 'script'}
+	C.vox_test_queue_navigation_redraw()
+	for _ in 0 .. 1000 { if vox_service_navigation_ui() != 0 { break } }
+	C.vox_browser_frame_prepared()
+	assert !app.native_frame_consumed_work()
+	app.poll_browser_script_requests()
+	assert scripts.active_fetches == 0
+	assert app.native_frame_consumed_work()
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }
 	app.js_runtime = runtime
