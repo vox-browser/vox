@@ -466,17 +466,28 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 		...background
 		transform: [f64(1), 0, 0, 1, 0, 5000]!
 	}
+	leaf_start := short_commands.len
+	for index in 0 .. 128 {
+		short_commands << if index % 2 == 0 {
+			msaa_test_underline(f64(index), 2)
+		} else {
+			layout.PaintCommand{kind: 'draw_text', has_clip: true}
+		}
+	}
 	oversized_suffix := []layout.PaintCommand{len: chromium_msaa_path_overlap_commands + 7}
-	assert chromium_msaa_path_batch_end(oversized_suffix, none) == 7
+	bounded_end, bounded_leaves := chromium_msaa_collection_ranges(oversized_suffix, none, true)
+	assert bounded_end == 7 && bounded_leaves == oversized_suffix.len
 	// The long list crosses the job capacity and reuses the same storage.
 	for visible_commands in [short_commands, commands] {
 		short := visible_commands.len == short_commands.len
 		viewport := ChromiumMSAAViewport{scroll_y: if short { 0 } else { 85 }, height: 2100, fringe: 7}
 		expected := chromium_msaa_triggers_for_viewport(visible_commands, viewport)
 		if short {
-			assert expected.len == 55
-			assert chromium_msaa_path_batch_end(visible_commands, viewport) == 53
-			assert chromium_msaa_path_batch_end(visible_commands, none) == short_commands.len
+			assert expected.len == 119
+			visible_path_end, visible_leaves := chromium_msaa_collection_ranges(visible_commands, viewport, true)
+			unclipped_path_end, _ := chromium_msaa_collection_ranges(visible_commands, none, false)
+			assert visible_path_end == 53 && visible_leaves == leaf_start
+			assert unclipped_path_end == leaf_start
 		} else {
 			assert expected.len > 288 && expected.len < 320
 		}
@@ -488,12 +499,17 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 					assert storage.path_work.running == 32
 					assert storage.path_work.count - storage.path_work.running == 22
 					assert tail != unsafe { nil }
+					if !chromium_serial_msaa_leaf_tail && !chromium_late_msaa_path_tail {
+						assert storage.leaf_work.ticket != unsafe { nil }
+						assert storage.leaf_work.first == leaf_start
+					}
 				}
 			}
-			storage.path_work.finish(mut storage.triggers, tail)
+			storage.finish_triggers(tail)
 			assert storage.path_work.jobs.len == chromium_msaa_max_path_jobs
 			assert storage.path_work.count == 0
 			assert storage.path_work.ticket == unsafe { nil }
+			assert storage.leaf_work.ticket == unsafe { nil } && storage.leaf_work.commands.len == 0
 			assert storage.triggers.len == expected.len
 			for index, trigger in storage.triggers {
 				assert trigger == expected[index]

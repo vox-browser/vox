@@ -68,15 +68,17 @@ fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
 	}
 }
 
+fn chromium_msaa_has_empty_clip(command &layout.PaintCommand) bool {
+	// Native replay discards empty clips before drawing. Culled geometry must
+	// not select multisampling for the other draws in its document tile.
+	return command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0
+		|| chromium_msaa_clip_list_has_empty_clip(command.clip_list))
+}
+
 fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 	viewport ?ChromiumMSAAViewport, batch_paths bool, mut path_work ChromiumMSAAPathWork,
 	mut triggers []ChromiumMSAATrigger) {
-	// Native replay discards empty clips before drawing. Culled geometry must
-	// not select multisampling for the other draws in its document tile.
-	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0
-		|| chromium_msaa_clip_list_has_empty_clip(command.clip_list)) {
-		return
-	}
+	if chromium_msaa_has_empty_clip(command) { return }
 	if rect := chromium_msaa_trigger_rect(command) {
 		triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
 	} else if command.kind == 'draw_background_image' {
@@ -457,6 +459,7 @@ struct ChromiumMSAAStorage {
 mut:
 	triggers []ChromiumMSAATrigger
 	path_work ChromiumMSAAPathWork
+	leaf_work ChromiumMSAALeafWork
 	by_layer [][]ChromiumMSAATrigger
 	legacy_tiles []i32
 	tiles [][]i32
@@ -491,7 +494,7 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	for index in 0 .. plan.layers.len {
 		storage.raster_parents[index] = chromium_opacity_raster_parent(commands, plan, index)
 	}
-	storage.path_work.finish(mut storage.triggers, tail)
+	storage.finish_triggers(tail)
 	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
 	for trigger in storage.triggers {
 		if trigger.command_index >= 0 && trigger.command_index < plan.command_layers.len {
