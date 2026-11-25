@@ -23,10 +23,11 @@ mut:
 	is_simple       bool
 }
 
-// Information about a single parameter name binding.
+// A formal binding name is a lexer-validated identifier, so its scope key
+// also preserves its spelling for duplicate checks and diagnostics.
 struct ParamInfo {
 mut:
-	name            Utf16String
+	name            InternedName
 	is_rest         bool
 	is_from_pattern bool
 	identifier      ?&Identifier
@@ -226,63 +227,6 @@ fn (p &Parser) statement(start Position, stmt StatementKind) Statement {
 
 fn (p &Parser) make_identifier(start Position, name Utf16String) &Identifier {
 	return Identifier.new(p.range_from(start), name)
-}
-
-fn (mut p Parser) register_function_parameters_with_scope(parameters []FunctionParameter, parameter_info []ParamInfo) {
-	mut entries := []ParameterEntry{}
-	mut has_parameter_expressions := false
-	mut info_index := 0
-	for parameter in parameters {
-		if parameter.default_value != none {
-			has_parameter_expressions = true
-		}
-		match parameter.binding {
-			IdentifierBinding {
-				mut name := Utf16String.new()
-				mut is_rest := false
-				mut is_from_pattern := false
-				if info_index < parameter_info.len {
-					pi := parameter_info[info_index]
-					info_index++
-					name = pi.name.clone()
-					is_rest = pi.is_rest
-					is_from_pattern = pi.is_from_pattern
-				} else {
-					name = parameter.binding.identifier.name.clone()
-					is_rest = parameter.is_rest
-				}
-				entries << ParameterEntry{
-					name:                  name
-					identifier:            parameter.binding.identifier
-					is_rest:               is_rest
-					is_from_pattern:       is_from_pattern
-					is_first_from_pattern: false
-				}
-			}
-			BindingPatternBinding {
-				if parameter.binding.pattern.contains_expression() {
-					has_parameter_expressions = true
-				}
-				entries << ParameterEntry{
-					name:                  Utf16String.new()
-					is_from_pattern:       true
-					is_first_from_pattern: true
-				}
-				for info_index < parameter_info.len && parameter_info[info_index].is_from_pattern {
-					pi := parameter_info[info_index]
-					entries << ParameterEntry{
-						name:                  pi.name.clone()
-						identifier:            pi.identifier
-						is_rest:               pi.is_rest
-						is_from_pattern:       true
-						is_first_from_pattern: false
-					}
-					info_index++
-				}
-			}
-		}
-	}
-	p.scope_collector.set_function_parameters(entries, has_parameter_expressions)
 }
 
 // === Token access ===
@@ -625,14 +569,12 @@ fn (mut p Parser) check_identifier_name_for_assignment_validity(name []u16, forc
 fn (mut p Parser) check_arrow_duplicate_parameters(parameter_info []ParamInfo) {
 	mut seen_names := map[string]bool{}
 	for pi in parameter_info {
-		name := pi.name
-		if name.is_empty() {
+		key := pi.name.key
+		if key == '' {
 			continue
 		}
-		key := name.str()
 		if key in seen_names {
-			name_str := string_from_utf16_lossy(name.data)
-			p.syntax_error("Duplicate parameter '${name_str}' not allowed in arrow function")
+			p.syntax_error("Duplicate parameter '${key}' not allowed in arrow function")
 		}
 		seen_names[key] = true
 	}
@@ -641,10 +583,10 @@ fn (mut p Parser) check_arrow_duplicate_parameters(parameter_info []ParamInfo) {
 fn (mut p Parser) check_unique_formal_parameters(parameter_info []ParamInfo) {
 	mut seen_names := map[string]bool{}
 	for pi in parameter_info {
-		if pi.name.is_empty() {
+		key := pi.name.key
+		if key == '' {
 			continue
 		}
-		key := pi.name.str()
 		if key in seen_names {
 			p.syntax_error("Duplicate parameter '${key}' not allowed")
 		}
@@ -656,15 +598,13 @@ fn (mut p Parser) check_parameters_post_body(parameter_info []ParamInfo, force_s
 	_ = kind
 	mut seen_names := map[string]bool{}
 	for pi in parameter_info {
-		name := pi.name
-		if name.is_empty() {
+		key := pi.name.key
+		if key == '' {
 			continue
 		}
-		p.check_identifier_name_for_assignment_validity(name.data, force_strict)
-		key := name.str()
+		p.check_identifier_name_for_assignment_validity(pi.name.text.data, force_strict)
 		if key in seen_names {
-			name_str := string_from_utf16_lossy(name.data)
-			p.syntax_error("Duplicate parameter '${name_str}' not allowed in strict mode")
+			p.syntax_error("Duplicate parameter '${key}' not allowed in strict mode")
 		}
 		seen_names[key] = true
 	}

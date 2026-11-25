@@ -13,3 +13,19 @@ fn test_function_scope_metadata_keeps_unicode_names_in_utf16() {
 	assert metadata.vars_to_initialize.any(it.name.data == utf16('α'))
 	assert metadata.vars_to_initialize.any(it.name.data == utf16('𐐀'))
 }
+
+fn test_formal_parameter_metadata_preserves_indices_and_escaped_name_identity() {
+	parsed := parse_source(r'function f(α, {β}, [γ], \u{10400}, ...rest) {
+		return α + β + γ + 𐐀 + rest.length;
+	}', .script)
+	ast := parsed.dump_ast()!
+	assert ast.contains('Identifier "α" [argument:0]'), ast
+	assert ast.contains('Identifier "𐐀" [argument:3]'), ast
+	assert ast.contains('Identifier "rest" [argument:4]'), ast
+	assert ast.contains('Identifier "β" [variable:0]'), ast
+	assert ast.contains('Identifier "γ" [variable:1]'), ast
+	for source in [r'function f(𐐀, \u{10400}) { "use strict"; }', r'(𐐀, \u{10400}) => 𐐀'] {
+		duplicate := parse_source(source, .script)
+		assert duplicate.diagnostics.any(it.message.contains("Duplicate parameter '𐐀'"))
+	}
+}

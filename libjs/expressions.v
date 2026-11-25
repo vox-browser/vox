@@ -1849,12 +1849,12 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 		p.consume() // consume ')'
 	} else if p.match_identifier() || p.match_token(.await_kw) {
 		param_token := p.consume()
-		value := p.token_value(param_token).clone()
-		if utf16_equals_ascii(value, 'await')
+		name := p.names.intern(p.token_value(param_token))
+		if name.key == 'await'
 			&& (is_async || p.program_type == .module || p.flags.in_class_static_init_block) {
 			p.syntax_error("'await' is a reserved identifier in async functions")
 		}
-		binding := Identifier.new(p.range_from(start), Utf16String.from_slice(value.clone()))
+		binding := Identifier.new(p.range_from(start), name.text)
 		parsed = ParsedParameters{
 			parameters:      [
 				FunctionParameter{
@@ -1866,7 +1866,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 			function_length: 1
 			parameter_info:  [
 				ParamInfo{
-					name:       Utf16String.from_slice(value)
+					name:       name
 					identifier: binding
 				},
 			]
@@ -1900,7 +1900,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 	// Arrow functions always reject duplicate parameter names.
 	p.check_arrow_duplicate_parameters(parameter_info)
 
-	p.register_function_parameters_with_scope(parameters, parameter_info)
+	p.scope_collector.set_function_parameters(parameters, parameter_info)
 
 	fn_kind := if is_async { FunctionKind.async_kind } else { FunctionKind.normal }
 	src_start := source_start_override.offset
@@ -2014,7 +2014,7 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	parsed := p.parse_formal_parameters()
 	p.check_unique_formal_parameters(parsed.parameter_info)
 
-	p.register_function_parameters_with_scope(parsed.parameters, parsed.parameter_info)
+	p.scope_collector.set_function_parameters(parsed.parameters, parsed.parameter_info)
 
 	if method_kind == .getter && parsed.parameters.len > 0 {
 		p.syntax_error('Getter function must have no arguments')

@@ -488,7 +488,7 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	p.pattern_bound_names = []BoundName{}
 
 	parsed := p.parse_formal_parameters()
-	p.register_function_parameters_with_scope(parsed.parameters, parsed.parameter_info)
+	p.scope_collector.set_function_parameters(parsed.parameters, parsed.parameter_info)
 
 	p.flags.in_generator_function_context = in_generator_before
 	p.flags.await_expression_is_valid = await_before
@@ -1139,13 +1139,12 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 				p.syntax_error("'yield' is not allowed as an identifier in this context")
 			}
 			token := p.consume()
-			value := Utf16String.from_slice(p.token_value(token))
-			p.check_identifier_name_for_assignment_validity(value.data, false)
+			name := p.names.intern(p.token_value(token))
+			p.check_identifier_name_for_assignment_validity(name.text.data, false)
 
-			// The parameter's name and its identifier share one copy.
-			id := Identifier.new(p.range_from(formal_parameters_start), value)
+			id := Identifier.new(p.range_from(formal_parameters_start), name.text)
 			parameter_info << ParamInfo{
-				name:            value
+				name:            name
 				is_rest:         rest
 				is_from_pattern: false
 				identifier:      id
@@ -1157,7 +1156,7 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			pat := p.parse_binding_pattern()
 			for bn in p.pattern_bound_names {
 				parameter_info << ParamInfo{
-					name:            bn.name.clone()
+					name:            p.names.intern(bn.name.data)
 					is_rest:         rest
 					is_from_pattern: true
 					identifier:      bn.identifier

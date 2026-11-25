@@ -82,15 +82,6 @@ struct ParameterName {
 	is_rest bool
 }
 
-struct ParameterEntry {
-mut:
-	name                  Utf16String
-	identifier            ?&Identifier
-	is_rest               bool
-	is_from_pattern       bool
-	is_first_from_pattern bool
-}
-
 struct ScopeRecord {
 mut:
 	scope_type  ScopeType
@@ -598,40 +589,59 @@ fn (mut record ScopeRecord) merge_identifier_group(key string, incoming Identifi
 
 // === Function parameters ===
 
-fn (mut sc ScopeCollector) set_function_parameters(entries []ParameterEntry, has_parameter_expressions bool) {
-	index := sc.current
-	if index < 0 {
-		return
+fn (mut sc ScopeCollector) register_parameter_binding(index int, key string, identifier ?&Identifier) {
+	if id := identifier { sc.register_identifier_key(id, key, none) }
+	flags := var_flag_parameter_candidate | var_flag_forbidden_lexical
+	mut variable := unsafe {
+		&sc.records[index].variables[key] or {
+			sc.records[index].variables[key] = ScopeVariable{flags: flags}
+			return
+		}
 	}
-	sc.records[index].has_function_parameters = true
-	sc.records[index].has_parameter_expressions = has_parameter_expressions
+	variable.flags |= flags
+}
 
-	for entry in entries {
-		if entry.is_from_pattern {
-			if entry.is_first_from_pattern {
-				sc.records[index].parameter_names << ParameterName{
-					name:    Utf16String.new()
-					is_rest: false
+fn (mut sc ScopeCollector) set_function_parameters(parameters []FunctionParameter, parameter_info []ParamInfo) {
+	index := sc.current
+	if index < 0 { return }
+	sc.records[index].has_function_parameters = true
+	mut names := []ParameterName{cap: parameters.len}
+	mut has_parameter_expressions := false
+	mut info_index := 0
+	for parameter in parameters {
+		if parameter.default_value != none { has_parameter_expressions = true }
+		match parameter.binding {
+			IdentifierBinding {
+				identifier := parameter.binding.identifier
+				info := if info_index < parameter_info.len {
+					entry := parameter_info[info_index]
+					info_index++
+					entry
+				} else {
+					ParamInfo{name: InternedName{text: identifier.name, key: identifier.name.str()},
+						is_rest: parameter.is_rest}
 				}
-				continue
+				// Parsed names share their read-only identifier text with scope metadata.
+				if !info.is_from_pattern {
+					push_within_capacity(mut names, ParameterName{name: info.name.text, is_rest: info.is_rest})
+				}
+				sc.register_parameter_binding(index, info.name.key, identifier)
 			}
-		} else {
-			sc.records[index].parameter_names << ParameterName{
-				name:    entry.name.clone()
-				is_rest: entry.is_rest
+			BindingPatternBinding {
+				if parameter.binding.pattern.contains_expression() { has_parameter_expressions = true }
+				// Reserve the original formal index. The names inside the pattern
+				// are declared in order and have no individual parameter slots.
+				push_within_capacity(mut names, ParameterName{})
+				for info_index < parameter_info.len && parameter_info[info_index].is_from_pattern {
+					info := parameter_info[info_index]
+					sc.register_parameter_binding(index, info.name.key, info.identifier)
+					info_index++
+				}
 			}
-		}
-		if entry_id := entry.identifier {
-			sc.register_identifier(entry_id, entry.name.data, none)
-		}
-		ekey := entry.name.str()
-		if ekey !in sc.records[index].variables {
-			sc.records[index].variables[ekey] = ScopeVariable{}
-		}
-		unsafe {
-			sc.records[index].variables[ekey].flags |= var_flag_parameter_candidate | var_flag_forbidden_lexical
 		}
 	}
+	sc.records[index].parameter_names = names
+	sc.records[index].has_parameter_expressions = has_parameter_expressions
 
 	// Mark non-parameter names referenced during formal parameter parsing.
 	if has_parameter_expressions {
