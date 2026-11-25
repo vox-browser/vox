@@ -8622,6 +8622,8 @@ fn run_browser(arguments []string) {
 	}
 	main_started := time.sys_mono_now()
 	_ = platform.initialize_browser_heap_policy()
+	css.begin_user_agent_stylesheet_startup()
+	defer { css.discard_user_agent_stylesheet_startup() }
 	browsersettings.initialize(browsersettings.default_path()) or {
 		eprintln('Vox: could not load settings: ${err.msg()}')
 		exit(1)
@@ -8744,6 +8746,9 @@ fn run_browser(arguments []string) {
 	app.prepare_initial_viewport(options.height, options.screenshot_viewport_height)
 	app.install_chrome_widget_input_bridge()
 	main_checkpoint = debug_timing_checkpoint('startup_input_bridge', main_checkpoint)
+	if !defer_remote_navigation {
+		css.finish_user_agent_stylesheet_startup()
+	}
 	if restored_tab.version > 0 {
 		app.restore_detached_tab(restored_tab)
 	} else if markup != '' {
@@ -8821,6 +8826,7 @@ fn run_browser(arguments []string) {
 		native_rendering: $if macos { true } $else { false }
 		init_fn: fn (mut app BrowserApp) {
 			app.initialize_native_window()
+			css.finish_user_agent_stylesheet_startup()
 			app.schedule_native_observation()
 			app.start_browser_update_check()
 		}

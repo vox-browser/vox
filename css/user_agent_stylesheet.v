@@ -4,6 +4,7 @@ import platform
 import os
 import processmetrics
 import runtime
+import sync
 import time
 
 // The user-agent (default) stylesheet, embedded verbatim from Ladybird's CSS/Default.css.
@@ -15,21 +16,34 @@ const user_agent_counter_styles_marker = '/* https://w3c.github.io/predefined-co
 const user_agent_cascade_stylesheet_source = user_agent_stylesheet_source.all_before(user_agent_counter_styles_marker)
 const user_agent_counter_stylesheet_source = user_agent_stylesheet_source.all_after(user_agent_counter_styles_marker)
 
-// The parsed user-agent CSSStyleSheet, built once at startup and shared by every StyleScope's UA rule
-// cache (the sheet is identical for all documents), so documents don't each re-parse Default.css.
+// The user-agent sheets are shared by every StyleScope in the process.
 const user_agent_stylesheets = load_user_agent_stylesheets()
-const user_agent_default_stylesheet = user_agent_stylesheets.default_sheet
 const user_agent_quirks_mode_stylesheet = user_agent_stylesheets.quirks
 const user_agent_mathml_stylesheet = user_agent_stylesheets.mathml
 const user_agent_svg_stylesheet = user_agent_stylesheets.svg
 const sync_user_agent_syntax = os.getenv('VOX_SYNC_UA_STYLESHEET_SYNTAX') == '1'
+const early_user_agent_stylesheet_join = os.getenv('VOX_EARLY_UA_STYLESHEET_JOIN') == '1'
 const user_agent_syntax_diagnostics = os.getenv('VOX_UA_STYLESHEET_DIAGNOSTICS') == '1'
+const deferred_user_agent_startup = use_deferred_user_agent_startup()
+
+__global (
+	user_agent_startup_mutex = sync.new_mutex()
+	user_agent_startup_work &UserAgentSyntaxPreparation
+	deferred_user_agent_default &CSSStyleSheet
+)
 
 struct UserAgentStyleSheets {
-	default_sheet &CSSStyleSheet
 	quirks &CSSStyleSheet
 	mathml &CSSStyleSheet
 	svg &CSSStyleSheet
+mut:
+	default_sheet &CSSStyleSheet = unsafe { nil }
+}
+
+struct UserAgentSyntaxPreparation {
+	ready chan PreparedUserAgentSyntax
+	consumed chan bool
+	worker thread
 }
 
 struct PreparedUserAgentSyntax {
@@ -57,45 +71,71 @@ fn prepare_user_agent_syntax(source string, ready chan PreparedUserAgentSyntax, 
 	_ = <-consumed
 }
 
-fn load_user_agent_stylesheets() UserAgentStyleSheets {
-	stage := processmetrics.begin_instruction_stage('user_agent_stylesheets')
-	defer { stage.finish() }
+fn user_agent_syntax_worker_available() bool {
 	$if macos && prealloc && !vox_css_diagnostics ? {
-		if !sync_user_agent_syntax && !bulk_css_input_probe_diagnostics && runtime.nr_cpus() >= 2 {
-			return load_user_agent_stylesheets_with_worker()
-		}
+		return !sync_user_agent_syntax && !bulk_css_input_probe_diagnostics && runtime.nr_cpus() >= 2
 	}
+	return false
+}
+
+fn use_deferred_user_agent_startup() bool {
+	$if vox_production ? {
+		return !early_user_agent_stylesheet_join && user_agent_syntax_worker_available()
+	}
+	return false
+}
+
+fn load_companion_user_agent_stylesheets() UserAgentStyleSheets {
 	return UserAgentStyleSheets{
-		default_sheet: parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
 		quirks: parse_shared_user_agent_stylesheet(user_agent_quirks_mode_stylesheet_source)
 		mathml: parse_shared_user_agent_stylesheet(user_agent_mathml_stylesheet_source)
 		svg: parse_shared_user_agent_stylesheet(user_agent_svg_stylesheet_source)
 	}
 }
 
-fn load_user_agent_stylesheets_with_worker() UserAgentStyleSheets {
+fn load_user_agent_stylesheets() UserAgentStyleSheets {
+	stage := processmetrics.begin_instruction_stage('user_agent_stylesheets')
+	defer { stage.finish() }
+	if deferred_user_agent_startup {
+		return load_companion_user_agent_stylesheets()
+	}
+	if user_agent_syntax_worker_available() {
+		return load_user_agent_stylesheets_with_worker()
+	}
+	default_sheet := parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
+	mut sheets := load_companion_user_agent_stylesheets()
+	sheets.default_sheet = default_sheet
+	return sheets
+}
+
+fn start_user_agent_syntax_preparation() &UserAgentSyntaxPreparation {
 	// Establish the owner arena before the tokenizer enters worker scratch.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	source := user_agent_cascade_stylesheet_source
 	ready := chan PreparedUserAgentSyntax{cap: 1}
 	consumed := chan bool{}
-	worker := spawn prepare_user_agent_syntax(source, ready, consumed)
-	defer {
-		consumed <- true
-		worker.wait()
-	}
-	quirks := parse_shared_user_agent_stylesheet(user_agent_quirks_mode_stylesheet_source)
-	mathml := parse_shared_user_agent_stylesheet(user_agent_mathml_stylesheet_source)
-	svg := parse_shared_user_agent_stylesheet(user_agent_svg_stylesheet_source)
-	companion_ready := if user_agent_syntax_diagnostics { time.sys_mono_now() } else { u64(0) }
-	prepared := <-ready
+	worker := spawn prepare_user_agent_syntax(user_agent_cascade_stylesheet_source, ready, consumed)
+	return &UserAgentSyntaxPreparation{ready: ready, consumed: consumed, worker: worker}
+}
+
+fn (preparation &UserAgentSyntaxPreparation) release() {
+	preparation.consumed <- true
+	preparation.worker.wait()
+}
+
+fn (preparation &UserAgentSyntaxPreparation) convert() &CSSStyleSheet {
+	defer { preparation.release() }
+	join_started := if user_agent_syntax_diagnostics { time.sys_mono_now() } else { u64(0) }
+	prepared := <-preparation.ready
 	if user_agent_syntax_diagnostics {
 		off_thread := prepared.thread_id != platform.native_thread_identity()
-		eprintln('VOX_UA_STYLESHEET_SYNTAX rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= companion_ready}')
+		eprintln('VOX_UA_STYLESHEET_SYNTAX rules=${prepared.rules.len} off_thread=${off_thread} ready=${prepared.ready_ns <= join_started}')
 	}
 	css_stage := processmetrics.begin_instruction_stage('css_parsing')
 	defer { css_stage.finish() }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	source := user_agent_cascade_stylesheet_source
 	cache_rules := !disable_stylesheet_rule_cache && stylesheet_rule_cache_.eligible(source)
 	deferred := os.getenv('VOX_EAGER_USER_AGENT_DECLARATIONS') == ''
 	if stylesheet_parse_diagnostics {
@@ -107,12 +147,79 @@ fn load_user_agent_stylesheets_with_worker() UserAgentStyleSheets {
 	mut default_sheet := convert_transient_stylesheet_rules(ParsingParams{is_ua_style_sheet: .yes},
 		prepared.rules, none, none, deferred, id)
 	default_sheet.process_lifetime = true
-	return UserAgentStyleSheets{
-		default_sheet: default_sheet
-		quirks: quirks
-		mathml: mathml
-		svg: svg
+	return default_sheet
+}
+
+fn load_user_agent_stylesheets_with_worker() UserAgentStyleSheets {
+	preparation := start_user_agent_syntax_preparation()
+	mut sheets := load_companion_user_agent_stylesheets()
+	sheets.default_sheet = preparation.convert()
+	return sheets
+}
+
+// Bracket the browser setup work before the first document needs UA styles.
+// Other embedders can keep using the ordinary stylesheet accessors.
+pub fn begin_user_agent_stylesheet_startup() {
+	if !deferred_user_agent_startup || !platform.arena_thread_is_current() { return }
+	user_agent_startup_mutex.lock()
+	defer { user_agent_startup_mutex.unlock() }
+	if deferred_user_agent_default == unsafe { nil } && user_agent_startup_work == unsafe { nil } {
+		user_agent_startup_work = start_user_agent_syntax_preparation()
 	}
+}
+
+pub fn finish_user_agent_stylesheet_startup() {
+	if deferred_user_agent_startup {
+		_ = default_user_agent_stylesheet()
+	}
+}
+
+pub fn discard_user_agent_stylesheet_startup() {
+	if !deferred_user_agent_startup || !platform.arena_thread_is_current() { return }
+	user_agent_startup_mutex.lock()
+	preparation := user_agent_startup_work
+	user_agent_startup_work = unsafe { nil }
+	user_agent_startup_mutex.unlock()
+	if preparation != unsafe { nil } { preparation.release() }
+}
+
+fn default_user_agent_stylesheet() &CSSStyleSheet {
+	if user_agent_stylesheets.default_sheet != unsafe { nil } {
+		return user_agent_stylesheets.default_sheet
+	}
+	owner := platform.arena_thread_is_current()
+	user_agent_startup_mutex.lock()
+	current := deferred_user_agent_default
+	mut preparation := unsafe { &UserAgentSyntaxPreparation(nil) }
+	if owner {
+		preparation = user_agent_startup_work
+		user_agent_startup_work = unsafe { nil }
+	}
+	user_agent_startup_mutex.unlock()
+	if current != unsafe { nil } {
+		if preparation != unsafe { nil } { preparation.release() }
+		return current
+	}
+	stage := processmetrics.begin_instruction_stage('user_agent_default_stylesheet')
+	defer { stage.finish() }
+	// Conversion can checkpoint and reenter the browser. Claim a worker's
+	// input under the mutex, then let a reentrant caller parse synchronously.
+	sheet := if preparation != unsafe { nil } {
+		preparation.convert()
+	} else {
+		parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
+	}
+	user_agent_startup_mutex.lock()
+	defer { user_agent_startup_mutex.unlock() }
+	if deferred_user_agent_default == unsafe { nil } {
+		if !owner {
+			persistent := platform.enter_persistent()
+			platform.retain_thread_allocations()
+			platform.leave_persistent(persistent)
+		}
+		deferred_user_agent_default = sheet
+	}
+	return deferred_user_agent_default
 }
 
 __global user_agent_counter_stylesheet &CSSStyleSheet
@@ -140,13 +247,13 @@ pub fn user_agent_counter_style_rules() []&CSSRule {
 // the sheet's list instead of parsing the 90 KiB Default.css source a second
 // time during every process startup.
 pub fn user_agent_rules() []&CSSRule {
-	return user_agent_default_stylesheet.css_rules().rules
+	return default_user_agent_stylesheet().css_rules().rules
 }
 
 // The shared parsed user-agent stylesheet for `url`, or none if that sheet isn't embedded.
 pub fn user_agent_default_style_sheet(url string) ?&CSSStyleSheet {
 	if url == 'CSS/Default.css' {
-		return user_agent_default_stylesheet
+		return default_user_agent_stylesheet()
 	}
 	if url == 'CSS/QuirksMode.css' {
 		return user_agent_quirks_mode_stylesheet

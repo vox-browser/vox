@@ -4,6 +4,48 @@ import dom
 import os
 import platform
 
+fn test_browser_ua_startup_prepares_then_publishes_the_shared_default_sheet() {
+	if !deferred_user_agent_startup { return }
+	assert deferred_user_agent_default == unsafe { nil }
+	begin_user_agent_stylesheet_startup()
+	preparation := user_agent_startup_work
+	assert preparation != unsafe { nil }
+	assert deferred_user_agent_default == unsafe { nil }
+	begin_user_agent_stylesheet_startup()
+	assert voidptr(user_agent_startup_work) == voidptr(preparation)
+	discard_user_agent_stylesheet_startup()
+	assert user_agent_startup_work == unsafe { nil }
+	assert deferred_user_agent_default == unsafe { nil }
+
+	begin_user_agent_stylesheet_startup()
+	sheet := user_agent_default_style_sheet('CSS/Default.css') or { panic('missing default sheet') }
+	assert sheet.process_lifetime
+	assert sheet.rules.length() > 0
+	assert user_agent_startup_work == unsafe { nil }
+	finish_user_agent_stylesheet_startup()
+	assert voidptr(default_user_agent_stylesheet()) == voidptr(sheet)
+	begin_user_agent_stylesheet_startup()
+	assert user_agent_startup_work == unsafe { nil }
+}
+
+fn read_default_ua_sheet_in_worker_scratch() &CSSStyleSheet {
+	scratch := platform.begin_thread_scratch('UA sheet caller scratch')
+	defer { scratch.finish() }
+	return default_user_agent_stylesheet()
+}
+
+fn test_default_ua_sheet_published_by_a_worker_outlives_its_caller() {
+	if !deferred_user_agent_startup { return }
+	previous := deferred_user_agent_default
+	deferred_user_agent_default = unsafe { nil }
+	defer { deferred_user_agent_default = previous }
+	worker := spawn read_default_ua_sheet_in_worker_scratch()
+	sheet := worker.wait()
+	assert voidptr(default_user_agent_stylesheet()) == voidptr(sheet)
+	rule := sheet.rules.item(0) or { panic('missing default rule') }
+	assert rule.css_text() != ''
+}
+
 fn test_user_agent_lazy_rules_serialize_exactly_as_eager_rules() {
 	previous := os.getenv_opt('VOX_EAGER_USER_AGENT_DECLARATIONS')
 	defer {
