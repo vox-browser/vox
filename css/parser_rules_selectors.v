@@ -2090,6 +2090,29 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 }
 
 fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSRule {
+	mut input := rule
+	if parser.component_input_transient {
+		$if prealloc {
+			scratch := platform.begin_thread_scratch('font face descriptor conversion')
+			defer { scratch.finish() }
+			descriptors := parse_font_face_rule_descriptors(rule)?
+			if font_face_descriptors_can_export(descriptors) {
+				scratch.leave()
+				owned := descriptors.map(own_parsed_font_face_descriptor(it))
+				return CSSRule.create_font_face_rule(CSSFontFaceRule.create(&CSSFontFaceDescriptors{
+					descriptors: owned
+				}))
+			}
+		}
+		input = own_transient_rule_tree(Rule(rule)) as AtRule
+	}
+	descriptors := parse_font_face_rule_descriptors(input)?
+	return CSSRule.create_font_face_rule(CSSFontFaceRule.create(&CSSFontFaceDescriptors{
+		descriptors: descriptors
+	}))
+}
+
+fn parse_font_face_rule_descriptors(rule AtRule) ?[]FontFaceDescriptor {
 	// https://drafts.csswg.org/css-fonts/#font-face-rule
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
@@ -2120,7 +2143,7 @@ fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSR
 		append_font_face_descriptor(mut descriptors, descriptor)
 	}
 
-	return CSSRule.create_font_face_rule(CSSFontFaceRule.create(CSSFontFaceDescriptors.create(descriptors)))
+	return descriptors
 }
 
 fn (mut parser RuleSelectorParser) parse_comma_separated_family_name_list(mut tokens ParserTokenStream) ?[]string {

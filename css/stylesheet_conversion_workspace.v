@@ -119,7 +119,7 @@ fn own_transient_rule_prelude(rule Rule) Rule {
 			name := rule.name.to_lower()
 			// Descriptor converters may retain nested component values directly,
 			// including function defaults and font-feature declaration lists.
-			if name in ['font-face', 'font-feature-values', 'counter-style', 'property', 'function',
+			if name in ['font-feature-values', 'counter-style', 'property', 'function',
 				'page', 'keyframes', '-webkit-keyframes'] {
 				return own_transient_rule_tree(rule)
 			}
