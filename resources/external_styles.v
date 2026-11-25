@@ -131,11 +131,16 @@ fn install_external_styles_with_existing_policy(document &dom.Document, base_url
 	return messages
 }
 
+@[params]
+struct BrowserLinkStylesheetOptions {
+	body_is_document_owned bool
+}
+
 // Install the actual link-owned CSSOM sheet before dispatching its completion
 // event. An adjacent synthetic <style> cannot supply LinkStyle.sheet or retain
 // CSSOM edits on the link, and makes late load listeners wait forever. Report
 // whether the owned sheet changed, including removal after a failed replacement.
-fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource) bool {
+fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource, options BrowserLinkStylesheetOptions) bool {
 	mut allocations := link.document().enter_native_storage()
 	defer { allocations.finish() }
 	native_link := unsafe { &dom.HTMLLinkElement(link) }
@@ -147,16 +152,18 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 	address := if resource.final_url == '' { resource.url } else { resource.final_url }
 	mut model := html.html_link_element_model_for_dom_element(native_link)
 	model.set_external_stylesheet_fetcher(true)
-	html.html_link_element_process_stylesheet_resource(native_link,
+	source := if resource.error != '' { '' }
+		else if resource.retained_for_process || options.body_is_document_owned { resource.body }
+		else { resource.body.clone() }
+	model.process_stylesheet_resource(
 		resource.error == '', html.LinkResourceResponse{
 			content_type: content_type
-			body:         resource.body.bytes()
 			original_url: dom.URL{ value: resource.url }
 			url:          dom.URL{ value: address }
 			// The browser adapter does not establish a CORS response. Opaque
 			// sheets may style the page, but their rules must remain private.
 			origin_clean: dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
-		})
+		}, retained_text: source)
 	return previous_sheet != native_link.linked_style_sheet_
 }
 
@@ -199,7 +206,7 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			continue
 		}
 		if resource := app.script_stylesheet_responses[resolved_url] {
-			if complete_browser_link_stylesheet(link, resource) { installed = true }
+			if complete_browser_link_stylesheet(link, resource, body_is_document_owned: true) { installed = true }
 			continue
 		}
 		// The navigation already requested the parser's sheets. One that
@@ -259,7 +266,7 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 	retained := PreloadedResource{
 		...filtered
 		url:              filtered.url.clone()
-		body:             filtered.body.clone()
+		body:             if filtered.retained_for_process { filtered.body } else { filtered.body.clone() }
 		error:            filtered.error.clone()
 		final_url:        filtered.final_url.clone()
 		source_url:       filtered.source_url.clone()
@@ -288,7 +295,7 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		}
 		resolved := css.link_style_sheet_url(link.get_attribute_value('href'), app.document.base_url().serialize()) or { continue }
 		if resolved != resource.url { continue }
-		if complete_browser_link_stylesheet(link, retained) { installed = true }
+		if complete_browser_link_stylesheet(link, retained, body_is_document_owned: true) { installed = true }
 		app.script_stylesheet_links[link.as_node().unique_id()] = resolved
 	}
 	return installed

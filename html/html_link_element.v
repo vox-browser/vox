@@ -34,6 +34,14 @@ pub:
 	origin_clean bool = true
 }
 
+@[params]
+pub struct LinkStylesheetResponseOptions {
+pub:
+	// Immutable response text whose storage outlives the link's loaded sheet.
+	// Byte responses are copied once when the source has no such owner.
+	retained_text ?string
+}
+
 // V counterparts of HTMLLinkElement::LinkProcessingOptions and the Fetch
 // request fields written by create_link_request/setup steps. Fetch itself is
 // kept behind LinkResourceFetchHook, but the observable request construction
@@ -804,7 +812,7 @@ pub fn (mut link HTMLLinkElementModel) process_icon_resource(success bool, url d
 	}
 }
 
-pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succeeded bool, response LinkResourceResponse) {
+pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succeeded bool, response LinkResourceResponse, options LinkStylesheetResponseOptions) {
 	if element := link.element_ {
 		if !link_dom_element(element).document().is_fully_active() {
 			return
@@ -827,7 +835,8 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 	}
 	link.clear_loaded_style_sheet()
 	if success {
-		link.loaded_style_sheet_ = response.body.bytestr()
+		text := options.retained_text or { response.body.bytestr() }
+		link.loaded_style_sheet_ = text
 		if element := link.element_ {
 			location := response.original_url or {
 				response.url or {
@@ -835,7 +844,7 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 				}
 			}
 			resource_url := response.url or { location }
-			mut sheet := css.install_link_style_sheet_with_base(element, response.body.bytestr(),
+			mut sheet := css.install_link_style_sheet_with_base(element, text,
 				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_,
 				resource_url.serialize())
 			sheet.base.origin_clean = response.origin_clean
