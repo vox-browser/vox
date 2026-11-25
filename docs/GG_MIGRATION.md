@@ -14682,6 +14682,15 @@ ThreadSanitizer and the pinned 2,500-draw glyph check passed. The archived
 Hacker News replay confirmed worker activity and byte-for-byte output.
 [Striped blend measurements](LOAD_PARALLELISM.md#retained-glyph-blending-across-pixel-stripes)
 
+### Parallel SVG background multisampling bounds
+
+Raster workers compute path bounds from resource-owned SVG scenes in
+disjoint slots. The browser thread prepares the scenes and assembles
+triggers in display-list order. The 23 focused multisampling tests and
+shared raster scan worker tests passed. The archived Hacker News phase
+produced 57 identical triggers, with 54 jobs across three lanes.
+[Hacker News timings](LOAD_PARALLELISM.md#svg-background-multisampling-bounds)
+
 ### Parallel CPU image scaling
 
 Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to

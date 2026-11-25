@@ -961,3 +961,57 @@ was `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
 Use the load benchmark command above with
 `--ready-selector tr.athing --repeat 7 --screenshot-scale 2 --js-engine javascriptcore --control-env VOX_SERIAL_GLYPH_BLEND=1`.
 The diagnostic used `VOX_GLYPH_BLEND_DIAGNOSTICS=1` in its own launch.
+
+### SVG background multisampling bounds
+
+Static SVG backgrounds keep resource-owned scene commands after layout.
+The raster plan batches their path bounds in groups of up to 256 jobs.
+Workers read the retained commands and write separate trigger slots.
+The browser thread prepares mutable scenes, joins the workers and
+compacts the triggers in display-list order. The shared worker pool uses
+up to four lanes. The serial control is `VOX_SERIAL_MSAA_PATHS=1`.
+
+Before the change, a production capture of the archived Hacker News homepage
+identified 56 root-layer triggers from SVG backgrounds. The focused replay
+then used the archived HTML with its archived stylesheet inlined, registered
+the archived images under their original URLs, and recorded at 1024×768 CSS
+pixels. The resulting list contained 554 commands and 57 triggers. A separate
+diagnostic scheduled 54 path jobs in three lanes, with 36 jobs off the caller
+in its first batch. The serial and parallel trigger lists matched exactly.
+
+The focused build used the C backend with `-prealloc -gc none` and ran 200
+passes per process over the prepared list and warm SVG scenes. These
+unprofiled times include trigger collection and the worker join.
+They exclude layout, GPU rendering and PNG encoding.
+
+| Pair | Serial, µs per pass | Parallel, µs per pass |
+| ---: | ---: | ---: |
+| 1 | 146.946 | 163.043 |
+| 2 | 163.197 | 189.790 |
+| 3 | 156.961 | 171.820 |
+| 4 | 147.425 | 165.579 |
+| 5 | 165.720 | 164.192 |
+| 6 | 156.300 | 169.149 |
+| 7 | 142.999 | 162.190 |
+| 8 | 145.643 | 169.362 |
+| 9 | 147.900 | 157.083 |
+| Median | 147.900 | 165.579 |
+
+The median dispatch and collection cost increased by 17.7 µs for this
+workload. The one-minute host load was 28.30–28.94 on 18 CPUs. All 18
+fresh processes and their 3 GiB guard exited zero. Peak aggregate RSS was
+139,100,160 bytes. The archive manifest SHA was
+`e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` and
+the replay executable SHA was
+`5dfe651c0b074d4c0f283009bc4a09c461ee77ea147c3084e3de59287647dfef`.
+
+All 23 focused multisampling tests passed. The batch test preserved
+clipping and trigger order across a 256-job batch with 192 off-thread
+jobs and a 28-job tail. The shared raster scan worker tests also passed.
+Production receipt `20261125-072247-4031dc62` sealed the new source and
+was compiling at the end of the focused measurements. For the full-page
+comparison, use the load benchmark command with
+`--ready-selector tr.athing --repeat 7 --screenshot-scale 2 --js-engine javascriptcore --control-env VOX_SERIAL_MSAA_PATHS=1`.
+Use `VOX_MSAA_TILE_DIAGNOSTICS=1` in a separate diagnostic to verify activity.
+Batches of independent path geometry now use workers. Raster submission
+and publication still depend on the browser thread.
