@@ -162,3 +162,85 @@ fn test_staged_ascii_shapes_follow_scope_and_native_font_lifetime() {
 	assert !jobs[0].prepared()
 	assert active_ascii_shape_batch() == unsafe { nil }
 }
+
+struct TestASCIIShapeTicket {
+	jobs []ASCIIShapeJob
+mut:
+	joins int
+}
+
+fn join_test_ascii_shape_ticket(ticket voidptr) bool {
+	mut work := unsafe { &TestASCIIShapeTicket(ticket) }
+	work.joins++
+	shape_ascii_job_range(work.jobs.data, 0, i32(work.jobs.len))
+	return false
+}
+
+fn test_pending_ascii_shapes_join_at_matching_cache_miss_and_only_once() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}
+	other := &Font{family: 'SerenitySans', point_size: 16, font_rendering_policy: .chromium}
+	text := 'AV office finish  '
+	expected := shape_text_uncached(0, 0, 0, text, font, .ltr)
+	jobs := prepare_ascii_shape_jobs([ASCIIShapeRequest{text, font}])
+	assert jobs.len == 1
+	mut work := TestASCIIShapeTicket{jobs: jobs}
+	mut scope := stage_ascii_shape_jobs(jobs,
+		worker_ticket: &work
+		join_workers: join_test_ascii_shape_ticket
+	)
+	defer { scope.finish() }
+	_ = shape_text_with_spacing(0, 0, 0, 'Different phrase', font, .ltr)
+	_ = shape_text_with_spacing(0, 0, 0, text, other, .ltr)
+	assert work.joins == 0
+	actual := shape_text_with_spacing(0, 0, 0, text, font, .ltr)
+	assert work.joins == 1
+	assert actual.glyph_run.glyphs_ == expected.glyph_run.glyphs_
+	assert actual.trailing_whitespace == expected.trailing_whitespace
+	scope.finish()
+	assert work.joins == 1
+}
+
+fn test_pending_ascii_scopes_join_before_font_cache_retirement() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}
+	text := 'Retained paragraph text'
+	outer_jobs := prepare_ascii_shape_jobs([ASCIIShapeRequest{text, font}])
+	inner_jobs := prepare_ascii_shape_jobs([ASCIIShapeRequest{'Nested phrase', font}])
+	mut outer_work := TestASCIIShapeTicket{jobs: outer_jobs}
+	mut inner_work := TestASCIIShapeTicket{jobs: inner_jobs}
+	mut outer := stage_ascii_shape_jobs(outer_jobs,
+		worker_ticket: &outer_work
+		join_workers: join_test_ascii_shape_ticket
+	)
+	defer { outer.finish() }
+	mut inner := stage_ascii_shape_jobs(inner_jobs,
+		worker_ticket: &inner_work
+		join_workers: join_test_ascii_shape_ticket
+	)
+	defer { inner.finish() }
+	release_unused_text_shaping()
+	assert inner_work.joins == 1 && outer_work.joins == 1
+	inner.finish()
+	assert take_ascii_shape_job(shaping_cache_font_key(font), text, ShapeParams.new(.ltr, 0, 0)) == none
+	outer.finish()
+	assert inner_work.joins == 1 && outer_work.joins == 1
+	assert !inner_jobs[0].prepared() && !outer_jobs[0].prepared()
+}
+
+fn test_unused_pending_ascii_shapes_join_and_release_at_scope_exit() {
+	platform_shaping_cache = &ShapingCache{}
+	font := &Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}
+	text := 'Unused prepared text'
+	jobs := prepare_ascii_shape_jobs([ASCIIShapeRequest{text, font}])
+	mut work := TestASCIIShapeTicket{jobs: jobs}
+	mut scope := stage_ascii_shape_jobs(jobs,
+		worker_ticket: &work
+		join_workers: join_test_ascii_shape_ticket
+	)
+	scope.finish()
+	assert work.joins == 1
+	assert !jobs[0].prepared()
+	mut cache := shared_shaping_cache()
+	assert cache.lookup(shaping_cache_font_key(font), text, ShapeParams.new(.ltr, 0, 0)) == none
+}

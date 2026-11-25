@@ -41,12 +41,22 @@ struct ASCIIShapeBatch {
 	first_by_text   map[string]int
 	font_generation u64
 	previous        &ASCIIShapeBatch
+	join_workers    fn (voidptr) bool = unsafe { nil }
+mut:
 	staged          int
+	worker_ticket   voidptr
 }
 
 pub struct ASCIIShapeScope {
 mut:
 	batch &ASCIIShapeBatch = unsafe { nil }
+}
+
+@[params]
+pub struct ASCIIShapeStageOptions {
+pub:
+	worker_ticket voidptr
+	join_workers  fn (voidptr) bool = unsafe { nil }
 }
 
 fn active_ascii_shape_batch() &ASCIIShapeBatch {
@@ -64,43 +74,47 @@ fn (mut job ASCIIShapeJob) take() ASCIIShapeJob {
 	return result
 }
 
-// Keep native results in this layout's ownership scope. Each matching cache
-// miss takes the glyphs or the buffer needed to build them. The cache copies
-// the glyphs into its own storage.
-pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
-	mut first_by_text := map[string]int{}
-	caller := if parallel_ascii_shape_diagnostics { native_thread_identity() } else { u64(0) }
+fn (batch &ASCIIShapeBatch) report_jobs() int {
+	caller := native_thread_identity()
 	mut staged := 0
 	mut off_thread := 0
 	mut strikes := 0
 	mut strikes_off_thread := 0
 	mut decoded := 0
 	mut decoded_off_thread := 0
+	mut threads := map[u64]bool{}
+	for index in 0 .. batch.jobs.len {
+		job := unsafe { &batch.jobs[index] }
+		if !job.prepared() { continue }
+		staged++
+		threads[job.thread_id] = true
+		if job.thread_id != caller { off_thread++ }
+		if job.advance_count > 0 {
+			strikes++
+			if job.thread_id != caller { strikes_off_thread++ }
+		}
+		if job.glyph_count > 0 {
+			decoded++
+			if job.thread_id != caller { decoded_off_thread++ }
+		}
+	}
+	eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${batch.jobs.len} staged=${staged} off_thread=${off_thread} strikes=${strikes} strikes_off_thread=${strikes_off_thread} decoded=${decoded} decoded_off_thread=${decoded_off_thread} threads=${threads.len}')
+	return staged
+}
+
+// The layout owns the inputs until finish(). With a worker ticket, only read
+// the immutable keys until the first matching cache miss joins the workers.
+pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob, options ASCIIShapeStageOptions) ASCIIShapeScope {
+	assert options.worker_ticket == unsafe { nil } || (jobs.len > 0 && options.join_workers != unsafe { nil })
+	mut first_by_text := map[string]int{}
+	mut staged := 0
 	for index in 0 .. jobs.len {
 		mut job := unsafe { &jobs[index] }
-		if !job.prepared() { continue }
+		if options.worker_ticket == unsafe { nil } && !job.prepared() { continue }
 		text := job.request.text
 		job.next_for_text = first_by_text[text]
 		first_by_text[text] = index + 1
 		staged++
-		if parallel_ascii_shape_diagnostics {
-			if job.thread_id != caller { off_thread++ }
-			if job.advance_count > 0 {
-				strikes++
-				if job.thread_id != caller { strikes_off_thread++ }
-			}
-			if job.glyph_count > 0 {
-				decoded++
-				if job.thread_id != caller { decoded_off_thread++ }
-			}
-		}
-	}
-	if parallel_ascii_shape_diagnostics {
-		mut threads := map[u64]bool{}
-		for job in jobs {
-			if job.prepared() { threads[job.thread_id] = true }
-		}
-		eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${jobs.len} staged=${staged} off_thread=${off_thread} strikes=${strikes} strikes_off_thread=${strikes_off_thread} decoded=${decoded} decoded_off_thread=${decoded_off_thread} threads=${threads.len}')
 	}
 	if staged == 0 { return ASCIIShapeScope{} }
 	batch := &ASCIIShapeBatch{
@@ -109,15 +123,41 @@ pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
 		font_generation: harfbuzz_cache_generation
 		previous: active_ascii_shape_batch()
 		staged: staged
+		worker_ticket: options.worker_ticket
+		join_workers: options.join_workers
+	}
+	if parallel_ascii_shape_diagnostics && options.worker_ticket == unsafe { nil } {
+		batch.report_jobs()
 	}
 	C.vox_ascii_shape_batch_set(batch)
 	return ASCIIShapeScope{batch: batch}
 }
 
+fn (mut batch ASCIIShapeBatch) join_pending_workers(reason string) {
+	if batch.worker_ticket == unsafe { nil } { return }
+	ready := batch.join_workers(batch.worker_ticket)
+	batch.worker_ticket = unsafe { nil }
+	if parallel_ascii_shape_diagnostics {
+		batch.staged = batch.report_jobs()
+		eprintln('VOX_LAYOUT_ASCII_SHAPE_JOIN reason=${reason} ready=${ready}')
+	}
+}
+
+fn join_pending_ascii_shape_batches() {
+	// Idle cache maintenance can retire the shared HarfBuzz handles. Join
+	// every active scope before destroying them, including an outer layout.
+	mut batch := active_ascii_shape_batch()
+	for batch != unsafe { nil } {
+		batch.join_pending_workers('font_cache')
+		batch = batch.previous
+	}
+}
+
 pub fn (mut scope ASCIIShapeScope) finish() {
-	batch := scope.batch
+	mut batch := scope.batch
 	if batch == unsafe { nil } { return }
 	assert voidptr(active_ascii_shape_batch()) == voidptr(batch)
+	batch.join_pending_workers('scope_exit')
 	C.vox_ascii_shape_batch_set(batch.previous)
 	mut discarded := 0
 	for index in 0 .. batch.jobs.len {
@@ -138,13 +178,14 @@ fn take_ascii_shape_job(font_key string, text string, params ShapeParams) ?ASCII
 	if params.text_type != .ltr || params.letter_spacing_bits != 0 || params.word_spacing_bits != 0 {
 		return none
 	}
-	batch := active_ascii_shape_batch()
+	mut batch := active_ascii_shape_batch()
 	if batch == unsafe { nil } || batch.font_generation != harfbuzz_cache_generation { return none }
 	mut link := batch.first_by_text[text]
 	for link > 0 {
 		mut job := unsafe { &batch.jobs[link - 1] }
-		if job.prepared() && job.font_key == font_key {
-			return job.take()
+		if job.font_key == font_key {
+			batch.join_pending_workers('first_use')
+			if job.prepared() { return job.take() }
 		}
 		link = job.next_for_text
 	}
@@ -162,7 +203,7 @@ fn ascii_harfbuzz_decode_params(text string, font &Font) HarfBuzzDecodeParams {
 }
 
 // Resolve the normal cache and native font keys on the owner thread. The
-// synchronous batch borrows font handles while the owner leaves them alone.
+// batch borrows font handles until the worker group joins.
 pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest) []ASCIIShapeJob {
 	mut jobs := []ASCIIShapeJob{cap: requests.len}
 	mut seen := map[string]bool{}

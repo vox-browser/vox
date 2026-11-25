@@ -109,16 +109,28 @@ $if macos && !cpuraster_freetype ? {
 			expected << shaped.glyph_run.glyphs().clone()
 			whitespace << shaped.trailing_whitespace
 		}
-		platform.release_unused_text_shaping()
-		jobs := platform.prepare_ascii_shape_jobs(phrases.map(platform.ASCIIShapeRequest{it, font}))
-		assert jobs.len == phrases.len
-		assert run_raster_ranges_with_caller(jobs.data, jobs.len, 4, platform.shape_ascii_job_range) >= 2
-		mut batch := platform.stage_ascii_shape_jobs(jobs)
-		defer { batch.finish() }
-		for index, phrase in phrases {
-			shaped := platform.shape_text_with_spacing(0, 0, 0, phrase, font, .ltr)
-			assert shaped.glyph_run.glyphs() == expected[index]
-			assert shaped.trailing_whitespace == whitespace[index]
+		for background in [false, true] {
+			platform.release_unused_text_shaping()
+			jobs := platform.prepare_ascii_shape_jobs(phrases.map(platform.ASCIIShapeRequest{it, font}))
+			assert jobs.len == phrases.len
+			mut batch := if background {
+				ticket, lanes := start_background_raster_ranges(jobs.data, jobs.len, 4,
+					platform.shape_ascii_job_range)
+				assert lanes >= 2 && ticket != unsafe { nil }
+				platform.stage_ascii_shape_jobs(jobs,
+					worker_ticket: ticket
+					join_workers: join_background_raster_range
+				)
+			} else {
+				assert run_raster_ranges_with_caller(jobs.data, jobs.len, 4, platform.shape_ascii_job_range) >= 2
+				platform.stage_ascii_shape_jobs(jobs)
+			}
+			for index, phrase in phrases {
+				shaped := platform.shape_text_with_spacing(0, 0, 0, phrase, font, .ltr)
+				assert shaped.glyph_run.glyphs() == expected[index]
+				assert shaped.trailing_whitespace == whitespace[index]
+			}
+			batch.finish()
 		}
 	}
 }

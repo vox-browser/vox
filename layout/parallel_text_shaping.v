@@ -8,6 +8,7 @@ import processmetrics
 
 const serial_ascii_layout_shaping = os.getenv('VOX_SERIAL_ASCII_LAYOUT_SHAPING') == '1'
 const eager_ascii_layout_shaping = os.getenv('VOX_EAGER_ASCII_LAYOUT_SHAPING') == '1'
+const sync_ascii_layout_shaping = os.getenv('VOX_SYNC_ASCII_LAYOUT_SHAPING') == '1'
 const two_lane_ascii_layout_shaping = os.getenv('VOX_TWO_LANE_ASCII_LAYOUT_SHAPING') == '1'
 const ascii_layout_shaping_jobs = 64
 
@@ -32,6 +33,16 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 			3
 		} else {
 			4
+		}
+		if !eager_ascii_layout_shaping && !sync_ascii_layout_shaping {
+			ticket, _ := cpuraster.start_background_raster_ranges(jobs.data, jobs.len, lanes,
+				platform.shape_ascii_job_range)
+			if ticket != unsafe { nil } {
+				return platform.stage_ascii_shape_jobs(jobs,
+					worker_ticket: ticket
+					join_workers: cpuraster.join_background_raster_range
+				)
+			}
 		}
 		if cpuraster.run_raster_ranges_with_caller(jobs.data, jobs.len, lanes,
 			platform.shape_ascii_job_range) == 0 {
