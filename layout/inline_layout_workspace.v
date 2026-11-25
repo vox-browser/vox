@@ -42,6 +42,10 @@ fn inline_layout_workspace_is_closed(node &Node, root bool) bool {
 // Nodes and fonts already have their own retained owners. Collect run identities
 // before entering that owner so the temporary deduplication table stays local.
 fn own_inline_layout_lines(lines []LineBox) []LineBox {
+	return clone_inline_layout_lines(lines, true)
+}
+
+fn clone_inline_layout_lines(lines []LineBox, into_document bool) []LineBox {
 	mut run_indexes := map[u64]int{}
 	mut source_runs := []&platform.GlyphRun{}
 	for line_index in 0 .. lines.len {
@@ -58,7 +62,11 @@ fn own_inline_layout_lines(lines []LineBox) []LineBox {
 		}
 	}
 	mut owned_runs := []&platform.GlyphRun{len: source_runs.len, init: unsafe { nil }}
-	mut retained := platform.enter_retained_allocations()
+	mut retained := if into_document {
+		platform.enter_retained_allocations()
+	} else {
+		platform.RetainedAllocationScope{}
+	}
 	defer { retained.finish() }
 	for index in 0 .. source_runs.len {
 		owned_runs[index] = source_runs[index].clone_for_layout()

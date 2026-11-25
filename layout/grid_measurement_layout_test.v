@@ -321,7 +321,8 @@ fn committed_grid_test_reused(state &LayoutState, cached &GridMeasurementLayout)
 	for entry in cached.values {
 		if entry.values.line_boxes.len == 0 { continue }
 		if used := state.try_get(entry.node) {
-			if used.line_boxes.data == entry.values.line_boxes.data { return true }
+			if used.line_boxes_are_shared_
+				&& published_line_boxes_equal(used.line_boxes, entry.values.line_boxes) { return true }
 		}
 	}
 	return false
