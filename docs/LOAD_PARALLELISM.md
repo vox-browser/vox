@@ -2481,3 +2481,98 @@ including the favicon miss. The executable, AVIF library, worker
 helper, archive and driver hashes stayed pinned. Browser, driver
 and 3 GiB guard exits were zero. Peak aggregate timing RSS was
 378,142,720 bytes.
+
+### Open cold frame glyph strikes in parallel
+
+Commit `c172ea42b` lets the cold prefetch coordinator open independent
+CoreText strikes on up to four threads. It groups the immutable run
+descriptors first, opens fonts in disjoint slots and joins before
+selecting or drawing masks. If an open fails or encounters a color
+face, it releases the opened fonts and retries collection in run
+order so later usable strikes can take the available slots.
+`VOX_SERIAL_FRAME_GLYPH_FONT_OPENS=1` keeps the same stages and opens
+the strikes in sequence on the coordinator.
+
+The production type check, arena-poisoned tests and ThreadSanitizer
+passed. The focused tests compare serial pixels and verify that a
+missing first face still admits four usable strikes, including an
+eligible run outside the initial four candidates.
+
+#### Retained Hacker News text replay
+
+Receipt `20261125-121959-2712ca82` supplied the archived homepage
+capture. Its PNG and all 30 ordered story IDs matched the references.
+The 332 retained draws reproduced the fixture log SHA-256
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The single-C-unit V `-prod` replay used the first 32 eligible runs for
+prefetch, joined immediately and drew all 332 runs with a fresh cache.
+Both modes used `VOX_ARENA_POISON=1`. The executable SHA-256 was
+`526630a063372cbdc6e7acd026815a481de0a676d58763a5c44a46ddc1f1a492`.
+
+In seven instrumented pairs, the candidate opened four strikes from
+four distinct threads and the control used one. Both selected and
+published 107 masks on four raster lanes. A separate seven-pair cohort
+timed the full prefetch and raster intervals with diagnostics off.
+Both cohorts alternated their modes in fresh processes.
+
+| Pair | Serial opens, ms | Parallel opens, ms | Serial prefetch, ms | Parallel prefetch, ms | Serial raster, ms | Parallel raster, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 0.429 | 0.218 | 2.062 | 2.001 | 7.749 | 7.684 |
+| 2 | 0.296 | 0.223 | 2.246 | 2.032 | 8.133 | 7.976 |
+| 3 | 0.260 | 0.252 | 2.048 | 1.933 | 7.964 | 8.002 |
+| 4 | 0.233 | 0.213 | 2.111 | 2.091 | 7.958 | 7.794 |
+| 5 | 0.360 | 0.209 | 2.083 | 2.075 | 7.786 | 7.924 |
+| 6 | 0.236 | 0.231 | 2.196 | 2.062 | 7.939 | 7.941 |
+| 7 | 0.280 | 0.234 | 2.133 | 1.957 | 8.150 | 7.767 |
+| Median | 0.280 | 0.223 | 2.111 | 2.032 | 7.958 | 7.924 |
+
+The uninstrumented paired median changes were −0.115 ms through
+the join and −0.065 ms through all draws. The parallel mode finished
+the full replay first in four pairs. Host load was 6.06 on 18 CPUs.
+All 28 runs matched the reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+The binary, the Verdana font files and all 333 captured inputs stayed
+pinned. Capture, build, replay and guard exits were zero. The 3 GiB
+replay guard recorded 46,907,392 bytes peak aggregate RSS.
+
+#### Matched production captures
+
+Receipt `20261125-123322-d3696956` sealed `c172ea42b`, passed startup
+smoke and published the single-C-unit V `-prod` executable SHA-256
+`c2873282cbc96bcb93758e4f291a416abf892e6c7f2c2087eac34dcdd7f677a5`.
+The production diagnostic confirmed four font-opening threads in the
+candidate and one in the control. Opening took 0.084 and 0.046 ms,
+respectively, in this instrumented pair. Both modes published all 107
+masks before text replay, with 98 jobs overlapping earlier commands.
+The remaining text used 192 mask jobs in 27 batches. Neither mode
+needed a font fallback, and both captured all 30 story IDs in order.
+
+The timed runs measured fresh launch through the encoded 1024×768
+CSS-pixel PNG at 2× scale. They used JavaScriptCore, fresh private
+profiles and HTTP caches, retained OS filesystem caches and an
+identical 60 ms replay delay on each logo response. The reversed
+cohort started with serial opens. Both modes kept frame prefetch on.
+
+| Pair | Serial, ms | Parallel, ms | Reversed serial, ms | Reversed parallel, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 298.440 | 308.796 | 336.723 | 298.348 |
+| 2 | 303.119 | 300.846 | 340.442 | 311.624 |
+| 3 | 291.822 | 273.490 | 327.780 | 317.201 |
+| 4 | 282.928 | 311.074 | 316.720 | 324.823 |
+| 5 | 300.561 | 311.509 | 325.025 | 337.724 |
+| 6 | 300.731 | 315.757 | 323.313 | 321.711 |
+| 7 | 322.433 | 315.325 | 324.637 | 329.010 |
+| Median | 300.561 | 311.074 | 325.025 | 321.711 |
+
+Paired median changes were +10.356 ms and −1.602 ms. Parallel opens
+finished first in three and four pairs. Host load was 4.68–5.03 and
+5.51–6.11 on 18 CPUs. The browser timings show mixed latency effects.
+Frame prefetch remains opt-in.
+
+All 28 timed and both diagnostic launches matched reference PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight replay request and response records matched in every run,
+including the favicon miss. The executable, AVIF library, adblock
+helper, archive and driver hashes stayed pinned. Each browser, driver
+and 3 GiB guard exited zero. Peak aggregate timing RSS was
+418,168,832 bytes.
