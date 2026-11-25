@@ -549,8 +549,10 @@ window. This endpoint cannot measure display scanout.
 The input windows lasted 12.609 and 12.774 seconds. The browsers, both
 drivers, and the 3 GiB guard exited 0. The guard observed a peak
 1,428,291,584 B of process-tree RSS. One-minute load was 5.81→5.72 and
-5.72→7.12. The new bundle still stalls for more than two seconds and
-misses most frame deadlines. Host load and bundled changes differ from
+5.72→7.12. Most scroll-changing intervals exceeded one 60 Hz frame budget.
+The schedule can reach the bottom before reversing. The table's maximum
+interval measures changes in scroll position and includes that stationary
+time, as the later trace confirms. Host load and bundled changes differ from
 the previous trials, so the throughput difference has no engine attribution.
 
 A separate candidate rendered clipped output rectangles for single Gaussian
@@ -569,3 +571,168 @@ of dirty untagged mappings, 108.0 MiB of dirty WebKit Malloc regions, and
 23.3 MiB of dirty graphics-owned unmapped memory. The snapshot classifies
 the mappings by VM tag. It cannot identify their owners within the engine.
 Vox, `vmmap`, the driver, and the 3 GiB guard exited 0.
+
+## Arena ownership and dataset replies
+
+A separate probe on the same `b0a6ad63` executable tracked live V arena
+block headers, including headers for recycled mappings. It matched the
+allocator's caller address against the pinned executable and sampled the
+live cursors at the 38-second sampling point. Both launches used private
+profiles and caches and the same live page, viewport and scale as the
+earlier memory comparison. A block's stack describes where it grew. Its
+byte count includes subsequent allocations that share the block.
+
+| Launch | Content audit | Native document arena used | Unscoped arena used | Browser / driver / guard exits |
+| --- | --- | ---: | ---: | --- |
+| 1 | Missing 384 bytes of item notes, 133 images | 357.95 MiB | 109.12 MiB | 0 / 1 / 1 |
+| 2 | Complete patch, 133 images | 316.04 MiB | 108.97 MiB | 0 / 0 / 0 |
+
+The complete launch had 292 document blocks with 323.41 MiB of capacity.
+The probe tracked 110,415 header creations and 109,874 retirements, with
+no dropped records. The 3 GiB guards observed 1,057,587,200 B and
+1,073,315,840 B of peak RSS with the probe active. These runs describe
+arena owners under instrumentation. The earlier process-tree footprint
+comparison used separate runs.
+
+Stylesheet conversion, CSS invalidation publication, and committed layout
+replay grew the document arena. The complete launch included 7.00 MiB of
+block use attributed to the stack building attribute snapshots for
+`dataset` replies. Those attribute maps only need to survive the host's
+copy into JavaScript.
+
+`c7f907fc5` retires dataset request and reply storage together. Native
+attribute names, values and mutations remain document-owned. Focused
+tests covered repeated replies containing a large unrelated attribute,
+live native writes, SVG attribute names, and deletion. Eight repeated
+reads retained less than 8 KiB in the document arena. All tests passed
+with the reply and request workspaces poisoned, and both C compile and
+runtime guards exited 0.
+
+`2093b2408` lets a fresh CSS rule cache grow its unpublished invalidation
+match sets in place. An extension of an existing cache and the general
+plan union retain their copy-on-write behavior. The focused fixture built
+128 descendant and 128 sibling selectors with shared prefixes. It
+retained 298,069 B with the unpublished path and 2,206,549 B with the
+existing merge. Both produced the same dependency graph. Invalidation
+workspace, subset union, and cache extension tests passed normally and
+with temporary selector storage poisoned. The C compile and runtime guards
+exited 0.
+
+### Live comparison on the dataset bundle
+
+The single-unit C `-prod` dataset bundle had executable SHA-256
+`c4ba7ebc9356d98497cda34e851ee5fb00bc9c1718d2c889380cb337a42ff924`.
+The sealed inputs and executable contained the dataset workspace. The
+build started before the CSS invalidation change. Nine SVG reftests were
+pixel-exact on the installed bundle, including same-size image replacement
+and paint-server updates. The screenshot driver and its 3 GiB guard
+exited 0.
+
+A fresh Brave–Vox pair used the extended readiness protocol above. Both
+browsers had 15,620 raw text bytes and matched the normalized text checksum,
+133 images, the patch title, and the viewport at the first 23-second
+checkpoint. The Vox AVIF library and Brave executable, framework and
+helpers retained their previous hashes. The final windows contained 56
+Brave and 57 Vox physical footprint samples.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 289,824,784 B | 845,373,480 B | 0 |
+| Vox | 728,354,632 B | 1,182,732,872 B | 0 |
+
+The driver and guard exited 0. The 3 GiB guard observed 1,380,139,008 B of
+peak process-tree RSS. One-minute load was 65.49→63.86 and 63.86→54.54 on
+the 18-CPU host. The RAM target remains open. This build contains other
+engine changes and ran under higher host load than the preceding pair.
+
+### Scroll boundary audit
+
+Two full live runs on the dataset bundle used the previous 720-event
+schedule with reversal after input 540. Both reached the bottom at
+13,791.5 CSS pixels on input 416 and stayed there until input 541.
+Each run published 238 completed frames at the same position between
+those two scroll changes. The longest gap between completed frames
+was 161.34 ms and 203.63 ms respectively. This corrects the earlier
+interpretation of the roughly two-second gaps between position changes
+as rendering stalls. The original timing measurements remain above.
+
+| Run | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 14.33 | 57.61 / 88.05 / 2,093.95 ms | 177/186 | 720 / 444 | 55.38 Hz | 66.67 / 82.66 ms |
+| 2 | 9.86 | 85.97 / 148.98 / 2,089.34 ms | 130/138 | 720 / 388 | 51.38 Hz | 81.80 / 76.73 ms |
+
+The input windows lasted 12.982 and 13.993 seconds. Both browser and driver
+exits and the 3 GiB guard exit were 0. The guard observed 1,439,662,080 B
+of peak RSS. One-minute load was 30.20→23.16 and 23.16→17.01.
+
+### Scroll before reaching the bottom
+
+The corrected schedule reverses after input 360 and keeps all other input
+parameters the same. The dataset bundle's two fresh launches completed
+the patch audit and reached 12,029 and 12,025 CSS pixels. Both stayed
+above the page bottom of 13,791.5 CSS pixels.
+
+| Run | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 12.27 | 86.03 / 123.09 / 175.56 ms | 161/173 | 720 / 196 | 50.99 Hz | 103.80 / 184.94 ms |
+| 2 | 10.56 | 98.99 / 143.69 / 208.41 ms | 138/151 | 720 / 170 | 50.30 Hz | 108.35 / 183.28 ms |
+
+The full input windows lasted 14.100 and 14.294 seconds. The longest
+intervals between any completed frame publications were 173.10 ms and
+205.30 ms. One-minute load was 15.85→15.91 and 15.91→36.79. Both browsers,
+both drivers, and the 3 GiB guard exited 0. The guard observed a peak
+1,401,405,440 B of process-tree RSS. Most scroll-changing intervals still
+missed the 60 Hz frame budget.
+
+A separate run of the corrected schedule sampled the main thread during
+frames that exceeded 75 ms. The complete live document produced 113 slow
+frames and 577 samples, with no dropped samples or thread snapshot failures.
+CSS filter completion appeared in 437 samples. Core Image rendering appeared
+in 276 of those samples, and filter source import appeared in 73. These
+counts describe the instrumented slow frames. The throughput table uses the
+two runs without profiling. The browser, driver, and guard exited 0. The
+guard observed 1,393,377,280 B of peak RSS and one-minute host load was
+51.13→53.81.
+
+### Live comparison with both memory fixes
+
+The production build requested at `7c6562f89` included the dataset and CSS
+invalidation changes. Its single-unit C `-prod` executable SHA-256 was
+`4087f96569a5011531befbe58071b20ae101e6e83aeeaa002859e4b68e21c72f`.
+The build and startup check exited 0.
+
+The next readiness-controlled live pair used the same identity and content
+checks. Brave and Vox both matched the entire patch at the first 23-second
+checkpoint. Each settled window contained 56 physical footprint samples.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 384,589,888 B | 871,030,680 B | 0 |
+| Vox | 707,432,312 B | 1,162,842,744 B | 0 |
+
+Vox used 1.84 times Brave's settled footprint in this pair. The driver and
+3 GiB guard exited 0, with 1,369,325,568 B of sampled peak RSS. One-minute
+host load was 50.25→42.38 and 42.38→32.51. This bundle also includes
+other engine changes, so these data do not isolate either fix's effect.
+
+The class and `:has()` invalidation reftests matched their pixel references
+on both bundles. The pseudo-class test differed from its upstream reference
+by the same 1,875 pixels on both. The upstream comparison exited 1 on each
+bundle. All three actual PNG files were byte-for-byte equal across the
+bundles. The extra comparison using the prebuilt pixel tool aborted with
+exit 134. Comparing the PNG bytes established the same-output check.
+
+Two more live launches of this build completed the patch audit and ran
+the corrected schedule. They reached 12,060.5 and 12,026 CSS pixels.
+
+| Run | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 10.79 | 97.00 / 140.12 / 198.06 ms | 145/157 | 720 / 177 | 49.43 Hz | 104.48 / 181.64 ms |
+| 2 | 10.90 | 95.64 / 141.77 / 211.81 ms | 145/156 | 720 / 175 | 50.26 Hz | 94.10 / 190.52 ms |
+
+The input windows lasted 14.546 and 14.305 seconds, with maximum gaps
+between completed frame publications of 194.95 and 208.25 ms. One-minute
+host load was 86.59→58.05 and 58.05→52.74. Both browser and driver exits
+and the 3 GiB guard exit were 0. The guard observed 1,485,225,984 B of
+peak RSS. Host contention and bundled changes limit timing attribution.
+The scroll runs still show repeated missed frame deadlines.
