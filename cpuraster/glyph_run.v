@@ -5,7 +5,7 @@ import os
 
 const glyph_position_validation_diagnostics = os.getenv('VOX_GLYPH_POSITION_VALIDATION_DIAGNOSTICS') == '1'
 const glyph_position_bounds_diagnostics = os.getenv('VOX_GLYPH_POSITION_BOUNDS_DIAGNOSTICS') == '1'
-const serial_retained_glyph_bounds = os.getenv('VOX_SERIAL_RETAINED_GLYPH_BOUNDS') == '1'
+const reuse_retained_glyph_bounds = os.getenv('VOX_REUSE_RETAINED_GLYPH_BOUNDS') == '1'
 
 // Canvas2D fillText() glyph runs, as skia/canvas_raster.cpp's
 // vox_skia_canvas_glyphs() draws them with LibWeb Skia: an SkFont at the
@@ -162,7 +162,7 @@ pub fn prepare_checked_retained_glyph_positions(source []f64, mut positions []f3
 
 fn canvas_glyph_position_bounds(positions []f32, coordinates int, validation GlyphPositionValidation,
 	checked bool) Rect {
-	if checked && !serial_retained_glyph_bounds {
+	if checked && reuse_retained_glyph_bounds {
 		if glyph_position_bounds_diagnostics {
 			eprintln('VOX_GLYPH_POSITION_BOUNDS_REUSED coordinates=${coordinates}')
 		}
