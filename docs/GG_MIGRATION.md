@@ -14675,6 +14675,13 @@ The padded in-place conversion, retained-text reference and ThreadSanitizer
 tests passed. The pinned 2,500-draw glyph check again completed with 2,459 exact
 draws and 41 declines. The 3 GiB guard exited zero. [Replay timings](LOAD_PARALLELISM.md#glyph-bounds-and-alpha-conversion-on-raster-workers)
 
+Retained text also blends large batches of A8 masks across disjoint pixel
+stripes. The focused checks compared overlapping, clipped masks on padded
+targets in both stripe directions and in low and high precision.
+ThreadSanitizer and the pinned 2,500-draw glyph check passed. The archived
+Hacker News replay confirmed worker activity and byte-for-byte output.
+[Striped blend measurements](LOAD_PARALLELISM.md#retained-glyph-blending-across-pixel-stripes)
+
 ### Parallel CPU image scaling
 
 Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to

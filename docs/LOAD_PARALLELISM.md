@@ -829,6 +829,93 @@ ran across four threads, nine across three, 13 across two and two on a
 single thread.
 
 The shared production attempt `20261125-063523-f43f35ba` rejected changed
-repository inputs before C preprocessing. The production comparisons
-remain pending while the shared worker retries. The timings above measure
-retained text replay with the captured inputs.
+repository inputs before C preprocessing. The timings above measure retained
+text replay with the captured inputs.
+
+### Whole-page glyph mask comparison
+
+Production receipt `20261125-065539-e305edb5` published commit `4aad4baa6`
+as a single C unit with V `-prod`. The executable SHA-256 was
+`2bf74b5de62aaf33a0b2e1c538bab9bda8afe89fecb8af683dd218d42e2b3849`.
+The bundled AVIF library and the archive manifest matched the earlier
+baseline fingerprints. Three cohorts ran seven alternating fresh-process
+pairs at 1024×768 CSS pixels and 2× scale, with JavaScriptCore, private
+profiles and HTTP caches, loopback archive replay and a complete PNG
+endpoint. The serial control set `VOX_SERIAL_GLYPH_MASKS=1` on the same
+executable. OS filesystem and shader caches were retained.
+
+One serial process in the first cohort fetched `y18.svg` twice. The initial
+cohort failed the matched-request gate and the wrapper exited 1. All 14
+browsers exited zero and matched the established document PNG digest.
+Both repeats retained the same endpoint and matched every request
+URL, response status, and body hash, including one archived-replay 404 for
+`/favicon.ico` per process. All 28 repeat browsers and both 3 GiB guards
+exited zero. The full PNG digest remained
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+A separate audit verified all 30 story IDs in order and observed 34 glyph
+worker batches, including batches with four threads.
+
+| Pair | First serial, ms | First parallel, ms | Second serial, ms | Second parallel, ms | Third serial, ms | Third parallel, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 426.64 | 439.60 | 423.84 | 459.24 | 523.54 | 531.18 |
+| 2 | 445.15 | 429.51 | 392.70 | 391.96 | 517.45 | 512.58 |
+| 3 | 462.59 | 457.93 | 430.72 | 428.31 | 509.78 | 525.54 |
+| 4 | 427.07 | 449.04 | 434.81 | 467.91 | 524.82 | 493.04 |
+| 5 | 485.60 | 429.06 | 472.53 | 464.44 | 520.66 | 508.04 |
+| 6 | 417.30 | 438.73 | 497.82 | 464.26 | 559.55 | 501.70 |
+| 7 | 432.31 | 428.96 | 459.41 | 474.56 | 517.33 | 487.34 |
+| Median | 432.31 | 438.73 | 434.81 | 464.26 | 520.66 | 508.04 |
+
+The second cohort's main-thread CPU median was 269.97 ms serial and
+284.74 ms parallel. Its median sampled time with at least two busy threads
+rose from 13.16 to 17.84 ms and main-thread share fell from 74.2% to 73.2%.
+In the third cohort, main-thread CPU medians were 311.88 and 309.28 ms,
+with main-thread shares of 74.9% and 73.8%. Parallel finished first in three
+of seven pairs in the second cohort and five of seven in the third.
+One-minute host load was 45.03–45.47, 25.31–27.32 and 25.53–28.61,
+respectively. The two request-matched launch-to-PNG medians changed in
+opposite directions.
+
+### Retained glyph blending across pixel stripes
+
+Large retained text runs with a solid paint now batch their A8 blits and
+partition the clipped destination along its longer dimension. Each worker
+replays the masks in original order within its own stripe. Overlapping
+glyphs keep their per-pixel blend order and worker writes are disjoint.
+The path starts at 24 glyphs and at least 8,192 clipped mask pixels. It
+uses up to four lanes and the existing low- or high-precision raster
+pipeline. Set `VOX_SERIAL_GLYPH_BLEND=1` for the serial blend control.
+
+The captured 332 retained draws were replayed with the same optimized C
+flags and a fresh strike cache for each process. The prior code, the new
+code with the serial blend control, and the striped blend rotated over 12
+rounds. The timer includes the CPU glyph renderer and excludes Quartz
+publication, input reading and output hashing.
+
+| Round | Previous blend, ms | New serial, ms | Striped, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 15.652 | 15.413 | 13.877 |
+| 2 | 14.531 | 12.884 | 13.173 |
+| 3 | 16.025 | 14.668 | 16.270 |
+| 4 | 16.004 | 18.238 | 20.946 |
+| 5 | 17.096 | 18.263 | 14.849 |
+| 6 | 17.362 | 17.728 | 17.069 |
+| 7 | 17.469 | 18.658 | 18.405 |
+| 8 | 18.215 | 17.213 | 19.453 |
+| 9 | 18.710 | 17.860 | 18.129 |
+| 10 | 17.763 | 18.358 | 16.940 |
+| 11 | 18.198 | 16.944 | 18.458 |
+| 12 | 17.424 | 18.277 | 18.348 |
+| Median | 17.393 | 17.794 | 17.599 |
+
+The host's one-minute load was 29.09 on 18 CPUs throughout. All 36 processes
+and the 3 GiB guard exited zero, with the same RGBA digest as the preceding
+replay. The executable SHA-256 values were
+`9b1b642bffe50fceb6b348dc0b8683330b9ff930272f7a07d22d3847e3a4f2eb`
+and `5aaabee0fdf3d5a16bdc859cd1b83405257403a96ba40713210df34665b1091c`.
+The binaries, captured inputs and fonts stayed pinned. A separate probe
+observed 17 striped batches, with four on four threads, seven on three
+and six on two. The timing ranges overlap and the previous blend was
+faster in six rounds. The production cohort above measures the earlier
+mask workers. Production timing for striped blending requires the next
+bundle.
