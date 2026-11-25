@@ -35,7 +35,7 @@ fn (mut app BrowserApp) sampled_profiled_webp_decode(url string, image &gg.Image
 		|| width > 4096 || height > 4096 {
 		return none
 	}
-	bytes := app.background_image_bytes(url) or { return none }
+	bytes := app.background_image_decode_bytes(url) or { return none }
 	if !profiled_webp_sampling_supported(bytes, image) { return none }
 	mut dw, mut dh := image.width, image.height
 	if width < image.width || height < image.height {
@@ -45,7 +45,8 @@ fn (mut app BrowserApp) sampled_profiled_webp_decode(url string, image &gg.Image
 	}
 	// A native-size GPU upload is reusable across raster scopes. Keep smaller
 	// CPU decodes scoped, but do not forget a full upload when changing tiles.
-	native_key := '\x00profiled-webp-native-upload:${u64(voidptr(app.document))}:${app.navigation_generation}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	digest := sha256.sum(bytes).hex()
+	native_key := '\x00profiled-webp-native-upload:${u64(voidptr(app.document))}:${app.navigation_generation}:${url}:${digest}'
 	if id := app.background_image_ids[native_key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.data != unsafe { nil }
@@ -53,7 +54,7 @@ fn (mut app BrowserApp) sampled_profiled_webp_decode(url string, image &gg.Image
 			return ProfiledWebPUpload{previous, true}
 		}
 	}
-	key := '\x00profiled-webp-upload:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	key := '\x00profiled-webp-upload:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${digest}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.data != unsafe { nil }

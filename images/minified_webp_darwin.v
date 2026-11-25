@@ -45,7 +45,7 @@ fn (mut app BrowserApp) draw_minified_webp(command &layout.PaintCommand, image &
 	if !math.is_finite(ox) || !math.is_finite(oy) || ox != math.floor(ox) || oy != math.floor(oy) {
 		return false
 	}
-	bytes := app.background_image_bytes(url) or { return false }
+	bytes := app.background_image_decode_bytes(url) or { return false }
 	if !lossy_webp_sampling_dimensions_match(bytes, image.width, image.height) || !app.webp_complete_yuv_allowed(url, bytes) {
 		return false
 	}

@@ -26,7 +26,7 @@ fn (mut app BrowserApp) draw_sampled_jpeg(command &layout.PaintCommand, image &g
 	}
 	for radius in clip[4..] { if radius != f32(destination.width) * .5 { return false } }
 	dw, dh := imageraster.decode_size(image.width, image.height, f64(destination.width), f64(destination.height)) or { return false }
-	bytes := app.background_image_bytes(url) or { return false }
+	bytes := app.background_image_decode_bytes(url) or { return false }
 	if !yuv.jpeg_plane_orientation_supported(bytes) { return false }
 	key := '\x00scaled-planar-jpeg:${fastsha256.sum(bytes).hex()}:${dw}x${dh}'
 	mut decoded := &gg.Image{}

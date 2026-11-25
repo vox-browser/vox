@@ -5149,10 +5149,24 @@ fn paint_commands_contain_backdrop_filter(commands []layout.PaintCommand) bool {
 }
 
 fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
+	return app.background_image_resource_bytes(image_url, false)
+}
+
+// Raster callers only read the encoded bytes. A retained response can be
+// borrowed even when its cache entry is replaced during a later replay.
+fn (app &BrowserApp) background_image_decode_bytes(image_url string) ![]u8 {
+	return app.background_image_resource_bytes(image_url, true)
+}
+
+fn (app &BrowserApp) background_image_resource_bytes(image_url string, borrow_retained bool) ![]u8 {
 	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
 	// Filtering a retained resource applies the same request filter first.
 	if resource := app.resource_cache[image_url] {
-		return filter_preloaded_resource(resource, source_url, 'image')!.body.bytes()
+		filtered := filter_preloaded_resource(resource, source_url, 'image')!
+		if borrow_retained && filtered.retained_for_process {
+			return unsafe { filtered.body.str.vbytes(filtered.body.len) }
+		}
+		return filtered.body.bytes()
 	}
 	if image_url.starts_with('http://') || image_url.starts_with('https://') {
 		filtered := browsernet.filter(adblock.Request{url: image_url, source_url: source_url, request_type: 'image'})!
@@ -5222,7 +5236,7 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 					return image
 				}
 			}
-			path := browser_cache_entry_path(browser_cache_root(), 'decoded-images', image_url + '\n' + sha256.hexhash(bytes.bytestr()))
+			path := browser_cache_entry_path(browser_cache_root(), 'decoded-images', image_url + '\n' + sha256.sum(bytes).hex())
 			if !os.is_file(path) {
 				write_browser_cache_entry(path, bytes.bytestr())
 			}
@@ -5425,7 +5439,7 @@ fn (mut app BrowserApp) background_image_uncached(image_url string) ?&gg.Image {
 	} else if !image_url.contains('://') && !image_url.starts_with('data:') && os.is_file(image_url) {
 		app.create_local_image_with_profile(image_url, image_url) or { return none }
 	} else {
-		bytes := app.background_image_bytes(image_url) or { return none }
+		bytes := app.background_image_decode_bytes(image_url) or { return none }
 		app.create_image_from_resource_bytes(image_url, bytes) or { return none }
 	}
 	app.background_image_ids[cache_key] = image.id
@@ -5479,7 +5493,7 @@ fn (mut app BrowserApp) force_dark_image_for_url(image_url string,
 			return filtered
 		}
 	}
-	bytes := app.background_image_bytes(image_url) or {
+	bytes := app.background_image_decode_bytes(image_url) or {
 		app.force_dark_image_states[key] = 1
 		return original
 	}

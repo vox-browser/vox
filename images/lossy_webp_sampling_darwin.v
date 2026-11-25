@@ -28,7 +28,7 @@ fn (mut app BrowserApp) sampled_lossy_webp_decode(url string, image &gg.Image,
 			|| (width == image.width / 2 && height == image.height / 2)) {
 		return none
 	}
-	bytes := app.background_image_bytes(url) or { return none }
+	bytes := app.background_image_decode_bytes(url) or { return none }
 	if !lossy_webp_sampling_dimensions_match(bytes, image.width, image.height)
 		|| !app.webp_complete_yuv_allowed(url, bytes) {
 		return none

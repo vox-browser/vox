@@ -27,7 +27,7 @@ fn (mut app BrowserApp) draw_sampled_jpegxl_circle(command &layout.PaintCommand,
 	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
 	left, top := geometry.x + page_x, geometry.y + page_y - f32(scroll_y)
 	if left != math.floor(left) || top != math.floor(top) { return false }
-	bytes := app.background_image_bytes(url) or { return false }
+	bytes := app.background_image_decode_bytes(url) or { return false }
 	if !image_bytes_are_jpegxl(bytes) { return false }
 	return C.native_draw_sampled_png(image.data, i32(image.width), i32(image.height),
 		i32(image.width), i32(image.height), 7, geometry.x, geometry.y,

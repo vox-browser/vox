@@ -37,7 +37,7 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	dw, dh := sampled_png_decode_size(image.width, image.height, raster_extent, decode_extent) or {
 		return none
 	}
-	bytes := app.background_image_bytes(url) or { return none }
+	bytes := app.background_image_decode_bytes(url) or { return none }
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
 	mut gpu_mips := profile.gamma > 0
 	if os.getenv('VOX_DIAGNOSTIC_PNG_GPU_MIPS') == '1' { gpu_mips = true }
