@@ -36,6 +36,36 @@ fn sibling_invalidation_rules_equal(a &SiblingInvalidationRule, b &SiblingInvali
 		&& invalidation_plans_equal(a.payload, b.payload)
 }
 
+// Most rule lists fit in one word. Track each matched entry independently so
+// unordered comparison still distinguishes duplicates.
+struct InvalidationRuleMatches {
+mut:
+	first u64
+	remaining []u64
+}
+
+fn invalidation_rule_matches(count int) InvalidationRuleMatches {
+	if count <= 64 { return InvalidationRuleMatches{} }
+	return InvalidationRuleMatches{
+		remaining: []u64{len: (count - 1) / 64}
+	}
+}
+
+fn (matches &InvalidationRuleMatches) has(index int) bool {
+	bit := u64(1) << (index % 64)
+	if index < 64 { return matches.first & bit != 0 }
+	return matches.remaining[index / 64 - 1] & bit != 0
+}
+
+fn (mut matches InvalidationRuleMatches) add(index int) {
+	bit := u64(1) << (index % 64)
+	if index < 64 {
+		matches.first |= bit
+	} else {
+		matches.remaining[index / 64 - 1] |= bit
+	}
+}
+
 fn invalidation_plans_equal(a &InvalidationPlan, b &InvalidationPlan) bool {
 	if voidptr(a) == voidptr(b) { return true }
 	if a == unsafe { nil } || b == unsafe { nil } { return false }
@@ -54,13 +84,13 @@ fn invalidation_plans_equal(a &InvalidationPlan, b &InvalidationPlan) bool {
 		}
 	}
 	if !descendants_ordered {
-		mut matched := []bool{len: b.descendant_rules.len}
+		mut matched := invalidation_rule_matches(b.descendant_rules.len)
 		for rule in a.descendant_rules {
 			mut found := false
 			for index in 0 .. b.descendant_rules.len {
-				if !matched[index]
+				if !matched.has(index)
 					&& descendant_invalidation_rules_equal(&rule, &b.descendant_rules[index]) {
-					matched[index] = true
+					matched.add(index)
 					found = true
 					break
 				}
@@ -76,13 +106,13 @@ fn invalidation_plans_equal(a &InvalidationPlan, b &InvalidationPlan) bool {
 		}
 	}
 	if !siblings_ordered {
-		mut matched := []bool{len: b.sibling_rules.len}
+		mut matched := invalidation_rule_matches(b.sibling_rules.len)
 		for rule in a.sibling_rules {
 			mut found := false
 			for index in 0 .. b.sibling_rules.len {
-				if !matched[index]
+				if !matched.has(index)
 					&& sibling_invalidation_rules_equal(&rule, &b.sibling_rules[index]) {
-					matched[index] = true
+					matched.add(index)
 					found = true
 					break
 				}
