@@ -386,26 +386,30 @@ fn (mut p Parser) eat(tt TokenType) bool {
 }
 
 fn (mut p Parser) check_arguments_or_eval(token Token) {
-	if token.token_type == .identifier && !p.flags.previous_token_was_period {
-		value := if id_val := token.identifier_value {
-			id_val.data
-		} else {
-			start := int(token.value_start)
-			end := start + int(token.value_len)
-			if end <= p.source.len {
-				p.source[start..end]
-			} else {
-				[]u16{}
-			}
+	if token.token_type != .identifier || p.flags.previous_token_was_period {
+		return
+	}
+	value := if id_val := token.identifier_value {
+		id_val.data
+	} else {
+		// Unescaped names have their final UTF-16 length in the token span.
+		if token.value_len != 'arguments'.len && token.value_len != 'eval'.len {
+			return
 		}
-		if utf16_equals_ascii(value, 'arguments') {
-			if p.flags.in_class_field_initializer {
-				p.syntax_error("'arguments' is not allowed in class field initializer")
-			}
-			p.flags.function_might_need_arguments_object = true
-		} else if utf16_equals_ascii(value, 'eval') {
-			p.flags.function_might_need_arguments_object = true
+		start := int(token.value_start)
+		end := start + int(token.value_len)
+		if end > p.source.len {
+			return
 		}
+		p.source[start..end]
+	}
+	if utf16_equals_ascii(value, 'arguments') {
+		if p.flags.in_class_field_initializer {
+			p.syntax_error("'arguments' is not allowed in class field initializer")
+		}
+		p.flags.function_might_need_arguments_object = true
+	} else if utf16_equals_ascii(value, 'eval') {
+		p.flags.function_might_need_arguments_object = true
 	}
 }
 

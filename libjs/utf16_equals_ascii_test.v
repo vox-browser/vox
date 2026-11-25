@@ -26,3 +26,10 @@ fn test_escaped_ascii_identifiers_still_mark_the_implicit_arguments_object() {
 	mut script := Script.parse('function f(a){return \\u0061rguments[0]};f(42)', vm.realm(), 'ascii-identifiers.js', unsafe { nil })!
 	assert vm.run(mut script)!.number == 42
 }
+
+fn test_escaped_eval_spelling_marks_the_implicit_arguments_object() {
+	parsed := parse_source('function f() { return \\u0065val("1"); }', .script)
+	assert !parsed.has_errors()
+	function := parsed.function_table.entries[0] or { panic('Missing function') }
+	assert function.parsing_insights.might_need_arguments_object
+}

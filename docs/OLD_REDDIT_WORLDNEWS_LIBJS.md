@@ -711,3 +711,61 @@ profile reached `complete` at Reddit's login page, `Welcome to Reddit`.
 It exposed zero listing posts and reported two unsupported `data:` script
 URLs. The browser and guard exited zero. Live listing performance remains
 unverified.
+
+## Checking identifier spelling by token length
+
+The archived production profile reached `check_arguments_or_eval` while
+LibJS was consuming identifiers. An ordinary name can spell `eval` or
+`arguments` only if its token span has the corresponding UTF-16 length.
+The parser now checks that length before slicing source. Escaped names use
+their decoded code units. The focused regression checks an escaped `eval`
+call alongside the existing escaped `arguments` coverage.
+All four focused test files and all 100 upstream AST fixtures passed with
+Boehm and `-gc none`. Both default full-package attempts stopped at the
+existing FastC-generated C error in `absent_property_set_test.v`.
+
+A separate debugger run on the candidate reached the length branch on a
+one-code-unit name in the archived main Reddit bundle. Single-unit `-prod`
+C standalone builds used `-prealloc -gc none` and the browser's parser
+recursion limit. Each process read the five pinned script bodies before
+timing, then parsed them eight times. The instruction counts cover the
+parser thread during those repetitions, and elapsed times are per set.
+
+| Pair | Control thread instructions | Candidate thread instructions | Control parse (ms) | Candidate parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,865,575,811 | 6,791,664,843 | 112.606 | 108.164 |
+| 2 | 6,899,276,608 | 6,823,448,354 | 122.761 | 127.344 |
+| 3 | 6,851,353,475 | 6,784,853,414 | 127.651 | 119.177 |
+| 4 | 6,849,258,671 | 6,831,091,268 | 126.469 | 111.958 |
+| 5 | 6,882,197,547 | 6,833,854,897 | 132.283 | 110.305 |
+| 6 | 6,914,859,836 | 6,861,607,690 | 113.008 | 111.477 |
+| 7 | 6,934,045,978 | 6,871,954,832 | 116.300 | 107.909 |
+| Median | 6,882,197,547 | 6,831,091,268 | 122.761 | 111.477 |
+
+Median parser-thread instructions fell **0.74%**, or 6.39 million per
+set of scripts. The candidate used fewer instructions in all seven pairs
+and finished sooner in six. The 18-core host's one-minute load ranged
+from 57.42 to 63.07. All 14 processes and the 3 GiB guard exited zero.
+The control and candidate SHA-256 values were
+`da6c93735f6c9c693cb95d89d673fe006e6486b119d8fcd00dcacc1380401c39`
+and `39fbdab42f22ead85199388d9c8d436f65980c63cacefc8040030c1cf3c74edb`.
+
+An earlier experiment added a direct cache for one-character ASCII interned
+names. The same standalone protocol gave these results on the 18-core host
+at one-minute loads of 158.44–161.21. All 14 processes and the guard exited
+zero. The candidate SHA-256 was
+`92848d65ed148d39ecd086968938f1300a5f3fe2c3cbfb9950019f205b8474d0`.
+
+| Pair | Control thread instructions | Cache thread instructions | Control parse (ms) | Cache parse (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 7,053,577,221 | 6,935,354,412 | 243.099 | 268.669 |
+| 2 | 6,963,531,767 | 6,958,932,428 | 115.921 | 118.437 |
+| 3 | 6,947,292,124 | 6,962,341,982 | 111.593 | 126.272 |
+| 4 | 6,992,674,588 | 6,972,303,555 | 117.350 | 141.572 |
+| 5 | 7,036,140,988 | 7,014,426,669 | 118.582 | 123.849 |
+| 6 | 7,010,200,371 | 6,990,607,406 | 137.007 | 130.818 |
+| 7 | 7,001,776,963 | 6,991,186,526 | 156.899 | 144.237 |
+| Median | 7,001,776,963 | 6,972,303,555 | 118.582 | 130.818 |
+
+The cache experiment was dropped after median elapsed time rose 12.24 ms
+and five pairs took longer. Its median instruction count fell 0.42%.
