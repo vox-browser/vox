@@ -3619,3 +3619,79 @@ viewport and all 30 ordered story IDs. Executable, native library,
 helper, archive and driver hashes stayed pinned. The browser
 processes, driver and 3 GiB guard exited zero. Peak aggregate RSS
 was 391,675,904 bytes.
+
+### Parse default user-agent stylesheet syntax on a worker
+
+Commit `7c6562f89` moves tokenization and raw-rule parsing for the default
+user-agent stylesheet to a worker on macOS preallocated builds. The
+browser thread parses the quirks, MathML and SVG sheets in parallel.
+It then converts the default sheet to CSSOM and publishes the rule-cache
+entry. The worker keeps its scratch arena alive through conversion and
+retires it before startup proceeds. `VOX_SYNC_UA_STYLESHEET_SYNTAX=1`
+selects the synchronous control.
+
+The worker-built sheet serialized rule for rule after its source arena
+was poisoned, including the retained text used by lazy declarations.
+The stylesheet rule-cache and shared user-agent cache-template tests
+passed with arena poisoning. ThreadSanitizer passed on the same
+preallocated worker path.
+
+#### Production captures with stylesheet syntax on a worker
+
+Receipt `20261125-165201-97a22bf9` sealed `7c6562f89`, passed startup
+smoke and published a single-C-unit V `-prod` build. Both modes used
+that executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `4087f96569a5011531befbe58071b20ae101e6e83aeeaa002859e4b68e21c72f` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both worker diagnostics recorded 157 raw rules off the browser
+thread. The worker was still running when the owner reached the join
+in both launches. Separate counter diagnostics recorded the following
+inclusive browser-thread instruction counts.
+
+| Pair | Sync UA initialization | Worker UA initialization | Sync style update | Worker style update |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 11,661,301 | 7,475,159 | 347,020,005 | 347,636,061 |
+| 2 | 11,646,885 | 7,670,135 | 346,509,228 | 342,016,702 |
+
+UA initialization instructions dropped by 35.9% and 34.1%. The
+document style update still took 342–348 million instructions.
+
+Two unprofiled cohorts alternated fresh launches through the completed
+document PNG. The reversed cohort started with the synchronous mode.
+Both used JavaScriptCore, a 1024×768 CSS-pixel viewport at 2× scale,
+private empty profiles and HTTP caches, retained OS filesystem caches
+and a 60 ms replay delay per logo response.
+
+| Pair | Sync, ms | Worker, ms | Reversed sync, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 469.268 | 470.009 | 479.856 | 486.667 |
+| 2 | 488.223 | 495.537 | 481.414 | 460.132 |
+| 3 | 757.842 | 565.811 | 480.541 | 487.212 |
+| 4 | 790.703 | 606.100 | 480.264 | 480.776 |
+| 5 | 557.182 | 584.718 | 497.809 | 613.261 |
+| 6 | 583.935 | 586.850 | 486.343 | 599.735 |
+| 7 | 501.662 | 535.424 | 515.170 | 499.833 |
+| Median | 557.182 | 565.811 | 481.414 | 487.212 |
+
+Paired median changes were +2.915 and +6.671 ms, with two worker
+wins per cohort. Sampled browser-thread CPU medians were
+312.808 → 334.738 ms and 292.772 → 293.112 ms. One-minute host load
+was 46.16–52.53 and 39.64–46.16 on 18 CPUs. These cohorts showed a
+launch-to-PNG regression under contention. A 150-second wait for
+one-minute load at or below 18 ended at 65.38, leaving the timing
+comparison limited to the two contended cohorts.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and the same eight replay records, including the favicon miss.
+The diagnostic captures verified the URL, ready state, viewport
+and all 30 ordered story IDs. Executable, native library, helper,
+archive and driver hashes stayed pinned. All browsers, the driver
+and the 3 GiB guard exited zero. Peak aggregate RSS was 399,130,624
+bytes.
