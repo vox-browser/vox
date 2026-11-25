@@ -1491,3 +1491,106 @@ Preparation rose from 2,770,698 to 2,953,751, and inclusive geometry fell
 from 174,917,384 to 174,850,467. These scopes include tracing overhead.
 Style resolution, line placement, glyph publication, and native frame
 submission still execute on the browser thread.
+
+#### More workers for initial text shaping
+
+Commit `334b43aa2` uses four lanes for a cold batch of at least 24 runs,
+three for 16–23 runs, and two for 8–15 runs, within the CPU count and
+raster worker limit. It explicitly submits the background ranges to
+Grand Central Dispatch and shapes the final range on the browser thread.
+The browser thread joins the workers before publishing or retiring the
+prepared shapes. The candidate selection and cache keys are unchanged.
+`VOX_TWO_LANE_ASCII_LAYOUT_SHAPING=1` selects the two-lane control.
+
+The focused tests exercise uneven partitions, the serial raster setting,
+exact glyph and whitespace equality, and the existing image and mask
+blur paths. The range and shaping checks also passed with ThreadSanitizer
+and with preallocation and arena poisoning.
+
+The focused benchmark extracted 27 eligible title strings from the
+archived homepage and shaped them in Verdana at 13⅓ CSS pixels. A fresh
+process timed dispatch through worker join, excluding font preparation
+and cache publication. It exercised the production shaping callback on
+a small non-`-prod` C test executable using preallocation. The two-lane
+probe shaped 13 titles off-thread. Four lanes shaped 20 off-thread and
+used four distinct threads. Both modes consumed all 27 results and
+produced 1,345 glyphs with the same playback and width checksum
+`74745bc03b491318`, including in the arena-poisoned probes.
+
+| Pair | Two lanes, ms | Four lanes, ms |
+| ---: | ---: | ---: |
+| 1 | 0.282 | 0.325 |
+| 2 | 0.455 | 0.253 |
+| 3 | 0.446 | 0.355 |
+| 4 | 0.292 | 0.346 |
+| 5 | 0.291 | 0.219 |
+| 6 | 0.289 | 0.319 |
+| 7 | 0.278 | 0.215 |
+| 8 | 0.289 | 0.223 |
+| 9 | 0.281 | 0.306 |
+| 10 | 0.301 | 0.223 |
+| 11 | 0.296 | 0.323 |
+| Median | 0.291 | 0.306 |
+
+The median paired change was −0.063 ms, with four lanes faster in six
+pairs. The timings are mixed. All 24 processes and the 3 GiB guard exited
+zero. Host load was 5.30 on 18 CPUs. The test executable stayed pinned at
+`f903a34d78a3645b29234010f9d3c24c538981a419db5a2a7d3d9a0691a7d1bb`,
+and the extracted title input at
+`77fcc2b20ff0bbc1bfd1cc10829c3cee41ad4cbe05d44cb20608928d205452aa`.
+
+Three production attempts stopped on changed checkout inputs before
+sealing C. These were receipts `20261125-090719-ee1219c8`,
+`20261125-090949-e49d7858`, and `20261125-091102-bdfc7600`. The
+second identified a regenerated LibJS corpus tool C file. The shared
+worker retried from the canonical checkout.
+
+Production receipt `20261125-091339-20c7aecc` sealed `cf32affec`, which
+includes the four-lane change. This single-C-unit V `-prod` build passed
+the native startup smoke and published executable SHA
+`0fb8d34da40c266b0235bb9512bfddc81db775d8b7a6e4d3b9be17dce9297e82`.
+The AVIF library SHA was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+The diagnostic pair confirmed that the default used four distinct threads
+and shaped, measured, and decoded 21 of 28 runs off the browser thread.
+The two-lane setting used two threads and did 14 of 28 runs off-thread.
+Both consumed all 28 results and verified all 30 ordered story IDs
+after the document reached complete readiness. Main-thread instructions
+for preparing the shapes dropped from 2,874,059 to 1,695,296. Flow layout
+rose from 150,432,963 to 150,774,198 while inclusive geometry fell from
+174,890,951 to 174,102,692. These scopes include tracing overhead.
+
+Two separate seven-pair cohorts alternated the default and the two-lane
+control on that same executable. The second cohort started with the
+two-lane process to reverse the order in odd-numbered pairs. The timer
+ends when the document PNG is complete, starting from a fresh launch
+with JavaScriptCore, an empty private profile and HTTP cache, 1024×768
+CSS pixels at 2× scale, and the same 60 ms replay delay for each logo
+response. OS filesystem caches were retained.
+
+| Pair | Two lanes, ms | Four lanes, ms | Reversed two lanes, ms | Reversed four lanes, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 350.198 | 327.332 | 327.244 | 340.545 |
+| 2 | 357.562 | 354.536 | 323.299 | 332.081 |
+| 3 | 350.228 | 330.103 | 350.815 | 333.711 |
+| 4 | 338.023 | 352.153 | 363.146 | 345.238 |
+| 5 | 327.152 | 337.400 | 339.669 | 335.935 |
+| 6 | 353.442 | 339.302 | 347.943 | 336.495 |
+| 7 | 367.665 | 350.813 | 357.426 | 329.698 |
+| Median | 350.228 | 339.302 | 347.943 | 335.935 |
+
+Four lanes finished sooner in five pairs in each cohort. Median paired
+changes were −14.139 ms and −11.448 ms. Host load was 5.09–5.66 and
+4.92–5.09 on 18 CPUs. The end-to-end differences include startup, network
+replay, and capture. The isolated shaping timings and traced geometry
+show smaller changes within the renderer.
+
+All 28 timing launches and both diagnostic launches had the same eight
+request and response records and matched the reference PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All browsers, drivers, and 3 GiB guards exited zero. The executable,
+native library, archive and driver hashes stayed pinned, and the largest
+timing peak was 377,847,808 bytes of aggregate RSS. Style resolution,
+line placement, cache publication, and native frame submission still
+run on the browser thread.
