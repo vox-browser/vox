@@ -1261,3 +1261,123 @@ returned to the top. One-minute host load on 18 CPUs was 5.14→5.63 and
 The guard sampled 1,347,518,464 B peak RSS. These trials were slower
 than the animation-fix observations. The frozen build contains other
 engine changes and the comparisons ran under different live conditions.
+
+### Drop-shadow paint diagnostics
+
+Two fresh live launches used the same viewport, backing scale, private
+profiles and caches, and direct HTTPS. Both audited the full patch with
+133 images, 15,620 bytes of matching React-root text and loaded fonts.
+The probes used a 23-second settle after the title matched, then 480
+precise wheel inputs at nominal 60 Hz, delta 16, reversing at 240.
+The single-unit production executable hashes were
+`2a4c5ca263a71dcf1cde0f816881cb89c0f667a2cd1f6e926c2a0fdb52e99847`
+and `99d6e8590f0a7c7749c65dc5dc243e4707405edcb1daa6371fae4feaaac7eae5`.
+Both used AVIF library SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The diagnostic probe validated the filter function's symbol range against
+the running executable image. Browser, driver and guard exits were 0 in
+both runs. The guards sampled 1,399,734,272 B and 1,643,053,056 B peak RSS.
+Host load on 18 CPUs was 6.04→7.00 and 11.93→17.04. These are instrumented
+diagnostics and the additional image comparisons ran on the render path.
+
+| Probe | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Direct crop | 15.70 | 66.31 / 113.42 / 178.95 ms | 124/144 | 480 / 169 | 52.22 Hz | 81.76 / 0.26 ms |
+| Aligned crop | 12.49 | 81.00 / 145.53 / 193.21 ms | 111/125 | 480 / 145 | 47.86 Hz | 88.42 / 181.08 ms |
+
+The throughput windows were 9.173 and 10.009 seconds from first to last input.
+The endpoint was frame installation after native view paint.
+
+The first run recorded zero direct filter sources before input and 258
+during input and its tail. All were 2048×1760 drop shadows. The visible
+portion had a median area of 79.2%. Median completion took 10.28 ms,
+including 2.18 ms to prepare the input, 4.69 ms to render in Core Image
+and 2.44 ms to draw in Quartz. Requesting the visible output directly
+matched 11 of 20 sampled draws. Rounding the output bands to 64 device
+rows matched all 20 draws in the second live probe.
+
+The broader pixel fixture found one-channel rounding differences in 20
+of 63 cases for the aligned crop. Keeping the full output and deferring
+its render matched all 63 cases, with elapsed times of 6.44 and 6.74
+seconds for 200 draws against 4.58 and 4.47 seconds for the immediate
+control. Reusing bitmap access and mapping sparse input also took longer
+than the immediate control in both fixture runs. These variants were
+discarded.
+
+### Temporary attribute setter replies
+
+`d767892ff` gives attribute setters a short-lived serialization workspace.
+JavaScriptCore copies the reply before the workspace retires. DOM values,
+reactions and invalidation keep their existing owners. The generic element
+query uses the same workspace for its attribute setter response.
+
+The C-backend preallocation fixture wrote attributes eight times through
+each path on an element with a 36,864-byte unrelated attribute. Both paths
+returned the complete attribute snapshot and kept the written Unicode
+values after workspace retirement. The combined document-arena growth was
+under 64 KiB. All five trusted-attribute tests and both UTF-16 reflection
+tests passed, including safeguards for callback exceptions, reentrant
+policies, namespace handling and unpaired surrogate values. Both suites
+also passed with the reply and input transport workspaces poisoned on
+retirement. The compile and runtime guards exited 0. The runtime guards
+sampled 84,459,520 B and 66,093,056 B peak RSS respectively.
+
+Nine SVG comparisons passed with zero differing pixels on the previously
+completed `99d6e8590f0a7c7749c65dc5dc243e4707405edcb1daa6371fae4feaaac7eae5`
+bundle at 800×600. The capture driver and 3 GiB guard exited 0 and all
+input, reference and executable hashes matched. This baseline predates
+the attribute reply change.
+
+The same completed bundle and Brave Chromium `158.0.8127.42` ran one fresh
+live pair in Brave–Vox order. Each used a private profile and cache, direct
+HTTPS and a 1024×768 document at scale 2. Both verified visible, complete
+content with loaded fonts, 133 images and 15,620 UTF-8 bytes of root text.
+The normalized text matched with generated UUIDs replaced. The audits
+passed at 23.02 and 23.05 seconds. Settled footprint is the median over
+the final three seconds of the following 12-second observation.
+
+| Browser | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: |
+| Brave | 335,192,296 B | 883,482,832 B | 51 |
+| Vox baseline | 783,421,304 B | 1,218,482,040 B | 52 |
+
+Process identities stayed fixed in both final windows. The browsers,
+drivers and 3 GiB guards exited 0. The guards sampled 898,187,264 B and
+1,049,837,568 B of peak RSS. One-minute host load on 18 CPUs was
+5.54→5.45 and 5.81→4.49. The baseline used 2.34 times Brave's settled
+footprint.
+
+The worker then published single-unit C `-prod` receipt
+`20261125-192653-2cd495a0` with executable SHA-256
+`cdecff67a9324189ef24b4dba842efcaf1995ff8ce820ad8304e0e87c1349712`.
+The generated C contains the new reply workspace after the native
+mutation call. The compile and headless smoke guards exited 0 and
+sampled 7,708,246,016 B and 119,767,040 B peak RSS. All nine SVG
+comparisons on the published executable were pixel-exact again. Their
+driver and 3 GiB guard exited 0 with 181,829,632 B peak RSS.
+
+The live candidate passed the same document audit at 23.04 seconds.
+It settled at **779,702,208 B** across 50 samples and peaked at
+1,206,505,408 B. Process identity stayed fixed in the final window.
+The browser, driver and 3 GiB guard exited 0. The guard sampled
+1,030,733,824 B of peak RSS, and one-minute host load was 7.99→6.68.
+The candidate's settled footprint was 2.33 times the Brave observation.
+The 3,719,096 B difference between the two Vox builds includes other
+production changes and live-run variation.
+
+### Physical footprint breakdown
+
+A separate launch of the published candidate passed the full patch audit at
+23.02 seconds. After the 12-second observation, macOS `footprint` reported
+778,407,848 B. Its largest category was 506,216,448 B of dirty memory in
+untagged mappings, followed by 106,004,480 B in WebKit Malloc and 103,956,480 B
+across IOSurface, graphics accelerator and unmapped graphics allocations.
+`vmmap -summary` corroborated the untagged total at 482.5 MiB. The older
+allocator trace above identifies some retained owners inside anonymous
+mappings. The VM category cannot attribute the whole balance to those owners.
+
+The browser, both diagnostic tools, driver and 3 GiB guard exited 0. The
+guard observed 1,084,063,744 B peak RSS. Host load was 4.93→4.68 on 18 CPUs.
+A preliminary diagnostic on the previous executable coincided with shared
+bundle publication. Its browser exited 0 and its driver and guard exited 1
+after the identity check. The table and breakdown use the stable launches.
