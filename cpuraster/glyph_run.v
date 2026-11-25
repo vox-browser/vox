@@ -51,10 +51,19 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, unsafe { nil })
 }
 
+// A destination loader runs on the caller before the first pixel write. An
+// early return for a culled run can leave the destination unread.
+@[params]
+pub struct CanvasGlyphBackdrop {
+pub:
+	context voidptr
+	read    fn (voidptr) bool = unsafe { nil }
+}
+
 // fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
 // typeface facts and glyph masks for later draws.
-pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
-	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, &cache)
+pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, backdrop CanvasGlyphBackdrop) bool {
+	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, &cache, backdrop)
 }
 
 @[params]
@@ -102,7 +111,9 @@ pub fn prepare_retained_glyph_positions(source []f64, mut positions []f32,
 	return glyph_positions_bounds(positions)
 }
 
-fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache) bool {
+fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache, backdrop CanvasGlyphBackdrop) bool {
+	has_backdrop := backdrop.read != unsafe { nil }
+	if has_backdrop && (alpha_type != 2 || style != none || filter_in != none) { return false }
 	if run.paint_color != none && (style != none || filter_in != none) { return false }
 	if run.glyphs.len == 0 {
 		return true
@@ -163,7 +174,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}
 	position_matrix := pre_translate(ctm, origin.x, origin.y)
-	routes := if glyphs_draw_as_paths(run.font_size, position_matrix) {
+	draw_as_paths := glyphs_draw_as_paths(run.font_size, position_matrix)
+	routes := if draw_as_paths {
 		path_face := lazy.get() or { return false }
 		glyph_routes(path_face, run.glyphs, true) or { return false }
 	} else {
@@ -287,6 +299,26 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if rc.is_empty {
 		return true
 	}
+	mut prepared_entry := unsafe { &CachedGlyphStrike(nil) }
+	mut prepared_masks := false
+	if has_backdrop {
+		mut loaded := false
+		$if macos && !cpuraster_freetype ? {
+			if run.retained && !strike.color && !draw_as_paths
+				&& (strike.font != unsafe { nil } || strike.deferred) {
+				strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
+				prepared_entry = glyph_cache_strike(cache, glyph_strike_key(strike_face,
+					run.font_size, position_matrix, &strike, smooth_luminance, luminance))
+				prepared_masks, loaded = prepared_entry.prepare_glyph_masks_over_backdrop(mut strike,
+					mut lazy, run, routes, rounding, backdrop)
+			} else {
+				loaded = backdrop.read(backdrop.context)
+			}
+		} $else {
+			loaded = backdrop.read(backdrop.context)
+		}
+		if !loaded { return false }
+	}
 	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
 		filter, legacy)
 	$if linux || windows || cpuraster_freetype ? {
@@ -308,9 +340,13 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			alpha, mode, filter, legacy)
 		return true
 	}
-	strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
-	mut entry := glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
-		&strike, smooth_luminance, luminance))
+	mut entry := if prepared_entry != unsafe { nil } {
+		prepared_entry
+	} else {
+		strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
+		glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
+			&strike, smooth_luminance, luminance))
+	}
 	if entry.empty {
 		return true
 	}
@@ -339,7 +375,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	defer {
 		if batch_blend { mask_batch.flush(mut wrapped) }
 	}
-	mut prepare_masks := $if macos && !cpuraster_freetype ? { run.retained } $else { false }
+	mut prepare_masks := $if macos && !cpuraster_freetype ? { run.retained && !prepared_masks } $else { false }
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue

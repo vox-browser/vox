@@ -118,6 +118,27 @@ const retain_covered_glyph_clip_draws = os.getenv('VOX_RETAIN_COVERED_GLYPH_CLIP
 // Also draw and merge such runs and report any pixel that differs from the
 // skipped draw's result.
 const verify_covered_glyph_clip_draws = os.getenv('VOX_VERIFY_COVERED_GLYPH_CLIP_DRAWS') != ''
+const sync_glyph_backdrop = os.getenv('VOX_SYNC_GLYPH_BACKDROP') == '1'
+
+struct DocumentGlyphBackdrop {
+	pixels   &u8
+	geometry [7]i32
+	scale    f32
+mut:
+	attempted bool
+	loaded    bool
+}
+
+fn read_document_glyph_backdrop(context voidptr) bool {
+	mut backdrop := unsafe { &DocumentGlyphBackdrop(context) }
+	if !backdrop.attempted {
+		backdrop.attempted = true
+		backdrop.loaded = C.native_document_text_raster_read_backdrop(backdrop.pixels,
+			backdrop.geometry[0], backdrop.geometry[1], backdrop.geometry[2], backdrop.geometry[3],
+			backdrop.scale) != 0
+	}
+	return backdrop.loaded
+}
 
 __global document_glyph_raster_records = 0
 
@@ -253,8 +274,10 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		height := int(geometry[3])
 		backdrop := geometry[4] != 0
 		mut pixels := []u8{len: width * height * 4}
-		if backdrop && C.native_document_text_raster_read_backdrop(pixels.data, geometry[0], geometry[1],
-			i32(width), i32(height), scale) == 0 {
+		deferred_backdrop := backdrop && !sync_glyph_backdrop && glyphs.len >= 4
+			&& clip_bounds == none && !extended_blend && document_glyph_raster_dump == ''
+		if backdrop && !deferred_backdrop && C.native_document_text_raster_read_backdrop(pixels.data,
+			geometry[0], geometry[1], i32(width), i32(height), scale) == 0 {
 			return 'backdrop unreadable'
 		}
 		scale_x := f32(width) / f32(geometry[5])
@@ -308,8 +331,25 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				return 'extended glyph blend declined'
 			}
 		} else {
-			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2, run,
-				transform, color, none, 1, .src_over, [], none) { return 'cpuraster declined' }
+			mut destination := DocumentGlyphBackdrop{
+				pixels: pixels.data
+				geometry: geometry
+				scale: scale
+			}
+			loader := if deferred_backdrop {
+				cpuraster.CanvasGlyphBackdrop{context: &destination, read: read_document_glyph_backdrop}
+			} else {
+				cpuraster.CanvasGlyphBackdrop{}
+			}
+			if !cpuraster.fill_canvas_glyphs_cached(mut cache, mut pixels, width, height, width * 4, 2,
+				run, transform, color, none, 1, .src_over, [], none, loader) {
+				return if destination.attempted && !destination.loaded { 'backdrop unreadable' } else { 'cpuraster declined' }
+			}
+			// A culled run can succeed before the loader runs. Preserve the
+			// earlier pixels when the finish operation replaces the backdrop.
+			if deferred_backdrop && !destination.loaded && !read_document_glyph_backdrop(&destination) {
+				return 'backdrop unreadable'
+			}
 		}
 		if C.native_document_text_raster_finish(pixels.data, geometry[0], geometry[1], i32(width), i32(height),
 			geometry[5], geometry[6], canvas_height, i32(backdrop)) == 0 {
