@@ -1,12 +1,13 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **52.17% fewer median observed CPU instructions**
-than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
-their respective screenshot references. Median launch-to-PNG time was
-**1.990 s for Vox and 1.984 s for Brave**, with Vox ahead in four of seven
-pairs. An earlier build led at the median by 3.91 ms. A fresh live Vox visit
+The production Vox rollback control with LibJS used **52.08% fewer median
+observed CPU instructions** than Brave on the frozen `/r/worldnews/` listing.
+All seven pairs matched their respective screenshot references. Median
+launch-to-PNG time was **2.011 s for Vox and 2.026 s for Brave**, with Vox
+ahead in four of seven pairs. This cohort used the control switch to restore
+script delivery without deferred layout coalescing. A fresh live Vox visit
 reached Reddit's login page.
-[Current comparison](#production-comparison-with-the-blocking-script-yield)
+[Current comparison](#compare-the-restored-script-delivery-path-with-brave)
 
 ## Workload and execution
 
@@ -2121,3 +2122,210 @@ from 10:30:57 to 10:31:35 UTC+03.
 A fresh direct launch of the same executable reached Reddit's login page,
 with zero posts and two script diagnostics. The browser and guard exited
 zero. The compared listing was the archived page.
+
+## Coalesce shell layout during deferred script delivery
+
+In the traced yields above, replaying script state could still run a
+synchronous shell layout. Commit `5e03cd942` adopts script effects
+using the ordinary frame's layout coalescing. The throttle's scheduled
+frame commits the resulting geometry. Author queries retain their
+synchronous document layout boundary.
+
+The focused regression covers a partial document with dirty style when
+a LibJS blocking response arrives. The layout pass count stays fixed
+through delivery, the parser runs on its existing HTML task, and the
+next frame commits the updated CSS width. Both initial test revisions
+caught fixture assertions. One scaled a CSS-pixel width as though it
+were a physical width. The other treated style invalidation as an
+already-dirty layout tree. The corrected nine parser request tests pass
+under C with preallocation, `-gc none` and arena poisoning. The same
+test binary exits 1 at the paint-pending assertion when
+`VOX_DISABLE_DEFERRED_SCRIPT_LAYOUT_COALESCING=1` restores the control.
+
+The four existing frame layout tests also passed with arena poisoning.
+They cover synchronous geometry and paint queries, cosmetic filters,
+nested preparation and initial layout. Both focused guards exited zero.
+
+The first managed attempt, `20261125-103650-f4cbb82c`, stopped when
+repository inputs changed during compiler-input sealing. A subsequent
+attempt, `20261125-103938-243989d6`, stopped at array-initializer compiler
+errors in a concurrent glyph geometry change. The build supervisor
+kept the last successfully published bundle in both cases. Attempt
+`20261125-104136-3c6a5492` also stopped when inputs changed before C
+preprocessing.
+
+### Archived listing on the available production bundle
+
+While the managed worker was building the coalescing change, the
+last completed single-unit C bundle `20261125-103028-32cdceac` was
+available. Its executable SHA-256 was
+`e2d4c598ddd30eb15a8cf1e7ace242d3abb15c16bb63e2783b17c0b55bd5b5ee`.
+It included the earlier blocking-script yield and the retained glyph
+replay worker change. The deferred script coalescing change was still
+awaiting production validation.
+
+One guarded reference visit on this bundle reproduced the fixed Vox
+pixels. The separate seven-pair comparison below used the established
+clock-pinned launch-to-PNG scope, archives, profiles and references.
+All 14 visits matched their references, served all five scripts,
+completed and displayed all 25 posts in order. LibJS execution
+generations were 153, 151, 149, 153, 153, 143 and 145. JavaScriptCore
+stayed uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,623,219,094 | 11,844,108,288 | 2003.472 | 2093.903 |
+| 2 | 5,619,318,006 | 11,733,382,190 | 1995.000 | 2001.966 |
+| 3 | 5,686,738,685 | 11,720,814,583 | 1997.668 | 2022.617 |
+| 4 | 5,603,637,960 | 11,738,356,596 | 2004.487 | 1993.268 |
+| 5 | 5,690,415,372 | 11,667,925,730 | 2018.014 | 2001.975 |
+| 6 | 5,595,437,649 | 11,793,300,637 | 2016.552 | 1969.563 |
+| 7 | 5,640,228,158 | 11,745,657,724 | 2069.268 | 2003.446 |
+| Median | 5,623,219,094 | 11,738,356,596 | 2004.487 | 2001.975 |
+
+Brave led the elapsed medians by **2.51 ms** and won four pairs. Vox
+used **52.10% fewer median observed instructions**. Its highest observed
+count was 48.77% of Brave's lowest, which met the observed-count gate.
+The 12 GiB guard adopted all 14 roots and sampled a peak of 864,698,368
+bytes. All browser roots, the driver and the guard exited zero.
+The final complete sample preceded PNG observation by 5.95–7.70 ms for
+Vox and 1.31–5.98 ms for Brave. Vox reported zero missing final samples.
+Brave reported 1, 2, 1, 1, 3, 1 and 1. Both process-tree totals are lower
+bounds and omit GPU and external services. The host's one-minute load
+was 5.01–6.53 on 18 cores from 10:42:32 to 10:43:10 UTC+03 while the
+shared managed build ran concurrently.
+
+### Verify layout coalescing in production
+
+Managed build `20261125-104407-2f48c8c6` published single-unit `-prod` C
+with the deferred layout change and the disjoint glyph geometry scratch
+regions. The sealed C SHA-256 was
+`d32989b5ea5bd237d0a8b108ba28e834a218f77699b0d3fe0f6171fd498136c8`.
+The executable SHA-256 was
+`d28f00de0a653a9fd4884ae70fa45ff069b99fd01b5014e67e25d513e5112664`.
+It passed the LibJS headless smoke. Both arms retained the earlier
+blocking-script yield; the control set
+`VOX_DISABLE_DEFERRED_SCRIPT_LAYOUT_COALESCING=1`.
+
+| Traced pair | Coalesced deliveries | Coalesced layouts | Control deliveries | Control layouts |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 4 | 0 | 3 | 2 |
+| 2 | 5 | 0 | 3 | 2 |
+
+These counts cover document layouts within the deferred native frames
+that delivered responses. The four instrumented visits matched the
+fixed PNG, ran the five scripts with LibJS and displayed all 25 posts.
+All browser roots, the driver and the guard exited zero.
+
+### Matched control for deferred layout coalescing
+
+Seven uninstrumented pairs kept the executable, clock, private profiles,
+empty HTTP caches and fixed render references identical. Both arms
+completed the archived listing, loaded the five scripts and displayed
+the 25 ordered posts using LibJS with JavaScriptCore uninitialized.
+
+| Pair | Coalesced instructions | Control instructions | Coalesced elapsed (ms) | Control elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,496,631,445 | 5,626,503,139 | 2025.504 | 1975.446 |
+| 2 | 5,539,237,960 | 5,623,742,781 | 2029.346 | 1989.068 |
+| 3 | 5,441,941,954 | 5,626,599,213 | 1988.467 | 1993.447 |
+| 4 | 5,513,286,086 | 5,604,359,478 | 2015.876 | 1968.318 |
+| 5 | 5,546,387,950 | 5,686,440,535 | 2035.429 | 1994.278 |
+| 6 | 5,493,888,813 | 5,636,382,881 | 1995.962 | 1972.721 |
+| 7 | 5,729,939,987 | 5,613,168,867 | 2033.405 | 1964.385 |
+| Median | 5,513,286,086 | 5,626,503,139 | 2025.504 | 1975.446 |
+
+Coalescing reduced median observed instructions by **2.01%** and took
+**50.06 ms longer** between elapsed medians. It finished sooner in one
+pair. The median paired delay was 41.15 ms. Both arms reported no
+missing final samples. The final complete sample preceded PNG
+observation by 7.34–7.63 ms with coalescing and 7.29–7.64 ms with the
+control. The 12 GiB guard adopted all 14 roots and sampled a peak
+aggregate RSS of 775,454,720 bytes. All browser roots, the driver and
+the guard exited zero. The 18-core host's one-minute load was 6.99–8.24
+from 10:49:56 to 10:50:33 UTC+03.
+
+### Production comparison with deferred layout coalescing enabled
+
+The full comparison retained the same clock-pinned launch and PNG scope,
+cache conditions, scripts, viewport and references. All 14 visits
+matched their references and completed with the five scripts and 25 posts.
+Vox used LibJS without initializing JavaScriptCore.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,472,515,517 | 11,815,837,190 | 1996.191 | 2143.927 |
+| 2 | 5,479,767,930 | 11,796,532,971 | 1971.415 | 1992.190 |
+| 3 | 5,501,080,960 | 11,693,984,506 | 2011.713 | 1995.074 |
+| 4 | 5,555,411,978 | 11,768,852,538 | 2023.592 | 1982.372 |
+| 5 | 5,446,154,623 | 11,729,097,015 | 2018.127 | 1969.536 |
+| 6 | 5,515,958,597 | 11,775,615,841 | 2007.295 | 1987.192 |
+| 7 | 5,536,698,488 | 11,737,833,695 | 1994.033 | 1979.701 |
+| Median | 5,501,080,960 | 11,768,852,538 | 2007.295 | 1987.192 |
+
+Vox used 53.26% fewer median observed instructions. Its highest count
+was 47.51% of Brave's lowest. Brave led the elapsed medians by 20.10 ms
+and won five pairs. Both process-tree counters are lower bounds.
+Vox reported zero missing final samples. Brave reported 1, 1, 2, 3, 2,
+2 and 2. The last complete samples preceded PNG observation by
+5.83–7.66 ms for Vox and 2.81–8.48 ms for Brave. The 12 GiB guard
+adopted 14 roots and sampled a peak RSS of 864,239,616 bytes. All
+browser roots, the driver and the guard exited zero. The host's
+one-minute load was 5.75–6.99 on 18 cores from 10:50:34 to 10:51:12
+UTC+03.
+
+### Compare the restored script delivery path with Brave
+
+Commit `814356bc9` reverted deferred layout coalescing after the matched
+elapsed regression. The comparison used the same production executable
+`d28f00de` with `VOX_DISABLE_DEFERRED_SCRIPT_LAYOUT_COALESCING=1`, which
+restored the script delivery path in the binary. The earlier one-frame
+yield remained active. This cohort establishes the result for that pinned
+executable and switch. The shared worker builds the source rollback
+through the managed commit hook.
+
+Seven fresh alternating pairs used the same clock-pinned archive and
+launch-to-completed-PNG endpoint. Private profiles and HTTP caches were
+empty at the start, and OS filesystem and shader caches were retained.
+Each visit reached `complete`, displayed the 25 posts in order, served
+all five original scripts and matched its browser's fixed 1024×768
+scale-1 reference after the same 1.4 s settle period. Vox ran LibJS with
+both code caches disabled. Its execution generations were 151, 151,
+153, 153, 157, 157 and 155. JavaScriptCore stayed uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,673,456,076 | 11,839,635,278 | 1981.332 | 2078.036 |
+| 2 | 5,636,159,332 | 11,735,165,271 | 1985.806 | 1989.439 |
+| 3 | 5,670,387,583 | 11,832,383,906 | 2009.242 | 2019.745 |
+| 4 | 5,661,267,806 | 11,848,766,582 | 2011.267 | 2030.170 |
+| 5 | 5,736,958,251 | 11,782,158,625 | 2013.859 | 2009.733 |
+| 6 | 5,711,886,274 | 11,780,302,615 | 2032.188 | 2032.149 |
+| 7 | 5,617,985,109 | 11,979,326,535 | 2032.876 | 2026.091 |
+| Median | 5,670,387,583 | 11,832,383,906 | 2011.267 | 2026.091 |
+
+Vox finished **14.82 ms sooner** between the elapsed medians, and its
+median paired lead was 3.63 ms. It won four pairs. Vox used **52.08%
+fewer median observed instructions**, with its highest count at 48.89%
+of Brave's lowest. This met the observed-count gate.
+
+These are polled process-tree lower bounds that exclude GPU and external
+service work. Last complete samples preceded PNG observation by
+5.30–7.71 ms for Vox and 1.27–7.58 ms for Brave. Vox reported zero missing
+final samples. Brave reported 1, 2, 0, 2, 1, 1 and 1. The 12 GiB guard
+adopted 14 browser roots and sampled 859,963,392 bytes at peak. All
+browser roots, the driver and the guard exited zero. The host's one-minute
+load was 5.50–7.42 on 18 cores from 10:51:38 to 10:52:16 UTC+03 while a
+managed build ran concurrently.
+
+The fresh live visit with the restored path redirected to Reddit's login
+page and completed with zero posts and two script diagnostics. The
+browser and guard exited zero. The restored source passed all eight
+parser request tests again under C with preallocation, `-gc none` and
+arena poisoning. Its compile and runtime guards exited zero.
+
+Build `20261125-105119-2fd902d5` generated C for the restored path and
+stopped when the supervisor detected changed repository inputs before
+preprocessing. The rollback commit requested another shared production
+build. The elapsed lead above was measured with the control switch and
+the rebuilt default remains to be verified.
