@@ -923,7 +923,7 @@ fn (mut l Lexer) lex_token() Token {
 	in_template := l.template_states.len > 0
 	mut line_has_token_yet := l.line_column > 1
 	mut unterminated_comment := false
-	mut token_message := ?string(none)
+	mut token_message := unsafe { &TokenMessage(nil) }
 
 	if !in_template || l.template_states[l.template_states.len - 1].in_expression {
 		for lex_may_start_trivia(l.current_code_unit) {
@@ -987,7 +987,7 @@ fn (mut l Lexer) lex_token() Token {
 	mut token_type := TokenType.invalid
 	did_consume_whitespace_or_comments := trivia_start != value_start
 
-	mut identifier_value := ?&Utf16String(none)
+	mut identifier_value := unsafe { &Utf16String(nil) }
 
 	if l.current_token_type == .regex_literal && !l.is_eof()
 		&& (l.current_code_unit < 128 && lex_is_ascii_alpha(u32(l.current_code_unit)))
@@ -1055,7 +1055,7 @@ fn (mut l Lexer) lex_token() Token {
 			token_type = .private_identifier
 		} else {
 			token_type = .invalid
-			token_message = "Start of private name '#' but not followed by valid identifier"
+			token_message = &TokenMessage{text: "Start of private name '#' but not followed by valid identifier"}
 		}
 	} else {
 		start_len := l.identifier_start_length()
@@ -1142,7 +1142,7 @@ fn (mut l Lexer) lex_token() Token {
 			}
 			if is_invalid {
 				token_type = .invalid
-				token_message = 'Invalid numeric literal'
+				token_message = &TokenMessage{text: 'Invalid numeric literal'}
 			}
 		} else if l.current_code_unit == ch(u8(`"`)) || l.current_code_unit == ch(u8(`'`)) {
 			stop_char := l.current_code_unit
@@ -1173,7 +1173,7 @@ fn (mut l Lexer) lex_token() Token {
 		} else if l.eof {
 			if unterminated_comment {
 				token_type = .invalid
-				token_message = 'Unterminated multi-line comment'
+				token_message = &TokenMessage{text: 'Unterminated multi-line comment'}
 			} else {
 				token_type = .eof
 			}
@@ -1272,10 +1272,9 @@ fn (mut l Lexer) lex_token() Token {
 		value_len:                  u32(l.position - value_start)
 		line_number:                value_start_line_number
 		line_column:                value_start_column_number
-		offset:                     vs
 		trivia_has_line_terminator: trivia_has_line_terminator
 		identifier_value:           identifier_value
-		message:                    if text := token_message { &TokenMessage{text: text} } else { none }
+		message:                    token_message
 	}
 }
 
@@ -1350,7 +1349,6 @@ fn (mut l Lexer) force_slash_as_regex() Token {
 		value_len:                  u32(l.position - value_start)
 		line_number:                token_line_number
 		line_column:                token_line_column
-		offset:                     vs
 		trivia_has_line_terminator: false
 	}
 }

@@ -330,13 +330,11 @@ mut:
 	value_len                  u32
 	line_number                u32
 	line_column                u32
-	offset                     u32
 	trivia_has_line_terminator bool
-	// Rare payloads out of line: only identifiers with escapes have a decoded
-	// value and only invalid tokens a message. Inline, they made every token
-	// 136 bytes, and tokens are copied several times each.
-	identifier_value ?&Utf16String
-	message          ?&TokenMessage
+	// Tokens are copied several times each. Only escaped identifiers and
+	// invalid tokens carry these payloads.
+	identifier_value &Utf16String = unsafe { nil }
+	message          &TokenMessage = unsafe { nil }
 }
 
 struct TokenMessage {

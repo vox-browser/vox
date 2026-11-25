@@ -8,11 +8,12 @@ fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
 	first := lexer.next()
 	assert first.token_type == .identifier
 	assert first.value_len == u32(utf16(first_source).len)
-	assert (first.identifier_value or { panic('Missing decoded identifier') }).data == utf16('alpha0_$𐐀moreabc')
+	assert first.identifier_value != unsafe { nil }
+	assert first.identifier_value.data == utf16('alpha0_$𐐀moreabc')
 
 	private_token := lexer.next()
 	assert private_token.token_type == .private_identifier
-	assert private_token.offset == first.value_len + 2
+	assert private_token.value_start == first.value_len + 2
 	assert private_token.line_number == 2
 	assert private_token.line_column == 1
 	assert private_token.trivia_has_line_terminator
@@ -33,7 +34,7 @@ fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
 	assert ascii_end.value_len == 8
 	end := lexer.next()
 	assert end.token_type == .eof
-	assert end.offset == u32(source.len)
+	assert end.value_start == u32(source.len)
 	assert end.line_column == ascii_end.line_column + ascii_end.value_len
 }
 

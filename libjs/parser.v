@@ -353,8 +353,8 @@ fn (mut p Parser) check_arguments_or_eval(token Token) {
 	if token.token_type != .identifier || p.flags.previous_token_was_period {
 		return
 	}
-	value := if id_val := token.identifier_value {
-		id_val.data
+	value := if token.identifier_value != unsafe { nil } {
+		token.identifier_value.data
 	} else {
 		// Unescaped names have their final UTF-16 length in the token span.
 		if token.value_len != 'arguments'.len && token.value_len != 'eval'.len {
@@ -422,12 +422,12 @@ fn (p &Parser) position() Position {
 	return Position{
 		line:   p.current_token.line_number
 		column: p.current_token.line_column
-		offset: p.current_token.offset
+		offset: p.current_token.value_start
 	}
 }
 
 fn (p &Parser) source_text_end_offset() u32 {
-	return p.current_token.offset - p.current_token.trivia_len
+	return p.current_token.value_start - p.current_token.trivia_len
 }
 
 // === Error reporting ===
@@ -491,8 +491,8 @@ fn (mut p Parser) parse_private_identifier(range_start Position) &PrivateIdentif
 }
 
 fn (mut p Parser) expected(what string) {
-	msg := if m := p.current_token.message {
-		m.text
+	msg := if p.current_token.message != unsafe { nil } {
+		p.current_token.message.text
 	} else {
 		'Unexpected token ${p.current_token.token_type.name()}. Expected ${what}'
 	}
@@ -671,8 +671,8 @@ fn (mut p Parser) check_parameters_post_body(parameter_info []ParamInfo, force_s
 }
 
 fn (p &Parser) token_value(token Token) []u16 {
-	if id_val := token.identifier_value {
-		return id_val.data
+	if token.identifier_value != unsafe { nil } {
+		return token.identifier_value.data
 	}
 	start := int(token.value_start)
 	end := start + int(token.value_len)
