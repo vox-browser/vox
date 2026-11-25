@@ -3454,3 +3454,20 @@ input inventory before the pruning fix and rejected the edit to
 `tools/buildtools/prune.v`. The coalesced single-C-unit V `-prod`
 request includes the fix. The available bundle still predates the
 shorter caller range. Full-page timings remain pending.
+
+Receipt `20261125-155553-2483b004` also rejected checkout changes
+before C preprocessing and exited 1. Peak process-tree RSS was
+7,675,166,720 bytes. The managed worker retained the previous
+published app and started receipt `20261125-161203-c3737351`.
+
+A fresh baseline capture on executable `4812830ce191…26bc` verified
+the archived URL, complete readiness and all 30 ordered story IDs.
+`tools/measure_load_parallelism.py` used JavaScriptCore, a private
+profile and HTTP cache, a 60 ms replay delay for the logo and the
+`tr.athing` ready selector at 1024×768 CSS pixels and 2× scale. It
+reproduced all eight replay records, including the favicon miss, and
+the reference PNG. The browser and 3 GiB guard exited zero. Peak
+aggregate RSS was 371,392,512 bytes and one-minute load was 124.30 on
+18 CPUs. This capture verifies the benchmark setup on the published
+baseline. The shorter-range scheduler was measured in the retained
+text replay above.
