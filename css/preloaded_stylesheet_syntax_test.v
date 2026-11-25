@@ -1,5 +1,6 @@
 module css
 
+import dom
 import platform
 
 fn preloaded_stylesheet_test_source(rules string) string {
@@ -30,6 +31,40 @@ fn test_preloaded_syntax_owns_worker_input_and_converts_in_the_consumers_context
 	for index, rule in actual.rules.rules {
 		assert rule.css_text() == reference.rules.rules[index].css_text()
 	}
+}
+
+fn test_preloaded_selector_lists_retire_with_staging_after_document_conversion() {
+	release_unused_stylesheet_syntax()
+	defer { release_unused_stylesheet_syntax() }
+	source := preloaded_stylesheet_test_source('@namespace s url("urn:probe"); ' +
+		's|a:is(.primary, #selected)[data-label="owned"] { color: red } ' +
+		'@media (width > 1px) { .parent { & > .child { width: 11px } } } ' +
+		'.reject, input::-moz-placeholder { color: green } ' +
+		':is(.keep, input::-moz-placeholder) { color: blue }')
+	if !prepare_preloaded_stylesheet_selectors || !preloaded_stylesheet_syntax_eligible(source) {
+		return
+	}
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	params := ParsingParams{document: document}
+	location := 'https://styles.test/worker-selectors.css'
+	reference := parse_css_stylesheet_in_workspace(params, source, location, none, true)
+	worker := spawn prepare_stylesheet_in_retiring_fetch_scratch(source)
+	worker.wait()
+	staged := preloaded_stylesheet_syntax_.take(source) or { panic('missing staged stylesheet') }
+	assert staged.selectors != unsafe { nil }
+	assert staged.selectors.namespaces['s']
+	assert staged.selectors.lists.len == 2
+	preloaded_stylesheet_syntax_.insert(staged)
+	actual := parse_css_stylesheet_in_workspace(params, source, location, none, true)
+	assert preloaded_stylesheet_syntax_.take(source) == none
+	assert actual.rules.length() == 4
+	assert actual.rules.length() == reference.rules.length()
+	for index, rule in actual.rules.rules {
+		assert rule.css_text() == reference.rules.rules[index].css_text()
+	}
+	assert actual.rules.rules[3].selector_text() == ':is(.keep)'
 }
 
 fn test_preloaded_syntax_evicts_old_leases_and_clears_idle_entries() {

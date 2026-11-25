@@ -84,18 +84,24 @@ fn prepare_user_agent_selector_lists(rules []Rule) (&PreparedStyleRuleSelectors,
 
 fn prepare_user_agent_selector_lists_with_namespaces(rules []Rule, namespaces map[string]bool) (&PreparedStyleRuleSelectors, platform.DetachedThreadScratch) {
 	scratch := platform.begin_thread_scratch('user agent stylesheet selectors')
-	mut prepared := &PreparedStyleRuleSelectors{namespaces: namespaces.clone()}
-	mut parser := RuleSelectorParser{is_ua_style_sheet: .yes, declared_namespaces: prepared.namespaces}
-	for rule in rules {
-		parser.prepare_user_agent_selector_list(rule, mut prepared)
-	}
+	prepared := prepare_stylesheet_selector_lists(rules, namespaces, .yes)
 	return prepared, scratch.detach()
 }
 
-// Read the embedded companion sheets' leading namespace declarations.
+fn prepare_stylesheet_selector_lists(rules []Rule, namespaces map[string]bool,
+	is_ua_style_sheet IsUAStyleSheet) &PreparedStyleRuleSelectors {
+	mut prepared := &PreparedStyleRuleSelectors{namespaces: namespaces.clone()}
+	mut parser := RuleSelectorParser{is_ua_style_sheet: is_ua_style_sheet, declared_namespaces: prepared.namespaces}
+	for rule in rules {
+		parser.prepare_stylesheet_selector_list(rule, mut prepared)
+	}
+	return prepared
+}
+
+// Read the leading namespace declarations.
 // Conversion checks the exact prefix set before reusing a list.
 // CSSOM still owns namespace URI resolution, ordering and error reporting.
-fn user_agent_leading_namespaces(rules []Rule) map[string]bool {
+fn stylesheet_leading_namespaces(rules []Rule) map[string]bool {
 	mut namespaces := map[string]bool{}
 	for rule in rules {
 		if rule is AtRule {
@@ -110,14 +116,18 @@ fn user_agent_leading_namespaces(rules []Rule) map[string]bool {
 	return namespaces
 }
 
-fn (mut parser RuleSelectorParser) prepare_user_agent_selector_list(rule Rule, mut prepared PreparedStyleRuleSelectors) {
+fn (mut parser RuleSelectorParser) prepare_stylesheet_selector_list(rule Rule, mut prepared PreparedStyleRuleSelectors) {
 	match rule {
 		QualifiedRule {
 			// The owner uses this exact raw prelude when converting the rule.
 			// Invalid lists stay on the normal path to report the same error.
 			mut stream := ParserTokenStream.from_values(rule.prelude)
 			if selectors := parser.parse_a_selector_list(mut stream, .standalone, .standard) {
-				if prepare_user_agent_selector_invalidation {
+				// Author selectors with engine-specific aliases need the
+				// consuming document's policy, including forgiving lists.
+				if parser.is_ua_style_sheet == .no
+					&& selectors.selectors.any(chromium_selector_has_mozilla_alias(it)) { return }
+				if parser.is_ua_style_sheet == .yes && prepare_user_agent_selector_invalidation {
 					for selector in selectors.selectors { prepare_selector_invalidation_projection(selector) }
 				}
 				prepared.lists[rule.prelude.data] = selectors
@@ -127,7 +137,7 @@ fn (mut parser RuleSelectorParser) prepare_user_agent_selector_list(rule Rule, m
 			// A top-level media rule preserves the standalone selector mode.
 			if !rule.is_block_rule || !equals_ignoring_ascii_case(rule.name, 'media') { return }
 			for child in rule.child_rules_and_lists_of_declarations {
-				if child is RuleNode { parser.prepare_user_agent_selector_list(child.rule, mut prepared) }
+				if child is RuleNode { parser.prepare_stylesheet_selector_list(child.rule, mut prepared) }
 			}
 		}
 	}
@@ -157,7 +167,7 @@ fn prepare_user_agent_syntax(source string, max_cache_nodes int, prepare_selecto
 	}
 	selectors, selector_storage := if prepare_selectors {
 		if companion {
-			prepare_user_agent_selector_lists_with_namespaces(rules, user_agent_leading_namespaces(rules))
+			prepare_user_agent_selector_lists_with_namespaces(rules, stylesheet_leading_namespaces(rules))
 		} else {
 			prepare_user_agent_selector_lists(rules)
 		}

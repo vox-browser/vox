@@ -40,7 +40,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 			}
 			id := if cache_rules { stylesheet_rule_cache_.store(text, staged.rules) } else { u64(0) }
 			return convert_transient_stylesheet_rules(params, staged.rules, location, media_list,
-				deferred: deferred, syntax_id: id)
+				deferred: deferred, syntax_id: id, prepared_selectors: staged.selectors)
 		}
 	}
 	$if prealloc {
@@ -100,8 +100,12 @@ fn convert_transient_stylesheet_rules(params ParsingParams, raw_rules []Rule, lo
 		prepared_rule_selectors: options.prepared_selectors
 	}
 	rules := CSSRuleList.create(parser.convert_rules(raw_rules))
-	if user_agent_syntax_diagnostics && options.prepared_selectors != unsafe { nil } {
-		eprintln('VOX_UA_STYLESHEET_SELECTORS prepared=${options.prepared_selectors.lists.len} used=${parser.prepared_rule_selector_hits}')
+	if options.prepared_selectors != unsafe { nil } {
+		if params.is_ua_style_sheet == .yes && user_agent_syntax_diagnostics {
+			eprintln('VOX_UA_STYLESHEET_SELECTORS prepared=${options.prepared_selectors.lists.len} used=${parser.prepared_rule_selector_hits}')
+		} else if params.is_ua_style_sheet == .no && preloaded_stylesheet_syntax_diagnostics {
+			eprintln('VOX_PRELOADED_STYLESHEET_SELECTORS prepared=${options.prepared_selectors.lists.len} used=${parser.prepared_rule_selector_hits}')
+		}
 	}
 	media := media_list or { MediaList.create_empty() }
 	mut sheet := CSSStyleSheet.create(rules, media, location)

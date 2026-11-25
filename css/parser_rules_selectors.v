@@ -1307,6 +1307,9 @@ fn (mut parser RuleSelectorParser) style_rule_selectors(prelude []ComponentValue
 		&& parser.prepared_rule_selectors.matches_namespaces(parser.declared_namespaces) {
 		if selectors := parser.prepared_rule_selectors.lists[prelude.data] {
 			parser.prepared_rule_selector_hits++
+			if parser.is_ua_style_sheet == .no {
+				return own_prepared_selector_list(selectors)
+			}
 			return selectors
 		}
 	}

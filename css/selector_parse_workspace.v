@@ -26,6 +26,22 @@ fn parse_owned_selector(text string) Selector {
 	return selector_from_text_impl(text)
 }
 
+// Author stylesheets use worker graphs from a short-lived staging entry.
+// Publish the final graph in the converter's owner before retiring that entry.
+fn own_prepared_selector_list(source SelectorList) SelectorList {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('prepared stylesheet selector copy')
+		defer { scratch.finish() }
+		mut copy := ParsedSelectorCopy{}
+		for selector in source.selectors { copy.prepare(selector) }
+		scratch.leave()
+		mut selectors := []Selector{cap: source.selectors.len}
+		for selector in source.selectors { selectors << copy.selector(selector) }
+		return SelectorList{selectors: selectors}
+	}
+	return source
+}
+
 // Copy the live stack entries into storage owned by the parsed graph.
 fn copy_selector_entries[T](entries [4]T, count int, capacity int) []T {
 	mut values := []T{cap: capacity}

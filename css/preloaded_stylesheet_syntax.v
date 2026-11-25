@@ -6,6 +6,7 @@ import sync
 
 const serial_preloaded_stylesheet_syntax = os.getenv('VOX_SERIAL_PRELOADED_STYLESHEET_SYNTAX') == '1'
 const preloaded_stylesheet_syntax_diagnostics = os.getenv('VOX_PRELOADED_STYLESHEET_SYNTAX_DIAGNOSTICS') == '1'
+const prepare_preloaded_stylesheet_selectors = os.getenv('VOX_PREPARE_PRELOADED_STYLESHEET_SELECTORS') == '1'
 const preloaded_stylesheet_syntax_max_source_bytes = 32 * 1024
 const preloaded_stylesheet_syntax_max_arena_bytes = 4 * 1024 * 1024
 const preloaded_stylesheet_syntax_slots = 4
@@ -14,6 +15,7 @@ const preloaded_stylesheet_syntax_label = 'preloaded stylesheet syntax'
 struct PreloadedStylesheetSyntax {
 	input string
 	rules []Rule
+	selectors &PreparedStyleRuleSelectors = unsafe { nil }
 	thread_id u64
 mut:
 	storage platform.DetachedThreadScratch
@@ -49,6 +51,12 @@ pub fn prepare_preloaded_stylesheet_syntax(text string) {
 		token_stream: ParserTokenStream.from_transient_source(input, 'utf-8')
 	}
 	rules := parser.parse_a_stylesheet(none).rules
+	selectors := if prepare_preloaded_stylesheet_selectors && !rule_selector_reuse_diagnostics
+		&& !borrowed_selector_span_diagnostics && !retained_selector_construction_diagnostics {
+		prepare_stylesheet_selector_lists(rules, stylesheet_leading_namespaces(rules), .no)
+	} else {
+		unsafe { &PreparedStyleRuleSelectors(nil) }
+	}
 	mut storage := scratch.detach()
 	if storage.capacity() > preloaded_stylesheet_syntax_max_arena_bytes {
 		storage.discard(preloaded_stylesheet_syntax_label)
@@ -57,6 +65,7 @@ pub fn prepare_preloaded_stylesheet_syntax(text string) {
 	preloaded_stylesheet_syntax_.insert(PreloadedStylesheetSyntax{
 		input: input
 		rules: rules
+		selectors: selectors
 		storage: storage
 		thread_id: if preloaded_stylesheet_syntax_diagnostics { platform.native_thread_identity() } else { u64(0) }
 	})
