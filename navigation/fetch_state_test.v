@@ -111,7 +111,7 @@ fn serve_initial_navigation_resource(mut listener net.TcpListener, path string, 
 	connection.write_string('HTTP/1.1 200 OK\r\nContent-Type: ${content_type}\r\nCache-Control: no-store\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
 }
 
-fn test_initial_stylesheet_fetch_starts_before_the_navigation_is_polled() {
+fn test_named_initial_stylesheet_fetch_starts_before_the_navigation_is_polled() {
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
 	listener.set_accept_timeout(5 * time.second)
 	defer { listener.close() or {} }
@@ -121,7 +121,7 @@ fn test_initial_stylesheet_fetch_starts_before_the_navigation_is_polled() {
 	app.script_policy = .enabled
 	app.layout_tree_only = true
 	address := 'http://${listener.addr()!}/next'
-	markup := '<!doctype html><html><head><base href="${address}"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><link rel="stylesheet" href="site.css"></head><body><p id="next">Next page</p></body></html>'
+	markup := '<!doctype html><html><head><base href="${address}"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><link rel="stylesheet" title="Preferred" href="site.css"></head><body><p id="next">Next page</p></body></html>'
 	stylesheet_requested := chan bool{cap: 1}
 	release_stylesheet := chan bool{cap: 1}
 	main_response := spawn serve_initial_navigation_resource(mut listener, '/next',

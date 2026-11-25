@@ -15,7 +15,7 @@ struct TokenizedNavigationPreloads {
 
 // Only the scripting-enabled path discards discovery without computed styles.
 // Preserve the full parser for foreign/template/selection contexts, base URL
-// changes, preferred stylesheet sets and document policy/encoding changes.
+// changes, stylesheet set selection and document policy/encoding changes.
 fn tokenized_navigation_preloads(loaded LoadedPage) ?TokenizedNavigationPreloads {
 	mut work := platform.begin_thread_scratch('tokenized navigation preloads')
 	markup, document_encoding := loaded_browser_navigation_input(loaded)
@@ -42,6 +42,7 @@ fn collect_tokenized_navigation_preloads(markup string, base_url string, documen
 	mut scripts := []string{}
 	mut script_type_urls := []string{}
 	mut images := []string{}
+	mut stylesheet_set_title := ''
 	mut saw_html := false
 	mut saw_head := false
 	mut saw_body := false
@@ -82,10 +83,19 @@ fn collect_tokenized_navigation_preloads(markup string, base_url string, documen
 			relations := (token.attribute('rel') or { '' }).to_lower().fields()
 			stylesheet := 'stylesheet' in relations
 			preload := 'preload' in relations && (token.attribute('as') or { '' }).to_lower() == 'style'
-			if stylesheet && (token.has_attribute('disabled')
-				|| (token.attribute('title') or { '' }) != ''
-				|| !html.is_supported_style_sheet_type_attribute(token.attribute('type'))) { return none }
-			if 'alternate' in relations && stylesheet { return none }
+			if stylesheet {
+				if token.has_attribute('disabled') || 'alternate' in relations
+					|| !html.is_supported_style_sheet_type_attribute(token.attribute('type')) {
+					return none
+				}
+				title := token.attribute('title') or { '' }
+				if title != '' && token.has_attribute('href') {
+					// The same set is selected regardless of which named link comes
+					// first. Untitled sheets are persistent and also apply.
+					if stylesheet_set_title != '' && title != stylesheet_set_title { return none }
+					stylesheet_set_title = title
+				}
+			}
 			valid_preload := preload && (token.attribute('type') or { '' }).split(';')[0].trim_space().to_lower() in ['', 'text/css']
 			if (stylesheet || valid_preload) && token.has_attribute('href') {
 				styles << resolve_document_reference(token.attribute('href') or { '' }, base_url)
