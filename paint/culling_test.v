@@ -237,6 +237,39 @@ $if macos {
 		assert chromium.glyph_positions() == libweb.glyph_positions()
 	}
 
+	fn test_worker_glyph_ranges_skip_unneeded_and_oversized_runs() {
+		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
+			|| serial_retained_glyph_geometry || packed_retained_glyph_geometry { return }
+		font := &platform.Font{point_size: 12, font_rendering_policy: .chromium}
+		glyph := platform.Glyph{glyph_index: 1, position: platform.GlyphPosition{5, 2}}
+		short := platform.GlyphRun.new(font, .ltr, [glyph])
+		long := platform.GlyphRun.new(font, .ltr, []platform.Glyph{
+			len: retained_glyph_positions_per_command + 1
+			init: glyph
+		})
+		text := layout.PaintCommand{kind: 'draw_text', glyph_run: short,
+			glyph_translation_x: 10, glyph_translation_y: 20}
+		commands := [
+			layout.PaintCommand{...text, glyph_run: long},
+			text,
+			layout.PaintCommand{...text, glyph_translation_y: 500},
+			text,
+			text,
+		]
+		mut batch := new_paint_canvas_bounds_batch(commands, 2, 0, 100, 100)
+		batch.submit()
+		assert batch.background_lanes == 2
+		bounds := batch.finish(true)
+		assert bounds.len == commands.len
+		assert bounds[2] == u8(PaintLeafCanvasBounds.outside)
+		geometry := batch.glyph_geometry
+		assert geometry[0].positions.len == 0 && geometry[2].positions.len == 0
+		assert geometry[1].positions == [f32(15), 22]
+		assert geometry[3].positions == geometry[1].positions
+		assert geometry[4].positions == geometry[1].positions
+		assert voidptr(geometry[1].positions.data) != voidptr(geometry[3].positions.data)
+	}
+
 	fn test_canvas_bounds_can_join_after_other_frame_setup_allocations() {
 		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1' { return }
 		visible := layout.PaintCommand{kind: 'fill_rect', width: 20, height: 20}
