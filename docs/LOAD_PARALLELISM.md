@@ -1674,3 +1674,77 @@ at each offset. Both modes retained all 160 ordered row IDs. The four
 processes and both 3 GiB guards exited zero. The two PNG SHAs were
 `7d51e803cd0676a54cfe2c056d279bb933451d073610c73ef06823fc270cd7b8`
 and `db268acf0e143fc1eb8a69c78c519bce30fe2e965843d273f2b15adc22939414`.
+
+### Parallel display-list leaf projection
+
+Commit `44ff81a77` lets workers copy eligible cached paint commands into
+preassigned display-list slots and apply the resolved transform, clip and
+opacity. The browser thread reserves slots in paint order and inserts the
+layer transitions. Commands that require live canvas or scroll state,
+local geometry, or scene allocation are projected there as well. Command
+effect bounds and scene publication follow the worker join.
+`VOX_SERIAL_DISPLAY_LIST_REPLAY=1` selects serial projection.
+
+The whole-browser production type check passed, and the shared raster
+range tests passed under ThreadSanitizer. The added regression case
+checks source-command immutability and the slots reserved for layer
+transitions. Standalone layout test builds had reached the compiler
+memory limit during the preceding visibility work. Runtime coverage
+for the new path used the production captures below. The generated C
+projection and callback made no V heap allocations.
+
+Receipt `20261125-094821-fe6de3ef` sealed `9bd548482`, which includes
+the worker projection change. The single-C-unit V `-prod` build passed
+the startup smoke and published executable SHA
+`366a61547c13d4600b7e9984387bf5e1a93bf2ad0ee490e202e6a7f172ed6994`.
+The native AVIF library SHA matched the preceding cohort.
+
+Hacker News recorded two display lists of 443 commands in the
+diagnostic launch. In each recording, 441 eligible leaves used the
+preassigned slots, with 332 projected off the browser thread in a
+four-lane batch. The serial control produced the same reference PNG
+and all 30 ordered story IDs. Main-thread instructions for recording
+the commands fell from 1,572,464 to 1,116,963. Inclusive paint command
+recording rose from 32,076,821 to 32,466,757. These figures are from a
+single instrumented pair.
+
+The two seven-pair timing cohorts alternated worker projection and
+`VOX_SERIAL_DISPLAY_LIST_REPLAY=1` on the same executable. The second
+cohort started with the serial setting. Both measured from fresh
+launch through the completed document PNG at 1024×768 CSS pixels
+and 2× scale, with JavaScriptCore, private empty profiles and HTTP
+caches, and a 60 ms delay on each replayed logo response. OS filesystem
+caches were retained.
+
+| Pair | Serial, ms | Workers, ms | Reversed serial, ms | Reversed workers, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 308.918 | 331.317 | 298.990 | 310.231 |
+| 2 | 306.906 | 312.513 | 312.367 | 339.032 |
+| 3 | 302.163 | 315.838 | 318.674 | 297.590 |
+| 4 | 311.918 | 309.016 | 317.977 | 305.900 |
+| 5 | 320.961 | 303.080 | 314.236 | 323.082 |
+| 6 | 311.004 | 304.096 | 313.792 | 299.530 |
+| 7 | 309.175 | 304.640 | 312.266 | 326.264 |
+| Median | 309.175 | 309.016 | 313.792 | 310.231 |
+
+Median paired changes were −2.902 ms and +8.846 ms, with workers
+finishing first in four and three pairs. Host load was 5.40–5.92 and
+4.76–5.44 on 18 CPUs. These results show no consistent end-to-end
+speedup. The 28 timing launches and both diagnostics had identical
+eight-record request and response fingerprints and matched PNG SHA
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All browser, driver and 3 GiB guard exits were zero. Executable, native
+library, archive, and driver hashes stayed pinned. The highest timing
+peak was 375,734,272 bytes of aggregate RSS.
+
+The mixed fixture included a live canvas, fixed opacity, transforms,
+an overflow clip, and an off-screen source with a visible drop shadow.
+Workers projected 638 leaves off-thread at the top and 649 at a
+740 CSS-pixel scroll offset. Both pairs matched the serial PNG exactly
+and preserved all 160 ordered row IDs. The top capture also matched
+the earlier production reference and verified the canvas pixel
+`(218, 69, 103)`. The two PNG SHAs were
+`5c6ab81d41d7a00055571cdfe2adbc7d633b75d859759ae93fe1271a49d90229`
+and `d9acc8f9908ab7eb7bc201b809cf18f1a1cbd7eb627cc17039a1f9cd43bf5f2e`.
+All four browsers and both guards exited zero. Paint ordering, layer
+effect bounds and frame publication still run on the browser thread.
