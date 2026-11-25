@@ -4002,3 +4002,127 @@ in default mode and three reuses of 421 selectors in each opt-in launch.
 The four captures matched the same PNG, content and replay records. All
 browser and guard exits were zero, with peak RSS of 369,197,056 bytes under
 the 3 GiB guard.
+
+### Parse preloaded author stylesheets on fetch workers
+
+Commit `a004f663a` lets a fetch worker parse the top-level grammar of a
+preloaded CSS response on macOS with preallocation. The browser thread uses
+the staged rules only when the decoded source bytes match exactly. It
+converts them in the document's own namespace, URL and cascade context.
+The staging cache has four slots with a 4 MiB arena budget per entry and
+accepts sources from 4 to 32 KiB. A consumer claims each entry once, and
+idle cleanup and eviction release unclaimed arenas.
+
+The focused syntax-cache tests passed with arena poisoning. They exercised
+exact source matching, conversion after the fetch worker and its original
+response arena retired, and lease retirement under eviction and idle cleanup.
+Concurrent publication passed ThreadSanitizer. The ordinary rule-cache
+suite also passed without preallocation.
+
+#### Preparation before delivering the response
+
+Receipt `20261125-183352-aa7514a2` verified `a004f663a`, passed startup smoke
+and published the single-C-unit V `-prod` executable with SHA-256
+`6f5a192bf9c9e338f41af173ac5c83b23e98db548ba4f4ea629c8b6c1bc625bb`.
+`VOX_SERIAL_PRELOADED_STYLESHEET_SYNTAX=1` selects the serial control. Both
+diagnostic candidate launches consumed the complete 7,418-byte author
+stylesheet as 63 top-level rules parsed on the fetch worker.
+
+| Pair | Serial CSS parsing | Worker CSS parsing | Serial document install | Worker document install | Serial style update | Worker style update |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 34,388,727 | 33,076,369 | 635,344,939 | 638,105,246 | 345,776,797 | 347,904,204 |
+| 2 | 34,888,006 | 33,016,609 | 639,316,169 | 636,259,098 | 348,374,290 | 347,848,345 |
+
+The inclusive CSS parsing scope fell by 3.8% and 5.4% in the separate
+browser-thread counter runs. Each launch recorded seven CSS parsing
+scopes, one document install and 12 style-update scopes.
+
+Each timing cohort alternated seven fresh launch pairs through completed
+document PNG. The reversed cohort started with serial parsing. Both used
+JavaScriptCore, a 1024×768 CSS-pixel viewport at 2× scale, private empty
+profiles and HTTP caches, retained OS filesystem caches, and a 60 ms
+replay delay per logo response.
+
+| Pair | Serial syntax, ms | Worker syntax, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 310.393 | 320.721 | 332.961 | 321.957 |
+| 2 | 306.279 | 329.927 | 317.035 | 342.025 |
+| 3 | 307.409 | 319.347 | 332.376 | 313.282 |
+| 4 | 334.005 | 359.816 | 322.664 | 322.218 |
+| 5 | 313.336 | 323.823 | 324.622 | 309.171 |
+| 6 | 321.021 | 312.575 | 317.540 | 319.397 |
+| 7 | 320.624 | 329.075 | 320.673 | 320.659 |
+| Median | 313.336 | 323.823 | 322.664 | 320.659 |
+
+Paired median changes were +10.487 and −0.446 ms with one and five worker
+wins. Sampled browser-thread CPU medians went from 178.051 to 183.374 ms
+and from 173.849 to 175.960 ms. One-minute host load ranged from 6.36 to
+6.61 and 6.26 to 6.46 on 18 CPUs. Preparing the rules added work before
+the fetch completion could be delivered.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight request and response records, including the favicon
+miss. The diagnostic captures verified the URL, ready state, viewport and
+30 ordered story IDs. Inputs stayed pinned. All browsers, the driver and
+the 3 GiB guard exited zero. Peak guard RSS was 391,118,848 bytes.
+
+#### Preparation after delivering the response
+
+Commit `584a222fc` sends the response and native wakeup before preparing
+the rules. Preparation runs after the last request in that worker's batch.
+The browser thread uses its normal parser when it reaches the stylesheet
+before the prepared input is ready.
+
+The resource fetch pool tests passed with arena poisoning. A combined
+compile-and-test run reached the 3 GiB guard during compilation. The split
+retry compiled under the 12 GiB build guard and ran the tests under the
+3 GiB runtime guard. The compile and runtime peaks were 6,885,195,776 and
+13,271,040 bytes, respectively.
+
+Receipt `20261125-184341-9bfe537b` verified `584a222fc` and passed startup
+smoke. Each schedule was measured against its same-binary serial control
+in single-C-unit V `-prod` mode.
+
+| Input | SHA-256 |
+| --- | --- |
+| Response-first Vox | `ff12fde05da780fe335310d7df448bc913dae54ea5e775b95a7cab749b4ac5c0` |
+| `libVoxAVIF.dylib` in both builds | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` in both builds | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both response-first candidate diagnostics found the worker's 63 rules
+ready when converting the 7,418-byte author stylesheet. Separate
+browser-thread counter runs recorded the same scope counts as before.
+
+| Pair | Serial CSS parsing | Worker CSS parsing | Serial document install | Worker document install | Serial style update | Worker style update |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 34,484,185 | 32,757,204 | 636,351,777 | 635,584,181 | 346,646,668 | 346,057,190 |
+| 2 | 34,576,439 | 32,789,495 | 642,369,537 | 634,168,873 | 348,375,191 | 346,111,380 |
+
+Browser-thread CSS parsing instructions fell 5.0% and 5.2%. Document
+install instructions fell 0.1% and 1.3%. The timing protocol matched the
+earlier cohorts.
+
+| Pair | Serial syntax, ms | Worker syntax, ms | Reversed serial, ms | Reversed worker, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 337.115 | 348.373 | 293.903 | 338.948 |
+| 2 | 320.116 | 345.792 | 325.111 | 304.773 |
+| 3 | 339.674 | 313.975 | 305.771 | 310.873 |
+| 4 | 319.867 | 317.725 | 328.996 | 306.288 |
+| 5 | 316.403 | 305.199 | 306.656 | 327.673 |
+| 6 | 328.607 | 323.709 | 293.792 | 328.498 |
+| 7 | 359.440 | 302.804 | 303.046 | 305.574 |
+| Median | 328.607 | 317.725 | 305.771 | 310.873 |
+
+Paired median changes were −4.898 and +5.103 ms with five and two worker
+wins. Sampled browser-thread CPU medians fell from 166.097 to 162.128 ms
+and from 160.112 to 158.436 ms. One-minute host load ranged from 4.10 to
+4.80 and 4.80 to 5.50 on 18 CPUs. The timing cohorts show mixed elapsed
+times.
+
+All 36 response-first captures matched the same PNG and replay records.
+The diagnostic captures verified the URL, ready state, viewport and
+30 ordered story IDs. Executable, native library, helper, archive and
+driver hashes stayed pinned. All browsers, the driver and the 3 GiB guard
+exited zero. Peak guard RSS was 393,363,456 bytes.
