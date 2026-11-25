@@ -402,28 +402,37 @@ fn shaped_text_with_baseline(shape CachedShape, baseline_start_x f32, font &Font
 			glyph.position.x += baseline_start_x
 		}
 	}
+	return shaped_text_with_owned_shape(CachedShape{...shape, glyphs: glyphs}, font, text_type)
+}
+
+fn shaped_text_with_owned_shape(shape CachedShape, font &Font, text_type GlyphRunTextType) ShapedText {
 	return ShapedText{
-		glyph_run: glyph_run_with_owned_glyphs(font, text_type, glyphs, shape.face)
+		glyph_run: glyph_run_with_owned_glyphs(font, text_type, shape.glyphs, shape.face)
 		trailing_whitespace: shape.trailing_whitespace
 	}
 }
 
 fn (mut cache ShapingCache) publish_ascii_shape_job(job ASCIIShapeJob, font_key string, text string,
-	font &Font, params ShapeParams) ShapedText {
-	advances := if job.advance_count > 0 { job.advances[..job.advance_count] } else { []f32{} }
-	shaped := decode_harfbuzz_shape(job.buffer, job.face, job.hb_font, 0, 0, 0, text, font,
-		.ltr, [], text.len, true, false, advances)
+	font &Font, params ShapeParams) CachedShape {
+	shape := if job.glyph_count > 0 {
+		CachedShape{
+			glyphs: job.glyphs[..job.glyph_count]
+			face: .document
+			trailing_whitespace: job.trailing_whitespace
+		}
+	} else {
+		advances := if job.advance_count > 0 { job.advances[..job.advance_count] } else { []f32{} }
+		decode_harfbuzz_shape(job.buffer, job.face, job.hb_font, ascii_harfbuzz_decode_params(text, font),
+			advances)
+	}
 	cache.store(font_key, text, params, CachedShape{
-		...cached_shape_from(shaped)
+		...shape
 		parallel_prepared: parallel_ascii_shape_diagnostics
 	})
-	return shaped
+	return shape
 }
 
-fn (mut cache ShapingCache) shape_cache_miss(font_key string, text string, font &Font, params ShapeParams) ShapedText {
-	if job := take_ascii_shape_job(font_key, text, params) {
-		return cache.publish_ascii_shape_job(job, font_key, text, font, params)
-	}
+fn (mut cache ShapingCache) shape_uncached_and_store(font_key string, text string, font &Font, params ShapeParams) ShapedText {
 	shaped := shape_text_uncached(0, math.f32_from_bits(params.letter_spacing_bits),
 		math.f32_from_bits(params.word_spacing_bits), text, font, params.text_type)
 	cache.store(font_key, text, params, cached_shape_from(shaped))
@@ -437,7 +446,17 @@ fn shape_text_cached(baseline_start_x f32, letter_spacing f32, word_spacing f32,
 	if shape := cache.lookup(font_key, text, params) {
 		return shaped_text_with_baseline(shape, baseline_start_x, font, text_type)
 	}
-	shaped := cache.shape_cache_miss(font_key, text, font, params)
+	shaped := if job := take_ascii_shape_job(font_key, text, params) {
+		shape := cache.publish_ascii_shape_job(job, font_key, text, font, params)
+		if job.glyph_count > 0 {
+			// The glyph vector belongs to the outer geometry scope. A returned
+			// run must own its mutable glyphs in the current caller's scope.
+			return shaped_text_with_baseline(shape, baseline_start_x, font, text_type)
+		}
+		shaped_text_with_owned_shape(shape, font, text_type)
+	} else {
+		cache.shape_uncached_and_store(font_key, text, font, params)
+	}
 	// The uncached run already owns its mutable glyph and playback storage.
 	// store() cloned the cache's glyphs, so this run can go directly to its caller.
 	if baseline_start_x == 0 {
@@ -450,6 +469,14 @@ fn shape_text_cached(baseline_start_x f32, letter_spacing f32, word_spacing f32,
 	}
 	run.refresh_replay_data()
 	return shaped
+}
+
+fn (mut cache ShapingCache) shape_metrics_cache_miss(font_key string, text string,
+	font &Font, params ShapeParams) CachedShape {
+	if job := take_ascii_shape_job(font_key, text, params) {
+		return cache.publish_ascii_shape_job(job, font_key, text, font, params)
+	}
+	return cached_shape_from(cache.shape_uncached_and_store(font_key, text, font, params))
 }
 
 pub struct ShapedTextContextMetrics {
@@ -513,8 +540,7 @@ pub fn shaped_text_context_metrics(letter_spacing f32, word_spacing f32, text st
 	}
 	scratch := begin_thread_scratch('context-width text shaping')
 	defer { scratch.finish() }
-	shaped := cache.shape_cache_miss(font_key, text, font, params)
-	return cached_shape_context_metrics(cached_shape_from(shaped))
+	return cached_shape_context_metrics(cache.shape_metrics_cache_miss(font_key, text, font, params))
 }
 
 // Width-only callers share the exact cache used by full glyph-run callers.
@@ -523,16 +549,18 @@ pub fn shaped_text_width(letter_spacing f32, word_spacing f32, text string, font
 	params := ShapeParams.new(text_type, letter_spacing, word_spacing)
 	mut cache := shared_shaping_cache()
 	if shape := cache.lookup(font_key, text, params) {
-		mut width := f32(0)
-		for glyph in shape.glyphs {
-			width += glyph.advance
-		}
-		return width
+		return cached_shape_width(shape)
 	}
-	// Only the scalar width escapes. store() owns the cache's independent
-	// snapshot; retire the temporary run and its native playback buffers.
+	// Only the scalar width escapes. store() owns the cache's independent snapshot.
 	scratch := begin_thread_scratch('width-only text shaping')
 	defer { scratch.finish() }
-	shaped := cache.shape_cache_miss(font_key, text, font, params)
-	return shaped.glyph_run.width()
+	return cached_shape_width(cache.shape_metrics_cache_miss(font_key, text, font, params))
+}
+
+fn cached_shape_width(shape CachedShape) f32 {
+	mut width := f32(0)
+	for glyph in shape.glyphs {
+		width += glyph.advance
+	}
+	return width
 }

@@ -937,58 +937,113 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		feature_count = 3
 	}
 	C.hb_shape(hb_font, buffer, &features[0], feature_count)
-	return decode_harfbuzz_shape(buffer, face, hb_font, initial_x, letter_spacing, word_spacing,
-		text, font, text_type, utf16_units, text_length_in_code_units, is_ascii, uses_emoji, [])
+	parameters := HarfBuzzDecodeParams{
+		initial_x: initial_x
+		letter_spacing: letter_spacing
+		word_spacing: word_spacing
+		text: text
+		font: font
+		text_type: text_type
+		utf16_units: utf16_units
+		text_length_in_code_units: text_length_in_code_units
+		is_ascii: is_ascii
+		uses_emoji: uses_emoji
+	}
+	shape := decode_harfbuzz_shape(buffer, face, hb_font, parameters, [])
+	return shaped_text_with_owned_shape(shape, font, text_type)
 }
 
-// Decode while the buffer is owned by the caller, then release it. The cache
-// batch and the normal shaper use the same glyph, advance and cluster handling.
-fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_x f32,
-	letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType,
-	utf16_units []u16, text_length_in_code_units int, is_ascii bool, uses_emoji bool,
-	prepared_advances []f32) ShapedText {
+struct HarfBuzzDecodeParams {
+	initial_x                 f32
+	letter_spacing            f32
+	word_spacing              f32
+	text                      string
+	font                      &Font
+	text_type                 GlyphRunTextType
+	utf16_units               []u16
+	text_length_in_code_units int
+	is_ascii                  bool
+	uses_emoji                bool
+}
+
+struct HarfBuzzGlyphBuffer {
+	infos     &C.hb_glyph_info_t
+	positions &C.hb_glyph_position_t
+	count     int
+}
+
+fn harfbuzz_buffer_glyphs(buffer voidptr) HarfBuzzGlyphBuffer {
+	mut count := u32(0)
+	infos := C.hb_buffer_get_glyph_infos(buffer, &count)
+	positions := C.hb_buffer_get_glyph_positions(buffer, &count)
+	return HarfBuzzGlyphBuffer{infos, positions, int(count)}
+}
+
+// Resolve any native advances the caller did not prepare, then dispose of
+// the native buffer. The glyph vector belongs to the current allocation scope.
+fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr,
+	params HarfBuzzDecodeParams, prepared_advances []f32) CachedShape {
+	source := harfbuzz_buffer_glyphs(buffer)
+	advances := if prepared_advances.len > 0 {
+		prepared_advances
+	} else {
+		chromium_native_shape_advances(params.font, face, hb_font, source.infos, source.positions,
+			source.count)
+	}
+	mut glyphs := []Glyph{len: source.count}
+	trailing := source.decode_into(mut glyphs, params, advances)
+	C.hb_buffer_destroy(buffer)
+	return CachedShape{
+		glyphs: glyphs
+		face: if params.uses_emoji { .emoji } else { .document }
+		trailing_whitespace: trailing
+	}
+}
+
+// Both the regular decoder and shaping workers supply their own output
+// storage. Only immutable font attributes and the borrowed buffer are read.
+fn (source HarfBuzzGlyphBuffer) decode_into(mut glyphs []Glyph, params HarfBuzzDecodeParams,
+	native_advances []f32) TrailingWhitespace {
+	font := params.font
 	resolution := f64(font.shaping_resolution())
-	mut glyph_count := u32(0)
-	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
-	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
+	infos := source.infos
+	positions := source.positions
+	glyph_count := source.count
 	// UNSAFE_TO_BREAK is meaningful only at cluster starts. Reject duplicate,
 	// decreasing or missing cluster coverage rather than inferring offsets.
-	mut known_breaks := (is_ascii || harfbuzz_latin_punctuation_units(utf16_units))
-		&& !uses_emoji && text_type == .ltr
+	mut known_breaks := (params.is_ascii || harfbuzz_latin_punctuation_units(params.utf16_units))
+		&& !params.uses_emoji && params.text_type == .ltr
 		&& font.font_rendering_policy == .chromium && glyph_count > 0
 	if known_breaks {
 		mut previous := -1
-		for index in 0 .. int(glyph_count) {
+		for index in 0 .. glyph_count {
 			cluster := int(unsafe { infos[index] }.cluster)
-			if (index == 0 && cluster != 0) || cluster <= previous || cluster >= text_length_in_code_units {
+			if (index == 0 && cluster != 0) || cluster <= previous || cluster >= params.text_length_in_code_units {
 				known_breaks = false
 				break
 			}
 			previous = cluster
 		}
 	}
-	native_advances := if prepared_advances.len > 0 {
-		prepared_advances
-	} else {
-		chromium_native_shape_advances(font, face, hb_font, infos, positions, int(glyph_count))
-	}
-	resolved_letter_spacing := font.quantized_shaping_spacing(letter_spacing)
-	resolved_word_spacing := font.quantized_shaping_spacing(word_spacing)
-	mut glyphs := []Glyph{cap: int(glyph_count)}
-	mut point_x := initial_x
-	trailing_length := trailing_whitespace_length(text)
-	first_trailing_offset := text_length_in_code_units - trailing_length
+	use_native_advances := native_advances.len >= glyph_count
+	resolved_letter_spacing := font.quantized_shaping_spacing(params.letter_spacing)
+	resolved_word_spacing := font.quantized_shaping_spacing(params.word_spacing)
+	mut point_x := params.initial_x
+	trailing_length := trailing_whitespace_length(params.text)
+	first_trailing_offset := params.text_length_in_code_units - trailing_length
 	mut trailing_advance := f32(0)
-	for index in 0 .. int(glyph_count) {
+	for index in 0 .. glyph_count {
 		info := unsafe { infos[index] }
 		position := unsafe { positions[index] }
 		starting_offset := int(info.cluster)
-		code_point := code_point_at_utf16_offset(text, utf16_units, is_ascii, starting_offset)
-		is_default_ignorable := code_point_is_default_ignorable(code_point)
+		code_point := code_point_at_utf16_offset(params.text, params.utf16_units, params.is_ascii,
+			starting_offset)
+		// Default_Ignorable_Code_Point contains no ASCII code points.
+		is_default_ignorable := code_point > 0x7f && code_point_is_default_ignorable(code_point)
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			design_advance := if native_advances.len == int(glyph_count) {
+			design_advance := if use_native_advances {
 				native_advances[index]
 			} else {
 				f32(f64(position.x_advance) / resolution)
@@ -1000,12 +1055,12 @@ fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_
 			// Blink never lets negative letter- or word-spacing make a glyph's
 			// advance negative.
 			if font.font_rendering_policy == .chromium && advance < 0
-				&& (letter_spacing < 0 || word_spacing < 0) {
+				&& (params.letter_spacing < 0 || params.word_spacing < 0) {
 				advance = 0
 			}
 		}
-		mut length_in_code_units := text_length_in_code_units - starting_offset
-		for following_index in index + 1 .. int(glyph_count) {
+		mut length_in_code_units := params.text_length_in_code_units - starting_offset
+		for following_index in index + 1 .. glyph_count {
 			following_offset := int(unsafe { infos[following_index] }.cluster)
 			if following_offset != starting_offset {
 				length_in_code_units = following_offset - starting_offset
@@ -1013,7 +1068,7 @@ fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_
 			}
 		}
 		offset_x := f32(f64(position.x_offset) / resolution)
-		glyphs << Glyph{
+		glyphs[index] = Glyph{
 			code_point:           code_point
 			glyph_index:          int(info.codepoint)
 			position:             GlyphPosition{
@@ -1039,16 +1094,8 @@ fn decode_harfbuzz_shape(buffer voidptr, face voidptr, hb_font voidptr, initial_
 			point_x += advance
 		}
 	}
-	C.hb_buffer_destroy(buffer)
-	return ShapedText{
-		glyph_run:           glyph_run_with_owned_glyphs(font, text_type, glyphs, if uses_emoji {
-			.emoji
-		} else {
-			.document
-		})
-		trailing_whitespace: TrailingWhitespace{
-			length_in_code_units: trailing_length
-			advance:              trailing_advance
-		}
+	return TrailingWhitespace{
+		length_in_code_units: trailing_length
+		advance:              trailing_advance
 	}
 }

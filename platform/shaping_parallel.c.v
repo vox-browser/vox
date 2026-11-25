@@ -8,6 +8,7 @@ fn C.vox_ascii_shape_batch_set(voidptr)
 
 const parallel_ascii_shape_diagnostics = os.getenv('VOX_PARALLEL_ASCII_SHAPE_DIAGNOSTICS') == '1'
 const serial_ascii_strike_advances = os.getenv('VOX_SERIAL_ASCII_STRIKE_ADVANCES') == '1'
+const serial_ascii_glyph_decode = os.getenv('VOX_SERIAL_ASCII_GLYPH_DECODE') == '1'
 const ascii_shape_strike_max_glyphs = 160
 
 pub struct ASCIIShapeRequest {
@@ -22,10 +23,14 @@ pub struct ASCIIShapeJob {
 	face     voidptr
 	hb_font  voidptr
 	strike   ChromiumNativeStrike
+	decoding HarfBuzzDecodeParams
 mut:
 	buffer    voidptr
 	advances  []f32
 	advance_count int
+	glyphs []Glyph
+	glyph_count int
+	trailing_whitespace TrailingWhitespace
 	thread_id u64
 	next_for_text int
 }
@@ -48,8 +53,20 @@ fn active_ascii_shape_batch() &ASCIIShapeBatch {
 	return unsafe { &ASCIIShapeBatch(C.vox_ascii_shape_batch_get()) }
 }
 
+fn (job &ASCIIShapeJob) prepared() bool {
+	return job.glyph_count > 0 || job.buffer != unsafe { nil }
+}
+
+fn (mut job ASCIIShapeJob) take() ASCIIShapeJob {
+	result := *job
+	job.buffer = unsafe { nil }
+	job.glyph_count = 0
+	return result
+}
+
 // Keep native results in this layout's ownership scope. Each matching cache
-// miss transfers one buffer to the normal decoder. The cache owns only glyphs.
+// miss takes the glyphs or the buffer needed to build them. The cache copies
+// the glyphs into its own storage.
 pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
 	mut first_by_text := map[string]int{}
 	caller := if parallel_ascii_shape_diagnostics { native_thread_identity() } else { u64(0) }
@@ -57,9 +74,11 @@ pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
 	mut off_thread := 0
 	mut strikes := 0
 	mut strikes_off_thread := 0
+	mut decoded := 0
+	mut decoded_off_thread := 0
 	for index in 0 .. jobs.len {
 		mut job := unsafe { &jobs[index] }
-		if job.buffer == unsafe { nil } { continue }
+		if !job.prepared() { continue }
 		text := job.request.text
 		job.next_for_text = first_by_text[text]
 		first_by_text[text] = index + 1
@@ -70,10 +89,14 @@ pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
 				strikes++
 				if job.thread_id != caller { strikes_off_thread++ }
 			}
+			if job.glyph_count > 0 {
+				decoded++
+				if job.thread_id != caller { decoded_off_thread++ }
+			}
 		}
 	}
 	if parallel_ascii_shape_diagnostics {
-		eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${jobs.len} staged=${staged} off_thread=${off_thread} strikes=${strikes} strikes_off_thread=${strikes_off_thread}')
+		eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${jobs.len} staged=${staged} off_thread=${off_thread} strikes=${strikes} strikes_off_thread=${strikes_off_thread} decoded=${decoded} decoded_off_thread=${decoded_off_thread}')
 	}
 	if staged == 0 { return ASCIIShapeScope{} }
 	batch := &ASCIIShapeBatch{
@@ -95,9 +118,10 @@ pub fn (mut scope ASCIIShapeScope) finish() {
 	mut discarded := 0
 	for index in 0 .. batch.jobs.len {
 		mut job := unsafe { &batch.jobs[index] }
-		if job.buffer == unsafe { nil } { continue }
-		C.hb_buffer_destroy(job.buffer)
+		if !job.prepared() { continue }
+		if job.buffer != unsafe { nil } { C.hb_buffer_destroy(job.buffer) }
 		job.buffer = unsafe { nil }
+		job.glyph_count = 0
 		discarded++
 	}
 	if parallel_ascii_shape_diagnostics {
@@ -115,14 +139,22 @@ fn take_ascii_shape_job(font_key string, text string, params ShapeParams) ?ASCII
 	mut link := batch.first_by_text[text]
 	for link > 0 {
 		mut job := unsafe { &batch.jobs[link - 1] }
-		if job.buffer != unsafe { nil } && job.font_key == font_key {
-			result := *job
-			job.buffer = unsafe { nil }
-			return result
+		if job.prepared() && job.font_key == font_key {
+			return job.take()
 		}
 		link = job.next_for_text
 	}
 	return none
+}
+
+fn ascii_harfbuzz_decode_params(text string, font &Font) HarfBuzzDecodeParams {
+	return HarfBuzzDecodeParams{
+		text: text
+		font: font
+		text_type: .ltr
+		text_length_in_code_units: text.len
+		is_ascii: true
+	}
 }
 
 // Resolve the normal cache and native font keys on the owner thread. The
@@ -150,6 +182,7 @@ pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest) []ASCIIShapeJob {
 		C.hb_font_make_immutable(hb_font)
 		mut strike := ChromiumNativeStrike{}
 		mut advances := []f32{}
+		mut glyphs := []Glyph{}
 		$if macos {
 			if !serial_ascii_strike_advances && request.text.len <= ascii_shape_strike_max_glyphs {
 				strike = if existing := strikes[key] {
@@ -161,6 +194,9 @@ pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest) []ASCIIShapeJob {
 				}
 				if strike.path != '' {
 					advances = []f32{len: request.text.len}
+					if !serial_ascii_glyph_decode {
+						glyphs = []Glyph{len: request.text.len}
+					}
 				}
 			}
 		}
@@ -171,14 +207,16 @@ pub fn prepare_ascii_shape_jobs(requests []ASCIIShapeRequest) []ASCIIShapeJob {
 			face: face
 			hb_font: hb_font
 			strike: strike
+			decoding: ascii_harfbuzz_decode_params(request.text, font)
 			advances: advances
+			glyphs: glyphs
 		}
 	}
 	return jobs
 }
 
-// Each worker reads the immutable font and writes its own native buffer and
-// strike advances. The V advance arrays are allocated by the caller.
+// Each worker reads the immutable font and writes its own native buffer,
+// advances and glyphs. The caller allocates both V arrays.
 // The caller owns the job array and retains the strings until every range joins.
 pub fn shape_ascii_job_range(context voidptr, first i32, end i32) {
 	jobs := unsafe { &ASCIIShapeJob(context) }
@@ -197,14 +235,19 @@ pub fn shape_ascii_job_range(context voidptr, first i32, end i32) {
 		job.thread_id = thread_id
 		$if macos {
 			if job.advances.len > 0 {
-				mut count := u32(0)
-				infos := C.hb_buffer_get_glyph_infos(buffer, &count)
-				positions := C.hb_buffer_get_glyph_positions(buffer, &count)
-				if count > 0 && int(count) <= job.advances.len {
-					mut glyphs := [ascii_shape_strike_max_glyphs]u16{}
-					if job.strike.shape_advances(job.hb_font, infos, positions, int(count),
-						&glyphs[0], job.advances.data) {
-						job.advance_count = int(count)
+				source := harfbuzz_buffer_glyphs(buffer)
+				if source.count > 0 && source.count <= job.advances.len {
+					mut ids := [ascii_shape_strike_max_glyphs]u16{}
+					if job.strike.shape_advances(job.hb_font, source.infos, source.positions, source.count,
+						&ids[0], job.advances.data) {
+						job.advance_count = source.count
+						if source.count <= job.glyphs.len {
+							job.trailing_whitespace = source.decode_into(mut job.glyphs,
+								job.decoding, job.advances)
+							job.glyph_count = source.count
+							C.hb_buffer_destroy(buffer)
+							job.buffer = unsafe { nil }
+						}
 					}
 				}
 			}
@@ -222,9 +265,9 @@ pub fn store_ascii_shape_jobs(jobs []ASCIIShapeJob) int {
 	mut off_thread := 0
 	for index in 0 .. jobs.len {
 		mut job := unsafe { &jobs[index] }
-		if job.buffer == unsafe { nil } { continue }
-		cache.publish_ascii_shape_job(*job, job.font_key, job.request.text, job.request.font, params)
-		job.buffer = unsafe { nil }
+		if !job.prepared() { continue }
+		result := job.take()
+		cache.publish_ascii_shape_job(result, result.font_key, result.request.text, result.request.font, params)
 		stored++
 		if parallel_ascii_shape_diagnostics && job.thread_id != caller { off_thread++ }
 	}
