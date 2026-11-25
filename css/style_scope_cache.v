@@ -562,9 +562,12 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 	}
 
 	if insights := scope.selector_insights {
-		scope.make_rule_cache_for_cascade_origin(.author, insights)
-		scope.make_rule_cache_for_cascade_origin(.user, insights)
-		scope.make_rule_cache_for_cascade_origin(.user_agent, insights)
+		// A fresh dependency graph has no outstanding readers. Growing its
+		// match sets in place keeps each successive selector from retaining a
+		// discarded copy of all the earlier keys.
+		scope.make_rule_cache_for_origin(.author, insights, true)
+		scope.make_rule_cache_for_origin(.user, insights, true)
+		scope.make_rule_cache_for_origin(.user_agent, insights, true)
 	}
 
 	cache := &StyleCache{
@@ -758,6 +761,7 @@ struct RuleCacheBuildContext {
 	insights &SelectorInsights
 	style_sheet_index uint
 	fold_id_and_class_name_case bool
+	unpublished_invalidation bool
 	// The indexed rules of a sheet whose identical copies share them.
 	duplicate_group &DuplicateSheetGroup = unsafe { nil }
 mut:
@@ -783,10 +787,12 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 	if style_invalidation_data := scope.style_invalidation_data {
 		mut mutable_invalidation_data := unsafe { &StyleInvalidationData(style_invalidation_data) }
 		for selector in absolutized_selectors.selectors {
-			mutable_invalidation_data.build_invalidation_sets_for_selector(selector)
+			mutable_invalidation_data.build_selector_dependencies(selector, false,
+				context.unpublished_invalidation)
 		}
 		if scope_rule := rule.parent_scope_rule() {
-			style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data, mut mutable_insights)
+			style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data,
+				mut mutable_insights, context.unpublished_invalidation)
 		}
 	}
 
@@ -886,6 +892,11 @@ fn style_scope_cache_keyframes_rule(context voidptr, rule &CSSRule) {
 }
 
 pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin CascadeOrigin, insights &SelectorInsights) {
+	scope.make_rule_cache_for_origin(cascade_origin, insights, false)
+}
+
+fn (mut scope StyleScope) make_rule_cache_for_origin(cascade_origin CascadeOrigin, insights &SelectorInsights,
+	unpublished_invalidation bool) {
 	sheets := scope.stylesheets_for_cascade_origin(cascade_origin)
 	// A complete build indexes its own copies; only an extension shares the
 	// groups of the build it extends.
@@ -893,7 +904,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 	// Only the order of sheet indexes matters to the cascade. A stride leaves
 	// room for sheets that rule_cache_extension.v inserts between them.
 	indexes := rule_cache_strided_indexes(sheets.len)
-	scope.cache_rules_of_sheets(cascade_origin, insights, sheets, indexes)
+	scope.cache_rules_of_sheets(cascade_origin, insights, sheets, indexes, unpublished_invalidation)
 	if cascade_origin == .author {
 		scope.rule_cache_author_sheets_ = sheets
 		scope.rule_cache_author_sheet_indexes_ = indexes
@@ -902,7 +913,8 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 
 // Adds the rules of `sheets`, whose cascade-order sheet indexes are `indexes`,
 // to the origin's caches.
-fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, insights &SelectorInsights, sheets []&CSSStyleSheet, indexes []uint) {
+fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, insights &SelectorInsights, sheets []&CSSStyleSheet,
+	indexes []uint, unpublished_invalidation bool) {
 	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
 
@@ -941,6 +953,7 @@ fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, in
 			insights: mutable_insights
 			style_sheet_index: style_sheet_index
 			fold_id_and_class_name_case: fold_id_and_class_name_case
+			unpublished_invalidation: unpublished_invalidation
 			duplicate_group: duplicate_group
 		}
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), style_scope_cache_style_rule)
@@ -955,20 +968,21 @@ pub fn (scope &StyleScope) have_size_container_queries() bool {
 	return scope.has_size_container_queries
 }
 
-fn style_scope_collect_boundary_selector_dependencies(scope_rule &CSSRule, mut invalidation_data StyleInvalidationData, mut insights SelectorInsights) {
+fn style_scope_collect_boundary_selector_dependencies(scope_rule &CSSRule, mut invalidation_data StyleInvalidationData, mut insights SelectorInsights,
+	unpublished_invalidation bool) {
 	mut current_scope_rule := ?&CSSRule(scope_rule)
 	for {
 		current := current_scope_rule or { break }
 		mut mutable_current := unsafe { &CSSRule(current) }
 		if start_selectors := mutable_current.scope_start_selectors_for_matching() {
 			for selector in start_selectors.selectors {
-				invalidation_data.build_invalidation_sets_for_scope_boundary_selector(selector)
+				invalidation_data.build_selector_dependencies(selector, true, unpublished_invalidation)
 				StyleScope.collect_selector_insights(selector, mut insights)
 			}
 		}
 		if end_selectors := mutable_current.scope_end_selectors_for_matching() {
 			for selector in end_selectors.selectors {
-				invalidation_data.build_invalidation_sets_for_scope_boundary_selector(selector)
+				invalidation_data.build_selector_dependencies(selector, true, unpublished_invalidation)
 				StyleScope.collect_selector_insights(selector, mut insights)
 			}
 		}

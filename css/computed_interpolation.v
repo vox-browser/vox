@@ -10363,6 +10363,10 @@ pub fn (p &InvalidationPlan) is_empty() bool {
 }
 
 pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
+	p.merge_invalidation_plan(other)
+}
+
+fn (mut p InvalidationPlan) merge_invalidation_plan(other &InvalidationPlan, options InvalidationMergeOptions) {
 	if voidptr(&p) == voidptr(other) { return }
 	p.invalidate_self = p.invalidate_self || other.invalidate_self
 
@@ -10378,10 +10382,10 @@ pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
 	}
 
 	for rule in other.descendant_rules {
-		append_or_merge_descendant_invalidation_rule(mut p.descendant_rules, rule)
+		append_or_merge_descendant_invalidation_rule(mut p.descendant_rules, rule, options)
 	}
 	for rule in other.sibling_rules {
-		append_or_merge_sibling_invalidation_rule(mut p.sibling_rules, rule)
+		append_or_merge_sibling_invalidation_rule(mut p.sibling_rules, rule, options)
 	}
 }
 
@@ -10402,19 +10406,20 @@ pub fn (s &StyleInvalidationData) plan_for_property(property InvalidationPropert
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_selector(selector Selector) {
-	$if prealloc {
-		build_owned_selector_invalidation(mut s, selector, false)
-		return
-	}
-	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_self_invalidation())
+	s.build_selector_dependencies(selector, false, false)
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_scope_boundary_selector(selector Selector) {
+	s.build_selector_dependencies(selector, true, false)
+}
+
+fn (mut s StyleInvalidationData) build_selector_dependencies(selector Selector, boundary bool, unpublished bool) {
 	$if prealloc {
-		build_owned_selector_invalidation(mut s, selector, true)
+		build_owned_selector_invalidation(mut s, selector, boundary, unpublished: unpublished)
 		return
 	}
-	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_whole_subtree_invalidation())
+	root := if boundary { make_invalidate_whole_subtree_invalidation() } else { make_invalidate_self_invalidation() }
+	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, root)
 }
 
 fn should_register_invalidation_property(property InvalidationProperty) bool {

@@ -199,7 +199,7 @@ fn (mut scope StyleScope) extend_rule_cache() bool {
 	scope.has_size_container_queries = previous.has_size_container_queries
 	scope.build_user_style_sheet_if_needed()
 	scope.rule_cache_duplicate_groups_ = saved.duplicate_groups
-	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, extension.added_indexes)
+	scope.cache_rules_of_sheets(.author, previous.selector_insights, appended, extension.added_indexes, false)
 	scope.build_qualified_layer_names_cache()
 	mut cache := &StyleCache{
 		function_rules_by_name:         previous.function_rules_by_name.clone()

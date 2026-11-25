@@ -136,7 +136,13 @@ fn union_invalidation_match_sets(a InvalidationSet, b InvalidationSet) Invalidat
 	return result
 }
 
-fn append_or_merge_descendant_invalidation_rule(mut rules []DescendantInvalidationRule, rule DescendantInvalidationRule) {
+@[params]
+struct InvalidationMergeOptions {
+	unpublished bool
+}
+
+fn append_or_merge_descendant_invalidation_rule(mut rules []DescendantInvalidationRule, rule DescendantInvalidationRule,
+	options InvalidationMergeOptions) {
 	for index in 0 .. rules.len {
 		if rules[index].match_any != rule.match_any || !invalidation_plans_equal(rules[index].payload, rule.payload) { continue
 		 }
@@ -144,18 +150,22 @@ fn append_or_merge_descendant_invalidation_rule(mut rules []DescendantInvalidati
 			// A covered subset contributes no keys or flags, so neither the
 			// rule vector nor the existing property map needs a new owner.
 			if invalidation_match_set_covers(&rules[index].match_set, &rule.match_set) { return }
-			// A value-copy of a V plan can share the old array header.
-			// Replace the modified vector before changing an existing entry.
-			rules = rules.clone()
-			rules[index].match_set = union_invalidation_match_sets(rules[index].match_set,
-				rule.match_set)
+			if options.unpublished {
+				rules[index].match_set.include_all_from(rule.match_set)
+			} else {
+				// A value-copy of a V plan can share the old array header.
+				rules = rules.clone()
+				rules[index].match_set = union_invalidation_match_sets(rules[index].match_set,
+					rule.match_set)
+			}
 		}
 		return
 	}
 	rules << rule
 }
 
-fn append_or_merge_sibling_invalidation_rule(mut rules []SiblingInvalidationRule, rule SiblingInvalidationRule) {
+fn append_or_merge_sibling_invalidation_rule(mut rules []SiblingInvalidationRule, rule SiblingInvalidationRule,
+	options InvalidationMergeOptions) {
 	for index in 0 .. rules.len {
 		if rules[index].reach != rule.reach || rules[index].match_any != rule.match_any
 			|| !invalidation_plans_equal(rules[index].payload, rule.payload) {
@@ -163,9 +173,13 @@ fn append_or_merge_sibling_invalidation_rule(mut rules []SiblingInvalidationRule
 		}
 		if !rule.match_any {
 			if invalidation_match_set_covers(&rules[index].match_set, &rule.match_set) { return }
-			rules = rules.clone()
-			rules[index].match_set = union_invalidation_match_sets(rules[index].match_set,
-				rule.match_set)
+			if options.unpublished {
+				rules[index].match_set.include_all_from(rule.match_set)
+			} else {
+				rules = rules.clone()
+				rules[index].match_set = union_invalidation_match_sets(rules[index].match_set,
+					rule.match_set)
+			}
 		}
 		return
 	}

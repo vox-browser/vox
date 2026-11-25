@@ -10,7 +10,7 @@ struct InvalidationPublication {
 // Selector projections, unions and partially built plans are parser-like
 // work. Publish only the final dependency graph into the calling style owner.
 fn build_owned_selector_invalidation(mut destination StyleInvalidationData, selector Selector,
-	boundary bool) {
+	boundary bool, options InvalidationMergeOptions) {
 	mut scratch := platform.begin_thread_scratch('selector invalidation')
 	mut temporary := StyleInvalidationData{}
 	root := if boundary {
@@ -49,7 +49,7 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 			if existing.invalidate_whole_subtree || plan.invalidate_whole_subtree {
 				existing.include_all_from(plan)
 			} else {
-				existing.include_all_from(working_copy.plan(plan))
+				existing.merge_invalidation_plan(working_copy.plan(plan), options)
 			}
 		} else {
 			owned_key := key.clone()
