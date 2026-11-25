@@ -5501,3 +5501,101 @@ state, viewport and 30 ordered story IDs. Executable, native library,
 helper, fixture and harness hashes stayed pinned. Browser, driver and
 guard exits were zero. Peak sampled benchmark RSS was
 435,208,192 bytes.
+
+### Fill spare cold-layout shaping slots with short runs
+
+Commit `ad17b7df0` lets the existing cold macOS shaping batch prepare
+short printable ASCII runs of 8–19 bytes, including digit-leading
+metadata. Long runs remain first. Cache hits and duplicate font/text
+keys leave room for eligible short runs within the 64-job cap.
+The browser still publishes shapes on a matching cache miss. The
+short-run schedule uses the same worker batch and cache key.
+Set `VOX_PREPARE_SHORT_ASCII_LAYOUT_SHAPES=1` to select it.
+
+The focused shaping tests checked priority after duplicate requests,
+exact glyphs and whitespace for a short numeric label, and ordinary
+cache publication after worker exit. The tests passed with arena
+poisoning and ThreadSanitizer, including serial advance and glyph
+decode controls. The existing dispatch tests also passed with both
+checks enabled.
+
+Two preliminary launches with receipt `20261125-224616-908c6971`
+verified the reference PNG and ordered story IDs. The executable SHA-256
+was `c589c77625fdea080723c8e1a24b916f4236a6ed3d933b7982eff4ac89491df5`.
+Both shaped and consumed all 28 long runs on workers. The build already
+underway while the shaping sources changed stopped at input verification.
+The matched comparison ran after the managed retry passed smoke.
+
+#### Matched production captures
+
+Receipt `20261125-225847-5c0feb90` verified `ad17b7df0` and
+passed startup smoke in single-C-unit V `-prod` mode. Both schedules
+used the same executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `d5d1b545614a51f6b49f138acec437ed83509a1094e5bde512f1e88402467314` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+| Shaping diagnostic | Long 1 | Short 1 | Long 2 | Short 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Submitted | 28 | 64 | 28 | 64 |
+| Shaped off-thread | 28 | 64 | 28 | 64 |
+| Decoded off-thread | 28 | 64 | 28 | 64 |
+| Consumed | 28 | 64 | 28 | 64 |
+| Discarded | 0 | 0 | 0 | 0 |
+| Worker threads | 4 | 4 | 4 | 4 |
+| Ready at first matching cache miss | Yes | No | Yes | No |
+
+Layout consumed every one of the 36 additional shapes in both diagnostics.
+The first matching request still waited for the expanded batch.
+
+Separate counter diagnostics measured inclusive browser-thread scopes.
+
+| Scope | Long 1 | Short 1 | Long 2 | Short 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Shaping job preparation | 328,881 | 683,733 | 356,519 | 683,159 |
+| Flow layout | 148,003,908 | 143,828,015 | 147,721,202 | 144,238,776 |
+| Layout geometry | 170,395,686 | 166,484,722 | 170,063,447 | 166,930,319 |
+
+Flow layout used 2.8% and 2.4% fewer main-thread instructions.
+The larger request list increased browser-thread preparation by about
+0.35 million instructions.
+
+Two unprofiled seven-pair cohorts alternated the schedules, starting
+with a different mode in each cohort. The timer spans fresh launch
+through the completed document PNG at a 1024×768 CSS-pixel viewport
+and 2× scale. Captures used JavaScriptCore, empty private profiles and
+HTTP caches, retained OS filesystem and shader caches, `tr.athing`
+readiness and a 60 ms replay delay per logo response.
+
+| Pair | Long, ms | With short, ms | Reversed long, ms | Reversed with short, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 315.187 | 305.414 | 312.502 | 306.804 |
+| 2 | 310.909 | 310.705 | 314.479 | 299.787 |
+| 3 | 301.084 | 298.480 | 299.914 | 313.715 |
+| 4 | 300.801 | 310.617 | 290.824 | 303.304 |
+| 5 | 317.772 | 302.697 | 300.526 | 307.076 |
+| 6 | 300.933 | 305.117 | 318.257 | 303.871 |
+| 7 | 318.907 | 306.479 | 294.110 | 307.003 |
+| Median | 310.909 | 305.414 | 300.526 | 306.804 |
+
+Median paired changes were −2.604 and +6.550 ms, with five and
+three expanded-batch wins.
+Sampled main-thread CPU medians went from 164.214 to
+167.175 ms and from 164.667 to 164.745 ms.
+One-minute load ranged from 6.55 to 6.95
+and from 6.55 to 7.34 on 18 CPUs.
+
+The expanded schedule stays opt-in based on the mixed end-to-end times.
+
+All 36 launches matched reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced eight replay records, including the favicon miss.
+The eight diagnostic launches verified the document URL, complete
+readiness, viewport and all 30 ordered story IDs. The executable,
+helper, library, archive and harness stayed pinned. All browser,
+driver and guard exits were zero. Peak sampled RSS was
+425,852,928 bytes.
