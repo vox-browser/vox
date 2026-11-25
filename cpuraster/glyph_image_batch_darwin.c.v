@@ -18,6 +18,7 @@ $if !cpuraster_freetype ? {
 	const glyph_mask_batch_min_four = os.getenv('VOX_GLYPH_MASK_BATCH_MIN_FOUR') == '1'
 	const glyph_batch_diagnostics = os.getenv('VOX_GLYPH_BATCH_DIAGNOSTICS') == '1'
 	const glyph_mask_dispatch_apply = os.getenv('VOX_GLYPH_MASK_DISPATCH_APPLY') == '1'
+	const glyph_mask_caller_last = os.getenv('VOX_GLYPH_MASK_CALLER_LAST') == '1'
 
 	struct GlyphImageJob {
 		key u32
@@ -86,7 +87,7 @@ $if !cpuraster_freetype ? {
 			return run_raster_ranges(&batch, batch.jobs.len, requested_lanes, draw_glyph_image_jobs) > 0
 		}
 		return run_raster_ranges_with_caller(&batch, batch.jobs.len, requested_lanes,
-			draw_glyph_image_jobs) > 0
+			draw_glyph_image_jobs, prefer_shorter_range: !glyph_mask_caller_last) > 0
 	}
 
 	fn draw_glyph_image_job(strike &GlyphStrike, mut job GlyphImageJob, diagnostics bool) {

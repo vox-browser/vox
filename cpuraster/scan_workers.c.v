@@ -12,18 +12,31 @@ fn C.vox_scan_workers_disabled() bool
 
 $if macos {
 	fn C.vox_scan_workers_with_caller(voidptr, i32, i32, fn (voidptr, i32, i32)) bool
+	fn C.vox_scan_workers_with_caller_range(voidptr, i32, i32, bool, fn (voidptr, i32, i32)) bool
 	fn C.vox_scan_worker_start(voidptr, i32, i32, fn (voidptr, i32, i32)) voidptr
 	fn C.vox_scan_worker_join(voidptr) bool
 }
 
-// Run the final range on the caller and join the explicitly submitted worker
-// ranges. Return zero without calling scan if parallel work cannot start.
+@[params]
+pub struct RasterCallerOptions {
+pub:
+	prefer_shorter_range bool
+}
+
+// Run one range on the caller and join the explicitly submitted worker ranges.
+// The final range is the default. With uneven ranges, the first range
+// rounds down and the final range rounds up.
+// Return zero without calling scan if parallel work cannot start.
 pub fn run_raster_ranges_with_caller(context voidptr, lines int, requested_lanes int,
-	scan fn (voidptr, i32, i32)) int {
+	scan fn (voidptr, i32, i32), options RasterCallerOptions) int {
 	$if macos {
 		lanes := raster_range_lanes(lines, requested_lanes)
-		if lanes >= 2 && C.vox_scan_workers_with_caller(context, i32(lines), i32(lanes), scan) {
-			return lanes
+		if lanes >= 2 {
+			caller_first := options.prefer_shorter_range && lines % lanes != 0
+			if C.vox_scan_workers_with_caller_range(context, i32(lines), i32(lanes), caller_first,
+				scan) {
+				return lanes
+			}
 		}
 	}
 	return 0

@@ -61,24 +61,27 @@ $if macos && !cpuraster_freetype ? {
 		}
 	}
 
-	fn test_joined_raster_ranges_cover_every_item_and_only_the_tail_uses_the_caller() {
+	fn test_joined_raster_ranges_cover_every_item_with_either_caller_range() {
 		if runtime.nr_cpus() < 2 { return }
 		previous := os.getenv_opt(serial_cpu_raster)
 		defer { restore_serial_raster_setting(previous) }
 		assert os.unsetenv(serial_cpu_raster) == 0
 
 		caller := platform.native_thread_identity()
-		mut ranges := JoinedRasterTestRanges{}
-		lanes := run_raster_ranges_with_caller(&ranges, ranges.thread_ids.len, 20,
-			record_joined_raster_range)
-		assert lanes == if runtime.nr_cpus() < 4 { runtime.nr_cpus() } else { 4 }
-		for lane in 0 .. lanes {
-			first := ranges.thread_ids.len * lane / lanes
-			end := ranges.thread_ids.len * (lane + 1) / lanes
-			for index in first .. end {
-				assert ranges.first[index] == first
-				assert ranges.thread_ids[index] != 0
-				assert (ranges.thread_ids[index] == caller) == (lane == lanes - 1)
+		for prefer_shorter in [false, true] {
+			mut ranges := JoinedRasterTestRanges{}
+			lanes := run_raster_ranges_with_caller(&ranges, ranges.thread_ids.len, 20,
+				record_joined_raster_range, prefer_shorter_range: prefer_shorter)
+			assert lanes == if runtime.nr_cpus() < 4 { runtime.nr_cpus() } else { 4 }
+			caller_lane := if prefer_shorter { 0 } else { lanes - 1 }
+			for lane in 0 .. lanes {
+				first := ranges.thread_ids.len * lane / lanes
+				end := ranges.thread_ids.len * (lane + 1) / lanes
+				for index in first .. end {
+					assert ranges.first[index] == first
+					assert ranges.thread_ids[index] != 0
+					assert (ranges.thread_ids[index] == caller) == (lane == caller_lane)
+				}
 			}
 		}
 

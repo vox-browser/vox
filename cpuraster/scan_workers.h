@@ -53,22 +53,27 @@ static void vox_scan_worker_joined_dispatch(void *context) {
 
 // Submit the background ranges explicitly so the caller cannot execute them
 // inline, including when dispatch_apply would keep a short batch on one lane.
-static bool vox_scan_workers_with_caller(void *context, int32_t lines, int32_t lanes, VoxRasterScan scan) {
+static bool vox_scan_workers_with_caller_range(void *context, int32_t lines, int32_t lanes,
+    bool caller_first, VoxRasterScan scan) {
     dispatch_group_t group = dispatch_group_create();
     if (!group) return false;
     dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
     VoxRasterScanBatch batch = {context, lines, lanes, scan, fegetround()};
     VoxRasterScanWorker workers[VOX_SCAN_WORKERS_MAX - 1];
-    for (int32_t lane = 0; lane < lanes - 1; ++lane) {
-        workers[lane] = (VoxRasterScanWorker){&batch, lane};
-        dispatch_group_async_f(group, queue, &workers[lane], vox_scan_worker_joined_dispatch);
+    for (int32_t worker = 0; worker < lanes - 1; ++worker) {
+        workers[worker] = (VoxRasterScanWorker){&batch, worker + caller_first};
+        dispatch_group_async_f(group, queue, &workers[worker], vox_scan_worker_joined_dispatch);
     }
-    vox_scan_worker_range(&batch, lanes - 1);
+    vox_scan_worker_range(&batch, caller_first ? 0 : lanes - 1);
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 #if !__has_feature(objc_arc)
     dispatch_release(group);
 #endif
     return true;
+}
+
+static bool vox_scan_workers_with_caller(void *context, int32_t lines, int32_t lanes, VoxRasterScan scan) {
+    return vox_scan_workers_with_caller_range(context, lines, lanes, false, scan);
 }
 
 typedef struct {

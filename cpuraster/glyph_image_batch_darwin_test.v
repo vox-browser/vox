@@ -249,7 +249,7 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 	}
 }
 
-fn test_four_cold_glyph_masks_split_between_caller_and_worker() {
+fn test_cold_glyph_masks_prefer_the_shorter_caller_range() {
 	$if !cpuraster_freetype ? {
 		if runtime.nr_cpus() < 2 || glyph_mask_dispatch_apply || C.vox_scan_workers_disabled() { return }
 		mut lazy := LazyGlyphFace{path: '/System/Library/Fonts/Supplemental/Verdana Bold.ttf'}
@@ -258,23 +258,28 @@ fn test_four_cold_glyph_masks_split_between_caller_and_worker() {
 		defer { strike.release() }
 		assert strike.ensure_font(mut lazy)
 		strike.table = identity_mask_gamma_table
-		mut batch := GlyphImageBatch{
-			strike:      &strike
-			diagnostics: true
-			jobs:        [u16(43), 44, 68, 70].map(GlyphImageJob{key: packed_glyph_key(it, 1, 0)})
-		}
+		glyphs := [u16(43), 44, 68, 70, 72]
 		mut caller := u64(0)
 		assert C.pthread_threadid_np(unsafe { nil }, &caller) == 0
-		assert batch.draw()
-		mut entry := CachedGlyphStrike{}
-		entry.publish_glyph_image_batch(&batch)
-		assert entry.glyphs.len == 4
-		for index, job in batch.jobs {
-			assert job.thread != 0
-			assert (job.thread == caller) == (index >= 2)
-			glyph := entry.glyphs[job.key] or { panic('missing batch glyph') }
-			assert glyph.image.len > 0
-			assert glyph == strike.make_glyph(u16(job.key >> 4), 1, 0)
+		for count in [3, 4, 5] {
+			mut batch := GlyphImageBatch{
+				strike:      &strike
+				diagnostics: true
+				jobs:        glyphs[..count].map(GlyphImageJob{key: packed_glyph_key(it, 1, 0)})
+			}
+			assert batch.draw()
+			mut entry := CachedGlyphStrike{}
+			entry.publish_glyph_image_batch(&batch)
+			assert entry.glyphs.len == count
+			caller_first := !glyph_mask_caller_last && count % 2 != 0
+			for index, job in batch.jobs {
+				assert job.thread != 0
+				on_caller := if caller_first { index < count / 2 } else { index >= count / 2 }
+				assert (job.thread == caller) == on_caller
+				glyph := entry.glyphs[job.key] or { panic('missing batch glyph') }
+				assert glyph.image.len > 0
+				assert glyph == strike.make_glyph(u16(job.key >> 4), 1, 0)
+			}
 		}
 	}
 }
