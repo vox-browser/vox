@@ -170,9 +170,17 @@ fn test_viewport_entry_blocks_select_exactly_the_per_entry_entries() {
 		assert result.record_scratch.viewport_ink_cache.blocks_valid
 		cullable := result.record_scratch.viewport_ink_cache.blocks.filter(it.cullable).len
 		assert cullable > 0
+		viewport := document.viewport_rect()
+		mut worker_mask := []bool{len: blocks.len, init: true}
+		mut memo := new_compatibility_visual_context_memo(&result.visual_context_tree,
+			result.scroll_state_snapshot)
+		if mark_viewport_invisible_blocks_parallel(result.paint_order,
+			&result.record_scratch.viewport_ink_cache, mut memo, mut worker_mask, viewport.width,
+			viewport.height) {
+			assert worker_mask == blocks, 'parallel block selection differs at y=${y}'
+		}
 		result.record_scratch.viewport_ink_cache.blocks_valid = false
 		mut per_entry := []bool{len: result.paint_order.len, init: true}
-		viewport := document.viewport_rect()
 		mark_viewport_invisible_entries(result, mut per_entry, viewport.width, viewport.height)
 		assert blocks == per_entry, 'y=${y}'
 		culled_by_blocks += blocks.filter(!it).len

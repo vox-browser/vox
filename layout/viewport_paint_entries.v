@@ -56,13 +56,19 @@ fn viewport_visible_paint_entries(mut result DocumentLayoutResult) []bool {
 fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []bool, width f64, height f64) {
 	mut contexts := new_compatibility_visual_context_memo(&result.visual_context_tree,
 		result.scroll_state_snapshot)
+	cache := &result.record_scratch.viewport_ink_cache
+	cached_blocks := !disable_viewport_ink_cache && !disable_viewport_entry_blocks
+		&& cache.blocks_valid && cache.blocks_revision == cache.revision
+		&& cache.testable.len == result.paint_order.len
+	if cached_blocks && mark_viewport_invisible_blocks_parallel(result.paint_order, cache,
+		mut contexts, mut selected, width, height) {
+		return
+	}
 	// The bounds helper borrows a command. Reuse one probe for the traversal:
 	// taking the address of a fresh local makes current V allocate a complete
 	// command for every box and text fragment, even in Boehm builds.
 	mut ink_probe := PaintCommand{}
-	cache := &result.record_scratch.viewport_ink_cache
-	if !disable_viewport_ink_cache && !disable_viewport_entry_blocks && cache.blocks_valid
-		&& cache.blocks_revision == cache.revision && cache.testable.len == result.paint_order.len {
+	if cached_blocks {
 		for block in cache.blocks {
 			if block.testable == 0 { continue }
 			if block.cullable && !disable_viewport_ink_bounds && !disable_direct_viewport_rect_culling {
@@ -70,13 +76,7 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 				context := unsafe { &contexts.contexts[slot] }
 				// The per-entry pass keeps every entry of a layered context.
 				if context.layer_list != unsafe { nil } { continue }
-				mut transform := context.transform
-				mut area_height := height
-				if block.prepaint {
-					transform = viewport_prepaint_transform(context.transform, height)
-					area_height = height * 3
-				}
-				if viewport_rect_is_outside(block.bounds, transform, width, area_height, mut ink_probe) {
+				if viewport_cached_block_is_outside(block, context.transform, width, height) {
 					for index in block.first .. block.first + block.count {
 						if cache.testable[index] { selected[index] = false }
 					}
@@ -94,6 +94,15 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 		mark_viewport_invisible_entry(result, index, mut contexts, mut selected, width, height, mut
 			ink_probe)
 	}
+}
+
+fn viewport_cached_block_is_outside(block ViewportEntryBlock, transform [6]f64, width f64,
+	height f64) bool {
+	if block.prepaint {
+		return viewport_rect_outside_native_canvas(block.bounds,
+			viewport_prepaint_transform(transform, height), width, height * 3)
+	}
+	return viewport_rect_outside_native_canvas(block.bounds, transform, width, height)
 }
 
 fn mark_viewport_invisible_entry(result &DocumentLayoutResult, index int,
