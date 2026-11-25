@@ -539,6 +539,7 @@ struct PreloadedResource {
 	bytes_available_before_completion u64
 	// Payload and headers already belong to retained storage outside a request.
 	retained_for_process bool
+	classic_frontend ?&browserjs.ClassicScriptFrontend
 }
 
 // Keep the root executable linked against the translated support modules too. The visible page

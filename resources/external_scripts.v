@@ -10,7 +10,17 @@ import browsernet
 
 const max_browser_script_fetches = 8
 
-type BrowserScriptFetch = fn (string, string, chan PreloadedResource, &browsernet.RequestScope)
+type BrowserScriptFetch = fn (string, string, bool, chan PreloadedResource, &browsernet.RequestScope)
+
+struct BrowserScriptFetchJob {
+	url string
+	prepare_classic bool
+}
+
+struct BrowserReadyClassicScript {
+	element &dom.Element
+	frontend &browserjs.ClassicScriptFrontend
+}
 
 @[heap]
 struct BrowserScriptRequest {
@@ -19,10 +29,13 @@ struct BrowserScriptRequest {
 	ordered bool
 	// Parser-created elements keep scheduling, execution and events in HTML.
 	parser_model ?&html.HTMLScriptElementModel
+	prepare_classic bool
+	parser_stream_generation u64
 mut:
 	ready     bool
 	completed bool
 	resource  PreloadedResource
+	classic_frontend ?&browserjs.ClassicScriptFrontend
 	delayer   dom.DocumentLoadEventDelayer
 }
 
@@ -36,7 +49,7 @@ struct BrowserScriptRequestLoader {
 mut:
 	requests       []&BrowserScriptRequest
 	candidates     []&dom.Element
-	queued         []string
+	queued         []BrowserScriptFetchJob
 	fetching       map[string]bool
 	active_fetches int
 	scan_version   u64
@@ -46,6 +59,7 @@ mut:
 	fetch          BrowserScriptFetch = fetch_script_in_background
 	resources      map[string]PreloadedResource
 	parser_host    ?&BrowserParserScriptHost
+	ready_classic  ?BrowserReadyClassicScript
 }
 
 fn new_browser_script_request_loader(document &dom.Document,
@@ -92,14 +106,21 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	prepare_classic := if host := loader.parser_host {
+		host.engine == .libjs && kind == .classic && model.is_implicitly_potentially_render_blocking()
+	} else {
+		false
+	}
 	loader.requests << &BrowserScriptRequest{
 		element: element
 		url: resource_url.clone()
 		parser_model: model
+		prepare_classic: prepare_classic
+		parser_stream_generation: loader.document.html_parser_stream_generation()
 	}
 	if resource_url !in loader.fetching {
 		loader.fetching[resource_url] = true
-		loader.queued << resource_url.clone()
+		loader.queued << BrowserScriptFetchJob{url: resource_url.clone(), prepare_classic: prepare_classic}
 	}
 	loader.start_fetches()
 }
@@ -108,11 +129,36 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 // Keep those bytes until it reaches EOF, rather than dropping them at commit.
 fn (mut loader BrowserScriptRequestLoader) finish_parsing() {
 	loader.resources = map[string]PreloadedResource{}
+	loader.discard_ready_classic()
 }
 
-fn fetch_script_in_background(address string, source string, results chan PreloadedResource,
+fn (mut loader BrowserScriptRequestLoader) take_ready_classic(element &dom.Element) ?&browserjs.ClassicScriptFrontend {
+	ready := loader.ready_classic or { return none }
+	if voidptr(ready.element) != voidptr(element) { return none }
+	loader.ready_classic = none
+	return ready.frontend
+}
+
+fn (mut loader BrowserScriptRequestLoader) discard_ready_classic() {
+	if ready := loader.ready_classic {
+		mut frontend := ready.frontend
+		frontend.discard_unused()
+		loader.ready_classic = none
+	}
+}
+
+fn fetch_script_in_background(address string, source string, prepare_classic bool, results chan PreloadedResource,
 	scope &browsernet.RequestScope) {
-	fetch_resource_for_results_with_scope(address, source, 'script', results, scope)
+	platform.retain_thread_allocations()
+	resource := fetch_resource_job(ResourceFetchJob{url: address, request_type: 'script'}, source, scope)
+	frontend := if prepare_classic && resource.error == '' && !scope.is_cancelled() {
+		browserjs.prepare_classic_script_frontend(resource.body)
+	} else {
+		none
+	}
+	if !publish_resource_result(PreloadedResource{...resource, classic_frontend: frontend}, results, scope) {
+		if mut unused := frontend { unused.discard_unused() }
+	}
 	C.native_wake_browser()
 }
 
@@ -125,8 +171,15 @@ fn (mut loader BrowserScriptRequestLoader) cancel() {
 	// Releasing a blocking model can schedule a resume check. Retirement must
 	// not let that check parse more markup or prepare requests on a closed host.
 	if parser := loader.document.active_parser() { parser.abort() }
-	loader.queued = []string{}
+	loader.queued = []BrowserScriptFetchJob{}
+	loader.discard_ready_classic()
+	// Cancellation excludes later publication, so buffered syntax is ours to release.
+	for loader.results.len > 0 {
+		resource := <-loader.results or { break }
+		if mut frontend := resource.classic_frontend { frontend.discard_unused() }
+	}
 	for mut request in loader.requests {
+		if mut frontend := request.classic_frontend { frontend.discard_unused() }
 		if mut model := request.parser_model { model.cancel_external_fetch() }
 		request.delayer.finish()
 	}
@@ -139,24 +192,24 @@ fn (mut loader BrowserScriptRequestLoader) start_fetches() {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	for !loader.cancelled && loader.active_fetches < max_browser_script_fetches && loader.queued.len > 0 {
-		address := loader.queued[0]
+		job := loader.queued[0]
 		loader.queued.delete(0)
 		loader.active_fetches++
 		// Workers never retain DOM/model pointers or document-owned strings.
 		source_url := loader.document.url.serialize().clone()
 		loader.request_scope.retain()
-		spawn run_browser_script_fetch(loader.fetch, address, source_url,
+		spawn run_browser_script_fetch(loader.fetch, job, source_url,
 			loader.results, loader.request_scope)
 	}
 }
 
 // The wrapper owns the worker reference for both native transport and test
 // hooks. Injected callbacks borrow the scope and never release that reference.
-fn run_browser_script_fetch(fetch_resource BrowserScriptFetch, address string, source string,
+fn run_browser_script_fetch(fetch_resource BrowserScriptFetch, job BrowserScriptFetchJob, source string,
 	results chan PreloadedResource, scope &browsernet.RequestScope) {
 	defer { scope.release() }
 	scope.check() or { return }
-	fetch_resource(address, source, results, scope)
+	fetch_resource(job.url, source, job.prepare_classic, results, scope)
 }
 
 fn (mut loader BrowserScriptRequestLoader) discover() {
@@ -208,7 +261,7 @@ fn (mut loader BrowserScriptRequestLoader) discover() {
 			request.resource = PreloadedResource{ url: request.url, source_url: document.url.serialize(), request_type: 'script', error: 'Empty external script URL' }
 		} else if request.url !in loader.fetching {
 			loader.fetching[request.url] = true
-			loader.queued << request.url
+			loader.queued << BrowserScriptFetchJob{url: request.url}
 		}
 	}
 	loader.candidates = pending
@@ -230,12 +283,22 @@ fn (mut loader BrowserScriptRequestLoader) poll(runtime &browserjs.Runtime, mut 
 			resource := <-loader.results {
 				loader.active_fetches--
 				loader.fetching.delete(resource.url)
+				mut frontend := resource.classic_frontend
+				response := PreloadedResource{...resource, classic_frontend: none}
+				generation := loader.document.html_parser_stream_generation()
 				for mut request in loader.requests {
 					if request.url == resource.url && !request.ready {
-						request.resource = resource
+						request.resource = response
+						// A worker arena has one owner even when requests share a response.
+						if frontend != none && request.prepare_classic
+							&& request.parser_stream_generation == generation {
+							request.classic_frontend = frontend
+							frontend = none
+						}
 						request.ready = true
 					}
 				}
+				if mut unused := frontend { unused.discard_unused() }
 				// Async scripts execute in completion order, even when several
 				// fetches finish between two UI polls.
 				loader.execute_ready(runtime, mut messages)
@@ -270,11 +333,14 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 		}
 		if request.parser_model == none && runtime == unsafe { nil } { continue }
 		request.completed = true
+		frontend := request.classic_frontend
+		request.classic_frontend = none
 		// Removal alone does not cancel an already prepared script. Adoption
 		// into another document, however, must not execute in the old realm.
 		if voidptr(request.element.document()) != voidptr(loader.document)
 			|| !compact_document_can_run_script(loader.document) {
 			if mut model := request.parser_model { model.cancel_external_fetch() }
+			if mut unused := frontend { unused.discard_unused() }
 			request.delayer.finish()
 			continue
 		}
@@ -283,8 +349,17 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 				if model.script_type() == .module {
 					runtime.preparse_libjs_document_module(request.url, resource.body)
 				}
+				if mut prepared := frontend {
+					if request.parser_stream_generation == loader.document.html_parser_stream_generation() {
+						loader.discard_ready_classic()
+						loader.ready_classic = BrowserReadyClassicScript{element: request.element, frontend: prepared}
+					} else {
+						prepared.discard_unused()
+					}
+				}
 				model.complete_external_fetch(resource.body)
 			} else {
+				if mut unused := frontend { unused.discard_unused() }
 				messages << 'Script ${request.url}: ${err.msg()}'
 				model.complete_external_fetch(none)
 			}

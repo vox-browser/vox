@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import browsernet
 import dom
 import encoding.base64
 import html
@@ -14,7 +15,7 @@ fn parser_input_image_host() &BrowserParserScriptHost {
 	owner.set_viewport_rect(dom.Rect{width: 800, height: 600})
 	images := new_browser_image_request_loader(document, {})
 	mut scripts := new_browser_script_request_loader(document, {})
-	scripts.fetch = fn (_ string, _ string, _ chan PreloadedResource) {}
+	scripts.fetch = fn (_ string, _ string, _ bool, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	return install_browser_parser_script_host(document, .javascriptcore, images, scripts, {}, none, none)
 }
 

@@ -29,6 +29,7 @@ const libjs_frontend_cache = &LibJSFrontendCache{}
 const libjs_frontend_cache_source_limit = 6 * 1024 * 1024
 const libjs_frontend_cache_max_entry_bytes = 4 * 1024 * 1024
 const libjs_frontend_cache_entry_limit = 128
+const libjs_browser_parse_options = libjs.ParseOptions{max_recursion_depth: 256}
 
 pub struct LibJSFrontendCacheStats {
 pub:
@@ -36,11 +37,18 @@ pub:
 	misses u64
 	// Module sources parsed on a worker thread instead of the main thread.
 	background_parses u64
+	// External classic scripts that used the fetch worker's syntax.
+	classic_background_hits u64
 }
 
 pub fn (runtime &Runtime) frontend_code_cache_stats() LibJSFrontendCacheStats {
 	background := if host := runtime.module_host_ { host.libjs_background_parses } else { u64(0) }
-	return LibJSFrontendCacheStats{ hits: runtime.libjs_frontend_cache_hits_, misses: runtime.libjs_frontend_cache_misses_, background_parses: background }
+	return LibJSFrontendCacheStats{
+		hits: runtime.libjs_frontend_cache_hits_
+		misses: runtime.libjs_frontend_cache_misses_
+		background_parses: background
+		classic_background_hits: runtime.libjs_classic_background_hits_
+	}
 }
 
 fn (runtime &Runtime) use_libjs_frontend_cache() bool {
@@ -127,7 +135,21 @@ fn (runtime &Runtime) prepare_libjs_script(source ScriptSource) !&PreparedScript
 	if source.starting_line < 1 { return error('Script starting line must be positive') }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	parsed := runtime.prepare_libjs_frontend(source.code, source.source_type, libjs.ParseOptions{ max_recursion_depth: 256 })
-	owned := ScriptSource{ ...source, code: parsed.source_text, url: source.url.clone() }
+	mut background := unsafe { &libjs.ParsedSource(nil) }
+	if frontend := source.classic_frontend {
+		if source.source_type == .script {
+			background = frontend.parsed
+		}
+	}
+	parsed := runtime.prepare_libjs_frontend_with(source.code, source.source_type,
+		libjs_browser_parse_options, background)
+	if mut frontend := source.classic_frontend {
+		if background != unsafe { nil } && voidptr(parsed) == voidptr(background) {
+			frontend.used = true
+			mut owner := unsafe { &Runtime(runtime) }
+			owner.libjs_classic_background_hits_++
+		}
+	}
+	owned := ScriptSource{ ...source, code: parsed.source_text, url: source.url.clone(), classic_frontend: none }
 	return finish_script_preparation(owned, parsed)
 }

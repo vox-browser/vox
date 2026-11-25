@@ -14,7 +14,7 @@ fn dynamic_script_fixture(code string) (&dom.Document, &browserjs.Runtime, &Brow
 	mut loader := &BrowserScriptRequestLoader{
 		document: document
 		// Tests deliver responses explicitly, including out-of-order completions.
-		fetch:    fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
+		fetch:    fn (_ string, _ string, _ bool, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	}
 	mut messages := []string{}
 	_ := script_sources(document, document.url.serialize(), {}, mut messages)

@@ -34,6 +34,8 @@ pub:
 	element ?&dom.Element
 	// The compact loader retains the actual external script for completion events.
 	external_element ?&dom.Element
+	// Optional translated syntax prepared by the external script's fetch worker.
+	classic_frontend ?&ClassicScriptFrontend
 }
 
 @[heap]
@@ -142,6 +144,7 @@ mut:
 	libjs_native_cache_partition_ string
 	libjs_frontend_cache_hits_ u64
 	libjs_frontend_cache_misses_ u64
+	libjs_classic_background_hits_ u64
 }
 
 pub fn Runtime.create() &Runtime {

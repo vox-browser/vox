@@ -55,6 +55,7 @@ fn install_browser_parser_script_host(document &dom.Document, engine browserjs.E
 
 fn browser_parser_created(target voidptr, parser &html.HTMLParser) {
 	mut host := unsafe { &BrowserParserScriptHost(target) }
+	host.scripts.discard_ready_classic()
 	host.parser_generation++
 	mut owner := unsafe { &html.HTMLParser(parser) }
 	// SVG's translated element uses the synchronous fetch/execute interface.
@@ -126,6 +127,10 @@ fn (mut host BrowserParserScriptHost) initialize() bool {
 fn (mut host BrowserParserScriptHost) execute(script &dom.HTMLScriptElement,
 	kind html.ScriptElementType, source string, address dom.URL) ! {
 	element := unsafe { &dom.Element(script) }
+	frontend := host.scripts.take_ready_classic(element)
+	defer {
+		if mut prepared := frontend { prepared.discard_unused() }
+	}
 	host.run_script(browserjs.ScriptSource{
 		code: source
 		starting_line: if element.has_attribute('src') { 1 } else { html.html_script_element_model_for_dom_element(script).source_line_number() }
@@ -133,6 +138,7 @@ fn (mut host BrowserParserScriptHost) execute(script &dom.HTMLScriptElement,
 		source_type: if kind == .module { .module } else { .script }
 		element: element
 		external_element: if element.has_attribute('src') { ?&dom.Element(element) } else { none }
+		classic_frontend: frontend
 	})!
 }
 
