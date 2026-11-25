@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import svg
 
 fn set_all_rare_flags(mut values UsedValues, value bool) {
 	values.set_has_line_clamp_point(value)
@@ -56,4 +57,41 @@ fn test_unchanged_rare_flags_preserve_measurement_sharing_and_real_changes_detac
 	set_all_rare_flags(mut original, false)
 	assert_all_rare_flags(original, false)
 	assert_all_rare_flags(copy, false)
+}
+
+fn test_committed_layout_replay_shares_scalars_and_detaches_from_both_sides() {
+	document := dom.Document.create(dom.url_about_blank())
+	node := NodeWithStyle.new(document, none, css.ComputedProperties.new())
+	mut before := LayoutState.new()
+	mut original := before.get_mutable(node)
+	original.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(3, 4, 20, 30)})
+	original.set_has_line_clamp_point(true)
+	mut after := LayoutState.new()
+	mut restored := after.restore_layout_values(node, original, none, true)
+	assert original.rare_is_shared_ && restored.rare_is_shared_
+	assert voidptr(original.rare_?) == voidptr(restored.rare_?)
+	original.set_has_line_clamp_point(false)
+	assert restored.has_line_clamp_point()
+	assert voidptr(original.rare_?) != voidptr(restored.rare_?)
+	restored.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(7, 8, 20, 30)})
+	assert restored.static_position() != original.static_position()
+}
+
+fn test_committed_layout_replay_owns_svg_and_grid_geometry() {
+	document := dom.Document.create(dom.url_about_blank())
+	node := NodeWithStyle.new(document, none, css.ComputedProperties.new())
+	mut before := LayoutState.new()
+	mut original := before.get_mutable(node)
+	original.set_grid_template_columns([CSSPixels.new(10)])
+	mut rare := original.ensure_rare_data()
+	rare.computed_svg_path_ = svg.Path{
+		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
+	}
+	mut after := LayoutState.new()
+	restored := after.restore_layout_values(node, original, none, true)
+	assert !restored.rare_is_shared_
+	assert voidptr(original.rare_?) != voidptr(restored.rare_?)
+	mut path := restored.computed_svg_path()?
+	path.instructions[0].data[0] = 99
+	assert original.computed_svg_path()?.instructions[0].data[0] == 7
 }

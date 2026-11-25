@@ -694,7 +694,7 @@ fn restore_committed_layout_node(mut state LayoutState, previous &LayoutState, n
 			if parent := committed_geometry_parent(node, values) {
 				containing = state.get(parent)
 			}
-			mut restored := state.restore_retained_values(styled, values, containing)
+			mut restored := state.restore_layout_values(styled, values, containing, true)
 			restored.scrollable_overflow_rect_ = none
 			restored.has_scrollable_overflow_ = false
 		}

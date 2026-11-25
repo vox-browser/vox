@@ -1550,6 +1550,11 @@ fn (mut state LayoutState) mutable_box_values(node &NodeWithStyle) &UsedValues {
 // computed sizes which would immediately be overwritten by this complete copy.
 fn (mut state LayoutState) restore_retained_values(node &NodeWithStyle,
 	snapshot &UsedValues, containing ?&UsedValues) &UsedValues {
+	return state.restore_layout_values(node, snapshot, containing, false)
+}
+
+fn (mut state LayoutState) restore_layout_values(node &NodeWithStyle,
+	snapshot &UsedValues, containing ?&UsedValues, previous_layout bool) &UsedValues {
 	mut retained_scope := retain_geometry_allocations()
 	defer { retained_scope.finish() }
 	mut values := state.used_values_store.get(node.layout_index()) or {
@@ -1559,6 +1564,14 @@ fn (mut state LayoutState) restore_retained_values(node &NodeWithStyle,
 	values.containing_block_used_values_ = containing
 	values.borrow_retained_line_boxes(snapshot.line_boxes)
 	if rare := snapshot.rare_ {
+		if previous_layout && rare.can_share_for_measurement() && rare.computed_svg_path_ == none {
+			// Both committed nodes belong to the document. Each detaches
+			// before mutating the common scalar geometry.
+			mut source := unsafe { &UsedValues(snapshot) }
+			source.rare_is_shared_ = true
+			values.rare_is_shared_ = true
+			return values
+		}
 		mut restored := rare.clone()
 		if path := rare.computed_svg_path_ {
 			restored.computed_svg_path_ = own_measurement_svg_path(path)
