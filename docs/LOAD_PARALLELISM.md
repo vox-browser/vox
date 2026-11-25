@@ -3695,3 +3695,83 @@ and all 30 ordered story IDs. Executable, native library, helper,
 archive and driver hashes stayed pinned. All browsers, the driver
 and the 3 GiB guard exited zero. Peak aggregate RSS was 399,130,624
 bytes.
+
+### Move the default stylesheet join into browser startup
+
+Commit `a3ed36c7f` starts the default stylesheet syntax worker after
+heap setup on macOS production builds. The worker can run during
+settings, font, browser state, navigation and native window setup.
+A local document joins before installation. A remote launch joins
+from the native window initializer, and the stylesheet accessor can
+complete the handoff if an earlier consumer needs the sheet. CSSOM
+conversion and publication remain on the browser thread in normal
+startup. `VOX_EARLY_UA_STYLESHEET_JOIN=1` selects the previous worker
+schedule, which completes the sheet during module initialization.
+
+Focused preallocated tests covered first-use publication, repeated
+startup calls, discarding an unused worker, rule serialization after
+worker arena retirement, and shared sheet lifetime past the first
+caller's scratch and worker exit. The user-agent cache template and
+shadow cache suites passed with arena poisoning. ThreadSanitizer
+passed the startup and lifetime tests.
+
+#### Production captures with the later stylesheet join
+
+Receipt `20261125-172559-4d24bb5b` verified `2cee06cef`, passed
+startup smoke and published a single-C-unit V `-prod` build. Both
+worker schedules used that executable.
+
+| Input | SHA-256 |
+| --- | --- |
+| Vox | `e9c5258ec283f042913e0f1dbfa7e0a4b19063ed1b75b7ee8107cd295816fb5e` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+
+Both schedules parsed 157 raw rules off-thread. The two late joins
+found the syntax ready. Both early joins waited for the worker.
+Separate counter runs included the module initialization scope and,
+for the late join, the scope that completes the default sheet.
+
+| Pair | Early UA initialization | Late companion sheets | Late default sheet | Late UA total | Early style update | Late style update |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 7,665,247 | 2,393,012 | 6,155,470 | 8,548,482 | 344,038,142 | 341,488,734 |
+| 2 | 7,652,393 | 2,372,250 | 6,194,191 | 8,566,441 | 347,769,126 | 344,981,444 |
+
+Browser-thread instructions for the combined stylesheet scopes
+increased by 11.5% and 11.9%. The late schedule overlaps the raw
+parse with independent work and shortens the dependency on the
+worker at the join.
+
+Two unprofiled cohorts alternated fresh launches through the
+completed document PNG, with the early join starting the reversed
+cohort. All launches used JavaScriptCore, a 1024×768 CSS-pixel
+viewport at 2× scale, private empty profiles and HTTP caches,
+retained OS filesystem caches and a 60 ms replay delay per logo
+response.
+
+| Pair | Early, ms | Late, ms | Reversed early, ms | Reversed late, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 515.219 | 492.823 | 523.854 | 566.472 |
+| 2 | 490.555 | 527.874 | 585.292 | 587.432 |
+| 3 | 526.977 | 522.810 | 680.291 | 687.873 |
+| 4 | 570.092 | 528.494 | 578.275 | 569.513 |
+| 5 | 624.227 | 541.273 | 585.442 | 577.727 |
+| 6 | 563.458 | 599.146 | 574.298 | 487.419 |
+| 7 | 574.658 | 578.625 | 582.531 | 547.190 |
+| Median | 563.458 | 528.494 | 582.531 | 569.513 |
+
+Paired median changes were −4.167 and −7.714 ms, with four late-join
+wins in each cohort. Sampled browser-thread CPU medians moved from
+335.498 to 331.899 ms and from 332.358 to 337.683 ms. One-minute host
+load was 17.88–23.81 and 23.59–24.22 on 18 CPUs. Individual timing
+pairs varied substantially.
+
+All 36 captures matched PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`
+and reproduced the eight replay records, including the favicon miss.
+The diagnostic captures verified the URL, ready state, viewport and
+all 30 ordered story IDs. Executable, native library, helper,
+archive and driver hashes stayed pinned. Every browser, the driver
+and the 3 GiB guard exited zero. Peak aggregate RSS was 441,630,720
+bytes.
