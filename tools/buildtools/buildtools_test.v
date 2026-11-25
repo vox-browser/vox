@@ -417,13 +417,36 @@ fn test_pruning_preserves_published_and_newest_payloads_and_retention() ! {
 		write_changed(join(receipt, 'generated/source.c'), 'generated fixture')!
 	}
 	write_changed(join(state, 'latest.json'), '101')!
-	prune_receipts(build, false)!
+	mut report := PruneReport{}
+	prune_receipts_report(build, []string{}, mut report)!
 	assert !exists(join(state, 'receipts/100'))
 	assert exists(join(state, 'receipts/101/generated/source.c'))
 	assert !exists(join(state, 'receipts/102'))
 	assert exists(join(state, 'receipts/103/result.json'))
 	assert !exists(join(state, 'receipts/103/generated'))
 	assert exists(join(state, 'receipts/122/generated/source.c'))
+}
+
+fn test_pruning_protects_payloads_of_an_older_build_with_an_open_log() ! {
+	root := real(temporary(os.temp_dir(), 'vox-prune-active-test-')!)
+	defer { remove(root) or {} }
+	build := join(root, 'Build')
+	receipts := join(build, 'production-build', 'receipts')
+	for i in 100 .. 123 {
+		write_changed(join(receipts, i.str(), 'frozen-compiler-inputs', '0-Vox.c.i'), 'input')!
+	}
+	active := join(receipts, '100')
+	mut log := os.create(join(active, 'build.log'))!
+	prune_receipts(build, false) or {
+		log.close()
+		return err
+	}
+	log.close()
+	sealed := join(active, 'frozen-compiler-inputs', '0-Vox.c.i')
+	assert exists(sealed)
+	assert !exists(join(receipts, '101'))
+	prune_receipts(build, false)!
+	assert !exists(active)
 }
 
 fn test_pruning_does_not_follow_symlinks() ! {

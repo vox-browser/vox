@@ -9,9 +9,10 @@ removed once nothing below it changed for --idle-hours and no process has a
 file below it open or uses it as its working directory.
 
 Production receipts keep only small records: the generated C and sealed
-compiler inputs stay with the published and the newest receipt, and only the
-newest RETAINED_RECEIPTS receipts are kept. Content-addressed runtimes under
-Build/v keep the two most recently used digests and any used recently.
+compiler inputs stay with the published, newest and in-use receipts.
+The receipt count limit applies to unused, unpublished receipts.
+Content-addressed runtimes under Build/v keep the two most recently used
+digests and any used recently.
 """
 import argparse
 import os
@@ -126,20 +127,21 @@ def published_receipt(state):
     return None
 
 
-def prune_receipts(build, dry_run=False, report=None, keep=RETAINED_RECEIPTS):
-    """Drop receipt payloads except for the published and newest receipts.
-
-    A running build only writes its own (newest) receipt, so this needs no
-    build lock and never delays a build request.
-    """
+def prune_receipts(build, dry_run=False, report=None, keep=RETAINED_RECEIPTS, held=None):
+    """Drop unused receipt payloads, preserving the published and newest."""
     report = [] if report is None else report
     state = build / 'production-build'
     receipts = sorted(path for path in (state / 'receipts').glob('*') if path.is_dir())
     if not receipts:
         return report
+    if held is None:
+        held = held_paths(build)
+        if held is None:
+            return report
     protected = {receipts[-1], published_receipt(state)}
     for index, receipt in enumerate(receipts):
-        if receipt in protected:
+        # The guard or compiler can still hold a file in an older receipt.
+        if receipt in protected or receipt.resolve() in held:
             continue
         if index < len(receipts) - keep:
             retire(receipt, 'old production receipt', dry_run, report)
@@ -186,7 +188,7 @@ def prune(root=ROOT, idle_hours=DEFAULT_IDLE_HOURS, dry_run=False):
         if now - newest < idle or path.resolve() in held:
             continue
         retire(path, reason, dry_run, report, size)
-    prune_receipts(build, dry_run, report)
+    prune_receipts(build, dry_run, report, held=held)
     prune_runtimes(build, idle, held, dry_run, report)
     return report
 

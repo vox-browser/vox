@@ -141,7 +141,7 @@ class PruneBuildTests(unittest.TestCase):
                 write(receipts / name / 'frozen-compiler-inputs/0-Vox.c.i')
             published = names[2]
             write(root / 'Build/production-build/latest.json', published.encode())
-            prune_build.prune_receipts(root / 'Build')
+            prune_build.prune_receipts(root / 'Build', held=set())
             kept = sorted(path.name for path in receipts.iterdir())
             self.assertEqual(kept, sorted([published] + names[-20:]))
             for name in kept:
@@ -149,6 +149,19 @@ class PruneBuildTests(unittest.TestCase):
                 self.assertEqual(has_payload, name in (published, names[-1]), name)
                 self.assertEqual((receipts / name / 'frozen-compiler-inputs').exists(), has_payload)
                 self.assertTrue((receipts / name / 'result.json').exists())
+
+    def test_held_receipt_retains_payload_until_released(self):
+        with TemporaryDirectory() as directory:
+            build = Path(directory).resolve() / 'Build'
+            receipts = build / 'production-build/receipts'
+            sealed = write(receipts / 'old/frozen-compiler-inputs/0-Vox.c.i')
+            write(receipts / 'recent/frozen-compiler-inputs/0-Vox.c.i')
+            active = sealed.parents[1]
+            with write(active / 'build.log').open('rb'):
+                prune_build.prune_receipts(build, keep=1)
+                self.assertTrue(sealed.exists())
+            prune_build.prune_receipts(build, keep=1)
+            self.assertFalse(active.exists())
 
     def test_runtime_caches_keep_recent_digests_and_retire_stale_ones(self):
         with TemporaryDirectory() as directory:

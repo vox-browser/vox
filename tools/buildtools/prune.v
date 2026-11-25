@@ -68,12 +68,14 @@ fn (mut report PruneReport) retire_entry(path string, reason string) {
 	if report.verbose { println('${reason}: ${path}') }
 }
 
-fn prune_receipts_report(build string, mut report PruneReport) ! {
+fn prune_receipts_report(build string, held []string, mut report PruneReport) ! {
 	state := join(build, 'production-build')
 	receipts := (listing(join(state, 'receipts'))!).filter(os.is_dir(it))
 	latest := read(join(state, 'latest.json')) or { '' }
 	for i, receipt in receipts {
-		if i == receipts.len - 1 || (latest.len > 0 && (read(join(receipt, 'result.json')) or { '' }) == latest) {
+		// A compiler or guard can outlive the worker that created its receipt.
+		if i == receipts.len - 1 || held.any(it == receipt || it.starts_with(receipt + '/'))
+			|| (latest.len > 0 && (read(join(receipt, 'result.json')) or { '' }) == latest) {
 			continue
 		}
 		if i < receipts.len - 20 {
@@ -89,12 +91,10 @@ fn prune_receipts_report(build string, mut report PruneReport) ! {
 
 fn prune_receipts(build string, dry bool) ! {
 	mut report := PruneReport{ dry: dry }
-	prune_receipts_report(build, mut report)!
+	prune_receipts_report(build, build_held_paths(build)!, mut report)!
 }
 
-fn prune_build(root string, idle_hours f64, dry bool, verbose bool) ! {
-	build := join(root, 'Build')
-	if !os.is_dir(build) { return }
+fn build_held_paths(build string) ![]string {
 	mut process := os.new_process('lsof')
 	process.set_args(['-nP', '-Fn'])
 	process.set_redirect_stdio()
@@ -110,6 +110,13 @@ fn prune_build(root string, idle_hours f64, dry bool, verbose bool) ! {
 	for line in output.split_into_lines() {
 		if line.starts_with('n' + build + '/') { held << line[1..] }
 	}
+	return held
+}
+
+fn prune_build(root string, idle_hours f64, dry bool, verbose bool) ! {
+	build := join(root, 'Build')
+	if !os.is_dir(build) { return }
+	held := build_held_paths(build)!
 	mut report := PruneReport{ dry: dry, verbose: verbose }
 	mut candidates := (listing(build)!).filter(os.file_name(it) !in ['v', 'deps', 'libregex', 'linux',
 		'production-build', 'pixel-tools', 'release.lock', '.DS_Store'])
@@ -133,7 +140,7 @@ fn prune_build(root string, idle_hours f64, dry bool, verbose bool) ! {
 		}
 		report.retire_entry(path, 'idle job output')
 	}
-	prune_receipts_report(build, mut report)!
+	prune_receipts_report(build, held, mut report)!
 	for cache in ['prealloc-runtime', 'font-runtime', 'native-gg-runtime'] {
 		base := join(build, 'v', cache)
 		mut digests := (listing(base)!).filter(os.is_dir(it))
