@@ -73,7 +73,17 @@ fn (mut geometry RetainedGlyphReplayGeometry) prepare_in_range(command &layout.P
 	storage []f32, first int, end int) int {
 	length := retained_glyph_geometry_position_count(command)
 	if length == 0 || length > end - first { return first }
-	geometry.positions = storage[first..first + length]
+	// Each worker owns this range. V slicing updates shared backing-buffer
+	// metadata, so publish a fixed view of the range directly.
+	geometry.positions = unsafe {
+		array{
+			data: &f32(storage.data) + first
+			len: length
+			cap: length
+			element_size: int(sizeof(f32))
+			flags: .nofree | .nogrow | .noshrink
+		}
+	}
 	geometry.prepare(command)
 	return first + length
 }
