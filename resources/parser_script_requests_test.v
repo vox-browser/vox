@@ -59,11 +59,13 @@ fn parser_script_request_model(document &dom.Document, id string) &html.HTMLScri
 
 fn test_parser_script_response_resumes_the_live_parser_without_a_runtime() {
 	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
-		'<!doctype html><p id="before">Before</p><script id="block" src="blocking.js"></script><p id="later">After</p>', {})
+		'<!doctype html><p id="before">Before</p><script id="block" src="blocking.js"></script><p id="later">After</p><img src="later.png">', {})
 	defer { loader.cancel(); document.finalize() }
 	mut messages := []string{}
 	parser.run()
 	assert parser.paused()
+	assert parser.has_active_speculative_html_parser()
+	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://parser-requests.test/later.png' })
 	assert document.get_element_by_id('before') != none
 	assert document.get_element_by_id('later') == none
 	assert loader.requests.len == 1 && loader.active_fetches == 1
@@ -75,6 +77,7 @@ fn test_parser_script_response_resumes_the_live_parser_without_a_runtime() {
 	assert observed.sources == ['blocking']
 	assert observed.later_visible == [false]
 	assert !parser.paused()
+	assert !parser.has_active_speculative_html_parser()
 	assert document.get_element_by_id('later') != none
 	assert parser_script_request_model(document, 'block').event_count('load') == 1
 	assert loader.requests.len == 0 && loader.active_fetches == 0

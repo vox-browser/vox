@@ -13,6 +13,7 @@ import dom
 import css
 import encoding
 import platform
+import processmetrics
 import time
 
 __global html_parser_non_append_insertions u64
@@ -694,11 +695,22 @@ pub fn (mut p HTMLParser) abort() {
 	}
 }
 
+// Same-binary control for the scan without an embedder's fetch hook.
+const scan_speculative_html_without_fetch_hook = os.getenv('VOX_SCAN_SPECULATIVE_HTML_WITHOUT_FETCH_HOOK') == '1'
+
 // https://html.spec.whatwg.org/multipage/parsing.html#start-the-speculative-html-parser
 fn (mut p HTMLParser) start_the_speculative_html_parser() {
 	if p.active_speculative_html_parser != none {
 		p.stop_the_speculative_html_parser()
 	}
+	if p.speculative_fetch_hook == none && !scan_speculative_html_without_fetch_hook {
+		// Preserve the suspended parser's encoding guard through script execution
+		// and document.write(). With no fetch hook there is no work for a scanner.
+		p.active_speculative_html_parser = &SpeculativeHTMLParser{}
+		return
+	}
+	scan := processmetrics.begin_thread_instruction_substage('html_speculative_parse')
+	defer { scan.finish() }
 	mut parser := SpeculativeHTMLParser.create(p.document_, p.tokenizer.unparsed_input(), p.document_.base_url(), p.speculative_fetch_hook)
 	p.active_speculative_html_parser = parser
 	parser.run()
