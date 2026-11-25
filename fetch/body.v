@@ -170,9 +170,13 @@ pub fn (mut body Body) fully_read() ![]u8 {
 }
 
 pub fn (mut body Body) incrementally_read(process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) &streams.ReadableStreamDefaultReader {
+	return body.read_chunks(process_chunk, process_end, process_error, false)
+}
+
+fn (mut body Body) read_chunks(process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback, borrow_chunks bool) &streams.ReadableStreamDefaultReader {
 	mut stream := body.stream_
 	reader := stream.get_default_reader() or { panic(err) }
-	body.incrementally_read_loop(reader, process_chunk, process_end, process_error)
+	body.read_chunks_with_reader(reader, process_chunk, process_end, process_error, borrow_chunks)
 	return reader
 }
 
@@ -181,12 +185,17 @@ pub fn cancel_incremental_read(mut reader streams.ReadableStreamDefaultReader) {
 }
 
 pub fn (mut body Body) incrementally_read_loop(reader &streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
+	body.read_chunks_with_reader(reader, process_chunk, process_end, process_error, false)
+}
+
+fn (mut body Body) read_chunks_with_reader(reader &streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback, borrow_chunks bool) {
 	mut request := &IncrementalReadLoopReadRequest{
 		body: body
 		reader: reader
 		process_chunk: process_chunk
 		process_end: process_end
 		process_error: process_error
+		borrow_chunks: borrow_chunks
 	}
 	request.read_next_chunk()
 }
@@ -195,6 +204,9 @@ pub fn (mut body Body) incrementally_read_loop(reader &streams.ReadableStreamDef
 // WebIDL read result and a Uint8Array copy that no Fetch callback consumes.
 @[heap]
 pub struct IncrementalReadLoopReadRequest {
+	// Internal sinks may read the stream's chunk until this callback returns.
+	// Public callbacks still receive their own copy for asynchronous use.
+	borrow_chunks bool
 pub:
 	body          &Body
 	reader        &streams.ReadableStreamDefaultReader
@@ -221,7 +233,8 @@ pub fn (mut request IncrementalReadLoopReadRequest) on_chunk(chunk streams.Value
 		request.process_error('TypeError: Body stream produced a non-byte chunk')
 		return
 	}
-	request.process_chunk(chunk.bytes_.clone())
+	bytes := if request.borrow_chunks { chunk.bytes_ } else { chunk.bytes_.clone() }
+	request.process_chunk(bytes)
 	request.read_next_chunk()
 }
 

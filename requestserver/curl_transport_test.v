@@ -161,6 +161,31 @@ fn serve_streaming_response(mut listener net.TcpListener) {
 	socket.write_string('ity') or { panic(err) }
 }
 
+fn test_curl_body_callback_copies_data_before_the_input_buffer_is_reused() {
+	mut request := fetch.Request.create()
+	params := fetch.FetchParams.create(request, fetch.FetchTimingInfo.create())
+	pending := fetch.PendingResponse.create(mut request, none)
+	mut body := fetch.Body.streaming()
+	mut receiver := fetch.FetchedDataReceiver.create_for_stream(body.stream())
+	receiver.set_body(body)
+	native := &CurlRequest{
+		connection_: &CurlConnection{}
+		request_: request
+		params_: params
+		pending_: pending
+		body_: body
+		receiver_: receiver
+		sent_headers_: true
+	}
+	mut buffer := [u8(`a`), `b`, `c`]
+	assert curl_data_received(buffer.data, 1, 3, voidptr(native)) == 3
+	buffer[0] = `d`
+	assert curl_data_received(buffer.data, 1, 3, voidptr(native)) == 3
+	buffer[1] = `z`
+	receiver.handle_network_data(fetch.NetworkResponseData{}, .complete)
+	assert body.fully_read()! == 'abcdbc'.bytes()
+}
+
 fn serve_redirect_response(mut listener net.TcpListener) {
 	for hop in 0 .. 2 {
 		mut socket := listener.accept() or { panic(err) }

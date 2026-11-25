@@ -107,6 +107,29 @@ fn test_native_body_read_reports_stream_errors_and_releases_pending_request() {
 	reader.release_lock()!
 }
 
+fn test_internal_body_reader_borrows_native_chunks_and_public_reader_copies_them() {
+	for borrow in [false, true] {
+		mut body := Body.streaming()
+		chunk := 'response bytes'.bytes()
+		mut recorder := &IncrementalReadRecorder{}
+		on_chunk := fn [mut recorder, chunk, borrow] (bytes []u8) {
+			assert (bytes.data == chunk.data) == borrow
+			recorder.chunks << bytes.bytestr()
+		}
+		mut reader := if borrow {
+			body.read_chunks(on_chunk, ignore_body_end, ignore_body_error, true)
+		} else {
+			body.incrementally_read(on_chunk, ignore_body_end, ignore_body_error)
+		}
+		mut stream := body.stream()
+		mut controller := stream.byte_controller() or { panic('missing byte controller') }
+		streams.readable_byte_stream_controller_enqueue_native_bytes(mut controller, chunk)!
+		stream.close()
+		assert recorder.chunks == ['response bytes']
+		reader.release_lock()!
+	}
+}
+
 fn test_multipart_form_data_parser() {
 	mime := mimesniff.MimeType.parse('multipart/form-data;boundary=abc')?
 	input := '--abc\r\nContent-Disposition: form-data; name="field"\r\n\r\nvalue\r\n--abc\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ntext\r\n--abc--\r\n'
