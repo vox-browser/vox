@@ -880,3 +880,72 @@ One-minute host load was 4.22→4.29 and 4.29→4.51 on 18 CPUs. The driver and
 used 2.21 times Brave's settled footprint on this pair. The bundle also
 contains other engine changes, so the comparison measures total browser
 memory on the live patch.
+
+### SVG and grid layout geometry
+
+`2b4e7ff2c` allocates grid track arrays and SVG geometry only for boxes that
+use them. Ordinary positioned and flex boxes still retain their scalar
+geometry. Grid array copies and published SVG path copies keep their
+independent backing storage when a measurement arena retires.
+
+A standalone fixture called the layout and allocator functions emitted by
+the production C backend. The before and after compiler receipts were
+`20261125-174702-1e7094d1` and `20261125-180110-c0f9257e`. Each fixture
+created 1,024 ordinary rare records and cloned each record. Clang compiled
+both at `-O0`. The record shrank from 872 B to 336 B. The arena allocation
+cursor for the fixture fell from 1,802,216 B to 688,128 B.
+The candidate produced the same result with arena poisoning enabled.
+Both compiler inputs stayed fixed. The compile and execution guards exited
+0 with sampled peak RSS of 4,102,586,368 B and 47,906,816 B respectively.
+
+The V rare-state fixture also passed with FastC and Clang after correcting
+two unrelated generated optional `libjs.ExecutionContext` casts in a
+temporary C file. That backend reported zero arena bytes for the fixture,
+so the allocation result above comes from the production C backend. The
+ordinary C-backend test command exceeded its 12 GiB guard. The separate
+production C fixture exercised the measured allocation and release path.
+
+The single-unit C `-prod` bundle with the new geometry records had SHA-256
+`85a440370b6dc773afdeb6213d63c9505e7ff7912b13698272671202cd1b55cc`.
+The frozen generated C matched the candidate's layout implementation.
+The next fresh pair used the same direct HTTPS, private profiles, viewport,
+scale and content checks. Brave and Vox audited the complete patch at
+23.01 and 23.13 seconds. The final three-second settled windows had 52 and
+53 samples respectively.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 359,080,072 B | 866,443,448 B | 0 |
+| Vox | 726,388,552 B | 1,165,824,584 B | 0 |
+
+The executable, native-library and helper identities remained fixed. The
+driver and guard exited 0. The 3 GiB guard observed 1,038,368,768 B of peak
+RSS. One-minute host load was 5.64→5.29 and 5.29→5.03 on 18 CPUs. The
+live comparison places Vox at 2.02 times Brave's settled footprint. It
+includes other bundled engine changes and live network variation.
+
+A separate fresh launch of the same executable stayed on the audited patch
+without input for 100 seconds. Three-second windows ending at 35, 65, and
+95 seconds yielded median footprints of 733,974,344 B, 733,990,728 B, and
+733,990,728 B. The sampled peak was 1,168,970,096 B. Executable and library
+hashes stayed fixed. Browser, driver and 3 GiB guard exited 0. The guard
+observed 1,100,496,896 B peak RSS, with one-minute host load at 5.25→4.31.
+This run covers a fresh tab through the first 100 seconds of its lifetime.
+
+### Long-running session observation
+
+An existing Vox process with almost twelve hours of uptime had
+21,637,619,328 B of physical footprint. Its mapped executable inode was
+different from the current bundle's inode. A read-only `vmmap -summary`
+classified 19.7 GiB as dirty untagged memory across 11,012 regions. It also
+reported 194.1 MiB of dirty WebKit Malloc and 110.8 MiB of dirty IOSurface
+memory. The mapping check and its guard exited 0. A second physical sample
+roughly two minutes later was 21,681,807,024 B. The process stayed running.
+This observation measures a long-lived session and establishes neither its
+loaded page nor the allocation owners within the engine.
+
+A separate two-second, 5 ms stack sample recorded 296 main-thread stacks.
+Of these, 289 waited in the event loop and five included a repeating timer
+calling UI2 element rendering. The sampler and guard exited 0. The stack
+sample measures active calls at that moment. Historical allocations cannot
+be attributed from it.
