@@ -26,6 +26,13 @@ fn parse_owned_selector(text string) Selector {
 	return selector_from_text_impl(text)
 }
 
+// Copy the live stack entries into storage owned by the parsed graph.
+fn copy_selector_entries[T](entries [4]T, count int, capacity int) []T {
+	mut values := []T{cap: capacity}
+	unsafe { values.push_many(&entries[0], count) }
+	return values
+}
+
 struct ParsedSelectorCopy {
 mut:
 	selectors map[voidptr]&ParsedSelectorCopyEntry
@@ -71,7 +78,11 @@ fn (mut copy ParsedSelectorCopy) prepare_simple(source &SimpleSelector) {
 }
 
 fn own_parsed_selector_name(source SelectorName) SelectorName {
-	return SelectorName{ name: source.name.clone(), lowercase_name: source.lowercase_name.clone() }
+	name := source.name.clone()
+	return SelectorName{
+		name: name
+		lowercase_name: if source.lowercase_name == source.name { name } else { source.lowercase_name.clone() }
+	}
 }
 
 fn own_parsed_qualified_name(source SelectorQualifiedName) SelectorQualifiedName {

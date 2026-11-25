@@ -695,9 +695,16 @@ pub mut:
 }
 
 pub fn SelectorName.new(name string) SelectorName {
+	mut lowercase_name := name
+	for byte in name {
+		if byte >= 0x80 || (byte >= `A` && byte <= `Z`) {
+			lowercase_name = name.to_lower()
+			break
+		}
+	}
 	return SelectorName{
 		name: name
-		lowercase_name: name.to_lower()
+		lowercase_name: lowercase_name
 	}
 }
 
@@ -2341,37 +2348,20 @@ fn parse_complex_selector(source string) []CompoundSelector {
 		return []
 	}
 
+	// Short selectors publish exact-sized lists. A longer selector grows a
+	// dynamic buffer only after filling the stack entries.
+	mut initial := [4]CompoundSelector{}
 	mut compounds := []CompoundSelector{}
-	mut current := []SimpleSelector{}
+	mut count := 0
 	mut combinator := Combinator.no_combinator
 	mut i := 0
 	for i < text.len {
-		mut saw_whitespace := false
-		for i < text.len && is_ascii_whitespace_byte(text[i]) {
-			saw_whitespace = true
+		if is_ascii_whitespace_byte(text[i]) {
 			i++
-		}
-		if i >= text.len {
-			break
-		}
-
-		if saw_whitespace && current.len != 0 && !is_combinator_start(text, i) {
-			compounds << CompoundSelector{
-				combinator: combinator
-				simple_selectors: current
-			}
-			current = []
-			combinator = .descendant
+			continue
 		}
 
 		if is_combinator_start(text, i) {
-			if current.len != 0 {
-				compounds << CompoundSelector{
-					combinator: combinator
-					simple_selectors: current
-				}
-				current = []
-			}
 			if text[i] == `>` {
 				combinator = .immediate_child
 				i++
@@ -2381,31 +2371,57 @@ fn parse_complex_selector(source string) []CompoundSelector {
 			} else if text[i] == `~` {
 				combinator = .subsequent_sibling
 				i++
-			} else if text[i] == `|` && i + 1 < text.len && text[i + 1] == `|` {
+			} else {
 				combinator = .column
 				i += 2
 			}
 			continue
 		}
 
-		parsed := parse_simple_selector(text, i)
-		if parsed.next <= i {
-			current << SimpleSelector.with_invalid_text(.invalid, text[i..i + 1])
-			i++
+		simple_selectors, next := parse_selector_compound(text, i)
+		compound := CompoundSelector{ combinator: combinator, simple_selectors: simple_selectors }
+		if count < initial.len {
+			initial[count] = compound
 		} else {
-			current << parsed.selector
-			i = parsed.next
+			if count == initial.len {
+				compounds = copy_selector_entries(initial, count, 2 * count)
+			}
+			compounds << compound
+		}
+		count++
+		combinator = .descendant
+		i = next
+	}
+	return if count <= initial.len { copy_selector_entries(initial, count, count) } else { compounds }
+}
+
+fn parse_selector_compound(text string, start int) ([]SimpleSelector, int) {
+	mut initial := [4]SimpleSelector{}
+	mut members := []SimpleSelector{}
+	mut count := 0
+	mut i := start
+	for {
+		parsed := parse_simple_selector(text, i)
+		member := if parsed.next <= i {
+			SimpleSelector.with_invalid_text(.invalid, text[i..i + 1])
+		} else {
+			parsed.selector
+		}
+		if count < initial.len {
+			initial[count] = member
+		} else {
+			if count == initial.len {
+				members = copy_selector_entries(initial, count, 2 * count)
+			}
+			members << member
+		}
+		count++
+		i = if parsed.next <= i { i + 1 } else { parsed.next }
+		if i >= text.len || is_ascii_whitespace_byte(text[i]) || is_combinator_start(text, i) {
+			break
 		}
 	}
-
-	if current.len != 0 {
-		compounds << CompoundSelector{
-			combinator: combinator
-			simple_selectors: current
-		}
-	}
-
-	return compounds
+	return if count <= initial.len { copy_selector_entries(initial, count, count) } else { members }, i
 }
 
 struct ParsedSimpleSelector {
