@@ -221,7 +221,7 @@ fn glyph_strike_key(face_key string, size f32, device SkAffine, strike &GlyphStr
 // the strike's font, made from the face on first need. None when that font
 // cannot be made, which empties every mask of the strike.
 fn (mut e CachedGlyphStrike) glyph(mut strike GlyphStrike, mut lazy LazyGlyphFace, id u16, sub_x int, sub_y int) ?StrikeGlyph {
-	key := u32(id) << 4 | u32(sub_x) << 2 | u32(sub_y)
+	key := packed_glyph_key(id, sub_x, sub_y)
 	if g := e.glyphs[key] {
 		return g
 	}

@@ -304,20 +304,34 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			filter, legacy) or { Blitter(NullBlitter{}) }
 	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
+	mut prepare_masks := $if macos && !cpuraster_freetype ? { run.retained } $else { false }
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x {
+		sub_x := if strike.snap_x {
 			0
 		} else {
 			packed_subpixel(mapped.x)
-		}, if strike.snap_y {
+		}
+		sub_y := if strike.snap_y {
 			0
 		} else {
 			packed_subpixel(mapped.y)
-		}) or { return true }
+		}
+		mut glyph := StrikeGlyph{}
+		if known := entry.glyphs[packed_glyph_key(id, sub_x, sub_y)] {
+			glyph = known
+		} else {
+			if prepare_masks {
+				prepare_masks = false
+				$if macos && !cpuraster_freetype ? {
+					entry.prepare_glyph_masks(mut strike, mut lazy, run, routes, i, rounding)
+				}
+			}
+			glyph = entry.glyph(mut strike, mut lazy, id, sub_x, sub_y) or { return true }
+		}
 		if glyph.width == 0 || glyph.height == 0 || glyph.width >= glyph_max_width {
 			// Empty glyphs are dropped; A8 images too wide for SkGlyph are
 			// rejected to a fallback that only draws color glyphs.
@@ -1040,13 +1054,17 @@ fn (mut s GlyphStrike) release() {
 }
 
 fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
-	key := u32(id) << 4 | u32(sub_x) << 2 | u32(sub_y)
+	key := packed_glyph_key(id, sub_x, sub_y)
 	if g := s.glyphs[key] {
 		return g
 	}
 	g := s.make_glyph(id, sub_x, sub_y)
 	s.glyphs[key] = g
 	return g
+}
+
+fn packed_glyph_key(id u16, sub_x int, sub_y int) u32 {
+	return u32(id) << 4 | u32(sub_x) << 2 | u32(sub_y)
 }
 
 // SkScalerContext::internalMakeGlyph() with SkScalerContext_Mac's
@@ -1075,6 +1093,11 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 		draw_glyph(s.font, id, s.transform, s.invertible, f64(x), f64(y), context_width,
 			context_height, g_width, g_height, s.color, s.foreground) or { return StrikeGlyph{} }
 	}
+	return s.glyph_image(g, cg, context_width, context_height)
+}
+
+fn (s &GlyphStrike) glyph_image(g StrikeGlyph, cg []u32, context_width int, context_height int) StrikeGlyph {
+	g_left, g_top, g_width, g_height := g.left, g.top, g.width, g.height
 	first := (context_height - g_height) * context_width
 	if s.color {
 		// cgpixels_to_pmcolor(): SkPackARGB32() of the premultiplied pixel,
