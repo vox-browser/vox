@@ -1161,3 +1161,103 @@ observed 1,022,558,208 B peak RSS. One-minute host load on 18 CPUs was
 3.32→5.38 and 5.38→5.73. Vox used 2.15 times Brave's settled footprint.
 The live results include other bundled changes and network variation.
 The controlled PNG fixture isolates the allocation effect of the change.
+
+### Retained CSS selector storage
+
+`1c0a3935f` gives short lists of compound and simple selectors exact-sized
+backing arrays. Parsing builds up to four entries in a fixed local array.
+Longer lists transfer the first four entries to a growable buffer.
+Lowercase ASCII selector names reuse their original spelling. Names that
+need folding preserve the existing Unicode conversion, and arena
+publication shares an owned copy for equal spellings.
+
+A C-backend fixture parsed 384 complex selectors inside native document
+storage. The control retained 852,880 B and the candidate retained
+697,207 B, a reduction of 155,673 B or 18.25%. An earlier candidate used
+a mutable wrapper that V allocated on the heap. It retained 1,149,495 B
+and was discarded. The final fixture returned the same count normally
+and with `short selector source` and `selector graph` arenas
+write-protected after retirement. The control and candidate compile and
+3 GiB runtime guards exited 0.
+
+The focused suites passed 27 cases covering source lifetime, both vector
+sizes, Unicode names, workspace publication, DOM queries, CSSOM rule
+reuse and invalidation dependencies. The affected workspaces passed
+again with targeted arena poisoning. The focused compile guard sampled
+2,227,027,968 B peak RSS and both 3 GiB runtime guards exited 0. The
+non-preallocated C-backend selector fixture also passed.
+
+### Live RAM before the selector-storage change
+
+The prior single-unit C `-prod` executable came from receipt
+`20261125-185109-2fd902d5` with SHA-256
+`1f7fb4fd495ae2f8186cb0a6cb056e6e8e6a4a59d010f1e5aab01daa5823a789`.
+The Brave–Vox pair used fresh profiles and caches, direct HTTPS and
+retained OS caches. Each passed the complete 1024×768 scale-2 audit
+with loaded fonts, 133 image elements and 15,620 bytes of matching
+normalized text. Brave and Vox audited at 23.01 and 23.14 seconds.
+The final three-second windows after twelve seconds of settling
+contained 54 and 55 samples respectively.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Brave | 329,981,992 B | 886,988,792 B | 0 |
+| Vox | 694,226,736 B | 1,134,514,544 B | 0 |
+
+Executable, framework and helper hashes stayed fixed. Brave reported
+Chromium `158.0.8127.42`. The driver and 3 GiB guard exited 0. The
+guard sampled 981,319,680 B peak RSS. One-minute host load was
+6.19→5.93 and 5.93→4.63 on 18 CPUs. Vox used 2.10 times Brave's
+settled footprint.
+
+### Live RAM on the selector-storage build
+
+The production worker published single-unit C `-prod` receipt
+`20261125-185951-29d81323` with executable SHA-256
+`2a4c5ca263a71dcf1cde0f816881cb89c0f667a2cd1f6e926c2a0fdb52e99847`.
+The frozen C uses fixed local arrays for both selector lists. The
+production compile and headless smoke guards exited 0 and sampled
+7,655,309,312 B and 78,921,728 B peak RSS respectively.
+
+The next pair started Vox first and repeated the same audit and
+measurement conditions. Vox and Brave passed the complete patch checks
+at 23.15 and 23.01 seconds. The final windows contained 56 and 55
+samples respectively.
+
+| Order | Settled footprint | Sampled peak | Browser exit |
+| --- | ---: | ---: | ---: |
+| Vox | 710,709,064 B | 1,159,942,512 B | 0 |
+| Brave | 324,444,224 B | 887,644,176 B | 0 |
+
+The AVIF library, adblock helper and all pinned Brave binaries matched
+the preceding pair. Both process trees stayed fixed within each trial.
+The driver and 3 GiB guard exited 0. The guard sampled 1,011,908,608 B
+peak RSS. One-minute host load was 4.74→5.32 and 5.32→4.90 on 18 CPUs.
+Vox used 2.19 times Brave's settled footprint. The candidate's fixture
+shows lower selector storage, while the total live footprint rose by
+16,482,328 B between builds. The live runs include other changes and
+network variation.
+
+### Native wheel scrolling on the selector-storage build
+
+Two fresh launches of the same executable used private profiles and
+HTTP caches, direct live HTTPS, retained OS caches, automatic scripting,
+and the matching 1024×768 viewport at backing scale 2. Both audits
+confirmed the complete patch at 22.84 and 23.04 seconds. The measurements
+used `tools/measure_precise_scroll.py` with `VOX_TEST_WINDOW=1`, 720 precise
+wheel events at nominal 60 Hz, delta 16, reversal after 360 events and a
+23-second settle after the title matched.
+
+| Trial | Scroll publications/s | Median / p95 / max scroll interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 17.28 | 59.54 / 91.16 / 167.04 ms | 219/235 | 720 / 266 | 52.88 Hz | 66.01 / 0.24 ms |
+| 2 | 18.54 | 54.06 / 92.85 / 134.25 ms | 230/250 | 720 / 284 | 53.32 Hz | 60.26 / 3.84 ms |
+
+Throughput spans the full 13.597- and 13.484-second input windows. The
+endpoint records completed native frame installation after outer view
+paint. Scroll positions reached 12,034.5 and 12,066.5 CSS pixels and
+returned to the top. One-minute host load on 18 CPUs was 5.14→5.63 and
+5.98→6.11. Both browsers, both drivers and the 3 GiB guard exited 0.
+The guard sampled 1,347,518,464 B peak RSS. These trials were slower
+than the animation-fix observations. The frozen build contains other
+engine changes and the comparisons ran under different live conditions.
