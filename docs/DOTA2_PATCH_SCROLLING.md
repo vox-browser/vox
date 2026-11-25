@@ -155,3 +155,123 @@ upload path that the texture change replaces. Another 170 were in the
 empty-layer scan and 117 in tiled CSS gradient drawing. The browser, driver and
 3 GiB guard exited 0. This instrumented run verifies the old shadow path was
 active during scrolling.
+
+## RAM target against Brave
+
+The comparison uses the simultaneous sum of macOS task physical footprints
+for an isolated browser process tree, including renderer and GPU helpers.
+The settled result is the median of the final three seconds, twelve seconds
+after the ready-document audit. The sampled peak runs from process launch
+through that same endpoint. The sampler polls every 50 ms and can miss short
+peaks or helpers that exit between samples. The 12 GiB guard measures RSS
+separately to bound the job.
+
+The first alternating diagnostic used fresh private profiles and HTTP caches,
+direct live HTTPS, default content blocking and author JavaScript. It matched
+the 1024×768 document viewport and backing scale of two. Brave used its CDP
+viewport override and Vox used its native viewport. Vox's native audit and
+Brave's CDP audit verified the patch title, complete readiness, visible
+document, loaded fonts, and 133 patch image elements. Vox had 15,620 bytes of
+React-root text and Brave's initial audit had 15,236 bytes. A follow-up Brave
+audit had 15,620 bytes and matched Vox byte for byte after normalizing the
+39 UUIDs generated in inline CSS class names. These live runs did not pin
+server responses or compare final pixels.
+
+| Browser and run | Settled footprint | Sampled peak footprint |
+| --- | ---: | ---: |
+| Vox 1 | 1,134,235,800 B | 1,566,118,736 B |
+| Brave 1 | 393,453,512 B | 865,723,584 B |
+| Brave 2 | 385,949,616 B | 888,922,008 B |
+| Vox 2 | 1,251,397,808 B | 1,663,176,904 B |
+
+The baseline Vox executable was from the single-unit C production build
+based on `086d79a4c`. Its SHA-256 was
+`4575782cafab004239ad56713933582762b7bc3f6806e876129c061e8e1cbfac`.
+Brave reported Chromium `158.0.8127.42`. Each Vox trial ended with a deliberate
+SIGTERM after sampling. Both Brave instances exited 0 via `Browser.close`.
+The guard exited 0 and observed a peak 1,560,805,376 bytes of aggregate RSS.
+One-minute host load at the start of the four trials was 5.30, 6.21, 5.68,
+and 6.19 on 18 CPUs.
+
+One Vox snapshot had 825.3 MiB of dirty anonymous memory. A probe on the
+following production build (`f67d4df3e`, executable SHA-256
+`dcbf80bcd447a22cccab9dec1709ca927f7fb7e773f21f825fd9ffda2fce382f`)
+identified 638.6 MiB of cursor-used allocation in the native document arena.
+The probe traced the allocations that currently owned each block, including
+recycled blocks. Major growth sites included collecting measurement inputs
+(62.7 MiB), flex measurement recording (57.1 MiB), and several line-box and
+descendant snapshot copy sites. These figures attribute the filled blocks to
+the caller that grew the arena and can include later allocations in those
+blocks. The recycled-block pool itself held 16.9 MiB at that snapshot.
+
+A diagnostic on that build disabled flex and grid measurement reuse with
+`VOX_DISABLE_FLEX_MEASUREMENT_REUSE=1` and
+`VOX_DISABLE_GRID_MEASUREMENT_REUSE=1`. It settled at 902,959,064 bytes and
+peaked at 1,339,691,736 bytes with a complete patch audit. This demonstrates
+the scale of the cache cost while the remaining footprint still exceeds the
+Brave baseline. The production behavior must retain the layout algorithms
+and document content. The comparison target remains open.
+
+### Retiring flex and grid measurement storage
+
+Flex and grid measurement inputs, rejection maps, and geometry snapshots now
+share an arena owned by one layout pass. Committed layout copies the lines,
+glyphs and other geometry it consumes before the pool releases its arena.
+Temporary measurements can still reuse the same snapshot during the pass.
+The recorded cache also avoids a duplicate copy of line-box data.
+
+A second alternating diagnostic exercised the completed `-prod` build with
+this change present in its compiled source. It used a minimum nine-second
+readiness checkpoint in both browsers, then the same twelve-second settle
+window. All four runs audited 133 image elements and 15,620 bytes of root
+text. Their normalized content SHA-256 was
+`58c17e85055d216d501de74d27b945582d45c17c1fd87d2408c9dc242d82c9da`.
+The browser and driver exits were 0 in all four runs. The 3 GiB guard exited
+0 with an observed peak 1,195,425,792 bytes of aggregate RSS.
+
+| Browser and run | Settled footprint | Sampled peak footprint |
+| --- | ---: | ---: |
+| Vox 1 | 882,642,928 B | 1,329,320,664 B |
+| Brave 1 | 404,586,536 B | 1,162,158,240 B |
+| Brave 2 | 387,145,648 B | 886,202,192 B |
+| Vox 2 | 891,588,568 B | 1,321,341,608 B |
+
+The Vox median was 887,115,748 bytes, compared with 395,866,092 bytes for
+Brave. One-minute load at trial start was 6.88, 8.90, 9.70, and 11.60 on
+18 CPUs. The earlier Vox median was 1,192,816,804 bytes. Other bundled
+changes and live network variation limit attribution of the 25.6% observed
+difference. Vox still used 2.24 times Brave's settled RAM in the latest
+diagnostic. This cohort covered load and idle.
+
+Vox executable SHA-256 was
+`e6de499528e972179c46e586aed7c1269ce07a7436bac4fc4e428a9b35fe7405`.
+Brave executable SHA-256 was
+`91891e4e395cb799e755f9ec5ee501f380560b4365959de0a15b5123ca0aacd5`.
+The process-tree driver checked executable and runtime file hashes at each
+launch and again after teardown.
+
+The focused storage and flex baseline tests passed with preallocation,
+with the measurement arena poisoned on retirement, and with `-gc none`
+without preallocation. The C test driver hit the 12 GiB guard. The focused
+runs used FastC with two generated `libjs.ExecutionContext` pointer
+expressions corrected in scratch before Clang compilation. FastC's option
+interpolation limitation blocked the broader geometry-oracle suite. On the
+production build, the same arena-poisoning setting also passed a live run of
+240 precise wheel inputs, completing 258 publications and exiting 0.
+Its 3 GiB guard exited 0 and observed 1,305,624,576 bytes of peak RSS.
+
+The remaining native document arena used 442.2 MiB in a separate candidate
+trace. The runtime recycle pool held 111.9 MiB of address space, with about
+2.6 MiB of dirty pages in an address-matched snapshot. The largest remaining
+document growth sites were map backing storage, layout replay, and CSS
+invalidation comparisons. The stylesheet syntax cache retained another
+42.7 MiB of used arena space.
+
+Unordered CSS invalidation comparisons now track the first 64 matched rule
+positions in a word and use compact extra words for larger lists. The
+focused preallocation test verified zero arena growth across 512 repeated
+small comparisons. Both descendant and sibling tests verified that reversed
+65-entry lists compare equal and that replacing a rule with a duplicate is
+detected. The focused C-backend executable and its guard exited 0. The shared
+production build still needs to publish this change before measuring its
+effect on the live page.
