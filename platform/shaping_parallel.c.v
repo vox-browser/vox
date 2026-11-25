@@ -96,7 +96,11 @@ pub fn stage_ascii_shape_jobs(jobs []ASCIIShapeJob) ASCIIShapeScope {
 		}
 	}
 	if parallel_ascii_shape_diagnostics {
-		eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${jobs.len} staged=${staged} off_thread=${off_thread} strikes=${strikes} strikes_off_thread=${strikes_off_thread} decoded=${decoded} decoded_off_thread=${decoded_off_thread}')
+		mut threads := map[u64]bool{}
+		for job in jobs {
+			if job.prepared() { threads[job.thread_id] = true }
+		}
+		eprintln('VOX_LAYOUT_ASCII_SHAPES jobs=${jobs.len} staged=${staged} off_thread=${off_thread} strikes=${strikes} strikes_off_thread=${strikes_off_thread} decoded=${decoded} decoded_off_thread=${decoded_off_thread} threads=${threads.len}')
 	}
 	if staged == 0 { return ASCIIShapeScope{} }
 	batch := &ASCIIShapeBatch{

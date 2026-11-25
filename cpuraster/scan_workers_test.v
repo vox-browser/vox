@@ -1,6 +1,7 @@
 module cpuraster
 
 import os
+import platform
 import runtime
 
 const serial_cpu_raster = 'VOX_SERIAL_CPU_RASTER'
@@ -43,6 +44,79 @@ $if macos && !cpuraster_freetype ? {
 		assert range.first == 0
 		assert range.end == 32
 		assert range.thread_id != 0 && range.thread_id != caller
+	}
+
+	struct JoinedRasterTestRanges {
+	mut:
+		thread_ids [37]u64
+		first      [37]i32
+	}
+
+	fn record_joined_raster_range(context voidptr, first i32, end i32) {
+		mut ranges := unsafe { &JoinedRasterTestRanges(context) }
+		thread_id := platform.native_thread_identity()
+		for index in int(first) .. int(end) {
+			ranges.thread_ids[index] = thread_id
+			ranges.first[index] = first
+		}
+	}
+
+	fn test_joined_raster_ranges_cover_every_item_and_only_the_tail_uses_the_caller() {
+		if runtime.nr_cpus() < 2 { return }
+		previous := os.getenv_opt(serial_cpu_raster)
+		defer { restore_serial_raster_setting(previous) }
+		assert os.unsetenv(serial_cpu_raster) == 0
+
+		caller := platform.native_thread_identity()
+		mut ranges := JoinedRasterTestRanges{}
+		lanes := run_raster_ranges_with_caller(&ranges, ranges.thread_ids.len, 20,
+			record_joined_raster_range)
+		assert lanes == if runtime.nr_cpus() < 4 { runtime.nr_cpus() } else { 4 }
+		for lane in 0 .. lanes {
+			first := ranges.thread_ids.len * lane / lanes
+			end := ranges.thread_ids.len * (lane + 1) / lanes
+			for index in first .. end {
+				assert ranges.first[index] == first
+				assert ranges.thread_ids[index] != 0
+				assert (ranges.thread_ids[index] == caller) == (lane == lanes - 1)
+			}
+		}
+
+		assert os.setenv(serial_cpu_raster, '1', true) == 0
+		mut untouched := JoinedRasterTestRanges{}
+		assert run_raster_ranges_with_caller(&untouched, untouched.thread_ids.len, 4,
+			record_joined_raster_range) == 0
+		assert untouched.thread_ids[0] == 0
+		assert untouched.thread_ids[untouched.thread_ids.len - 1] == 0
+	}
+
+	fn test_joined_shaping_ranges_publish_exact_glyphs() {
+		if runtime.nr_cpus() < 2 { return }
+		previous := os.getenv_opt(serial_cpu_raster)
+		defer { restore_serial_raster_setting(previous) }
+		assert os.unsetenv(serial_cpu_raster) == 0
+
+		font := &platform.Font{family: 'SerenitySans', point_size: 13.25, font_rendering_policy: .chromium}
+		phrases := ['AV office  ', 'Private file choices', 'Words for line fitting', 'Keep both spaces  ',
+			'First worker range', 'Second worker range', 'Third worker range', 'Browser thread tail']
+		mut expected := [][]platform.Glyph{cap: phrases.len}
+		mut whitespace := []platform.TrailingWhitespace{cap: phrases.len}
+		for phrase in phrases {
+			shaped := platform.shape_text_with_spacing(0, 0, 0, phrase, font, .ltr)
+			expected << shaped.glyph_run.glyphs().clone()
+			whitespace << shaped.trailing_whitespace
+		}
+		platform.release_unused_text_shaping()
+		jobs := platform.prepare_ascii_shape_jobs(phrases.map(platform.ASCIIShapeRequest{it, font}))
+		assert jobs.len == phrases.len
+		assert run_raster_ranges_with_caller(jobs.data, jobs.len, 4, platform.shape_ascii_job_range) >= 2
+		mut batch := platform.stage_ascii_shape_jobs(jobs)
+		defer { batch.finish() }
+		for index, phrase in phrases {
+			shaped := platform.shape_text_with_spacing(0, 0, 0, phrase, font, .ltr)
+			assert shaped.glyph_run.glyphs() == expected[index]
+			assert shaped.trailing_whitespace == whitespace[index]
+		}
 	}
 }
 

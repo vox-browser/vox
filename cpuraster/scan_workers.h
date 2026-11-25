@@ -21,6 +21,11 @@ typedef struct {
     int rounding;
 } VoxRasterScanBatch;
 
+typedef struct {
+    const VoxRasterScanBatch *batch;
+    int32_t lane;
+} VoxRasterScanWorker;
+
 static bool vox_scan_workers_disabled(void) {
     const char *value = getenv("VOX_SERIAL_CPU_RASTER");
     return value && value[0] == '1' && value[1] == '\0';
@@ -39,6 +44,31 @@ static void vox_scan_worker_range(const VoxRasterScanBatch *batch, int32_t lane)
 #if defined(__APPLE__)
 static void vox_scan_worker_dispatch(void *context, size_t lane) {
     vox_scan_worker_range(context, (int32_t)lane);
+}
+
+static void vox_scan_worker_joined_dispatch(void *context) {
+    const VoxRasterScanWorker *worker = (const VoxRasterScanWorker *)context;
+    vox_scan_worker_range(worker->batch, worker->lane);
+}
+
+// Submit the background ranges explicitly so the caller cannot execute them
+// inline, including when dispatch_apply would keep a short batch on one lane.
+static bool vox_scan_workers_with_caller(void *context, int32_t lines, int32_t lanes, VoxRasterScan scan) {
+    dispatch_group_t group = dispatch_group_create();
+    if (!group) return false;
+    dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
+    VoxRasterScanBatch batch = {context, lines, lanes, scan, fegetround()};
+    VoxRasterScanWorker workers[VOX_SCAN_WORKERS_MAX - 1];
+    for (int32_t lane = 0; lane < lanes - 1; ++lane) {
+        workers[lane] = (VoxRasterScanWorker){&batch, lane};
+        dispatch_group_async_f(group, queue, &workers[lane], vox_scan_worker_joined_dispatch);
+    }
+    vox_scan_worker_range(&batch, lanes - 1);
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+#if !__has_feature(objc_arc)
+    dispatch_release(group);
+#endif
+    return true;
 }
 
 typedef struct {
@@ -86,11 +116,6 @@ static bool vox_scan_worker_join(void *ticket) {
     return ready;
 }
 #else
-typedef struct {
-    const VoxRasterScanBatch *batch;
-    int32_t lane;
-} VoxRasterScanWorker;
-
 static void *vox_scan_worker_thread(void *context) {
     const VoxRasterScanWorker *worker = context;
     vox_scan_worker_range(worker->batch, worker->lane);

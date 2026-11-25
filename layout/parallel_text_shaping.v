@@ -8,6 +8,7 @@ import processmetrics
 
 const serial_ascii_layout_shaping = os.getenv('VOX_SERIAL_ASCII_LAYOUT_SHAPING') == '1'
 const eager_ascii_layout_shaping = os.getenv('VOX_EAGER_ASCII_LAYOUT_SHAPING') == '1'
+const two_lane_ascii_layout_shaping = os.getenv('VOX_TWO_LANE_ASCII_LAYOUT_SHAPING') == '1'
 const ascii_layout_shaping_jobs = 64
 
 fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platform.ASCIIShapeScope {
@@ -24,12 +25,18 @@ fn prepare_first_layout_ascii_shapes(document &dom.Document, root &Node) platfor
 		if requests.len < 8 { return platform.ASCIIShapeScope{} }
 		jobs := platform.prepare_ascii_shape_jobs(requests)
 		if jobs.len < 8 { return platform.ASCIIShapeScope{} }
-		split := jobs.len / 2
-		ticket := cpuraster.start_background_raster_range(jobs.data, i32(split),
-			platform.shape_ascii_job_range)
-		if ticket == unsafe { nil } { return platform.ASCIIShapeScope{} }
-		platform.shape_ascii_job_range(jobs.data, i32(split), i32(jobs.len))
-		cpuraster.join_background_raster_range(ticket)
+		// Keep the dispatch overhead bounded for small cold batches.
+		lanes := if two_lane_ascii_layout_shaping || jobs.len < 16 {
+			2
+		} else if jobs.len < 24 {
+			3
+		} else {
+			4
+		}
+		if cpuraster.run_raster_ranges_with_caller(jobs.data, jobs.len, lanes,
+			platform.shape_ascii_job_range) == 0 {
+			return platform.ASCIIShapeScope{}
+		}
 		if !eager_ascii_layout_shaping { return platform.stage_ascii_shape_jobs(jobs) }
 		platform.store_ascii_shape_jobs(jobs)
 	}

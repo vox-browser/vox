@@ -11,8 +11,22 @@ fn C.vox_scan_workers_run(voidptr, i32, i32, fn (voidptr, i32, i32))
 fn C.vox_scan_workers_disabled() bool
 
 $if macos {
+	fn C.vox_scan_workers_with_caller(voidptr, i32, i32, fn (voidptr, i32, i32)) bool
 	fn C.vox_scan_worker_start(voidptr, i32, fn (voidptr, i32, i32)) voidptr
 	fn C.vox_scan_worker_join(voidptr) bool
+}
+
+// Run the final range on the caller and join the explicitly submitted worker
+// ranges. Return zero without calling scan if parallel work cannot start.
+pub fn run_raster_ranges_with_caller(context voidptr, lines int, requested_lanes int,
+	scan fn (voidptr, i32, i32)) int {
+	$if macos {
+		lanes := raster_range_lanes(lines, requested_lanes)
+		if lanes >= 2 && C.vox_scan_workers_with_caller(context, i32(lines), i32(lanes), scan) {
+			return lanes
+		}
+	}
+	return 0
 }
 
 const scan_pixels_per_worker = 128 * 1024
@@ -49,16 +63,20 @@ pub fn run_raster_scans(context voidptr, lines int, pixels_per_line int, scan fn
 // for non-pixel work. Return the number of scheduled ranges for diagnostics.
 pub fn run_raster_ranges(context voidptr, lines int, requested_lanes int, scan fn (voidptr, i32, i32)) int {
 	if lines <= 0 { return 0 }
-	mut lanes := 1
-	if requested_lanes > 1 && lines <= max_i32 && !C.vox_scan_workers_disabled() {
-		lanes = math.min(requested_lanes, math.min(int(C.VOX_SCAN_WORKERS_MAX), math.min(lines, runtime.nr_cpus())))
-	}
+	lanes := raster_range_lanes(lines, requested_lanes)
 	if lanes <= 1 {
 		scan(context, 0, i32(lines))
 		return 1
 	}
 	C.vox_scan_workers_run(context, i32(lines), i32(lanes), scan)
 	return lanes
+}
+
+fn raster_range_lanes(lines int, requested_lanes int) int {
+	if lines < 2 || lines > max_i32 || requested_lanes < 2 || C.vox_scan_workers_disabled() {
+		return 1
+	}
+	return math.min(requested_lanes, math.min(int(C.VOX_SCAN_WORKERS_MAX), math.min(lines, runtime.nr_cpus())))
 }
 
 // Start a borrowed range on a background worker. A non-nil ticket must be
