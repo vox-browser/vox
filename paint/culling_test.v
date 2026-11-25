@@ -207,6 +207,41 @@ fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
 }
 
 $if macos {
+	fn test_replay_workers_project_screen_rectangles_for_unchanged_leaves() {
+		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
+			|| serial_paint_screen_geometry { return }
+		leaf := layout.PaintCommand{kind: 'fill_rect', x: 10.25, y: 20, width: 16, height: 8}
+		transformed := layout.PaintCommand{
+			...leaf
+			transform: [f64(-1), 0.25, 0.5, 1, 50, -4]!
+		}
+		commands := [leaf, transformed, layout.PaintCommand{...leaf, x: 900},
+			layout.PaintCommand{...leaf, checkbox_theme_data: &layout.PaintCheckboxThemeData{}},
+			layout.PaintCommand{kind: 'begin_css_effect_layer'},
+			layout.PaintCommand{kind: 'draw_video'}]
+		page_y := f32(12.5)
+		mut batch := new_paint_canvas_bounds_batch(commands, 2, f64(page_y), 100, 100)
+		batch.submit()
+		assert batch.background_lanes == 2
+		assert batch.finish(true).len == commands.len
+		for index in 0 .. 2 {
+			command := &commands[index]
+			prepared := batch.screen_geometry_at(index)
+			assert prepared != unsafe { nil }
+			x, y := paint_screen_point(*command, command.x, command.y, 0, page_y, 0)
+			assert prepared.points[0] == x && prepared.points[1] == y
+			assert prepared.points == transformed_rect_points(*command, 0, page_y, 0)
+			assert prepared.matrix == normalized_paint_transform(command.transform)
+		}
+		identity := batch.screen_geometry_at(0)
+		assert [identity.x, identity.y, identity.width, identity.height]! == [f32(10.25), 32.5, 16, 8]!
+		affine := batch.screen_geometry_at(1)
+		assert [affine.x, affine.y, affine.width, affine.height]! == [f32(33.75), 31.0625, 20, 12]!
+		for index in 2 .. commands.len {
+			assert batch.screen_geometry_at(index) == unsafe { nil }
+		}
+	}
+
 	fn test_replay_workers_prepare_glyph_positions_in_their_command_slots() {
 		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
 			|| serial_retained_glyph_geometry { return }

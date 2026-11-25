@@ -22,6 +22,7 @@ struct PaintCanvasBoundsWork {
 	commands       []layout.PaintCommand
 	bounds         &u8
 	glyph_geometry &RetainedGlyphReplayGeometry = unsafe { nil }
+	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
 	glyph_positions []f32
 	threads        &u64
 	page_y         f64
@@ -52,6 +53,14 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 			PaintLeafCanvasBounds.retain
 		}
 		unsafe { work.bounds[index] = u8(result) }
+		// The native checkbox/radio resolver can replace both the rectangle
+		// and transform. Its commands need the replay-time projection.
+		if work.screen_geometry != unsafe { nil } && result != .outside
+			&& command.checkbox_theme_data == unsafe { nil } {
+			unsafe {
+				work.screen_geometry[index] = paint_command_screen_geometry(command, 0, f32(work.page_y), 0)
+			}
+		}
 		if work.glyph_geometry != unsafe { nil } && kind == 'draw_text' {
 			mut geometry := unsafe { &work.glyph_geometry[index] }
 			if glyph_count == 0 {
@@ -68,6 +77,7 @@ struct PaintCanvasBoundsBatch {
 	work           &PaintCanvasBoundsWork = unsafe { nil }
 	bounds         []u8
 	glyph_geometry []RetainedGlyphReplayGeometry
+	screen_geometry []PaintCommandScreenGeometry
 	threads        []u64
 	lanes          int
 mut:
@@ -89,19 +99,26 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 	glyph_stage := processmetrics.begin_thread_instruction_substage('retained_glyph_geometry_reservation')
 	geometry, glyph_positions := reserve_retained_glyph_geometry(commands)
 	glyph_stage.finish()
+	screen_geometry := if !serial_paint_screen_geometry && commands.len <= paint_screen_geometry_command_limit {
+		[]PaintCommandScreenGeometry{len: commands.len}
+	} else {
+		[]PaintCommandScreenGeometry{}
+	}
 	mut threads := []u64{}
-	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics {
+	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics || paint_screen_geometry_diagnostics {
 		threads = []u64{len: commands.len}
 	}
 	return PaintCanvasBoundsBatch{
 		bounds: bounds
 		glyph_geometry: geometry
+		screen_geometry: screen_geometry
 		threads: threads
 		lanes: lanes
 		work: &PaintCanvasBoundsWork{
 			commands: commands
 			bounds: unsafe { &u8(bounds.data) }
 			glyph_geometry: unsafe { if geometry.len > 0 { &RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
+			screen_geometry: unsafe { if screen_geometry.len > 0 { &PaintCommandScreenGeometry(screen_geometry.data) } else { nil } }
 			glyph_positions: glyph_positions
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 			page_y: page_y
@@ -160,5 +177,23 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 		mode := if batch.work.glyph_positions.len > 0 { 'worker_ranges' } else { 'packed' }
 		eprintln('VOX_RETAINED_GLYPH_GEOMETRY_BATCH prepared=${prepared} off_thread=${off_thread} mode=${mode}')
 	}
+	if paint_screen_geometry_diagnostics && batch.screen_geometry.len > 0 {
+		caller := platform.native_thread_identity()
+		mut prepared := 0
+		mut off_thread := 0
+		for index in 0 .. batch.screen_geometry.len {
+			if !batch.screen_geometry[index].ready { continue }
+			prepared++
+			if batch.threads[index] != caller { off_thread++ }
+		}
+		eprintln('VOX_PAINT_SCREEN_GEOMETRY_BATCH prepared=${prepared} off_thread=${off_thread} ready_at_join=${ready}')
+	}
 	return batch.bounds
+}
+
+fn (batch &PaintCanvasBoundsBatch) screen_geometry_at(index int) &PaintCommandScreenGeometry {
+	if index < batch.screen_geometry.len && batch.screen_geometry[index].ready {
+		return unsafe { &batch.screen_geometry[index] }
+	}
+	return unsafe { nil }
 }

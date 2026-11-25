@@ -4915,8 +4915,7 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 }
 
 fn map_paint_point(transform [6]f64, x f64, y f64) (f64, f64) {
-	matrix := normalized_paint_transform(transform)
-	return matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5]
+	return map_normalized_paint_point(normalized_paint_transform(transform), x, y)
 }
 
 fn append_native_gradient_path_point(mut data []f32, kind f32, x f64, y f64) {
@@ -5115,12 +5114,8 @@ fn paint_screen_point(command layout.PaintCommand, x f64, y f64, page_x f32, pag
 // Every rectangle has four corners. Keep their screen coordinates inline so
 // ordinary command replay needs no temporary point or corner arrays.
 fn transformed_rect_points(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) [8]f32 {
-	left_top_x, left_top_y := paint_screen_point(command, command.x, command.y, page_x, page_y, scroll_y)
-	right_top_x, right_top_y := paint_screen_point(command, command.x + command.width, command.y, page_x, page_y, scroll_y)
-	right_bottom_x, right_bottom_y := paint_screen_point(command, command.x + command.width, command.y + command.height, page_x, page_y, scroll_y)
-	left_bottom_x, left_bottom_y := paint_screen_point(command, command.x, command.y + command.height, page_x, page_y, scroll_y)
-	return [left_top_x, left_top_y, right_top_x, right_top_y,
-		right_bottom_x, right_bottom_y, left_bottom_x, left_bottom_y]!
+	return project_paint_rect_points(&command, normalized_paint_transform(command.transform), page_x,
+		page_y, scroll_y)
 }
 
 // Polygon drawing consumes this read-only view synchronously in both the
@@ -5956,7 +5951,7 @@ fn replaced_image_pixels_for_renderer(command &layout.PaintCommand, native_rende
 }
 
 fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32,
-	window_height int, options RetainedGlyphGeometryOptions) {
+	window_height int, options PaintCommandReplayOptions) {
 	leaf_instructions := paint_leaf_instruction_stage(source_command.kind)
 	defer { leaf_instructions.finish() }
 	// A native border or coincident antialiased fill can consume the underlay
@@ -6284,20 +6279,18 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			}
 		}
 	}
-	rect_points := transformed_rect_points(*command, page_x, page_y, scroll_y)
-	mut x := rect_points[0]
-	mut y := rect_points[1]
-	mut bounds_right := x
-	mut bounds_bottom := y
-	for index := 2; index + 1 < rect_points.len; index += 2 {
-		x = math.min(x, rect_points[index])
-		y = math.min(y, rect_points[index + 1])
-		bounds_right = math.max(bounds_right, rect_points[index])
-		bounds_bottom = math.max(bounds_bottom, rect_points[index + 1])
+	screen_rect := if options.screen_geometry != unsafe { nil } {
+		if paint_screen_geometry_diagnostics { eprintln('VOX_PAINT_SCREEN_GEOMETRY_USED') }
+		*options.screen_geometry
+	} else {
+		paint_command_screen_geometry(command, page_x, page_y, scroll_y)
 	}
-	w := bounds_right - x
-	h := bounds_bottom - y
-	matrix := normalized_paint_transform(command.transform)
+	rect_points := screen_rect.points
+	x := screen_rect.x
+	y := screen_rect.y
+	w := screen_rect.width
+	h := screen_rect.height
+	matrix := screen_rect.matrix
 	non_axis_aligned := matrix[1] != 0 || matrix[2] != 0
 	mut cull_top := y
 	mut cull_bottom := y + h
@@ -8046,6 +8039,9 @@ fn (mut app BrowserApp) draw() {
 				glyph_geometry := if has_glyph_geometry && command.kind == 'draw_text' {
 					unsafe { &canvas_bounds.glyph_geometry[command_index] }
 				} else { unsafe { &RetainedGlyphReplayGeometry(nil) } }
+				screen_geometry := if leaf_canvas_bounds.len > 0 {
+					canvas_bounds.screen_geometry_at(command_index)
+				} else { unsafe { &PaintCommandScreenGeometry(nil) } }
 				$if macos && !cpuraster_freetype ? {
 					if frame_glyph_prefetch != unsafe { nil } && command.kind == 'draw_text'
 						&& command_index >= frame_glyph_prefetch_at {
@@ -8055,10 +8051,12 @@ fn (mut app BrowserApp) draw() {
 				}
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
-					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry)
+					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry,
+						screen_geometry: screen_geometry)
 					app.scroll_profile.record_replay_allocation(command.kind, platform.thread_arena_usage().used - before)
 				} else {
-					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry)
+					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry,
+						screen_geometry: screen_geometry)
 				}
 				$if macos {
 					if app.ctx.native_rendering && command.kind == 'begin_css_filter_layer' {
