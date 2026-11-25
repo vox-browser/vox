@@ -14688,6 +14688,12 @@ pinned V `-prod` glyph differential check returned 1,962 exact draws and 38
 declines in 2,000 cases. The check and its 3 GiB guard exited zero.
 [Hacker News measurements](LOAD_PARALLELISM.md#prepare-cold-frame-glyph-strikes-on-a-worker)
 
+Early frame prefetch folds retained f64 glyph positions on a worker.
+The arena-poisoned and ThreadSanitizer checks matched prepared-position
+keys and masks. The pinned V `-prod` glyph differential returned 1,962
+exact draws and 38 declines in 2,000 cases under the 3 GiB guard.
+[Hacker News measurements](LOAD_PARALLELISM.md#overlap-glyph-mask-prefetch-with-native-frame-setup)
+
 ### Parallel SVG background multisampling bounds
 
 Raster workers compute path bounds from resource-owned SVG scenes in

@@ -2682,3 +2682,77 @@ including the favicon miss. The executable, AVIF library, adblock
 helper, archive and driver hashes stayed pinned. Browser, driver and
 3 GiB guard exits were zero. Peak aggregate timing RSS was
 373,506,048 bytes.
+
+### Overlap glyph mask prefetch with native frame setup
+
+Commit `840390f1a` lets cold frame prefetch borrow the immutable f64
+positions from retained glyph runs. The coordinator folds the baseline
+into float32 coordinates with the same rounding used by ordinary
+replay. It can start after canvas-bounds submission, before native
+viewport planning and canvas setup. The browser still publishes masks
+at the text replay boundaries. A scroll-reuse hit discards the batch
+after joining its work.
+
+`VOX_EARLY_FRAME_GLYPH_PREFETCH=1` selects the early submission when
+the existing frame prefetch experiment is enabled. It uses the cold
+sRGB setup path with a background canvas-bounds batch. Warm frames use
+prepared positions at the ordinary submission point.
+
+The production type check, arena-poisoned tests and ThreadSanitizer
+passed. The raw-position test folds a fractional baseline and matches
+every strike key and mask against prepared positions. A diagnostic on
+the preceding production executable (`9b3d5850b3fc89ea579000c61e1cfb12bea1f1728e1995c6412b8823a00f3120`)
+confirmed that all 443 canvas bounds ran off-thread on four lanes.
+That run matched the reference PNG and all 30 ordered story IDs.
+
+#### Matched production captures
+
+Receipt `20261125-130257-647367d1` sealed `840390f1a`, passed startup
+smoke and published single-C-unit V `-prod` executable SHA-256
+`023fcab30a49d36fcc0f38d7aef0c0e73c699247c9bebf3269001c86b4d1e297`.
+The diagnostic observed 55 mask jobs overlapping native frame setup
+with early submission and zero with the later submission. Both
+variants computed 443 canvas bounds on four workers and classified 60
+commands as outside the canvas. Both published 107 masks in the first
+wave and 48 in the second. The two waves were ready when joined.
+Ordinary text issued 158 jobs in 23 batches, and the two captures
+matched all 30 ordered story IDs.
+
+A separate instrumented pair measured 6,970,529 → 7,757,777 inclusive
+main-thread instructions for raster setup and 834,749 → 924,478 for
+prefetch submission. Inclusive native raster replay measured
+272,139,671 → 273,072,390 instructions. Early submission shifts the
+timing of mask drawing while adding some browser-thread preparation.
+
+The timing cohorts used fresh launches through the encoded document
+PNG at 1024×768 CSS pixels and 2× scale. Both variants enabled frame
+prefetch and its second wave, used JavaScriptCore, fresh private
+profiles and HTTP caches, retained OS filesystem caches, and replayed
+a 60 ms delay on each logo response. The first cohort began with early
+submission. The reversed cohort began with later submission.
+
+| Pair | Later, ms | Early, ms | Reversed later, ms | Reversed early, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 337.819 | 313.214 | 316.004 | 316.060 |
+| 2 | 323.089 | 303.508 | 321.437 | 321.160 |
+| 3 | 305.002 | 318.700 | 318.294 | 317.358 |
+| 4 | 321.854 | 310.306 | 324.477 | 317.173 |
+| 5 | 304.475 | 313.150 | 311.395 | 326.964 |
+| 6 | 305.646 | 323.833 | 319.774 | 303.225 |
+| 7 | 315.910 | 303.415 | 311.636 | 300.154 |
+| Median | 315.910 | 313.150 | 318.294 | 317.173 |
+
+Paired median changes were −11.548 ms and −0.936 ms. Early submission
+finished first in four and five pairs. Host load ranged from 4.69 to
+6.07 and from 6.07 to 6.93 on 18 CPUs. Sampled median main-thread CPU
+changed from 171.72 to 169.75 ms and from 174.59 to 177.20 ms. The
+launch timing effect varied across the two cohorts. Early prefetch
+remains opt-in.
+
+All 28 timed and four diagnostic launches matched reference PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight replay request and response records matched in every run,
+including the favicon miss. The executable, AVIF library, adblock
+helper, archive and driver hashes stayed pinned. Browser, driver and
+3 GiB guard exits were zero. Peak aggregate timing RSS was
+374,390,784 bytes.
