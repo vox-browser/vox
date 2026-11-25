@@ -2449,3 +2449,176 @@ The macOS footprint summary reported 375 MB of dirty untagged mappings,
 tool's display units. The browser, footprint command, driver and 3 GiB
 guard exited 0. The guard sampled 911,720,448 B peak RSS. One-minute host
 load was 4.63→3.96.
+
+## Deferring device-coordinate layout caches
+
+`38bb72e2b` keeps the coordinate scale on the computed style. Converting
+units and cloning anonymous wrappers had each allocated a full resolved
+layout record just to set the scale. On the control's arm64 executable the
+allocator reserved 4,664 bytes for each such record. Later layout could
+replace it with a newly resolved or shared record. The scale now comes
+from the style even when its resolved cache is absent or shared. The
+provenance checks still require an equal scale before reusing resolved
+geometry.
+
+The staged C-backend preallocation runner executed 13 focused tests, both
+normally and with retired native document arenas poisoned. They checked
+unresolved projections, old cache ownership, zoom, inherited anonymous
+geometry, pending author fonts and independent style mutation. The compile
+and 3 GiB runtime guards exited 0 at peak RSS of 6,443,991,040 B and
+25,837,568 B.
+
+The live control used single-unit C `-prod` receipt
+`20261125-224616-908c6971` at sealed revision `802c8ee36`.
+Its executable SHA-256 was
+`c589c77625fdea080723c8e1a24b916f4236a6ed3d933b7982eff4ac89491df5`.
+The control audit observed layout at scale 2 and JavaScriptCore.
+
+The live memory runs used fresh processes, private profiles and HTTP
+caches, direct HTTPS, retained OS caches, automatic scripting and a
+1024×768 document at scale 2. They verified the visible patch, complete
+readiness, loaded fonts, 133 images and 15,620 UTF-8 text bytes. Replacing
+39 generated UUIDs with `<uuid>` yielded the established text digest.
+The sampler measured process-tree physical footprint from launch at
+50 ms intervals. The settled result is the median in the last three
+seconds of a 12-second window after the first passing audit.
+
+Single-unit C `-prod` receipt `20261125-225847-5c0feb90` sealed
+`ad17b7df0`, including the scale change and a separate cold text-shaping
+change. Executable SHA-256 was
+`d5d1b545614a51f6b49f138acec437ed83509a1094e5bde512f1e88402467314`.
+The generated C writes the scale directly and omits the eager layout
+cache call. The compile and headless smoke guards exited 0 at
+7,734,394,880 B and 97,222,656 B peak RSS. Two preceding shared build
+attempts rejected changed source inputs before preprocessing.
+
+| Run | Full patch audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Vox control with timing logs | 23.02 s | 690,638,712 B | 1,122,963,320 B | 56 |
+| Vox control 1 | 23.01 s | 640,094,048 B | 1,092,850,320 B | 58 |
+| Vox control 2 | 23.00 s | 644,222,816 B | 1,089,163,824 B | 56 |
+| Vox candidate 1 | 23.02 s | 650,678,088 B | 1,104,548,400 B | 55 |
+| Vox candidate 2 | 23.03 s | 660,819,832 B | 1,106,858,592 B | 52 |
+| Brave 158.1.100.59 | 23.00 s | 338,255,792 B | 887,070,568 B | 55 |
+
+The candidate settled above both controls run with the same settings and
+at 1.92–1.95 times the latest live Brave footprint. All six browsers,
+drivers and 3 GiB guards exited 0. Peak guard RSS was 989,954,048 B,
+990,707,712 B, 998,522,880 B, 1,003,208,704 B, 1,024,901,120 B and
+1,202,372,608 B in table order. One-minute host loads on 18 CPUs were
+6.93→6.13, 7.11→6.79, 5.97→6.03, 6.38→7.07, 6.30→5.29 and 10.90→9.86.
+
+Brave reported Chromium `158.0.8127.92`. Its executable and framework
+SHA-256 hashes were
+`16db606608c3101c4a2deace5822ec948acc4be8de524c0108e81356767fdcd3`
+and `eba91727c2d8408bd397d776c9561bc0480d75cbc671318e42517e7e1c8c1ecc`.
+All helper binaries were pinned and the settled process tree contained
+six processes. CDP verified the full visible patch initially and at the
+endpoint. AppKit observed Brave as active when opening the tab. An
+earlier attempt incorrectly used document keyboard focus as the HTML
+activity check and rejected the result. Its browser exited 0 and the
+driver and guard exited 1 at 1,298,219,008 B peak guard RSS.
+
+The native wheel runs used `tools/measure_precise_scroll.py` with
+`VOX_TEST_WINDOW=1`, 112 pixels of chrome and a 23-second settle after
+the matching title. They issued 720 precise events at nominal 60 Hz,
+delta 16 and reversal at event 360. All completed the patch audit, and
+throughput covers the first-to-last input interval. The endpoint was
+completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 1 | 19.22 | 52.90 / 83.22 / 148.27 ms | 238/259 | 720 / 292 | 53.35 Hz | 63.83 / 0.21 ms |
+| Control 2 | 19.79 | 50.75 / 78.33 / 138.90 ms | 240/259 | 720 / 292 | 54.95 Hz | 76.79 / 0.21 ms |
+| Candidate 1 | 19.87 | 51.26 / 78.42 / 129.86 ms | 238/259 | 720 / 293 | 55.17 Hz | 65.94 / 7.55 ms |
+| Candidate 2 | 21.36 | 48.18 / 72.17 / 133.94 ms | 254/276 | 720 / 311 | 55.65 Hz | 63.23 / 3.59 ms |
+
+The full input windows were 13.476, 13.085, 13.034 and 12.919 seconds.
+The document reached 12,064, 12,033.5, 12,065.5 and 12,065.5 CSS pixels
+and returned to 0, 0, 1 and 2.5. One-minute host load was 5.32→6.93,
+6.93→7.83, 6.82→6.32 and 6.32→6.43. Both guards and all four drivers
+and browser processes exited 0. Peak guard RSS was 1,312,505,856 B for
+the controls and 1,271,955,456 B for the candidate. The order and shared
+source changes limit attribution, and most intervals missed 60 Hz.
+
+The 250 ms repeating load audit first verified the complete patch after
+3.98 seconds on the control and 7.92 seconds on the candidate. The two
+browsers, drivers and guards exited 0, with peak guard RSS of 802,996,224 B
+and 1,032,601,600 B. One-minute host load was 6.49→6.53 and 6.31→6.13.
+These single runs are load diagnostics.
+
+All six 800×600 actual PNGs matched across the builds byte for byte.
+Five passed their exact references, covering SVG image replacement,
+gradient stop updates, selection, table flex-item layout and a fieldset
+legend move. The existing collapsed-border colgroup case differed from
+its reference by the same 808 pixels on each build. Its mismatch
+returned driver and guard exit 1 for both groups, with peak guard RSS of
+181,190,656 B and 165,380,096 B.
+
+## Retiring site-compatibility match workspaces
+
+`aa5f50bd8` scopes the URL serialization, matching inputs and regex VM
+workspace to each compatibility-rule lookup. User-agent transformations
+and feature enablement still consume the resulting boolean outside that
+scope. The regex engine reserves a 2,048-entry VM stack per component.
+
+A C-backend preallocation fixture ran 128 lookups with the built-in rule,
+alternating the Dota patch URL and a matching Twitch URL. The earlier
+lookup body retained 22,419,277 B in the caller's arena. The scoped
+lookup retained zero, with identical match decisions. These are arena
+bytes from a synchronous fixture. The compile and 3 GiB runtime guards
+exited 0 at 1,655,537,664 B and 32,768 B peak RSS.
+
+All five site-compatibility tests passed normally and with the workspace
+poisoned at retirement. The regression test verified zero caller-arena
+growth for 64 matching and nonmatching calls. The test compile and
+runtime guards exited 0 at 1,419,673,600 B and 2,555,904 B peak RSS.
+The default Twitch policy test also passed with poisoning. The two Fetch
+identity tests passed with the repository adblock assets supplied explicitly
+and the workspace poisoned. Their standalone binary requires those assets.
+The first asset-free run exited 1 with a network error.
+
+The published single-unit C `-prod` receipt
+`20261125-231123-8745b241` sealed `0dd428a2f`, including the matcher
+change and a separate text-shaping worker change. The executable SHA-256
+was `62a038841ae78ebfe515f47d2d4b514866aab1de87ed917bc8373563ff025513`.
+The sealed C bounds the normal URLPattern call with the scratch scope.
+The production and smoke guards exited 0 at 7,649,787,904 B and
+100,761,600 B peak RSS. An earlier rebuild rejected changed source
+inputs before preprocessing.
+
+| Vox run | Full patch audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: |
+| Site-compatibility build 1 | 23.01 s | 657,248,096 B | 1,112,150,408 B | 54 |
+| Site-compatibility build 2 | 23.04 s | 652,398,408 B | 1,087,672,304 B | 52 |
+
+The two fresh launches used the same viewport, backing scale, caches,
+script policy and physical-footprint endpoint as above. Browsers,
+drivers and 3 GiB guards exited 0 with 1,018,265,600 B and 971,587,584 B
+peak guard RSS. One-minute host load was 3.75→5.05 and 5.05→5.04. Both
+live footprints overlap the preceding Vox build's 651–661 MB range.
+They are 1.93–1.94 times the latest audited Brave result.
+
+The adblock asset hashes and AVIF library hash matched across the three
+builds. The latest adblock helper SHA-256 was
+`31dfe96b534e9bf5f14ff05f6f5db53b2f9a0bb2001fb27f9060f92bc034da14`,
+versus `8ef704b018d10aee3d88821378ba1baae27f6adde1c60e43c6411ece44e6f0d4`
+on the other two builds. Each trial verified its runtime inputs before
+and after launch. The shared source and helper changes limit attribution.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Site-compatibility build 1 | 21.22 | 48.26 / 72.70 / 133.00 ms | 254/277 | 720 / 314 | 55.09 Hz | 61.84 / 2.91 ms |
+| Site-compatibility build 2 | 19.69 | 52.05 / 78.88 / 140.11 ms | 233/257 | 720 / 292 | 55.09 Hz | 64.19 / 3.35 ms |
+
+Both scroll runs used the same native wheel schedule, audited the complete
+patch and ended at the top after reaching 12,097.5 and 12,102 CSS pixels.
+Both first-to-last input windows lasted 13.052 seconds. The browsers,
+drivers and 3 GiB guard exited 0 at 1,222,967,296 B peak guard RSS.
+One-minute host load was 5.27→5.75 and 5.75→6.34. Most intervals missed
+the 60 Hz budget.
+
+A fresh 250 ms repeating audit verified the full patch after 4.17 seconds.
+The browser, driver and guard exited 0, with sampled peak guard RSS of
+855,490,560 B and one-minute host load 6.34→6.87. This was a single
+load diagnostic.
