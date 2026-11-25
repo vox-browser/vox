@@ -1,13 +1,13 @@
 # Scripted Old Reddit worldnews comparison
 
-The production Vox rollback control with LibJS used **52.08% fewer median
-observed CPU instructions** than Brave on the frozen `/r/worldnews/` listing.
-All seven pairs matched their respective screenshot references. Median
-launch-to-PNG time was **2.011 s for Vox and 2.026 s for Brave**, with Vox
-ahead in four of seven pairs. This cohort used the control switch to restore
-script delivery without deferred layout coalescing. A fresh live Vox visit
+Production Vox with LibJS used **51.31% fewer median observed CPU instructions**
+than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
+their respective screenshot references. Median launch-to-PNG time was
+**1.999 s for Vox and 2.013 s for Brave**. Vox won three pairs and the
+median paired difference was 0.07 ms in Brave's favor. The rebuilt
+bundle used the restored script delivery path. A fresh live Vox visit
 reached Reddit's login page.
-[Current comparison](#compare-the-restored-script-delivery-path-with-brave)
+[Current comparison](#production-comparison-with-the-rebuilt-script-delivery-path)
 
 ## Workload and execution
 
@@ -2327,5 +2327,63 @@ arena poisoning. Its compile and runtime guards exited zero.
 Build `20261125-105119-2fd902d5` generated C for the restored path and
 stopped when the supervisor detected changed repository inputs before
 preprocessing. The rollback commit requested another shared production
-build. The elapsed lead above was measured with the control switch and
-the rebuilt default remains to be verified.
+build. The elapsed lead above was measured with the control switch.
+
+### Production comparison with the rebuilt script delivery path
+
+The managed worker stopped build `20261125-105418-83443ccf` when its
+inputs changed before C preprocessing. It published the replacement,
+`20261125-105649-29d81323`, as a single-unit `-prod` C bundle. The sealed
+source receipt identified checkout `633625da4`. The generated C
+contained the blocking-script frame yield and confirmed removal of the
+deferred layout coalescing experiment. The sealed C SHA-256 was
+`0febd8ca7a41a59a831b660428886ed20db12d91e2c7148d5c7c8c74075cdb30`, and
+the executable SHA-256 was
+`87e856b295d23343569bbdacba074c0e3c9c43ae7fdff8038e8eb5338465d303`.
+The LibJS headless smoke and 118 guarded archive and observer tests passed.
+Two separate visits with load-throttle logging recorded two frame yields
+per visit, and four and three deferred script deliveries, respectively.
+Both matched the fixed Vox reference and exited zero with the driver and
+guard. These traces verify that the rebuilt bundle exercised the yield.
+
+Seven alternating pairs used fresh processes, private empty profiles and
+HTTP caches, the same clock-pinned archive and the existing 1.4 s settle
+interval. The endpoint was observer receipt of the completed 1024×768
+scale-1 document PNG. The run used LibJS with frontend and native code
+caches disabled and the production script delivery settings. OS
+filesystem and shader caches were retained. Both browsers matched their
+fixed references, completed the listing with all 25 posts in order and
+served all five original author scripts. LibJS execution generations
+were 153, 155, 155, 155, 151, 153 and 151. JavaScriptCore stayed
+uninitialized. The executable, native dependencies, Brave framework and
+helpers, replay bodies and references were pinned across the cohort.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,579,019,705 | 11,716,768,230 | 1964.622 | 2064.944 |
+| 2 | 5,693,393,685 | 11,850,601,071 | 1993.794 | 1987.618 |
+| 3 | 5,703,144,198 | 11,713,459,067 | 2022.655 | 2022.586 |
+| 4 | 5,703,820,181 | 11,681,260,605 | 2033.571 | 2061.175 |
+| 5 | 5,758,123,059 | 11,683,417,116 | 2022.261 | 1974.199 |
+| 6 | 5,718,990,163 | 11,727,697,202 | 1997.511 | 2013.084 |
+| 7 | 5,727,129,733 | 11,597,264,363 | 1998.912 | 1989.835 |
+| Median | 5,703,820,181 | 11,713,459,067 | 1998.912 | 2013.084 |
+
+Vox finished **14.17 ms sooner** between the independent elapsed medians.
+It won three pairs. The median paired difference was **0.07 ms** in
+Brave's favor. Vox used **51.31% fewer median observed instructions** and
+retired fewer observed instructions in all seven pairs. Its highest
+observed count was **49.65%** of Brave's lowest, meeting the instruction
+gate for the observed counts.
+
+Polled process-tree counts are lower bounds and exclude GPU work and
+external services. Last complete samples preceded PNG observation by
+5.37–7.62 ms for Vox and 1.57–6.95 ms for Brave. Vox reported zero missing
+final samples. Brave reported 1, 2, 2, 2, 3, 2 and 2. All browser roots,
+the driver and the guard exited zero. The 12 GiB guard adopted 14 roots
+and sampled a peak aggregate RSS of 799,555,584 bytes. Host one-minute
+load ranged from 3.84 to 7.10 on 18 cores from 11:02:10 to 11:02:48 UTC+03.
+
+A fresh direct launch of the same executable completed at Reddit's login
+page with zero posts and two script diagnostics. The browser and guard
+exited zero. The elapsed comparison covers the archived listing.
