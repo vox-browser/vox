@@ -268,8 +268,12 @@ fn test_unported_glyph_runs_decline() {
 }
 
 fn test_checked_glyph_positions_match_serial_and_reject_replacement_coordinates() {
-	positions := [f32(4.25), 12, 9.5, 12]
-	validation := validate_prepared_glyph_positions(positions)
+	mut positions := []f32{len: 4}
+	bounds, validation := prepare_checked_retained_glyph_positions([f64(0.25), 0, 5.5, 0],
+		mut positions, 4, 12, true)
+	assert positions == [f32(4.25), 12, 9.5, 12]
+	assert bounds == Rect{4.25, 12, 9.5, 12}
+	assert validation.bounds == bounds
 	assert validation.covers(positions, 4)
 	assert !validation.covers(positions[..2], 4)
 	assert !validation.covers(positions.clone(), 4)
@@ -279,21 +283,23 @@ fn test_checked_glyph_positions_match_serial_and_reject_replacement_coordinates(
 	}
 	run := glyph_test_run(GlyphTestCase{size: 12, glyphs: [u16(5), 7], positions: positions})
 	transform := [f32(1), 0, 0, 1, 0, 0]!
-	mut serial := glyph_test_background()
-	mut checked := serial.clone()
-	assert fill_canvas_glyphs(mut serial, 48, 40, 192, 2, run, transform, 0xff000000,
-		none, 1, .src_over, [], none)
-	assert fill_canvas_glyphs(mut checked, 48, 40, 192, 2, CanvasGlyphRun{
-		...run
-		position_validation: validation
-	}, transform, 0xff000000, none, 1, .src_over, [], none)
-	assert checked == serial
-	assert !fill_canvas_glyphs(mut checked, 48, 40, 192, 2, CanvasGlyphRun{
-		...run
-		positions: [f32(math.nan()), 12, 9.5, 12]
-		position_validation: validation
-	}, transform, 0xff000000, none, 1, .src_over, [], none)
-	assert checked == serial
+	for filter in [?CanvasFilter(none), new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: 1.5}])] {
+		mut serial := glyph_test_background()
+		mut checked := serial.clone()
+		assert fill_canvas_glyphs(mut serial, 48, 40, 192, 2, run, transform, 0xff000000,
+			none, 1, .src_over, [], filter)
+		assert fill_canvas_glyphs(mut checked, 48, 40, 192, 2, CanvasGlyphRun{
+			...run
+			position_validation: validation
+		}, transform, 0xff000000, none, 1, .src_over, [], filter)
+		assert checked == serial
+		assert !fill_canvas_glyphs(mut checked, 48, 40, 192, 2, CanvasGlyphRun{
+			...run
+			positions: [f32(math.nan()), 12, 9.5, 12]
+			position_validation: validation
+		}, transform, 0xff000000, none, 1, .src_over, [], filter)
+		assert checked == serial
+	}
 }
 
 // The mask gamma tables match SkTMaskGamma<3, 3, 3>(0.5, sRGB): linear at

@@ -4,6 +4,8 @@ import math
 import os
 
 const glyph_position_validation_diagnostics = os.getenv('VOX_GLYPH_POSITION_VALIDATION_DIAGNOSTICS') == '1'
+const glyph_position_bounds_diagnostics = os.getenv('VOX_GLYPH_POSITION_BOUNDS_DIAGNOSTICS') == '1'
+const serial_retained_glyph_bounds = os.getenv('VOX_SERIAL_RETAINED_GLYPH_BOUNDS') == '1'
 
 // Canvas2D fillText() glyph runs, as skia/canvas_raster.cpp's
 // vox_skia_canvas_glyphs() draws them with LibWeb Skia: an SkFont at the
@@ -46,11 +48,12 @@ pub:
 	paint_color ?[4]f32
 }
 
-// Binds a successful check to one exact view. Keep the positions alive and
-// immutable until replay has finished using the check.
+// Binds a successful check and its coordinate bounds to one exact view.
+// Keep the positions alive and immutable through replay.
 pub struct GlyphPositionValidation {
 	data  voidptr
 	count int
+	bounds Rect
 }
 
 pub fn (validation GlyphPositionValidation) covers(positions []f32, count int) bool {
@@ -59,8 +62,13 @@ pub fn (validation GlyphPositionValidation) covers(positions []f32, count int) b
 }
 
 pub fn validate_prepared_glyph_positions(positions []f32) GlyphPositionValidation {
+	if positions.len < 2 { return GlyphPositionValidation{} }
+	return check_glyph_position_bounds(positions, glyph_positions_bounds(positions))
+}
+
+fn check_glyph_position_bounds(positions []f32, bounds Rect) GlyphPositionValidation {
 	if glyph_positions_are_finite(positions, positions.len) {
-		return GlyphPositionValidation{positions.data, positions.len}
+		return GlyphPositionValidation{positions.data, positions.len, bounds}
 	}
 	return GlyphPositionValidation{}
 }
@@ -143,6 +151,26 @@ pub fn prepare_retained_glyph_positions(source []f64, mut positions []f32,
 	return glyph_positions_bounds(positions)
 }
 
+// The converted position bounds are also used by the CPU raster quick reject.
+// Attach them to the same checked view without scanning for bounds again.
+pub fn prepare_checked_retained_glyph_positions(source []f64, mut positions []f32,
+	baseline_x f32, baseline_y f32, fold_origin bool) (Rect, GlyphPositionValidation) {
+	bounds := prepare_retained_glyph_positions(source, mut positions, baseline_x, baseline_y,
+		fold_origin)
+	return bounds, check_glyph_position_bounds(positions, bounds)
+}
+
+fn canvas_glyph_position_bounds(positions []f32, coordinates int, validation GlyphPositionValidation,
+	checked bool) Rect {
+	if checked && !serial_retained_glyph_bounds {
+		if glyph_position_bounds_diagnostics {
+			eprintln('VOX_GLYPH_POSITION_BOUNDS_REUSED coordinates=${coordinates}')
+		}
+		return validation.bounds
+	}
+	return glyph_positions_bounds(positions[..coordinates])
+}
+
 @[inline]
 fn retained_glyph_coordinate(value f64, origin f32, fold_origin bool) f32 {
 	return if fold_origin { f32(value) + origin } else { f32(value) }
@@ -172,7 +200,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	filter := plan.color
 	coordinates := run.glyphs.len * 2
-	if run.position_validation.covers(run.positions, coordinates) {
+	checked := run.position_validation.covers(run.positions, coordinates)
+	if checked {
 		if glyph_position_validation_diagnostics {
 			eprintln('VOX_GLYPH_POSITION_VALIDATION_REUSED coordinates=${coordinates}')
 		}
@@ -202,7 +231,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		if !is_finite_f32(run.translation[0]) || !is_finite_f32(run.translation[1]) {
 			return false
 		}
-		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+		mut bounds := canvas_glyph_position_bounds(run.positions, coordinates, run.position_validation,
+			checked)
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
 		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom {
@@ -327,7 +357,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	// bounds at the font size. Empty typeface bounds take the glyphs' own
 	// bounds instead, which cannot reject a glyph that would touch the clip.
 	if font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size) {
-		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+		mut bounds := canvas_glyph_position_bounds(run.positions, coordinates, run.position_validation,
+			checked)
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
 		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom {

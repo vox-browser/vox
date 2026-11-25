@@ -94,10 +94,13 @@ fn (mut geometry RetainedGlyphReplayGeometry) prepare(command &layout.PaintComma
 	if geometry.positions.len == 0 { return }
 	run := command.glyph_run or { return }
 	chromium := run.font().font_rendering_policy == .chromium
-	geometry.bounds = cpuraster.prepare_retained_glyph_positions(run.glyph_positions(),
-		mut geometry.positions, f32(command.glyph_translation_x), f32(command.glyph_translation_y),
-		chromium)
-	if !serial_retained_glyph_validation {
-		geometry.validation = cpuraster.validate_prepared_glyph_positions(geometry.positions)
+	baseline_x := f32(command.glyph_translation_x)
+	baseline_y := f32(command.glyph_translation_y)
+	if serial_retained_glyph_validation {
+		geometry.bounds = cpuraster.prepare_retained_glyph_positions(run.glyph_positions(),
+			mut geometry.positions, baseline_x, baseline_y, chromium)
+	} else {
+		geometry.bounds, geometry.validation = cpuraster.prepare_checked_retained_glyph_positions(
+			run.glyph_positions(), mut geometry.positions, baseline_x, baseline_y, chromium)
 	}
 }
