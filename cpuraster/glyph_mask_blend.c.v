@@ -5,8 +5,11 @@ import os
 import runtime
 
 const glyph_blend_batch_size = 128
-const glyph_blend_pixels_per_lane = 4096
+const glyph_blend_pixels_per_lane = 2048
+const previous_glyph_blend_pixels_per_lane = 4096
+const previous_glyph_blend_run_min = 24
 const serial_glyph_blend = os.getenv('VOX_SERIAL_GLYPH_BLEND') == '1'
+const previous_glyph_blend_budget = os.getenv('VOX_PREVIOUS_GLYPH_BLEND_BUDGET') == '1'
 const glyph_blend_diagnostics = os.getenv('VOX_GLYPH_BLEND_DIAGNOSTICS') == '1'
 
 struct GlyphMaskBlit {
@@ -85,7 +88,12 @@ fn blend_glyph_mask_stripes(context voidptr, first i32, end i32) {
 }
 
 fn (batch &GlyphMaskBatch) blend_parallel(blitter &PipelineBlitter) bool {
-	mut lanes := math.min(int(batch.pixels / glyph_blend_pixels_per_lane),
+	pixels_per_lane := if previous_glyph_blend_budget {
+		previous_glyph_blend_pixels_per_lane
+	} else {
+		glyph_blend_pixels_per_lane
+	}
+	mut lanes := math.min(int(batch.pixels / pixels_per_lane),
 		int(C.VOX_SCAN_WORKERS_MAX))
 	if lanes < 2 { return false }
 	mut bounds := batch.blits[0].clip

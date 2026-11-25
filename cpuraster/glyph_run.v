@@ -367,7 +367,12 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
 	batch_blend := $if macos && !cpuraster_freetype ? {
-		run.retained && run.glyphs.len >= 24 && rc.is_bw && mode == .src_over && style == none
+		// Short runs can cover a substantial region at large scales. The
+		// batch uses the sum of its clipped mask pixels to choose lanes.
+		blend_candidate := run.glyphs.len >= previous_glyph_blend_run_min
+			|| (!previous_glyph_blend_budget
+			&& i64(clip_bounds.width()) * clip_bounds.height() >= 2 * glyph_blend_pixels_per_lane)
+		run.retained && blend_candidate && rc.is_bw && mode == .src_over && style == none
 			&& filter_in == none && blitter is PipelineBlitter && !serial_glyph_blend
 			&& !C.vox_scan_workers_disabled()
 	} $else {
