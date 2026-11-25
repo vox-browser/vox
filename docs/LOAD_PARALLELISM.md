@@ -2576,3 +2576,109 @@ including the favicon miss. The executable, AVIF library, adblock
 helper, archive and driver hashes stayed pinned. Each browser, driver
 and 3 GiB guard exited zero. Peak aggregate timing RSS was
 418,168,832 bytes.
+
+### Prefetch later glyph masks during frame replay
+
+Commit `20dab029c` adds a second wave to the cold macOS frame mask
+experiment. Enable `VOX_PREFETCH_FRAME_GLYPH_MASKS=1` and
+`VOX_PREFETCH_TAIL_FRAME_GLYPH_MASKS=1` to use it. The first wave still
+examines up to 32 eligible runs within the first 160 paint commands.
+The second wave extends the search to 128 runs within 512 commands.
+The coordinator deduplicates keys across both waves and uses up to
+four strikes and 256 masks. It starts the second wave after drawing
+the first. The browser joins that wave at or after its first text
+command and releases the fonts after both waves finish.
+
+The production type check, arena-poisoned tests and ThreadSanitizer
+passed. The focused checks cover duplicate keys across waves,
+separate publication, a skipped prefix, and discarding a pending
+wave at the end of replay. The second wave's pixels match serial
+replay.
+
+#### Retained Hacker News text replay
+
+Receipt `20261125-123322-d3696956` supplied the archived homepage
+capture. Its PNG and all 30 ordered story IDs matched the references.
+The 332 retained draws reproduced fixture log SHA-256
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The standalone single-C-unit V `-prod` replay used `VOX_ARENA_POISON=1`
+and a fresh glyph cache per process. It joined the first wave before
+draw 1 and joined the second after the first 32 eligible draws.
+
+The isolated diagnostic retained 107 first-wave masks in both modes.
+All 48 additional masks overlapped the interval between first and
+second publication. Ordinary raster work went from 192 mask jobs in
+27 batches to 158 jobs in 23 batches. Seven timed pairs alternated the
+modes across fresh processes with one executable SHA-256
+`d7dc4a526416d144d438ef191d749461ee281355dba62cc2ec7127ffa297e330`.
+
+| Pair | One wave through first join, ms | Two waves through first join, ms | One wave through all draws, ms | Two waves through all draws, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 2.052 | 2.046 | 7.853 | 7.328 |
+| 2 | 1.943 | 2.043 | 7.866 | 7.517 |
+| 3 | 1.975 | 2.066 | 7.694 | 7.345 |
+| 4 | 1.965 | 2.313 | 7.669 | 7.575 |
+| 5 | 2.076 | 2.079 | 7.746 | 7.447 |
+| 6 | 1.961 | 2.000 | 7.531 | 7.497 |
+| 7 | 2.042 | 2.129 | 7.764 | 7.481 |
+| Median | 1.975 | 2.066 | 7.746 | 7.481 |
+
+Paired median wall time rose 0.088 ms through the first join and
+fell 0.299 ms through all draws. The full two-wave replay finished
+first in all seven pairs. Host load was 4.68 on 18 CPUs. Every replay
+matched reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+The executable, font files and 333 captured input hashes stayed
+pinned. Capture, build, replay and guard exits were zero. Peak
+aggregate replay RSS was 46,858,240 bytes under the 3 GiB guard.
+
+#### Matched production captures
+
+Receipt `20261125-124903-d0b9c4b8` sealed `449b64ee7`, passed startup
+smoke and published single-C-unit V `-prod` executable SHA-256
+`9b3d5850b3fc89ea579000c61e1cfb12bea1f1728e1995c6412b8823a00f3120`.
+The candidate published 107 masks in the first wave and 48 additional
+masks across four lanes in the second. Both waves were ready at their
+joins. The diagnostic reported no second-wave jobs overlapping text
+after the first publication. Ordinary text issued 158 jobs in 23
+batches with two waves and 192 jobs in 27 batches with one. Both
+diagnostic captures matched the 30 ordered story IDs.
+
+In a separate instrumented pair, text replay went from 127,446,216
+to 120,688,642 main-thread instructions. Prefetch submission grew
+from 299,853 to 822,597 and the combined joins grew from 269,408 to
+400,394 instructions. Inclusive native raster replay went from
+277,063,960 to 273,450,923 instructions.
+
+The timing cohorts used fresh launches through the encoded document
+PNG at 1024×768 CSS pixels and 2× scale. Both variants used
+JavaScriptCore, private empty profiles and HTTP caches, retained OS
+filesystem caches and a 60 ms replay delay on each logo response.
+The first cohort started with two waves and the reversed cohort
+started with one.
+
+| Pair | One wave, ms | Two waves, ms | Reversed one, ms | Reversed two, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 317.704 | 314.652 | 311.188 | 323.488 |
+| 2 | 305.075 | 329.590 | 312.272 | 314.432 |
+| 3 | 308.150 | 324.109 | 331.927 | 320.808 |
+| 4 | 294.797 | 298.392 | 319.549 | 308.799 |
+| 5 | 316.963 | 299.217 | 314.352 | 315.195 |
+| 6 | 337.973 | 305.589 | 316.327 | 308.825 |
+| 7 | 317.082 | 310.007 | 294.372 | 343.239 |
+| Median | 316.963 | 310.007 | 314.352 | 315.195 |
+
+The paired median change was −3.052 ms and +0.843 ms. Two waves
+finished first in four and three pairs, respectively. Host load was
+5.15–5.40 and 5.37–5.42 on 18 CPUs. Sampled median main-thread CPU
+changed from 175.81 to 170.37 ms and from 176.53 to 177.78 ms.
+The full-page timings varied across trials. The second wave remains
+opt-in.
+
+All 28 timed and four diagnostic launches matched reference PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight replay request and response records matched in every run,
+including the favicon miss. The executable, AVIF library, adblock
+helper, archive and driver hashes stayed pinned. Browser, driver and
+3 GiB guard exits were zero. Peak aggregate timing RSS was
+373,506,048 bytes.
