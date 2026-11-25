@@ -1261,3 +1261,93 @@ host loads of 11.80–13.50 and 14.39–17.02, respectively, on 18 CPUs.
 Launch latency remains inconclusive. The timing and diagnostic browsers,
 drivers and 3 GiB guards all exited zero. The larger timing peak was
 389,513,216 bytes of aggregate RSS.
+
+### Decode prepared shapes at first use
+
+The first layout keeps the batch's HarfBuzz buffers in a thread-local
+geometry scope. A matching cache miss takes one buffer and uses the
+normal decoder, cache store, and return path. The first glyph-run caller
+receives the newly decoded run directly. Width and safe-break callers
+populate the same cache. Scope exit releases unused buffers, and a
+native font-cache reset makes outstanding buffers ineligible for reuse.
+`VOX_EAGER_ASCII_LAYOUT_SHAPING=1` selects the preceding eager
+publication behavior on the same executable.
+
+The focused Hacker News replay used the same 1024×768 inlined archive and
+the same initial typed-layout interval as the preceding focused cohorts.
+A diagnostic staged 28 buffers, shaped 14 on the worker, and consumed
+all 28. Eager publication and arena poisoning produced the same
+554 commands, 483 glyph runs, and geometry and glyph checksum
+`961d99c633fd8923`.
+
+| Round | Serial, ms | Eager, ms | On demand, ms | Repeat serial, ms | Repeat eager, ms | Repeat on demand, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 91.971 | 91.726 | 92.337 | 94.493 | 99.695 | 94.527 |
+| 2 | 91.345 | 92.160 | 91.901 | 95.309 | 94.213 | 93.969 |
+| 3 | 91.972 | 92.299 | 92.740 | 95.142 | 93.744 | 93.880 |
+| 4 | 93.062 | 90.196 | 94.292 | 97.119 | 94.123 | 93.845 |
+| 5 | 95.946 | 94.450 | 95.344 | 93.440 | 95.042 | 94.880 |
+| 6 | 98.165 | 101.525 | 95.310 | 94.140 | 94.648 | 94.857 |
+| 7 | 97.713 | 95.387 | 97.742 | 94.533 | 94.773 | 94.877 |
+| 8 | 94.287 | 95.970 | 93.435 | 93.230 | 96.205 | 94.514 |
+| 9 | 93.758 | 101.572 | 98.275 | 93.412 | 94.664 | 93.492 |
+| Median | 93.758 | 94.450 | 94.292 | 94.493 | 94.664 | 94.514 |
+
+The median paired change from eager to on-demand publication was
++0.441 ms and −0.245 ms, respectively. Host load was 22.19 in the first
+cohort and 21.86–22.55 in the repeat on 18 CPUs. All 54 processes matched
+the same layout checksum and exited zero, as did both 3 GiB guards.
+The non-`-prod` C executable used `-prealloc -gc none` and stayed pinned
+at SHA `8e77db4934e0bb86504542ff96177005c796107846f9986fb7b76a7f78cbb08e`.
+The archive and response fingerprints stayed unchanged.
+
+Focused checks covered glyph and whitespace equality, per-font and
+spacing keys, first use by safe-break metrics, nested scopes, discard of
+unused buffers, and native font retirement. The focused tests passed
+under preallocation and ThreadSanitizer. The whole-browser
+production-mode type check passed.
+
+#### Production on-demand shaping on Hacker News
+
+Receipt `20261125-081947-87776ad4` sealed `2b607e604` and passed the
+startup smoke. It published the single-C-unit V `-prod` executable
+`25a4419dd5ebe7ab916a465634fa27be4447094486083b9d6814a1037f04e434`.
+The AVIF library SHA matched the preceding cohort. The earlier shared
+build stopped before C preprocessing after repository inputs changed.
+
+Native diagnostics verified the reference PNG and all 30 story IDs.
+Both settings shaped 14 of the 28 jobs on a worker. On-demand
+publication consumed all 28 prepared buffers and recorded 28 later
+cache hits. Eager publication recorded 56 hits. A separate instrumented
+pair traced main-thread instructions through the encoded PNG. The ASCII
+preparation scope fell from 5,954,051 to 839,920 instructions. Exclusive
+flow layout rose from 151,781,893 to 156,666,231, and inclusive layout
+geometry moved from 179,297,222 to 179,155,395. The scope measurements
+include tracing overhead, and the inclusive total covers its subscopes.
+
+Two seven-pair cohorts alternated on-demand and eager publication on
+the same executable using `VOX_EAGER_ASCII_LAYOUT_SHAPING=1` for the
+control. The endpoint was the encoded document PNG at 1024×768 CSS
+pixels and 2× scale. Every launch used JavaScriptCore, a fresh private
+profile and HTTP cache, and the fixed 60 ms logo response delay used
+above. All 28 launches matched the same eight request and response
+records and the reference PNG. The executable, native libraries, archive,
+and tooling hashes stayed pinned, and OS filesystem caches were retained.
+
+| Pair | Eager, ms | On demand, ms | Repeat eager, ms | Repeat on demand, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 352.401 | 331.842 | 334.947 | 340.939 |
+| 2 | 335.991 | 331.948 | 335.779 | 353.723 |
+| 3 | 331.962 | 327.908 | 357.047 | 352.530 |
+| 4 | 341.609 | 344.743 | 346.408 | 331.411 |
+| 5 | 353.803 | 353.737 | 341.979 | 347.571 |
+| 6 | 345.656 | 346.674 | 345.665 | 349.411 |
+| 7 | 338.927 | 353.872 | 328.277 | 369.740 |
+| Median | 341.609 | 344.743 | 341.979 | 349.411 |
+
+On-demand publication was faster in four pairs and two repeat pairs.
+The median paired changes were −0.066 ms and +5.592 ms. One-minute
+host load was 20.12–21.92 and 19.30–20.32 on 18 CPUs. Whole-page
+latency had no demonstrated improvement. All timing and diagnostic
+browsers, drivers and 3 GiB guards exited zero. The larger timing peak
+was 390,709,248 bytes of aggregate RSS.
