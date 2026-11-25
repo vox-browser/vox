@@ -7,9 +7,10 @@ Median launch-to-PNG time was **1.975 s for Vox and 1.988 s for Brave**,
 with Vox ahead in four pairs. The later LibJS punctuator change reduced
 median parser instructions by 0.96% across the five archived scripts.
 Scanning strings in ASCII spans reduced median parser instructions by
-another 0.59%. Both later browser cohorts failed the fixed Brave pixel
-check because of thumbnail variation. A fresh live Vox visit reached
-Reddit's login page.
+another 0.59%. Reusing scope analysis storage cut median parse time by
+1.05 ms and median instructions by 1.08%. Later browser cohorts failed
+the fixed Brave pixel check because of thumbnail variation. Fresh live
+visits in both browsers reached Reddit's sign-in page.
 [Qualifying comparison](#published-comparison-before-the-punctuator-change)
 
 ## Workload and execution
@@ -2679,3 +2680,147 @@ context and zero script diagnostics. The browser and guard exited
 zero. A fresh direct live visit with the same executable reached the
 Reddit sign-in page with zero listing posts and two unsupported
 `data:` script diagnostics. Its browser and guard exited zero.
+
+## Reuse scope analysis storage for unresolved identifiers
+
+Commit `09d2753be` reuses one buffer for identifiers waiting to
+propagate to a parent scope. Each scope resolves after its children.
+It still adds explicit capture markers before merging the pending
+groups in registration order. The focused regression checks that a
+captured name in one function and a local of the same name in a
+sibling function keep their separate bindings.
+
+A macOS sample of the standalone control reached
+`ScopeCollector.resolve_identifiers` and the array growth path. A
+separate LLDB run on the archived main script reached the candidate's
+append to the reused propagation buffer. The parser and observer
+exited zero in both diagnostics.
+
+The standalone timed cohort parsed the five original scripts from the
+clock-pinned archive eight times per fresh process. It measured
+current-task instructions and elapsed time after file reads, including
+scope analysis, with the parser recursion limit set to 256. Both
+binaries used single-unit C with `-prod -prealloc -gc none`. The pinned
+manifest SHA-256 was
+`b0c5b6d87c0cfc5df9a4e55a56d72c41b42f3aab3c6bfc0c39711178fa80a575`.
+The executable SHA-256 values were
+`9fb79d3dc71b5a798a23e51341b5eb964f427ee51903b2d530827767bb405028`
+and `21a0c812b9ee5d1be64d56a09c6631f80dbd2150f2192762655b9fbce037ae11`
+for control and candidate, respectively.
+
+| Pair | Control instructions | Candidate instructions | Control ms per pass | Candidate ms per pass |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6,218,981,004 | 6,131,880,943 | 57.378 | 55.637 |
+| 2 | 6,206,925,392 | 6,135,726,717 | 57.118 | 56.093 |
+| 3 | 6,190,516,657 | 6,127,568,630 | 56.674 | 56.825 |
+| 4 | 6,186,932,201 | 6,123,495,214 | 55.640 | 55.622 |
+| 5 | 6,202,933,295 | 6,110,892,815 | 57.686 | 55.315 |
+| 6 | 6,179,020,152 | 6,110,189,271 | 56.392 | 55.042 |
+| 7 | 6,189,593,188 | 6,110,373,073 | 56.047 | 55.231 |
+| Median | 6,190,516,657 | 6,123,495,214 | 56.674 | 55.622 |
+
+The median instruction count dropped **1.08%**, or about 8.38 million
+instructions per pass, and fell in all seven pairs. The median
+elapsed time dropped **1.05 ms**, or 1.86%, and improved in six
+pairs. The median paired lead was 1.02 ms. One-minute load ranged
+from 6.10 to 6.20 on 18 cores from 11:40:25 to 11:40:32 UTC+03.
+All 14 timed processes and the 3 GiB guard exited zero. Its sampled
+aggregate peak was 2,167,111,680 bytes.
+
+The scope-order, scope-rollback, arguments, function-parameters,
+empty-scopes and `with` execution tests passed with the C backend
+under Boehm and `-gc none`. All 100 upstream AST fixtures matched
+in each mode. Both full-package FastC runs stopped at the existing
+generated C error `expression expected before '?'` in
+`absent_property_set_test.v`. That test passed with the C backend
+in both heap modes.
+
+### Brave raster diagnostic
+
+Three alternating Brave pairs kept the clock-pinned archive, fresh
+profiles, viewport and fixed references. One member used Brave's
+default settings and the other added `--disable-gpu-rasterization`.
+All six visits reached a complete document with 25 ordered posts and
+exited zero. Each default capture reproduced the known 13,902-pixel
+thumbnail variant. Each modified capture produced the same PNG
+with SHA-256
+`79f10c77691817d3781ce01f94061e07fa8017146aafaea386348e5c9b038d1f`,
+with 85,488 differing RGB pixels across the viewport and a maximum
+channel error of 82. The setting changed rendering and failed the
+existing reference.
+
+The first diagnostic wrapper stopped after the first default visit
+because it read the wrong exit field. The subsequent guarded command
+kept that visit and finished the remaining five attempts. Their guards
+adopted one and five Brave roots, respectively. The second guard
+exited zero. These captures were diagnostic only and the performance
+cohort kept the default settings.
+
+### Production comparison with reused scope storage
+
+Shared production receipt `20261125-114306-cc5fb4cc` verified
+`09d2753be` and contained the reused buffer in its sealed single-unit
+`-prod` C. The sealed C SHA-256 was
+`a7038baaf07fcd8d3034c1f8e8980f34a2585962d86dc882a7f3d3b19513f287`.
+The installed Vox executable SHA-256 was
+`b8666c1b92278aec0e78486c9f187841ab360a2f6d37bc6b43d3617e9ebf307c`.
+The controller checked 185 workload and browser input hashes and
+14 observer, Brave helper and reference hashes. The Brave executable
+and framework hashes matched the earlier comparison. LibJS headless
+smoke verified bytecode execution, DOM mutation and click events.
+
+The seven alternating fresh pairs kept the clock-pinned replay,
+1024×768 scale-1 document PNG, 1.4 s settle setting, fixed references
+and empty private HTTP caches and profiles. OS filesystem and shader
+caches were retained. LibJS used its interpreter with native and
+frontend caches disabled. Counting starts at browser launch and ends
+at observation of the completed native PNG for Vox and delivery of the
+completed CDP PNG for Brave.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) | Brave pixels |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 | 5,647,742,449 | 11,644,756,444 | 1990.932 | 2031.038 | Alternate thumbnails |
+| 2 | 5,660,991,143 | 11,579,361,371 | 1957.422 | 1961.801 | Alternate thumbnails |
+| 3 | 5,652,536,313 | 11,611,977,756 | 1977.062 | 1971.253 | Alternate thumbnails |
+| 4 | 5,647,429,269 | 11,679,586,254 | 2052.126 | 1963.541 | Exact |
+| 5 | 5,677,532,816 | 11,610,500,302 | 1982.605 | 1990.902 | Exact |
+| 6 | 5,704,021,020 | 11,585,439,334 | 1992.725 | 1977.109 | Alternate thumbnails |
+| 7 | 5,605,272,473 | 11,545,359,799 | 2050.197 | 1960.030 | Alternate thumbnails |
+| Median | 5,652,536,313 | 11,610,500,302 | 1990.932 | 1971.253 | Five failures |
+
+Every Vox PNG matched its fixed reference. Both browsers reached
+`complete` with 25 ordered posts and all five original scripts.
+Vox recorded LibJS generations 155, 153, 151, 143, 153, 155 and 143.
+JavaScriptCore stayed uninitialized. All seven Brave visits reported
+the required author handlers and zero script exceptions. Their
+44 archived URL and response-hash pairs were identical.
+
+Four Brave visits reproduced the known 13,902-pixel thumbnail
+variant. Pair 2 produced PNG SHA-256
+`37007484576b07ed5d4ba00dfe8f78e7010d1ffd6669cdfa3979559fe922f954`.
+It differed in 14,081 RGB pixels within the same x=83–153 and
+y=400–762 area. Its maximum channel error was 83. The five pixel
+failures invalidate the cohort for a new acceptance claim.
+
+Vox used 51.32% fewer median observed instructions, and its
+highest observed count was 49.41% of Brave's lowest. Its observed
+elapsed median was 19.68 ms slower, with three Vox pair wins
+and a 5.81 ms median paired deficit. The previous qualifying cohort
+remains the catalog result.
+
+The 12 GiB guard adopted all 14 browser roots and sampled
+773,734,400 bytes peak aggregate RSS. All browsers exited zero.
+The driver and guard exited 1 on the fixed-reference check. Final
+complete samples preceded capture by 5.82–7.65 ms for Vox and
+1.36–8.12 ms for Brave. Vox reported no missing final samples. Brave
+reported 2, 2, 2, 2, 2, 1 and 1. Both process-tree totals are lower
+bounds and exclude GPU and external services. One-minute load
+ranged from 4.93 to 5.85 on 18 cores from 11:48:52 to 11:49:28 UTC+03.
+
+A separate sampled browser visit reached `ScopeCollector.resolve_identifiers`
+inside the published Vox executable. It captured the complete archived
+listing with LibJS generation 143, zero script diagnostics and no
+JavaScriptCore context. The browser and guard exited zero. Fresh
+direct visits in Vox and Brave both reached Reddit's sign-in page
+with zero listing posts and normal exits. Vox reported two unsupported
+`data:` script diagnostics on the sign-in page.
