@@ -6545,3 +6545,118 @@ The bundle lease, executable, helper, libraries, font inputs,
 archive and reference remained pinned throughout the measurements.
 Browser, driver and 3 GiB guards exited zero. Peak sampled RSS
 was 323,780,608 bytes.
+
+### Prepare raster extents during display-list projection
+
+Commit `8d60de35a` adds `VOX_RECORD_RASTER_CHUNK_BOUNDS=1` on
+macOS. Existing display-list projection lanes write an unclipped
+extent beside each eligible leaf while its retained box is available.
+The recording owns the slots. The planner checks the command vector,
+paint order and paint revision before reading them. It intersects
+each extent with the current clip, using the applicable root-scroll
+translation, and computes sticky bounds from the live replay transform.
+Reusing these extents needs no additional worker submission or join.
+A recording without suitable slots uses the existing planner.
+
+ThreadSanitizer and arena poisoning passed on the 807-command sticky,
+fixed and clipped fixture after a 260 CSS-pixel root scroll. At scale
+one and two, both the default projection and its optional early prefix
+supplied 802 extents. An equal copy of the command vector used the
+ordinary calculation and produced the same layer geometry and command
+assignments. Serial projection and the standalone bounds batch also
+passed. Guarded compilation and runtime peaked at 6,462,423,040 and
+271,319,040 bytes of sampled RSS, respectively.
+
+#### Isolated Hacker News recording and planning
+
+An unoptimized test executable SHA-256
+`91938497cefd01b58c617edc89134f427ab62ea95f6633f1a5688707315fd33a`
+read the archived HTML and CSS at a 1024×768 CSS-pixel viewport and
+2× scale. Inlining the archived stylesheet allowed it to exercise
+viewport recording and layer planning without fetching resources,
+running scripts or rasterizing. The diagnostic launch recorded 45
+plans. Each consumed 441 recorded extents among 443 commands, with
+332 leaves projected off-thread and no planner worker submission.
+
+Two separate timing cohorts used seven alternating fresh-launch
+pairs. Each launch timed 40 recording-and-planning iterations after
+five warm-up iterations. The combined scope includes scene recording,
+display-list projection and completed layer planning. Host one-minute
+load ranged from 5.61 to 5.75 on 18 CPUs. Every launch and its guard
+exited zero. Runtime peak sampled RSS was 114,130,944 bytes.
+
+| Cohort | Control median | Recorded median | Median paired change | Recorded wins |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 450.396 µs | 420.230 µs | −28.729 µs | 7/7 |
+| 2 | 443.521 µs | 438.646 µs | +0.083 µs | 3/7 |
+
+#### Matched production captures
+
+The managed compact build published receipt `20261126-013053-7d38fb40`
+after disk-space failures in the standard build. It verified the feature
+commit and passed the headless smoke using single-C-unit V `-prod`.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `e9ba606bb96ab23620aa3e1ee0cbcf7a8e48de80abdb4124e4fd2379ce53ebac` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+The ordinary projection computed all 441 eligible extents in each
+443-command plan, with 332 projected off-thread. The optional early
+prefix moved 338 off-thread, including 128 in its initial batch, and
+the planner consumed the same 441 extents. Serial projection used
+the ordinary calculation. The standalone bounds schedule supplied
+443 bounds on two additional lanes and reached its join before they
+were ready. Recorded mode submitted no separate planner batch.
+
+The first instrumented pair recorded two plans in each launch. The
+planner used 146,401 fewer main-thread instructions, while display-list
+recording used 75,392 more. The enclosing paint command stage differed by
+54,495 instructions. The second recorded mode launch performed twice
+as many plans as its control, so its totals provide path diagnostics
+only. Both pairs are retained below.
+
+| Pair | Mode | Plan calls | Paint record commands | Paint record display list | Layer planning | Paint command recording |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | Control | 2 | 1,214,032 | 30,161,424 | 1,261,452 | 31,995,652 |
+| 1 | Recorded | 2 | 1,246,100 | 30,236,816 | 1,115,051 | 31,941,157 |
+| 2 | Control | 2 | 1,243,215 | 30,205,247 | 1,264,911 | 32,052,434 |
+| 2 | Recorded | 4 | 2,216,897 | 52,360,911 | 2,167,512 | 55,903,794 |
+
+The unprofiled benchmark alternated seven fresh-launch pairs in each
+of four cohorts on the same executable. Recorded mode started the
+second and fourth cohorts. It used the archived origin, JavaScriptCore,
+a private empty profile and HTTP cache, retained OS filesystem and
+shader caches, and a 1024×768 CSS-pixel viewport at 2× scale. The timer
+ran from process launch to observation of the completed document PNG
+with nominal 1 ms polling. The replay used `tr.athing` readiness and a
+60 ms delay on logo responses.
+
+| Pair | Control 1, ms | Recorded 1, ms | Control 2, ms | Recorded 2, ms | Control 3, ms | Recorded 3, ms | Control 4, ms | Recorded 4, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 301.421 | 309.312 | 303.483 | 326.735 | 296.725 | 313.233 | 387.408 | 337.096 |
+| 2 | 318.224 | 308.563 | 300.548 | 328.082 | 309.153 | 308.913 | 306.836 | 327.570 |
+| 3 | 321.833 | 309.275 | 303.771 | 331.712 | 303.656 | 319.617 | 310.919 | 316.075 |
+| 4 | 304.650 | 312.787 | 314.197 | 310.719 | 315.751 | 317.996 | 309.797 | 316.776 |
+| 5 | 311.354 | 298.608 | 310.066 | 296.410 | 297.360 | 325.256 | 318.589 | 311.511 |
+| 6 | 321.547 | 288.467 | 321.406 | 292.231 | 316.623 | 309.051 | 343.929 | 325.398 |
+| 7 | 311.277 | 315.939 | 320.283 | 321.233 | 332.736 | 319.662 | 313.991 | 309.306 |
+| Median | 311.354 | 309.275 | 310.066 | 321.233 | 309.153 | 317.996 | 313.991 | 316.776 |
+
+Median paired changes were −9.661, +0.950, +2.244 and −4.686 ms.
+Recorded mode finished first in four, three, three and four pairs.
+Host one-minute load ranged from 3.16 to 4.05 on 18 CPUs. The mixed
+launch times leave this path opt-in.
+
+All 67 launches reproduced eight replay requests with identical
+fingerprints, including the favicon miss. They passed the URL,
+readiness, viewport and 30-story audit, and produced PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All 11 diagnostic comparisons verified all 3,145,728 pixels against
+the unchanged reference. The executable, native library, helper,
+font inputs, archive and measurement scripts remained pinned.
+Browser, driver and 3 GiB guards exited zero. Peak sampled RSS was
+339,853,312 bytes.
