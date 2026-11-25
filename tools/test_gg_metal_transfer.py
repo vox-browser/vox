@@ -33,6 +33,8 @@ def main():
         return {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     pins = hashes()
     (output / 'inputs.json').write_text(json.dumps(pins, indent=2) + '\n')
+    worker_env = dict(os.environ, VOX_PARALLEL_GG_METAL_PIPELINES='1')
+    worker_env.pop('VOX_SERIAL_GG_METAL_SHADERS', None)
     records = []
     try:
         for mode, flags in [('optimized', ['-O2']),
@@ -45,21 +47,23 @@ def main():
             for step in [command, [str(binary)]]:
                 assert hashes() == pins, 'inputs changed before ' + mode
                 print(shlex.join(step), flush=True)
-                result = subprocess.run(step, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                result = subprocess.run(step, env=worker_env, text=True,
+                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 print(result.stdout, flush=True)
-                records.append({'command': step, 'exit': result.returncode, 'output': result.stdout})
+                records.append({'command': step,
+                                'env': {'VOX_PARALLEL_GG_METAL_PIPELINES': '1'},
+                                'exit': result.returncode, 'output': result.stdout})
                 assert hashes() == pins, 'inputs changed during ' + mode
                 if result.returncode:
                     raise SystemExit(result.returncode)
-        env = dict(os.environ, VOX_GG_READBACK_DIAGNOSTICS='1',
+        env = dict(worker_env, VOX_GG_READBACK_DIAGNOSTICS='1',
                    VOX_GG_METAL_SHADER_DIAGNOSTICS='1', VOX_GG_METAL_PIPELINE_DIAGNOSTICS='1')
-        env.pop('VOX_SERIAL_GG_METAL_SHADERS', None)
-        env.pop('VOX_SERIAL_GG_METAL_PIPELINES', None)
         step = [str(output / 'optimized')]
         result = subprocess.run(step, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         records.append({'command': step, 'env': {'VOX_GG_READBACK_DIAGNOSTICS': '1',
                                                  'VOX_GG_METAL_SHADER_DIAGNOSTICS': '1',
-                                                 'VOX_GG_METAL_PIPELINE_DIAGNOSTICS': '1'},
+                                                 'VOX_GG_METAL_PIPELINE_DIAGNOSTICS': '1',
+                                                 'VOX_PARALLEL_GG_METAL_PIPELINES': '1'},
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
         assert result.stdout.count('VOX_GG_READBACK ') == 128, 'diagnostics must be bounded'
@@ -75,10 +79,9 @@ def main():
         print('Bounded readback diagnostics: 128 markers', flush=True)
 
         env['VOX_SERIAL_GG_METAL_SHADERS'] = '1'
-        env['VOX_SERIAL_GG_METAL_PIPELINES'] = '1'
+        del env['VOX_PARALLEL_GG_METAL_PIPELINES']
         result = subprocess.run(step, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        records.append({'command': step, 'env': {'VOX_SERIAL_GG_METAL_SHADERS': '1',
-                                                 'VOX_SERIAL_GG_METAL_PIPELINES': '1'},
+        records.append({'command': step, 'env': {'VOX_SERIAL_GG_METAL_SHADERS': '1'},
                         'exit': result.returncode, 'output': result.stdout})
         assert result.returncode == 0 and hashes() == pins
         assert 'VOX_GG_METAL_SHADER_PAIR ' not in result.stdout

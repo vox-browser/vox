@@ -29,8 +29,9 @@ VOX_NATIVE_STATE VoxGGMetalPipelineBatch vox_gg_metal_pipeline_batch;
     ((pip)->slot.state == SG_RESOURCESTATE_ALLOC && vox_gg_metal_pipeline_batch.group != NULL)
 
 bool vox_gg_metal_begin_pipeline_batch(void) {
+    const char *enabled = getenv("VOX_PARALLEL_GG_METAL_PIPELINES");
     if (vox_gg_metal_pipeline_batch.group || !_sg.valid
-        || getenv("VOX_SERIAL_GG_METAL_PIPELINES")) return false;
+        || !enabled || strcmp(enabled, "1") != 0) return false;
     vox_gg_metal_pipeline_batch.group = dispatch_group_create();
     vox_gg_metal_pipeline_batch.owner = getenv("VOX_GG_METAL_PIPELINE_DIAGNOSTICS")
         ? pthread_self() : NULL;
