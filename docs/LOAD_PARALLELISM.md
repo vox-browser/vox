@@ -2756,3 +2756,143 @@ including the favicon miss. The executable, AVIF library, adblock
 helper, archive and driver hashes stayed pinned. Browser, driver and
 3 GiB guard exits were zero. Peak aggregate timing RSS was
 374,390,784 bytes.
+
+### Full frame prefetch compared with production defaults
+
+The same `023fcab3…e297` production executable ran with all three
+frame prefetch switches enabled and with its default replay settings.
+The enabled diagnostic published 155 masks across two waves, with 18
+jobs overlapping native setup. Ordinary replay issued 158 jobs in 23
+batches with frame prefetch and 249 jobs in 34 batches at the default.
+Both launches matched all 30 ordered story IDs.
+
+In a separate instrumented pair, inclusive native raster replay on
+the browser thread went from 286,940,279 to 272,777,369 instructions.
+Text leaf replay went from 145,364,085 to 121,788,467 instructions.
+Prefetch submission and joins accounted for 1,263,738 instructions.
+
+Two seven-pair cohorts alternated fresh processes at 1024×768 CSS pixels
+and 2× capture scale. Each used JavaScriptCore, private empty profiles
+and HTTP caches, and a 60 ms replay delay on the logo responses.
+The interval ran from launch through the encoded document PNG. OS
+filesystem caches were retained. The reversed cohort started with the
+default.
+
+| Pair | Default, ms | Prefetch, ms | Reversed default, ms | Reversed prefetch, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 289.168 | 301.558 | 295.476 | 288.408 |
+| 2 | 295.799 | 310.093 | 296.778 | 322.524 |
+| 3 | 310.353 | 319.401 | 318.932 | 316.903 |
+| 4 | 309.420 | 315.038 | 323.685 | 317.749 |
+| 5 | 308.613 | 315.472 | 308.659 | 303.291 |
+| 6 | 315.461 | 298.987 | 330.871 | 309.911 |
+| 7 | 295.108 | 315.039 | 325.149 | 323.439 |
+| Median | 308.613 | 315.038 | 318.932 | 316.903 |
+
+The paired medians were +9.048 ms and −5.368 ms, with prefetch
+finishing first in one and six pairs. Host load ranged from 4.81 to 5.06
+and from 4.91 to 5.32 on 18 CPUs. Frame prefetch remains opt-in because
+the launch measurements varied across cohorts.
+
+All 28 timed and four diagnostic launches reproduced the unchanged
+reference PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight replay records and the pinned executable, library, helper,
+fixture and driver hashes matched throughout. Browser, driver and 3 GiB
+guard exits were zero. Peak aggregate timing RSS was 370,262,016 bytes.
+
+### Batch later glyph mask misses during retained text replay
+
+Commit `086d79a4c` lets a retained macOS text run schedule another
+parallel mask batch after the previous scan ends. Each scan examines
+at most 48 glyphs and publishes up to 16 masks on the browser thread.
+A later cache miss beyond that scan can start the next batch. The
+ordinary glyph loop keeps the paint order and handles individual
+misses inside a window. The experimental backdrop pipeline also
+carries the end of its first scan into ordinary replay.
+`VOX_SINGLE_GLYPH_MASK_BATCH=1` selects the previous one-batch control.
+
+The production type check, arena-poisoned tests and ThreadSanitizer
+passed. A long focused run has too few misses in its first window
+and still draws 25 masks across two later batches. Both modes match
+the serial reference pixels. The pinned glyph differential completed
+1,962 exact comparisons and 38 declines in 2,000 cases.
+
+#### Retained Hacker News text replay
+
+The published executable `f7ab6eb5…6ba0` captured 332 retained glyph
+draws from the archived homepage. The capture reproduced the reference
+PNG and fixture log SHA-256
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The canonical glyph replay driver used a fresh cache and
+`VOX_ARENA_POISON=1` on single-C-unit V `-prod` executable SHA-256
+`ff885637d0a173459d0c7750310303b86e967fc3b3b941f19a6f48e98a4eec6f`.
+The timer covers CPU text rasterization of all captured runs.
+
+The diagnostic issued 249 mask jobs in 34 batches with the one-batch
+control. The rolling windows issued 277 jobs in 37 batches. The three
+follow-up batches accounted for 16, five and seven jobs. Seven timed
+pairs alternated the modes in fresh processes.
+
+| Pair | One batch, ms | Rolling windows, ms |
+| ---: | ---: | ---: |
+| 1 | 9.639 | 10.553 |
+| 2 | 10.077 | 9.591 |
+| 3 | 9.734 | 8.747 |
+| 4 | 9.450 | 8.595 |
+| 5 | 9.535 | 8.979 |
+| 6 | 10.965 | 8.633 |
+| 7 | 9.016 | 8.920 |
+| Median | 9.639 | 8.920 |
+
+Rolling windows finished first in six pairs and saved 0.556 ms in the
+paired median. Host load was 6.28 on 18 CPUs. Each replay matched
+reference RGBA SHA-256
+`66224ad1cc7630402f5456c035a7e639e2e503561098f9260f0e9e265285bd52`.
+Executable, font and captured input hashes stayed pinned. Browser,
+build, replay and guard exits were zero. Peak replay RSS under the
+3 GiB guard was 45,563,904 bytes.
+
+#### Matched production captures
+
+Receipt `20261125-131846-a6067da7` sealed `d0cd66c78` with the rolling
+windows, passed startup smoke and published single-C-unit V `-prod`
+executable SHA-256
+`4575782cafab004239ad56713933582762b7bc3f6806e876129c061e8e1cbfac`.
+The diagnostic reproduced 34 batches and 249 jobs with the single-batch
+control, and 37 batches and 277 jobs with rolling windows. Three
+follow-up batches drew the same 28 masks as in standalone replay.
+Both launches matched the 30 ordered story IDs.
+
+A separate instrumented pair measured 145,450,649 → 142,147,656
+browser-thread text replay instructions and 288,517,907 → 284,886,172
+inclusive native raster replay instructions.
+
+Both timing cohorts measured fresh launch through the encoded PNG at
+1024×768 CSS pixels and 2× scale. They used JavaScriptCore, private
+empty profiles and HTTP caches, retained OS filesystem caches and
+a 60 ms delay on replayed logo responses. The first cohort started
+with rolling windows and the reversed cohort with one batch.
+
+| Pair | One batch, ms | Rolling windows, ms | Reversed one batch, ms | Reversed rolling, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 306.335 | 317.587 | 300.852 | 291.444 |
+| 2 | 301.819 | 310.338 | 306.061 | 312.025 |
+| 3 | 309.300 | 304.784 | 314.872 | 291.080 |
+| 4 | 296.879 | 294.552 | 293.321 | 309.855 |
+| 5 | 317.743 | 289.594 | 308.604 | 302.649 |
+| 6 | 318.095 | 279.101 | 301.189 | 312.051 |
+| 7 | 307.518 | 295.214 | 314.504 | 303.792 |
+| Median | 307.518 | 295.214 | 306.061 | 303.792 |
+
+Paired median changes were −4.516 ms and −5.955 ms, with rolling
+windows finishing first in five and four pairs. Host load ranged from
+4.91 to 5.53 and from 5.08 to 5.55 on 18 CPUs. Sampled browser-thread
+CPU medians went from 164.80 to 161.54 ms and from 160.54 to 159.30 ms.
+
+All 28 timed and four diagnostic launches matched reference PNG
+SHA-256 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The eight request and response records matched in every run, including
+the favicon miss. Executable, library, helper, archive and driver
+hashes stayed pinned throughout. Browser, driver and 3 GiB guard exits
+were zero. Peak aggregate timing RSS was 374,718,464 bytes.

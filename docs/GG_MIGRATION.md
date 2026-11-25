@@ -14694,6 +14694,12 @@ keys and masks. The pinned V `-prod` glyph differential returned 1,962
 exact draws and 38 declines in 2,000 cases under the 3 GiB guard.
 [Hacker News measurements](LOAD_PARALLELISM.md#overlap-glyph-mask-prefetch-with-native-frame-setup)
 
+Retained text now schedules parallel mask batches for later cache
+misses in a run. The arena-poisoned and ThreadSanitizer tests matched
+the serial pixels. The pinned V `-prod` glyph differential returned
+1,962 exact draws and 38 declines in 2,000 cases under the 3 GiB guard.
+[Hacker News measurements](LOAD_PARALLELISM.md#batch-later-glyph-mask-misses-during-retained-text-replay)
+
 ### Parallel SVG background multisampling bounds
 
 Raster workers compute path bounds from resource-owned SVG scenes in
