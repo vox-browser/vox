@@ -1,12 +1,12 @@
 # Scripted Old Reddit worldnews comparison
 
-Production Vox with LibJS used **52.21% fewer median observed CPU instructions**
+Production Vox with LibJS used **52.17% fewer median observed CPU instructions**
 than Brave on the frozen `/r/worldnews/` listing. All seven pairs matched
 their respective screenshot references. Median launch-to-PNG time was
-**1.998 s for Vox and 1.986 s for Brave**, with Vox ahead in three of seven
+**1.990 s for Vox and 1.984 s for Brave**, with Vox ahead in four of seven
 pairs. An earlier build led at the median by 3.91 ms. A fresh live Vox visit
 reached Reddit's login page.
-[Current comparison](#production-comparison-with-the-scan-and-integer-changes)
+[Current comparison](#production-comparison-with-the-blocking-script-yield)
 
 ## Workload and execution
 
@@ -2012,3 +2012,112 @@ A fresh live launch with the same executable and an empty private profile
 redirected to Reddit's login page. It completed with zero posts and two
 script diagnostics. The browser and guard exited zero. The timed claim
 covers the archived listing.
+
+## Let a buffered blocking script run before stale layout
+
+A stage trace on `86238581` used the archived listing with a fresh LibJS
+process. The main Reddit bundle's transfer completed at 310.99 ms after
+launch. The next native frame began at 315.43 ms. Its document layout ran
+from 318.57 to 399.43 ms, followed by the bundle's JavaScript stage from
+403.68 to 429.76 ms. The next script transfer began at 429.75 ms. The
+first complete document submission was observed at 627.96 ms. These
+times use diagnostic log receipt and resource clocks.
+
+Commit `c654765bd` makes the frame yield when a blocking parser script has a buffered
+response and style or layout is stale. This gives the response to the
+existing HTML task queue, then requests another frame. The path uses
+the loading throttle's current-document and recent-input checks.
+Replacement navigation and pending script-blocking stylesheets keep
+their ordinary path. A frame with current layout can still draw.
+
+Eight parser request tests and ten loading-throttle tests passed in the
+native C build with preallocation and `-gc none`. The new case verifies
+that an otherwise eligible frame yields to enqueue the response, recent
+input and a replacement navigation retain priority, and the HTML task
+resumes parsing. Both suites exited zero under the 3 GiB runtime guard.
+The 118 guarded archive, comparison, bundle lease and memory guard tests
+also passed.
+
+Managed build `20261125-102421-18184b05` sealed the candidate in single-unit
+`-prod` C. Its preprocessed C SHA-256 was
+`0378ba01ee9c9e1136e7ae83a567e571962f089bba625743263e3d1409b2e909`.
+The executable SHA-256 was
+`80bf97ca55370339bc269c8e4dba3534b637efc0d1eddc7e10dbbba4655d8c4b`.
+The LibJS headless smoke passed. The same-binary control set
+`VOX_DISABLE_BLOCKING_SCRIPT_FRAME_YIELD=1`.
+
+Two instrumented pairs matched the fixed Vox pixels. The candidate
+yielded zero frames in the first pair and three in the second. The
+control yielded zero in both. In the second pair the interval from
+completion of the main bundle response to the next script request fell
+from 185.61 to 178.66 ms. The yielding frames took 1.60, 7.74 and
+7.27 ms, including compact script state replay and some layout.
+All four browser roots, the driver and the guard exited zero.
+
+### Matched control for yielding layout
+
+Seven alternating uninstrumented pairs used a fresh process and private
+profile and cache per visit. Both variants used the clock-pinned archive
+with both native and frontend code caches disabled. Each captured the
+unchanged 1024×768 scale-1 document after the 1.4 s settle interval,
+served all five author scripts, reached `complete`, and rendered the 25
+posts in order. LibJS ran the scripts and JavaScriptCore stayed
+uninitialized. OS filesystem and shader caches were retained.
+
+| Pair | Yield instructions | Frame first instructions | Yield elapsed (ms) | Frame first elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,578,534,845 | 5,624,265,365 | 1950.346 | 1998.887 |
+| 2 | 5,606,156,924 | 5,608,855,313 | 1976.622 | 1959.027 |
+| 3 | 5,725,380,899 | 5,638,473,340 | 2028.976 | 2017.676 |
+| 4 | 5,647,118,198 | 5,669,785,683 | 1997.459 | 2032.800 |
+| 5 | 5,703,067,422 | 5,687,391,844 | 1996.484 | 2016.498 |
+| 6 | 5,642,262,294 | 5,653,154,545 | 2009.414 | 2041.572 |
+| 7 | 5,678,282,724 | 5,672,035,455 | 1993.873 | 2026.369 |
+| Median | 5,647,118,198 | 5,653,154,545 | 1996.484 | 2017.676 |
+
+Yielding finished sooner in five pairs, with a **21.19 ms lead** between
+the elapsed medians. The median paired lead was 32.16 ms. Median observed
+instructions fell by 0.11%. Neither arm reported a missing final sample.
+Final complete samples preceded PNG observation by 6.09–7.65 ms for the
+candidate and 6.26–7.67 ms for the control. The 12 GiB guard adopted all
+14 roots and sampled 776,585,216 bytes at peak. All browser roots, the
+driver and the guard exited zero. Host one-minute load was 5.80–6.89 on
+18 cores from 10:30:19 to 10:30:55 UTC+03.
+
+### Production comparison with the blocking script yield
+
+The seven fresh, alternating Vox and Brave pairs used the same pinned
+archive, launch-to-PNG boundary, browser settings and fixed pixel references.
+Every visit loaded all five original scripts, displayed all 25 posts in
+order and reached `complete`. Each browser matched its own fixed reference.
+Vox's execution generations were 149, 155, 151, 149, 159, 145 and 153.
+JavaScriptCore remained uninitialized.
+
+| Pair | Vox observed instructions | Brave observed instructions | Vox elapsed (ms) | Brave elapsed (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 5,603,226,284 | 11,750,229,461 | 2006.769 | 2036.110 |
+| 2 | 5,705,256,481 | 11,914,074,548 | 2005.796 | 1987.024 |
+| 3 | 5,579,333,605 | 11,785,709,166 | 1948.875 | 1988.594 |
+| 4 | 5,629,117,299 | 11,740,383,819 | 1968.684 | 1983.738 |
+| 5 | 5,642,471,347 | 11,790,090,217 | 1990.025 | 1980.384 |
+| 6 | 5,667,051,572 | 11,811,687,710 | 1995.181 | 1961.473 |
+| 7 | 5,637,677,209 | 11,729,777,204 | 1969.518 | 1979.032 |
+| Median | 5,637,677,209 | 11,785,709,166 | 1990.025 | 1983.738 |
+
+Vox used **52.17% fewer median observed instructions**. Its highest count
+was **48.64%** of Brave's lowest and met the observed-count gate. Brave led
+by **6.29 ms** between the independent elapsed medians. Vox won four pairs,
+with a median paired lead of 9.51 ms.
+
+Polled process-tree totals are lower bounds and exclude GPU and external
+service work. Final complete samples preceded PNG observation by
+7.57–7.65 ms for Vox and 0.93–7.18 ms for Brave. Vox reported zero missing
+final samples. Brave reported 2, 3, 1, 2, 0, 2 and 2. The 12 GiB guard
+adopted all 14 roots and sampled 840,499,200 bytes at peak. All browser
+roots, the driver and the guard exited zero. A managed production build
+ran concurrently. The 18-core host's one-minute load was 5.22–6.66
+from 10:30:57 to 10:31:35 UTC+03.
+
+A fresh direct launch of the same executable reached Reddit's login page,
+with zero posts and two script diagnostics. The browser and guard exited
+zero. The compared listing was the archived page.
