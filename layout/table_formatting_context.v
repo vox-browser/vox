@@ -1953,12 +1953,17 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 			}
 		}
 	}
+	fixed_mode := table_uses_fixed_mode_layout(table)
 	for placement in placements {
+		// Only a measured, non-spanning cell can constrain its column. In
+		// fixed layout the cells of later rows do not measure the columns.
+		if placement.column_span != 1 || (fixed_mode && placement.row != 0) {
+			continue
+		}
 		if placement.column < constrained_columns.len && placement.cell.computed_values().size_value(.width).is_length() {
 			constrained_columns[placement.column] = true
 		}
 	}
-	fixed_mode := table_uses_fixed_mode_layout(table)
 	mut cell_measures := []TableCellIntrinsicWidthMeasures{cap: placements.len}
 	for placement in placements {
 		cell_measures << table_cell_intrinsic_width_measures(mut state, placement.cell, computed.border_collapse() == .collapse, constrained_columns[placement.column], fixed_mode, percentage_basis)
