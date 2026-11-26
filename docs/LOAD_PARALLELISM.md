@@ -7522,7 +7522,7 @@ and 3 GiB guard exits were zero. Peak benchmark RSS was 328,925,184 bytes.
 
 ### Skip fully transparent background gradients during native replay
 
-Commit `40894b0ec` adds the macOS opt-in
+Commit `40894b0ec` introduced the macOS shortcut as an opt-in via
 `VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS=1`. Canvas-bounds workers
 classify normal-blend CSS backgrounds whose resolved gradient stops all
 have zero alpha. The result uses the same per-command byte as canvas
@@ -7607,3 +7607,79 @@ transparent OKLab hard stops, visible stops, multiply blends and blur
 groups. The five existing fixtures covered CSS masks, compositor
 backdrops, radial gradients, clipped gradient text and fractional
 gradient tiles. These fixture captures and their guard exited zero.
+
+### Enable transparent background gradient elision by default
+
+Commit `3e285efd4` enables the shortcut by default. Set
+`VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS=0` to restore the original
+draws. The focused paint-culling tests passed under ThreadSanitizer with
+the setting unset, `0`, and `1`.
+
+Two managed production builds ran out of disk space during preprocessing.
+The guarded compact retry used RAM-backed compiler scratch and published
+receipt `20261126-072907-7c4fe8a1` from sealed revision `3747c189c` with
+single-C-unit V `-prod`. The bundle passed headless smoke and strict
+signature verification.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `867f2a36e3add42e9ff0b683b1129e9b179fb1b96e9ccf86850f9e0c99ee56e8` |
+| `VoxAdblockWorker` | `ab958692215c0dfb1fc44009b54a827bb6e4bef4801d859cfafa9ff25e346582` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+With the setting unset, workers classified 22 transparent backgrounds
+and native replay skipped 22 draws. Explicit `1` and streamed canvas
+bounds produced the same counts. Both explicit `0` and serial canvas
+bounds used the ordinary draws. At 1×, workers classified 23 candidates
+and replay skipped 22. The default and disabled 1× PNGs matched across
+all 786,432 pixels.
+
+The same archived Hacker News protocol used `tools/measure_load_parallelism.py`
+with fresh processes, private profiles and HTTP caches, retained OS caches,
+and 1 ms polling. Original-origin replay delayed each archived logo response
+by 60 ms. Browser arguments included `--enable-javascript
+--js-engine=javascriptcore --window-width 1024 --window-height 880
+--screenshot-viewport-height 768`. The endpoint was launch through complete
+2× document PNG availability, with `tr.athing` readiness. Each unprofiled
+cohort ran seven pairs alternating the first setting. The second cohort
+started with the unset default.
+
+| Pair | Disabled 1, ms | Default 1, ms | Disabled 2, ms | Default 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 297.183 | 268.505 | 301.923 | 289.045 |
+| 2 | 315.476 | 286.115 | 297.865 | 318.992 |
+| 3 | 299.677 | 282.827 | 326.062 | 287.592 |
+| 4 | 309.674 | 289.718 | 300.522 | 289.660 |
+| 5 | 291.230 | 287.598 | 313.436 | 290.201 |
+| 6 | 301.855 | 316.337 | 287.131 | 294.708 |
+| 7 | 297.543 | 308.964 | 301.387 | 296.474 |
+| Median | 299.677 | 287.598 | 301.387 | 290.201 |
+
+Median paired savings were 16.850 ms and 10.861 ms, with five default
+wins in each cohort. Sampled main-thread CPU medians changed from 157.691
+to 156.900 ms and from 164.993 to 160.263 ms. One-minute host load ranged
+from 4.92 to 5.55 and from 5.01 to 5.74 on 18 CPUs.
+
+Two separate diagnostic pairs verified JavaScriptCore setup and execution.
+Inclusive main-thread instructions across three native raster replay
+scopes fell from 256,432,408 to 242,195,218 and from 257,548,756 to
+241,103,840. The 25 fill scopes within replay fell from 56,817,334 to
+1,637,693 and from 57,044,689 to 1,717,638. Those scopes include native
+setup. Ordered paint replay still drives the shared canvas on the
+browser thread. In the unprofiled default runs the median sampled
+main-thread share of process CPU was 69.3% and 68.9%, and the median
+wall time with at least two busy threads was 11.8 and 12.1 ms using
+the sampler's 50% threshold. These samples include non-rendering work
+and exclude GPU execution and separate processes.
+
+All 37 Retina captures matched all 3,145,728 reference pixels and the
+established PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All 39 candidate captures verified the URL, complete ready state,
+viewport, and 30 ordered story IDs. Each produced the same eight replay
+records, including the expected empty favicon 404. The executable,
+helper, linked libraries, archive, reference and harness inputs stayed
+pinned. Browser, benchmark driver and 3 GiB guard exits were zero.
+Peak benchmark RSS was 334,102,528 bytes.
