@@ -5,6 +5,9 @@ fn array_prototype_sort(mut vm VM) !Value {
 	callback := vm.argument(0)
 	if !callback.is_undefined() && !callback.is_function() { return vm.throw_error_type(.type_error, .not_a_function, callback.str()) }
 	mut object, length := array_receiver(mut vm)!
+	// Match other engines: frozen singletons need no indexed reads or writes.
+	// Comparator validation and the observable length read still happen first.
+	if length < 2 { return Value.from_object(object) }
 	compare := fn [callback] (mut vm VM, x Value, y Value) !f64 {
 		vm.consume_execution_budget()!
 		return compare_array_elements(mut vm, x, y, if callback.is_undefined() { ?&Object(none) } else { ?&Object(callback.as_object()) })
