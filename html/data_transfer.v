@@ -100,8 +100,9 @@ pub fn (transfer &DataTransfer) types_revision() u64 {
 	return transfer.types_revision_
 }
 
-// DataTransfer.cpp normalizes its legacy aliases without lowercasing the
-// stored spelling of other formats. Lookup and clearing ignore ASCII case.
+// Normalize the legacy aliases for lookup, clearing, and storage. setData
+// lowercases other format names before calling this helper; lookup and
+// clearing compare them without ASCII case distinctions.
 fn normalize_data_transfer_format_utf16(format_argument libjs.Utf16String) libjs.Utf16String {
 	return match format_argument.to_ascii_lowercase().str() {
 		'text' { libjs.utf16_string('text/plain') }
@@ -146,7 +147,8 @@ pub fn (mut transfer DataTransfer) set_data_utf16(format_argument libjs.Utf16Str
 	if store.mode != .read_write {
 		return
 	}
-	format := normalize_data_transfer_format_utf16(format_argument)
+	// Stored MIME types are ASCII lowercase, including replacement lookup.
+	format := normalize_data_transfer_format_utf16(format_argument.to_ascii_lowercase())
 	for index, item in store.item_list {
 		if item.kind == .text && item.type_utf16().code_units() == format.code_units() {
 			transfer.remove_item(uint(index))
