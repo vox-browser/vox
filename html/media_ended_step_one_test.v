@@ -12,6 +12,7 @@ mut:
 fn test_media_ended_cache_changes_after_microtasks_and_before_the_next_task() {
 	mut loop := main_thread_event_loop()
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
+	media.set_up_playback_manager()
 	media.set_ready_state(.have_metadata)
 	media.set_duration(10)
 	loop.process()
@@ -44,6 +45,7 @@ fn test_media_ended_cache_changes_after_microtasks_and_before_the_next_task() {
 fn test_ready_state_changes_refresh_the_ended_cache_at_step_one() {
 	mut loop := main_thread_event_loop()
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
+	media.set_up_playback_manager()
 	media.set_duration(1)
 	media.set_current_playback_position(1)
 	loop.process()
@@ -63,30 +65,26 @@ fn test_ready_state_changes_refresh_the_ended_cache_at_step_one() {
 	assert loop.reached_step_1_tasks.len == pending
 }
 
-fn test_ended_boundary_reads_the_latest_position_and_recorded_loop_state() {
+fn test_ended_uses_live_loop_state_and_replay_starts_at_zero() {
 	mut loop := main_thread_event_loop()
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
+	media.set_up_playback_manager()
 	media.set_ready_state(.have_enough_data)
 	media.set_duration(10)
 	media.seekable_.add_range(0, 10)
 	loop.process()
 	media.set_current_playback_position(10)
-	media.reached_end_of_media_playback()
-	assert !media.loop_was_specified_at_end_
-	assert !media.ended()
-	// Adding loop after the endpoint preserves the last recorded non-loop end.
+	loop.process()
+	assert media.ended()
 	media.set_loop(true)
-	loop.process()
-	assert media.ended()
-	media.set_current_playback_position(5)
-	media.set_current_playback_position(10)
-	media.set_paused(false)
-	media.reached_end_of_media_playback()
-	assert media.loop_was_specified_at_end_
-	assert media.current_time() == 0
-	assert media.ended()
-	loop.process()
-	assert !media.ended()
+	assert !media.ended() && !media.has_ended_playback()
+	media.set_loop(false)
+	assert media.ended() && media.has_ended_playback()
+	media.set_loop(true)
+	media.network_state_ = .idle
+	media.play_element()
+	assert !media.paused() && media.seeking()
+	assert media.current_time() == 0 && !media.ended()
 	media.remove_queued_media_element_tasks()
 	loop.process()
 }
@@ -94,7 +92,9 @@ fn test_ended_boundary_reads_the_latest_position_and_recorded_loop_state() {
 fn test_pending_ended_checks_use_live_owners_after_reload_and_duration_changes() {
 	mut loop := main_thread_event_loop()
 	mut first := HTMLMediaElement.create(none, dom.url_about_blank())
+	first.set_up_playback_manager()
 	mut second := HTMLMediaElement.create(none, dom.url_about_blank())
+	second.set_up_playback_manager()
 	first.set_ready_state(.have_metadata)
 	first.set_duration(10)
 	first.set_current_playback_position(10)
