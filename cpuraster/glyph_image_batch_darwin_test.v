@@ -239,13 +239,14 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 
 		mut caller := u64(0)
 		C.pthread_threadid_np(unsafe { nil }, &caller)
-		for pipeline in [false, true] {
+		for mode in [CanvasGlyphBackdrop{}, CanvasGlyphBackdrop{pipeline_masks: true},
+			CanvasGlyphBackdrop{copy_pending: true}] {
 			mut deferred := []u8{len: serial.len}
 			mut backdrop := TestGlyphBackdrop{pixels: deferred, caller: caller}
 			mut cache := new_glyph_cache()
 			assert fill_canvas_glyphs_cached(mut cache, mut deferred, 256, 48, 1024, 2, run,
 				transform, 0xff123456, none, 1, .src_over, [], none,
-				context: &backdrop, read: read_test_glyph_backdrop, pipeline_masks: pipeline)
+				CanvasGlyphBackdrop{...mode, context: &backdrop, read: read_test_glyph_backdrop})
 			assert backdrop.calls == 1
 			assert serial == deferred
 
@@ -254,7 +255,7 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 			mut empty_cache := new_glyph_cache()
 			assert !fill_canvas_glyphs_cached(mut empty_cache, mut rejected, 256, 48, 1024, 2, run,
 				transform, 0xff123456, none, 1, .src_over, [], none,
-				context: &failing, read: read_test_glyph_backdrop, pipeline_masks: pipeline)
+				CanvasGlyphBackdrop{...mode, context: &failing, read: read_test_glyph_backdrop})
 			assert failing.calls == 1
 			assert rejected.all(it == 0)
 			assert empty_cache.strikes.values().all(it.glyphs.len == 0)

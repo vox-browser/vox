@@ -101,6 +101,7 @@ pub:
 	context        voidptr
 	read           fn (voidptr) bool = unsafe { nil }
 	pipeline_masks bool
+	copy_pending   bool
 }
 
 // fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
@@ -382,7 +383,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		$if macos && !cpuraster_freetype ? {
 			if backdrop.pipeline_masks {
 				loaded = read_pending_glyph_backdrop(pending_masks, backdrop)
-			} else if run.retained && !strike.color && !draw_as_paths
+			} else if !backdrop.copy_pending && run.retained && !strike.color && !draw_as_paths
 				&& (strike.font != unsafe { nil } || strike.deferred) {
 				prepared_entry = cached_canvas_run_strike(cache, face_key, run, position_matrix,
 					&strike, smooth_luminance, luminance)

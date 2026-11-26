@@ -20,6 +20,12 @@ fn C.native_document_text_raster_begin(f32, f32, f32, f32, f32, f32, i32, &i32, 
 fn C.native_document_text_raster_finish(&u8, i32, i32, i32, i32, i32, i32, f32, i32) i32
 fn C.native_document_text_raster_read_backdrop(&u8, i32, i32, i32, i32, f32) i32
 
+$if macos {
+	#include "@VMODROOT/native/include/native_text_backdrop_darwin.h"
+	fn C.native_document_start_text_backdrop_copy(&u8, i32, i32, i32, i32, f32) voidptr
+	fn C.native_document_finish_text_backdrop_copy(voidptr)
+}
+
 // The cache keeps typeface facts and glyph masks across frames. Its retained
 // allocations go to their own arena, reset (with the cache) once it has grown
 // past a budget, because frame scratch is reset every frame and prealloc never
@@ -122,6 +128,7 @@ const retain_covered_glyph_clip_draws = os.getenv('VOX_RETAIN_COVERED_GLYPH_CLIP
 const verify_covered_glyph_clip_draws = os.getenv('VOX_VERIFY_COVERED_GLYPH_CLIP_DRAWS') != ''
 const overlap_glyph_backdrop = os.getenv('VOX_OVERLAP_GLYPH_BACKDROP') == '1'
 const pipeline_glyph_masks = os.getenv('VOX_PIPELINE_GLYPH_MASKS') == '1'
+const prefetch_glyph_backdrop_copy = os.getenv('VOX_PREFETCH_GLYPH_BACKDROP_COPY') == '1'
 
 struct DocumentGlyphBackdrop {
 	pixels   &u8
@@ -130,10 +137,23 @@ struct DocumentGlyphBackdrop {
 mut:
 	attempted bool
 	loaded    bool
+	ticket    voidptr
+}
+
+fn (mut backdrop DocumentGlyphBackdrop) finish_copy() {
+	$if macos {
+		if backdrop.ticket != unsafe { nil } {
+			C.native_document_finish_text_backdrop_copy(backdrop.ticket)
+			backdrop.ticket = unsafe { nil }
+			backdrop.attempted = true
+			backdrop.loaded = true
+		}
+	}
 }
 
 fn read_document_glyph_backdrop(context voidptr) bool {
 	mut backdrop := unsafe { &DocumentGlyphBackdrop(context) }
+	backdrop.finish_copy()
 	if !backdrop.attempted {
 		backdrop.attempted = true
 		backdrop.loaded = C.native_document_text_raster_read_backdrop(backdrop.pixels,
@@ -280,8 +300,17 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 		height := int(geometry[3])
 		backdrop := geometry[4] != 0
 		mut pixels := []u8{len: width * height * 4}
-		deferred_backdrop := backdrop && (pipeline_glyph_masks || overlap_glyph_backdrop) && glyphs.len >= 4
-			&& clip_bounds == none && !extended_blend && document_glyph_raster_dump == ''
+		can_defer_backdrop := backdrop && glyphs.len >= 4 && clip_bounds == none
+			&& !extended_blend && document_glyph_raster_dump == ''
+		mut destination := DocumentGlyphBackdrop{pixels: pixels.data, geometry: geometry, scale: scale}
+		if can_defer_backdrop && prefetch_glyph_backdrop_copy {
+			destination.ticket = C.native_document_start_text_backdrop_copy(pixels.data,
+				geometry[0], geometry[1], geometry[2], geometry[3], scale)
+		}
+		// A rejected run can return before its loader is called.
+		defer { destination.finish_copy() }
+		copy_pending := destination.ticket != unsafe { nil }
+		deferred_backdrop := can_defer_backdrop && (pipeline_glyph_masks || overlap_glyph_backdrop || copy_pending)
 		if backdrop && !deferred_backdrop && C.native_document_text_raster_read_backdrop(pixels.data,
 			geometry[0], geometry[1], i32(width), i32(height), scale) == 0 {
 			return 'backdrop unreadable'
@@ -337,16 +366,12 @@ fn draw_document_glyph_raster_run(glyphs []u16, positions []f64, font_path strin
 				return 'extended glyph blend declined'
 			}
 		} else {
-			mut destination := DocumentGlyphBackdrop{
-				pixels: pixels.data
-				geometry: geometry
-				scale: scale
-			}
 			loader := if deferred_backdrop {
 				cpuraster.CanvasGlyphBackdrop{
 					context: &destination
 					read: read_document_glyph_backdrop
 					pipeline_masks: pipeline_glyph_masks
+					copy_pending: copy_pending && !overlap_glyph_backdrop
 				}
 			} else {
 				cpuraster.CanvasGlyphBackdrop{}
