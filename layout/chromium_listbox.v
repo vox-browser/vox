@@ -22,7 +22,7 @@ fn chromium_select_listbox_auto_size(node &Node) css.SizeWithAspectRatio {
  font := node.first_available_font()
  mut maximum := f32(0)
  for option in css.query_selector_all(element.as_node(),'option') {
-  maximum=math.max(maximum,platform.shaped_text_width(f32(resolved_text_spacing_for_shaping(node,.letter_spacing)),f32(resolved_text_spacing_for_shaping(node,.word_spacing)),html.html_option_element_label(unsafe { &dom.HTMLOptionElement(option) }),font,.common))
+  maximum=math.max(maximum,platform.shaped_text_width(f32(resolved_text_spacing_for_shaping(node,.letter_spacing)),f32(resolved_text_spacing_for_shaping(node,.word_spacing)),html.html_option_element_display_label(unsafe { &dom.HTMLOptionElement(option) }),font,.common))
  }
  rows := if element.get_attribute_value('size').int()>0 { element.get_attribute_value('size').int() } else { 4 }
  metrics := font.inline_metrics()
