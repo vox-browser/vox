@@ -6,7 +6,9 @@ import os
 
 const parallel_gradient_stops = os.getenv('VOX_PARALLEL_GRADIENT_STOPS') == '1'
 const paint_gradient_stops_diagnostics = os.getenv('VOX_PAINT_GRADIENT_STOPS_DIAGNOSTICS') == '1'
-const skip_transparent_background_gradients = os.getenv('VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS') == '1'
+const skip_transparent_background_gradients = (os.getenv_opt('VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS') or {
+	'1'
+}) == '1'
 const transparent_background_gradient_diagnostics = os.getenv('VOX_TRANSPARENT_BACKGROUND_GRADIENT_DIAGNOSTICS') == '1'
 const native_gradient_subdivisions = 16
 const paint_gradient_source_stop_limit = 4

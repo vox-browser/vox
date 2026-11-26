@@ -325,10 +325,16 @@ $if macos {
 			layout.PaintCommand{...leaf, scrollbar_axis: 'vertical'},
 			layout.PaintCommand{...leaf, gradient_background_layer: false},
 			layout.PaintCommand{kind: 'begin_css_filter_layer'}]
-		expected := [PaintLeafCanvasBounds.transparent_gradient, .retain, .outside,
-			.transparent_gradient, .retain, .retain, .retain, .unprepared]
-		mut batch := new_paint_canvas_bounds_batch(commands, 2, 0, 100, 100,
-			classify_transparent_gradients: true)
+		mut clear_bounds := PaintLeafCanvasBounds.transparent_gradient
+		if setting := os.getenv_opt('VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS') {
+			if setting != '1' { clear_bounds = .retain }
+		}
+		expected := [clear_bounds, .retain, .outside, clear_bounds, .retain, .retain, .retain, .unprepared]
+		app := BrowserApp{
+			ctx: &gg.Context{native_rendering: true}
+			paint_commands: commands
+		}
+		mut batch := app.new_document_canvas_bounds_batch(2, 0, 100, 100)
 		batch.submit(replay_ranges: true)
 		assert batch.background_lanes == 2 && batch.begin_replay(true)
 		for index, result in expected {
