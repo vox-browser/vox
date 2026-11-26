@@ -7247,3 +7247,101 @@ including the repeated logo and favicon miss. The executable, linked
 dependencies, helper, archive, reference and harness hashes were
 verified throughout. All browser, benchmark and 3 GiB guard exits were
 zero. Peak benchmark RSS was 336,560,128 bytes.
+
+### Copy retained text backdrops during glyph preparation
+
+Commit `f9cd51ef3` adds the macOS opt-in
+`VOX_PREFETCH_GLYPH_BACKDROP_COPY=1`. For eligible retained text
+runs with at least 128 KiB of backdrop pixels, the browser thread flushes
+the private bitmap and gives a worker its source rows and the glyph
+raster's destination rows. The worker copies bytes while the caller
+prepares the glyph run. The existing backdrop loader joins before any
+blending. If preparation rejects or culls the run, the caller joins
+before releasing the raster. Small or clipped runs and disabled worker
+submission use the synchronous path.
+
+The preflight archive capture used executable `792761be8713…` from the
+preceding MSAA cohort and recorded 332 retained glyph draws with backdrops.
+Eleven copies met the byte threshold. The recorded glyph
+input SHA-256 was
+`0b75efddc25387223969a473bf038cf9e4a80c59a3c3c40a2d440439b333cd24`.
+The capture matched the established document PNG.
+
+The focused CoreGraphics fixture exercised padded source rows, a
+fractional-scale origin, destination guard bytes, repeated worker joins,
+invalid bounds and the serial override. It passed with AddressSanitizer,
+UndefinedBehaviorSanitizer and ThreadSanitizer. The 11 focused glyph
+tests passed with ThreadSanitizer and arena poisoning. The glyph loader
+tests verified exact pixels and rejected loads with the copy pending,
+alongside the existing mask preparation modes.
+
+The canonical macOS bundle from receipt `20261126-035920-519ffcaf`
+sealed `840af1338`, which contains the backdrop change, as a single C
+unit with V `-prod`. The build, headless smoke, and strict signature
+checks passed. Both timing modes ran on this one executable.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `150e18a517ec1fea4c8a0fbf3ffce2e073fce8e047ffe0fc6867ee19efc25682` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Unchanged pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Two standalone worker diagnostics copied 1,865,616 bytes across 11
+runs off-thread per launch. The caller waited for all 11 at the join
+in each run. A separate capture combined the new option with both
+existing glyph mask overlap settings and recorded the same 11 copies,
+one ready at the join. The default and forced serial raster diagnostics
+recorded zero worker copies.
+
+The memory-guarded driver held the bundle lease and used the
+`tools/measure_load_parallelism.py` trial runner with 1 ms polling.
+Each timed process used JavaScriptCore with the archived author script,
+an empty private profile and HTTP cache, retained OS caches, and a
+60 ms delay per replayed logo response. Vox launched with
+`--enable-javascript --js-engine=javascriptcore --window-width 1024
+--window-height 880 --screenshot-viewport-height 768`. The timer ran
+from fresh process launch to the completed 1024×768 document PNG at
+2× scale, with `tr.athing` readiness. Each unprofiled cohort alternated
+seven pairs. The second cohort started with the worker option.
+
+| Pair | Default 1, ms | Worker 1, ms | Default 2, ms | Worker 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 322.290 | 315.233 | 337.415 | 317.710 |
+| 2 | 315.754 | 302.397 | 296.009 | 308.025 |
+| 3 | 309.148 | 310.626 | 314.154 | 324.775 |
+| 4 | 339.999 | 350.142 | 313.948 | 309.262 |
+| 5 | 343.164 | 346.272 | 321.272 | 305.859 |
+| 6 | 296.337 | 358.237 | 302.210 | 312.383 |
+| 7 | 314.968 | 317.895 | 324.943 | 295.819 |
+| Median | 315.754 | 317.895 | 314.154 | 309.262 |
+
+Median paired changes were +2.928 ms and −4.686 ms. The worker finished
+first in two and four pairs, respectively. Sampled main-thread CPU
+medians changed from 168.084 to 178.308 ms and from 164.279 to
+166.121 ms. One-minute load on the 18-CPU host ranged from 5.75 to
+6.03 and 6.03 to 6.79. The launch-to-PNG times gave mixed results, so
+the worker copy stays opt-in.
+
+Four additional captures enabled `VOX_PROFILE_INSTRUCTIONS=1`,
+`VOX_DIAGNOSTIC_LOAD_STAGES=1` and `VOX_DIAGNOSTIC_THREAD_LOAD_STAGES=1`.
+Each recorded 333 `paint_leaf_text` scopes and confirmed script runtime
+setup and JavaScript execution. The per-scope clocks and instruction
+counters were summed across text leaves. These traced intervals include
+the backdrop, glyph preparation, blending and text publication.
+
+| Pair | Default thread instructions | Worker thread instructions | Default text CPU, ms | Worker text CPU, ms | Default text wall, ms | Worker text wall, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 127,745,192 | 127,537,471 | 10.981 | 10.478 | 13.252 | 12.931 |
+| 2 | 128,795,824 | 127,301,049 | 10.706 | 10.612 | 12.766 | 12.862 |
+
+All 37 captures matched established Vox PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All five copy diagnostics compared 3,145,728 pixels directly against
+the unchanged reference with zero differences. Every launch passed
+the URL, readiness, viewport and ordered 30-story audits and reproduced
+the same eight replay records, including the repeated logo and favicon
+miss. The executable, linked native libraries, helper, fixtures and
+measurement inputs stayed pinned. All browser, driver and guard exits
+were zero. Peak benchmark RSS was 325,910,528 bytes under the 3 GiB guard.
