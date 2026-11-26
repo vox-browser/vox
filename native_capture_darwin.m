@@ -2665,8 +2665,16 @@ typedef struct {
 } NativeCSSBackdropBitmap;
 
 typedef struct {
+	IOSurfaceRef surface;
+	BOOL locked;
+	int references;
+	int callback_fired;
+} NativeCSSFilterSurface;
+
+typedef struct {
 	CGContextRef context;
 	CGContextRef destination;
+	NativeCSSFilterSurface *source_surface;
 	// Non-null only for this layer's dedicated anonymous zero-fill mapping.
 	uint8_t *sparse_input_pixels;
 	CGImageRef backdrop_source;
@@ -2822,7 +2830,52 @@ void native_prepare_css_filter_renderer(void) {
 		native_css_filter_ci_context != nil, (CACurrentMediaTime() - started) * 1e6);
 }
 
-static void native_begin_css_filter_layer_in_space(float canvas_width, float canvas_height, int p3) {
+static void native_release_css_filter_surface(NativeCSSFilterSurface *source) {
+	if (__atomic_sub_fetch(&source->references, 1, __ATOMIC_ACQ_REL) != 0) return;
+	if (source->locked) IOSurfaceUnlock(source->surface, 0, NULL);
+	CFRelease(source->surface);
+	free(source);
+}
+
+static void native_css_filter_context_released(void *info, void *pixels) {
+	(void)pixels;
+	NativeCSSFilterSurface *source = (NativeCSSFilterSurface *)info;
+	__atomic_store_n(&source->callback_fired, 1, __ATOMIC_RELEASE);
+	native_release_css_filter_surface(source);
+}
+
+static CGContextRef native_create_css_filter_surface_context(size_t width, size_t height,
+	CGColorSpaceRef color_space, NativeCSSFilterSurface **source_surface) {
+	if (!width || !height || width > SIZE_MAX / 4 / height || !color_space) return NULL;
+	IOSurfaceRef surface = IOSurfaceCreate((__bridge CFDictionaryRef)@{
+		(__bridge id)kIOSurfaceWidth: @(width), (__bridge id)kIOSurfaceHeight: @(height),
+		(__bridge id)kIOSurfaceBytesPerElement: @4,
+		(__bridge id)kIOSurfacePixelFormat: @((uint32_t)'RGBA'),
+	});
+	if (!surface) return NULL;
+	NativeCSSFilterSurface *source = (NativeCSSFilterSurface *)malloc(sizeof(*source));
+	if (!source) {
+		CFRelease(surface);
+		return NULL;
+	}
+	*source = (NativeCSSFilterSurface){.surface = surface,
+		.locked = IOSurfaceLock(surface, 0, NULL) == kIOReturnSuccess, .references = 2};
+	void *pixels = source->locked ? IOSurfaceGetBaseAddress(surface) : NULL;
+	size_t pitch = IOSurfaceGetBytesPerRow(surface);
+	CGContextRef context = pixels && pitch >= width * 4 && pitch <= SIZE_MAX / height
+		? CGBitmapContextCreateWithData(pixels, width, height, 8, pitch, color_space,
+			kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
+			native_css_filter_context_released, source) : NULL;
+	// A failed context creation can invoke the data-release callback itself.
+	if (!context && !__atomic_load_n(&source->callback_fired, __ATOMIC_ACQUIRE))
+		native_release_css_filter_surface(source);
+	if (context) *source_surface = source;
+	native_release_css_filter_surface(source);
+	return context;
+}
+
+static void native_begin_css_filter_layer_in_space(float canvas_width, float canvas_height, int p3,
+	BOOL shared_spatial_input) {
 	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
 		native_css_filter_overflow_depth++;
 		return;
@@ -2841,7 +2894,10 @@ static void native_begin_css_filter_layer_in_space(float canvas_width, float can
 		if (getenv("VOX_SPARSE_CSS_FILTER_INPUTS")) {
             layer.context = native_create_sparse_bitmap_context(width, height, color_space);
             if (layer.context) layer.sparse_input_pixels = (uint8_t *)CGBitmapContextGetData(layer.context);
-        }
+        } else if (shared_spatial_input) {
+			layer.context = native_create_css_filter_surface_context(width, height, color_space,
+				&layer.source_surface);
+		}
         if (!layer.context)
             layer.context = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
                 color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
@@ -2860,7 +2916,12 @@ static void native_begin_css_filter_layer_in_space(float canvas_width, float can
 }
 
 void native_begin_css_filter_layer(float width, float height) {
-    native_begin_css_filter_layer_in_space(width, height, 0);
+    native_begin_css_filter_layer_in_space(width, height, 0, NO);
+}
+
+void native_begin_spatial_css_filter_layer(float width, float height) {
+	native_begin_css_filter_layer_in_space(width, height, 0,
+		!getenv("VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT") && !getenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP"));
 }
 
 void native_end_css_filter_layer(void);
@@ -3091,7 +3152,7 @@ void native_begin_font_compositing_layer(float width, float height) {
 			[NSGraphicsContext graphicsContextWithCGContext:destination flipped:NO]];
 		native_css_filter_stack[native_css_filter_stack_depth++] = layer;
 	} else {
-		native_begin_css_filter_layer_in_space(width, height, vox_document_display_p3_enabled());
+		native_begin_css_filter_layer_in_space(width, height, vox_document_display_p3_enabled(), NO);
 	}
 	if (fresh_destination && native_css_filter_stack_depth == previous_depth + 1) {
 		NativeCSSFilterLayer *layer = &native_css_filter_stack[previous_depth];
@@ -4682,6 +4743,19 @@ static CIImage *native_css_filter_spatial_bitmap(NativeCSSFilterLayer const *lay
 		|| layer->sparse_input_pixels || getenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP")) return nil;
 	int kind = layer->operations[0].kind;
 	if (kind != 0 && kind != 1) return nil;
+	NativeCSSFilterSurface *source = layer->source_surface;
+	if (source) {
+		// Quartz has finished writing. Core Image retains the immutable surface
+		// independently of the bitmap context and can read it without an upload.
+		CGContextFlush(layer->context);
+		CGColorSpaceRef color = CGBitmapContextGetColorSpace(layer->context);
+		CIImage *image = [CIImage imageWithIOSurface:source->surface
+			options:@{kCIImageColorSpace: (__bridge id)color}];
+		if (image && IOSurfaceUnlock(source->surface, 0, NULL) == kIOReturnSuccess) {
+			source->locked = NO;
+			return image;
+		}
+	}
 	return native_css_filter_completed_bitmap(layer->context);
 }
 
@@ -4751,10 +4825,11 @@ void native_end_css_filter_layer(void) {
 		CIImage *bitmap_source = native_css_filter_spatial_bitmap(&layer);
 		CGImageRef source_image = NULL;
 		if (bitmap_source) {
+			BOOL shared = layer.source_surface && !layer.source_surface->locked;
 			CGContextRelease(layer.context);
 			if (timing) fprintf(stderr,
-				"VOX_CSS_FILTER_DIRECT_SOURCE kind=%d width=%.0f height=%.0f\n",
-				layer.operations[0].kind, bitmap_source.extent.size.width, bitmap_source.extent.size.height);
+				"VOX_CSS_FILTER_DIRECT_SOURCE kind=%d width=%.0f height=%.0f shared=%d\n",
+				layer.operations[0].kind, bitmap_source.extent.size.width, bitmap_source.extent.size.height, shared);
 		} else if (layer.borrows_fresh_frame) {
 			// Quartz snapshots retain their pixels when the fresh target is cleared.
 			source_image = CGBitmapContextCreateImage(layer.context);

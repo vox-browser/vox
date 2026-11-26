@@ -140,6 +140,33 @@ static void check_completed_bitmap_ownership(void) {
     fprintf(stderr, "PASS completed bitmap pixels and lifetime for padded RGBA/BGRA in sRGB and P3\n");
 }
 
+static void check_shared_spatial_source(void) {
+    CGRect bounds = CGRectMake(0, 0, 127, 73);
+    NSData *expected;
+    CIImage *shared;
+    @autoreleasepool {
+        CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        NativeCSSFilterLayer layer = {0};
+        CGContextRef context = native_create_css_filter_surface_context(127, 73, color,
+            &layer.source_surface);
+        CGColorSpaceRelease(color);
+        assert(context && layer.source_surface && layer.source_surface->locked);
+        NativeCSSFilterOperation operation = {.kind = 0};
+        layer.context = context;
+        layer.destination = context;
+        layer.operation_count = 1;
+        layer.operations = &operation;
+        CGContextSetRGBFillColor(context, .37, .81, .16, .7);
+        CGContextFillEllipseInRect(context, CGRectMake(3.5, -7.25, 118, 61));
+        expected = render_pixels(native_css_filter_completed_bitmap(context), bounds);
+        shared = native_css_filter_spatial_bitmap(&layer);
+        assert(shared && !layer.source_surface->locked);
+        CGContextRelease(context);
+    }
+    assert([expected isEqualToData:render_pixels(shared, bounds)]);
+    fprintf(stderr, "PASS shared spatial input lifetime after Quartz context release\n");
+}
+
 static void check_svg_turbulence(void) {
     const size_t width = 317;
     const int32_t height = 257;
@@ -190,16 +217,24 @@ static void paint_filtered_frame(id view, SEL selector, NSRect rect) {
 }
 
 static int spatial_filter_kind;
+static BOOL spatial_filter_empty;
 
 static void paint_spatial_filtered_frame(id view, SEL selector, NSRect rect) {
-    (void)view; (void)selector; (void)rect;
+    (void)selector; (void)rect;
+    NSSize size = ((NSView *)view).bounds.size;
     CGContextRef destination = NSGraphicsContext.currentContext.CGContext;
     CGContextSaveGState(destination);
     CGContextClipToRect(destination, CGRectMake(21, 22, 710, 681));
-    native_begin_css_filter_layer(1280, 900);
+    native_begin_spatial_css_filter_layer(size.width, size.height);
+    BOOL expect_shared = !getenv("VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT")
+        && !getenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP");
+    assert((native_css_filter_stack[native_css_filter_stack_depth - 1].source_surface != NULL)
+        == expect_shared);
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    CGContextSetRGBFillColor(context, .28, .64, .31, .78);
-    CGContextFillEllipseInRect(context, CGRectMake(19.25, 10.75, 750, 601));
+    if (!spatial_filter_empty) {
+        CGContextSetRGBFillColor(context, .28, .64, .31, .78);
+        CGContextFillEllipseInRect(context, CGRectMake(19.25, 10.75, 750, 601));
+    }
     native_add_css_filter_operation(spatial_filter_kind, 2.5, -1.75, 1.25,
         (gg__Color){104, 39, 222, 177});
     native_end_css_filter_layer();
@@ -207,16 +242,26 @@ static void paint_spatial_filtered_frame(id view, SEL selector, NSRect rect) {
 }
 
 static void check_spatial_filter_pixels(NSView *view) {
+    for (int empty = 0; empty <= 1; ++empty)
     for (spatial_filter_kind = 0; spatial_filter_kind <= 1; ++spatial_filter_kind) @autoreleasepool {
+        spatial_filter_empty = empty;
         setenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP", "1", 1);
         CGImageRef expected = native_layer_raster_frame(view, 2, (IMP)paint_spatial_filtered_frame);
         unsetenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP");
+        setenv("VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT", "1", 1);
+        CGImageRef bitmap = native_layer_raster_frame(view, 2, (IMP)paint_spatial_filtered_frame);
+        unsetenv("VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT");
         CGImageRef actual = native_layer_raster_frame(view, 2, (IMP)paint_spatial_filtered_frame);
-        assert(actual && expected && [pack_pixels(actual) isEqualToData:pack_pixels(expected)]);
+        assert(actual && bitmap && expected);
+        NSData *reference = pack_pixels(expected);
+        assert([pack_pixels(actual) isEqualToData:reference]);
+        assert([pack_pixels(bitmap) isEqualToData:reference]);
         CGImageRelease(actual);
+        CGImageRelease(bitmap);
         CGImageRelease(expected);
     }
-    fprintf(stderr, "PASS exact clipped publication for completed bitmap blur and drop-shadow\n");
+    spatial_filter_empty = NO;
+    fprintf(stderr, "PASS exact shared, bitmap and copied publication for clipped and empty spatial filters\n");
 }
 
 static uint64_t resident_bytes(void) {
@@ -250,9 +295,12 @@ int main(void) { @autoreleasepool {
     check_formats_and_ownership();
     check_backdrop_snapshot_ownership();
     check_completed_bitmap_ownership();
+    check_shared_spatial_source();
     check_svg_turbulence();
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 1280, 900)];
     check_spatial_filter_pixels(view);
+    NSView *odd = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 607, 433)];
+    check_spatial_filter_pixels(odd);
     check_repeated_frames(view, (IMP)paint_filtered_frame, "SVG-filtered");
     check_repeated_frames(view, (IMP)paint_spatial_filtered_frame, "spatial CSS-filtered");
     return 0;

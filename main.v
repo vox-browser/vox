@@ -300,6 +300,7 @@ fn C.native_begin_svg_mask_layer()
 fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32, canvas_height f32, page_x f32, page_y f32, scroll_y f32)
 
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
+fn C.native_begin_spatial_css_filter_layer(canvas_width f32, canvas_height f32)
 
 fn C.native_record_css_gradient_blur_input(content_key u64)
 fn C.native_record_css_svg_filter_input(a f32, b f32, c f32, d f32, e f32, f f32, left f32, top f32, right f32, bottom f32, page_x f32, page_y f32)
@@ -6144,10 +6145,17 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	if command.kind == 'begin_css_filter_layer' {
 		$if macos {
 			if app.ctx.native_rendering {
-				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
 				if filter := command.visual_layer().filter {
+					if filter.nodes.len == 0 && filter.operations.len == 1
+						&& filter.operations[0].kind in ['blur', 'drop-shadow'] {
+						C.native_begin_spatial_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+					} else {
+						C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+					}
 					app.add_native_css_filter(filter, command.transform, page_x, page_y)
 					app.record_native_svg_css_filter(command, page_x, page_y)
+				} else {
+					C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
 				}
 			}
 		}

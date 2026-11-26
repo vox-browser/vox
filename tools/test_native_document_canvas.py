@@ -34,8 +34,12 @@ def entry_points(text):
         "static CGPathRef native_create_corner_rounded_rect_path(",
         "static void native_initialize_css_filter_renderer(",
         "void native_prepare_css_filter_renderer(",
+        "static void native_release_css_filter_surface(",
+        "static void native_css_filter_context_released(",
+        "static CGContextRef native_create_css_filter_surface_context(",
         "static void native_begin_css_filter_layer_in_space(",
-        "void native_begin_css_filter_layer(")]
+        "void native_begin_css_filter_layer(",
+        "void native_begin_spatial_css_filter_layer(")]
     functions.append("void native_end_css_filter_layer(void);")
     functions += [function(signature) for signature in (
         "void native_begin_font_compositing_layer(", "void native_end_font_compositing_layer(",
