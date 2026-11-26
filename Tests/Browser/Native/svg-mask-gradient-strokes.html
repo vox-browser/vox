@@ -1,0 +1,50 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Gradient strokes inside SVG masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="480" height="110" viewBox="0 0 480 110">
+  <defs>
+    <linearGradient id="reflected" gradientUnits="userSpaceOnUse" x1="20" x2="60" y1="0" y2="0"
+                    gradientTransform="translate(8 0)" spreadMethod="reflect">
+      <stop id="faint" stop-color="red" stop-opacity=".6"/>
+      <stop offset="1" stop-color="green"/>
+    </linearGradient>
+    <radialGradient id="radial" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="20"
+                    gradientTransform="translate(42 30) scale(2 1)">
+      <stop stop-color="#f00"/>
+      <stop offset="1" stop-color="#0f0"/>
+    </radialGradient>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="8" width="174" height="82">
+      <g opacity=".5">
+        <path d="M16 44H160" fill="none" stroke="url(#reflected)" stroke-opacity=".5"
+              stroke-width="12" stroke-linecap="square"/>
+      </g>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="192" y="8" width="208" height="82">
+      <rect x="12" y="30" width="68" height="44" transform="translate(196 0)"
+            fill="white" stroke="url(#radial)" stroke-width="12" stroke-opacity=".5"/>
+      <rect x="12" y="30" width="68" height="44" transform="translate(300 0)"
+            fill="white" stroke="url(#radial)" stroke-width="12" stroke-opacity=".5" paint-order="stroke fill"/>
+    </mask>
+  </defs>
+  <path fill="blue" mask="url(#alpha)" d="M0 0H186V100H0Z"/>
+  <path fill="blue" mask="url(#luminance)" d="M188 0H404V100H188Z"/>
+  <path fill="#f80" d="M416 20h28v32h-28Z"/>
+</svg>
+<script>
+let frame = 0;
+function editStrokeGradient() {
+    if (++frame === 12)
+        document.getElementById('faint').setAttribute('stop-opacity', '0');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-gradient-stroke-ready', '');
+    else
+        requestAnimationFrame(editStrokeGradient);
+}
+requestAnimationFrame(editStrokeGradient);
+</script>

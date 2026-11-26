@@ -55,6 +55,20 @@ fn (f &ColorFilter) alpha_unchanged() bool {
 	return f.filters.all(it.alpha_unchanged())
 }
 
+@[inline]
+fn apply_straight_color_matrix(m &[20]f32, r f32, g f32, b f32, a f32, clamp bool) [4]f32 {
+	mut nr := mad(r, m[0], mad(g, m[1], mad(b, m[2], mad(a, m[3], m[4]))))
+	mut ng := mad(r, m[5], mad(g, m[6], mad(b, m[7], mad(a, m[8], m[9]))))
+	mut nb := mad(r, m[10], mad(g, m[11], mad(b, m[12], mad(a, m[13], m[14]))))
+	na := mad(r, m[15], mad(g, m[16], mad(b, m[17], mad(a, m[18], m[19]))))
+	if clamp {
+		nr = neon_min(neon_max(0, nr), 1)
+		ng = neon_min(neon_max(0, ng), 1)
+		nb = neon_min(neon_max(0, nb), 1)
+	}
+	return [nr, ng, nb, neon_min(neon_max(0, na), 1)]!
+}
+
 // The filters' highp stages on a premultiplied color: per matrix, unpremul
 // unless the input is known opaque, matrix_4x5's nested fused
 // multiply-adds, clamp_01 or clamp_a_01, and premul unless the output
@@ -75,18 +89,8 @@ fn (f &ColorFilter) apply(c [4]f32, opaque bool) [4]f32 {
 			g = g * scale
 			b = b * scale
 		}
-		m := filter.matrix
-		nr := mad(r, m[0], mad(g, m[1], mad(b, m[2], mad(a, m[3], m[4]))))
-		ng := mad(r, m[5], mad(g, m[6], mad(b, m[7], mad(a, m[8], m[9]))))
-		nb := mad(r, m[10], mad(g, m[11], mad(b, m[12], mad(a, m[13], m[14]))))
-		na := mad(r, m[15], mad(g, m[16], mad(b, m[17], mad(a, m[18], m[19]))))
-		r, g, b, a = nr, ng, nb, na
-		if filter.clamp {
-			r = neon_min(neon_max(0, r), 1)
-			g = neon_min(neon_max(0, g), 1)
-			b = neon_min(neon_max(0, b), 1)
-		}
-		a = neon_min(neon_max(0, a), 1)
+		mapped := apply_straight_color_matrix(&filter.matrix, r, g, b, a, filter.clamp)
+		r, g, b, a = mapped[0], mapped[1], mapped[2], mapped[3]
 		if !stays_opaque {
 			r = r * a
 			g = g * a

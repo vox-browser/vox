@@ -71,6 +71,17 @@ fn test_request_object_constructor_guards_and_getters() {
 	assert clone.method() == 'POST'
 }
 
+fn test_request_explicit_null_signal_does_not_inherit_input_request_signal() {
+	mut source := dom.AbortSignal.new()
+	request := RequestObject.construct(RequestInput{url: dom.URL{value: 'https://example.test/data'}}, RequestInit{signal: source})!
+	inherited := RequestObject.construct(RequestInput{request: request}, RequestInit{})!
+	independent := RequestObject.construct(RequestInput{request: request}, RequestInit{signal_present: true})!
+	source.signal_abort(dom.js_string('native reason'))
+	assert request.signal().aborted() && inherited.signal().aborted()
+	assert !independent.signal().aborted()
+	assert independent.signal().source_signals().len == 0
+}
+
 fn test_request_wrappable_constructor_entry_points_use_relevant_settings() {
 	client := &ConstructionTestClient{
 		base_url: dom.URL{value: 'https://settings.test/base/'}

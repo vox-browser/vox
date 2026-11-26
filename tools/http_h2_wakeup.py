@@ -2,6 +2,7 @@
 
 
 def patch_h2_wakeup(source):
+    source = source.replace('\tclosed       bool\n}', '\tclosed bool\n}')
     fields = '\tclosed bool\n}'
     if source.count(fields) != 1:
         raise RuntimeError('Unsupported HTTP/2 transport state layout')

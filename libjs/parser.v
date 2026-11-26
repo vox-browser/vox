@@ -24,10 +24,11 @@ mut:
 	is_simple       bool
 }
 
-// Information about a single parameter name binding.
+// A formal binding name is a lexer-validated identifier, so its scope key
+// also preserves its spelling for duplicate checks and diagnostics.
 struct ParamInfo {
 mut:
-	name            Utf16String
+	name            InternedName
 	is_rest         bool
 	is_from_pattern bool
 	identifier      ?&Identifier
@@ -59,70 +60,34 @@ enum Associativity {
 
 // Tracks which tokens are forbidden in the current expression context.
 struct ForbiddenTokens {
-mut:
-	forbid_in                   bool
-	forbid_logical              bool
-	forbid_coalesce             bool
-	forbid_paren_open           bool
-	forbid_question_mark_period bool
-	forbid_equals               bool
+	bits u8
 }
 
-fn ForbiddenTokens.none() ForbiddenTokens {
-	return ForbiddenTokens{}
+const forbidden_in = ForbiddenTokens{bits: 1 << 0}
+const forbidden_logical = ForbiddenTokens{bits: 1 << 1}
+const forbidden_coalesce = ForbiddenTokens{bits: 1 << 2}
+const forbidden_call = ForbiddenTokens{bits: 1 << 3}
+const forbidden_optional_chain = ForbiddenTokens{bits: 1 << 4}
+const forbidden_equals = ForbiddenTokens{bits: 1 << 5}
+
+fn (f ForbiddenTokens) allows(token TokenType) bool {
+	if f.bits == 0 {
+		return true
+	}
+	disallowed := match token {
+		.in_kw { forbidden_in }
+		.double_ampersand, .double_pipe { forbidden_logical }
+		.double_question_mark { forbidden_coalesce }
+		.paren_open { forbidden_call }
+		.question_mark_period { forbidden_optional_chain }
+		.equals { forbidden_equals }
+		else { ForbiddenTokens{} }
+	}
+	return f.bits & disallowed.bits == 0
 }
 
-fn ForbiddenTokens.with_in() ForbiddenTokens {
-	return ForbiddenTokens{
-		forbid_in: true
-	}
-}
-
-fn (f &ForbiddenTokens) allows(token TokenType) bool {
-	return match token {
-		.in_kw { !f.forbid_in }
-		.double_ampersand, .double_pipe { !f.forbid_logical }
-		.double_question_mark { !f.forbid_coalesce }
-		.paren_open { !f.forbid_paren_open }
-		.question_mark_period { !f.forbid_question_mark_period }
-		.equals { !f.forbid_equals }
-		else { true }
-	}
-}
-
-fn (f &ForbiddenTokens) merge(other ForbiddenTokens) ForbiddenTokens {
-	return ForbiddenTokens{
-		forbid_in:                   f.forbid_in || other.forbid_in
-		forbid_logical:              f.forbid_logical || other.forbid_logical
-		forbid_coalesce:             f.forbid_coalesce || other.forbid_coalesce
-		forbid_paren_open:           f.forbid_paren_open || other.forbid_paren_open
-		forbid_question_mark_period: f.forbid_question_mark_period
-			|| other.forbid_question_mark_period
-		forbid_equals:               f.forbid_equals || other.forbid_equals
-	}
-}
-
-fn (f &ForbiddenTokens) forbid(tokens []TokenType) ForbiddenTokens {
-	mut result := ForbiddenTokens{
-		forbid_in:                   f.forbid_in
-		forbid_logical:              f.forbid_logical
-		forbid_coalesce:             f.forbid_coalesce
-		forbid_paren_open:           f.forbid_paren_open
-		forbid_question_mark_period: f.forbid_question_mark_period
-		forbid_equals:               f.forbid_equals
-	}
-	for t in tokens {
-		match t {
-			.in_kw { result.forbid_in = true }
-			.double_ampersand, .double_pipe { result.forbid_logical = true }
-			.double_question_mark { result.forbid_coalesce = true }
-			.paren_open { result.forbid_paren_open = true }
-			.question_mark_period { result.forbid_question_mark_period = true }
-			.equals { result.forbid_equals = true }
-			else {}
-		}
-	}
-	return result
+fn (f ForbiddenTokens) merge(other ForbiddenTokens) ForbiddenTokens {
+	return ForbiddenTokens{bits: f.bits | other.bits}
 }
 
 struct ParserError {
@@ -214,6 +179,14 @@ mut:
 	scope_collector                ScopeCollector
 	exported_names                 map[string]bool
 	function_table                 FunctionTable
+	// parser_names.v: identifier names shared by their occurrences.
+	names ParserNames
+	// parser_lists.v: elements of the lists being built.
+	statement_scratch  []Statement
+	argument_scratch   []CallArgument
+	expression_scratch []Expression
+	property_scratch   []ObjectProperty
+	element_scratch    []?Expression
 }
 
 fn Parser.new(source []u16, program_type ProgramType) Parser {
@@ -256,63 +229,6 @@ fn (p &Parser) statement(start Position, stmt StatementKind) Statement {
 
 fn (p &Parser) make_identifier(start Position, name Utf16String) &Identifier {
 	return Identifier.new(p.range_from(start), name)
-}
-
-fn (mut p Parser) register_function_parameters_with_scope(parameters []FunctionParameter, parameter_info []ParamInfo) {
-	mut entries := []ParameterEntry{}
-	mut has_parameter_expressions := false
-	mut info_index := 0
-	for parameter in parameters {
-		if parameter.default_value != none {
-			has_parameter_expressions = true
-		}
-		match parameter.binding {
-			IdentifierBinding {
-				mut name := Utf16String.new()
-				mut is_rest := false
-				mut is_from_pattern := false
-				if info_index < parameter_info.len {
-					pi := parameter_info[info_index]
-					info_index++
-					name = pi.name.clone()
-					is_rest = pi.is_rest
-					is_from_pattern = pi.is_from_pattern
-				} else {
-					name = parameter.binding.identifier.name.clone()
-					is_rest = parameter.is_rest
-				}
-				entries << ParameterEntry{
-					name:                  name
-					identifier:            parameter.binding.identifier
-					is_rest:               is_rest
-					is_from_pattern:       is_from_pattern
-					is_first_from_pattern: false
-				}
-			}
-			BindingPatternBinding {
-				if parameter.binding.pattern.contains_expression() {
-					has_parameter_expressions = true
-				}
-				entries << ParameterEntry{
-					name:                  Utf16String.new()
-					is_from_pattern:       true
-					is_first_from_pattern: true
-				}
-				for info_index < parameter_info.len && parameter_info[info_index].is_from_pattern {
-					pi := parameter_info[info_index]
-					entries << ParameterEntry{
-						name:                  pi.name.clone()
-						identifier:            pi.identifier
-						is_rest:               pi.is_rest
-						is_from_pattern:       true
-						is_first_from_pattern: false
-					}
-					info_index++
-				}
-			}
-		}
-	}
-	p.scope_collector.set_function_parameters(entries, has_parameter_expressions)
 }
 
 // === Token access ===
@@ -380,26 +296,30 @@ fn (mut p Parser) eat(tt TokenType) bool {
 }
 
 fn (mut p Parser) check_arguments_or_eval(token Token) {
-	if token.token_type == .identifier && !p.flags.previous_token_was_period {
-		value := if id_val := token.identifier_value {
-			id_val.data
-		} else {
-			start := int(token.value_start)
-			end := start + int(token.value_len)
-			if end <= p.source.len {
-				p.source[start..end]
-			} else {
-				[]u16{}
-			}
+	if token.token_type != .identifier || p.flags.previous_token_was_period {
+		return
+	}
+	value := if token.identifier_value != unsafe { nil } {
+		token.identifier_value.data
+	} else {
+		// Unescaped names have their final UTF-16 length in the token span.
+		if token.value_len != 'arguments'.len && token.value_len != 'eval'.len {
+			return
 		}
-		if utf16_equals(value, utf16('arguments')) {
-			if p.flags.in_class_field_initializer {
-				p.syntax_error("'arguments' is not allowed in class field initializer")
-			}
-			p.flags.function_might_need_arguments_object = true
-		} else if utf16_equals(value, utf16('eval')) {
-			p.flags.function_might_need_arguments_object = true
+		start := int(token.value_start)
+		end := start + int(token.value_len)
+		if end > p.source.len {
+			return
 		}
+		p.source[start..end]
+	}
+	if utf16_equals_ascii(value, 'arguments') {
+		if p.flags.in_class_field_initializer {
+			p.syntax_error("'arguments' is not allowed in class field initializer")
+		}
+		p.flags.function_might_need_arguments_object = true
+	} else if utf16_equals_ascii(value, 'eval') {
+		p.flags.function_might_need_arguments_object = true
 	}
 }
 
@@ -439,10 +359,7 @@ fn (mut p Parser) consume_or_insert_semicolon() {
 // === Lookahead ===
 
 fn (mut p Parser) next_token() Token {
-	p.lexer.save_state()
-	token := p.lexer.next()
-	p.lexer.load_state()
-	return token
+	return p.lexer.peek()
 }
 
 // === Position ===
@@ -451,12 +368,12 @@ fn (p &Parser) position() Position {
 	return Position{
 		line:   p.current_token.line_number
 		column: p.current_token.line_column
-		offset: p.current_token.offset
+		offset: p.current_token.value_start
 	}
 }
 
 fn (p &Parser) source_text_end_offset() u32 {
-	return p.current_token.offset - p.current_token.trivia_len
+	return p.current_token.value_start - p.current_token.trivia_len
 }
 
 // === Error reporting ===
@@ -470,7 +387,7 @@ fn (mut p Parser) enter_recursion() bool {
 		stack_address - p.recursion_stack_base
 	}
 	p.recursion_depth++
-	if p.recursion_depth > p.recursion_limit || p.stack_info.size_free() < 512 * 1024
+	if p.recursion_depth > p.recursion_limit || stack_address - p.stack_info.base < 512 * 1024
 		|| stack_used > max_parser_recursion_stack_bytes {
 		p.recursion_depth--
 		p.recursion_limit_reached = true
@@ -513,7 +430,7 @@ fn (mut p Parser) register_referenced_private_name(name []u16) bool {
 	return false
 }
 
-fn (mut p Parser) parse_private_identifier(range_start Position) PrivateIdentifier {
+fn (mut p Parser) parse_private_identifier(range_start Position) &PrivateIdentifier {
 	value := p.token_value(p.current_token)
 	if !p.register_referenced_private_name(value) {
 		name := string_from_utf16_lossy(value)
@@ -521,15 +438,15 @@ fn (mut p Parser) parse_private_identifier(range_start Position) PrivateIdentifi
 	}
 	token := p.consume()
 	value2 := p.token_value(token)
-	return PrivateIdentifier{
+	return &PrivateIdentifier{
 		range: p.range_from(range_start)
 		name:  Utf16String.from_slice(value2)
 	}
 }
 
 fn (mut p Parser) expected(what string) {
-	msg := if m := p.current_token.message {
-		m
+	msg := if p.current_token.message != unsafe { nil } {
+		p.current_token.message.text
 	} else {
 		'Unexpected token ${p.current_token.token_type.name()}. Expected ${what}'
 	}
@@ -632,25 +549,25 @@ fn (p &Parser) match_invalid_escaped_keyword() bool {
 		return false
 	}
 	value := p.token_value(p.current_token)
-	if utf16_equals(value, utf16('await')) {
+	if utf16_equals_ascii(value, 'await') {
 		return p.program_type == .module || p.flags.await_expression_is_valid
 			|| p.flags.in_class_static_init_block
 	}
-	if utf16_equals(value, utf16('async')) {
+	if utf16_equals_ascii(value, 'async') {
 		return false
 	}
-	if utf16_equals(value, utf16('yield')) {
+	if utf16_equals_ascii(value, 'yield') {
 		return p.flags.in_generator_function_context
 	}
 	if p.flags.strict_mode {
 		return true
 	}
-	return !utf16_equals(value, utf16('let')) && !utf16_equals(value, utf16('static'))
+	return !utf16_equals_ascii(value, 'let') && !utf16_equals_ascii(value, 'static')
 }
 
 fn (mut p Parser) check_identifier_name_for_assignment_validity(name []u16, force_strict bool) {
 	if p.flags.strict_mode || force_strict {
-		if utf16_equals(name, utf16('arguments')) || utf16_equals(name, utf16('eval')) {
+		if utf16_equals_ascii(name, 'arguments') || utf16_equals_ascii(name, 'eval') {
 			p.syntax_error("Binding pattern target may not be called 'arguments' or 'eval' in strict mode")
 		} else if is_strict_reserved_word(name) {
 			name_str := string_from_utf16_lossy(name)
@@ -662,14 +579,12 @@ fn (mut p Parser) check_identifier_name_for_assignment_validity(name []u16, forc
 fn (mut p Parser) check_arrow_duplicate_parameters(parameter_info []ParamInfo) {
 	mut seen_names := map[string]bool{}
 	for pi in parameter_info {
-		name := pi.name
-		if name.is_empty() {
+		key := pi.name.key
+		if key == '' {
 			continue
 		}
-		key := name.str()
 		if key in seen_names {
-			name_str := string_from_utf16_lossy(name.data)
-			p.syntax_error("Duplicate parameter '${name_str}' not allowed in arrow function")
+			p.syntax_error("Duplicate parameter '${key}' not allowed in arrow function")
 		}
 		seen_names[key] = true
 	}
@@ -678,10 +593,10 @@ fn (mut p Parser) check_arrow_duplicate_parameters(parameter_info []ParamInfo) {
 fn (mut p Parser) check_unique_formal_parameters(parameter_info []ParamInfo) {
 	mut seen_names := map[string]bool{}
 	for pi in parameter_info {
-		if pi.name.is_empty() {
+		key := pi.name.key
+		if key == '' {
 			continue
 		}
-		key := pi.name.str()
 		if key in seen_names {
 			p.syntax_error("Duplicate parameter '${key}' not allowed")
 		}
@@ -693,23 +608,21 @@ fn (mut p Parser) check_parameters_post_body(parameter_info []ParamInfo, force_s
 	_ = kind
 	mut seen_names := map[string]bool{}
 	for pi in parameter_info {
-		name := pi.name
-		if name.is_empty() {
+		key := pi.name.key
+		if key == '' {
 			continue
 		}
-		p.check_identifier_name_for_assignment_validity(name.data, force_strict)
-		key := name.str()
+		p.check_identifier_name_for_assignment_validity(pi.name.text.data, force_strict)
 		if key in seen_names {
-			name_str := string_from_utf16_lossy(name.data)
-			p.syntax_error("Duplicate parameter '${name_str}' not allowed in strict mode")
+			p.syntax_error("Duplicate parameter '${key}' not allowed in strict mode")
 		}
 		seen_names[key] = true
 	}
 }
 
 fn (p &Parser) token_value(token Token) []u16 {
-	if id_val := token.identifier_value {
-		return id_val.data
+	if token.identifier_value != unsafe { nil } {
+		return token.identifier_value.data
 	}
 	start := int(token.value_start)
 	end := start + int(token.value_len)
@@ -829,7 +742,7 @@ fn (mut p Parser) parse_script(starts_in_strict_mode bool) ([]Statement, bool) {
 		p.flags.strict_mode = true
 	}
 
-	children << p.parse_statement_list(true)
+	p.parse_statement_list(mut children, true)
 	if !p.done() {
 		if p.flags.in_function_context {
 			p.expected('CurlyClose')
@@ -855,7 +768,7 @@ fn (mut p Parser) parse_module() ([]Statement, bool) {
 	mut children := []Statement{}
 
 	for !p.done() {
-		children << p.parse_statement_list(true)
+		p.parse_statement_list(mut children, true)
 
 		if p.done() {
 			break
@@ -883,7 +796,9 @@ fn (mut p Parser) parse_module() ([]Statement, bool) {
 
 fn (mut p Parser) check_undeclared_exports(children []Statement) {
 	mut declared_names := map[string]bool{}
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
 		match child.kind.tag {
 			.variable_declaration {
 				for decl in child.kind.declarations {
@@ -941,7 +856,9 @@ fn (mut p Parser) check_undeclared_exports(children []Statement) {
 	}
 
 	// Check each export's local bindings
-	for child in children {
+	child_items_next := children
+	for child_index in 0 .. child_items_next.len {
+		child := unsafe { &child_items_next[child_index] }
 		if child.kind.tag == .export_stmt {
 			if ed := child.kind.export_data {
 				if ed.statement != none {
@@ -988,21 +905,28 @@ fn (mut p Parser) parse_directive() (bool, []Statement) {
 	return found_use_strict, statements
 }
 
-fn (mut p Parser) parse_statement_list(allow_labelled_functions bool) []Statement {
-	mut statements := []Statement{}
+fn (mut p Parser) parse_statement_list(mut statements []Statement, allow_labelled_functions bool) {
+	mark := p.statement_scratch.len
 	for !p.done() {
 		if p.match_export_or_import() {
 			break
 		}
 		if p.match_declaration() {
-			statements << p.parse_declaration()
+			p.statement_scratch << p.parse_declaration()
 		} else if p.match_statement() {
-			statements << p.parse_statement(allow_labelled_functions)
+			p.statement_scratch << p.parse_statement(allow_labelled_functions)
 		} else {
 			break
 		}
 	}
-	return statements
+	if statements.len == 0 {
+		statements = take_scratch_list(mut p.statement_scratch, mark)
+	} else {
+		statements << p.statement_scratch[mark..]
+		unsafe {
+			p.statement_scratch.len = mark
+		}
+	}
 }
 
 fn (mut p Parser) match_statement() bool {
@@ -1031,7 +955,7 @@ fn (mut p Parser) match_declaration() bool {
 		}
 		.identifier {
 			value := p.token_value(p.current_token)
-			if !utf16_equals(value, utf16('using')) {
+			if !utf16_equals_ascii(value, 'using') {
 				false
 			} else {
 				next := p.next_token()
@@ -1046,7 +970,7 @@ fn (mut p Parser) match_declaration() bool {
 
 fn (mut p Parser) try_match_let_declaration() bool {
 	next := p.next_token()
-	if next.token_type.is_identifier_name() && !utf16_equals(p.token_value(next), utf16('in')) {
+	if next.token_type.is_identifier_name() && !utf16_equals_ascii(p.token_value(next), 'in') {
 		return true
 	}
 	if next.token_type == .curly_open || next.token_type == .bracket_open {

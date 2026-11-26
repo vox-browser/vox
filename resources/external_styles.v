@@ -131,15 +131,22 @@ fn install_external_styles_with_existing_policy(document &dom.Document, base_url
 	return messages
 }
 
+@[params]
+struct BrowserLinkStylesheetOptions {
+	body_is_document_owned bool
+}
+
 // Install the actual link-owned CSSOM sheet before dispatching its completion
 // event. An adjacent synthetic <style> cannot supply LinkStyle.sheet or retain
 // CSSOM edits on the link, and makes late load listeners wait forever. Report
-// whether the owned sheet changed, including removal after a failed replacement.
-fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource) bool {
+// whether sheet rules changed and may require another layout.
+fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource, options BrowserLinkStylesheetOptions) bool {
 	mut allocations := link.document().enter_native_storage()
 	defer { allocations.finish() }
 	native_link := unsafe { &dom.HTMLLinkElement(link) }
 	previous_sheet := native_link.linked_style_sheet_
+	previous_has_rules := previous_sheet != unsafe { nil }
+		&& unsafe { (&css.CSSStyleSheet(previous_sheet)).css_rules().length() > 0 }
 	mut content_type := ''
 	for header in resource.response_headers {
 		if header.name.to_lower() == 'content-type' { content_type = header.value }
@@ -147,17 +154,21 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 	address := if resource.final_url == '' { resource.url } else { resource.final_url }
 	mut model := html.html_link_element_model_for_dom_element(native_link)
 	model.set_external_stylesheet_fetcher(true)
-	html.html_link_element_process_stylesheet_resource(native_link,
+	source := if resource.error != '' { '' }
+		else if resource.retained_for_process || options.body_is_document_owned { resource.body }
+		else { resource.body.clone() }
+	model.process_stylesheet_resource(
 		resource.error == '', html.LinkResourceResponse{
 			content_type: content_type
-			body:         resource.body.bytes()
 			original_url: dom.URL{ value: resource.url }
 			url:          dom.URL{ value: address }
 			// The browser adapter does not establish a CORS response. Opaque
 			// sheets may style the page, but their rules must remain private.
 			origin_clean: resource.error == '' && dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
-		})
-	return previous_sheet != native_link.linked_style_sheet_
+		}, retained_text: source)
+	current_sheet := native_link.linked_style_sheet_
+	return previous_sheet != current_sheet && (previous_has_rules || (current_sheet != unsafe { nil }
+		&& unsafe { (&css.CSSStyleSheet(current_sheet)).css_rules().length() > 0 }))
 }
 
 // Scripts can insert stylesheet links after the initial resources; 4chan's
@@ -165,7 +176,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 // new remote one in the background. The CSS bridge installs it, in the link's
 // tree position, once its text arrives. A sheet the disk cache holds is
 // installed at once, so the document is not laid out and painted without it
-// first. Returns whether an owned sheet was installed, removed, or replaced.
+// first. Returns whether rules were added or removed.
 fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 	if app.state == .retired || app.document == unsafe { nil } {
 		return false
@@ -199,7 +210,7 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			continue
 		}
 		if resource := app.script_stylesheet_responses[resolved_url] {
-			if complete_browser_link_stylesheet(link, resource) { installed = true }
+			if complete_browser_link_stylesheet(link, resource, body_is_document_owned: true) { installed = true }
 			continue
 		}
 		// The navigation already requested the parser's sheets. One that
@@ -259,12 +270,13 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 	retained := PreloadedResource{
 		...filtered
 		url:              filtered.url.clone()
-		body:             filtered.body.clone()
+		body:             if filtered.retained_for_process { filtered.body } else { filtered.body.clone() }
 		error:            filtered.error.clone()
 		final_url:        filtered.final_url.clone()
 		source_url:       filtered.source_url.clone()
 		request_type:     filtered.request_type.clone()
 		response_headers: filtered.response_headers.map(adblock.ResponseHeader{ name: it.name.clone(), value: it.value.clone() })
+		retained_for_process: false
 	}
 	app.script_stylesheet_responses[resource.url.clone()] = retained
 	if retained.error == '' {
@@ -272,11 +284,13 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		for header in retained.response_headers {
 			if header.name.to_lower() == 'content-type' { content_type = header.value }
 		}
-		css.set_remote_link_style_sheet_response(resource.url, css.ImportedStyleSheetSource{
+		css.set_document_link_style_sheet_response(app.document, retained.url, css.ImportedStyleSheetSource{
 			css_text: retained.body
 			response_url: if retained.final_url == '' { retained.url } else { retained.final_url }
 			content_type: content_type
 		})
+	} else {
+		css.set_document_link_style_sheet_response(app.document, retained.url, none)
 	}
 	mut installed := false
 	for link in css.query_selector_all(app.document.as_node(), 'link[rel][href]') {
@@ -285,7 +299,7 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		}
 		resolved := css.link_style_sheet_url(link.get_attribute_value('href'), app.document.base_url().serialize()) or { continue }
 		if resolved != resource.url { continue }
-		if complete_browser_link_stylesheet(link, retained) { installed = true }
+		if complete_browser_link_stylesheet(link, retained, body_is_document_owned: true) { installed = true }
 		app.script_stylesheet_links[link.as_node().unique_id()] = resolved
 	}
 	return installed

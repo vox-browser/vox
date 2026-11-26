@@ -7,6 +7,7 @@ import dom
 import fetch
 import html
 import http
+import platform
 import requestserver
 import xhr
 import x.json2
@@ -54,8 +55,9 @@ pub fn XMLHttpRequestHost.create_native(document &dom.Document) !&XMLHttpRequest
 }
 
 pub fn (mut host XMLHttpRequestHost) install(mut runtime Runtime) ! {
-	runtime.define_host_function('__ladybirdXHR', fn [mut host, mut runtime] (input string) !string {
-		return host.call(input, runtime)
+	runtime.define_temporary_host_function('__ladybirdXHR', fn [mut host, mut runtime] (input string) !HostFunctionReply {
+		// Open, send and other mutations can keep strings from the request.
+		return host.call(input.clone(), runtime)
 	})!
 	$if darwin || linux || windows { host.install_native_blob_transport(mut runtime)! }
 	runtime.add_close_handler(fn [mut host] () { host.close() })
@@ -167,7 +169,22 @@ fn (mut host XMLHttpRequestHost) response_value(mut request xhr.XMLHttpRequest) 
 	}
 }
 
-fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
+// Decoding can construct several full-size buffers, and responseText can be
+// read many times during progress. JavaScript copies the reply synchronously.
+fn xhr_host_text_reply(request &xhr.XMLHttpRequest) !HostFunctionReply {
+	work := platform.begin_thread_scratch('XHR text reply')
+	text := request.response_text() or {
+		work.leave()
+		failure := copy_host_exception(err)
+		work.finish()
+		return failure
+	}
+	value := json2.encode(text)
+	work.leave()
+	return HostFunctionReply{value: value, workspace: work}
+}
+
+fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !HostFunctionReply {
 	if host.closed { return error('InvalidStateError: XMLHttpRequest global has closed') }
 	object := canvas_host_object(json2.decode[json2.Any](input)!)!
 	method := canvas_host_string(object['method'] or { json2.Any('') })
@@ -175,7 +192,7 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 	if method == 'create' {
 		host.next_id++
 		host.requests[host.next_id] = &XHRHostRecord{ request: xhr.XMLHttpRequest.construct_in_settings(host.settings, host.fetch_host) }
-		return json2.encode(host.next_id)
+		return HostFunctionReply{value: json2.encode(host.next_id)}
 	}
 	if method == 'event' {
 		event := host.events[canvas_host_string(object['event'] or { json2.Any('') })] or { return error('InvalidStateError: unknown native event') }
@@ -184,9 +201,9 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 			'preventDefault' { mutable_event.prevent_default() }
 			'stopPropagation' { mutable_event.stop_propagation() }
 			'stopImmediatePropagation' { mutable_event.stop_immediate_propagation() }
-			else { return json2.encode(event.default_prevented()) }
+			else { return HostFunctionReply{value: json2.encode(event.default_prevented())} }
 		}
-		return 'null'
+		return HostFunctionReply{value: 'null'}
 	}
 	if method == 'document' || method == 'element' {
 		key := canvas_host_string(object['key'] or { json2.Any('') })
@@ -213,7 +230,7 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 		if action == 'textContent' { result = if value := node.text_content() { json2.Any(value) } else { json2.Null{} } }
 		if action == 'querySelector' { result = host.element_value(css.query_selector(node, canvas_host_string(args[0]))) }
 		if action == 'querySelectorAll' { result = json2.Any(css.query_selector_all(node, canvas_host_string(args[0])).map(host.element_value(it))) }
-		return json2.encode(result)
+		return HostFunctionReply{value: json2.encode(result)}
 	}
 	key := int(canvas_host_number(object['key'] or { json2.Any(0) }))
 	record := host.requests[key] or { return error('InvalidStateError: unknown XMLHttpRequest') }
@@ -251,9 +268,12 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 				'responseURL' { result = json2.Any(request.response_url()) }
 				'status' { result = json2.Any(int(request.status())) }
 				'statusText' { result = json2.Any(request.status_text()) }
-				'responseText' { result = json2.Any(request.response_text()!) }
+				'responseText' { return xhr_host_text_reply(request) }
 				'responseXML' { value := request.response_xml()!; result = host.document_value(value.document) }
-				'response' { result = host.response_value(mut request) }
+				'response' {
+					if request.response_type() in [.empty, .text] { return xhr_host_text_reply(request) }
+					result = host.response_value(mut request)
+				}
 				else { return error('TypeError: unknown XMLHttpRequest attribute') }
 			}
 		}
@@ -263,7 +283,7 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 				'withCredentials' { request.set_with_credentials(canvas_host_bool(args[0]))! }
 				'responseType' {
 					value := canvas_host_string(args[0])
-					type_ := match value { '' { xhr.ResponseType.empty } 'text' { .text } 'json' { .json } 'blob' { .blob } 'document' { .document } 'arraybuffer' { .arraybuffer } else { return 'null' } }
+					type_ := match value { '' { xhr.ResponseType.empty } 'text' { .text } 'json' { .json } 'blob' { .blob } 'document' { .document } 'arraybuffer' { .arraybuffer } else { return HostFunctionReply{value: 'null'} } }
 					request.set_response_type(type_)!
 				}
 				else { return error('TypeError: unknown XMLHttpRequest attribute') }
@@ -271,5 +291,5 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 		}
 		else { return error('TypeError: unknown XMLHttpRequest operation ${method}') }
 	}
-	return json2.encode(result)
+	return HostFunctionReply{value: json2.encode(result)}
 }

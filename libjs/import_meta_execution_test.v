@@ -3,10 +3,8 @@ module libjs
 fn test_import_meta_execution_retains_per_module_identity_and_the_defining_module_in_functions() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
-	agent := &vm
-	vm.host_get_import_meta_properties=fn [agent] (module_record Module) []ImportMetaProperty {
-		mut vm := unsafe { &VM(agent) }
-		return [ImportMetaProperty{PropertyName.from_str('url'),Value.from_string(vm.create_string_from_str(module_record.filename()))}]
+	vm.host_get_import_meta_properties=fn (module_record Module) []ImportMetaProperty {
+		return [ImportMetaProperty{PropertyName.from_str('url'),Value.from_string(&PrimitiveString{utf16: utf16_string(module_record.filename())})}]
 	}
 	mut a := SourceTextModule.parse('export const meta=import.meta;export function read(){return import.meta}import.meta.count=41;export const answer=import.meta.count+1;',vm.realm(),'https://modules.test/a.js',unsafe { nil })!
 	a.link(mut vm)!

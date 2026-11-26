@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // TypedArrayPrototype.cpp::to_reversed/to_sorted/with. Creation uses the
 // current realm's same-type intrinsic dependency, without a species lookup.
 pub fn typed_array_prototype_to_reversed(mut vm VM, prototypes PrimitiveObjectPrototypes, constructor_getter TypedArrayIntrinsicConstructorGetter) !Value {
@@ -11,6 +13,7 @@ pub fn typed_array_prototype_to_reversed(mut vm VM, prototypes PrimitiveObjectPr
 	], constructor_getter)!
 	mut object := array.object
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		value := source.object.get(mut vm, PropertyName.from_number(length - k - 1))!
 		object.set(mut vm, PropertyName.from_number(k), value, .yes)!
 	}
@@ -32,10 +35,12 @@ pub fn typed_array_prototype_to_sorted(mut vm VM, prototypes PrimitiveObjectProt
 	compare := fn [compare_function] (mut vm VM, x Value, y Value) !f64 {
 		return compare_typed_array_elements(mut vm, x, y, compare_function)
 	}
+	defer { platform.release_closure(voidptr(compare)) }
 	sorted := sort_indexed_properties(mut vm, source.object, u64(length), compare,
 		.read_through_holes)!
 	mut object := array.object
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		object.set(mut vm, PropertyName.from_number(k), sorted[int(k)], .yes)!
 	}
 	return Value.from_object(object)
@@ -64,6 +69,7 @@ pub fn typed_array_prototype_with(mut vm VM, prototypes PrimitiveObjectPrototype
 	], constructor_getter)!
 	mut object := array.object
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		value_from := if f64(k) == actual {
 			numeric
 		} else {

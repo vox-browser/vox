@@ -132,3 +132,42 @@ fn test_user_style_replacement_preserves_a_pending_full_update() {
 	document.update_style()
 	assert user_change_color(first) == 'rgb(255, 0, 0)'
 }
+
+fn test_metadata_mutations_after_user_sheet_replacement_use_new_invalidation_plans() {
+	for names in [['data-master', 'data-hidden'], ['aria-busy', 'aria-hidden']] {
+		mut document, first, _, _ := user_change_fixture()
+		defer { document.finalize() }
+		mut target := unsafe { &dom.Element(first) }
+		// Procedural filters install their action sheet before adding the marker
+		// attributes. Initially no element matches either presence selector.
+		set_document_user_style_sheet(document, '[' + names[0] + '][' + names[1] + '] {color:red!important}')
+		target.set_attribute_value(names[0], '')
+		target.set_attribute_value(names[1], '')
+		document.update_style()
+		assert user_change_color(target) == 'rgb(255, 0, 0)', 'new presence rule ' + names.str()
+		target.remove_attribute(names[0])
+		document.update_style()
+		assert user_change_color(target) == 'rgb(0, 0, 255)', 'presence rule removed ' + names.str()
+	}
+}
+
+fn test_new_user_rules_invalidate_metadata_descendants_and_siblings() {
+	for selector in ['[data-master][data-hidden] .child', '[data-master][data-hidden]+.second'] {
+		mut document, first, second, bystander := user_change_fixture()
+		defer { document.finalize() }
+		child := user_change_element(document, first.as_node(), 'span', 'child')
+		document.update_style()
+		previous := bystander.el_computed_properties() or { panic('missing bystander style') }
+		set_document_user_style_sheet(document, selector + '{color:red!important}')
+		mut owner := unsafe { &dom.Element(first) }
+		owner.set_attribute_value('data-master', '')
+		owner.set_attribute_value('data-hidden', '')
+		document.update_style()
+		subject := if selector.contains('+') { second } else { child }
+		assert user_change_color(subject) == 'rgb(255, 0, 0)', selector
+		assert voidptr(bystander.el_computed_properties() or { panic('missing bystander style') }) == voidptr(previous)
+		owner.remove_attribute('data-hidden')
+		document.update_style()
+		assert user_change_color(subject) == 'rgb(0, 0, 255)', selector + ' removed'
+	}
+}

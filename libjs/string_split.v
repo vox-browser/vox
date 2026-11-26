@@ -17,10 +17,9 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 		}
 	}
 	text := this_value.to_primitive_string(mut vm)!
-	array := ArrayObject.create(mut vm, realm, 0, array_prototype)!
+	mut array := ArrayObject.create(mut vm, realm, 0, array_prototype)!
 	mut object := array.object
-	mut array_length := u32(0)
-	limit := if limit_argument.is_undefined() {
+		limit := if limit_argument.is_undefined() {
 		u32(0xffffffff)
 	} else {
 		limit_argument.to_u32(mut vm)!
@@ -29,26 +28,20 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 	if limit == 0 { return Value.from_object(object) }
 	string_length := text.utf16.len()
 	if separator_argument.is_undefined() {
-		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(0),
-			Value.from_string(text))!
-		assert defined
+		array.append_split_value(mut vm, Value.from_string(text))!
 		return Value.from_object(object)
 	}
 	separator_length := separator.len()
 	if separator_length == 0 {
 		out_length := if limit < u32(string_length) { int(limit) } else { string_length }
 		for index in 0 .. out_length {
-			unit := vm.create_string(Utf16String.from_slice(text.utf16.data[index..index + 1]))
-			defined := object.create_data_property_or_throw(mut vm,
-				PropertyName.from_number(u32(index)), Value.from_string(unit))!
-			assert defined
+			unit := vm.create_generated_string(text.utf16.data[index..index + 1])
+			array.append_split_value(mut vm, Value.from_string(unit))!
 		}
 		return Value.from_object(object)
 	}
 	if string_length == 0 {
-		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(0),
-			Value.from_string(text))!
-		assert defined
+		array.append_split_value(mut vm, Value.from_string(text))!
 		return Value.from_object(object)
 	}
 	mut search_start := 0
@@ -56,18 +49,13 @@ pub fn string_prototype_split(mut vm VM, array_prototype &Object) !Value {
 	for {
 		index := match_index or { break }
 		substring :=
-			vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..int(index)]))
-		defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),
-			Value.from_string(substring))!
-		assert defined
-		array_length++
-		if array_length == limit { return Value.from_object(object) }
+			vm.create_generated_string(text.utf16.data[search_start..int(index)])
+		array.append_split_value(mut vm, Value.from_string(substring))!
+		if array.length == limit { return Value.from_object(object) }
 		search_start = int(index) + separator_length
 		match_index = string_index_of(text.utf16, separator, uint(search_start))
 	}
-	substring := vm.create_string(Utf16String.from_slice(text.utf16.data[search_start..]))
-	defined := object.create_data_property_or_throw(mut vm, PropertyName.from_number(array_length),
-		Value.from_string(substring))!
-	assert defined
+	substring := vm.create_generated_string(text.utf16.data[search_start..])
+	array.append_split_value(mut vm, Value.from_string(substring))!
 	return Value.from_object(object)
 }

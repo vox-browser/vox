@@ -11,6 +11,8 @@ import painting
 pub struct PaintLocalBorderData {
 pub:
 	has_local_geometry bool = true
+	// Number of box-local solid sides emitted together by the border painter.
+	solid_side_count int
 	origin_x f64
 	origin_y f64
 	transform_context_index int
@@ -111,6 +113,7 @@ fn append_chromium_partial_border(mut commands []PaintCommand, box &BlockBox,
 		if width > extent { return false }
 	}
 	data := &PaintLocalBorderData{
+		solid_side_count: count
 		origin_x: rect.x
 		origin_y: rect.y
 		transform_context_index: box.own_transform_visual_context_idx

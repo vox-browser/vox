@@ -1,5 +1,6 @@
 #ifndef VOX_METAL_DEPTH_TRANSFER_H
 #define VOX_METAL_DEPTH_TRANSFER_H
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 /* Canonical combined pixels: float32 depth followed by uint32 stencil. */
 static int vox_metal_depth_region(VoxMetalTexture* resource,unsigned level,unsigned slice,unsigned x,unsigned y,unsigned width,unsigned height,void* bytes,int upload)
 {
@@ -41,4 +42,5 @@ static int vox_metal_depth_region(VoxMetalTexture* resource,unsigned level,unsig
         vox_metal_drop_owned(staging);return success;
     }
 }
+#endif
 #endif

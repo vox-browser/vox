@@ -69,6 +69,7 @@ pub:
 pub mut:
 	control                &FormAssociatedElement
 	text                   &FormAssociatedTextControlElement
+	raw_value_             string
 	dirty_value            bool
 	// Whether the value was last changed by a user edit rather than by script.
 	value_user_edited      bool
@@ -90,18 +91,24 @@ pub fn HTMLTextAreaElementModel.create(element &dom.HTMLTextAreaElement) &HTMLTe
 	dom_element := unsafe { &dom.Element(element) }
 	default_value := dom_element.as_node().child_text_content()
 	control := FormAssociatedElement.create(dom_element)
-	mut text := FormAssociatedTextControlElement.create(control, default_value)
+	api_value := normalize_textarea_api_newlines(default_value)
+	mut text := FormAssociatedTextControlElement.create(control, api_value)
 	// Initializing the model's value is not a DOM selection operation.
-	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .value_change)
+	text.set_the_selection_range(u32(form_string_to_utf16(api_value).len), u32(form_string_to_utf16(api_value).len), .none, .value_change)
 	mut model := &HTMLTextAreaElementModel{
 		element: element
 		control: control
 		text: text
+		raw_value_: default_value
 	}
+	model.text.value_owner_ = TextControlValueOwner(model)
 	model.text.did_edit_target_ = voidptr(model)
 	model.text.did_edit_callback_ = html_text_area_element_did_edit_callback
 	mut mutable_element := unsafe { &dom.HTMLTextAreaElement(element) }
 	mutable_element.text_area_element_model_ = voidptr(model)
+	model.control.constraint_validation_owner_ = ConstraintValidationOwner(model)
+	model.control.value_ = api_value
+	model.update_validity()
 	install_form_control_selected_text_callback(dom_element.document())
 	return model
 }
@@ -128,7 +135,7 @@ pub fn (mut model HTMLTextAreaElementModel) set_default_value(value string) {
 }
 
 pub fn (model &HTMLTextAreaElementModel) value() string {
-	return normalize_textarea_api_newlines(model.text.relevant_value())
+	return model.api_value()
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_value(value string) {
@@ -569,13 +576,13 @@ fn form_model_element(form &HTMLFormElementModel) &dom.Element {
 
 pub fn (mut form HTMLFormElementModel) add_control(mut control FormAssociatedElement) {
 	control.set_form(form.element)
-	if control !in form.controls_ {
+	if !form.controls_.any(voidptr(it) == voidptr(&control)) {
 		form.controls_ << control
 	}
 }
 
 pub fn (mut form HTMLFormElementModel) remove_control(control &FormAssociatedElement) {
-	form.controls_ = form.controls_.filter(it != control)
+	form.controls_ = form.controls_.filter(voidptr(it) != voidptr(control))
 	mut mutable_control := unsafe { &FormAssociatedElement(control) }
 	mutable_control.set_form(none)
 }
@@ -585,13 +592,8 @@ pub fn (form &HTMLFormElementModel) controls() []&FormAssociatedElement {
 }
 
 pub fn (form &HTMLFormElementModel) length() u32 {
-	mut count := 0
-	for control in form.controls_ {
-		if control.is_listed() && !(control.element.local_name() == 'input' && form_element_input_type(control.element) == 'image') {
-			count++
-		}
-	}
-	return u32(count)
+	mut owner := unsafe { &HTMLFormElementModel(form) }
+	return u32(owner.elements().length())
 }
 
 pub fn (mut form HTMLFormElementModel) set_submission_hook(hook ?FormSubmissionHook) {
@@ -734,7 +736,7 @@ pub fn (mut form HTMLFormElementModel) submit_form(submitter ?&FormAssociatedEle
 			mut mutable_control := unsafe { &FormAssociatedElement(control) }
 			mutable_control.user_validity_ = true
 		}
-		should_validate := if control := submitter { !control.novalidate_state() } else { true }
+		should_validate := if control := submitter { !control.novalidate_state() } else { !element.has_attribute('novalidate') }
 		if should_validate && !form.interactively_validate_constraints() {
 			form.firing_submission_events_ = false
 			return

@@ -55,6 +55,18 @@ sh build-prod-browser.sh --prod
 open Build/v/Vox.app
 ```
 
+For a low-space macOS build, set `TMPDIR` to a writable scratch volume
+and `VOX_BUILD_INPUT_COMPRESSOR` to an `afsctool` executable.
+
+```sh
+TMPDIR=/path/to/scratch VOX_BUILD_INPUT_COMPRESSOR=/path/to/afsctool \
+    sh tools/run_v_tool.sh rebuild_browser --build --backend c --prod
+```
+
+The single-unit build writes its large compiler inputs on scratch and
+retains filesystem-compressed copies in the production receipt. Clang
+and receipt validation read the same bytes at the canonical receipt paths.
+
 #### Linux (Ubuntu 24.04+ / Debian 13)
 
 ```sh
@@ -140,7 +152,24 @@ Initially we started with an implementation from scratch, but decided to use [La
 ### Existing features
 - Built-in ad blocking (using uBlock Origin lists).
 - Built-in cookie banner blocking
+- Unpacked Chrome Manifest V3 extensions with declarative content scripts.
 
+### Chrome extensions
+
+Open **Settings → Extensions**, choose the unpacked folder containing
+`manifest.json`, and click **Load unpacked**. Vox saves the extension in the
+current profile. Enable or disable it from the list, or remove it. Reload a page
+to apply changes. To pick up edited extension files, load the folder again.
+
+Vox supports declarative CSS and JavaScript content scripts on matching
+top-level HTTP and HTTPS pages. JavaScript must explicitly declare
+`"world": "MAIN"` and uses Vox's page scripting policy. Scripts can run at
+`document_start`, `document_end`, or `document_idle`. See the
+[Chrome content script manifest reference](https://developer.chrome.com/docs/extensions/reference/manifest/content-scripts).
+
+Chrome Web Store and CRX installation, isolated worlds, background service
+workers, extension pages and toolbar actions, packaged assets, and
+`chrome.*` extension APIs are outside the supported subset.
 
 ### Planned features
 

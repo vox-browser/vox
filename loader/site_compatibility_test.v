@@ -1,6 +1,7 @@
 module loader
 
 import dom
+import platform
 import x.json2
 
 const compatibility_test_user_agent = 'Mozilla/5.0 Ladybird/1.0 Chrome/146.0.0.0 Safari/537.36'
@@ -29,6 +30,29 @@ fn test_site_compatibility_rule_matches_url_patterns() {
 	assert wide.matches(compatibility_url('https://example.com/article'))
 	assert wide.matches(compatibility_url('https://edition.news.example.com/article'))
 	assert !wide.matches(compatibility_url('https://notexample.com/article'))
+}
+
+fn test_site_compatibility_matches_leave_no_regex_workspace_in_the_callers_arena() {
+	$if prealloc {
+		rule := SiteCompatibilityRule.create([
+			'https://example.com/*',
+			'https://*.example.com/files/:name',
+		], [.hide_ladybird], []) or { panic(err) }
+		matching := compatibility_url('https://cdn.example.com/files/banner.jpg')
+		missing := compatibility_url('https://invalid.example/files/banner.jpg')
+		mut arena := platform.new_arena('site compatibility caller')
+		entry := arena.enter()
+		defer {
+			arena.leave(entry)
+			arena.release()
+		}
+		before := arena.usage().used
+		for _ in 0 .. 32 {
+			assert rule.matches(matching)
+			assert !rule.matches(missing)
+		}
+		assert arena.usage().used == before
+	}
 }
 
 fn test_site_compatibility_transforms_only_matching_user_agents() {

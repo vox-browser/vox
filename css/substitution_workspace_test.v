@@ -49,6 +49,24 @@ fn test_substituted_strings_and_attribute_values_survive_workspace_retirement() 
 	}
 }
 
+fn test_substituted_shorthand_and_image_keep_their_typed_values_after_workspace_retirement() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	target := document.create_element('div')!
+	element := dom.AbstractElement.new(target, none)
+	for property, source in {
+		PropertyID.border_radius: '2px 4px / 3px 6px'
+		.background_image:        r'image-set(url("esc\61 ped.png") 1x, url("other.png") 2x)'
+	} {
+		direct := parse_css_value_logic(property, source)?
+		unresolved := parse_css_value_logic(property, 'var(--missing, ${source})')?
+		assert unresolved is UnresolvedStyleValue
+		resolved := resolve_unresolved_style_value_for_property(element, property, unresolved)
+		typed := typed_style_value_logic_from_dom(resolved)?
+		assert typed.serialize(.normal) == direct.serialize(.normal)
+	}
+}
+
 fn test_property_resolution_keeps_enclosing_substitution_cycle_state() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }

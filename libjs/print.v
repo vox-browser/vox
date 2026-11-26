@@ -110,12 +110,12 @@ fn (mut context PrintContext) print_object(object &Object) ! {
 	// discard removed keys and symbols, shadow inherited keys even when hidden.
 	for {
 		holder := target or { break }
-		keys := holder.own_property_keys()
+		keys := holder.own_property_keys_checked(mut context.vm)!
 		for key in keys {
 			if key.is_symbol() { continue }
 			name := if key.is_number() { utf16_string(key.number.str()) } else { key.as_string() }
 			if name in visited { continue }
-			descriptor := holder.internal_get_own_property(key) or { continue }
+			descriptor := holder.get_own_property_checked(mut context.vm, key)!.descriptor or { continue }
 			visited << name
 			if !(descriptor.enumerable or { false }) { continue }
 			context.out(if first { ' ' } else { ', ' })
@@ -128,7 +128,7 @@ fn (mut context PrintContext) print_object(object &Object) ! {
 			context.print_value(value)!
 			if context.seen_objects.len > original_seen_count + 20 { return }
 		}
-		target = holder.internal_get_prototype_of()
+		target = holder.get_prototype_of_checked(mut context.vm)!.prototype
 	}
 	if !first { context.out(' ') }
 	context.out('}')
@@ -227,7 +227,7 @@ fn (mut context PrintContext) print_value(value Value) ! {
 			context.print_type(utf16_string(object.class_name))
 			if object.native_callable {
 				context.out(' ')
-				context.out_utf16(object.native_initial_name or { Utf16String.new() })
+				context.out_utf16(if name := object.native_initial_name { *name } else { Utf16String.new() })
 			}
 			return
 		}
@@ -245,15 +245,15 @@ fn (mut context PrintContext) print_value(value Value) ! {
 			}
 			return
 		}
-		if view := object.data_view { return context.print_data_view(view) }
+		if view := object.slots.data_view { return context.print_data_view(view) }
 		if buffer := object.array_buffer { return context.print_array_buffer(buffer) }
 		if array := object.typed_array { return context.print_typed_array(array) }
-		if wrapper := object.boolean_object {
+		if wrapper := object.slots.boolean_object {
 			context.print_type(utf16_string('Boolean'))
 			context.out(' ')
 			return context.print_value(Value.from_bool(wrapper.value))
 		}
-		if wrapper := object.number_object {
+		if wrapper := object.slots.number_object {
 			context.print_type(utf16_string('Number'))
 			context.out(' ')
 			return context.print_value(Value.from_f64(wrapper.value))

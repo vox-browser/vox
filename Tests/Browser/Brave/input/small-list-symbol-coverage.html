@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Small predefined list symbol coverage</title>
+<style>
+html, body { margin: 0; background: white; }
+ul { position: absolute; margin: 0; padding-left: 40px; width: 240px;
+     font: 13px/15px Verdana, Arial, sans-serif; color: #555; }
+li { height: 30px; }
+.disc { left: 24px; top: 31px; list-style-type: disc; }
+.square { left: 584px; top: 31px; list-style-type: square; }
+.small { top: 171px; font-size: 10px; color: #123456; }
+.large { top: 311px; font-size: 17px; color: #222; }
+.tile-trigger { position: absolute; left: 950px; top: 620px; width: 30px;
+                height: 30px; border-radius: 3px; background: #b35; }
+.multisample { left: 719px; top: 731px; }
+</style>
+<ul class="disc"><li>Disc</li><li>Disc</li></ul>
+<ul class="square"><li>Square</li><li>Square</li></ul>
+<ul class="disc small"><li>Small disc</li><li>Small disc</li></ul>
+<ul class="square small"><li>Small square</li><li>Small square</li></ul>
+<ul class="disc large"><li>Large disc</li><li>Large disc</li></ul>
+<ul class="square large"><li>Large square</li><li>Large square</li></ul>
+<div class="tile-trigger"></div>
+<ul class="disc multisample"><li>Disc in a multisample tile</li></ul>

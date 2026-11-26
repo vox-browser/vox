@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Transformed SVG mask regions</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { position: absolute; top: 8px; left: 0; transform-origin: 0 0; }
+#sheared { transform: matrix(1, .5, -.5, 1, 48, 0); }
+#reflected { transform: matrix(-1, .5, .5, 1, 264, 0); }
+#quarter-turn { transform: matrix(0, 1, -1, 0, 400, 0); }
+</style>
+<header></header>
+<svg id="sheared" width="120" height="100">
+  <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="20" y="20" width="72" height="48">
+    <path d="M0 0H120V100H0Z" fill="black"/>
+  </mask>
+  <path d="M0 0H120V100H0Z" fill="blue" mask="url(#alpha)"/>
+</svg>
+<svg id="reflected" width="120" height="100">
+  <mask id="luminance" maskUnits="userSpaceOnUse" x="20" y="20" width="72" height="48">
+    <path d="M0 0H120V100H0Z" fill="white" opacity=".5"/>
+  </mask>
+  <path d="M0 0H120V100H0Z" fill="blue" mask="url(#luminance)"/>
+</svg>
+<svg id="quarter-turn" width="120" height="100">
+  <mask id="turned" mask-type="alpha" maskUnits="userSpaceOnUse" x="20" y="20" width="72" height="48">
+    <path d="M0 0H120V100H0Z" fill="white"/>
+  </mask>
+  <path d="M0 0H120V100H0Z" fill="blue" mask="url(#turned)"/>
+</svg>
+<script>
+let frame = 0;
+function moveMaskRegion() {
+    if (++frame === 12)
+        document.getElementById('alpha').setAttribute('x', '32');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-region-ready', '');
+    else
+        requestAnimationFrame(moveMaskRegion);
+}
+requestAnimationFrame(moveMaskRegion);
+</script>

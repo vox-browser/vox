@@ -34,6 +34,14 @@ fn (mut scope NativeReplayScratchScope) finish() {
 	scope.arena = unsafe { nil }
 }
 
+// Keep worker inputs and results in the scratch arena while frame setup
+// continues in its usual allocation scope. Replay reenters and resets it.
+fn (mut scope NativeReplayScratchScope) leave_for_frame_setup() {
+	if scope.arena == unsafe { nil } { return }
+	scope.arena.leave(scope.entry)
+	scope.arena = unsafe { nil }
+}
+
 fn (mut app BrowserApp) release_native_replay_scratch() {
 	if app.native_replay_scratch == unsafe { nil } { return }
 	app.native_replay_scratch.release()

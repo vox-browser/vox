@@ -152,6 +152,19 @@ pub fn (a &Attr_) value() string {
 	return a.value_
 }
 
+pub fn (mut a Attr_) set_value(value string) ! {
+	mut verified := value
+	if element := a.owner_element() {
+		verified = element.document().trusted_types_compliant_attribute_value(element, a.local_name_,
+			a.namespace_uri_, value)!
+	}
+	old_value := a.value_
+	a.value_ = verified
+	if element := a.owner_element() {
+		a.handle_attribute_changes(element, old_value, verified)
+	}
+}
+
 pub fn (a &Attr_) local_name() string {
 	return a.local_name_
 }
@@ -1200,6 +1213,8 @@ pub mut:
 	// Set while the pixels are still encoded. The bitmap's size and format are
 	// final; ensure_pixels() fills `data` once, when something reads it.
 	pixel_decoder_ BitmapPixelDecoder = unsafe { nil }
+mut:
+	upload_revision_ u64
 }
 
 // Fills `bitmap.data` (pitch × height bytes) from retained encoded pixels.
@@ -1727,6 +1742,7 @@ pub mut:
 	rendered_in_top_layer                                                           bool
 	style_uses_attr_css_function                                                    bool
 	style_uses_var_css_function                                                     bool
+	style_declares_custom_properties_                                              bool
 	style_uses_tree_counting_function                                               bool
 	style_uses_if_css_function                                                      bool
 	style_uses_inherit_css_function                                                 bool
@@ -2903,6 +2919,7 @@ pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
 pub fn (mut e Element) reset_style_dependency_flags() {
 	e.style_uses_attr_css_function = false
 	e.style_uses_var_css_function = false
+	e.style_declares_custom_properties_ = false
 	e.style_uses_tree_counting_function = false
 	e.style_uses_if_css_function = false
 	e.style_uses_inherit_css_function = false
@@ -2917,6 +2934,12 @@ pub fn (mut e Element) set_style_uses_attr_css_function() {
 
 pub fn (mut e Element) set_style_uses_var_css_function() {
 	e.style_uses_var_css_function = true
+}
+
+// Literal declarations still own a custom-property environment. An ancestor
+// update must recascade them rather than replace that environment by inheritance.
+pub fn (mut e Element) set_style_declares_custom_properties() {
+	e.style_declares_custom_properties_ = true
 }
 
 pub fn (mut e Element) set_style_uses_if_css_function() {
@@ -3016,6 +3039,10 @@ pub fn (e &Element) style_uses_attr_css_function() bool {
 
 pub fn (e &Element) style_uses_var_css_function() bool {
 	return e.style_uses_var_css_function
+}
+
+pub fn (e &Element) style_declares_custom_properties() bool {
+	return e.style_declares_custom_properties_
 }
 
 pub fn (e &Element) style_uses_if_css_function() bool {
@@ -6089,6 +6116,9 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		if e.is_svg_element() {
 			e.update_use_elements_that_reference_this()
+			if local_name == 'href' && namespace_ == namespace_xlink_uri {
+				e.note_svg_paint_resource_description_may_have_changed()
+			}
 		}
 		return
 	}
@@ -6964,7 +6994,10 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 // inserted() resolves the reference again after the use element connects.
 // Building a clone here would add new nodes to the ongoing adopting traversal.
 // The V implementation walks the live document rather than keeping an observer.
-pub fn (mut e Element) adopted_from(_ &Document) {
+pub fn (mut e Element) adopted_from(old_document &Document) {
+	if e.is_html_element() && e.local_name() == 'template' {
+		html_template_element_adopted_from(unsafe { &HTMLTemplateElement(&e) }, old_document)
+	}
 	if e.is_html_element() && e.local_name() == 'img' {
 		mut image := unsafe { &HTMLImageElement(&e) }
 		image.is_image_document_image_ = false
@@ -7439,9 +7472,9 @@ fn (e &Element) svg_use_referenced_element() ?&Element {
 	fragment := reference.fragment() or { return none }
 	if !e.svg_use_reference_is_same_document(reference) {
 		resource := e.document().svg_use_resource_document(reference) or { return none }
-		return resource.get_element_by_id(url_percent_decode(fragment))
+		return resource.rendering_element_by_id(url_percent_decode(fragment))
 	}
-	return e.document().get_element_by_id(url_percent_decode(fragment))
+	return e.document().rendering_element_by_id(url_percent_decode(fragment))
 }
 
 fn (mut e Element) svg_use_inserted() {
@@ -7687,7 +7720,7 @@ fn (e &Element) svg_paint_resource_element() ?&Element {
 	if !e.is_svg_element() {
 		return none
 	}
-	if e.local_name() in ['linearGradient', 'radialGradient', 'pattern', 'filter'] {
+	if e.local_name() in ['linearGradient', 'radialGradient', 'pattern', 'filter', 'mask'] {
 		return e
 	}
 	parent := e.as_node().parent_element() or { return none }
@@ -7713,7 +7746,7 @@ pub fn (mut d Document) note_svg_paint_resources_changed() {
 		// Ladybird republishes the resource descriptions in its visual-context
 		// arena. V embeds those descriptions in the renderer paint tree, so
 		// rebuild that transport from the retained DOM/layout state.
-		d.set_needs_full_layout_tree_update(true)
+		d.request_full_layout_tree_update('svg-paint-resources')
 		d.set_needs_repaint()
 	}
 }

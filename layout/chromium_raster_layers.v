@@ -1,9 +1,11 @@
 module layout
 
+import cpuraster
 import dom
 import math
 import painting
 import platform
+import processmetrics
 
 // The layerizer can merge chunks with a common property state until a
 // different composited scroll/sticky state overlaps them. Raster origins and
@@ -18,6 +20,9 @@ pub mut:
 	scroll_contents bool
 	// Fixed, sticky and hinted contents likewise rasterize before compositing.
 	composited_contents bool
+	// Retain the picture's unsnapped origin before capture-space enclosure.
+	compositor_origin ?[2]f64
+	compositor_size ?[2]f64
 	// A rounded clip below the picture's common property state is rasterized
 	// inside that picture, preventing the single-image raster optimization.
 	picture_local_rounded_clip bool
@@ -96,6 +101,7 @@ struct ChromiumRasterPlanScratch {
 mut:
 	properties         []ChromiumRasterPropertyState
 	chunks             []ChromiumRasterChunk
+	command_bounds     []LayoutRect
 	layer_states       []ChromiumRasterPropertyState
 	composited_scrolls map[int]bool
 	composited_stickies map[int]bool
@@ -121,6 +127,7 @@ mut:
 	paint_visible_effects map[u64]bool
 	perspective_owners []int
 	perspective_root_rasters []bool
+	memos ChromiumRasterPlanMemos
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
@@ -173,6 +180,8 @@ fn chromium_layer_bounds_overlap(a LayoutRect, b LayoutRect) bool {
 fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 	for index in 0 .. plan.layer_storage.len {
 		plan.layer_storage[index].bounds = LayoutRect{}
+		plan.layer_storage[index].compositor_origin = none
+		plan.layer_storage[index].compositor_size = none
 		plan.layer_storage[index].recorded_bounds = LayoutRect{}
 		plan.layer_storage[index].fixed_bounds_extended = false
 		plan.layer_storage[index].has_fixed_opacity_paint_origin = false
@@ -433,9 +442,18 @@ fn chromium_raster_chunk_bounds_with_root_scroll(box &BlockBox, command &PaintCo
 
 fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
 	root_scroll_y f64, transform [6]f64) LayoutRect {
-	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) {
+	if chromium_raster_chunk_has_empty_clip(command) {
 		return LayoutRect{}
 	}
+	return chromium_clip_raster_chunk(command, root_scroll_y,
+		chromium_raster_chunk_extent(box, command, transform))
+}
+
+fn chromium_raster_chunk_has_empty_clip(command &PaintCommand) bool {
+	return command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0)
+}
+
+fn chromium_raster_chunk_extent(box &BlockBox, command &PaintCommand, transform [6]f64) LayoutRect {
 	mut rect := box.border_box()
 	// Canvas backgrounds cover the viewport and scrollable overflow, rather
 	// than only the root box. Layer merging must see that painted extent too;
@@ -477,7 +495,10 @@ fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
 			height: command.height + 2 * outset
 		})
 	}
-	mut mapped := compatibility_affine_map_rect(transform, rect)
+	return compatibility_affine_map_rect(transform, rect)
+}
+
+fn chromium_clip_raster_chunk(command &PaintCommand, root_scroll_y f64, mapped LayoutRect) LayoutRect {
 	if command.has_clip {
 		// Flattened clips include the live root scroll, while retained box
 		// geometry remains in document space. Restore that translation before
@@ -488,7 +509,7 @@ fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
 		// at the sparsity threshold, especially under a rotated overflow clip.
 		x := math.max(mapped.x, command.clip_x)
 		y := math.max(mapped.y, clip_y)
-		mapped = LayoutRect{
+		return LayoutRect{
 			x:      x
 			y:      y
 			width:  math.max(0.0, math.min(mapped.x + mapped.width,
@@ -537,6 +558,15 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.compositor_bounds.clear()
 	scratch.compositor_fixed_raster_owners.clear()
 	scratch.compositor_unbounded_animations.clear()
+	setup_stage := processmetrics.begin_thread_instruction_substage('raster_plan_setup')
+	root_scroll_y := if cull != none { document.viewport_rect().y } else { 0.0 }
+	recorded_bounds_slots := recorded_chromium_raster_bounds(result, commands)
+	mut bounds_work := ChromiumRasterBoundsWork{
+		commands: commands
+		paint_order: result.paint_order
+		root_scroll_y: root_scroll_y
+	}
+	bounds_ticket, bounds_lanes := scratch.start_command_bounds(mut bounds_work, recorded_bounds_slots.len > 0)
 	candidates := if disable_viewport_entry_candidates {
 		[]int{len: result.paint_order.len, init: index}
 	} else {
@@ -566,7 +596,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			scratch.composited_scrolls[box.own_scroll_frame_index] = true
 		}
 		if box.sticky_scroll_frame_index > 0
-			&& chromium_sticky_needs_compositing(box, result.boxes_by_layout_cache) {
+			&& result.box_index != unsafe { nil }
+			&& chromium_sticky_needs_compositing(box, result.box_index.last) {
 			scratch.composited_stickies[box.sticky_scroll_frame_index] = true
 			scratch.sticky_bounds[box.sticky_scroll_frame_index] =
 				compatibility_affine_map_rect(chromium_sticky_raster_transform(box, result), box.border_box())
@@ -580,6 +611,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			}
 		}
 	}
+	setup_stage.finish()
+	chunks_stage := processmetrics.begin_thread_instruction_substage('raster_plan_chunks')
 	tree := result.visual_context_tree
 	scratch.prepare(tree.nodes.len, commands.len)
 	scratch.prepare_perspective_rasters(&tree)
@@ -613,8 +646,13 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			break
 		}
 	}
+	// Candidate discovery and property inheritance read the same immutable
+	// paint inputs. Finish the worker batch before grouping or returning on
+	// invalid command state.
+	bounds_ready := cpuraster.join_background_raster_range(bounds_ticket)
+	mut worker_bounds_used := 0
+	mut recorded_bounds_used := 0
 	mut index := 0
-	root_scroll_y := if cull != none { document.viewport_rect().y } else { 0.0 }
 	for index < commands.len {
 		first := index
 		mut end := index + 1
@@ -793,6 +831,13 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 					transform[5] += viewport.y
 				}
 				command_bounds = chromium_raster_chunk_bounds_in_space(box, command, viewport.y, transform)
+			} else if recorded_bounds_slots.len > 0 && recorded_bounds_slots[position].ready {
+				command_bounds = chromium_clip_raster_chunk(command, root_scroll_y,
+					recorded_bounds_slots[position].extent)
+				if raster_chunk_bounds_diagnostics { recorded_bounds_used++ }
+			} else if bounds_lanes > 0 {
+				command_bounds = scratch.command_bounds[position]
+				if raster_chunk_bounds_diagnostics { worker_bounds_used++ }
 			} else {
 				command_bounds = chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y)
 			}
@@ -826,15 +871,21 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 		}
 		index = end
 	}
+	if raster_chunk_bounds_diagnostics {
+		eprintln('VOX_RASTER_CHUNK_BOUNDS commands=${commands.len} lanes=${bounds_lanes} used=${worker_bounds_used} ready=${bounds_ready} recorded=${recorded_bounds_used}')
+	}
+	chunks_stage.finish()
 	if scratch.compositor_scopes.len > 0 {
 		chromium_root_raster_plan_into(commands.len, mut plan)
 		return
 	}
+	layerize_stage := processmetrics.begin_thread_instruction_substage('raster_plan_layerize')
 	if cull != none || scratch.fixed_bounds.len > 0 {
 		chromium_layerize_visible_paint_chunks(result, commands, cull, device_scale, mut scratch, mut plan)
 	} else {
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	}
+	layerize_stage.finish()
 	for layer_index, state in scratch.layer_states {
 		if state.legacy_effect && state.atomic_opacity && state.fixed_to_viewport {
 			if origin := scratch.fixed_bounds[state.fixed_raster_owner] {
@@ -868,6 +919,10 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				plan.layers[layer_index].bounds, plan.layers[layer_index].recorded_bounds, device_scale)
 		}
 		if state.effect_scope != 0 && !state.legacy_effect {
+			plan.layers[layer_index].compositor_origin = [plan.layers[layer_index].bounds.x,
+				plan.layers[layer_index].bounds.y]!
+			plan.layers[layer_index].compositor_size = [plan.layers[layer_index].bounds.width,
+				plan.layers[layer_index].bounds.height]!
 			// Compositor rasters enclose fractional geometry, independently of
 			// paint's nearest-pixel snapping. Round after unioning descendant ink.
 			plan.layers[layer_index].bounds = chromium_enclosing_raster_rect(plan.layers[layer_index].bounds)

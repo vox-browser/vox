@@ -112,3 +112,28 @@ fn test_selector_match_query_passes_arguments_of_every_length_unchanged() {
 fn json_string(value string) string {
 	return '"' + value + '"'
 }
+
+// One lowercase type selector is answered from the element's record: it
+// matches exactly the element's local name, whatever its namespace.
+fn test_tag_selector_matches_follow_type_selector_case_rules() {
+	mut document := html.parse_document('<!doctype html><div id="plain"></div><svg id="vector"><foreignObject id="foreign"></foreignObject></svg><x-widget id="widget"></x-widget>')
+	mut runtime := browserjs.Runtime.create_with_engine(.javascriptcore)
+	defer { runtime.close(); document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+const check=(value,label)=>{if(!value)throw Error(label);};
+const plain=document.getElementById("plain"),widget=document.getElementById("widget"),foreign=document.getElementById("foreign");
+check(plain.matches("div")&&!plain.matches("span")&&plain.matches("DIV"),"div");
+check(widget.matches("x-widget")&&!widget.matches("x-widge")&&!widget.matches("x"),"custom element");
+check(!foreign.matches("foreignobject")&&foreign.matches("foreignObject"),"svg case");
+const upper=document.createElementNS("http://www.w3.org/1999/xhtml","DIV");
+check(!upper.matches("div"),"html element with an uppercase local name");
+const created=document.createElement("include-fragment");
+check(created.matches("include-fragment")&&!created.matches("div"),"created element");
+const prefixed=document.createElementNS("urn:test","p:item");
+check(prefixed.matches("item")&&!prefixed.matches("p"),"prefixed element");
+globalThis.tagMatchesPassed=true;
+'], runtime, mut messages)
+	assert messages == []string{}
+	assert runtime.evaluate_host('tagMatchesPassed')! == 'true'
+}

@@ -23,9 +23,20 @@ fn test_tagged_template_tails_retain_nested_tags_and_substitutions() {
 	assert expression.kind.tag == .member
 	outer := expression.kind.object?
 	assert outer.kind.tag == .tagged_template_literal
-	inner := outer.kind.tag_expr?
+	inner := outer.kind.tag_expr()?
 	assert inner.kind.tag == .tagged_template_literal
-	assert inner.kind.tag_expr?.kind.tag == .identifier_expr
-	assert inner.kind.template_literal_expr?.kind.tag == .template_literal
-	assert inner.kind.template_literal_expr?.kind.template_data?.expressions.len == 3
+	assert inner.kind.tag_expr()?.kind.tag == .identifier_expr
+	assert inner.kind.template_literal_expr()?.kind.tag == .template_literal
+	assert inner.kind.template_literal_expr()?.kind.template_data()?.expressions.len == 3
+}
+
+fn test_secondary_operator_restrictions_preserve_grouping_and_for_in() {
+	for source in ['a && b ?? c;', 'a || b ?? c;', 'a ?? b && c;', 'a ?? b || c;'] {
+		assert parse_source(source, .script).has_errors(), source
+	}
+	for source in ['a && (b ?? c);', '(a || b) ?? c;', '(a ?? b) && c;', 'a ?? (b || c);',
+		'for (key in object) {}', 'for (var key in object) {}', 'for ((key in object);;) {}',
+		'for (a, b;;) {}', 'new factory.Member(arg).extra;', '({key: object.key = value} = source);'] {
+		assert !parse_source(source, .script).has_errors(), source
+	}
 }

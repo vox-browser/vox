@@ -1,0 +1,51 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shared GG SVG gradient fills</title>
+<style>
+  body { margin: 0; min-height: 4096px; background: white; }
+  .stage { position: fixed; top: 0; left: 0; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+  .scrolling { position: absolute; top: 0; left: 270px; }
+</style>
+<div class="stage">
+  <header></header>
+  <svg width="250" height="150">
+    <defs>
+      <linearGradient id="color">
+        <stop offset="0" stop-color="red"/>
+        <stop id="endpoint" offset="1" stop-color="blue"/>
+      </linearGradient>
+      <radialGradient id="radial" gradientUnits="userSpaceOnUse" cx="166" cy="28" fr="8" r="24">
+        <stop offset="0" stop-color="white"/>
+        <stop offset="1" stop-color="#2071ca"/>
+      </radialGradient>
+      <linearGradient id="repeat" gradientUnits="userSpaceOnUse" x1="0" x2="22"
+                      gradientTransform="translate(8)" spreadMethod="repeat">
+        <stop offset="0" stop-color="red"/>
+        <stop offset="1" stop-color="yellow"/>
+      </linearGradient>
+      <linearGradient id="reflect" gradientUnits="userSpaceOnUse" x1="120" x2="140"
+                      spreadMethod="reflect">
+        <stop offset="0" stop-color="black"/>
+        <stop offset="1" stop-color="white"/>
+      </linearGradient>
+      <linearGradient id="single">
+        <stop offset=".5" stop-color="#2448cc" stop-opacity=".5"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 12H112V42H12Z M42 20H62V32H42Z" fill="url(#color)" fill-rule="evenodd"
+          stroke="black" stroke-width="4" style="paint-order: stroke fill"/>
+    <path d="M138 8H212V48H138Z" fill="url(#radial)"/>
+    <path d="M12 54H108V88H12Z" fill="url(#repeat)"/>
+    <path d="M120 54H214V88H120Z" fill="url(#reflect)"/>
+    <path id="translucent" d="M12 100H112V140H12Z" fill="url(#single)" fill-opacity=".75"/>
+  </svg>
+</div>
+<svg class="scrolling" width="108" height="100">
+  <linearGradient id="edge" x2="0" y2="1">
+    <stop offset="0" stop-color="#2787b6"/>
+    <stop offset="1" stop-color="#3b8463"/>
+  </linearGradient>
+  <path d="M8 23H92V100H8Z" fill="url(#edge)"/>
+</svg>

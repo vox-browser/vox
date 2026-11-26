@@ -41,6 +41,51 @@ fn test_image_blurs_match_skia() {
 	assert image_blur_test(0.01, 5, IRect{5, 0, 15, 16}, IRect{2, -10, 18, 26}) == '10x36 at 5,-10 99ed73d38c5612df'
 }
 
+fn test_large_image_filter_subset_has_independent_packed_rows() {
+	w, h := 1401, 929
+	source := BlurImage{[]u8{len: w * h * 4, init: u8(index * 37 + index / 213)}, w, h}
+	subset := IRect{3, 2, w - 7, h - 5}
+	mut result, x, y := image_with_blur_filter(source, subset, IRect{0, 0, w, h}, 0, 0) or {
+		panic('Expected a materialized subset')
+	}
+	assert x == subset.left && y == subset.top
+	assert result.width == subset.width() && result.height == subset.height()
+	bytes := result.width * 4
+	for row in 0 .. result.height {
+		first := ((y + row) * w + x) * 4
+		target := row * bytes
+		matches := source.pixels[first..first + bytes] == result.pixels[target..target + bytes]
+		assert matches
+	}
+	original := source.pixels[(y * w + x) * 4]
+	result.pixels[0] = original ^ 0xff
+	assert source.pixels[(y * w + x) * 4] == original
+}
+
+fn test_raw_filter_subset_preserves_straight_alpha_and_padded_pitch() {
+	w, h := 1401, 929
+	pitch := w * 4 + 29
+	pixels := []u8{len: (h - 1) * pitch + w * 4, init: u8(index * 67 + index / 279)}
+	view := FilterImageView{
+		bitmap:       CanvasBitmap{pixels: pixels, width: w, height: h, pitch: pitch, premultiplied: false}
+		transform:    affine_translate(-17, 31)
+		layer_bounds: IRect{-17, 31, w - 17, h + 31}
+	}
+	request := IRect{-11, 39, w - 17, h + 31}
+	result := raw_filter_image_view(view, request) or { panic('Expected a raw filter subset') }
+	assert result.has_image && !result.color_info.premultiplied
+	assert result.origin_x == request.left && result.origin_y == request.top
+	image := result.image.backing
+	assert image.width == request.width() && image.height == request.height()
+	bytes := image.width * 4
+	for row in 0 .. image.height {
+		first := (row + 8) * pitch + 6 * 4
+		target := row * bytes
+		matches := pixels[first..first + bytes] == image.pixels[target..target + bytes]
+		assert matches
+	}
+}
+
 // Box blur windows and Gaussian radii at their boundaries.
 fn test_blur_windows() {
 	assert blur_sigma_to_radius(0.03) == 0

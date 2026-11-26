@@ -14,6 +14,12 @@ pub:
 	high_water_mark ?f64
 	size            ?SizeAlgorithm
 	size_value      ?ValueSizeAlgorithm
+	size_object     ?SizeAlgorithmObject
+}
+
+pub interface SizeAlgorithmObject {
+mut:
+	invoke_size_algorithm(Value) !webidl.Value
 }
 
 pub struct QueuingStrategyInit {
@@ -47,7 +53,8 @@ pub fn invoke_queuing_strategy_size_callback(callback SizeAlgorithm, chunk Value
 	return callback(chunk)
 }
 
-fn invoke_size_value_algorithm(scalar SizeAlgorithm, actual ?ValueSizeAlgorithm, chunk Value) !webidl.Value {
+fn invoke_size_value_algorithm(scalar SizeAlgorithm, actual ?ValueSizeAlgorithm, object ?SizeAlgorithmObject, chunk Value) !webidl.Value {
+	if mut callback := object { return callback.invoke_size_algorithm(chunk) }
 	if callback := actual { return callback(chunk) }
 	return webidl.number_value(scalar(chunk)!)
 }

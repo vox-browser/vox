@@ -177,9 +177,41 @@ static void test_skipped_frame_publication(void)
     puts("Skipped frames: retained pixels and generation, no publication or redraw loop, resumed paint passed");
 }
 
+static void test_large_transparent_reuse(void)
+{
+    const size_t width = 4099, height = 2161;
+    for (int shared = 0; shared <= 1; ++shared) {
+        VoxLayerFrameBuffer *buffer = native_layer_acquire_frame_buffer(width, height, NO, shared);
+        assert(buffer && buffer->bytes == buffer->pitch * height);
+        assert((buffer->surface != NULL) == shared && buffer->locked == shared);
+        memset(buffer->pixels, 0xA5, buffer->bytes);
+        native_layer_unlock_frame_buffer(buffer);
+        __atomic_store_n(&buffer->busy, 0, __ATOMIC_RELEASE);
+
+        assert(native_layer_acquire_frame_buffer(width, height, YES, shared) == buffer);
+        const uint8_t *pixels = buffer->pixels;
+        for (size_t i = 0; i < buffer->bytes; ++i) assert(pixels[i] == 0xA5);
+        native_layer_unlock_frame_buffer(buffer);
+        __atomic_store_n(&buffer->busy, 0, __ATOMIC_RELEASE);
+
+        assert(native_layer_acquire_frame_buffer(width, height, NO, shared) == buffer);
+        assert(buffer->locked == shared && __atomic_load_n(&buffer->busy, __ATOMIC_ACQUIRE));
+        for (size_t i = 0; i < buffer->bytes; ++i) assert(pixels[i] == 0);
+        native_layer_unlock_frame_buffer(buffer);
+        if (buffer->surface) CFRelease(buffer->surface);
+        else munmap(buffer->pixels, buffer->bytes);
+        *buffer = (VoxLayerFrameBuffer){0};
+    }
+    puts("Large frame buffers: shared and mapped reuse, deferred bytes and complete transparent clears passed");
+}
+
 int main(int argc, char **argv)
 {
     @autoreleasepool {
+        if (argc == 2 && !strcmp(argv[1], "--large-clear")) {
+            test_large_transparent_reuse();
+            return 0;
+        }
         if (argc == 2 && !strcmp(argv[1], "--skipped")) {
             test_skipped_frame_publication();
             return 0;

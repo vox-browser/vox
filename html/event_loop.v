@@ -126,6 +126,7 @@ mut:
 	document_ ?&dom.Document
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
+	owns_steps bool
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
@@ -136,6 +137,15 @@ pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task
 	}
 	if source == .rendering { owner = unsafe { nil } }
 	return Task.create_with_storage(source, document, steps, owner)
+}
+
+// Transfer a captured callback to a one-shot task. Existing create() callers
+// retain their callback ownership; this path releases it after execution or
+// discard, never while its trampoline is on the native stack.
+pub fn Task.create_owned(source TaskSource, document ?&dom.Document, steps fn()) &Task {
+	mut task := Task.create(source, document, steps)
+	task.owns_steps = true
+	return task
 }
 
 fn Task.create_with_storage(source TaskSource, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) &Task {
@@ -168,6 +178,12 @@ pub fn (task &Task) execute() {
 
 fn (task &Task) cancel() {
 	mut mutable_task := unsafe { &Task(task) }
+	if mutable_task.owns_steps {
+		mutable_task.owns_steps = false
+		steps := mutable_task.steps
+		mutable_task.steps = fn () {}
+		platform.release_closure(voidptr(steps))
+	}
 	mut owner := mutable_task.allocation_owner
 	mutable_task.allocation_owner = unsafe { nil }
 	if owner != unsafe { nil } { owner.release() }
@@ -513,6 +529,18 @@ pub fn (mut event_loop EventLoop) enqueue_microtask(task &Task) {
 	event_loop.microtask_queue << task
 }
 
+// Only pending tasks can be discarded. A callback currently executing owns
+// its steps until Task.execute() returns, including shutdown inside a callback.
+pub fn (mut event_loop EventLoop) discard_microtask(task &Task) bool {
+	for index, pending in event_loop.microtask_queue {
+		if voidptr(pending) != voidptr(task) { continue }
+		event_loop.microtask_queue.delete(index)
+		task.cancel()
+		return true
+	}
+	return false
+}
+
 pub fn (event_loop &EventLoop) microtask_queue_empty() bool {
 	return event_loop.microtask_queue.len == 0
 }
@@ -602,10 +630,17 @@ pub fn (mut event_loop EventLoop) process() {
 	if mut timer := event_loop.system_event_loop_timer_ { timer.stop() }
 	event_loop.task_generation_++
 	event_loop.scheduled = false
-	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
-	event_loop.reached_step_1_tasks.clear()
-	for steps in reached_step_1_tasks {
-		steps.execute()
+	if event_loop.reached_step_1_tasks.len > 0 {
+		// Callbacks can register work for the next turn, so detach the pending
+		// pointers before calling out. Their execution uses the caller's arena.
+		snapshot := platform.begin_thread_scratch('event loop step-one snapshot')
+		reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
+		snapshot.leave()
+		event_loop.reached_step_1_tasks.clear()
+		for steps in reached_step_1_tasks {
+			steps.execute()
+		}
+		snapshot.finish()
 	}
 
 	if event_loop.task_queue_.has_runnable_tasks() {
@@ -718,7 +753,7 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 		return false
 	}
 	event_loop.rendering_task_queued_ = true
-	task := Task.create(.rendering, none, fn [mut event_loop] () {
+	task := Task.create_owned(.rendering, none, fn [mut event_loop] () {
 		event_loop.update_the_rendering()
 	})
 	mut queue := event_loop.task_queue_
@@ -922,7 +957,8 @@ fn (mut event_loop EventLoop) rendering_document_snapshot() RenderingDocumentSna
 		if document.is_decoded_svg() || !document.is_fully_active()
 			|| document.is_render_blocked() || document.hidden()
 			|| document.rendering_suppression_for_view_transitions
-			|| !document_has_a_rendering_opportunity(document) { continue }
+			|| !document_has_a_rendering_opportunity(document)
+			|| document_runs_deferred_scripts(document) { continue }
 		documents[count] = document
 		count++
 	}
@@ -1036,12 +1072,15 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 		}
 	}
 	indexeddb.cleanup_indexed_database_transactions(voidptr(&event_loop))
-	// ClearKeptObjects is represented by the real VM's execution generation.
+	// ClearKeptObjects follows all reactions in this checkpoint. A WeakRef
+	// target stays stable across separate jobs in the same microtask drain.
 	for vm_pointer in event_loop.embedding_vms_ {
 		mut vm := unsafe { &libjs.VM(vm_pointer) }
+		vm.clear_kept_objects()
 		vm.finish_execution_generation()
 	}
 	if mut primary := event_loop.primary_vm_not_embedded() {
+		primary.clear_kept_objects()
 		primary.finish_execution_generation()
 	}
 	// clear() alone leaves scanned pointers in the retained backing allocation.

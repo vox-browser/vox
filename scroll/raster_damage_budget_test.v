@@ -73,6 +73,8 @@ fn test_coalesced_damage_still_refuses_large_unbounded_and_reordered_changes() {
 	b := ScrollRasterCommandKey{...a, hash: 2}
 	ordered := budget_previous([a, b])
 	mut order := ScrollRasterDiffStats{}
+	// raster_order_damage.v's experimental switch reconciles reorders.
+	if paint_order_damage_enabled { return }
 	assert scroll_raster_content_damage(&ordered, [b, a], 7, 0, 200, 200, mut order) == none
 	assert order.fallback == 'paint-order-changed'
 }

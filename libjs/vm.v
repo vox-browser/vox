@@ -245,6 +245,10 @@ pub fn (mut scope TypeErrorRealmScope) restore() {
 @[heap]
 pub struct VM {
 mut:
+	short_utf8_strings map[string]&PrimitiveString
+	generated_string_cache []?&PrimitiveString
+	native_type_names []&PrimitiveString
+	global_binding_hints []GlobalBindingHint
 	string_to_atom_cache       []StringToAtomCacheEntry
 	fly_string_cache           []?&PrimitiveString
 	numeric_string_cache       []?&PrimitiveString
@@ -271,6 +275,10 @@ mut:
 	global_symbol_registry_ map[string]GlobalSymbolRegistryEntry
 
 	promise_jobs                       []PromiseJob
+	promise_jobs_external bool
+	kept_objects []Value
+	running_promise_jobs bool
+	promise_job_errors []IError
 	finalization_registry_cleanup_jobs []FinalizationRegistry
 
 	empty_string_                  &PrimitiveString = unsafe { nil }
@@ -278,6 +286,8 @@ mut:
 	error_messages                 []Utf16String
 
 	loaded_modules []StoredModule
+	date_clock_epoch_ms_ ?f64
+	date_clock_started_ns_ i64
 
 	well_known_symbols_ []&Symbol
 
@@ -287,8 +297,14 @@ mut:
 	run_executable_depth           u32
 	// Explicit experimental tier; absent in ordinary/browser execution.
 	native_tier ?&NativeTier
+	native_lookup_index ?&NativeLookupIndex
+	compiler_validation_owner ?&CompilerValidationOwner
+	indexed_prototype_cache ?&IndexedPrototypeCache
+	weak_collection_registry ?&WeakCollectionRegistry
 	instruction_budget u64
 	instruction_budget_active bool
+	instruction_budget_error ?IError
+	proxy_operation_depth u32
 	external_budget_depth u32
 	array_join_objects map[voidptr]bool
 	module_execution_depth         u32
@@ -300,6 +316,7 @@ mut:
 
 	dynamic_imports_allowed bool
 pub mut:
+	length_property_key PropertyName
 	cached_strings CachedStrings
 
 	on_promise_unhandled_rejection   fn (mut promise Promise) = unsafe { nil }
@@ -342,7 +359,9 @@ const nanoseconds_min_instant = '-8640000000000000000000'
 const nanoseconds_max_instant = '8640000000000000000000'
 
 pub fn VM.create() &VM {
+	$if test { configure_optimization_control_for_testing() }
 	mut vm := &VM{
+		length_property_key: PropertyName.from_str('length')
 		stack_info_:                StackInfo.new()
 		interpreter_stack_:         InterpreterStack.new()
 		string_to_atom_cache:       []StringToAtomCacheEntry{len: string_to_atom_cache_size}
@@ -676,25 +695,31 @@ pub fn (mut vm VM) push_execution_context_checked(mut context ExecutionContext) 
 }
 
 pub fn (mut vm VM) push_execution_context(mut context ExecutionContext) {
+	vm.inherit_call_environment(mut context)
 	context.caller_frame = none
 	context.caller_return_pc = 0
 	context.caller_dst_raw = 0
 	context.caller_is_construct = false
-	vm.execution_context_stack_ << &context
-	vm.execution_context_stack_previous_running_contexts << vm.running_execution_context_
+	push_within_capacity(mut vm.execution_context_stack_, &context)
+	push_within_capacity(mut vm.execution_context_stack_previous_running_contexts, vm.running_execution_context_)
 	vm.running_execution_context_ = &context
 }
 
 pub fn (mut vm VM) pop_execution_context() &ExecutionContext {
-	if vm.execution_context_stack_.len == 0 {
-		panic('pop_execution_context on an empty execution context stack')
-	}
-	mut context := vm.execution_context_stack_.pop()
+	context := vm.pop_current_context()
+	expose_execution_context(context)
+	return context
+}
+
+fn (mut vm VM) pop_current_context() &ExecutionContext {
+	mut context := pop_last(mut vm.execution_context_stack_,
+		'pop_execution_context on an empty execution context stack')
 	context.caller_frame = none
 	context.caller_return_pc = 0
 	context.caller_dst_raw = 0
 	context.caller_is_construct = false
-	vm.running_execution_context_ = vm.execution_context_stack_previous_running_contexts.pop()
+	vm.running_execution_context_ = pop_last(mut vm.execution_context_stack_previous_running_contexts,
+		'pop_execution_context without a previous running context')
 	return context
 }
 
@@ -702,6 +727,12 @@ pub fn (mut vm VM) pop_execution_context() &ExecutionContext {
 // At any point in time, there is at most one execution context per agent that
 // is actually executing code. This is the agent's running execution context.
 pub fn (vm &VM) running_execution_context() &ExecutionContext {
+	context := vm.current_context()
+	expose_execution_context(context)
+	return context
+}
+
+fn (vm &VM) current_context() &ExecutionContext {
 	return vm.running_execution_context_ or { panic('no running execution context') }
 }
 
@@ -720,6 +751,7 @@ pub fn (mut vm VM) set_running_execution_context(context ?&ExecutionContext) {
 // frames are threaded through ExecutionContext.caller_frame starting at the
 // running execution context.
 pub fn (vm &VM) execution_context_stack() []&ExecutionContext {
+	for context in vm.execution_context_stack_ { expose_execution_context(context) }
 	return vm.execution_context_stack_
 }
 
@@ -764,6 +796,12 @@ fn collect_execution_contexts_top_to_bottom(stack []&ExecutionContext, previous_
 // for_each_execution_context_top_to_bottom: the running context first, inline
 // frames through caller_frame, then each earlier base push.
 pub fn (vm &VM) execution_contexts_top_to_bottom() []&ExecutionContext {
+	contexts := vm.context_chain()
+	for context in contexts { expose_execution_context(context) }
+	return contexts
+}
+
+fn (vm &VM) context_chain() []&ExecutionContext {
 	return collect_execution_contexts_top_to_bottom(vm.execution_context_stack_, vm.execution_context_stack_previous_running_contexts,
 		vm.running_execution_context_)
 }
@@ -787,6 +825,7 @@ pub fn (vm &VM) previous_execution_context() ?&ExecutionContext {
 }
 
 pub fn (mut vm VM) save_execution_context_stack() {
+	for context in vm.context_chain() { expose_execution_context(context) }
 	vm.saved_execution_context_stacks << SavedExecutionContextStack{
 		stack:                           vm.execution_context_stack_
 		previous_running_contexts:       vm.execution_context_stack_previous_running_contexts
@@ -802,8 +841,8 @@ pub fn (mut vm VM) save_execution_context_stack() {
 }
 
 pub fn (mut vm VM) clear_execution_context_stack() {
-	vm.execution_context_stack_.clear()
-	vm.execution_context_stack_previous_running_contexts.clear()
+	for vm.execution_context_stack_.len > 0 { vm.execution_context_stack_.delete_last() }
+	for vm.execution_context_stack_previous_running_contexts.len > 0 { vm.execution_context_stack_previous_running_contexts.delete_last() }
 	vm.running_execution_context_ = none
 	vm.type_error_realm_override = none
 	vm.type_error_realm_override_depth = 0
@@ -813,7 +852,8 @@ pub fn (mut vm VM) restore_execution_context_stack() {
 	if vm.saved_execution_context_stacks.len == 0 {
 		panic('restore_execution_context_stack without a saved stack')
 	}
-	saved_stack := vm.saved_execution_context_stacks.pop()
+	saved_stack := vm.saved_execution_context_stacks.last()
+	vm.saved_execution_context_stacks.delete_last()
 	vm.execution_context_stack_ = saved_stack.stack
 	vm.execution_context_stack_previous_running_contexts = saved_stack.previous_running_contexts
 	vm.running_execution_context_ = saved_stack.running_execution_context
@@ -828,7 +868,7 @@ pub fn (vm &VM) saved_execution_context_stack_count() int {
 // Running-context accessors
 
 pub fn (vm &VM) realm() &Realm {
-	return vm.running_execution_context().realm or { panic('running execution context has no realm') }
+	return vm.current_context().realm or { panic('running execution context has no realm') }
 }
 
 pub fn (vm &VM) global_object() &Object {
@@ -842,46 +882,56 @@ pub fn (vm &VM) global_declarative_environment() &DeclarativeEnvironment {
 }
 
 pub fn (vm &VM) lexical_environment() ?Environment {
-	return vm.running_execution_context().lexical_environment
+	vm.expose_current_call_environment()
+	return vm.current_context().lexical_environment
 }
 
 pub fn (vm &VM) variable_environment() ?Environment {
-	return vm.running_execution_context().variable_environment
+	vm.expose_current_call_environment()
+	return vm.current_context().variable_environment
 }
 
 // https://tc39.es/ecma262/#current-realm
 // The value of the Realm component of the running execution context is also called the current Realm Record.
 pub fn (vm &VM) current_realm() ?&Realm {
-	return vm.running_execution_context().realm
+	return vm.current_context().realm
 }
 
 // https://tc39.es/ecma262/#active-function-object
 // The value of the Function component of the running execution context is also called the active function object.
 pub fn (vm &VM) active_function_object() ?FunctionObject {
-	return vm.running_execution_context().function
+	return vm.current_context().function
 }
 
 pub fn (vm &VM) argument_count() u32 {
-	return vm.running_execution_context().argument_count
+	return vm.current_context().argument_count
 }
 
 pub fn (vm &VM) argument(index u32) Value {
-	return vm.running_execution_context().argument(index)
+	return vm.current_context().argument(index)
 }
 
 pub fn (vm &VM) this_value() Value {
-	return vm.running_execution_context().this_value or {
+	return vm.current_context().this_value or {
 		panic('running execution context has no this value')
 	}
 }
 
+// One explicit bounds check, then a direct load or store; V's generic array
+// accessors copy every 16-byte value through a helper call.
 pub fn (vm &VM) reg(index u32) Value {
-	return vm.running_execution_context().values[index]
+	context := vm.current_context()
+	if index >= u32(context.values.len) { panic('register ${index} is outside the running frame') }
+	return unsafe { (&Value(context.values.data))[index] }
 }
 
 pub fn (mut vm VM) set_reg(index u32, value Value) {
-	mut context := vm.running_execution_context()
-	context.values[index] = value
+	mut context := vm.current_context()
+	if index >= u32(context.values.len) { panic('register ${index} is outside the running frame') }
+	unsafe {
+		mut values := &Value(context.values.data)
+		values[index] = value
+	}
 }
 
 pub fn (vm &VM) accumulator() Value {
@@ -897,12 +947,21 @@ pub fn (mut vm VM) do_return(value_argument Value) {
 	if value.is_special_empty_value() {
 		value = js_undefined()
 	}
+	mut context := vm.current_context()
+	if context.values.len >= int(reserved_register_count) {
+		unsafe {
+			mut registers := &Value(context.values.data)
+			registers[register_return_value] = value
+			registers[register_exception] = js_special_empty_value()
+		}
+		return
+	}
 	vm.set_reg(register_return_value, value)
 	vm.set_reg(register_exception, js_special_empty_value())
 }
 
 pub fn (vm &VM) current_executable() &Executable {
-	return vm.running_execution_context().executable or {
+	return vm.current_context().executable or {
 		panic('running execution context has no executable')
 	}
 }
@@ -917,6 +976,7 @@ pub fn (vm &VM) execution_generation() u32 {
 
 pub fn (mut vm VM) finish_execution_generation() {
 	vm.execution_generation_++
+	vm.sweep_weak_collections()
 }
 
 pub fn (vm &VM) run_executable_depth() u32 {
@@ -989,6 +1049,7 @@ pub fn (mut vm VM) throw_error_type(kind ErrorKind, error_type ErrorType, args .
 
 // 9.1.2.1 GetIdentifierReference ( env, name, strict ), https://tc39.es/ecma262/#sec-getidentifierreference
 pub fn (mut vm VM) get_identifier_reference(environment ?Environment, name Utf16String, strict bool, hops u32) !Reference {
+	vm.expose_current_call_environment()
 	// 1. If env is the value null, then
 	env := environment or {
 		// a. Return the Reference Record { [[Base]]: unresolvable, [[ReferencedName]]: name, [[Strict]]: strict, [[ThisValue]]: empty }.
@@ -1020,7 +1081,7 @@ pub fn (mut vm VM) resolve_binding(name Utf16String, strict bool, environment ?E
 	// 1. If env is not present or if env is undefined, then
 	env := environment or {
 		// a. Set env to the running execution context's LexicalEnvironment.
-		vm.running_execution_context().lexical_environment or {
+		vm.current_context().lexical_environment or {
 			// 2. Assert: env is an Environment Record.
 			panic('ResolveBinding: the running execution context has no lexical environment')
 		}
@@ -1097,12 +1158,27 @@ pub fn (vm &VM) get_global_object() &Object {
 // Jobs
 
 pub fn (mut vm VM) run_queued_promise_jobs() {
+	// A handler's RunExecutable cleanup may request another checkpoint. Finish
+	// the current reaction (including resolving its result) before the next job.
+	if vm.running_promise_jobs { return }
+	vm.running_promise_jobs = true
+	defer {
+		vm.running_promise_jobs = false
+		if !vm.promise_jobs_external { vm.clear_kept_objects() }
+	}
 	for vm.promise_jobs.len > 0 {
 		job := vm.promise_jobs[0]
 		vm.promise_jobs.delete(0)
-		// The job result is intentionally ignored.
-		job() or {}
+		// Normal reaction results are ignored; unsupported runtime operations
+		// and other job failures must remain observable to the embedding.
+		job() or { vm.promise_job_errors << err }
 	}
+}
+
+pub fn (mut vm VM) take_promise_job_errors() []IError {
+	errors := vm.promise_job_errors
+	vm.promise_job_errors = []
+	return errors
 }
 
 // 9.5.4 HostEnqueuePromiseJob ( job, realm ), https://tc39.es/ecma262/#sec-hostenqueuepromisejob
@@ -1173,7 +1249,7 @@ pub fn (vm &VM) stack_trace() []StackTraceElement {
 
 pub fn (vm &VM) backtrace_lines() []string {
 	mut lines := []string{}
-	for frame in vm.execution_contexts_top_to_bottom() {
+	for frame in vm.context_chain() {
 		name := if function := frame.function { function.name_for_call_stack().str() } else { '' }
 		if executable := frame.executable {
 			if source_range := executable.source_range_at(frame.program_counter) {
@@ -1193,6 +1269,29 @@ pub fn (vm &VM) dump_backtrace() {
 }
 
 pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
+	if owner := vm.compiler_validation_owner { roots.add(voidptr(owner)) }
+	if cache := vm.indexed_prototype_cache {
+		roots.add(voidptr(cache))
+		for entry in cache.slots {
+			for position in 0 .. entry.count {
+				roots.add(voidptr(entry.states[position].object))
+				roots.add(voidptr(entry.states[position].index))
+			}
+		}
+	}
+	if tier := vm.native_tier {
+		for slot in tier.entry_cache { roots.add(voidptr(slot.executable)) }
+	}
+	for name in vm.native_type_names { roots.add(voidptr(name)) }
+	for hint in vm.global_binding_hints {
+		if hint.owner != unsafe { nil } { roots.add(voidptr(hint.owner)) }
+		if hint.object != unsafe { nil } { roots.add(voidptr(hint.object)) }
+	}
+	for buffer in vm.interpreter_stack_.call_argument_workspaces {
+		for value in buffer.values { roots.add_value(value) }
+	}
+	for _, cached in vm.short_utf8_strings { roots.add(voidptr(cached)) }
+	for entry in vm.generated_string_cache { if cached := entry { roots.add(voidptr(cached)) } }
 	roots.add(voidptr(vm.empty_string_))
 	for cached in vm.single_ascii_character_strings {
 		roots.add(voidptr(cached))
@@ -1226,8 +1325,14 @@ pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 	for registry in vm.finalization_registry_cleanup_jobs {
 		roots.add(finalization_registry_identity(registry))
 	}
-	for context in vm.execution_contexts_top_to_bottom() {
+	for context in vm.context_chain() {
 		context.visit_roots(mut roots)
+	}
+	for context in vm.interpreter_stack_.recycled {
+		if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
+	}
+	for context in vm.interpreter_stack_.parked_contexts() {
+		if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
 	}
 	for saved_stack in vm.saved_execution_context_stacks {
 		for context in collect_execution_contexts_top_to_bottom(saved_stack.stack, saved_stack.previous_running_contexts,
@@ -1245,6 +1350,9 @@ pub fn (vm &VM) gather_roots(mut roots HeapRoots) {
 		}
 	}
 	// Promise jobs are V closures managed by the V runtime rather than GC cells.
+	for err in vm.promise_job_errors {
+		if is_throw_completion(err) { roots.add_value(thrown_value(err)) }
+	}
 }
 
 // 9.4.1 GetActiveScriptOrModule ( ), https://tc39.es/ecma262/#sec-getactivescriptormodule
@@ -1254,7 +1362,7 @@ pub fn (vm &VM) get_active_script_or_module() ScriptOrModule {
 		return ScriptOrModule{}
 	}
 	// 2. Let ec be the topmost execution context on the execution context stack whose ScriptOrModule component is not null.
-	for context in vm.execution_contexts_top_to_bottom() {
+	for context in vm.context_chain() {
 		if !context.script_or_module.is_empty() {
 			// 3. Otherwise, return ec's ScriptOrModule.
 			return context.script_or_module
@@ -1272,21 +1380,19 @@ pub fn (mut vm VM) handle_exception(program_counter_argument u32, exception Valu
 	for {
 		if handlers := vm.current_executable().exception_handlers_for_offset(program_counter) {
 			if depth := handlers.restore_scope_depth {
-				mut frame := vm.running_execution_context()
+				mut frame := vm.current_context()
 				if depth>frame.lexical_scope_depth { vm.set_reg(register_exception,exception);return .exit_from_executable }
 				for frame.lexical_scope_depth>depth {
-					environment := frame.lexical_environment or { return .exit_from_executable }
-					frame.lexical_environment=environment.outer_environment()
-					frame.lexical_scope_depth--
+					frame.leave_lexical_scope() or { return .exit_from_executable }
 				}
 			}
 			vm.set_reg(register_exception, exception)
-			mut running := vm.running_execution_context()
+			mut running := vm.current_context()
 			running.program_counter = handlers.handler_offset
 			return .continue_in_this_executable
 		}
 		// If we're in an inline frame, unwind to the caller and try its handlers.
-		callee_frame := vm.running_execution_context()
+		callee_frame := vm.current_context()
 		if caller_frame := callee_frame.caller_frame {
 			caller_pc := callee_frame.caller_return_pc
 			vm.interpreter_stack_.deallocate_context(callee_frame)
@@ -1306,7 +1412,7 @@ pub fn (mut vm VM) handle_exception(program_counter_argument u32, exception Valu
 }
 
 pub fn (mut vm VM) unwind_inline_frame_for_exception() {
-	callee_frame := vm.running_execution_context()
+	callee_frame := vm.current_context()
 	caller_frame := callee_frame.caller_frame or {
 		panic('unwind_inline_frame_for_exception: the running frame has no caller frame')
 	}

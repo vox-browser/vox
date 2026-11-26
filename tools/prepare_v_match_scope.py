@@ -64,8 +64,9 @@ def prepare(compiler):
                            VOX_MATCH_SCOPE_RECEIPT=str(root / 'patched.txt'))
         with tempfile.TemporaryDirectory(prefix='build-', dir=root) as scratch:
             scratch = Path(scratch)
+            # Keep the bootstrap optimized without requiring Clang's LLVMgold linker plugin.
             command = [str(compiler), '-b', 'c', '-nocache', '-memory-limit', '10G', '-cc', str(wrapper),
-                       '-prod', '-o', str(scratch / 'v')]
+                       '-prod', '-no-prod-options', '-cflags', '-O2', '-o', str(scratch / 'v')]
             for backend in ('fastc', 'x64', 'amd64', 'arm64', 'ssa', 'eval', 'wasm'):
                 command += ['-d', 'skip_' + backend]
             command += [str(vlib.parent / 'cmd/v')]

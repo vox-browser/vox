@@ -28,7 +28,7 @@ fn test_bigint_prototype_initialization_preserves_ordinary_record_source_order_a
 	prototype := BigIntPrototype.create(mut vm, realm, parent, bigint_prototype_test_dependencies(mut vm,
 		realm, parent)).object
 	assert voidptr(prototype.internal_get_prototype_of()?) == voidptr(parent)
-	assert prototype.bigint_object == none && prototype.class_name == 'BigIntPrototype'
+	assert prototype.slots.bigint_object == none && prototype.class_name == 'BigIntPrototype'
 	assert Value.from_object(prototype).str() == '[object BigIntPrototype]'
 	if _ := call(mut vm, Value.from_object(prototype), js_null(), []Value{}) {
 		assert false
@@ -78,7 +78,7 @@ fn test_bigint_records_cooperate_with_explicit_boxing_and_bound_prototype_calls(
 		}
 	}
 	wrapper := integer.to_object_with_prototypes(mut vm, primitives)!
-	assert voidptr(wrapper.bigint_object?.bigint) == voidptr(integer.as_bigint())
+	assert voidptr(wrapper.slots.bigint_object?.bigint) == voidptr(integer.as_bigint())
 	text := wrapper.get(mut vm, PropertyName.from_str('toString'))!
 	assert call(mut vm, text, Value.from_object(wrapper), [Value.from_i32(16)])!.as_string().str() == '2a'
 	assert integer.invoke_with_prototypes(mut vm, PropertyName.from_str('toString'), [

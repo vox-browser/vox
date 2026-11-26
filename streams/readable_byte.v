@@ -6,6 +6,8 @@
 // ReadableStreamBYOBRequest, pull-into descriptors, and byte controller ops.
 module streams
 
+import webidl
+
 pub enum PullIntoReaderType {
 	default_reader
 	byob
@@ -307,6 +309,13 @@ fn (mut stream ReadableStream) byte_controller_pull_steps_request(mut request Re
 		return
 	}
 	if size := stream.auto_allocate_size_ {
+		// Construct(%ArrayBuffer%, size) can fail before a read request is
+		// queued. Native byte vectors cannot represent a larger allocation;
+		// report the allocation failure to this read, preserving stream state.
+		if size > 0x7fffffff {
+			request.on_error(webidl.simple_exception_value(webidl.SimpleException{type_: .range_error, message: 'ReadableStream allocation exceeds the native byte-vector limit'}))
+			return
+		}
 		controller.pending_pull_intos_.append(new_pull_into_descriptor(int(size), 1, 1, .default_reader))
 	}
 	stream.pending_reads_.append(request)

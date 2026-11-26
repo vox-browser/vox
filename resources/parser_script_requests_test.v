@@ -4,6 +4,7 @@ import browserjs
 import browsernet
 import dom
 import html
+import time
 
 @[heap]
 struct ParserScriptRequestObservations {
@@ -58,11 +59,13 @@ fn parser_script_request_model(document &dom.Document, id string) &html.HTMLScri
 
 fn test_parser_script_response_resumes_the_live_parser_without_a_runtime() {
 	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
-		'<!doctype html><p id="before">Before</p><script id="block" src="blocking.js"></script><p id="later">After</p>', {})
+		'<!doctype html><p id="before">Before</p><script id="block" src="blocking.js"></script><p id="later">After</p><img src="later.png">', {})
 	defer { loader.cancel(); document.finalize() }
 	mut messages := []string{}
 	parser.run()
 	assert parser.paused()
+	assert parser.has_active_speculative_html_parser()
+	assert !document.has_speculative_fetch_url(dom.URL{ value: 'https://parser-requests.test/later.png' })
 	assert document.get_element_by_id('before') != none
 	assert document.get_element_by_id('later') == none
 	assert loader.requests.len == 1 && loader.active_fetches == 1
@@ -74,10 +77,119 @@ fn test_parser_script_response_resumes_the_live_parser_without_a_runtime() {
 	assert observed.sources == ['blocking']
 	assert observed.later_visible == [false]
 	assert !parser.paused()
+	assert !parser.has_active_speculative_html_parser()
 	assert document.get_element_by_id('later') != none
 	assert parser_script_request_model(document, 'block').event_count('load') == 1
 	assert loader.requests.len == 0 && loader.active_fetches == 0
 	assert !document.anything_is_delaying_the_load_event()
+}
+
+fn test_parser_shares_retained_script_bodies_for_preloads_and_worker_results() {
+	address := 'https://parser-requests.test/retained.js'
+	resource := persistent_preloaded_resource(PreloadedResource{
+		url: address
+		source_url: 'https://parser-requests.test/'
+		request_type: 'script'
+		body: '/* retained external source */'.repeat(32768)
+	})
+	for preloaded in [true, false] {
+		mut resources := map[string]PreloadedResource{}
+		if preloaded { resources[address] = resource }
+		mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+			'<!doctype html><script id="script" src="retained.js"></script><p id="later">Ready</p>', resources)
+		document.enable_native_storage()
+		defer {
+			loader.cancel()
+			document.finalize()
+			document.release_native_storage()
+		}
+		parser.run()
+		if !preloaded {
+			assert parser.paused()
+			assert observed.sources.len == 0
+			loader.results <- resource
+			mut messages := []string{}
+			loader.poll(unsafe { &browserjs.Runtime(nil) }, mut messages)
+			assert messages.len == 0
+		}
+		parser_script_request_drain_tasks()
+		assert observed.sources.len == 1
+		assert observed.sources[0] == resource.body
+		assert voidptr(observed.sources[0].str) == voidptr(resource.body.str)
+		assert observed.later_visible == [false]
+		assert parser_script_request_model(document, 'script').event_count('load') == 1
+		assert document.get_element_by_id('later') != none
+		assert !document.anything_is_delaying_the_load_event()
+	}
+}
+
+fn test_throttled_frame_delivers_blocking_script_only_for_the_current_navigation() {
+	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+		'<!doctype html><script src="blocking.js"></script><p id="later">After</p>', {})
+	mut app := &BrowserApp{document: document, script_request_loader: loader, document_presented: true}
+	defer {
+		if app.load_frames.timer != unsafe { nil } { app.load_frames.timer.stop() }
+		loader.cancel()
+		document.finalize()
+	}
+	parser.run()
+	assert parser.paused() && document.has_pending_parsing_blocking_script()
+	parser_script_request_response(loader, 'blocking.js', 'blocking', '')
+	now := time.sys_mono_now()
+	app.load_frames.generation = app.navigation_generation
+	app.load_frames.presented_ns = now
+	app.load_frames.last_end_ns = now
+	app.load_frames.last_cost_ns = 100 * time.millisecond
+	app.pending_native_navigation = 'https://parser-requests.test/replacement'
+	app.draw()
+	assert app.load_frames.deferred_frames == 1
+	assert loader.results.len == 1 && observed.sources.len == 0
+
+	app.pending_native_navigation = none
+	app.load_frames.quiet_start_ns = 0
+	app.draw()
+	assert app.load_frames.deferred_frames == 2
+	assert loader.results.len == 0 && loader.requests.len == 0
+	parser_script_request_drain_tasks()
+	assert observed.sources == ['blocking']
+	assert observed.later_visible == [false]
+	assert document.get_element_by_id('later') != none
+}
+
+fn test_unthrottled_frame_yields_stale_layout_to_a_buffered_blocking_script() {
+	mut document, mut parser, mut loader, observed := parser_script_request_fixture(
+		'<!doctype html><p>Before</p><script src="blocking.js"></script><p id="later">After</p>', {})
+	document.set_cached_navigable(&dom.Navigable{active_document_: document})
+	mut app := &BrowserApp{document: document, script_request_loader: loader, document_presented: true}
+	defer {
+		if app.load_frames.timer != unsafe { nil } { app.load_frames.timer.stop() }
+		loader.cancel()
+		document.finalize()
+	}
+	parser.run()
+	assert parser.paused() && !document.layout_is_up_to_date()
+	now := time.sys_mono_now()
+	app.load_frames.generation = app.navigation_generation
+	app.load_frames.presented_ns = now
+	assert app.load_frames.deadline(now, app.navigation_generation) == 0
+	assert !app.defer_loading_frame(now)
+	parser_script_request_response(loader, 'blocking.js', 'blocking', '')
+	app.load_frames.last_input_ns = now
+	assert !app.defer_loading_frame(now)
+	app.load_frames.last_input_ns = 0
+	app.pending_native_navigation = 'https://parser-requests.test/replacement'
+	assert !app.defer_loading_frame(now)
+	app.pending_native_navigation = none
+
+	app.draw()
+	assert app.load_frames.deferred_frames == 1
+	assert loader.results.len == 0 && loader.requests.len == 0
+	assert observed.sources.len == 0
+	assert !app.defer_loading_frame(time.sys_mono_now())
+	parser_script_request_drain_tasks()
+	assert observed.sources == ['blocking']
+	assert observed.later_visible == [false]
+	assert document.get_element_by_id('later') != none
 }
 
 fn test_parser_async_requests_share_transport_but_complete_each_element_once() {

@@ -20,7 +20,7 @@ pub fn reflect_delete_property(mut vm VM) !Value {
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
 	key := property_key.to_property_key(mut vm)!
 	mut object := target.as_object()
-	return Value.from_bool(object.internal_delete(key))
+	return Value.from_bool(object.delete_checked(mut vm, key)!)
 }
 
 pub fn reflect_get(mut vm VM) !Value {
@@ -38,7 +38,7 @@ pub fn reflect_get_own_property_descriptor(mut vm VM, object_prototype ?&Object)
 	property_key := vm.argument(1)
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
 	key := property_key.to_property_key(mut vm)!
-	descriptor := target.as_object().internal_get_own_property(key)
+	descriptor := target.as_object().get_own_property_checked(mut vm, key)!.descriptor
 	return from_property_descriptor(mut vm, descriptor, object_prototype)
 }
 
@@ -47,7 +47,7 @@ pub fn reflect_has(mut vm VM) !Value {
 	property_key := vm.argument(1)
 	if !target.is_object() { return vm.throw_error_type(.type_error, .not_an_object, target.str()) }
 	key := property_key.to_property_key(mut vm)!
-	return Value.from_bool(target.as_object().internal_has_property(key))
+	return Value.from_bool(target.as_object().has_property_checked(mut vm, key)!)
 }
 
 pub fn reflect_set(mut vm VM) !Value {

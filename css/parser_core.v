@@ -34,10 +34,19 @@ fn is_ident_start_code_point(code_point u32) bool {
 		|| (!is_ascii(code_point) && is_unicode(code_point)) || code_point == `_`
 }
 
+// Ident code points below U+0080, one bit each: `-` and digits below U+0040,
+// letters and `_` from U+0040.
+const ident_code_point_bits_low = u64(0x03ff200000000000)
+const ident_code_point_bits_high = u64(0x07fffffe87fffffe)
+
 // https://www.w3.org/TR/css-syntax-3/#ident-code-point
 fn is_ident_code_point(code_point u32) bool {
-	// An ident-start code point, a digit, or U+002D HYPHEN-MINUS (-).
-	return is_ident_start_code_point(code_point) || is_digit(code_point) || code_point == `-`
+	// An ident-start code point, a digit, or U+002D HYPHEN-MINUS (-). Every
+	// non-ASCII code point is an ident-start code point; the tokenizer's EOF
+	// value lies above U+10FFFF.
+	if code_point < 0x40 { return (ident_code_point_bits_low >> code_point) & 1 != 0 }
+	if code_point < 0x80 { return (ident_code_point_bits_high >> (code_point - 0x40)) & 1 != 0 }
+	return code_point <= 0x10ffff
 }
 
 // https://www.w3.org/TR/css-syntax-3/#non-printable-code-point

@@ -1,0 +1,50 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Non-scaling strokes in SVG masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="520" height="94" viewBox="0 0 520 94">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="168" height="90">
+      <path id="live-width" d="M12 24H76" transform="scale(2)" fill="none" stroke="white"
+            stroke-width="6" stroke-dasharray="18 10" stroke-dashoffset="4"/>
+    </mask>
+    <pattern id="tile" patternUnits="userSpaceOnUse" width="24" height="16">
+      <rect width="8" height="16" fill="white"/>
+      <rect x="8" width="8" height="16" fill="#808080"/>
+    </pattern>
+    <mask id="pattern" maskUnits="userSpaceOnUse" x="180" y="0" width="165" height="90">
+      <path d="M18 96H290" transform="translate(180 0) scale(.5)" fill="none" stroke="url(#tile)"
+            stroke-width="6" vector-effect="non-scaling-stroke"/>
+    </mask>
+    <linearGradient id="split" gradientUnits="userSpaceOnUse" x1="0" x2="60">
+      <stop stop-color="white"/>
+      <stop offset=".5" stop-color="white"/>
+      <stop offset=".5" stop-color="#808080"/>
+      <stop offset="1" stop-color="#808080"/>
+    </linearGradient>
+    <mask id="gradient" maskUnits="userSpaceOnUse" x="356" y="0" width="156" height="90">
+      <path d="M7 24H72" transform="translate(356 0) scale(2)" fill="none" stroke="url(#split)"
+            stroke-width="6" vector-effect="non-scaling-stroke"/>
+    </mask>
+  </defs>
+  <path d="M0 0H168V90H0Z" fill="blue" mask="url(#alpha)"/>
+  <path d="M180 0H345V90H180Z" fill="blue" mask="url(#pattern)"/>
+  <path d="M356 0H512V90H356Z" fill="blue" mask="url(#gradient)"/>
+</svg>
+<script>
+let frame = 0;
+function editStroke() {
+    if (++frame === 12)
+        document.getElementById('live-width').setAttribute('vector-effect', 'non-scaling-stroke');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-stroke-width-ready', '');
+    else
+        requestAnimationFrame(editStroke);
+}
+requestAnimationFrame(editStroke);
+</script>

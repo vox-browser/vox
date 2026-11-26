@@ -17,13 +17,21 @@ fn C.vox_resource_curl_fetch(url &char, proxy &char, ca_bundle &char, user_agent
 fn C.vox_curl_slist_append(list voidptr, value &char) voidptr
 fn C.vox_curl_slist_free_all(list voidptr)
 
+@[typedef]
+struct C.VoxResourceBody {
+	data &u8
+	len  uint
+}
+
+fn C.vox_resource_body_append(body &C.VoxResourceBody, bytes voidptr, length uint, limit uint) bool
+
 @[heap]
 struct CancellableResponse {
 	scope    &RequestScope
 	progress &ResponseBodyProgress
 mut:
 	response      http.Response
-	body          []u8
+	body          C.VoxResourceBody
 	response_time i64
 	expected      u64
 }
@@ -68,8 +76,11 @@ fn cancellable_response_body(buffer voidptr, size uint, count uint, owner voidpt
 	mut state := unsafe { &CancellableResponse(owner) }
 	if state.scope.is_cancelled() { return 0 }
 	length := size * count
+	// Reserve space for the V string's trailing NUL.
+	if !C.vox_resource_body_append(&state.body, buffer, length, uint(max_int - 1)) {
+		return 0
+	}
 	chunk := unsafe { (&u8(buffer)).vbytes(int(length)) }
-	state.body << chunk
 	state.progress.observe(chunk, u64(state.body.len), state.expected, state.response.status_code)
 	return length
 }
@@ -97,6 +108,7 @@ fn fetch_cancellable(config http.FetchConfig, scope &RequestScope, mut progress 
 	for attempt in 0 .. 2 {
 		scope.check()!
 		mut state := &CancellableResponse{ scope: scope, progress: &progress }
+		defer { unsafe { C.free(state.body.data) } }
 		mut error_buffer := []u8{len: 256}
 		mut protocol := i32(0)
 		request_time := time.now().unix_milli()
@@ -126,7 +138,9 @@ fn fetch_cancellable(config http.FetchConfig, scope &RequestScope, mut progress 
 				': ' + message
 			}}')
 		}
-		state.response.body = state.body.bytestr()
+		if state.body.len != 0 {
+			state.response.body = unsafe { state.body.data.vbytes(int(state.body.len)).bytestr() }
+		}
 		return CancellableTransportResult{
 			response:      state.response
 			request_time:  request_time

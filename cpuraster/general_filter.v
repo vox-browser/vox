@@ -274,19 +274,13 @@ fn general_blur(image BlurImage, sigma_x f32, sigma_y f32) BlurImage {
 // The part of src at (x, y) inside a width x height transparent image.
 fn general_place(src BlurImage, x int, y int, width int, height int) BlurImage {
 	mut out := BlurImage{[]u8{len: width * height * 4}, width, height}
-	for row in 0 .. src.height {
-		dy := y + row
-		if dy < 0 || dy >= height {
-			continue
-		}
-		left := math_max_int(x, 0)
-		right := if x + src.width < width { x + src.width } else { width }
-		if left >= right {
-			continue
-		}
-		start := (row * src.width + (left - x)) * 4
-		copy(mut out.pixels[(dy * width + left) * 4..(dy * width + right) * 4], src.pixels[start..start +
-			(right - left) * 4])
+	left, top := math.max(x, 0), math.max(y, 0)
+	right, bottom := math.min(x + src.width, width), math.min(y + src.height, height)
+	if left < right && top < bottom {
+		start := ((top - y) * src.width + left - x) * 4
+		destination := (top * width + left) * 4
+		copy_raster_rectangle(src.pixels[start..], mut out.pixels[destination..], src.width * 4,
+			width * 4, (right - left) * 4, bottom - top)
 	}
 	return out
 }
@@ -297,15 +291,61 @@ fn general_tint(mut image BlurImage, color u32) {
 	general_tint_with_coverage(mut image,color,-1)
 }
 
+@[direct_array_access]
 fn general_tint_with_coverage(mut image BlurImage, color u32, coverage_alpha f32) {
 	ca := if coverage_alpha >= 0 { coverage_alpha } else { f32(color >> 24) * inv_255 }
 	rgb := [f32((color >> 16) & 255) * ca, f32((color >> 8) & 255) * ca, f32(color & 255) * ca]!
+	alpha_scale := f32(255) * ca
+	if image.pixels.len >= packed_rgba_scan_bytes {
+		// A constant SrcIn tint depends only on the input alpha byte.
+		// Build the table with the same rounding as the small scalar path.
+		mut table := [256][4]u8{}
+		for alpha in 0 .. table.len {
+			table[alpha] = filter_tint_pixel(u8(alpha), rgb, alpha_scale)
+		}
+		scan := FilterTintScan{
+			pixels: image.pixels.data
+			table:  table
+		}
+		pixel_bytes := image.pixels.len / 4 * 4
+		tail := run_packed_rgba_scans(&scan, pixel_bytes, scan_filter_tint)
+		scan.tint_span(tail, pixel_bytes)
+		return
+	}
 	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		a := f32(image.pixels[i + 3]) * inv_255
-		image.pixels[i] = general_byte(rgb[0] * a)
-		image.pixels[i + 1] = general_byte(rgb[1] * a)
-		image.pixels[i + 2] = general_byte(rgb[2] * a)
-		image.pixels[i + 3] = general_byte(f32(255) * ca * a)
+		pixel := filter_tint_pixel(image.pixels[i + 3], rgb, alpha_scale)
+		image.pixels[i] = pixel[0]
+		image.pixels[i + 1] = pixel[1]
+		image.pixels[i + 2] = pixel[2]
+		image.pixels[i + 3] = pixel[3]
+	}
+}
+
+@[inline]
+fn filter_tint_pixel(alpha u8, rgb [3]f32, alpha_scale f32) [4]u8 {
+	a := f32(alpha) * inv_255
+	return [general_byte(rgb[0] * a), general_byte(rgb[1] * a), general_byte(rgb[2] * a),
+		general_byte(alpha_scale * a)]!
+}
+
+struct FilterTintScan {
+	pixels &u8
+	table  [256][4]u8
+}
+
+fn scan_filter_tint(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterTintScan(context) }
+	scan.tint_span(int(first) * packed_rgba_scan_bytes, int(end) * packed_rgba_scan_bytes)
+}
+
+@[inline]
+fn (scan &FilterTintScan) tint_span(start int, end int) {
+	pixels := scan.pixels
+	unsafe {
+		for offset := start; offset < end; offset += 4 {
+			alpha := pixels[offset + 3]
+			vmemcpy(pixels + offset, &scan.table[alpha], 4)
+		}
 	}
 }
 
@@ -320,102 +360,236 @@ fn general_byte(v f32) u8 {
 	return u8(v + f32(0.5))
 }
 
-// SkImageFilters::Offset: whole-pixel translations copy; fractional ones
-// sample bilinearly, as the deferred transform does.
-fn general_offset(image BlurImage, dx f32, dy f32) BlurImage {
-	if !is_finite_f32(dx) || !is_finite_f32(dy) {
-		return BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	}
-	if dx == f32(math.round(dx)) && dy == f32(math.round(dy)) {
-		return general_place(image, int(dx), int(dy), image.width, image.height)
-	}
-	w, h := image.width, image.height
-	mut out := BlurImage{[]u8{len: image.pixels.len}, w, h}
-	for y in 0 .. h {
-		sy := f32(y) - dy
-		y0 := int(math.floor(sy))
-		fy := sy - f32(y0)
-		for x in 0 .. w {
-			sx := f32(x) - dx
-			x0 := int(math.floor(sx))
-			fx := sx - f32(x0)
-			for c in 0 .. 4 {
-				p00 := general_sample(image, x0, y0, c)
-				p10 := general_sample(image, x0 + 1, y0, c)
-				p01 := general_sample(image, x0, y0 + 1, c)
-				p11 := general_sample(image, x0 + 1, y0 + 1, c)
-				top_step := (p10 - p00) * fx
-				bottom_step := (p11 - p01) * fx
-				top := p00 + top_step
-				bottom := p01 + bottom_step
-				vertical := (bottom - top) * fy
-				out.pixels[(y * w + x) * 4 + c] = general_byte(top + vertical)
-			}
-		}
-	}
-	return out
-}
-
-@[inline]
-fn general_sample(image BlurImage, x int, y int, c int) f32 {
-	if x < 0 || y < 0 || x >= image.width || y >= image.height {
-		return 0
-	}
-	return f32(image.pixels[(y * image.width + x) * 4 + c])
-}
-
 // SkImageFilters::Merge: each input source-over the preceding ones.
 fn general_merge(inputs []BlurImage, width int, height int) BlurImage {
-	mut out := BlurImage{[]u8{len: width * height * 4}, width, height}
-	for input in inputs {
-		for i := 0; i + 3 < out.pixels.len; i += 4 {
-			sa := u32(input.pixels[i + 3])
+	output := []u8{len: width * height * 4}
+	scan := FilterMergeScan{
+		inputs:    inputs
+		output:    output
+		row_bytes: width * 4
+	}
+	run_raster_scans(&scan, height, width * inputs.len, scan_filter_merge)
+	return BlurImage{output, width, height}
+}
+
+struct FilterMergeScan {
+	inputs    []BlurImage
+	output    []u8
+	row_bytes int
+}
+
+fn scan_filter_merge(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterMergeScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	// Each range composites its rows through the complete input list in order.
+	for input in scan.inputs {
+		pixels := input.pixels
+		for i := start; i < stop; i += 4 {
+			sa := u32(pixels[i + 3])
 			if sa == 0 {
 				continue
 			}
 			inv := 255 - sa
 			for c in 0 .. 4 {
-				out.pixels[i + c] = u8(math.min(u32(255), u32(input.pixels[i + c]) +
-					(u32(out.pixels[i + c]) * inv + 127) / 255))
+				output[i + c] = u8(math.min(u32(255), u32(pixels[i + c]) +
+					(u32(output[i + c]) * inv + 127) / 255))
 			}
 		}
 	}
-	return out
 }
 
 // SkColorFilters::Matrix on premultiplied pixels through the ported
 // color filter: unpremultiply, the matrix, clamping, premultiply.
 fn general_color_matrix(image BlurImage, matrix MatrixColorFilter) BlurImage {
 	filter := new_color_filter([matrix]) or { return image }
-	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		c := filter.apply([f32(image.pixels[i]) * inv_255, f32(image.pixels[i + 1]) * inv_255, f32(image.pixels[i + 2]) * inv_255,
-			f32(image.pixels[i + 3]) * inv_255]!, false)
-		a := general_byte(c[3] * 255)
-		out.pixels[i + 3] = a
-		for k in 0 .. 3 {
-			v := general_byte(c[k] * 255)
-			out.pixels[i + k] = if v > a { a } else { v }
+	output := []u8{len: image.pixels.len}
+	scan := FilterMatrixScan{
+		source:      image.pixels
+		output:      output
+		row_bytes:   image.width * 4
+		pitch:       image.width * 4
+		filter:      filter
+		transparent: filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
+	}
+	run_raster_scans(&scan, image.height, image.width, scan_filter_matrix)
+	return BlurImage{output, image.width, image.height}
+}
+
+@[params]
+pub struct CanvasColorFilterOptions {
+pub:
+	// Zero uses tightly packed rows.
+	pitch int
+}
+
+fn (options CanvasColorFilterOptions) validated_pitch(pixels []u8, width int, height int) ?int {
+	pitch := if options.pitch == 0 { width * 4 } else { options.pitch }
+	if options.pitch != 0 && height > 1 && pitch > pixels.len / (height - 1) {
+		return none
+	}
+	if !untiled_device(pixels, width, height, pitch) { return none }
+	return pitch
+}
+
+// Clamp and premultiply each SVG stage in floating point. Only the final
+// result is quantized, so all stages can share one pass over the bitmap.
+pub fn apply_canvas_color_matrices_in_place(mut pixels []u8, width int, height int,
+	stages [][20]f32, linear_rgb bool, options CanvasColorFilterOptions) bool {
+	if stages.len == 0 { return false }
+	pitch := options.validated_pitch(pixels, width, height) or { return false }
+	mut matrices := []MatrixColorFilter{cap: stages.len}
+	for matrix in stages {
+		if !matrix.all(is_finite_f32(it)) { return false }
+		matrices << MatrixColorFilter{matrix: matrix, clamp: true}
+	}
+	filter := ColorFilter{matrices}
+	scan := FilterMatrixScan{
+		source: pixels
+		output: pixels
+		row_bytes: width * 4
+		pitch: pitch
+		filter: filter
+		transparent: if linear_rgb {
+			filter_linear_matrix_pixel(&filter, [u8(0), 0, 0, 0]!)
+		} else {
+			filter_matrix_pixel(&filter, [f32(0), 0, 0, 0]!)
 		}
 	}
-	return out
+	if linear_rgb {
+		run_raster_scans(&scan, height, width, scan_filter_linear_matrix)
+	} else {
+		run_raster_scans(&scan, height, width, scan_filter_matrix)
+	}
+	return true
+}
+
+struct FilterMatrixScan {
+	source      []u8
+	output      []u8
+	row_bytes   int
+	pitch       int
+	filter      ColorFilter
+	transparent [4]u8
+}
+
+fn scan_filter_matrix(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterMatrixScan(context) }
+	mut output := unsafe { scan.output }
+	for row in int(first) .. int(end) {
+		start := row * scan.pitch
+		stop := start + scan.row_bytes
+		for i := start; i < stop; i += 4 {
+			alpha := scan.source[i + 3]
+			// Unpremultiplication yields transparent black at zero alpha,
+			// regardless of the RGB bytes stored there.
+			if alpha == 0 && scan.transparent[3] == 0 {
+				continue
+			}
+			pixel := if alpha == 0 {
+				scan.transparent
+			} else {
+				filter_matrix_pixel(&scan.filter, [f32(scan.source[i]) * inv_255,
+					f32(scan.source[i + 1]) * inv_255, f32(scan.source[i + 2]) * inv_255,
+					f32(alpha) * inv_255]!)
+			}
+			for k in 0 .. 4 {
+				output[i + k] = pixel[k]
+			}
+		}
+	}
+}
+
+@[inline]
+fn filter_matrix_pixel(filter &ColorFilter, input [4]f32) [4]u8 {
+	c := filter.apply(input, false)
+	a := general_byte(c[3] * 255)
+	return [math.min(a, general_byte(c[0] * 255)), math.min(a, general_byte(c[1] * 255)),
+		math.min(a, general_byte(c[2] * 255)), a]!
+}
+
+fn scan_filter_linear_matrix(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterMatrixScan(context) }
+	mut output := unsafe { scan.output }
+	for row in int(first) .. int(end) {
+		start := row * scan.pitch
+		stop := start + scan.row_bytes
+		for i := start; i < stop; i += 4 {
+			alpha := scan.source[i + 3]
+			if alpha == 0 && scan.transparent[3] == 0 { continue }
+			pixel := if alpha == 0 {
+				scan.transparent
+			} else {
+				filter_linear_matrix_pixel(&scan.filter, [scan.source[i], scan.source[i + 1],
+					scan.source[i + 2], alpha]!)
+			}
+			for k in 0 .. 4 {
+				output[i + k] = pixel[k]
+			}
+		}
+	}
+}
+
+fn filter_linear_matrix_pixel(filter &ColorFilter, input [4]u8) [4]u8 {
+	// Keep both tone curves and the matrix in the same pass. Quantize only
+	// after converting the unpremultiplied output back to sRGB.
+	alpha := f64(input[3]) / 255
+	unpremul := if alpha > 0 { 1.0 / f64(input[3]) } else { 0.0 }
+	linear := [f32(general_decode_srgb(f64(input[0]) * unpremul) * alpha),
+		f32(general_decode_srgb(f64(input[1]) * unpremul) * alpha),
+		f32(general_decode_srgb(f64(input[2]) * unpremul) * alpha), f32(alpha)]!
+	// Multi-stage SVG filters can amplify even a small alpha change.
+	// Use the full premultiplied path throughout a chain.
+	color := filter.apply(linear, input[3] == 255 && filter.filters.len == 1)
+	a := general_byte(color[3] * 255)
+	if a == 0 { return [u8(0), 0, 0, 0]! }
+	alpha_scale := f64(color[3]) * 255
+	inverse := 1.0 / f64(color[3])
+	mut pixel := [u8(0), 0, 0, a]!
+	for k in 0 .. 3 {
+		pixel[k] = math.min(a, general_byte(f32(general_encode_srgb(f64(color[k]) * inverse) * alpha_scale)))
+	}
+	return pixel
 }
 
 fn general_alpha_table(image BlurImage, table [256]u8) BlurImage {
-	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		a := image.pixels[i + 3]
-		if a == 0 {
+	output := []u8{len: image.pixels.len}
+	scan := FilterOpacityScan{
+		source:    image.pixels
+		output:    output
+		row_bytes: image.width * 4
+		table:     table
+	}
+	run_raster_scans(&scan, image.height, image.width, scan_filter_opacity)
+	return BlurImage{output, image.width, image.height}
+}
+
+struct FilterOpacityScan {
+	source    []u8
+	output    []u8
+	row_bytes int
+	table     [256]u8
+}
+
+fn scan_filter_opacity(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterOpacityScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	for i := start; i < stop; i += 4 {
+		a := scan.source[i + 3]
+		na := scan.table[a]
+		// Transparent input and output both leave the initialized zero pixel.
+		if a == 0 || na == 0 {
 			continue
 		}
-		na := table[a]
 		for k in 0 .. 3 {
-			unpremul := f32(image.pixels[i + k]) * 255 / f32(a)
-			out.pixels[i + k] = general_byte(unpremul * f32(na) * inv_255)
+			unpremul := f32(scan.source[i + k]) * 255 / f32(a)
+			output[i + k] = general_byte(unpremul * f32(na) * inv_255)
 		}
-		out.pixels[i + 3] = na
+		output[i + 3] = na
 	}
-	return out
 }
 
 // SRGBToLinearGamma and LinearToSRGBGamma on unpremultiplied channels.
@@ -423,70 +597,60 @@ fn general_transfer(image BlurImage, to_linear bool) BlurImage {
 	mut table := [256]f32{}
 	for v in 0 .. 256 {
 		x := f64(v) / 255
-		table[v] = f32(if to_linear {
-			if x <= 0.04045 { x / 12.92 } else { math.pow((x + 0.055) / 1.055, 2.4) }
-		} else {
-			if x <= 0.0031308 { x * 12.92 } else { general_encode_srgb(x) }
-		})
+		table[v] = f32(if to_linear { general_decode_srgb(x) } else { general_encode_srgb(x) })
 	}
-	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
-	for i := 0; i + 3 < image.pixels.len; i += 4 {
-		a := image.pixels[i + 3]
+	output := []u8{len: image.pixels.len}
+	scan := FilterTransferScan{
+		source:    image.pixels
+		output:    output
+		row_bytes: image.width * 4
+		table:     table
+	}
+	run_raster_scans(&scan, image.height, image.width, scan_filter_transfer)
+	return BlurImage{output, image.width, image.height}
+}
+
+struct FilterTransferScan {
+	source    []u8
+	output    []u8
+	row_bytes int
+	table     [256]f32
+}
+
+fn scan_filter_transfer(context voidptr, first i32, end i32) {
+	scan := unsafe { &FilterTransferScan(context) }
+	mut output := unsafe { scan.output }
+	start := int(first) * scan.row_bytes
+	stop := int(end) * scan.row_bytes
+	for i := start; i < stop; i += 4 {
+		a := u32(scan.source[i + 3])
 		if a == 0 {
 			continue
 		}
 		fa := f32(a) * inv_255
 		for k in 0 .. 3 {
-			unpremul := int(math.min(255.0, math.round(f64(image.pixels[i + k]) * 255 / f64(a))))
-			out.pixels[i + k] = general_byte(table[unpremul] * fa * 255)
+			unpremul := filter_transfer_index(scan.source[i + k], a)
+			output[i + k] = general_byte(scan.table[unpremul] * fa * 255)
 		}
-		out.pixels[i + 3] = a
+		output[i + 3] = u8(a)
 	}
-	return out
+}
+
+// For a nonzero byte alpha, round the positive quotient to the nearest
+// byte, with half values rounded up, and clamp out-of-range source RGB.
+@[inline]
+fn filter_transfer_index(channel u8, alpha u32) int {
+	return int(math.min(u32(255), (u32(channel) * 255 + alpha / 2) / alpha))
+}
+
+fn general_decode_srgb(x f64) f64 {
+	return if x <= 0.04045 { x / 12.92 } else { math.pow((x + 0.055) / 1.055, 2.4) }
 }
 
 fn general_encode_srgb(x f64) f64 {
+	if x <= 0.0031308 { return x * 12.92 }
 	scaled := 1.055 * math.pow(x, 1 / 2.4)
 	return scaled - 0.055
-}
-
-// SkImageFilters::Erode/Dilate: the per-channel minimum or maximum over a
-// (2rx+1) x (2ry+1) window, decal outside the layer.
-fn general_morphology(image BlurImage, rx_in int, ry_in int, dilate bool) BlurImage {
-	if rx_in <= 0 && ry_in <= 0 {
-		return image
-	}
-	// Larger radii cover the whole layer before this cap matters.
-	rx := if rx_in > 256 { 256 } else if rx_in < 0 { 0 } else { rx_in }
-	ry := if ry_in > 256 { 256 } else if ry_in < 0 { 0 } else { ry_in }
-	w, h := image.width, image.height
-	mut horizontal := BlurImage{[]u8{len: image.pixels.len}, w, h}
-	for y in 0 .. h {
-		for x in 0 .. w {
-			for c in 0 .. 4 {
-				mut v := if dilate { u8(0) } else { u8(255) }
-				for k in -rx .. rx + 1 {
-					s := if x + k < 0 || x + k >= w { u8(0) } else { image.pixels[(y * w + x + k) * 4 + c] }
-					v = if dilate { if s > v { s } else { v } } else { if s < v { s } else { v } }
-				}
-				horizontal.pixels[(y * w + x) * 4 + c] = v
-			}
-		}
-	}
-	mut out := BlurImage{[]u8{len: image.pixels.len}, w, h}
-	for y in 0 .. h {
-		for x in 0 .. w {
-			for c in 0 .. 4 {
-				mut v := if dilate { u8(0) } else { u8(255) }
-				for k in -ry .. ry + 1 {
-					s := if y + k < 0 || y + k >= h { u8(0) } else { horizontal.pixels[((y + k) * w + x) * 4 + c] }
-					v = if dilate { if s > v { s } else { v } } else { if s < v { s } else { v } }
-				}
-				out.pixels[(y * w + x) * 4 + c] = v
-			}
-		}
-	}
-	return out
 }
 
 // make_svg_filter(): nodes evaluated in order, inputs -1 for the source,
@@ -557,22 +721,38 @@ fn general_svg_graph(source BlurImage, graph SvgFilterGraph, layer IRect, space 
 // Crop with decal tiling: pixels whose centers fall outside the device rect
 // become transparent.
 fn general_crop(image BlurImage, crop Rect, layer IRect) BlurImage {
-	mut out := BlurImage{image.pixels.clone(), image.width, image.height}
-	for y in 0 .. image.height {
-		cy := f32(layer.top + y) + f32(0.5)
-		row_inside := cy >= crop.top && cy < crop.bottom
-		for x in 0 .. image.width {
-			cx := f32(layer.left + x) + f32(0.5)
-			if !row_inside || cx < crop.left || cx >= crop.right {
-				i := (y * image.width + x) * 4
-				out.pixels[i] = 0
-				out.pixels[i + 1] = 0
-				out.pixels[i + 2] = 0
-				out.pixels[i + 3] = 0
-			}
-		}
+	mut out := BlurImage{[]u8{len: image.pixels.len}, image.width, image.height}
+	left := filter_crop_boundary(layer.left, image.width, crop.left)
+	right := filter_crop_boundary(layer.left, image.width, crop.right)
+	top := filter_crop_boundary(layer.top, image.height, crop.top)
+	bottom := filter_crop_boundary(layer.top, image.height, crop.bottom)
+	if left < right && top < bottom {
+		start := (top * image.width + left) * 4
+		pitch := image.width * 4
+		copy_raster_rectangle(image.pixels[start..], mut out.pixels[start..], pitch, pitch,
+			(right - left) * 4, bottom - top)
+	}
+	pixel_bytes := image.width * image.height * 4
+	if pixel_bytes < image.pixels.len {
+		copy(mut out.pixels[pixel_bytes..], image.pixels[pixel_bytes..])
 	}
 	return out
+}
+
+// Find the first pixel center on or after an edge. Use the same f32
+// expression as the pixel test, including where neighboring centers round
+// to the same value at large device coordinates.
+fn filter_crop_boundary(origin int, extent int, edge f32) int {
+	mut first, mut end := 0, extent
+	for first < end {
+		mid := first + (end - first) / 2
+		if f32(origin + mid) + f32(0.5) < edge {
+			first = mid + 1
+		} else {
+			end = mid
+		}
+	}
+	return first
 }
 
 // draw_general_canvas_path is the Skia-free fallback for a Canvas2D fill or

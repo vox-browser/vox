@@ -280,6 +280,58 @@ static CFStringRef vox_ct_cached_family_name(CTFontRef font) {
 	return family;
 }
 
+static unsigned vox_ct_be16(const UInt8 *bytes) { return (unsigned)bytes[0] << 8 | bytes[1]; }
+
+// A 16.16 limit as CoreText reports it, when it needs no rounding: CoreText
+// truncates axis limits to four decimals (Skia's 0.479996 wght minimum reads
+// 0.4799).
+static int vox_ct_exact_axis_limit(const UInt8 *bytes, double *value) {
+	double limit = (int32_t)vox_ct_be32(bytes) / 65536.0;
+	if (trunc(limit * 10000.0) / 10000.0 != limit)
+		return 0;
+	*value = limit;
+	return 1;
+}
+
+// The `wght` range from the 'fvar' table, as CTFontCopyVariationAxes() would
+// report it without that call's localization of every axis name (about 30M
+// instructions for the system UI font). Returns 1 with *found set when the
+// table settles the answer, 0 to ask CoreText.
+static int vox_ct_fvar_weight_axis_range(CTFontRef font, double *minimum, double *maximum, int *found) {
+	*found = 0;
+	const char *disabled = getenv("VOX_DISABLE_FVAR_WEIGHT_AXIS_RANGE");
+	if (disabled && *disabled)
+		return 0;
+	CFDataRef table = CTFontCopyTable(font, 'fvar', kCTFontTableOptionNoOptions);
+	if (!table)
+		return 1;
+	const UInt8 *bytes = CFDataGetBytePtr(table);
+	CFIndex length = CFDataGetLength(table);
+	int resolved = 0;
+	if (length >= 16) {
+		unsigned offset = vox_ct_be16(bytes + 4), count = vox_ct_be16(bytes + 8), size = vox_ct_be16(bytes + 10);
+		if (size >= 20 && offset + (CFIndex)count * size <= length) {
+			resolved = 1;
+			for (unsigned index = 0; index < count; ++index) {
+				const UInt8 *axis = bytes + offset + index * size;
+				if (vox_ct_be32(axis) != 0x77676874) // wght
+					continue;
+				double low = 0, high = 0;
+				if (vox_ct_exact_axis_limit(axis + 4, &low) && vox_ct_exact_axis_limit(axis + 12, &high)) {
+					*minimum = low;
+					*maximum = high;
+					*found = 1;
+				} else {
+					resolved = 0;
+				}
+				break;
+			}
+		}
+	}
+	CFRelease(table);
+	return resolved;
+}
+
 // The font's `wght` axis range. Returns 0 when the face has no such axis.
 static int vox_ct_weight_axis_range(CTFontRef font, double *minimum, double *maximum) {
 	const int tag = 0x77676874; // wght
@@ -297,7 +349,8 @@ static int vox_ct_weight_axis_range(CTFontRef font, double *minimum, double *max
 		return found;
 	}
 	int found = 0;
-	CFArrayRef axes = CTFontCopyVariationAxes(font);
+	CFArrayRef axes = vox_ct_fvar_weight_axis_range(font, minimum, maximum, &found)
+		? NULL : CTFontCopyVariationAxes(font);
 	for (CFIndex index = 0; axes && index < CFArrayGetCount(axes); ++index) {
 		CFDictionaryRef axis = (CFDictionaryRef)CFArrayGetValueAtIndex(axes, index);
 		if ((int)vox_ct_number(axis, kCTFontVariationAxisIdentifierKey) == tag) {

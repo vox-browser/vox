@@ -432,3 +432,159 @@ What remains below the input rate:
   burst, and one run had none at all, so it depends on the environment.
 - Occasional 100–130 ms frames elsewhere in the thread did not recur under
   diagnostics; host load from other sessions also moves the input rate itself.
+
+## Live r/europe listing on 2026-11-23
+
+Two fresh launches of the live listing at 100% page zoom on the shared macOS
+production build reproduced the lag. Each trial used a 1701×948 document
+viewport at 2×, an empty private profile and HTTP cache, and the automatic
+script policy (which enabled JavaScript). The host's OS caches were retained.
+After the title `Europe` settled for eight seconds, the native input probe
+sent 360 precise six-point wheel events at nominal 60 Hz, reversing at event
+180. Throughput counts scroll-changing native frame installations during the
+entire input window. The Mac's 18 logical CPUs were under substantial
+contention, with one-minute load rising from 92.4 to 129.1 across the trials.
+
+| Trial (UTC start) | Scroll FPS | Input Hz | Scroll changes / publications | Median / p95 / max (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 02:18:51 | 9.48 | 28.12 | 121 / 142 | 73.20 / 245.70 / 550.74 | 90.91% | 669.34 / 25.36 |
+| 02:19:20 | 17.04 | 40.79 | 150 / 181 | 34.01 / 126.26 / 268.18 | 90.00% | 393.28 / 197.62 |
+
+Both browsers and the 12 GiB memory guard exited 0. The production receipt was
+`20261123-042042-7650db79` with executable SHA-256
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102` and
+`libVoxAVIF.dylib` SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+Two earlier attempts using lowercase `europe` missed the case-sensitive title
+gate and timed out before input (both browser exits were −9). The external
+sample captured rendering stacks, while the simultaneous bounded stall logger
+overflowed and the diagnostic driver exited 1. Separate raster and geometry
+diagnostics both finished with browser and guard exit 0.
+
+All 45 raster passes logged after input began reused the viewport. The largest
+rounded shadow still rasterized a 2738×2120 device-pixel surface even when
+Quartz published a strip as narrow as 50 device pixels. Another tall shadow and
+the rounded listing background also transferred large surfaces. Sampled
+main-thread stacks were dominated by shadow mask preparation, Metal transfers
+and texture uploads.
+
+On reused frames the macOS shape bridge now bounds rounded fill and outer
+shadow transfers to the repaint clip when it covers at most half the leaf.
+It keeps the original standalone surface or compositor tiles, including their
+sample count, and computes analytic shadow coverage only for the transfer
+rectangle. General blur filters keep their source bounds and sampling grid.
+`VOX_DISABLE_SCROLL_SHAPE_REGIONS=1` selects the whole-leaf control on the same
+binary, and `VOX_SCROLL_SHAPE_REGION_DIAGNOSTICS=1` logs the cropped and
+original dimensions for a separate eligibility run.
+
+An isolated C-backend test drew the 2738×2120 rounded shadow five times per
+path, comparing a 2738×100 crop byte for byte. Every crop matched. The full
+draws took 183–316 ms and the cropped draws took 13–91 ms with the leaf cache
+off. These diagnostic timings are for one shadow in an unoptimized test
+executable under contention.
+
+The Chromium geometry test also matched full and cropped pixels for
+rectangular and rounded shadows and rounded fills, with fractional shape
+coordinates, mixed sample counts and a crop crossing both tile boundaries.
+The GG leaf-region, shadow reference and native scroll-ring checks passed.
+
+Reproduce the live input protocol from the repository root with a unique job
+directory. Use a new output directory for every process.
+
+```sh
+D=$(mktemp -d Build/reddit-europe-scroll.XXXXXX)
+env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY -u all_proxy -u http_proxy -u https_proxy \
+  VOX_TEST_WINDOW=1 sh tools/run_v_tool.sh run_memory_bounded \
+  --lock "$D/live.lock" --report "$D/live-guard.json" -- \
+  python3 tools/measure_precise_scroll.py --output "$D/run" \
+  --url https://old.reddit.com/r/europe/ --width 1701 --height 948 \
+  --inputs 360 --delta 6 --reverse-every 180 --require-title Europe \
+  --settle-seconds 8 --timeout 55 \
+  --network-policy 'Live HTTPS, empty private HTTP cache per process, host OS caches retained'
+```
+
+## Live r/europe comment thread on 2026-11-23
+
+The [reported comment thread](https://old.reddit.com/r/europe/comments/1y2nf00/intimidating_vigilantes_posing_as_farright/)
+still stalled after the listing change. Two fresh macOS launches at 100% zoom
+used a 1701×948 document viewport at 2×, an empty private profile and HTTP cache,
+the automatic script policy, and retained OS caches. After eight seconds with
+the matching title, `tools/measure_precise_scroll.py` sent 480 precise six-point
+wheel events at nominal 60 Hz, reversing after 240. The endpoint measures
+scroll-changing native frame installations over the complete input window.
+
+| Trial (UTC start) | Scroll FPS | Input Hz | Scroll changes / publications | Median / p95 / max (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 03:13:08 | 23.38 | 48.27 | 232 / 236 | 21.29 / 193.08 / 329.04 | 72.41% | 203.08 / 0.33 |
+| 03:14:02 | 23.58 | 47.26 | 239 / 244 | 22.18 / 187.08 / 340.53 | 74.06% | 155.85 / 0.35 |
+
+Both completed all 480 inputs, and the browser and guards exited 0. The
+one-minute host load was 17.0–21.4 on 18 logical CPUs. The first attempted run
+completed in the browser, but its driver exited 1 because production published
+a replacement executable before it could verify the input hashes. The valid
+trials used receipt `20261123-060034-72fee019`, executable SHA-256
+`1a716874d467a366ff3eeeab46e48954c0f93e97bd4245e37a01af9db8e840da`,
+and `libVoxAVIF.dylib` SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+The separate raster and stack diagnostic completed 205 viewport-reusing
+passes after input began. It logged 379 cropped shape transfers. The tall
+comment outlines still dominated the slowest frames, despite damage largely
+following the exposed strip. A second geometry diagnostic found unblurred
+shadows with zero effective alpha and uniform strokes replaying surfaces as
+large as 2650×2120 device pixels. The geometry and sampling drivers and their
+guards exited 0.
+
+Chromium replay now returns before native raster setup when an outer box
+shadow's effective alpha is zero. Stroked rounded rectangles and visible
+unblurred shadows can use the existing cropped transfer path with their
+original tile geometry. The same-binary control sets
+`VOX_DISABLE_SCROLL_OUTLINE_REGIONS=1` and
+`VOX_REPLAY_TRANSPARENT_BOX_SHADOWS=1`, leaving the earlier listing
+optimizations active.
+
+Five isolated C-backend trials on the traced 2650×2120 shadow and border
+compared a 2650×100 repaint strip byte for byte. All pixels matched. The full
+pair took 6.1–7.7 ms. The cropped stroke took 54.5 ms on its first draw and
+0.9–3.8 ms on subsequent draws. These times describe two isolated leaves with
+the leaf cache disabled, including the cold draw.
+
+The Chromium geometry regression passed with exact pixels for the new
+outline modes, including fractional coordinates, rounded underlays, mixed
+tile sample counts and a crop spanning tile boundaries. The transparent
+shadow test also passed with no native raster context.
+
+### Production replay
+
+Receipt `20261123-061736-d9523769` published the renderer change in executable
+`70d03ef7a4fe9572c2397421b6922cf7b1a6bddf2b01fb5b84c4e43e9fa76bc9`
+(single C unit, V `-prod`, same AVIF library hash as above). Its source manifest
+matches both committed renderer files and its guarded startup and native
+wheel smoke check exited 0.
+
+The same-binary live comparison used the protocol above. The first pair ran
+control then fixed, and the second reversed that order. All four browser runs
+completed 480 wheel events with verified input hashes. Their browser, driver
+and 12 GiB guard exits were 0. One-minute host load varied from 54.5 to 76.6
+during the cohort, including the lower-load second control.
+
+| Arm (UTC start) | Scroll FPS | Input Hz | Scroll changes / publications | Median / p95 / max (ms) | Over 16.67 ms | Leading / trailing scroll gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control 03:27:30 | 25.52 | 47.02 | 260 / 265 | 20.10 / 160.30 / 282.66 | 70.77% | 163.40 / 0.33 |
+| Fixed 03:27:54 | 46.26 | 55.95 | 396 / 408 | 17.08 / 55.01 / 119.68 | 57.83% | 193.92 / 17.85 |
+| Fixed 03:28:17 | 45.53 | 56.65 | 385 / 396 | 17.12 / 52.92 / 128.86 | 58.70% | 157.20 / 18.63 |
+| Control 03:28:38 | 25.20 | 48.87 | 247 / 250 | 20.01 / 169.69 / 276.86 | 74.49% | 155.33 / 0.34 |
+
+A separate eligibility run logged 442 cropped stroke transfers whose original
+surfaces exceeded 1900×1000 device pixels. The slowest frames still included
+bursts of small sidebar shadows and several nested borders. The live
+measurements continue to miss the 60 Hz frame budget.
+
+The 3402×1896 document viewport of a fixed nested-outline page matched
+pixel for pixel at final scroll offset 2910. The production diagnostic
+confirmed cropped strokes during that run. A fixture with a repeating
+gradient differed by one channel level in 27,652 pixels inside the gradient.
+Two control runs of that same gradient differed by one level in 28,024 pixels
+in the same bounds. Both screenshot guards exited 0 after correcting the
+repeat helper's string comparison of the numeric offset. The solid fixture
+was compared with zero tolerance.

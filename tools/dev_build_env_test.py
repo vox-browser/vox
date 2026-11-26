@@ -21,7 +21,7 @@ class DevelopmentBuildEnvironmentTests(unittest.TestCase):
 
     def test_windows_embeds_resources_and_selects_the_shared_ui2_renderer(self):
         flags = shlex.split(build_flags(Path('C:/vox'), [], 'win32'))
-        for flag in ['-prod', '-no-prod-options', 'none', 'sokol_d3d11', 'ui2_custom_rendering']:
+        for flag in ['-prod', '-no-prod-options', 'none', 'sokol_d3d11', 'vox_gg_svg', 'ui2_custom_rendering']:
             self.assertIn(flag, flags)
         self.assertEqual(flags[flags.index('-cc') + 1], 'gcc')
 

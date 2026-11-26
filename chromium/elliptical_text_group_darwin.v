@@ -4,7 +4,6 @@ import layout
 import cpuraster
 import ggshape
 import math
-import os
 
 // A bounded picture prefix with only supported geometry followed by glyphs.
 // Culled commands have no drawing or resource state to preserve. Every visible
@@ -33,7 +32,7 @@ fn elliptical_text_group_indices(commands []layout.PaintCommand, layers []int, s
 			|| c.opacity != 1 || c.group_opacity != 1 || c.outer_shadow || c.disable_antialias
 			|| c.recording_clip != none || c.clip_outs.len != 0 || c.scrollbar_axis != ''
 			|| !chromium_shared_recording_clips_supported(c) || chromium_contoured_box_supported(c) {
-			if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+			if chromium_paint_layer_diagnostics {
 				eprintln('ELLIPSE_TEXT_BLOCK start=${start} i=${i} kind=${c.kind} owner=${layers[i]} clip_same=${voidptr(c.clip_list) == voidptr(first.clip_list)} clip=${c.has_clip} compat=${c.clip_x},${c.clip_y},${c.clip_width},${c.clip_height} opacity=${c.opacity}/${c.group_opacity} props=${c.outer_shadow}/${c.disable_antialias}/${c.recording_clip != none}/${c.clip_outs.len}')
 			}
 			break
@@ -125,12 +124,12 @@ fn elliptical_text_coverage(command &layout.PaintCommand, geometry [7]i32, page_
 
 fn (mut app BrowserApp) draw_elliptical_text_group(start int, page_y f32) int {
 	if !app.ctx.native_rendering || app.document == unsafe { nil } || app.page_zoom != 1
-		|| app.document.font_rendering_policy() != .chromium || C.native_display_device_pixel_ratio() != 1 {
+		|| app.document.font_rendering_policy() != .chromium || C.native_raster_device_pixel_ratio() != 1 {
 		return start
 	}
 	selected := elliptical_text_group_indices(app.paint_commands, app.chromium_raster_plan.command_layers, start, layout.LayoutRect{0, 0, f64(app.viewport_width), f64(app.viewport_height)})
 	if selected.len == 0 { return start }
-	if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+	if chromium_paint_layer_diagnostics {
 		eprintln('ELLIPSE_TEXT_SELECTED start=${start} selected=${selected}')
 	}
 	first := &app.paint_commands[start]
@@ -160,7 +159,7 @@ fn (mut app BrowserApp) draw_elliptical_text_group(start int, page_y f32) int {
 		c := &app.paint_commands[i]
 		if c.kind == 'draw_text' {
 			mask := elliptical_text_coverage(c, geometry, page_y) or {
-				if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+				if chromium_paint_layer_diagnostics {
 					eprintln('ELLIPSE_TEXT_MASK_DECLINE index=${i}')
 				}
 				return start
@@ -221,7 +220,7 @@ fn (mut app BrowserApp) draw_elliptical_text_group(start int, page_y f32) int {
 	if C.native_text_raster_finish(pixels.data, geometry[0], geometry[1], geometry[2], geometry[3], geometry[5], geometry[6], f32(app.ctx.height), geometry[4]) == 0 {
 		return start
 	}
-	if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+	if chromium_paint_layer_diagnostics {
 		eprintln('VOX_ELLIPSE_TEXT start=${start} end=${selected.last() + 1} shapes=${shapes.len} glyphs=${masks.len}')
 	}
 	return selected.last() + 1

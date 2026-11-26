@@ -2,6 +2,7 @@ module main
 
 import html
 import dom
+import mimesniff
 import os
 import platform
 
@@ -13,16 +14,16 @@ struct TokenizedNavigationPreloads {
 }
 
 // Only the scripting-enabled path discards discovery without computed styles.
-// Preserve the full parser for foreign/template/selection contexts, bases,
-// preferred stylesheet sets and document policy/encoding changes.
+// Preserve the full parser for foreign/template/selection contexts, base URL
+// changes, stylesheet set selection and document policy/encoding changes.
 fn tokenized_navigation_preloads(loaded LoadedPage) ?TokenizedNavigationPreloads {
 	mut work := platform.begin_thread_scratch('tokenized navigation preloads')
-	markup, _ := loaded_browser_navigation_input(loaded)
+	markup, document_encoding := loaded_browser_navigation_input(loaded)
 	address := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') or {
 		work.finish()
 		return none
 	}
-	result := collect_tokenized_navigation_preloads(markup, address.serialize()) or {
+	result := collect_tokenized_navigation_preloads(markup, address.serialize(), document_encoding or { '' }) or {
 		work.finish()
 		return none
 	}
@@ -35,12 +36,13 @@ fn tokenized_navigation_preloads(loaded LoadedPage) ?TokenizedNavigationPreloads
 	return TokenizedNavigationPreloads{urls:urls, types:types}
 }
 
-fn collect_tokenized_navigation_preloads(markup string, base_url string) ?TokenizedNavigationPreloads {
+fn collect_tokenized_navigation_preloads(markup string, base_url string, document_encoding string) ?TokenizedNavigationPreloads {
 	mut tokenizer := html.HTMLTokenizer.new(markup)
 	mut styles := []string{}
 	mut scripts := []string{}
 	mut script_type_urls := []string{}
 	mut images := []string{}
+	mut stylesheet_set_title := ''
 	mut saw_html := false
 	mut saw_head := false
 	mut saw_body := false
@@ -53,8 +55,11 @@ fn collect_tokenized_navigation_preloads(markup string, base_url string) ?Tokeni
 		if token.is_end_of_file() { break }
 		if !token.is_start_tag() { continue }
 		name := token.tag_name
-		if token.had_duplicate_attribute() || name in ['base','noscript','template','svg','math',
+		if token.had_duplicate_attribute() || name in ['noscript','template','svg','math',
 			'select','frameset','frame','iframe','object','plaintext','image','feimage'] { return none }
+		// A base that repeats the response URL resolves exactly as the fallback
+		// base, even when document policy rejects the element.
+		if name == 'base' && (token.attribute('href') or { '' }) != base_url { return none }
 		if name == 'html' { saw_html = true }
 		if name == 'head' {
 			if !saw_html || saw_body { return none }
@@ -64,15 +69,33 @@ fn collect_tokenized_navigation_preloads(markup string, base_url string) ?Tokeni
 			if !saw_html || !saw_head { return none }
 			saw_body = true
 		}
-		if name == 'meta' && token.attribute('http-equiv') != none { return none }
+		if name == 'meta' {
+			if pragma := token.attribute('http-equiv') {
+				if pragma.to_lower() != 'content-type' || document_encoding.to_lower() != 'utf-8'
+					|| token.has_attribute('charset') { return none }
+				mime := mimesniff.MimeType.parse(token.attribute('content') or { '' }) or { return none }
+				charset := mime.parameters()['charset'] or { return none }
+				if mime.essence() != 'text/html' || charset.to_lower() != 'utf-8' { return none }
+			}
+		}
 		if name == 'style' && (token.attribute('title') or { '' }) != '' { return none }
 		if name == 'link' {
 			relations := (token.attribute('rel') or { '' }).to_lower().fields()
 			stylesheet := 'stylesheet' in relations
 			preload := 'preload' in relations && (token.attribute('as') or { '' }).to_lower() == 'style'
-			if stylesheet && (token.has_attribute('disabled')
-				|| (token.attribute('title') or { '' }) != '') { return none }
-			if 'alternate' in relations && stylesheet { return none }
+			if stylesheet {
+				if token.has_attribute('disabled') || 'alternate' in relations
+					|| !html.is_supported_style_sheet_type_attribute(token.attribute('type')) {
+					return none
+				}
+				title := token.attribute('title') or { '' }
+				if title != '' && token.has_attribute('href') {
+					// The same set is selected regardless of which named link comes
+					// first. Untitled sheets are persistent and also apply.
+					if stylesheet_set_title != '' && title != stylesheet_set_title { return none }
+					stylesheet_set_title = title
+				}
+			}
 			valid_preload := preload && (token.attribute('type') or { '' }).split(';')[0].trim_space().to_lower() in ['', 'text/css']
 			if (stylesheet || valid_preload) && token.has_attribute('href') {
 				styles << resolve_document_reference(token.attribute('href') or { '' }, base_url)

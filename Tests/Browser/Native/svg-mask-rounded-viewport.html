@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG masks in rounded viewports</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+.viewport { position: absolute; top: 20px; overflow: hidden; transform-origin: 0 0; }
+svg { display: block; transform-origin: 0 0; }
+#plain { left: 20px; width: 108px; height: 84px; border-radius: 8px; }
+#reflect { left: 0; width: 112px; height: 88px; border-radius: 26px 20px 26px 34px / 26px 22px 26px 28px; transform: matrix(-1, .5, .5, 1, 380, 0); }
+#reflect svg { transform: matrix(-.8, .4, .4, .8, 80, 8); }
+</style>
+<header></header>
+<div id="plain" class="viewport">
+  <svg width="108" height="84">
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="72" height="84">
+      <path d="M0 0H108V84H0Z" fill="white"/>
+    </mask>
+    <g mask="url(#alpha)">
+      <path d="M0 0H108V84H0Z" fill="blue"/>
+      <path d="M42 18H52V42H42Z" fill="red"/>
+    </g>
+  </svg>
+</div>
+<div id="reflect" class="viewport">
+  <svg width="140" height="100">
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="106" height="98">
+      <path d="M0 0H140V100H0Z" fill="white" opacity=".5"/>
+    </mask>
+    <path d="M0 0H140V100H0Z" fill="blue" mask="url(#luminance)"/>
+  </svg>
+</div>
+<script>
+let frame = 0;
+function roundViewport() {
+    if (++frame === 12)
+        document.getElementById('plain').style.borderRadius = '32px';
+    if (frame === 24)
+        document.body.setAttribute('data-mask-rounded-viewport-ready', '');
+    else
+        requestAnimationFrame(roundViewport);
+}
+requestAnimationFrame(roundViewport);
+</script>

@@ -769,12 +769,19 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 	}
 	typed := style_value_logic_from_dom(property_id, value) or { return unsafe { value } }
 	if typed is UnresolvedStyleValue {
+		note_cascade_substitution(abstract_element, typed)
+		if reused := lookup_environment_substitution(abstract_element, property_id, value, typed) {
+			return reused
+		}
 		mut resolved := resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
 		resolved.base_url = value.base_url
-		if opaque_is_guaranteed_invalid(resolved) {
-			return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
+		result := if opaque_is_guaranteed_invalid(resolved) {
+			dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
+		} else {
+			resolved
 		}
-		return resolved
+		store_environment_substitution(abstract_element, property_id, value, typed, result)
+		return result
 	}
 	if typed is GuaranteedInvalidStyleValue {
 		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.unset)))
@@ -1137,7 +1144,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		}
 		scope := css_style_scope_for(pseudo_abstract)
 		mut new_pseudo_style := ?&ComputedProperties(none)
-		has_candidate := scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
+		has_candidate := scope.has_indexed_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
 		if has_candidate {
 			// Bucket admission does not match selectors. Only a cascade needs
 			// the originating element in the ancestor filter for its pseudo.
@@ -1285,7 +1292,18 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		return invalidation
 	}
 
-	s.compute_property_values(mut computed, *abstract_element)
+	// compute_alignment_values() resolves a bare justify-items legacy against
+	// the parent after the longhand values, as the complete computation does.
+	// Every element starts with that value, so when no inherited value
+	// changed and it is the only parent-dependent one, resolve it alone.
+	if retain_justify_items_refresh {
+		s.compute_property_values(mut computed, *abstract_element)
+	} else if invalidation.is_none() && inheritance_dependence_is_justify_items_only(computed) {
+		compute_alignment_values(mut computed, *abstract_element)
+	} else {
+		s.compute_property_values(mut computed, *abstract_element)
+		compute_alignment_values(mut computed, *abstract_element)
+	}
 	for affected in values_affected_by_inherited_style {
 		property_invalidation := compute_property_invalidation(affected.property_id, affected.old_value, computed.property(affected.property_id, .no))
 		only_color_changes = only_color_changes && (affected.property_id == .color || property_invalidation.is_none())
@@ -1313,6 +1331,14 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		}
 	}
 	return invalidation
+}
+
+fn inheritance_dependence_is_justify_items_only(computed &ComputedProperties) bool {
+	if computed.inheritance_specified_storage_ == unsafe { nil } { return false }
+	for property_id, _ in computed.inheritance_specified_storage_.values {
+		if property_id != .justify_items { return false }
+	}
+	return true
 }
 
 fn animated_property_maps_invalidation(old_values map[PropertyID]&dom.StyleValue, new_values map[PropertyID]&dom.StyleValue) RequiredInvalidationAfterStyleChange {
@@ -1550,7 +1576,8 @@ fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_el
 	}
 	// Hidden animated targets ask this on every sample; walk the stores in
 	// place rather than collecting per-target lists.
-	if style_computer.css_animation_storage_ != unsafe { nil } {
+	if style_computer.css_animation_storage_ != unsafe { nil }
+		&& style_computer.css_animation_storage_.has_entries_for(abstract_element) {
 		for entry in style_computer.css_animation_storage_.entries {
 			if !abstract_elements_equal(entry.abstract_element, abstract_element) {
 				continue
@@ -1967,6 +1994,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	element_opt := node.as_element()
 	if element := element_opt {
 		style_computer.push_ancestor(element)
+		note_style_pass(9)
 	}
 
 	mut is_display_none := false
@@ -1978,13 +2006,15 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 			|| parent_display_changed
 			|| ancestor_needs_descendant_style_recompute
 			|| (recompute_elements_depending_on_custom_properties
-				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
+				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()
+					|| element.style_declares_custom_properties()))
 			|| needs_style_update_due_to_if_media
 		if should_recompute {
             reason := if needs_full_style_update { 0 } else if node.needs_style_update() { 1 }
                 else if parent_display_changed { 2 } else if ancestor_needs_descendant_style_recompute { 3 }
                 else if recompute_elements_depending_on_custom_properties { 4 } else { 5 }
             record_diagnostic_style_update_cause(reason)
+            note_style_pass(reason)
             record_diagnostic_style_update_element(reason, element)
 			mut abstract_element := dom.AbstractElement.new(element, none)
 			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
@@ -1995,16 +2025,19 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 				mutable_element.set_pending_font_input_update(false)
 				if font_invalidation := style_computer.try_refresh_font_inputs(element) {
                     record_diagnostic_style_update_cause(6)
+                    note_style_pass(6)
 					node_invalidation = font_invalidation
 					font_inputs_refreshed = true
 				} else {
                     record_diagnostic_style_update_cause(7)
+                    note_style_pass(7)
 					mut abstract_element := dom.AbstractElement.new(element, none)
 					node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 					font_inputs_refreshed = true
 				}
 			}
 			if needs_inherited_style_update && !font_inputs_refreshed {
+				note_style_pass(8)
 				mut abstract_element := dom.AbstractElement.new(element, none)
 				node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut abstract_element)
 			}
@@ -2038,7 +2071,8 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	if node_invalidation.needs_relayout() {
 		mutable_node.set_needs_layout_update(.style_change)
 	}
-	if node_invalidation.needs_layout_tree_rebuild() {
+	if node_invalidation.needs_layout_tree_rebuild()
+		&& !style_change_cannot_change_layout_tree(node, is_display_none) {
 		if parent_element := node.parent_or_shadow_host_element() {
 			mut mutable_parent := unsafe { &dom.Node(parent_element.as_node()) }
 			mutable_parent.set_needs_layout_tree_update(true, .style_change)
@@ -2160,7 +2194,10 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 	style_computer.reset_has_result_cache()
 	style_computer.reset_ancestor_filter()
 	mutable_document.build_registered_properties_cache()
-	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false, false, false)
+	started := style_pass_clock()
+	result := update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false, false, false)
+	report_style_pass(document, started)
+	return result
 }
 
 // The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.

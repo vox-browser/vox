@@ -4,6 +4,7 @@ module browserjs
 import css
 import dom
 import html
+import os
 
 pub type ElementWheelReplayHook = fn (&Runtime) !
 
@@ -35,6 +36,7 @@ pub fn ElementWheelHost.create_with_replay(document &dom.Document, replay ?Eleme
 	}
 	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
 		host.elements['__element_${index}'] = element
+		invalidate_element_key_index(voidptr(host))
 	}
 	return host
 }
@@ -45,6 +47,59 @@ pub fn (host &ElementWheelHost) elements_for_binding() map[string]&dom.Element {
 
 fn (mut host ElementWheelHost) refresh_elements() {
 	host.runtime.merge_canvas_elements_into(mut host.elements)
+	invalidate_element_key_index(voidptr(host))
+}
+
+// Same-binary control: refresh the host's map from every provider and scan it
+// for each event target without a wrapper, as before.
+const retain_wheel_element_refresh = os.getenv('VOX_RETAIN_WHEEL_ELEMENT_REFRESH') != ''
+
+__global wheel_element_key_counts [2]u64
+
+// Wrapper keys resolved from the providers' single key, and resolved by
+// refreshing the host's map, in this process (tests and diagnostics).
+pub fn wheel_element_key_statistics() (u64, u64) {
+	return wheel_element_key_counts[0], wheel_element_key_counts[1]
+}
+
+// The key the wrapper resolver receives for `element`: the first key naming
+// it in the host's map refreshed from every provider. Copying every
+// provider's map and scanning the result cost each new custom element and
+// each first event target O(elements) (13 million instructions per
+// createElement of a custom element on a 2,700-element page), and each
+// refresh made the next identity lookup index the maps again.
+//
+// The refreshed map names `element` by exactly the keys a provider maps to
+// it (providers only add keys; the last provider with a key wins, as in
+// canvas_element_for_binding()). With one such key, which the providers
+// resolve to `element`, that key is the answer, and it is the one entry the
+// refresh would add or change for this element. No key leaves nothing to find.
+// Several keys keep the refresh, whose map order picks among them.
+fn (mut host ElementWheelHost) wheel_element_key(element &dom.Element) ?string {
+	if !retain_wheel_element_refresh {
+		keys := host.runtime.canvas_element_keys_for_binding(element)
+		if keys.len == 0 { return none }
+		if keys.len == 1 {
+			key := keys[0]
+			if resolved := host.runtime.canvas_element_for_binding(key) {
+				if voidptr(resolved) == voidptr(element) {
+					wheel_element_key_counts[0]++
+					if existing := host.elements[key] {
+						if voidptr(existing) == voidptr(element) { return key }
+					}
+					host.elements[key] = element
+					note_element_key_write(voidptr(host), key, element, host.elements.len)
+					return key
+				}
+			}
+		}
+	}
+	wheel_element_key_counts[1]++
+	host.refresh_elements()
+	for key, candidate in host.elements {
+		if voidptr(candidate) == voidptr(element) { return key }
+	}
+	return none
 }
 
 fn event_target_is_element(target &dom.EventTarget) bool {
@@ -55,6 +110,7 @@ fn event_target_is_element(target &dom.EventTarget) bool {
 fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string, namespace string) !&dom.Element {
 	if element := host.runtime.canvas_element_for_binding(key) {
 		host.elements[key] = element
+		note_element_key_write(voidptr(host), key, element, host.elements.len)
 	}
 	if element := host.elements[key] {
 		// Wrapper state names a prefixed element by its qualified name.
@@ -87,5 +143,6 @@ fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string,
 		return error('TypeError: Media elements retain their native media binding')
 	}
 	host.elements[key] = element
+	note_element_key_write(voidptr(host), key, element, host.elements.len)
 	return element
 }

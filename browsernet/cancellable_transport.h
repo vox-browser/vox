@@ -2,7 +2,34 @@
 #define VOX_BROWSER_CANCELLABLE_TRANSPORT_H
 #include "../platform/curl_api.h"
 #include "request_scope.h"
+#include <stdlib.h>
 #include <string.h>
+
+typedef struct {
+    unsigned char *data;
+    size_t len;
+    size_t capacity;
+} VoxResourceBody;
+
+// Resource workers retain their V arenas for the published response. Grow the
+// temporary body on the native heap so only the completed string stays there.
+static bool vox_resource_body_append(VoxResourceBody *body, const void *bytes,
+        size_t length, size_t limit) {
+    if (!length) return true;
+    if (length > limit - body->len) return false;
+    size_t needed = body->len + length;
+    if (needed > body->capacity) {
+        size_t capacity = body->capacity > limit / 2 ? limit : body->capacity * 2;
+        if (capacity < needed) capacity = needed;
+        unsigned char *data = realloc(body->data, capacity);
+        if (!data) return false;
+        body->data = data;
+        body->capacity = capacity;
+    }
+    memcpy(body->data + body->len, bytes, length);
+    body->len = needed;
+    return true;
+}
 
 typedef struct {
     long request_protocol;

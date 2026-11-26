@@ -411,7 +411,8 @@ fn committed_flex_measurement_test_reused(state &LayoutState, cached &FlexMeasur
 	for entry in cached.values {
 		if entry.values.line_boxes.len == 0 { continue }
 		if current := state.try_get(entry.node) {
-			if current.line_boxes.data == entry.values.line_boxes.data { return true }
+			if current.line_boxes_are_shared_
+				&& published_line_boxes_equal(current.line_boxes, entry.values.line_boxes) { return true }
 		}
 	}
 	return false

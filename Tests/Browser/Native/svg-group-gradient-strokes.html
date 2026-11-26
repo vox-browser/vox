@@ -1,0 +1,54 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Gradient strokes inside SVG paint groups</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 8px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="420" height="100">
+  <defs>
+    <linearGradient id="bar" gradientUnits="userSpaceOnUse" x1="32" y1="46" x2="128" y2="46">
+      <stop stop-color="blue"/><stop id="edited-stop" offset="1" stop-color="red"/>
+    </linearGradient>
+    <radialGradient id="edge" gradientUnits="userSpaceOnUse" cx="192" cy="46" r="40">
+      <stop stop-color="blue"/><stop offset="1" stop-color="lime"/>
+    </radialGradient>
+    <radialGradient id="dashes" gradientUnits="userSpaceOnUse" cx="305" cy="42" r="30">
+      <stop stop-color="blue"/><stop offset="1" stop-color="lime"/>
+    </radialGradient>
+    <linearGradient id="local" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="30" y2="0">
+      <stop stop-color="red"/><stop offset="1" stop-color="blue"/>
+    </linearGradient>
+    <clipPath id="clip"><circle cx="305" cy="43" r="32"/></clipPath>
+    <mask id="mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="348" y="8" width="65" height="80">
+      <path fill="white" d="M358 8h37v80h-37Z"/>
+    </mask>
+  </defs>
+  <g opacity=".5">
+    <path fill="red" d="M12 16h84v60H12Z"/>
+    <path fill="none" stroke="url(#bar)" stroke-width="12" stroke-opacity=".5" d="M32 46H128"/>
+  </g>
+  <g opacity=".5">
+    <path fill="red" stroke="url(#edge)" stroke-width="16" paint-order="stroke fill"
+          d="M164 24h56v44h-56Z"/>
+  </g>
+  <g clip-path="url(#clip)">
+    <path fill="none" stroke="url(#dashes)" stroke-width="14" stroke-dasharray="16 8"
+          d="M252 42H353"/>
+  </g>
+  <g mask="url(#mask)">
+    <path fill="none" stroke="url(#local)" stroke-width="12" vector-effect="non-scaling-stroke"
+          transform="translate(348 44) scale(2)" d="M0 0h30"/>
+  </g>
+</svg>
+<script>
+let frames = 0;
+function editStroke() {
+  if (++frames === 10) document.getElementById('edited-stop').setAttribute('stop-color', 'lime');
+  if (frames === 20) document.body.setAttribute('data-gradient-stroke-ready', '1');
+  else requestAnimationFrame(editStroke);
+}
+requestAnimationFrame(editStroke);
+</script>

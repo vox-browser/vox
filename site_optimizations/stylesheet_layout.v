@@ -11,7 +11,7 @@ const github_stylesheet_layout_diagnostics = os.getenv('VOX_GITHUB_STYLESHEET_LA
 fn (mut app BrowserApp) complete_site_stylesheet_update() bool {
 	if disable_github_stylesheet_layout_reuse || app.document == unsafe { nil }
 		|| app.document.layout_root == unsafe { nil } || app.initial_layout_pending
-		|| !site_batches_image_completion_layout(app.document.url.serialize()) {
+		|| !site_is_github_http_url(app.document.url) {
 		return false
 	}
 	// Installing the link's CSSOM sheet already invalidates matching subjects,

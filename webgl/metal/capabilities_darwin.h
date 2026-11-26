@@ -1,6 +1,7 @@
 #ifndef VOX_METAL_CAPABILITIES_H
 #define VOX_METAL_CAPABILITIES_H
 #include "drawing_buffer_darwin.h"
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static uint32_t vox_metal_device_sample_mask(void* owner)
 {
     VoxMetalDrawingBuffer* target = owner;
@@ -18,4 +19,5 @@ static int vox_metal_device_float_filtering(void* owner)
     if(@available(macOS 11.0,*)) return [(__bridge id<MTLDevice>)target->device supports32BitFloatFiltering];
     return 0;
 }
+#endif
 #endif

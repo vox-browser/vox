@@ -39,8 +39,12 @@ fn xhr_settings() (&html.EnvironmentSettingsObject, &html.EventLoop) {
 }
 
 fn xhr_run_queued_work(owner &html.EventLoop) {
+	mut platform_loop := platform.EventLoopPlugin.the()
 	mut queue := owner.task_queue()
 	for i := 0; i < 100; i++ {
+		// PendingResponse posts its continuation before Fetch queues the
+		// networking task inspected below.
+		if platform_loop.run_one_deferred() { continue }
 		mut task := queue.take_first_runnable() or { return }
 		task.execute()
 	}

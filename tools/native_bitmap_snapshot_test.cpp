@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 static CGImageRef make_image(bool owned, CFStringRef space, bool rgba, int scale, int padding, bool match_destination = false)
@@ -118,8 +119,44 @@ static int test_opacity_results()
     return comparisons;
 }
 
+static void test_large_padded_bitmap_handoff()
+{
+    size_t width = 3851, height = 2161, pitch = width * 4 + 12;
+    std::vector<uint8_t> pixels(pitch * height, 0x5a);
+    for (size_t y = 0; y < height; ++y) for (size_t x = 0; x < width; ++x) {
+        uint8_t *p = &pixels[y * pitch + x * 4];
+        p[0] = uint8_t(x + y * 3) / 2;
+        p[1] = uint8_t(x * 7 + y) / 2;
+        p[2] = uint8_t(x * 13 + y * 5 + 1) / 2;
+        p[3] = 128;
+    }
+    auto expected = pixels;
+    for (size_t y = 0; y < height; ++y) for (size_t x = 0; x < width; ++x)
+        std::swap(expected[y * pitch + x * 4], expected[y * pitch + x * 4 + 2]);
+
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto source = CGBitmapContextCreate(pixels.data(), width, height, 8, pitch, space,
+        CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    auto destination = CGBitmapContextCreate(nullptr, 1, 1, 8, 4, space,
+        CGBitmapInfo(kCGImageAlphaPremultipliedFirst) | kCGBitmapByteOrder32Little);
+    CGColorSpaceRelease(space);
+    assert(source && destination);
+    auto image = native_take_bitmap_image_for_destination(source, destination);
+    CGContextRelease(destination);
+    assert(image && CGImageGetWidth(image) == width && CGImageGetHeight(image) == height);
+    assert(CGImageGetBytesPerRow(image) == pitch);
+    assert(CGImageGetBitmapInfo(image)
+        == (CGBitmapInfo(kCGImageAlphaPremultipliedFirst) | kCGBitmapByteOrder32Little));
+    auto bytes = CGDataProviderCopyData(CGImageGetDataProvider(image));
+    assert(bytes && size_t(CFDataGetLength(bytes)) == expected.size());
+    assert(std::memcmp(CFDataGetBytePtr(bytes), expected.data(), expected.size()) == 0);
+    CFRelease(bytes);
+    CGImageRelease(image);
+}
+
 int main()
 {
+    test_large_padded_bitmap_handoff();
     int comparisons = 0;
     for (auto source_space : {kCGColorSpaceSRGB, kCGColorSpaceDisplayP3, kCGColorSpaceGenericRGBLinear})
     for (bool source_rgba : {false, true}) for (int source_scale : {1, 2}) for (int padding : {0, 16}) {

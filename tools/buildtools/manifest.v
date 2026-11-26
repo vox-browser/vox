@@ -3,7 +3,6 @@ module buildtools
 import os
 import time
 import json2 as json
-import crypto.sha256
 
 fn v_source(path string) bool { return ['.v', '.vv', '.vsh'].any(path.ends_with(it)) }
 
@@ -80,8 +79,8 @@ fn input_names(root string) ![]string {
 }
 
 fn repository_state(root string) !Record {
-	mut full := sha256.new()
-	mut build := sha256.new()
+	mut full := new_build_digest()!
+	mut build := new_build_digest()!
 	names := checkout_names(root)!
 	fixtures := embedded_fixtures(root, names)!
 	for name in names {
@@ -93,17 +92,17 @@ fn repository_state(root string) !Record {
 		} else {
 			'missing'
 		}
-		full.write((name + '\x00').bytes())!
-		full.write(bytes.bytes())!
+		full.add(name + '\x00')!
+		full.add(bytes)!
 		if production_input(name) || name in fixtures {
-			build.write((name + '\x00').bytes())!
-			build.write(bytes.bytes())!
+			build.add(name + '\x00')!
+			build.add(bytes)!
 		}
 	}
 	return map[string]json.Any{
 		'head':                git(root, 'rev-parse', 'HEAD')!.trim_space()
-		'repository_sha256':   full.sum([]u8{}).hex()
-		'build_inputs_sha256': build.sum([]u8{}).hex()
+		'repository_sha256':   full.hex()!
+		'build_inputs_sha256': build.hex()!
 		'dirty':               git(root, 'status', '--porcelain')!.len > 0
 	}
 }

@@ -28,8 +28,11 @@ fn test_function_source_retains_defining_module_and_survives_other_scripts() {
 	mut unrelated := Script.parse('"unrelated"', vm.realm(), 'other.js', unsafe { nil })!
 	assert vm.run(mut unrelated)!.as_string().str() == 'unrelated'
 	second := call(mut vm, factory, js_undefined(), [])!
+	first_source := first.as_object().source_text()?
+	second_source := second.as_object().source_text()?
+	assert voidptr(first_source.data.data) == voidptr(second_source.data.data)
 	for closure in [first, second] {
-		assert closure.as_object().function_source_text?.str() == '()=>"é😀"'
+		assert closure.as_object().source_text()?.str() == '()=>"é😀"'
 		assert call(mut vm, closure, js_undefined(), [])!.as_string().str() == 'é😀'
 	}
 }

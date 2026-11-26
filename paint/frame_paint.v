@@ -3,14 +3,19 @@ module main
 import processmetrics
 
 import dom
+import hash.fnv1a
 import layout
 import math
+import painting
 import time
 import platform
 import os
 
 const disable_javascript_paint_only_sync = os.getenv('VOX_DISABLE_JAVASCRIPT_PAINT_SYNC') != ''
 const javascript_paint_sync_diagnostics = os.getenv('VOX_JAVASCRIPT_PAINT_SYNC_DIAGNOSTICS') != ''
+// VOX_DIAGNOSTIC_PAINT_FINGERPRINT=1: one line per recorded display list with
+// a hash of its dump, to find frames that repaint unchanged content.
+const paint_fingerprint_diagnostics = os.getenv('VOX_DIAGNOSTIC_PAINT_FINGERPRINT') != ''
 
 __global javascript_paint_sync_adoptions u64
 
@@ -161,18 +166,34 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	checkpoint := time.sys_mono_now()
 	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
+	record_stage := processmetrics.begin_thread_instruction_substage('paint_record_display_list')
 	display_list := if app.ctx != unsafe { nil } && app.ctx.native_rendering
 		&& !app.paint_canvas_culling_disabled {
 		document.record_viewport_display_list()
 	} else {
 		document.record_display_list()
 	}
+	record_stage.finish()
+	adopt_list_stage := processmetrics.begin_thread_instruction_substage('paint_adopt_display_list')
 	if list := display_list {
 		previous_commands := app.paint_commands
 		previous_scene := app.paint_scene
 		app.paint_display_list = list
 		app.paint_generation++
 		app.paint_commands = layout.display_list_commands(list)
+		if paint_fingerprint_diagnostics {
+			listing := list.dump()
+			digest := fnv1a.sum64_string(listing)
+			eprintln('VOX_PAINT_FINGERPRINT generation=${app.paint_generation} commands=${app.paint_commands.len} dump_bytes=${listing.len} hash=${digest:016x} scroll=${app.scroll_y} at_ms=${time.sys_mono_now() / 1000000}')
+		}
+		if portable_svg_viewport_reuse {
+			viewport := document.viewport_rect()
+			app.portable_svg_group_recording = PortableSVGGroupRecording{
+				document: u64(document.unique_id().value())
+				revision: document.paint_content_revision()
+				viewport: painting.Rect{viewport.x, viewport.y, viewport.width, viewport.height}
+			}
+		}
 		app.paint_scene = layout.retain_display_list_scene(list)
 		layout.release_display_list_scene(previous_scene)
 		// Return the previous vector after dropping our lease. The recording
@@ -185,17 +206,23 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		app.release_paint_commands()
 		app.paint_commands_have_backdrop_filter = false
 	}
+	adopt_list_stage.finish()
 	// Recording can refresh paint-only styles in the retained transport without
 	// a layout pass. Adopt that final snapshot as well as geometry changes.
+	geometry_stage := processmetrics.begin_thread_instruction_substage('paint_adopt_geometry')
 	app.adopt_current_document_geometry()
+	geometry_stage.finish()
+	resources_stage := processmetrics.begin_thread_instruction_substage('paint_prime_resources')
 	app.prime_document_paint_resources()
 	app.prepare_native_css_filter_renderer()
-	// Raster-layer origins and tile grids use screen pixels. Zoomed commands
+	resources_stage.finish()
+	raster_plan_stage := processmetrics.begin_thread_instruction_substage('paint_raster_layer_plan')
+	// Raster-layer origins and tile grids use frame pixels. Zoomed commands
 	// use the ordinary compositing layer until those plans support a scale.
 	if document.font_rendering_policy() == .chromium && app.page_zoom == 1 {
 		mut raster_scale := 1.0
 		$if macos {
-			raster_scale = C.native_display_device_pixel_ratio()
+			raster_scale = C.native_raster_device_pixel_ratio()
 		}
 		layout.update_chromium_raster_layer_plan_for_viewport(document, app.paint_commands,
 			raster_scale, layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height},
@@ -203,6 +230,7 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	} else {
 		app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	}
+	raster_plan_stage.finish()
 	app.paint_commands_pending = false
 	root_rect := app.root_box.border_box()
 	// Animation frames re-record without changing what the status shows.

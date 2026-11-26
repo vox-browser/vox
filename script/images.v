@@ -118,6 +118,7 @@ fn (mut app BrowserApp) request_unsized_script_inserted_images() map[string]bool
 	base_url := app.document.base_url().serialize()
 	source_url := app.document.url.serialize()
 	mut candidates := 0
+	mut jobs := []ResourceFetchJob{}
 	for element in css.query_selector_all(app.document.as_node(), 'img[src]') {
 		if !element.is_html_element() || (element.has_attribute('width') && element.has_attribute('height'))
 			|| element.get_attribute_value('loading').to_lower() == 'lazy' {
@@ -145,13 +146,14 @@ fn (mut app BrowserApp) request_unsized_script_inserted_images() map[string]bool
 				continue
 			}
 		}
-		app.request_background_resource(resource_url)
+		app.enqueue_background_resource(resource_url, mut jobs)
 		if resource_url in app.background_resource_pending {
 			app.script_image_requests[resource_url] = true
 		} else {
 			ready[resource_url] = true
 		}
 	}
+	app.start_background_resource_batch(jobs)
 	return ready
 }
 

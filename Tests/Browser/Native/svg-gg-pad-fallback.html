@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG pad gradient fallback</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="260" height="100">
+  <defs>
+    <linearGradient id="linear" gradientUnits="userSpaceOnUse" x1="8.5" y1="0" x2="72.5" y2="0"
+                    gradientTransform="translate(8 0)">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue" stop-opacity=".5"/>
+    </linearGradient>
+    <radialGradient id="radial" gradientUnits="userSpaceOnUse" cx="48.5" cy="32.5" fr="8" r="24"
+                    gradientTransform="translate(4 0)">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="blue"/>
+    </radialGradient>
+  </defs>
+  <path d="M8 8H120V88H8Z M50 30H62V46H50Z" fill="url(#linear)" fill-rule="evenodd"/>
+  <path d="M0 0H104V80H0Z" transform="translate(144 8)" fill="url(#radial)" fill-opacity=".5"/>
+</svg>

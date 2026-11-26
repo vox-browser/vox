@@ -101,3 +101,44 @@ fn test_full_style_pass_reuses_fresh_resolved_aliases_and_replaces_changed_inher
 	document.update_style()
 	assert root_abstract.custom_property_data()? == changed
 }
+
+// `initial` and failed substitutions resolve to a fresh guaranteed-invalid
+// value on every pass. Such an environment is still the same, so its
+// descendants keep sharing it, while a real change still replaces it.
+fn test_full_style_pass_reuses_guaranteed_invalid_custom_properties() {
+	invalid := custom_property_bridge_value(dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create())))
+	other := custom_property_bridge_value(dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create())))
+	assert invalid.css_value_handle != other.css_value_handle
+	assert custom_property_environment_values_equivalent(invalid, other)
+	number := custom_property_bridge_value(dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(0))))
+	assert !custom_property_environment_values_equivalent(invalid, number)
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html')!
+	child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node())!
+	mut root_node := root.as_node()
+	root_node.append_child(child.as_node())!
+	add_document_author_style_sheet(document,
+		'html{--reset:initial;--missing:var(--absent);--base:red}span{color:var(--missing, var(--base))}')
+	css_style_computer_for(document)
+	document.set_needs_full_style_update(true)
+	document.update_style()
+	root_abstract := dom.AbstractElement.new(root, none)
+	child_abstract := dom.AbstractElement.new(child, none)
+	initial := root_abstract.custom_property_data()?
+	assert computed_value_for(child, .color)? == 'rgb(255, 0, 0)'
+	for _ in 0 .. 3 {
+		document.set_needs_full_style_update(true)
+		document.update_style()
+		assert root_abstract.custom_property_data()? == initial
+		assert child_abstract.custom_property_data()? == initial
+	}
+	root.set_attribute_value('style', '--missing:blue')
+	document.update_style()
+	changed := root_abstract.custom_property_data()?
+	assert changed != initial
+	assert computed_value_for(child, .color)? == 'rgb(0, 0, 255)'
+}

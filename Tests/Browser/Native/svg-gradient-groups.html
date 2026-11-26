@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG gradient groups</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 8px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="360" height="264" viewBox="0 0 360 264">
+  <defs>
+    <linearGradient id="blue" gradientUnits="userSpaceOnUse" x1="60" y1="0" x2="156" y2="0">
+      <stop stop-color="blue"/>
+      <stop offset=".65" stop-color="blue"/>
+      <stop offset="1" stop-color="#00a"/>
+    </linearGradient>
+    <radialGradient id="green" gradientUnits="userSpaceOnUse" cx="68" cy="140" r="36">
+      <stop stop-color="#0c0"/>
+      <stop offset=".5" stop-color="#0c0"/>
+      <stop offset="1" stop-color="#060"/>
+    </radialGradient>
+    <clipPath id="circle"><circle cx="68" cy="140" r="36"/></clipPath>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse"
+          x="12" y="196" width="144" height="56">
+      <rect x="12" y="196" width="64" height="56" fill="white" opacity=".5"/>
+    </mask>
+  </defs>
+  <g opacity=".5">
+    <path fill="red" d="M12 12h96v72H12Z"/>
+    <path fill="url(#blue)" fill-rule="evenodd" d="M60 12h96v72H60Z M72 32h24v32H72Z"/>
+  </g>
+  <g clip-path="url(#circle)">
+    <path fill="url(#green)" d="M12 102h144v76H12Z"/>
+    <path fill="red" d="M70 144h70v24H70Z"/>
+  </g>
+  <path fill="url(#blue)" mask="url(#alpha)" d="M12 196h144v56H12Z"/>
+</svg>

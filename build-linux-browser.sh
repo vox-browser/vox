@@ -90,9 +90,12 @@ fi
 # Listing the repository first keeps its packages unqualified wherever it lives.
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
-    -d vox_production -d use_openssl \
+    -d vox_production -d use_openssl -d vox_gg_svg \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$module_paths"
+if pkg-config --exists gstreamer-app-1.0 gstreamer-video-1.0; then
+    set -- "$@" -d vox_gstreamer
+fi
 if [ "$gc_mode" = prealloc ]; then
     # Match macOS production: -prealloc alone leaves the default collector
     # selected. Keep the compiler's imported graph within its memory budget.
@@ -121,3 +124,12 @@ echo "Building Vox ($gc_mode) with: $*"
 "$v_compiler" "$@" -show-c-output -cflags "-D_GNU_SOURCE=1 ${VOX_LINUX_CFLAGS:--O2}" -o "$build_dir/vox" "$browser_source"
 echo "Built Vox: $build_dir/vox"
 echo "Run: '$build_dir/vox' https://example.com"
+if [ -n "${VOX_BUILD_RECEIPT_DIR:-}" ]; then
+    v_prod=false
+    if [ "$gc_mode" = none ] || [ "${VOX_BUILD_V_PROD:-0}" = 1 ]; then
+        v_prod=true
+    fi
+    printf '{"backend":"%s","mode":"single","requested":"%s","v_prod":%s}\n' \
+        "$v_backend" "${VOX_BUILD_C_MODE:-single}" "$v_prod" \
+        > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
+fi

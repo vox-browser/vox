@@ -230,7 +230,7 @@ fn (mut p Parser) parse_break_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:          .break_stmt
-		target_label: label
+		target_label: if text := label { ast_text(text) } else { none }
 	})
 }
 
@@ -271,7 +271,7 @@ fn (mut p Parser) parse_continue_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:          .continue_stmt
-		target_label: label
+		target_label: if text := label { ast_text(text) } else { none }
 	})
 }
 
@@ -423,9 +423,8 @@ fn (mut p Parser) parse_for_statement() Statement {
 			statement: p.parse_variable_declaration(true)
 		})
 	} else {
-		forbidden := ForbiddenTokens.with_in()
 		LocalForInit(LocalForInitExpression{
-			expression: p.parse_expression(precedence_comma, .right, forbidden)
+			expression: p.parse_expression(precedence_comma, .right, forbidden_in)
 		})
 	}
 
@@ -819,19 +818,12 @@ fn (mut p Parser) parse_catch_clause() CatchClause {
 fn (mut p Parser) try_parse_labelled_statement(allow_labelled_function bool) ?Statement {
 	start := p.position()
 
-	if !p.match_identifier_name() {
+	if !p.match_identifier_name() || p.next_token().token_type != .colon {
 		return none
 	}
 
-	p.save_state()
 	lbl_token := p.consume()
 	label := Utf16String.from_slice(p.token_value(lbl_token))
-
-	if !p.match_token(.colon) {
-		p.load_state()
-		return none
-	}
-	p.discard_saved_state()
 	p.consume() // consume :
 
 	if is_unconditional_reserved_word(label.data) {
@@ -912,7 +904,7 @@ fn (mut p Parser) try_parse_labelled_statement(allow_labelled_function bool) ?St
 
 	return p.statement(start, StatementKind{
 		tag:           .labelled
-		label:         label
+		label:         ast_text(label)
 		labelled_item: &body
 	})
 }

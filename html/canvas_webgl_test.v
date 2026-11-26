@@ -65,24 +65,32 @@ fn test_html_webgl_native_surface_reaches_existing_paint_registry_and_readback()
 	assert presented.alpha_type == 2
 	assert presented.native_rows_are_top_down
 	assert presented.data[..4] == [u8(255), 0, 0, 255]
+	revision := presented.upload_revision()
+	assert revision != 0
 	frame := source.current_frame() or { panic('retained decoded frame') }
 	assert frame.bitmap().data == presented.data
 	assert !context.needs_to_present()
 	// The retained display frame survives another paint after implicit discard.
-	assert (html_canvas_element_present_existing_surface(canvas) or { panic('retained') }).data == presented.data
-	assert (html_canvas_element_get_bitmap_from_surface(canvas) or { panic('live readback') }).data == []u8{len: 16}
+	retained := html_canvas_element_present_existing_surface(canvas) or { panic('retained') }
+	assert voidptr(retained) == voidptr(presented)
+	assert retained.upload_revision() == revision
+	readback := html_canvas_element_get_bitmap_from_surface(canvas) or { panic('live readback') }
+	assert readback.data == []u8{len: 16}
+	assert readback.upload_revision() == 0
 	context.clear_color(0, 0, 1, 1)
 	context.clear(0x4000)
-	assert (html_canvas_element_present_existing_surface(canvas) or { panic('updated') }).data[..4] == [
-		u8(0),
-		0,
-		255,
-		255,
-	]
+	updated := html_canvas_element_present_existing_surface(canvas) or { panic('updated') }
+	assert voidptr(updated) == voidptr(presented)
+	assert updated.data[..4] == [u8(0), 0, 255, 255]
+	updated_revision := updated.upload_revision()
+	assert updated_revision != 0 && updated_revision != revision
+	assert frame.bitmap().data[..4] == [u8(255), 0, 0, 255]
 	html_canvas_element_set_width(mut canvas, 3) or { panic(err) }
 	assert context.drawing_buffer_width() == 3
 	assert source.current_frame() == none
-	assert (html_canvas_element_present_existing_surface(canvas) or { panic('resized') }).data == []u8{len: 24}
+	resized := html_canvas_element_present_existing_surface(canvas) or { panic('resized') }
+	assert resized.data == []u8{len: 24}
+	assert resized.upload_revision() != 0 && resized.upload_revision() != updated_revision
 	assert context.get_error() == webgl.no_error
 	html_canvas_element_set_width(mut canvas, 0) or { panic(err) }
 	assert html_canvas_element_get_bitmap_from_surface(canvas) == none

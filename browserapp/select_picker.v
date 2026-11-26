@@ -52,7 +52,7 @@ fn (mut app BrowserApp) show_browser_select_picker(node &dom.Node) {
 	state.select_node = unsafe { &dom.Node(element) }
 	state.select_document = app.document.unique_id()
 	state.version++
-	state.popup = browserui.Popup{
+	popup := browserui.Popup{
 		token:  u64(time.sys_mono_now())
 		x:      rect.x * app.page_zoom
 		y:      (rect.y + rect.height) * app.page_zoom + app.page_top()
@@ -60,7 +60,38 @@ fn (mut app BrowserApp) show_browser_select_picker(node &dom.Node) {
 		active: browser_select_picker_selected(rows)
 		rows:   rows
 	}
+	state.popup = popup
+	$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+		if app.native_address_bar && browserui.native_popup_host('toolbar') != unsafe { nil } {
+			// Let mouse-up dispatch and its document allocation scope unwind before
+			// AppKit starts the native menu's tracking loop.
+			owner := &app
+			token := popup.token
+			state.select_popup_timer = platform.Timer.create_single_shot(0, fn [owner, token] () {
+				mut tab := unsafe { &BrowserApp(owner) }
+				tab.present_native_select_picker(token)
+			})
+			state.select_popup_timer.start()
+		}
+	}
 	app.refresh_browser_ui()
+}
+
+$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+	fn (mut app BrowserApp) present_native_select_picker(token u64) {
+		popup := app.browser_ui().popup or { return }
+		if popup.token != token { return }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		mut action := 'browser-menu:${token}:dismiss'
+		host := browserui.native_popup_host('toolbar')
+		if app.is_active_browser_tab() && host != unsafe { nil } {
+			index := browserui.show_native_popup(host, popup)
+			choice := popup.action(index)
+			if choice != '' { action = choice }
+		}
+		app.browser_popup_action(action)
+	}
 }
 
 fn (mut app BrowserApp) complete_browser_select_picker(selected u32) {

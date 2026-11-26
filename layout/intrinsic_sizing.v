@@ -239,7 +239,7 @@ fn calculate_transferred_width_for_replaced_element(mut state LayoutState, box &
 // layout in a throwaway LayoutState; it must not read geometry left behind by
 // the normal layout pass.
 fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
-	mark_sized_by_ancestor_measurement(unsafe { &Node(box) })
+	mark_sized_by_ancestor_measurement(unsafe { &Node(box) }, .min_content_width)
 	node := unsafe { &Node(box) }
 	computed := box.computed_values()
 	width := computed.size_value(.width)
@@ -291,7 +291,7 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 }
 
 fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
-	mark_sized_by_ancestor_measurement(unsafe { &Node(box) })
+	mark_sized_by_ancestor_measurement(unsafe { &Node(box) }, .max_content_width)
 	auto_size := box.auto_content_box_size()
 	if transferred_width := calculate_transferred_width_for_replaced_element(mut state, box) {
 		return transferred_width
@@ -492,7 +492,7 @@ fn populate_intrinsic_external_containing_blocks_once(mut throwaway LayoutState,
 }
 
 fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Box, constraint SizeConstraint) CSSPixels {
-	mark_sized_by_ancestor_measurement(unsafe { &Node(box) })
+	mark_sized_by_ancestor_measurement(unsafe { &Node(box) }, .content_width)
 	box_node := unsafe { &Node(box) }
 	box_styled := box_node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut throwaway := source_state.new_measurement_for_subtree(box_styled)
@@ -870,7 +870,7 @@ fn flex_formatting_context_calculate_cross_max_content_contribution(mut state La
 }
 
 fn calculate_intrinsic_column_flex_width(mut state LayoutState, container &Node, items []&Node, constraint SizeConstraint) CSSPixels {
-	mark_sized_by_ancestor_measurement(container)
+	mark_sized_by_ancestor_measurement(container, .column_flex_width)
 	container_styled := container.as_node_with_style() or { return CSSPixels.new(0) }
 	mut container_state := state.get_mutable(container_styled)
 	// Intrinsic measurement marks this axis indefinite before entering the flex
@@ -936,7 +936,7 @@ fn calculate_intrinsic_column_flex_width(mut state LayoutState, container &Node,
 // used for row flex containers; column containers expose the largest cross
 // contribution as their intrinsic width.
 fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constraint SizeConstraint) CSSPixels {
-	mark_sized_by_ancestor_measurement(container)
+	mark_sized_by_ancestor_measurement(container, .flex_width)
 	items := ordered_flex_items(container)
 	if items.len == 0 {
 		return CSSPixels.new(0)
@@ -1110,7 +1110,7 @@ fn calculate_fit_content_width(mut state LayoutState, box &Box, available_width 
 // CSS Sizing intrinsic block sizes. For block containers, tables and inline
 // boxes the min-content block size is the max-content block size.
 fn calculate_min_content_height(mut state LayoutState, box &Box, width CSSPixels) CSSPixels {
-	mark_sized_by_ancestor_measurement(unsafe { &Node(box) })
+	mark_sized_by_ancestor_measurement(unsafe { &Node(box) }, .min_content_height)
 	node := unsafe { &Node(box) }
 	if (node.is_block_container() && node.computed_values().writing_mode() == .horizontal_tb) || node.display().is_table_inside() {
 		return calculate_max_content_height(mut state, box, width)
@@ -1137,7 +1137,7 @@ fn calculate_min_content_height(mut state LayoutState, box &Box, width CSSPixels
 }
 
 fn calculate_max_content_height(mut state LayoutState, box &Box, width CSSPixels) CSSPixels {
-	mark_sized_by_ancestor_measurement(unsafe { &Node(box) })
+	mark_sized_by_ancestor_measurement(unsafe { &Node(box) }, .max_content_height)
 	if box.has_preferred_aspect_ratio() {
 		if styled := unsafe { &Node(box) }.as_node_with_style() {
 			box_state := state.get(styled)
@@ -1192,7 +1192,7 @@ fn calculate_max_content_height(mut state LayoutState, box &Box, width CSSPixels
 }
 
 fn calculate_content_height_with_constraint(mut source_state LayoutState, box &Box, width CSSPixels, constraint SizeConstraint) CSSPixels {
-	mark_sized_by_ancestor_measurement(unsafe { &Node(box) })
+	mark_sized_by_ancestor_measurement(unsafe { &Node(box) }, .content_height)
 	node := unsafe { &Node(box) }
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut throwaway := source_state.new_measurement_for_subtree(styled)

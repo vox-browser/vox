@@ -25,7 +25,7 @@ typedef struct {
     char *extensions;
 } VoxGLESState;
 VOX_NATIVE_STATE __thread VoxGLESState *vox_gles_current;
-/* WebGL and the portable GLX window share a thread, not GL state. Rebind the
+/* WebGL and the portable window share a thread, not GL state. Rebind the
  * selected GLES context for each service call and restore the caller on exit.
  * Headless callers keep their GLES context current between calls. */
 /* Sokol declares its own GLX types. Keep the window ABI opaque here rather
@@ -50,7 +50,14 @@ static void vox_gles_prepare_glx(void) {
     vox_gles_glx.read_drawable=(unsigned long(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentReadDrawable");
     vox_gles_glx.make_current=(int(*)(void*,unsigned long,unsigned long,void*))dlsym(RTLD_DEFAULT,"glXMakeContextCurrent");
 }
-typedef struct { void *display,*context; unsigned long draw,read; } VoxGLESCall;
+typedef struct {
+    void *display,*context;
+    unsigned long draw,read;
+    EGLDisplay egl_display;
+    EGLContext egl_context;
+    EGLSurface egl_draw,egl_read;
+    EGLenum egl_api;
+} VoxGLESCall;
 static VoxGLESCall vox_gles_begin_call(void) {
     vox_gles_prepare_glx();
     VoxGLESCall call={0};
@@ -60,15 +67,32 @@ static VoxGLESCall vox_gles_begin_call(void) {
         call.display=vox_gles_glx.display();call.draw=vox_gles_glx.drawable();call.read=vox_gles_glx.read_drawable();
         vox_gles_glx.make_current(call.display,0,0,NULL);
     }
-    if(vox_gles_current && eglGetCurrentContext()!=vox_gles_current->context)
+    EGLContext current=eglGetCurrentContext();
+    if(current!=EGL_NO_CONTEXT && (!vox_gles_current || current!=vox_gles_current->context)) {
+        /* Sokol can host its desktop GL window through EGL. Preserve both
+         * window surfaces and the API before entering the WebGL context. */
+        call.egl_context=current;
+        call.egl_display=eglGetCurrentDisplay();
+        call.egl_draw=eglGetCurrentSurface(EGL_DRAW);
+        call.egl_read=eglGetCurrentSurface(EGL_READ);
+        call.egl_api=eglQueryAPI();
+        eglMakeCurrent(call.egl_display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
+        eglBindAPI(EGL_OPENGL_ES_API);
+    }
+    if(vox_gles_current && current!=vox_gles_current->context)
         eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
     return call;
 }
 static void vox_gles_end_call(VoxGLESCall *call) {
-    if(!call->context)return;
+    if(!call->context && call->egl_context==EGL_NO_CONTEXT)return;
     EGLDisplay display=eglGetCurrentDisplay();
     if(display!=EGL_NO_DISPLAY)eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
-    vox_gles_glx.make_current(call->display,call->draw,call->read,call->context);
+    if(call->egl_context!=EGL_NO_CONTEXT) {
+        eglBindAPI(call->egl_api);
+        eglMakeCurrent(call->egl_display,call->egl_draw,call->egl_read,call->egl_context);
+    } else {
+        vox_gles_glx.make_current(call->display,call->draw,call->read,call->context);
+    }
 }
 #define VOX_GLES_CALL VoxGLESCall vox_gles_call __attribute__((cleanup(vox_gles_end_call)))=vox_gles_begin_call()
 #else

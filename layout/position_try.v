@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 @[heap]
 struct PositionTryLayoutState {
@@ -51,7 +52,29 @@ fn position_try_saved_anchor(node &Node, name string) ?css.CSSPixelRect {
 fn position_try_note_anchor(node &Node, name string, rect css.CSSPixelRect) {
 	box := node.as_box() or { return }
 	mut retained := box.position_try_state_ or { return }
-	if retained.capture_anchors { retained.current_anchors[name] = rect }
+	if retained.capture_anchors {
+		mut allocations := platform.enter_retained_allocations()
+		defer { allocations.finish() }
+		retained.current_anchors[name] = rect
+	}
+}
+
+fn new_position_try_layout_state() &PositionTryLayoutState {
+	mut allocations := platform.enter_retained_allocations()
+	defer { allocations.finish() }
+	return &PositionTryLayoutState{}
+}
+
+fn retain_position_try_string(value string) string {
+	mut allocations := platform.enter_retained_allocations()
+	defer { allocations.finish() }
+	return value.clone()
+}
+
+fn reset_position_try_anchor_capture(mut retained PositionTryLayoutState) {
+	mut allocations := platform.enter_retained_allocations()
+	defer { allocations.finish() }
+	retained.current_anchors.clear()
 }
 
 fn position_try_options_signature(target dom.AbstractElement, text string) string {
@@ -206,15 +229,15 @@ fn position_try_apply_tactics(node &Node, properties &css.ComputedProperties, te
 	return declaration
 }
 
-fn position_try_layout_option(mut state LayoutState, node &Node, mut target dom.AbstractElement,
- mut retained PositionTryLayoutState, option string) bool {
+// Only the applied style escapes this operation. Geometry scratch below must
+// keep its ordinary temporary lifetime, especially during repeated popup layout.
+fn apply_position_try_option_style(node &Node, mut target dom.AbstractElement,
+ retained &PositionTryLayoutState, option string) bool {
+ mut allocations := platform.enter_retained_allocations()
+ defer { allocations.finish() }
  mut styled := node.as_node_with_style() or { return false }
- mut box := node.as_box() or { return false }
  styled.computed_values_ = retained.base_layout
  css.install_position_try_style(mut target,retained.base_css)
- retained.capture_anchors = !retained.use_last_anchors
- if retained.capture_anchors { retained.current_anchors = map[string]css.CSSPixelRect{} }
- defer { retained.capture_anchors = false }
  if option != '' {
   declaration := position_try_declaration(target,option) or { return false }
   mut properties := css.compute_position_try_style(target,declaration)
@@ -225,6 +248,17 @@ fn position_try_layout_option(mut state LayoutState, node &Node, mut target dom.
   styled.set_computed_values(properties)
   css.install_position_try_style(mut target,properties)
  }
+ return true
+}
+
+fn position_try_layout_option(mut state LayoutState, node &Node, mut target dom.AbstractElement,
+ mut retained PositionTryLayoutState, option string) bool {
+ mut box := node.as_box() or { return false }
+ styled := node.as_node_with_style() or { return false }
+ retained.capture_anchors = !retained.use_last_anchors
+ if retained.capture_anchors { reset_position_try_anchor_capture(mut retained) }
+ defer { retained.capture_anchors = false }
+ if !apply_position_try_option_style(node,mut target,retained,option) { return false }
  box.reset_cached_intrinsic_sizes()
  layout_absolutely_positioned_box_once(mut state,node)
  retained.applied_layout = styled.computed_values()
@@ -237,7 +271,7 @@ fn layout_with_position_try_fallbacks(mut state LayoutState, node &Node) bool {
  mut target := position_try_target(node) or { return false }
  mut retained := box.position_try_state_ or {
   if position_try_property_text(styled.computed_values(),.position_try_fallbacks) in ['', 'none'] { return false }
-  value := &PositionTryLayoutState{}
+  value := new_position_try_layout_state()
   box.position_try_state_ = value
   value
  }
@@ -250,7 +284,7 @@ fn layout_with_position_try_fallbacks(mut state LayoutState, node &Node) bool {
  signature := position_try_options_signature(target,text)
  if signature != retained.options_signature {
   retained.last_success = false
-  retained.options_signature = signature
+  retained.options_signature = retain_position_try_string(signature)
  }
  retained.current_success = false
  order := position_try_property_text(retained.base_layout,.position_try_order)
@@ -281,7 +315,7 @@ fn layout_with_position_try_fallbacks(mut state LayoutState, node &Node) bool {
   if !position_try_layout_option(mut state,node,mut target,mut retained,entry) { continue }
   if position_try_fits(state,node) {
    if !ordered {
-    retained.current_option = entry
+    retained.current_option = retain_position_try_string(entry)
     retained.current_success = true
     return true
    }
@@ -295,7 +329,7 @@ fn layout_with_position_try_fallbacks(mut state LayoutState, node &Node) bool {
  }
  if best_fits {
   _ = position_try_layout_option(mut state,node,mut target,mut retained,best_option)
-  retained.current_option = best_option
+  retained.current_option = retain_position_try_string(best_option)
   retained.current_success = true
  } else if retained.last_success {
   // Retain the successful option, resolving it against the current anchors.

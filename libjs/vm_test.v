@@ -195,7 +195,7 @@ fn test_errors_capture_the_execution_context_stack_as_a_traceback() {
 	frame.realm = vm.realm()
 	vm.push_execution_context(mut frame)
 	error_object := thrown_value(vm.throw_error(.error, 'boom')).as_object()
-	data := error_object.error_data?
+	data := error_object.slots.error_data?
 	assert data.traceback.len == 2
 	assert data.traceback[0].function_name.str() == 'outer'
 	assert data.traceback[0].source_range().start.line == 3
@@ -211,7 +211,7 @@ fn test_errors_capture_the_execution_context_stack_as_a_traceback() {
 	anonymous.realm = frame.realm
 	vm.push_execution_context(mut anonymous)
 	anonymous_error := thrown_value(vm.throw_error(.error, 'anonymous')).as_object()
-	assert anonymous_error.error_data?.stack_string(false) == '    at anon.js:9:1\n    at outer (trace.js:3:4)\n'
+	assert anonymous_error.slots.error_data?.stack_string(false) == '    at anon.js:9:1\n    at outer (trace.js:3:4)\n'
 	vm.pop_execution_context()
 	for _ in 0 .. 5 {
 		mut repeated := ExecutionContext.create(5, [], 0)
@@ -221,9 +221,9 @@ fn test_errors_capture_the_execution_context_stack_as_a_traceback() {
 		vm.push_execution_context(mut repeated)
 	}
 	compact_error := thrown_value(vm.throw_error(.error, 'deep')).as_object()
-	assert compact_error.error_data?.traceback.len == 7
-	assert compact_error.error_data?.stack_string(true) == '    at outer (trace.js:3:4)\n    5 more calls\n'
-	assert compact_error.error_data?.stack_string(false).count('at outer') == 6
+	assert compact_error.slots.error_data?.traceback.len == 7
+	assert compact_error.slots.error_data?.stack_string(true) == '    at outer (trace.js:3:4)\n    5 more calls\n'
+	assert compact_error.slots.error_data?.stack_string(false).count('at outer') == 6
 	assert vm.heap_roots().contains(voidptr(frame.executable?))
 }
 

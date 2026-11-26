@@ -148,6 +148,9 @@ fn initialize_native_browser_context(user_data voidptr) {
 	context.update_timer = time.new_stopwatch()
 	$if macos {
 		C.native_configure_browser_drawables()
+		if sapp.isvalid() {
+			browserwindow.install_cooperative_termination()
+		}
 	}
 	if context.config.init_fn != unsafe { nil } {
 		context.config.init_fn(context.user_data)

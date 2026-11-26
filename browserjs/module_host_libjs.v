@@ -2,9 +2,11 @@
 module browserjs
 
 import dom
+import fetch
 import html
 import libjs
 import platform
+import processmetrics
 
 struct LibJSModuleImport {
 	referrer libjs.ImportedModuleReferrer
@@ -15,6 +17,9 @@ struct LibJSModuleImport {
 fn (mut host ModuleHost) install_libjs(mut runtime Runtime) ! {
 	if runtime.module_host_ != none { return error('A module loader is already installed') }
 	host.runtime=&runtime
+	if mut document_host := runtime.libjs_document_host_ {
+		document_host.install_fetch(fetch.RequestClient(host.settings), host.transport)!
+	}
 	owner := &host
 	mut vm := runtime.agent_vm
 	vm.host_load_imported_module=fn [owner] (referrer libjs.ImportedModuleReferrer,request libjs.ModuleRequest,_ voidptr,payload libjs.ImportedModulePayload) {
@@ -59,11 +64,14 @@ fn (mut host ModuleHost) load_libjs_import(imported LibJSModuleImport) ! {
 	// This runtime executes JavaScript modules. Other module types must fail
 	// before fetching rather than treating their response body as JavaScript.
 	if imported.request.attributes.len>0 { return error('LibJS import attributes are not supported by the JavaScript module host') }
-	parent := imported.referrer.filename()
-	base := if source := host.sources[parent] { source.base } else { parent }
+	parent := if imported.referrer.kind == .realm { host.settings.api_base_url().serialize() } else { imported.referrer.filename() }
+	base := if source := host.sources[parent] { source.base } else {
+		if parent == '' || parent == '<script>' { host.settings.api_base_url().serialize() } else { parent }
+	}
 	key := host.resolve(imported.request.module_specifier.str(),base,parent)!
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if cached := runtime.libjs_modules_[key] {
+		if imported.payload.kind==.promise_capability { runtime.queue_native_module_templates(cached) }
 		libjs.finish_loading_imported_module(imported.referrer,imported.request,imported.payload,
 			libjs.ModuleLoadResult.from_module(libjs.Module(cached)))
 		return
@@ -101,7 +109,7 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 	if waiters.len==0 { return }
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	mut vm := runtime.agent_vm
-	mut result := libjs.ModuleLoadResult.from_error(vm.throw_error(.type_error,'Failed to fetch JavaScript module ${operation.key}'))
+	mut result := libjs.ModuleLoadResult{}
 	if source := script {
 		module_script := unsafe { &html.JavaScriptModuleScript(source) }
 		if module_script.kind==.javascript {
@@ -114,10 +122,19 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 			result=libjs.ModuleLoadResult.from_module(libjs.Module(module_record))
 		}
 	}
+	if result.module_record == none {
+		result = libjs.ModuleLoadResult.from_error(vm.throw_error(.type_error,
+			'Failed to fetch JavaScript module ${operation.key}'))
+	}
 	for mut waiter in waiters {
 		if waiter.finished { continue }
 		waiter.finished=true
 		if imported := waiter.libjs_import {
+			if imported.payload.kind==.promise_capability {
+				if loaded := result.module_record {
+					if loaded is libjs.SourceTextModule { runtime.queue_native_module_templates(loaded) }
+				}
+			}
 			libjs.finish_loading_imported_module(imported.referrer,imported.request,imported.payload,result)
 		}
 	}
@@ -127,11 +144,62 @@ fn (mut host ModuleHost) consume_libjs_script(operation &BrowserModuleOperation,
 fn (mut host ModuleHost) parse_libjs_module(key string,code string,starting_line int) !&libjs.SourceTextModule {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	if cached := runtime.libjs_modules_[key] { return cached }
-	mut created := libjs.SourceTextModule.parse_with_options(code,runtime.realm,key,voidptr(runtime),
-		libjs.ParseOptions{max_recursion_depth:256})!
+	frontend_stage := processmetrics.begin_thread_instruction_substage('libjs_module_frontend')
+	defer { frontend_stage.finish() }
+	preparsed := host.libjs_preparsed[key] or { unsafe { &libjs.ParsedSource(nil) } }
+	if preparsed != unsafe { nil } { host.libjs_preparsed.delete(key) }
+	parsed := runtime.prepare_libjs_frontend_with(code, .module, libjs.ParseOptions{max_recursion_depth:256}, preparsed)
+	if parsed.has_errors() { return libjs.ModuleParseError{diagnostics: parsed.diagnostics} }
+	mut created := &libjs.SourceTextModule{module_realm:runtime.realm, module_filename:key,
+		host_defined:voidptr(runtime), parsed:parsed}
 	created.module_starting_line=u32(starting_line)
 	runtime.libjs_modules_[key.clone()]=created
+	// Initial and statically imported modules also contain uncalled event
+	// handlers needed on later visits. Queue their syntax without running it.
+	runtime.queue_native_module_templates(created)
 	return created
+}
+
+// Parse a fetched JavaScript module on a worker, then resume its fetch from an
+// ordinary networking task on this thread. Returns false when the module is
+// handled synchronously: other engines, cached or non-JavaScript modules, a
+// failed decode, or no available worker.
+fn (mut host ModuleHost) parse_libjs_module_in_background(mut operation BrowserModuleOperation, response &fetch.Response, body []u8, callback html.OnFetchScriptComplete) bool {
+	if host.runtime.engine != .libjs || host.closed { return false }
+	runtime := unsafe { &Runtime(host.runtime) }
+	if _ := runtime.libjs_modules_[operation.key] { return false }
+	if !fetch.is_ok_status(response.status) { return false }
+	mime := fetch.extract_mime_type(response.header_list) or { return false }
+	if !mime.is_javascript() { return false }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	source := html.decode_module_script_source(body) or { return false }
+	owner := voidptr(host)
+	op := voidptr(operation)
+	key := operation.key.clone()
+	// Called once on this thread's run loop; it releases itself afterwards. The
+	// runtime does not own it, because a worker may still hold it at close.
+	done := fn [owner, op, key, response, callback] (parsed &libjs.ParsedSource) {
+		mut host := unsafe { &ModuleHost(owner) }
+		if host.closed { return }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		html.queue_a_task(.networking, host.settings.responsible_event_loop(), host.settings.responsible_document(), fn [owner, op, key, parsed, response, callback] () {
+			mut host := unsafe { &ModuleHost(owner) }
+			if host.closed { return }
+			persistent := platform.enter_persistent()
+			defer { platform.leave_persistent(persistent) }
+			mut operation := unsafe { &BrowserModuleOperation(op) }
+			host.libjs_preparsed[key] = parsed
+			host.complete_module_fetch(mut operation, response, callback)
+		})
+	}
+	if !submit_libjs_module_parse(source, libjs.ParseOptions{ max_recursion_depth: 256 }, done) {
+		platform.release_closure(voidptr(done))
+		return false
+	}
+	host.libjs_background_parses++
+	return true
 }
 
 fn (mut host ModuleHost) execute_libjs(source ScriptSource,stringify_result bool) !string {
@@ -200,6 +268,8 @@ fn (mut host ModuleHost) drain_libjs_modules() {
 
 fn (mut host ModuleHost) evaluate_libjs_execution(mut execution BrowserModuleExecution) {
 	mut module_record := execution.libjs_module or { return }
+	javascript_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { javascript_stage.finish() }
 	mut vm := unsafe { &libjs.VM(host.runtime.agent_vm) }
 	host.runtime.prepare_html_script()
 	previous := if document := host.settings.responsible_document() { document.current_script() } else { none }
@@ -208,9 +278,15 @@ fn (mut host ModuleHost) evaluate_libjs_execution(mut execution BrowserModuleExe
 		if mut document := host.settings.responsible_document() { document.set_current_script(previous) }
 		host.runtime.clean_up_html_script()
 	}
-	module_record.link(mut vm) or { host.finish_script(mut execution,libjs_exception_message(err));return }
+	link_stage := processmetrics.begin_thread_instruction_substage('libjs_module_link')
+	module_record.link(mut vm) or {
+		link_stage.finish()
+		host.finish_script(mut execution,libjs_exception_message(err))
+		return
+	}
+	link_stage.finish()
 	execution.evaluated=true
-	result := module_record.evaluate(mut vm) or { host.finish_script(mut execution,libjs_exception_message(err));return }
+	result := module_record.evaluate_with_limits(mut vm, host.runtime.libjs_execution_limits()) or { host.finish_script(mut execution,libjs_exception_message(err));return }
 	message := if result.promise.state==.rejected { libjs_exception_message(libjs.throw_completion(result.promise.result)) } else { '' }
 	host.finish_script(mut execution,message)
 }

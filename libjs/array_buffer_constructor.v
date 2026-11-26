@@ -52,7 +52,7 @@ fn array_buffer_constructor_construct(mut vm VM, new_target &Object) !&Object {
 
 fn array_buffer_constructor_is_view(mut vm VM) !Value {
 	value := vm.argument(0)
-	return Value.from_bool(value.is_object() && (value.as_object().data_view != none || value.as_object().typed_array != none))
+	return Value.from_bool(value.is_object() && (value.as_object().slots.data_view != none || value.as_object().typed_array != none))
 }
 
 fn array_buffer_constructor_species(mut vm VM) !Value {

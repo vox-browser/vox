@@ -1,9 +1,9 @@
 module libjs
 
 // Translated from the Promise state machine in LibJS/Runtime/Promise.{h,cpp} and
-// the PromiseCapability record. Reaction records, resolving functions, and
-// perform_then() belong to the pending builtin-object translation, so only the
-// settled-state transitions that the VM observes are implemented.
+// the module PromiseCapability record. JavaScript objects, resolving functions
+// and reaction jobs are installed by promise_intrinsics.v. Module-only promises
+// preserve their existing settled-state representation without a JS wrapper.
 
 pub enum PromiseState {
 	pending
@@ -22,6 +22,10 @@ pub mut:
 	state      PromiseState // [[PromiseState]]
 	is_handled bool         // [[PromiseIsHandled]]
 	result     Value        // [[PromiseResult]]
+	object ?&Object
+	owner_vm ?&VM
+	fulfill_reactions []PromiseReaction
+	reject_reactions []PromiseReaction
 }
 
 pub fn Promise.create(realm &Realm) &Promise {
@@ -46,7 +50,11 @@ pub fn (mut promise Promise) fulfill(value Value) {
 	promise.result = value
 	// 6. Set promise.[[PromiseState]] to fulfilled.
 	promise.state = .fulfilled
-	// 7. TriggerPromiseReactions is part of the pending reaction translation.
+	if mut vm := promise.owner_vm {
+		for reaction in promise.fulfill_reactions { enqueue_promise_reaction(mut vm, reaction, value) }
+	}
+	promise.fulfill_reactions = []
+	promise.reject_reactions = []
 }
 
 // 27.2.1.7 RejectPromise ( promise, reason ), https://tc39.es/ecma262/#sec-rejectpromise
@@ -63,12 +71,15 @@ pub fn (mut promise Promise) reject(mut vm VM, reason Value) {
 	if !promise.is_handled {
 		vm.host_promise_rejection_tracker(mut promise, RejectionOperation.reject)
 	}
-	// 8. TriggerPromiseReactions is part of the pending reaction translation.
+	for reaction in promise.reject_reactions { enqueue_promise_reaction(mut vm, reaction, reason) }
+	promise.fulfill_reactions = []
+	promise.reject_reactions = []
 }
 
 // 27.2.1.1 PromiseCapability Records, https://tc39.es/ecma262/#sec-promisecapability-records
 @[heap]
-// Resolve and reject are optional until promise resolving functions are translated.
+// Module loading permits absent resolving hooks; generic JavaScript capabilities
+// retain their callable values in JSPromiseCapability.
 pub struct PromiseCapability {
 pub:
 	promise &Promise

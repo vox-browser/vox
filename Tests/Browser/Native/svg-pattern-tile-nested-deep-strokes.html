@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Device stroke width through three nested SVG tiles</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="320" height="90" viewBox="0 0 320 90">
+  <defs>
+    <pattern id="stripe" width="48" height="80" patternUnits="userSpaceOnUse"
+             patternTransform="scale(1 .75)">
+      <path d="M0 32H48" fill="none" stroke="lime" stroke-width="6"
+            vector-effect="non-scaling-stroke"/>
+    </pattern>
+    <pattern id="middle" width="48" height="60" patternUnits="userSpaceOnUse"
+             patternTransform="scale(1 .5)">
+      <path d="M0 0h48v60H0Z" fill="url(#stripe)"/>
+    </pattern>
+    <pattern id="tile" width="48" height="60" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <path d="M0 0h48v30H0Z" fill="url(#middle)"/>
+      <path d="M0 45H48" fill="none" stroke="url(#middle)" stroke-width="30"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h96v90H0Z" fill="url(#tile)"/>
+  <path d="M0 0h96v90H0Z" fill="url(#tile)" transform="translate(112)"/>
+  <path d="M0 0h96v45H0Z" fill="url(#tile)" transform="translate(224) scale(1 2)"/>
+</svg>

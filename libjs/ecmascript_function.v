@@ -1,5 +1,10 @@
 module libjs
 
+const function_prototype_key = PropertyName.from_str('prototype')
+const function_constructor_key = PropertyName.from_str('constructor')
+const default_export_identifier = utf16_string('*default*')
+const default_export_name = utf16_string('default')
+
 // Runtime/ECMAScriptFunctionObject.cpp: ordinary calls retain their defining
 // environment and allocate an independent interpreter frame. Executables use
 // this port's instruction-index ABI rather than upstream inline frames.
@@ -14,16 +19,41 @@ struct ECMAScriptFunction {
 	script_or_module ScriptOrModule
 	inferred_name ?Utf16String
 mut:
+	register_bindings []FunctionRegisterBinding
 	executable ?&Executable
+	field_initializer_name ?PropertyName
+	// Own properties of the last object this function constructed, reserved
+	// in the next one (internal_construct, BaseClassFunction.internal_construct).
+	constructed_properties u32
 }
 
-fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String) !&Object {
+fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
 	data := source.parsed_source.function_table.get(FunctionId{id: index})
-	if data.kind != .normal { return error('LibJS async and generator functions are not translated yet') }
+	return create_ecmascript_function_data(mut vm, source, data, named_expression, inferred_name, ordinary)
+}
+
+fn create_ecmascript_function_data(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool) !&Object {
+	return create_ecmascript_function_in_environment(mut vm, source, data, named_expression, inferred_name, ordinary,
+		vm.current_context().lexical_environment, vm.current_context().private_environment, vm.current_context().script_or_module)
+}
+
+fn create_ecmascript_function_in_environment(mut vm VM, source &Executable, data &JsFunctionData, named_expression bool, inferred_name ?Utf16String, ordinary bool,
+	defining_environment ?Environment, private_environment ?&PrivateEnvironment, script_or_module ScriptOrModule) !&Object {
+	vm.expose_current_call_environment()
 	realm := vm.realm()
-	mut object := Object.create(realm, realm.function_prototype)
+	function_prototype := match data.kind {
+		.normal { realm.function_prototype }
+		.async_kind { realm.async_function_prototype }
+		.generator { realm.generator_function_prototype }
+		.async_generator { realm.async_generator_function_prototype }
+	}
+	mut object := Object.create(realm, function_prototype)
 	object.class_name = 'Function'
-	mut environment := vm.running_execution_context().lexical_environment
+	// length, name and, for constructors and generators, prototype.
+	has_prototype := (ordinary && !data.is_arrow_function && data.kind == .normal)
+		|| data.kind in [.generator, .async_generator]
+	object.reserve_properties(if has_prototype { 3 } else { 2 })
+	mut environment := defining_environment
 	// Named function expressions have a private immutable self binding.
 	mut named := ?&DeclarativeEnvironment(none)
 	if named_expression {
@@ -39,38 +69,47 @@ fn create_ecmascript_function(mut vm VM, source &Executable, index u32, named_ex
 		data: data
 		source: source
 		environment: environment
-		private_environment: vm.running_execution_context().private_environment
-		script_or_module: vm.running_execution_context().script_or_module
+		private_environment: private_environment
+		script_or_module: script_or_module
 		inferred_name: inferred_name
 	}
 	object.callable = FunctionObject(function)
-	if !data.is_arrow_function { object.constructor = ConstructorFunction(function) }
+	if ordinary && !data.is_arrow_function && data.kind == .normal { object.constructor = ConstructorFunction(function) }
 	object.set_function_length(f64(data.function_length))
-	object.set_function_name(mut vm, PropertyName.from_utf16(function.name_for_call_stack()), none)
-	// SourceCode is already decoded once per script/module and shared by all
-	// of its executables. Converting the whole program here retained one full
-	// UTF-16 copy per created function in the GC-disabled browser.
+	object.set_function_name_text(mut vm, function.name_for_call_stack())
 	code := source.source_code or { return error('Function executable is missing its source code') }
-	units := code.code.as_slice()
-	if data.source_text_start > data.source_text_end || data.source_text_end > u32(units.len) {
+	if data.source_text_start > data.source_text_end || data.source_text_end > u32(code.code.as_slice().len) {
 		return error('Function source range is out of bounds')
 	}
-	object.function_source_text = utf16_string_from_code_units(units[int(data.source_text_start)..int(data.source_text_end)])
+	// [[SourceText]] is a view of the immutable SourceCode the callable retains
+	// through its executable; source_text() forms it when it is read.
 	if scope := named {
 		mut binding := scope
 		binding.initialize_binding(mut vm, data.name or { panic('missing function name') }.name, Value.from_object(object), .normal)!
 	}
-	if !data.is_arrow_function {
+	if ordinary && !data.is_arrow_function && data.kind == .normal {
 		mut prototype := Object.create(realm, realm.object_prototype)
-		prototype.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(object), attribute_writable | attribute_configurable)
-		object.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(prototype), attribute_writable)
+		prototype.reserve_properties(1)
+		prototype.define_absent_property(function_constructor_key, Value.from_object(object), attribute_writable | attribute_configurable)
+		object.define_absent_property(function_prototype_key, Value.from_object(prototype), attribute_writable)
+	} else if data.kind in [.generator, .async_generator] {
+		// Generator methods also own a prototype, but have no [[Construct]].
+		parent := if data.kind == .generator { realm.generator_prototype } else { realm.async_generator_prototype }
+		object.define_absent_property(function_prototype_key, Value.from_object(Object.create(realm, parent)), attribute_writable)
 	}
 	return object
 }
 
+// [[SourceText]]: a view of the defining SourceCode, checked at creation.
+fn (function &ECMAScriptFunction) source_text() ?Utf16String {
+	code := function.source.source_code or { return none }
+	units := code.code.as_slice()
+	return Utf16String{data: units[int(function.data.source_text_start)..int(function.data.source_text_end)]}
+}
+
 fn (function &ECMAScriptFunction) name_for_call_stack() Utf16String {
 	if name := function.data.name {
-		return if name.name.str() == '*default*' { utf16_string('default') } else { name.name }
+		return if name.name == default_export_identifier { default_export_name } else { name.name }
 	}
 	return function.inferred_name or { Utf16String.new() }
 }
@@ -78,7 +117,16 @@ fn (function &ECMAScriptFunction) name_for_call_stack() Utf16String {
 fn (function &ECMAScriptFunction) realm() ?&Realm { return function.realm_ }
 
 fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
+	return function.compile_with_lexical_registers(mut vm, LexicalRegisterExclusions{})
+}
+
+fn (mut function ECMAScriptFunction) compile_with_lexical_registers(mut vm VM, exclusions LexicalRegisterExclusions) !&Executable {
 	if executable := function.executable { return executable }
+	if cached := function.cached_function_compilation() {
+		function.executable = cached.executable
+		function.register_bindings = cached.register_bindings
+		return cached.executable
+	}
 	mut generator := BytecodeGenerator{
 		executable: &Executable{
 			name: function.name_for_call_stack()
@@ -86,39 +134,74 @@ fn (mut function ECMAScriptFunction) compile(mut vm VM) !&Executable {
 			source_code: function.source.source_code
 			parsed_source: function.source.parsed_source
 			starting_line: function.source.starting_line
+			native_cache_scope: 'function:${function.data.source_text_start}:${function.data.source_text_end}:${function.data.is_strict_mode}:${function.data.is_arrow_function}'
 		}
 		strict: function.data.is_strict_mode
 		starting_line: function.source.starting_line
 		range: function.data.body.range
 		function_body: true
+		generator_function: function.data.kind == .generator
 	}
-	for parameter in function.data.parameters {
-		if parameter.binding !is IdentifierBinding || parameter.default_value != none || parameter.is_rest {
-			return generator.unsupported('non-simple function parameters')
-		}
+	function.prepare_register_bindings(mut generator, exclusions)
+	if function.data.body.kind.tag == .class_field_initializer {
+		expression := function.data.body.kind.expression or { return error('Missing field initializer') }
+		mut value := Operand{}
+		if expression.kind.tag == .function_expr && generator.executable.parsed_source.function_table.get(expression.kind.function_id).name == none {
+			value = generator.temporary()
+			key := (function.field_initializer_name or { return error('Missing initializer field name') }).to_value(mut vm)
+			generator.emit(Instruction{op: .new_function_with_name, dst: value, lhs: generator.constant(key), identifier: expression.kind.function_id.id})
+		} else { value = generator.expression(mut vm, expression)! }
+		generator.emit(Instruction{op: .end, lhs: value})
+	} else {
+		generator.collect_vars(&function.data.body)!
+		if !function.data.simple_parameters() { generator.initialize_function_parameters(mut vm, function.data)! }
+		scope := function.data.body.kind.scope or { return error('Missing function body') }
+		generator.lexical_declarations(scope.children, false)!
+		generator.initialize_functions(scope.children)
+		if function.data.kind == .generator { generator.emit(Instruction{op: .generator_start}) }
+		generator.body_statements(mut vm, scope.children)!
+		generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
 	}
-	generator.collect_vars(&function.data.body)!
-	scope := function.data.body.kind.scope or { return error('Missing function body') }
-	generator.lexical_declarations(scope.children, false)!
-	generator.initialize_functions(scope.children)
-	for statement in scope.children { generator.statement(mut vm, &statement)! }
-	generator.emit(Instruction{op: .end, lhs: generator.constant(js_undefined())})
+	if generator.rejected_lexicals.len > 0 {
+		$if test { lexical_register_recompilations_for_test++ }
+		return function.compile_with_lexical_registers(mut vm, exclusions.with_rejected(generator.rejected_lexicals))
+	}
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
+	vm.remember_compiler_validation(generator.executable)
 	function.executable = generator.executable
+	function.remember_function_compilation(generator.executable)
 	return generator.executable
 }
 
 fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, arguments []Value) !Value {
-	executable := function.compile(mut vm)!
+	if function.data.kind == .async_kind { return function.call_async(mut vm, this_value, arguments) }
+	return function.call_with_new_target(mut vm, this_value, arguments, js_undefined(), none)
+}
+
+fn (mut function ECMAScriptFunction) call_with_new_target(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction) !Value {
+	return function.call_body(mut vm, this_value, arguments, new_target, class_constructor, none)
+}
+
+fn (mut function ECMAScriptFunction) call_body(mut vm VM, this_value Value, arguments []Value, new_target Value, class_constructor ?&BaseClassFunction, async_execution ?&AsyncExecution) !Value {
+	if function.data.kind == .async_generator { return error('LibJS async generator execution is not translated yet') }
+	// compile() returns an existing body before considering a new compilation.
+	executable := function.executable or { function.compile(mut vm)! }
+	call_plan := function.call_plan(executable)
+	simple_parameters := call_plan.simple_parameters
 	mut stack := vm.interpreter_stack()
 	mark := stack.top()
-	mut frame := stack.allocate(executable.registers_and_locals_count, executable.constants, u32(arguments.len)) or {
+	mut frame := (if function.data.kind == .normal && async_execution == none {
+		stack.allocate_body_frame(executable, u32(arguments.len))
+	} else { stack.allocate(executable.registers_and_locals_count, executable.constants, u32(arguments.len)) }) or {
 		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
 	}
 	defer { stack.deallocate(mark) }
-	mut environment := FunctionEnvironment.create(function.environment)
+	mut environment := vm.obtain_call_environment(mut frame, function.environment)
 	environment.set_function_object(FunctionObject(&function))
+	environment.set_new_target(new_target)
+	environment.class_constructor = class_constructor
+	environment.home_object = function.object.home_object
 	frame.function = FunctionObject(&function)
 	frame.realm = function.realm_
 	frame.script_or_module = function.script_or_module
@@ -126,12 +209,16 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 	frame.lexical_environment = Environment(environment)
 	frame.variable_environment = Environment(environment)
 	frame.passed_argument_count = u32(arguments.len)
-	for index, argument in arguments { frame.set_argument(u32(index), argument) }
+	frame.async_execution = async_execution
+	if function.data.kind == .generator {
+		frame.generator_execution = &GeneratorExecution{function: &function, realm: function.realm_, state: .executing}
+	}
+	frame.copy_call_arguments(arguments)
 	vm.push_execution_context_checked(mut frame)!
-	defer { vm.pop_execution_context() }
+	defer { vm.pop_current_context() }
 	if function.data.is_arrow_function {
 		environment.set_this_binding_status(.lexical)
-	} else {
+	} else if !(if constructor := class_constructor { constructor.derived } else { false }) {
 		bound_this := if function.data.is_strict_mode || this_value.is_object() {
 			this_value
 		} else if this_value.is_nullish() {
@@ -143,25 +230,82 @@ fn (mut function ECMAScriptFunction) internal_call(mut vm VM, this_value Value, 
 		frame.this_value = bound_this
 	}
 	for index, parameter in function.data.parameters {
-		binding := parameter.binding as IdentifierBinding
-		name := binding.identifier.name
-		value := if index < arguments.len { arguments[index] } else { js_undefined() }
-		if !environment.has_binding_named(name) { environment.create_mutable_binding(mut vm, name, false)!
-			environment.initialize_binding(mut vm, name, value, .normal)!
-		} else { environment.set_mutable_binding(mut vm, name, value, false)! }
-	}
-	for binding in executable.global_bindings {
-		if !environment.has_binding_named(binding.name) {
-			environment.create_mutable_binding(mut vm, binding.name, false)!
-			environment.initialize_binding(mut vm, binding.name, js_undefined(), .normal)!
+		if use_register_call_metadata() {
+			// call_plan() matched parameter_slots.len to this parameter list.
+			slot := unsafe { (&i64(call_plan.parameter_slots.data))[index] }
+			if slot >= 0 {
+				$if test {
+					if register_call_metadata_diagnostics { register_call_metadata_reads++ }
+				}
+				value := if index < arguments.len { arguments[index] } else { js_undefined() }
+				// run_executable() checks this layout; the plan's slot is a register binding.
+				destination := executable.local_index_base + u32(slot)
+				if destination >= u32(frame.values.len) { panic('Parameter register is outside its frame') }
+				unsafe {
+					mut values := &Value(frame.values.data)
+					values[destination] = value
+				}
+				continue
+			}
+		} else if function.parameter_in_register(index) {
+			value := if index < arguments.len { arguments[index] } else { js_undefined() }
+			for binding in function.register_bindings {
+				if binding.parameter_index == index { frame.values[executable.local_index_base + binding.slot] = value }
+			}
+			continue
+		}
+		if simple_parameters && use_direct_call_bindings() && parameter.binding is IdentifierBinding {
+			name := parameter.binding.identifier.name
+			value := if index < arguments.len { arguments[index] } else { js_undefined() }
+			environment.initialize_call_parameter(mut vm, name, value)!
+			continue
+		}
+		for name in parameter_bound_names(parameter) {
+			if !environment.has_binding_named(name) { environment.create_mutable_binding(mut vm, name, false)! }
+			if simple_parameters {
+				value := if index < arguments.len { arguments[index] } else { js_undefined() }
+				binding_index := environment.find_binding_index(name)
+				if environment.bindings[binding_index].initialized { environment.set_mutable_binding(mut vm, name, value, false)! }
+				else { environment.initialize_binding(mut vm, name, value, .normal)! }
+			}
 		}
 	}
-	return vm.run_executable(mut frame, executable, 0, ExecutionLimits{})
+	if function.needs_arguments_binding() {
+		object := create_arguments_object(mut vm, &function, environment, arguments)!
+		name := utf16_string('arguments')
+		if function.data.is_strict_mode {
+			environment.create_immutable_binding(mut vm, name, false)!
+		} else { environment.create_mutable_binding(mut vm, name, false)! }
+		environment.initialize_binding(mut vm, name, Value.from_object(object), .normal)!
+	}
+	if simple_parameters {
+		if use_register_call_metadata() {
+			for name in call_plan.environment_vars { initialize_function_var(mut vm, mut environment, name)! }
+		} else {
+			for binding in executable.global_bindings {
+				if function.variable_in_register(binding.name) { continue }
+				initialize_function_var(mut vm, mut environment, binding.name)!
+			}
+		}
+	}
+	returned := vm.run_executable(mut frame, executable, 0, ExecutionLimits{})!
+	if frame.yield_is_await { return js_special_empty_value() }
+	if constructor := class_constructor {
+		if constructor.derived {
+			if returned.is_object() { return returned }
+			if !returned.is_undefined() { return vm.throw_error(.type_error, 'Derived constructor returned a non-object value') }
+			return environment.get_this_binding(mut vm)
+		}
+	}
+	return returned
 }
 
 fn (mut function ECMAScriptFunction) internal_construct(mut vm VM, arguments []Value, new_target &Object) !&Object {
-	prototype := new_target.get(mut vm, PropertyName.from_str('prototype'))!
-	object := Object.create(function.realm_, if prototype.is_object() { prototype.as_object() } else { function.realm_.object_prototype_record() })
-	value := function.internal_call(mut vm, Value.from_object(object), arguments)!
+	prototype := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.object_prototype_record() })!
+	mut object := Object.create(function.realm_, prototype)
+	// A constructor's instances usually end with the same properties.
+	object.reserve_properties(function.constructed_properties)
+	value := function.call_with_new_target(mut vm, Value.from_object(object), arguments, Value.from_object(new_target), none)!
+	function.constructed_properties = u32(object.properties.len)
 	return if value.is_object() { value.as_object() } else { object }
 }

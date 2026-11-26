@@ -46,7 +46,10 @@ pub fn (mut object Object) set_engine_private_property(key &Symbol, value Value)
 pub fn (mut object Object) delete_engine_private_property(key &Symbol) {
 	assert key.is_private()
 	index := object.find_own_property(PropertyName.from_symbol(key))
-	if index >= 0 { object.properties.delete(index) }
+	if index >= 0 {
+		object.properties.delete(index)
+		object.reindex_deleted_property()
+	}
 }
 
 pub fn (mut object Object) define_direct_cached_accessor(key PropertyName, getter ?&Object, setter ?&Object, attributes u8) {

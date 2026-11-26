@@ -1,6 +1,7 @@
 module adblock
 
 import os
+import processmetrics
 import time
 
 #flag @DIR/worker_transport_native.o
@@ -86,10 +87,21 @@ fn evaluate_default_worker(source string) !string {
 
 // Call at the very start of an explicitly worker-capable executable. An ordinary
 // invocation returns none. No module initializer opts into subprocess behavior.
+// VOX_ADBLOCK_WORKER_DIAGNOSTICS=PATH: the worker appends its startup and each
+// request's calling-thread instructions to PATH (its own stderr is closed).
+const worker_request_diagnostics = os.getenv('VOX_ADBLOCK_WORKER_DIAGNOSTICS') != ''
+
+fn report_worker_diagnostic(line string) {
+	mut file := os.open_append(os.getenv('VOX_ADBLOCK_WORKER_DIAGNOSTICS')) or { return }
+	file.writeln(line) or {}
+	file.close()
+}
+
 pub fn run_default_worker_role(arguments []string) ?int {
 	if arguments.len < 2 || arguments[1] != '--vox-adblock-worker-v1' { return none }
 	if arguments.len != 2 || C.vox_adblock_worker_begin_lifetime_watch() != 0 { return 64 }
 	configure_filter_worker_javascript_startup()
+	startup := if worker_request_diagnostics { processmetrics.thread_instruction_snapshot().instructions } else { u64(0) }
 	mut context := create_context(none) or {
 		message := err.msg()
 		_ = C.vox_adblock_worker_send_frame(4, 6, 0, message.str, uint(message.len), 0)
@@ -97,6 +109,9 @@ pub fn run_default_worker_role(arguments []string) ?int {
 	}
 	defer { if context != unsafe { nil } { C.JSGlobalContextRelease(context) } }
 	if C.vox_adblock_worker_send_frame(4, 3, 0, unsafe { nil }, 0, 0) != 0 { return 74 }
+	if worker_request_diagnostics {
+		report_worker_diagnostic('VOX_ADBLOCK_WORKER startup instructions=${processmetrics.thread_instruction_snapshot().instructions - startup}')
+	}
 	mut previous := u64(0)
 	for {
 		mut kind := 0
@@ -118,9 +133,14 @@ pub fn run_default_worker_role(arguments []string) ?int {
 		}
 		if kind != 1 { return 65 }
 		mut response_kind := 4
+		request_start := if worker_request_diagnostics { processmetrics.thread_instruction_snapshot().instructions } else { u64(0) }
 		message := evaluate_context(context, source) or {
 			response_kind = 5
 			err.msg()
+		}
+		if worker_request_diagnostics {
+			spent := processmetrics.thread_instruction_snapshot().instructions - request_start
+			report_worker_diagnostic('VOX_ADBLOCK_WORKER request bytes=${source.len} reply=${message.len} instructions=${spent} source=${source.limit(60).replace('\n', ' ')}')
 		}
 		if C.vox_adblock_worker_send_frame(4, response_kind, id, message.str, uint(message.len), 0) != 0 { return 74 }
 	}

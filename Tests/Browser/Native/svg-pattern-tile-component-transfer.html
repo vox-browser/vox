@@ -1,0 +1,79 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Component transfer in sRGB and linear RGB SVG pattern tiles</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="384" height="200" viewBox="0 0 384 200">
+  <defs>
+    <filter id="srgb-shade" color-interpolation-filters="sRGB">
+      <feComponentTransfer>
+        <feFuncR id="srgb-red" type="table" tableValues="0 .6"/>
+        <feFuncA id="srgb-alpha" type="linear" slope="1"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="linear-shade">
+      <feComponentTransfer>
+        <feFuncR id="linear-red" type="table" tableValues="0 .6"/>
+        <feFuncA id="linear-alpha" type="linear" slope="1"/>
+      </feComponentTransfer>
+    </filter>
+    <pattern id="srgb-tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <g filter="url(#srgb-shade)">
+        <path d="M4 4h20v8H4Z" fill="red"/>
+        <path d="M4 28h28v4H4Z" fill="none"/>
+      </g>
+      <path d="M0 36h40v4H0Z" fill="lime"/>
+    </pattern>
+    <pattern id="linear-tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <g filter="url(#linear-shade)">
+        <path d="M4 4h20v8H4Z" fill="red"/>
+        <path d="M4 28h28v4H4Z" fill="none"/>
+      </g>
+      <path d="M0 36h40v4H0Z" fill="lime"/>
+    </pattern>
+    <mask id="srgb-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="100">
+      <path d="M0 0h120v100H0Z" fill="url(#srgb-tile)"/>
+    </mask>
+    <mask id="linear-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="100">
+      <path d="M0 0h120v100H0Z" fill="url(#linear-tile)"/>
+    </mask>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#srgb-tile)"/>
+  <path d="M0 50H120" fill="none" stroke="url(#srgb-tile)" stroke-width="100"
+        transform="translate(128)"/>
+  <g transform="translate(256)">
+    <path d="M0 0h120v100H0Z" fill="black" mask="url(#srgb-mask)"/>
+  </g>
+  <g transform="translate(0 100)">
+    <path d="M0 0h120v100H0Z" fill="url(#linear-tile)"/>
+    <path d="M0 50H120" fill="none" stroke="url(#linear-tile)" stroke-width="100"
+          transform="translate(128)"/>
+    <g transform="translate(256)">
+      <path d="M0 0h120v100H0Z" fill="black" mask="url(#linear-mask)"/>
+    </g>
+  </g>
+</svg>
+<script>
+let frame = 0;
+function editTransfer() {
+    if (++frame === 12) {
+        for (const space of ['srgb', 'linear']) {
+            document.getElementById(space + '-red').setAttribute('tableValues', '0 1');
+            const alpha = document.getElementById(space + '-alpha');
+            alpha.setAttribute('slope', '0');
+            alpha.setAttribute('intercept', '.6');
+        }
+    }
+    if (frame === 24)
+        document.body.setAttribute('data-component-transfer-ready', '');
+    else
+        requestAnimationFrame(editTransfer);
+}
+requestAnimationFrame(editTransfer);
+</script>

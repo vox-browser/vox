@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portable web font replay</title>
+<style>
+@font-face { font-family: Origin; src: url(../Brave/resources/glyph-origin.ttf); }
+body { margin: 0; background: #101820; min-height: 1400px; }
+.marker { position: absolute; top: 0; left: 220px; width: 20px; height: 16px; background: #ea70b5; }
+.custom { position: absolute; font: 80px/96px Origin, sans-serif; color: #e52db8; }
+.partially-visible { left: -30px; top: 0; }
+.inside { left: 32px; top: 80px; }
+</style>
+<div class="marker"></div>
+<div class="custom partially-visible">m</div>
+<div class="custom inside">Im</div>

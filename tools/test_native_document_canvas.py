@@ -25,15 +25,28 @@ def entry_points(text):
     declarations = declarations.replace(
         "static CGImageRef native_copy_cg_image(gg__Image *image);",
         "static CGImageRef native_copy_cg_image(gg__Image *image) { (void)image; return NULL; }")
-    functions = [function(signature) for signature in (
+    functions = ['#include "native/include/native_sparse_bitmap_context_darwin.h"',
+                 '#ifndef VOX_DOCUMENT_COLOR_BRIDGE\n'
+                 'static int vox_document_display_p3_enabled(void) { return 0; }\n'
+                 'static int native_document_raster_uses_p3(void) { return 0; }\n'
+                 '#endif']
+    functions += [function(signature) for signature in (
         "static void native_add_elliptical_arc(",
         "static CGPathRef native_create_corner_rounded_rect_path(",
         "static void native_initialize_css_filter_renderer(",
         "void native_prepare_css_filter_renderer(",
-        "void native_begin_css_filter_layer(")]
+        "static int native_text_raster_finish_in_space(",
+        "static int native_finish_owned_document_shape_raster(",
+        "static void native_release_css_filter_surface(",
+        "static void native_css_filter_context_released(",
+        "static CGContextRef native_create_css_filter_surface_context(",
+        "static void native_begin_css_filter_layer_in_space(",
+        "void native_begin_css_filter_layer(",
+        "void native_begin_spatial_css_filter_layer(")]
     functions.append("void native_end_css_filter_layer(void);")
     functions += [function(signature) for signature in (
-        "void native_begin_font_compositing_layer(", "void native_end_font_compositing_layer(")]
+        "void native_begin_font_compositing_layer(", "void native_end_font_compositing_layer(",
+        "void *native_start_initial_document_clear(", "void native_finish_initial_document_clear(")]
     functions.append(text[text.index("void native_begin_backdrop_filter_layer("):
                           text.index("static CGRect native_svg_mask_canvas_rect(")])
     return declarations + "\n" + "\n".join(functions) + "\n"

@@ -2,6 +2,7 @@ module css
 
 
 import dom
+import processmetrics
 import platform
 
 // Translated scaffolding from:
@@ -22,12 +23,16 @@ pub struct RuleCaches {
 pub mut:
 	main     &RuleCache = unsafe { nil }
 	by_layer map[string]&RuleCache
+	// Every rule of `main` and `by_layer` in one index, in the same insertion
+	// order (combined_author_matching.v).
+	all &RuleCache = unsafe { nil }
 }
 
 pub fn RuleCaches.new() &RuleCaches {
 	return &RuleCaches{
 		main: RuleCache.new()
 		by_layer: map[string]&RuleCache{}
+		all: RuleCache.new()
 	}
 }
 
@@ -162,7 +167,9 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 	}
 	compound_selector := compound_selectors[compound_selectors.len - 1]
 	if compound_selector.simple_selectors.len != 1 {
-		return none
+		// Every simple selector of the argument's subject compound must hold
+		// for the subject, so any of them is a sound bucket.
+		return subject_compound_bucket(compound_selector)
 	}
 
 	inner_simple_selector := compound_selector.simple_selectors[0]
@@ -210,6 +217,9 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 	// NOTE: We traverse the simple selectors in reverse order to make sure that
 	// class/ID buckets are preferred over tag buckets in the common case of
 	// div.foo or div#foo selectors.
+	// An attribute name required through :is()/:where() is kept until no class
+	// or ID turns up, and then preferred over the tag.
+	mut required_attribute := ''
 	for i := last_compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		simple_selector := last_compound_selector.simple_selectors[i]
 		if simple_selector.type_ == .id {
@@ -221,13 +231,25 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 			return
 		}
 		if simple_selector.type_ == .tag_name {
+			if required_attribute != '' {
+				break
+			}
 			style_scope_push_rule(mut cache.rules_by_tag_name, simple_selector.qualified_name().name.lowercase_name, matching_rule)
 			return
 		}
 		// NOTE: Selectors like `:is/where(.foo)` and `:is/where(.foo .bar)` are
 		// bucketed as class selectors for `foo` and `bar` respectively.
 		if simplified := style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_selector) {
+			if simplified.type_ == .attribute {
+				if required_attribute == '' {
+					required_attribute = simplified.name
+				}
+				continue
+			}
 			if simplified.type_ == .tag_name {
+				if required_attribute != '' {
+					break
+				}
 				style_scope_push_rule(mut cache.rules_by_tag_name, simplified.name, matching_rule)
 				return
 			}
@@ -240,6 +262,17 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 				return
 			}
 		}
+	}
+	if required_attribute != '' {
+		style_scope_push_rule(mut cache.rules_by_attribute_name, required_attribute, matching_rule)
+		return
+	}
+
+	if tag_names := pseudo_class_subject_tag_buckets(last_compound_selector) {
+		for tag_name in tag_names {
+			style_scope_push_rule(mut cache.rules_by_tag_name, tag_name, matching_rule)
+		}
+		return
 	}
 
 	if matching_rule.contains_pseudo_element {
@@ -311,6 +344,18 @@ fn rule_cache_bucket_has_pseudo_element(bucket []&MatchingRule, pseudo_element P
 fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
 	// This public coarse query also supports manually updated bucket vectors
 	// and mutable MatchingRule hints. Keep reading those live views directly.
+	return cache.has_pseudo_subject_candidate(abstract_element, pseudo_element)
+}
+
+// The style pass's query. In caches a style scope built, the pseudo-subject
+// index holds every rule recording this pseudo-element, and matching for the
+// pseudo-element reads the same index, so only those rules are scanned.
+fn (cache &RuleCache) has_indexed_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	if cache.disjunctive_subject_masks_trusted_ && cache.pseudo_subject_index_ready_
+		&& !disable_pseudo_subject_rule_index && !disable_pseudo_candidate_index_lookup {
+		index := cache.pseudo_subject_rules_[pseudo_element] or { return false }
+		return index.has_pseudo_subject_candidate(abstract_element, pseudo_element)
+	}
 	return cache.has_pseudo_subject_candidate(abstract_element, pseudo_element)
 }
 
@@ -389,15 +434,28 @@ fn (cache &RuleCache) has_pseudo_subject_candidate(abstract_element dom.Abstract
 }
 
 fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
-	if caches.main.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+	return caches.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, false)
+}
+
+fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element_in(abstract_element dom.AbstractElement, pseudo_element PseudoElement, indexed bool) bool {
+	if caches.main.has_candidate_rule_for_pseudo_element_with(abstract_element, pseudo_element, indexed) {
 		return true
 	}
 	for _, cache in caches.by_layer {
-		if cache.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+		if cache.has_candidate_rule_for_pseudo_element_with(abstract_element, pseudo_element, indexed) {
 			return true
 		}
 	}
 	return false
+}
+
+@[inline]
+fn (cache &RuleCache) has_candidate_rule_for_pseudo_element_with(abstract_element dom.AbstractElement, pseudo_element PseudoElement, indexed bool) bool {
+	return if indexed {
+		cache.has_indexed_candidate_rule_for_pseudo_element(abstract_element, pseudo_element)
+	} else {
+		cache.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element)
+	}
 }
 
 // Avoid running a complete cascade for generated pseudo-elements when none of
@@ -405,13 +463,23 @@ fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element d
 // This is the same coarse candidate filtering used before selector matching;
 // it can produce false positives, but never skips a potentially matching rule.
 pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	return scope.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, false)
+}
+
+// has_candidate_rule_for_pseudo_element() through the pseudo-subject indexes,
+// for the style pass deciding whether to cascade a generated pseudo-element.
+pub fn (scope &StyleScope) has_indexed_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	return scope.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, true)
+}
+
+fn (scope &StyleScope) has_candidate_rule_for_pseudo_element_in(abstract_element dom.AbstractElement, pseudo_element PseudoElement, indexed bool) bool {
 	// A part's rules can live in an outer scope. Local buckets cannot prove
 	// that its pseudo-element has no matching rules there.
 	if abstract_element.element().has_part_names() { return true }
 	scope.build_rule_cache_if_needed()
 	for caches in [scope.author_rule_cache, scope.user_rule_cache, scope.user_agent_rule_cache]! {
 		if value := caches {
-			if value.has_candidate_rule_for_pseudo_element(abstract_element, pseudo_element) {
+			if value.has_candidate_rule_for_pseudo_element_in(abstract_element, pseudo_element, indexed) {
 				return true
 			}
 		}
@@ -494,9 +562,12 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 	}
 
 	if insights := scope.selector_insights {
-		scope.make_rule_cache_for_cascade_origin(.author, insights)
-		scope.make_rule_cache_for_cascade_origin(.user, insights)
-		scope.make_rule_cache_for_cascade_origin(.user_agent, insights)
+		// A fresh dependency graph has no outstanding readers. Growing its
+		// match sets in place keeps each successive selector from retaining a
+		// discarded copy of all the earlier keys.
+		scope.make_rule_cache_for_origin(.author, insights, true)
+		scope.make_rule_cache_for_origin(.user, insights, true)
+		scope.make_rule_cache_for_origin(.user_agent, insights, true)
 	}
 
 	cache := &StyleCache{
@@ -518,6 +589,9 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 }
 
 pub fn (mut scope StyleScope) build_rule_cache() {
+	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_rule_cache')
+	defer { load_instruction_stage.finish() }
+	if scope.extend_rule_cache() { return }
 	if cache := scope.shared_user_agent_only_shadow_style_cache() {
 		scope.adopt_style_cache(cache)
 		return
@@ -551,6 +625,10 @@ pub fn (mut scope StyleScope) style_sheet_list() &StyleSheetList {
 }
 
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
+	scope.extendable_rule_cache_ = unsafe { nil }
+	scope.rule_cache_author_sheets_ = []&CSSStyleSheet{}
+	scope.rule_cache_author_sheet_indexes_ = []uint{}
+	scope.rule_cache_duplicate_groups_ = map[string]&DuplicateSheetGroup{}
 	scope.adopted_user_agent_only_shadow_cache_ = unsafe { nil }
 	scope.invalidate_counter_style_cache()
 	scope.rule_cache = none
@@ -683,8 +761,32 @@ struct RuleCacheBuildContext {
 	insights &SelectorInsights
 	style_sheet_index uint
 	fold_id_and_class_name_case bool
+	invalidation_data ?&StyleInvalidationData
+	invalidation RuleCacheInvalidationBuild
+	// The indexed rules of a sheet whose identical copies share them.
+	duplicate_group &DuplicateSheetGroup = unsafe { nil }
 mut:
 	rule_index uint
+	prepared_invalidation_selectors int
+}
+
+@[params]
+struct RuleCacheInvalidationBuild {
+	unpublished bool
+	staged_data ?&StyleInvalidationData
+	storage &platform.Arena = unsafe { nil }
+}
+
+fn (build RuleCacheInvalidationBuild) add_selector(mut data StyleInvalidationData,
+	selector Selector, boundary bool) {
+	if build.storage == unsafe { nil } {
+		data.build_selector_dependencies(selector, boundary, build.unpublished)
+		return
+	}
+	mut storage := unsafe { &platform.Arena(build.storage) }
+	entry := storage.enter()
+	defer { storage.leave(entry) }
+	data.build_selector_dependencies(selector, boundary, build.unpublished)
 }
 
 fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
@@ -703,13 +805,17 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 		}
 	}
 	absolutized_selectors := style_scope_absolutized_selectors_for_rule(rule)
-	if style_invalidation_data := scope.style_invalidation_data {
+	if style_invalidation_data := context.invalidation_data {
 		mut mutable_invalidation_data := unsafe { &StyleInvalidationData(style_invalidation_data) }
 		for selector in absolutized_selectors.selectors {
-			mutable_invalidation_data.build_invalidation_sets_for_selector(selector)
+			if user_agent_syntax_diagnostics && selector.has_invalidation_projection() {
+				context.prepared_invalidation_selectors++
+			}
+			context.invalidation.add_selector(mut mutable_invalidation_data, selector, false)
 		}
 		if scope_rule := rule.parent_scope_rule() {
-			style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data, mut mutable_insights)
+			style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data,
+				mut mutable_insights, context.invalidation)
 		}
 	}
 
@@ -726,8 +832,14 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 			scope_rule: rule.parent_scope_rule()
 			container_rule: rule.parent_container_rule()
 		}
+		if context.duplicate_group != unsafe { nil } {
+			mut group := context.duplicate_group
+			group.rules << matching_rule
+		}
 
 		qualified_layer_name := matching_rule.qualified_layer_name()
+		matching_rule.in_layer_cache = qualified_layer_name.len != 0
+		matching_rule.cache_layer_name = qualified_layer_name
 		mut rule_cache := if qualified_layer_name.len == 0 {
 			rule_caches.main
 		} else {
@@ -785,6 +897,13 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 
 		rule_cache.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
 		rule_cache.index_pseudo_subject_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+		if rule_caches.all != unsafe { nil } {
+			mut all := rule_caches.all
+			all.fold_id_and_class_name_case = fold_id_and_class_name_case
+			all.disjunctive_subject_masks_trusted_ = true
+			all.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+			all.index_pseudo_subject_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+		}
 	}
 	context.rule_index++
 }
@@ -796,12 +915,60 @@ fn style_scope_cache_keyframes_rule(context voidptr, rule &CSSRule) {
 }
 
 pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin CascadeOrigin, insights &SelectorInsights) {
+	scope.make_rule_cache_for_origin(cascade_origin, insights, false)
+}
+
+fn (mut scope StyleScope) make_rule_cache_for_origin(cascade_origin CascadeOrigin, insights &SelectorInsights,
+	unpublished_invalidation bool) {
+	sheets := scope.stylesheets_for_cascade_origin(cascade_origin)
+	// A complete build indexes its own copies; only an extension shares the
+	// groups of the build it extends.
+	if cascade_origin == .author { scope.rule_cache_duplicate_groups_ = map[string]&DuplicateSheetGroup{} }
+	// Only the order of sheet indexes matters to the cascade. A stride leaves
+	// room for sheets that rule_cache_extension.v inserts between them.
+	indexes := rule_cache_strided_indexes(sheets.len)
+	scope.cache_rules_of_sheets(cascade_origin, insights, sheets, indexes, unpublished: unpublished_invalidation)
+	if cascade_origin == .author {
+		scope.rule_cache_author_sheets_ = sheets
+		scope.rule_cache_author_sheet_indexes_ = indexes
+	}
+}
+
+// Adds the rules of `sheets`, whose cascade-order sheet indexes are `indexes`,
+// to the origin's caches.
+fn (mut scope StyleScope) cache_rules_of_sheets(cascade_origin CascadeOrigin, insights &SelectorInsights, sheets []&CSSStyleSheet,
+	indexes []uint, invalidation RuleCacheInvalidationBuild) {
 	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
+	invalidation_data := if staged := invalidation.staged_data { ?&StyleInvalidationData(staged) } else { scope.style_invalidation_data }
 
-	mut style_sheet_index := uint(0)
-	for sheet in scope.stylesheets_for_cascade_origin(cascade_origin) {
+	identities, last_copy := duplicate_sheet_identities(cascade_origin, sheets)
+	for position, sheet in sheets {
+		style_sheet_index := indexes[position]
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
+		identity := identities[position]
+		mut duplicate_group := unsafe { &DuplicateSheetGroup(nil) }
+		if identity != '' {
+			if mut group := scope.rule_cache_duplicate_groups_[identity] {
+				// An identical copy is already indexed (by an earlier build this
+				// cache extends): match its rules at the latest copy's index.
+				if style_sheet_index > group.index {
+					for mut rule in group.rules { rule.style_sheet_index = style_sheet_index }
+					group.index = style_sheet_index
+				}
+				report_duplicate_style_sheet(sheet, 'shared', group.index)
+				sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
+				continue
+			}
+			if last_copy[identity] != position {
+				// A later copy among these sheets is indexed instead.
+				report_duplicate_style_sheet(sheet, 'skipped', style_sheet_index)
+				sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
+				continue
+			}
+			duplicate_group = &DuplicateSheetGroup{ index: style_sheet_index }
+			scope.rule_cache_duplicate_groups_[identity] = duplicate_group
+		}
 		mut context := RuleCacheBuildContext{
 			scope: &scope
 			rule_caches: rule_caches
@@ -810,12 +977,17 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 			insights: mutable_insights
 			style_sheet_index: style_sheet_index
 			fold_id_and_class_name_case: fold_id_and_class_name_case
+			invalidation_data: invalidation_data
+			invalidation: invalidation
+			duplicate_group: duplicate_group
 		}
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), style_scope_cache_style_rule)
+		if context.prepared_invalidation_selectors > 0 {
+			eprintln('VOX_UA_SELECTOR_INVALIDATION selectors=${context.prepared_invalidation_selectors}')
+		}
 
 		// Loosely based on https://drafts.csswg.org/css-animations-2/#keyframe-processing
 		sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
-		style_sheet_index++
 	}
 }
 
@@ -824,20 +996,21 @@ pub fn (scope &StyleScope) have_size_container_queries() bool {
 	return scope.has_size_container_queries
 }
 
-fn style_scope_collect_boundary_selector_dependencies(scope_rule &CSSRule, mut invalidation_data StyleInvalidationData, mut insights SelectorInsights) {
+fn style_scope_collect_boundary_selector_dependencies(scope_rule &CSSRule, mut invalidation_data StyleInvalidationData, mut insights SelectorInsights,
+	build RuleCacheInvalidationBuild) {
 	mut current_scope_rule := ?&CSSRule(scope_rule)
 	for {
 		current := current_scope_rule or { break }
 		mut mutable_current := unsafe { &CSSRule(current) }
 		if start_selectors := mutable_current.scope_start_selectors_for_matching() {
 			for selector in start_selectors.selectors {
-				invalidation_data.build_invalidation_sets_for_scope_boundary_selector(selector)
+				build.add_selector(mut invalidation_data, selector, true)
 				StyleScope.collect_selector_insights(selector, mut insights)
 			}
 		}
 		if end_selectors := mutable_current.scope_end_selectors_for_matching() {
 			for selector in end_selectors.selectors {
-				invalidation_data.build_invalidation_sets_for_scope_boundary_selector(selector)
+				build.add_selector(mut invalidation_data, selector, true)
 				StyleScope.collect_selector_insights(selector, mut insights)
 			}
 		}
@@ -1049,16 +1222,29 @@ pub fn (scope &StyleScope) rule_cache_for_cascade_origin(cascade_origin CascadeO
 
 	rule_caches_by_layer := scope.rule_caches_for_origin(cascade_origin) or { return none }
 	if layer_name := qualified_layer_name {
+		if layer_name == all_layers_rule_cache_name {
+			if rule_caches_by_layer.all == unsafe { nil } { return none }
+			return rule_caches_by_layer.all
+		}
 		return rule_caches_by_layer.by_layer[layer_name] or { return none }
 	}
 	return rule_caches_by_layer.main
 }
 
 pub fn StyleScope.collect_selector_insights(selector Selector, mut insights SelectorInsights) {
-	for compound_selector in selector.compound_selectors() {
+	StyleScope.collect_selector_insights_at(selector, true, mut insights)
+}
+
+// `subject`: the selector's last compound matches the element the rule
+// styles. Earlier compounds, :has() arguments and ::slotted() compounds
+// match other elements.
+fn StyleScope.collect_selector_insights_at(selector Selector, subject bool, mut insights SelectorInsights) {
+	compounds := selector.compound_selectors()
+	for compound_index, compound_selector in compounds {
+		in_subject := subject && compound_index == compounds.len - 1
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .attribute {
-				insights.record_attribute_value_test(simple_selector.attribute())
+				insights.record_attribute_value_test(simple_selector.attribute(), in_subject)
 			} else if simple_selector.type_ == .pseudo_class {
 				if simple_selector.pseudo_class().type_ == .local_link {
 					insights.has_local_link_selectors = true
@@ -1074,13 +1260,17 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 						}
 					}
 				}
+				// :is(), :where() and :not() test their arguments on the element
+				// itself; :has() and :nth-child(of …) on other elements.
+				argument_subject := in_subject
+					&& simple_selector.pseudo_class().type_ in [.is_, .where, .not_]
 				for argument_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
-					StyleScope.collect_selector_insights(argument_selector, mut insights)
+					StyleScope.collect_selector_insights_at(argument_selector, argument_subject, mut insights)
 				}
 			} else if simple_selector.type_ == .pseudo_element
 				&& simple_selector.pseudo_element().type_ == .slotted {
 				if argument_selector := simple_selector.pseudo_element().compound_selector {
-					StyleScope.collect_selector_insights(argument_selector, mut insights)
+					StyleScope.collect_selector_insights_at(argument_selector, false, mut insights)
 				}
 			}
 		}
@@ -2032,33 +2222,101 @@ fn style_scope_filter_namespace_rule(element_namespace_uri ?string, rule &Matchi
 	return true
 }
 
-fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
-	// FIXME: This needs to be revised when adding support for the ::shadow
-	// selector, as it needs to cross shadow boundaries.
-	from_user_agent_or_user_stylesheet := rule_to_run.cascade_origin == .user_agent || rule_to_run.cascade_origin == .user
-
-	// NOTE: Inside shadow trees, we only match rules that are defined in the
-	// shadow tree's style sheets. Exceptions are:
-	// - the shadow tree's shadow host, which needs to match :host rules from
-	//   inside the shadow root.
-	// - ::slotted() rules, which need to match elements assigned to slots from
-	//   inside the shadow root.
-	// - UA or User style sheets don't have a scope, so they are always relevant.
-	mut rule_is_relevant_for_current_scope := style_scope_optional_shadow_root_equal(rule_root, shadow_root)
+// NOTE: Inside shadow trees, we only match rules that are defined in the
+// shadow tree's style sheets. Exceptions are:
+// - the shadow tree's shadow host, which needs to match :host rules from
+//   inside the shadow root.
+// - ::slotted() rules, which need to match elements assigned to slots from
+//   inside the shadow root.
+// - UA or User style sheets don't have a scope, so they are always relevant.
+// The part that depends only on the roots, the same for a whole bucket.
+fn style_scope_rule_root_is_relevant(rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot) bool {
+	if style_scope_optional_shadow_root_equal(rule_root, shadow_root) {
+		return true
+	}
 	if shadow_root_for_element := element_shadow_root {
-		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || style_scope_optional_shadow_root_equal(rule_root, shadow_root_for_element)
+		if style_scope_optional_shadow_root_equal(rule_root, shadow_root_for_element) {
+			return true
+		}
 	}
-	rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || from_user_agent_or_user_stylesheet || rule_to_run.slotted || rule_to_run.contains_part_pseudo_element
 	if root := shadow_root {
-		rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope || (style_scope_shadow_root_is_none(rule_root) && root.uses_document_style_sheets())
+		return style_scope_shadow_root_is_none(rule_root) && root.uses_document_style_sheets()
 	}
+	return false
+}
 
-	if !rule_is_relevant_for_current_scope {
+// FIXME: This needs to be revised when adding support for the ::shadow
+// selector, as it needs to cross shadow boundaries.
+@[inline]
+fn style_scope_rule_is_relevant_for_scope(rule &MatchingRule, root_is_relevant bool) bool {
+	return root_is_relevant || rule.cascade_origin == .user_agent || rule.cascade_origin == .user
+		|| rule.slotted || rule.contains_part_pseudo_element
+}
+
+// should_reject_with_ancestor_filter() for a candidate, reading the selector's
+// retained hashes in place. Quirks mode folds id and class case first.
+@[inline]
+fn (s &StyleComputer) rejects_rule_with_ancestor_filter(rule &MatchingRule, quirks bool) bool {
+	data := rule.selector.data_
+	if quirks || data == unsafe { nil } || s.ancestor_filter_.buckets.len != counting_bloom_filter_bucket_count {
+		selector := rule.selector
+		return selector.can_use_ancestor_filter() && s.should_reject_with_ancestor_filter(selector)
+	}
+	if !data.can_use_ancestor_filter {
+		return false
+	}
+	buckets := s.ancestor_filter_.buckets
+	for index in 0 .. selector_ancestor_hash_count {
+		hash := data.ancestor_hashes[index]
+		if hash == 0 {
+			break
+		}
+		if unsafe { buckets[int(hash & counting_bloom_filter_key_mask)] } == 0
+			|| unsafe { buckets[int((hash >> 16) & counting_bloom_filter_key_mask)] } == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+fn (s &StyleComputer) in_quirks_document() bool {
+	return s.document_ != unsafe { nil } && s.document_.in_quirks_mode()
+}
+
+// The checks of style_scope_add_rule_to_run() that depend only on the roots
+// and the document, made once for a bucket or rule list.
+struct RuleCandidateScope {
+	root_is_relevant bool
+	recorded_root    ?&dom.ShadowRoot
+	quirks           bool
+}
+
+fn rule_candidate_scope(style_computer &StyleComputer, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot) RuleCandidateScope {
+	return RuleCandidateScope{
+		root_is_relevant: style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)
+		recorded_root:    style_scope_mut_shadow_root_option(rule_root)
+		quirks:           style_computer.in_quirks_document()
+	}
+}
+
+// style_scope_add_rule_to_run() with the scope's checks already made.
+@[inline]
+fn style_scope_add_rule_in_scope(style_computer &StyleComputer, rule &MatchingRule, scope &RuleCandidateScope, mut rules_to_run []ScopedMatchingRule) {
+	if !style_scope_rule_is_relevant_for_scope(rule, scope.root_is_relevant)
+		|| style_computer.rejects_rule_with_ancestor_filter(rule, scope.quirks) {
 		return
 	}
+	rules_to_run << ScopedMatchingRule{
+		rule: rule
+		shadow_root: scope.recorded_root
+	}
+}
 
-	selector := rule_to_run.selector
-	if selector.can_use_ancestor_filter() && style_computer.should_reject_with_ancestor_filter(selector) {
+fn style_scope_add_rule_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rule_to_run &MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
+	if !style_scope_rule_is_relevant_for_scope(rule_to_run, style_scope_rule_root_is_relevant(rule_root, shadow_root, element_shadow_root)) {
+		return
+	}
+	if style_computer.rejects_rule_with_ancestor_filter(rule_to_run, style_computer.in_quirks_document()) {
 		return
 	}
 
@@ -2086,6 +2344,7 @@ fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element 
 	}
 	element_namespace_uri := abstract_element.element().namespace_uri()
 	if queried_pseudo_element := style_scope_pseudo_element_from_abstract_element(abstract_element) {
+		scope := rule_candidate_scope(style_computer, rule_root, shadow_root, element_shadow_root)
 		for rule in rules {
 			// Only selectors targeting the queried pseudo-element can match. This avoids
 			// evaluating ordinary selectors and selectors for a different pseudo-element.
@@ -2097,13 +2356,20 @@ fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element 
 			if !style_scope_filter_namespace_rule(element_namespace_uri, rule) {
 				continue
 			}
-			style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			style_scope_add_rule_in_scope(style_computer, rule, &scope, mut rules_to_run)
 		}
 	} else {
+		// style_scope_add_rule_to_run() for each rule, with the checks that
+		// depend only on the roots and document done once for the bucket.
+		scope := rule_candidate_scope(style_computer, rule_root, shadow_root, element_shadow_root)
 		for rule in rules {
-			if (rule.slotted || rule.contains_part_pseudo_element || !rule.contains_pseudo_element) && style_scope_filter_namespace_rule(element_namespace_uri, rule) {
-				style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			if !rule.slotted && !rule.contains_part_pseudo_element && rule.contains_pseudo_element {
+				continue
 			}
+			if !style_scope_filter_namespace_rule(element_namespace_uri, rule) {
+				continue
+			}
+			style_scope_add_rule_in_scope(style_computer, rule, &scope, mut rules_to_run)
 		}
 	}
 }
@@ -2467,6 +2733,10 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 	}
  diagnostic_matches_start := begin_diagnostic_instruction_scope()
  defer { record_diagnostic_instruction_scope(13, diagnostic_matches_start) }
+	$if vox_css_diagnostics ? {
+		diagnostic_matching_candidates[0]++
+		diagnostic_matching_candidates[1] += u64(rules_to_run.len)
+	}
 
 	mut matching_rules := []ScopedMatchingRule{}
 	mut repeated_rule_matches := RepeatedRuleMatchMemo{}
@@ -2571,6 +2841,9 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 		}
 
 		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, candidate_buffer.context)
+		$if vox_css_diagnostics ? {
+			if !did_match { note_diagnostic_failed_candidate(rule_to_run) }
+		}
 		if did_match {
 			if container_rule := rule_to_run.container_rule {
 				contains_size_feature := container_rule.container_rule_contains_size_feature()
@@ -2601,6 +2874,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 					arena.leave(entry)
 				}
 			}
+			$if vox_css_diagnostics ? { diagnostic_matching_candidates[2]++ }
 			append_scoped_matching_rule(mut matching_rules, ScopedMatchingRule{
 				rule: rule_to_run
 				shadow_root: style_scope_mut_shadow_root_option(rule_root)
@@ -2662,6 +2936,10 @@ fn build_matching_rule_set_with_storage(style_computer &StyleComputer, abstract_
 	matching_rule_set.user_rules = collect_matching_rules_with_storage(style_computer, abstract_element, .user, mut attempted_pseudo_class_matches, none, scope, storage)
 	sort_matching_rules(mut matching_rule_set.user_rules)
 
+	if use_combined_author_matching() {
+		collect_author_rules_by_layer(style_computer, abstract_element, mut matching_rule_set,
+			mut attempted_pseudo_class_matches, scope, storage)
+	} else {
 	// @layer-ed author rules
 	for layer_name in scope.qualified_layer_names_in_order {
 		mut layer_rules := collect_matching_rules_with_storage(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, layer_name, scope, storage)
@@ -2678,6 +2956,7 @@ fn build_matching_rule_set_with_storage(style_computer &StyleComputer, abstract_
 		qualified_layer_name: ''
 		rules: unlayered_author_rules
 	}, storage)
+	}
 
 	if mode == .create_pseudo_element_style_if_needed {
 		mut author_rules_has_any_rules := false

@@ -3,8 +3,22 @@
 #include <cstdio>
 #include <vector>
 
+static void check_large_clear()
+{
+    for (size_t padding : {0, 56}) {
+        constexpr size_t row_bytes = 2049 * 4, rows = 1781;
+        size_t pitch = row_bytes + padding;
+        std::vector<uint8_t> actual(pitch * rows, 0x17), expected = actual;
+        for (size_t y = 0; y < rows; ++y)
+            memset(expected.data() + y * pitch, 255, row_bytes);
+        vox_clear_frame_rows(actual.data(), row_bytes, pitch, rows);
+        assert(actual == expected);
+    }
+}
+
 int main()
 {
+    check_large_clear();
     int cases = 0, direct = 0;
     for (int scale : {1, 2}) for (int padding : {0, 16})
     for (int clipping : {0, 1, 2, 3}) for (int transform : {0, 1, 2})

@@ -68,6 +68,49 @@ fn with_imported_cookie_file(contents string, check fn ()) {
 	check()
 }
 
+fn quiet_imported_request_header() string {
+	mut capture := os.stdio_capture() or { panic(err) }
+	header := imported_request_header('https://www.reddit.com/', 'https://www.reddit.com/', 100)
+	_, stderr := capture.finish()
+	assert stderr.len == 0, stderr.join('')
+	return header
+}
+
+fn test_missing_imported_cookie_file_is_silent_and_observes_later_creation() {
+	with_imported_cookie_file('', fn () {
+		path := imported_cookie_file()
+		os.rm(path) or { panic(err) }
+		// A fresh profile has no jar; every subresource takes this path too.
+		for _ in 0 .. 20 {
+			assert quiet_imported_request_header() == ''
+		}
+		os.write_file(path, '.reddit.com\tTRUE\t/\tFALSE\t0\tsession\timported\n') or { panic(err) }
+		assert quiet_imported_request_header() == 'session=imported'
+		os.rm(path) or { panic(err) }
+		assert quiet_imported_request_header() == ''
+	})
+}
+
+fn test_imported_cookie_file_disabled_empty_oversized_and_directory_are_silent() {
+	with_imported_cookie_file('', fn () {
+		path := imported_cookie_file()
+		assert quiet_imported_request_header() == ''
+		os.setenv('VOX_COOKIE_FILE', '', true)
+		assert quiet_imported_request_header() == ''
+		os.setenv('VOX_COOKIE_FILE', path, true)
+		jar := '.reddit.com\tTRUE\t/\tFALSE\t0\tsession\timported\n'
+		// Preserve the 1 MiB boundary, including a valid cookie before padding.
+		os.write_file(path, jar + '#'.repeat(1024 * 1024 - jar.len)) or { panic(err) }
+		assert quiet_imported_request_header() == 'session=imported'
+		os.write_file(path, jar + '#'.repeat(1024 * 1024 + 1 - jar.len)) or { panic(err) }
+		assert quiet_imported_request_header() == ''
+		os.rm(path) or { panic(err) }
+		os.mkdir(path) or { panic(err) }
+		defer { os.rmdir(path) or {} }
+		assert quiet_imported_request_header() == ''
+	})
+}
+
 // Fetch and XMLHttpRequest send the request header of the shared jar. Imported
 // sessions must reach them too: old Reddit answers a cookieless
 // /api/morechildren POST with a login redirect.

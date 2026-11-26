@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Release Vox: commit the version bump, build that commit with literal -prod / single C
-unit in the ../vox2-release checkout, package a stripped macOS DMG, upload it to a new
-GitHub release and update vox-browser.org/version. Uncommitted work is never released."""
+"""Release Vox: build committed sources with literal -prod / single C unit, strip,
+package a macOS DMG, Linux DEB or Arch archive and upload it to a new GitHub release.
+macOS releases also update vox-browser.org/version."""
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -103,14 +104,15 @@ def guarded(command, root, reports, name, limit_gib=12, **kwargs):
          '--limit-gib', str(limit_gib), '--', *command], root, **kwargs)
 
 
-def deploy(root=ROOT, output=None, package_only=False):
+def deploy(root=ROOT, output=None, package_only=False, library_directory=None):
+    expected_version = release_macos.packaging_version(root)
     if not package_only:
         # The canonical supervisor supplies the memory guard and build receipts.
         # Pin the C backend as automatic production builds do: v.mod may select
         # FastC for development, which cannot supply the single-C release build.
         # Drop inherited supervision/profiling overrides before entering it. The
         # build targets Info.plist's LSMinimumSystemVersion itself.
-        run([sys.executable, root / 'tools/rebuild_browser.py', '--build', '--backend', 'c',
+        run(['sh', root / 'tools/run_v_tool.sh', 'rebuild_browser', '--build', '--backend', 'c',
              '--prod', '--no-parallel-cc'],
             root, env=production_environment(os.environ))
 
@@ -131,10 +133,18 @@ def deploy(root=ROOT, output=None, package_only=False):
 
         # The build links Homebrew libraries by absolute build-machine
         # paths. Carry them inside the release and drop those search paths.
-        bundle_libraries(app)
+        library_identity = bundle_identity(library_directory) if library_directory is not None else None
+        if library_directory is None:
+            bundle_libraries(app)
+        else:
+            bundle_libraries(app, library_directory=library_directory)
+            if bundle_identity(library_directory) != library_identity:
+                raise RuntimeError('The release dependency directory changed while bundling')
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         verify_deployment_target(app, info.get('LSMinimumSystemVersion', ''))
         version = info['CFBundleShortVersionString']
+        if version != expected_version:
+            raise RuntimeError('The built bundle version does not match the packaging version')
         if not version or any(c not in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.-+' for c in version):
             raise RuntimeError('Invalid release version in Info.plist')
         if output is None:
@@ -189,6 +199,9 @@ def deploy(root=ROOT, output=None, package_only=False):
                             sizes=sizes, memory_reports=str(reports),
                             bundled_libraries=sorted(path.name for path in (app / 'Contents/Frameworks').glob('*')),
                             signing='ad-hoc; no Developer ID certificate or Apple notarization')
+            if library_directory is not None:
+                manifest['library_directory'] = dict(path=str(library_directory.resolve()),
+                                                     sha256=library_identity)
             manifest_path = Path(image_directory) / 'manifest.json'
             manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
             os.replace(image, output)
@@ -197,32 +210,73 @@ def deploy(root=ROOT, output=None, package_only=False):
     return output
 
 
+def linux_package_format():
+    try:
+        release = platform.freedesktop_os_release()
+    except OSError:
+        return 'deb'
+    families = (release.get('ID', '') + ' ' + release.get('ID_LIKE', '')).split()
+    return 'arch' if 'arch' in families else 'deb'
+
+
 def main():
+    linux = sys.platform == 'linux'
     parser = argparse.ArgumentParser(prog='deploy.vsh', description=__doc__)
-    parser.add_argument('--output', type=Path, help='DMG path (default: Build/deploy/Vox-VERSION-ARCH.dmg)')
+    parser.add_argument('--format', choices=('deb', 'arch'),
+                        help='Linux package format (default: detect Arch or Debian from /etc/os-release)')
+    parser.add_argument('--output', type=Path, help='package path (default: Build/deploy/ with native package extension)')
     parser.add_argument('--package-only', action='store_true',
                         help="reuse the release checkout's completed build (with --no-publish: "
-                        "the canonical Build/v build)")
+                        "the canonical Build/" + ('linux' if linux else 'v') + " build)")
     parser.add_argument('--version', help='release this version (for example 0.2.0) instead of '
                         'the next patch version')
     parser.add_argument('--no-publish', action='store_true',
                         help='only build and package; leave the version, GitHub and the website alone')
+    parser.add_argument('--stage-release', action='store_true',
+                        help='commit the release version and build its clean release checkout; '
+                             'leave GitHub and the website unchanged until all platform packages are ready')
     parser.add_argument('--website-only', action='store_true',
                         help='point vox-browser.org/version at the released version in Info.plist')
+    parser.add_argument('--library-dir', type=Path,
+                        help='macOS: package external dylibs from this directory (no Homebrew fallback)')
     args = parser.parse_args()
-    if sys.platform != 'darwin':
-        parser.error('DMG deployment requires macOS')
-    if args.website_only and (args.no_publish or args.package_only or args.output or args.version):
+    if sys.platform not in ('darwin', 'linux'):
+        parser.error('Deployment requires macOS or Linux')
+    if args.format and not linux:
+        parser.error('--format requires Linux')
+    target = 'macos'
+    package = deploy
+    if linux:
+        package_format = args.format or linux_package_format()
+        if package_format == 'arch':
+            from deploy_arch import deploy as package
+            target = 'linux-arch'
+        else:
+            from deploy_linux import deploy as package
+            target = 'linux'
+    if args.library_dir:
+        if linux or not args.library_dir.is_dir():
+            parser.error('--library-dir requires a macOS library directory')
+        package = functools.partial(deploy, library_directory=args.library_dir.resolve())
+    if args.website_only and linux:
+        parser.error('--website-only requires macOS (the website tracks the macOS download)')
+    if args.website_only and (args.no_publish or args.stage_release or args.package_only or args.output or args.version or args.library_dir or args.format):
         parser.error('--website-only takes no other options')
     if args.no_publish and args.version:
         parser.error('--version publishes a release; omit --no-publish')
+    if args.no_publish and args.stage_release:
+        parser.error('--stage-release and --no-publish are mutually exclusive')
     try:
         if args.website_only:
             release_macos.publish_website_only(ROOT)
         elif args.no_publish:
-            deploy(output=args.output, package_only=args.package_only)
+            package(output=args.output, package_only=args.package_only)
         else:
-            release_macos.release(ROOT, deploy, args.output, args.package_only, args.version)
+            options = dict(target=target)
+            if args.stage_release:
+                options['publish'] = False
+            release_macos.release(ROOT, package, args.output, args.package_only, args.version,
+                                  **options)
     except subprocess.CalledProcessError as error:
         if error.returncode == 75:
             print('Deploy: the shared production build is busy; run again after it finishes, '

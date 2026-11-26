@@ -22,6 +22,7 @@ typedef struct {
     uint32_t rgb_only_mask;
 } VoxMetalRenderState;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static VoxMetalRenderState vox_metal_default_render_state(VoxMetalDrawingBuffer* target)
 {
     VoxMetalRenderState state = {0};
@@ -56,4 +57,5 @@ static MTLStencilDescriptor* vox_metal_stencil_descriptor(VoxMetalStencilFace co
     descriptor.readMask = face->read_mask; descriptor.writeMask = face->write_mask;
     return descriptor;
 }
+#endif
 #endif

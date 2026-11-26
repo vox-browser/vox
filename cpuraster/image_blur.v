@@ -46,19 +46,9 @@ pub mut:
 	height int
 }
 
-// A pass's per-pixel state; segment() mirrors Pass::blurSegment() with
-// optional source and destination, as pixel indexes and strides into the
-// images.
-interface BlurPass {
-	border int
-mut:
-	start()
-	segment(n int, src []u8, src_index int, src_stride int, mut dst []u8, dst_index int, dst_stride int, has_src bool, has_dst bool)
-}
-
 // Pass::blur(): one row or column, with source pixels srcLeft..srcRight
 // relative to the destination's start, writing dst_count pixels.
-fn run_blur_pass(mut pass BlurPass, src_left int, src_right int, dst_count int, src []u8, src_start int, src_stride int, mut dst []u8, dst_start int, dst_stride int) {
+fn run_blur_pass[T](mut pass T, src_left int, src_right int, dst_count int, src []u8, src_start int, src_stride int, mut dst []u8, dst_start int, dst_stride int) {
 	pass.start()
 	src_start_idx := src_left - pass.border
 	src_end := src_right - pass.border
@@ -117,12 +107,15 @@ type BlurFloatPixel = [4]f32
 
 type BlurUintPixel = [4]u32
 
+// A Gaussian pass uses sigma < 2, radius <= 6.
+const max_gaussian_blur_width = 13
+
 struct GaussianBlurPass {
 	border int
 	window int
-	kernel []f32
+	kernel [max_gaussian_blur_width]f32
 mut:
-	ring []BlurFloatPixel
+	ring [max_gaussian_blur_width]BlurFloatPixel
 	base int
 }
 
@@ -133,17 +126,16 @@ fn new_gaussian_blur_pass(sigma f32) GaussianBlurPass {
 		border: radius
 		window: width
 		kernel: blur_kernel_1d(sigma, radius)
-		ring:   []BlurFloatPixel{len: width}
 	}
 }
 
 // SkShaderBlurAlgorithm::Compute2DBlurKernel() for {sigma, 0}.
-fn blur_kernel_1d(sigma f32, radius int) []f32 {
+fn blur_kernel_1d(sigma f32, radius int) [max_gaussian_blur_width]f32 {
 	width := 2 * radius + 1
 	two := f32(2) * sigma
 	two_sigma_sqrd := two * sigma
 	denom := if radius > 0 { f32(1) / two_sigma_sqrd } else { f32(1) }
-	mut kernel := []f32{len: width}
+	mut kernel := [max_gaussian_blur_width]f32{}
 	mut sum := f32(0)
 	for x in 0 .. width {
 		mut term := f32(x - radius)
@@ -162,8 +154,10 @@ fn blur_kernel_1d(sigma f32, radius int) []f32 {
 }
 
 fn (mut p GaussianBlurPass) start() {
-	for i in 0 .. p.ring.len {
-		p.ring[i] = [f32(0), 0, 0, 0]!
+	for i in 0 .. p.window {
+		for channel in 0 .. 4 {
+			p.ring[i][channel] = 0
+		}
 	}
 	p.base = 0
 }
@@ -237,7 +231,7 @@ struct ThreeBoxBlurPass {
 	b2  int
 	end int
 mut:
-	buffer []BlurUintPixel
+	buffer [max_box_blur_ring_entries]BlurUintPixel
 	sum0   BlurUintPixel
 	sum1   BlurUintPixel
 	sum2   BlurUintPixel
@@ -262,7 +256,6 @@ fn new_three_box_blur_pass(window int) ThreeBoxBlurPass {
 		b1:      b1
 		b2:      b2
 		end:     end
-		buffer:  []BlurUintPixel{len: end}
 	}
 }
 
@@ -273,8 +266,10 @@ fn (mut p ThreeBoxBlurPass) start() {
 		p.sum1[c] = 0
 		p.sum2[c] = h
 	}
-	for i in 0 .. p.buffer.len {
-		p.buffer[i] = [u32(0), 0, 0, 0]!
+	for i in 0 .. p.end {
+		for channel in 0 .. 4 {
+			p.buffer[i][channel] = 0
+		}
 	}
 	p.c0 = 0
 	p.c1 = p.b1
@@ -336,11 +331,44 @@ fn new_blur_maker(sigma f32) BlurMaker {
 	return BlurMaker{box_blur_window(sigma), sigma, false}
 }
 
-fn (m BlurMaker) pass() BlurPass {
-	if m.gaussian {
-		return new_gaussian_blur_pass(m.sigma)
+struct ImageBlurScan {
+	maker         BlurMaker
+	source        []u8
+	target        []u8
+	source_left   int
+	source_right  int
+	source_start  int
+	source_pitch  int
+	source_stride int
+	target_count  int
+	target_start  int
+	target_pitch  int
+	target_stride int
+}
+
+fn (scan &ImageBlurScan) run[T](private_pass voidptr, first int, end int) {
+	// The pass is mutable scratch owned exclusively by this callback.
+	mut pass := unsafe { &T(private_pass) }
+	mut target := unsafe { scan.target }
+	for line in first .. end {
+		run_blur_pass(mut pass, scan.source_left, scan.source_right, scan.target_count, scan.source,
+			scan.source_start + line * scan.source_pitch, scan.source_stride, mut target,
+			scan.target_start + line * scan.target_pitch, scan.target_stride)
 	}
-	return new_three_box_blur_pass(m.window)
+}
+
+fn scan_image_blur(context voidptr, first i32, end i32) {
+	scan := unsafe { &ImageBlurScan(context) }
+	// Pass the address as an opaque borrow so V keeps the scratch on the stack.
+	if scan.maker.gaussian {
+		mut pass := GaussianBlurPass{}
+		pass = new_gaussian_blur_pass(scan.maker.sigma)
+		scan.run[GaussianBlurPass](voidptr(&pass), int(first), int(end))
+	} else {
+		mut pass := ThreeBoxBlurPass{}
+		pass = new_three_box_blur_pass(scan.maker.window)
+		scan.run[ThreeBoxBlurPass](voidptr(&pass), int(first), int(end))
+	}
 }
 
 // eval_blur_passes(): src's pixels cover src_bounds; the result covers the
@@ -357,7 +385,7 @@ fn blur_8888(sigma_x f32, sigma_y f32, src BlurImage, src_bounds_in IRect, dst_b
 	}
 	dst_origin_x := dst_bounds.left
 	dst_origin_y := dst_bounds.top
-	mut dst := BlurImage{
+	dst := BlurImage{
 		pixels: []u8{len: dst_bounds.width() * dst_bounds.height() * 4}
 		width:  dst_bounds.width()
 		height: dst_bounds.height()
@@ -366,20 +394,25 @@ fn blur_8888(sigma_x f32, sigma_y f32, src BlurImage, src_bounds_in IRect, dst_b
 	mut loop_end := math.min(src_bounds.right, dst_bounds.right)
 	mut dst_y_offset := 0
 	mut source := src
-	mut in_place := false
 	if maker_x.window > 1 {
 		loop_start = math.max(src_bounds.top, dst_bounds.top)
 		loop_end = math.min(src_bounds.bottom, dst_bounds.bottom)
-		mut pass := maker_x.pass()
-		mut src_row := (loop_start - src_bounds.top) * src.width
-		mut dst_row := (loop_start - dst_bounds.top) * dst.width
-		for _ in loop_start .. loop_end {
-			run_blur_pass(mut pass, src_bounds.left - dst_bounds.left, src_bounds.right - dst_bounds.left,
-				dst_bounds.width(), src.pixels, src_row, 1, mut dst.pixels, dst_row, 1)
-			src_row += src.width
-			dst_row += dst.width
+		horizontal := ImageBlurScan{
+			maker:         maker_x
+			source:        src.pixels
+			target:        dst.pixels
+			source_left:   src_bounds.left - dst_bounds.left
+			source_right:  src_bounds.right - dst_bounds.left
+			source_start:  (loop_start - src_bounds.top) * src.width
+			source_pitch:  src.width
+			source_stride: 1
+			target_count:  dst_bounds.width()
+			target_start:  (loop_start - dst_bounds.top) * dst.width
+			target_pitch:  dst.width
+			target_stride: 1
 		}
-		in_place = true
+		run_raster_scans(&horizontal, loop_end - loop_start, horizontal.target_count, scan_image_blur)
+		source = dst
 		loop_start = dst_bounds_in.left
 		loop_end = dst_bounds_in.right
 		dst_y_offset = dst_bounds_in.top - dst_bounds.top
@@ -387,25 +420,23 @@ fn blur_8888(sigma_x f32, sigma_y f32, src BlurImage, src_bounds_in IRect, dst_b
 		dst_bounds = dst_bounds_in
 	}
 	if maker_y.window > 1 {
-		mut pass := maker_y.pass()
-		source_width := if in_place { dst.width } else { source.width }
-		mut src_col := loop_start - src_bounds.left
-		mut dst_col := (loop_start - dst_bounds.left) + dst_y_offset * dst.width
-		for _ in loop_start .. loop_end {
-			if in_place {
-				// The vertical pass reads and writes the horizontal pass's
-				// pixels in place.
-				run_blur_pass(mut pass, src_bounds.top - dst_bounds.top, src_bounds.bottom - dst_bounds.top,
-					dst_bounds.height(), dst.pixels, src_col, source_width, mut dst.pixels, dst_col,
-					dst.width)
-			} else {
-				run_blur_pass(mut pass, src_bounds.top - dst_bounds.top, src_bounds.bottom - dst_bounds.top,
-					dst_bounds.height(), source.pixels, src_col, source_width, mut dst.pixels,
-					dst_col, dst.width)
-			}
-			src_col++
-			dst_col++
+		// After a horizontal pass the source is the same bitmap. Each
+		// worker reads and writes only the columns it owns.
+		vertical := ImageBlurScan{
+			maker:         maker_y
+			source:        source.pixels
+			target:        dst.pixels
+			source_left:   src_bounds.top - dst_bounds.top
+			source_right:  src_bounds.bottom - dst_bounds.top
+			source_start:  loop_start - src_bounds.left
+			source_pitch:  1
+			source_stride: source.width
+			target_count:  dst_bounds.height()
+			target_start:  loop_start - dst_bounds.left + dst_y_offset * dst.width
+			target_pitch:  1
+			target_stride: dst.width
 		}
+		run_raster_scans(&vertical, loop_end - loop_start, vertical.target_count, scan_image_blur)
 	}
 	subset := IRect{dst_bounds_in.left - dst_origin_x, dst_bounds_in.top - dst_origin_y, dst_bounds_in.right - dst_origin_x, dst_bounds_in.bottom - dst_origin_y}
 	return dst, subset

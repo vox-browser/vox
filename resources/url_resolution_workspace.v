@@ -7,14 +7,14 @@ import url
 // copied component strings. Preserve the existing fallback policy and publish
 // only the resulting string into the caller's allocation owner.
 fn resolve_document_reference(reference string, base string) string {
+	if reference == '' { return base }
+	mut work := platform.begin_thread_scratch('document reference resolution')
+	defer { work.finish() }
 	trimmed := reference.trim_space()
 	if trimmed == '' { return base }
-	mut work := platform.begin_thread_scratch('document reference resolution')
 	resolved := resolve_document_reference_in_workspace(trimmed, base)
 	work.leave()
-	owned := resolved.clone()
-	work.finish()
-	return owned
+	return resolved.clone()
 }
 
 fn resolve_document_reference_in_workspace(trimmed string, base string) string {

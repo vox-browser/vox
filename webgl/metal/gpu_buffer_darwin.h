@@ -4,6 +4,7 @@
 
 typedef struct { CFTypeRef device, buffer; uint64_t size; } VoxMetalGPUBuffer;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static void vox_metal_gpu_buffer_destroy(void* handle)
 {
     VoxMetalGPUBuffer* buffer = handle;
@@ -44,4 +45,5 @@ static int vox_metal_gpu_buffer_transfer(void* handle, uint64_t offset, uint64_t
     }
     return 1;
 }
+#endif
 #endif

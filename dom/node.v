@@ -948,6 +948,9 @@ pub fn (n &Node) owner_document() ?&Document {
 	if n.is_document() {
 		return none
 	}
+	if attribute := n.as_attr() {
+		if record := attribute.attribute_record_ { return record.document() }
+	}
 	if n.document_ == unsafe { nil } {
 		return none
 	}
@@ -1352,7 +1355,7 @@ pub fn (n &Node) text_content() ?string {
 	}
 	if attr := n.as_attr() {
 		// If Attr node, return this's value.
-		return attr.value_
+		return attr.value()
 	}
 	// Otherwise, return null.
 	return none
@@ -1494,7 +1497,7 @@ pub fn (n &Node) node_value() ?string {
 	// The nodeValue getter steps are to return the following, switching on the interface this implements:
 	if attr := n.as_attr() {
 		// If Attr, return this's value.
-		return attr.value_
+		return attr.value()
 	}
 	if character_data := n.character_data() {
 		// If CharacterData, return this's data.
@@ -1887,7 +1890,10 @@ pub fn (d &Document) style_computer() &StyleComputer {
 
 pub fn (mut d Document) style_invalidator() &StyleInvalidator {
 	if d.style_invalidator_ == unsafe { nil } {
+		mut owner := d.native_storage()
+		mut scope := if owner != unsafe { nil } { owner.enter_nested() } else { platform.RetainedArenaScope{} }
 		d.style_invalidator_ = &StyleInvalidator{}
+		scope.finish()
 	}
 	return d.style_invalidator_
 }
@@ -2131,15 +2137,26 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	if options.invalidate_self {
 		n.set_needs_style_update(true)
 	}
+	style_computer := doc.style_computer()
+	if style_computer.invalidation_plan_callback == unsafe { nil }
+		|| style_computer.css_handle == unsafe { nil } {
+		return
+	}
 	mut document := unsafe { &Document(doc) }
 	mut invalidator := document.style_invalidator()
-	plan := doc.style_computer().invalidation_plan_for_properties(properties, style_scope)
-	if invalidator.enqueue_invalidation_plan(&n, reason, *plan) {
+	storage := invalidator.plan_storage_for_document(document)
+	// Self-only plans and sibling plans that found no reader can be discarded
+	// even when this mutation does not schedule a style pass.
+	defer { invalidator.reset_consumed_plan_storage() }
+	plan := style_computer.invalidation_plan_callback(style_computer.css_handle, properties,
+		style_scope, storage)
+	if invalidator.enqueue_invalidation_plan(&n, reason, plan) {
 		return
 	}
 	for additional_scope in additional_scopes {
-		additional_plan := doc.style_computer().invalidation_plan_for_properties(properties, additional_scope)
-		if invalidator.enqueue_invalidation_plan(&n, reason, *additional_plan) {
+		additional_plan := style_computer.invalidation_plan_callback(style_computer.css_handle,
+			properties, additional_scope, storage)
+		if invalidator.enqueue_invalidation_plan(&n, reason, additional_plan) {
 			return
 		}
 	}
@@ -2562,7 +2579,9 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 				}
 			}
 		}
-		n.set_needs_layout_tree_update(true, .node_insert_before)
+		if !n.insertion_cannot_create_boxes() {
+			n.set_needs_layout_tree_update(true, .node_insert_before)
+		}
 	}
 	// AD-HOC: invalidate the ordinal of the first list_item of the list_owner of the child node, if any.
 	if child_node := child {
@@ -2929,7 +2948,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	} else {
 		n.invalidate_style(.node_insert_before)
 	}
-	if n.is_connected() {
+	if n.is_connected() && !new_parent.insertion_cannot_create_boxes() {
 		new_parent.set_needs_layout_tree_update(true, .node_insert_before)
 	}
 	moved_node := &n
@@ -3316,6 +3335,11 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 			}
 		}
 	}
+	if value {
+		n.layout_tree_update_reasons |= u32(1) << u32(reason)
+	} else {
+		n.layout_tree_update_reasons = 0
+	}
 	if n.needs_layout_tree_update == value {
 		return
 	}
@@ -3408,6 +3432,16 @@ pub fn (n &Node) first_letter_owner_for_layout_subtree_from(inclusive_ancestor &
 
 pub fn (n &Node) needs_layout_tree_update_() bool {
 	return n.needs_layout_tree_update
+}
+
+// Whether every reason this node was flagged for speaks only of its own box
+// and its list of children: a child with a box was removed, or a child's (or
+// its own) style needs another box. Its remaining descendants were never
+// detached, replaced or given other content without flags of their own.
+pub fn (n &Node) layout_tree_update_keeps_descendants() bool {
+	keeping := (u32(1) << u32(SetNeedsLayoutTreeUpdateReason.node_remove)) | (u32(1) << u32(SetNeedsLayoutTreeUpdateReason.style_change))
+	return n.needs_layout_tree_update && n.layout_tree_update_reasons != 0
+		&& n.layout_tree_update_reasons & ~keeping == 0
 }
 
 pub fn (n &Node) child_needs_layout_tree_update_() bool {
@@ -4237,8 +4271,8 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 		return none
 	}
 	if attr := n.as_attr() {
-		if attr.owner_element_ != unsafe { nil } {
-			return attr.owner_element_.as_node().locate_a_namespace(prefix)
+		if owner := attr.owner_element() {
+			return owner.as_node().locate_a_namespace(prefix)
 		}
 		return none
 	}
@@ -4279,8 +4313,8 @@ pub fn (n &Node) lookup_prefix(namespace_ ?string) ?string {
 		}
 	}
 	if attr := n.as_attr() {
-		if attr.owner_element_ != unsafe { nil } {
-			return attr.owner_element_.locate_a_namespace_prefix(namespace_)
+		if owner := attr.owner_element() {
+			return owner.locate_a_namespace_prefix(namespace_)
 		}
 	}
 	if parent := n.parent_element() {
@@ -5365,6 +5399,7 @@ pub fn (mut a Attr) set_value(value string) ! {
 }
 
 pub fn (a &Attr) value() string {
+	if record := a.attribute_record_ { return record.value() }
 	return a.value_
 }
 
@@ -5385,6 +5420,7 @@ pub fn (a &Attr) prefix() ?string {
 }
 
 pub fn (a &Attr) owner_element() ?&Element {
+	if record := a.attribute_record_ { return record.owner_element() }
 	if a.owner_element_ == unsafe { nil } {
 		return none
 	}
@@ -5539,7 +5575,7 @@ pub fn (sc &StyleComputer) invalidation_property_used_in_has_selector(property I
 
 pub fn (sc &StyleComputer) invalidation_plan_for_properties(properties []InvalidationProperty, style_scope &StyleScope) &InvalidationPlan {
 	if sc.invalidation_plan_callback != unsafe { nil } && sc.css_handle != unsafe { nil } {
-		plan := sc.invalidation_plan_callback(sc.css_handle, properties, style_scope)
+		plan := sc.invalidation_plan_callback(sc.css_handle, properties, style_scope, unsafe { nil })
 		return &plan
 	}
 	return &InvalidationPlan{}

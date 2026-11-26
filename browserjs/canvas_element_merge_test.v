@@ -17,7 +17,7 @@ fn install_canvas_merge_probe(mut runtime Runtime, probe &CanvasMergeProbe) {
 	}, fn [probe] (key string) ?&dom.Element {
 		return probe.elements[key] or { return none }
 	}, fn [probe] (element &dom.Element) []string {
-		return native_canvas_element_identity_keys(probe.elements, element)
+		return native_canvas_element_identity_keys(voidptr(probe), probe.elements, element)
 	}, fn [probe] (registry &CanvasElementRegistry) {
 		for key, element in probe.elements { registry.set(key, element) }
 	})
@@ -50,6 +50,7 @@ fn test_canvas_element_merge_matches_the_copied_snapshot_without_copies() {
 	// A provider that later rebinds a key wins on the next merge.
 	mut changed := unsafe { &CanvasMergeProbe(second) }
 	changed.elements['second'] = a
+	invalidate_element_key_index(voidptr(changed))
 	runtime.merge_canvas_elements_into(mut merged)
 	assert voidptr(merged['second'] or { panic('second') }) == voidptr(a)
 	assert voidptr(merged['shared'] or { panic('shared') }) == voidptr(b)

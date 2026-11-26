@@ -100,6 +100,7 @@ fn style_scope_add_masked_other_rules(computer &StyleComputer, subject dom.Abstr
 	}
 	namespace_uri := element.namespace_uri()
 	pseudo := style_scope_pseudo_element_from_abstract_element(subject)
+	scope := rule_candidate_scope(computer, rule_root, shadow_root, element_shadow_root)
 	for offset, rule in cache.other_rules {
 		entry := unsafe { &index.rules[offset] }
 		if voidptr(entry.rule) == voidptr(rule) && entry.mask != 0 && entry.mask & possible == 0 { continue }
@@ -107,6 +108,6 @@ fn style_scope_add_masked_other_rules(computer &StyleComputer, subject dom.Abstr
 			if !style_scope_selector_targets_pseudo_element(rule.selector, target) { continue }
 		} else if !rule.slotted && !rule.contains_part_pseudo_element && rule.contains_pseudo_element { continue }
 		if !style_scope_filter_namespace_rule(namespace_uri, rule) { continue }
-		style_scope_add_rule_to_run(computer, subject, rule, rule_root, shadow_root, element_shadow_root, mut rules)
+		style_scope_add_rule_in_scope(computer, rule, &scope, mut rules)
 	}
 }

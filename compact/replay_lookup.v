@@ -106,6 +106,22 @@ fn compact_replay_element_keys(state map[string]json2.Any) []string {
 struct CompactDOMReplayResult {
 	elements map[string]&dom.Element
 	navigation ?string
+	workspace platform.ThreadScratchScope
+}
+
+fn compact_replay_element_tables(document &dom.Document, state map[string]json2.Any,
+	runtime &browserjs.Runtime) (map[string]&dom.Element, map[string]&dom.Element, platform.ThreadScratchScope) {
+	workspace := if document.native_storage() != unsafe { nil } {
+		platform.begin_thread_scratch('compact replay element tables')
+	} else {
+		platform.ThreadScratchScope{}
+	}
+	// Queries return the original provider bindings. Replay uses its own map
+	// so newly created nodes and legacy index fallbacks stay local to the batch.
+	elements := runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
+	replay_elements := elements.clone()
+	workspace.leave()
+	return elements, replay_elements, workspace
 }
 
 // Queries and native host/task boundaries replay through this one owner. The
@@ -123,14 +139,15 @@ fn replay_compact_dom_snapshot(document &dom.Document, encoded string,
 	defer { replay.workspace.finish() }
 	state := replay.state
 	note_compact_replay_effects(state, runtime)
-	elements := runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
-	navigation := apply_decoded_javascript_state(document, state, elements, mut messages)
-	return CompactDOMReplayResult{elements: elements, navigation: navigation}
+	elements, mut replay_elements, workspace := compact_replay_element_tables(document, state, runtime)
+	navigation := apply_decoded_javascript_state_with_bindings(document, state, mut replay_elements, mut messages)
+	return CompactDOMReplayResult{elements: elements, navigation: navigation, workspace: workspace}
 }
 
 fn apply_javascript_runtime_state(document &dom.Document, encoded string,
 	runtime &browserjs.Runtime, mut messages []string) ?string {
 	result := replay_compact_dom_snapshot(document, encoded, runtime, mut messages)
+	result.workspace.finish()
 	settle_compact_dom_reactions(document, runtime, mut messages) or {
 		messages << 'JavaScript DOM synchronization: ${err.msg()}'
 	}

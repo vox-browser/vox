@@ -105,7 +105,7 @@ fn test_ua_only_svg_document_roots_reuse_indexes_with_independent_wrappers_and_c
 }
 
 fn test_ua_template_limit_keeps_later_stylesheet_mutations_fresh() {
-	mut sheet := unsafe { &CSSStyleSheet(user_agent_default_stylesheet) }
+	mut sheet := unsafe { &CSSStyleSheet(default_user_agent_stylesheet()) }
 	for index in 0 .. user_agent_style_cache_template_limit + 3 {
 		position := u32(sheet.rules.length())
 		sheet.insert_rule('.ua-template-probe {color:rgb(${index + 10} 22 33)}', position)!

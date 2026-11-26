@@ -19,8 +19,43 @@ const maximum_document_rule_selector_bytes = 4194304
 @[heap]
 struct DocumentRuleSelectorMemo {
 mut:
-	selectors map[string]Selector
+	selectors map[string]RuleSelectorMemoEntry
 	bytes     int
+}
+
+// One selector text has a validated graph per selector mode and per browser
+// selector policy. Keying the memo by the text alone avoids building a
+// combined key for every lookup; an absent graph has a nil handle.
+struct RuleSelectorMemoEntry {
+mut:
+	selectors [4]Selector
+}
+
+fn (parser RuleSelectorParser) rule_selector_memo_slot(mode ParserSelectorType) int {
+	mut slot := int(mode) * 2
+	if parser.uses_chromium_selector_policy() { slot++ }
+	return slot
+}
+
+fn memoized_rule_selector(memo map[string]RuleSelectorMemoEntry, text string, slot int) ?Selector {
+	entry := memo[text] or { return none }
+	selector := entry.selectors[slot]
+	if selector.data_ == unsafe { nil } { return none }
+	return selector
+}
+
+// Records a graph and returns the bytes a new text adds to the memo.
+fn memoize_rule_selector(mut memo map[string]RuleSelectorMemoEntry, text string, slot int, selector Selector) int {
+	mut entry := memo[text] or { RuleSelectorMemoEntry{} }
+	added := if entry.selectors[0].data_ == unsafe { nil } && entry.selectors[1].data_ == unsafe { nil }
+		&& entry.selectors[2].data_ == unsafe { nil } && entry.selectors[3].data_ == unsafe { nil } {
+		text.len
+	} else {
+		0
+	}
+	entry.selectors[slot] = selector
+	memo[text] = entry
+	return added
 }
 
 // A document's stylesheet parsers publish into the same retained owner. Share
@@ -73,27 +108,33 @@ fn (mut parser RuleSelectorParser) parse_memoized_rule_selector(text string, mod
 		return parser.parse_supported_rule_selector(text, mode)
 	}
 	mut shared := parser.document_rule_selector_memo()
+	slot := parser.rule_selector_memo_slot(mode)
+	// Lookups allocate nothing; only a new graph and its memo entry belong to
+	// the document's retained storage.
+	if shared != unsafe { nil } {
+		if selector := memoized_rule_selector(shared.selectors, text, slot) {
+			return reused_document_rule_selector(selector)
+		}
+	}
+	if selector := memoized_rule_selector(parser.parsed_rule_selectors, text, slot) {
+		return reused_rule_selector(selector)
+	}
 	mut owner := if shared != unsafe { nil } {
 		platform.enter_retained_allocations()
 	} else {
 		platform.RetainedAllocationScope{}
 	}
 	defer { owner.finish() }
-	key := '${int(mode)}\x00${parser.uses_chromium_selector_policy()}\x00${text}'
-	if shared != unsafe { nil } {
-		if selector := shared.selectors[key] { return reused_document_rule_selector(selector) }
-	}
-	if selector := parser.parsed_rule_selectors[key] { return reused_rule_selector(selector) }
 	selector := parser.parse_supported_rule_selector(text, mode) or { return none }
 	if shared != unsafe { nil } && shared.selectors.len < maximum_document_rule_selectors
-		&& shared.bytes + key.len <= maximum_document_rule_selector_bytes {
-		if existing := shared.selectors[key] { return reused_document_rule_selector(existing) }
-		shared.selectors[key] = selector
-		shared.bytes += key.len
+		&& shared.bytes + text.len <= maximum_document_rule_selector_bytes {
+		if existing := memoized_rule_selector(shared.selectors, text, slot) {
+			return reused_document_rule_selector(existing)
+		}
+		shared.bytes += memoize_rule_selector(mut shared.selectors, text, slot, selector)
 	} else if parser.parsed_rule_selectors.len < maximum_reused_rule_selectors
-		&& parser.parsed_rule_selector_bytes + key.len <= maximum_reused_rule_selector_bytes {
-		parser.parsed_rule_selectors[key] = selector
-		parser.parsed_rule_selector_bytes += key.len
+		&& parser.parsed_rule_selector_bytes + text.len <= maximum_reused_rule_selector_bytes {
+		parser.parsed_rule_selector_bytes += memoize_rule_selector(mut parser.parsed_rule_selectors, text, slot, selector)
 	}
 	return selector
 }

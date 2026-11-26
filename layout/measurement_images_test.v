@@ -267,7 +267,8 @@ fn test_image_measurements_promote_nested_absolute_geometry_into_final_layout() 
 			for entry in snapshots {
 				if entry.values.line_boxes.len == 0 { continue }
 				if current := source.try_get(entry.node) {
-					if current.line_boxes.data == entry.values.line_boxes.data { reused = true }
+					if current.line_boxes_are_shared_
+						&& published_line_boxes_equal(current.line_boxes, entry.values.line_boxes) { reused = true }
 				}
 			}
 			committed_enabled := if kind == 'grid' { !disable_committed_grid_measurement_reuse } else { !disable_committed_flex_measurement_reuse }

@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portable video playback</title>
+<style>
+body { margin: 0; background: #101820 }
+#marker { width: 8px; height: 8px; background: #ea70b5 }
+video, canvas { position: absolute; top: 16px; display: block; border-radius: 24px }
+video { left: 16px }
+#canvas { left: 144px }
+#rotated { left: 224px; width: 48px; height: 48px; transform: rotate(15deg) }
+#updated { left: 304px; border-radius: 0 }
+</style>
+<body>
+<div id="marker"></div>
+<canvas id="canvas" width="48" height="48"></canvas>
+<canvas id="rotated" width="256" height="256"></canvas>
+<canvas id="updated" width="32" height="24"></canvas>
+<video id="clip" autoplay muted playsinline width="96" height="64" src="portable-video.mp4"></video>
+<script>
+for (const id of ['canvas', 'rotated']) {
+    const canvas = document.getElementById(id);
+    const context = canvas.getContext('2d');
+    context.fillStyle = 'rgba(0, 240, 144, 0.5)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+}
+const updated = document.getElementById('updated').getContext('2d');
+updated.fillStyle = '#aa2211';
+updated.fillRect(0, 0, 32, 24);
+const clip = document.getElementById('clip');
+let seekingToSecondScene = false;
+clip.addEventListener('timeupdate', () => {
+    if (seekingToSecondScene || clip.currentTime < 0.2 || clip.paused) return;
+    updated.fillStyle = '#1ecc56';
+    updated.fillRect(0, 0, 32, 24);
+    seekingToSecondScene = true;
+    clip.pause();
+    clip.currentTime = 1.6;
+});
+clip.addEventListener('seeked', () => {
+    if (seekingToSecondScene && clip.paused && clip.currentTime >= 1.5) {
+        document.body.setAttribute('data-video-ready', '');
+    }
+});
+</script>

@@ -4,6 +4,7 @@ import layout
 import math
 import painting
 import os
+import platform
 import processmetrics
 import gg.canvas
 
@@ -16,6 +17,12 @@ fn C.native_set_chromium_paint_origin(f64, f64, i32)
 // tiles, adds one border texel on each side, rounds up to 32 rows and keeps at
 // least 256, so a 768-row viewport uses 256-row tiles spaced 254 rows apart.
 const chromium_min_gpu_raster_tile_rows = 256
+const chromium_root_capture_width = os.getenv('VOX_DIAGNOSTIC_ROOT_CAPTURE_WIDTH') == '1'
+// Paint-layer tracing: every recorded command, layer decisions and the raster
+// parity paths taken. Read once; the checks sit inside per-command loops.
+const chromium_paint_layer_diagnostics = os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != ''
+// Each frame's multisampled tiles and the commands that select them, by layer.
+const chromium_msaa_tile_diagnostics = os.getenv('VOX_MSAA_TILE_DIAGNOSTICS') != ''
 
 fn chromium_gpu_raster_tile_rows(viewport_device_height int) int {
 	quarter := (viewport_device_height + 3) / 4 + 2
@@ -54,35 +61,49 @@ fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport 
 
 fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
 	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+	mut path_work := ChromiumMSAAPathWork{}
 	for index in 0 .. commands.len {
-		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, mut triggers)
+		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, false,
+			mut path_work, mut triggers)
 	}
 }
 
-fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
-	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+fn chromium_msaa_has_empty_clip(command &layout.PaintCommand) bool {
 	// Native replay discards empty clips before drawing. Culled geometry must
 	// not select multisampling for the other draws in its document tile.
-	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0
-		|| chromium_msaa_clip_list_has_empty_clip(command.clip_list)) {
-		return
-	}
+	return command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0
+		|| chromium_msaa_clip_list_has_empty_clip(command.clip_list))
+}
+
+fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
+	viewport ?ChromiumMSAAViewport, batch_paths bool, mut path_work ChromiumMSAAPathWork,
+	mut triggers []ChromiumMSAATrigger) {
+	if chromium_msaa_has_empty_clip(command) { return }
 	if rect := chromium_msaa_trigger_rect(command) {
 		triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
 	} else if command.kind == 'draw_background_image' {
 		if visible := viewport {
 			if !chromium_svg_background_intersects_raster_viewport(command, visible) { return }
 		}
-		append_chromium_svg_background_msaa_triggers(command, index, mut triggers)
+		collect_chromium_svg_background_msaa_triggers(command, index, batch_paths,
+			mut path_work, mut triggers)
 	} else if command.kind == 'paint_nested_display_list' {
 		paintable := command.nested_viewport_paintable or { return }
 		converter := painting.new_device_pixel_converter(1) or { return }
 		result := paintable.paint(converter) or { return }
+		// Nested replay projects clip and mask payloads. Only the scalar
+		// trigger bounds belong to the frame's reusable tile storage.
+		scratch := platform.begin_thread_scratch('nested viewport MSAA')
+		defer { scratch.finish() }
+		mut nested_triggers := []ChromiumMSAATrigger{}
 		for path in command.nested_viewport_commands {
 			transformed := layout.paint_command_for_nested_viewport(path, command.transform,
 				painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
-			append_chromium_msaa_trigger(transformed, index, viewport, mut triggers)
+			append_chromium_msaa_trigger(unsafe { &transformed }, index, viewport, false,
+				mut path_work, mut nested_triggers)
 		}
+		scratch.leave()
+		triggers << nested_triggers
 	}
 }
 
@@ -144,6 +165,15 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 	match command.kind {
 		'draw_replaced_image' {
 			paintable := command.image_paintable or { return none }
+			m := normalized_paint_transform(transform)
+			// A full bitmap rectangle can absorb its own rounded clip as an
+			// analytic rrect draw. Testing the clip alone incorrectly selects
+			// MSAA for an ellipse and changes every other draw in its tile.
+			// Cropped images, SVGs and ancestor clips keep their existing path.
+			if !command.has_clip && !paintable.is_svg_image && paintable.object_fit == .fill
+				&& m[0] > 0 && m[3] > 0 && m[1] == 0 && m[2] == 0 {
+				return none
+			}
 			converter := painting.new_device_pixel_converter(1) or { return none }
 			rect := converter.rounded_device_rect(painting.Rect{
 				paintable.image_rect.x + paintable.paint_offset_adjustment.x,
@@ -233,6 +263,13 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 			}
 			stride := layout.compatibility_clip_path_segment_stride
 			if svg_data.path_data.len < stride {
+				return none
+			}
+			// Graphite recognizes an isolated filled oval and uses analytic
+			// coverage; it joins an existing MSAA pass but cannot create one.
+			if !has_stroke && svg_data.path_data.len == stride
+				&& svg_data.path_data[0] == 6 && command.clip_outs.len == 0
+				&& (command.clip_list == unsafe { nil } || command.clip_list.items.len == 0) {
 				return none
 			}
 			mut min_x := math.inf(1)
@@ -421,6 +458,8 @@ $if test {
 struct ChromiumMSAAStorage {
 mut:
 	triggers []ChromiumMSAATrigger
+	path_work ChromiumMSAAPathWork
+	leaf_work ChromiumMSAALeafWork
 	by_layer [][]ChromiumMSAATrigger
 	legacy_tiles []i32
 	tiles [][]i32
@@ -440,13 +479,11 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	device_viewport_width int, device_viewport_height int, scroll_y f64, scale f64,
 	root_extent ?layout.LayoutRect) {
 	tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(viewport_height) * scale)))
-	storage.triggers.clear()
-	append_chromium_msaa_triggers(commands, ChromiumMSAAViewport{
+	tail := storage.queue_triggers(commands, ChromiumMSAAViewport{
 		scroll_y: scroll_y
 		height: f64(viewport_height)
 		fringe: f64(tile_rows) / scale
-	}, mut storage.triggers)
-	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
+	}, !chromium_serial_msaa_paths)
 	for storage.by_layer.len < plan.layers.len {
 		storage.by_layer << []ChromiumMSAATrigger{}
 		storage.tiles << []i32{}
@@ -457,6 +494,8 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 	for index in 0 .. plan.layers.len {
 		storage.raster_parents[index] = chromium_opacity_raster_parent(commands, plan, index)
 	}
+	storage.finish_triggers(tail)
+	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
 	for trigger in storage.triggers {
 		if trigger.command_index >= 0 && trigger.command_index < plan.command_layers.len {
 			layer := plan.command_layers[trigger.command_index]
@@ -493,16 +532,38 @@ fn (mut app BrowserApp) update_chromium_viewport_raster_plan() {
 	defer { stage.finish() }
 	$if macos {
 		if app.page_zoom != 1 || app.document == unsafe { nil } { return }
-		scale := C.native_display_device_pixel_ratio()
+		scale := C.native_raster_device_pixel_ratio()
 		viewport := layout.LayoutRect{0, app.scroll_y, app.viewport_width, app.viewport_height}
 		if !layout.chromium_raster_cull_changed(app.document, viewport, scale, &app.chromium_raster_plan) {
 			return
 		}
+		previous := if scroll_raster_damage_diagnostics { app.chromium_raster_plan.paint_cull_description() } else { '' }
 		layout.update_chromium_raster_layer_plan_for_viewport(app.document, app.paint_commands,
 			scale, viewport, mut app.chromium_raster_plan)
+		if scroll_raster_damage_diagnostics {
+			eprintln('VOX_SCROLL_RASTER_PLAN_DISCARD revision=${app.document.paint_content_revision()} from ${previous} to ${app.chromium_raster_plan.paint_cull_description()}')
+		}
 		// A changed interest rect can change compositor grouping and dither
 		// origins. Pixels retained under the preceding plan cannot be reused.
 		C.native_discard_scroll_raster()
+	}
+}
+
+const overlap_initial_document_clear = os.getenv('VOX_OVERLAP_INITIAL_DOCUMENT_CLEAR') == '1'
+
+fn C.native_start_initial_document_clear(width f32, height f32) voidptr
+fn C.native_finish_initial_document_clear(work voidptr)
+
+fn (mut app BrowserApp) prepare_chromium_msaa_tiles(window_width int, window_height int) {
+	$if macos {
+		// A deferred frame cannot enter scroll raster reuse. Its first draw
+		// clears the complete bitmap after this pixel-free setup.
+		clear := if overlap_initial_document_clear && app.scroll_raster_frame_deferred
+			&& os.getenv('VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS') == '' {
+			C.native_start_initial_document_clear(f32(window_width), f32(window_height))
+		} else { voidptr(0) }
+		defer { if clear != unsafe { nil } { C.native_finish_initial_document_clear(clear) } }
+		app.set_chromium_msaa_tiles()
 	}
 }
 
@@ -513,18 +574,21 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		document_geometry_grid = DocumentGeometryGrid{}
 		app.chromium_background_uses_local_origin = false
 		app.begin_chromium_image_decode_frame()
-		if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+		scale := C.native_raster_device_pixel_ratio()
+		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
+		if chromium_paint_layer_diagnostics {
+			top := app.scroll_y * layout_scale
+			bottom := (app.scroll_y + app.viewport_height) * layout_scale
 			for index, command in app.paint_commands {
 				owner := app.chromium_raster_plan.command_layers[index]
-				if owner >= 0 && (command.y + command.height < app.scroll_y || command.y > app.scroll_y + app.viewport_height) { continue }
+				if owner >= 0 && (command.y + command.height < top || command.y > bottom) { continue }
 				eprintln('VOX_PAINT_COMMAND index=${index} kind=${command.kind} owner=${owner} xywh=${command.x},${command.y},${command.width},${command.height}')
+				eprintln('VOX_PAINT_GEOMETRY index=${index} matrix=${normalized_paint_transform(command.transform)} aa=${command.antialiased_rect} radius=${command.radius} clip_outs=${command.clip_outs}')
 				if effect := command.visual_layer_data {
 					eprintln('VOX_PAINT_EFFECT index=${index} kind=${effect.kind} opacity=${effect.opacity} blend=${effect.blend_mode} filter=${effect.filter != none} scope=${effect.scope_id}')
 				}
 			}
 		}
-		scale := C.native_display_device_pixel_ratio()
-		layout_scale := if app.document != unsafe { nil } { app.document.layout_coordinate_scale() } else { 1.0 }
 		app.chromium_msaa_storage.update_for_device_viewport(app.paint_commands, app.chromium_raster_plan,
 			app.viewport_width, app.viewport_height,
 			int(math.ceil(app.viewport_width * layout_scale)), int(math.ceil(app.viewport_height * layout_scale)),
@@ -532,6 +596,9 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		count := app.chromium_raster_plan.layers.len
 		app.chromium_raster_tiles = app.chromium_msaa_storage.tiles[..count]
 		app.chromium_raster_grids = app.chromium_msaa_storage.grids[..count]
+		if chromium_msaa_tile_diagnostics {
+			app.report_chromium_msaa_tiles()
+		}
 		C.native_set_chromium_raster_scroll_y(app.scroll_y)
 		C.native_set_chromium_raster_layer(0, 0, 1)
 		C.native_set_chromium_save_layer_image_raster(0, 0, 0, 0, 0)
@@ -540,9 +607,29 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	}
 }
 
+fn (app &BrowserApp) report_chromium_msaa_tiles() {
+	revision := if app.document != unsafe { nil } { app.document.paint_content_revision() } else { u64(0) }
+	for layer in 0 .. app.chromium_msaa_storage.by_layer.len {
+		if layer >= app.chromium_raster_tiles.len { break }
+		triggers := app.chromium_msaa_storage.by_layer[layer]
+		mut listed := []string{}
+		for trigger in triggers {
+			if listed.len >= 24 { break }
+			kind := if trigger.command_index >= 0 && trigger.command_index < app.paint_commands.len {
+				app.paint_commands[trigger.command_index].kind
+			} else { '?' }
+			listed << '${trigger.command_index}:${kind}@${int(trigger.left)},${int(trigger.top)}'
+		}
+		grid := if layer < app.chromium_raster_grids.len { app.chromium_raster_grids[layer] } else { ChromiumRasterGrid{} }
+		eprintln('VOX_MSAA_TILES revision=${revision} layer=${layer} tiles=${app.chromium_raster_tiles[layer]} grid=${grid.tile_width}x${grid.tile_height}/${grid.columns} cells=${grid.cells} triggers=${triggers.len} ${listed.join(' ')}')
+	}
+}
+
 fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 	$if macos {
 		document_geometry_grid = DocumentGeometryGrid{}
+		compositor_raster_phase = [2]f64{}
+		compositor_capture_bounds = none
 		if index < 0 || index >= app.chromium_raster_plan.layers.len
 			|| index >= app.chromium_raster_tiles.len {
 			return
@@ -554,7 +641,16 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		} else { index }
 		layer := app.chromium_raster_plan.layers[raster_index]
 		app.chromium_background_uses_local_origin = raster_index > 0 && !layer.legacy_raster
-		scale := C.native_display_device_pixel_ratio()
+		scale := C.native_raster_device_pixel_ratio()
+		phase_origin := layer.compositor_origin or { [layer.bounds.x, layer.bounds.y]! }
+		compositor_shape_basis = f32(1 / app.document.layout_coordinate_scale())
+		select_compositor_raster_phase(phase_origin[0], phase_origin[1],
+			app.document.rendering_device_pixel_ratio(), scale,
+			raster_index > 0 && layer.composited_contents && !layer.legacy_raster)
+		if size := layer.compositor_size {
+			compositor_capture_bounds = compositor_picture_capture_bounds(phase_origin, size,
+				app.document.rendering_device_pixel_ratio(), scale)
+		}
 		x := if raster_index == 0 || layer.legacy_raster {
 			0.0
 		} else {
@@ -586,7 +682,14 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 			}
 		}
 		if raster_index < app.chromium_raster_grids.len {
-			grid := app.chromium_raster_grids[raster_index]
+			original_grid := app.chromium_raster_grids[raster_index]
+			grid := if raster_index == 0 {
+				chromium_root_capture_grid(original_grid, app.viewport_width, scale,
+					app.document.layout_coordinate_scale(), chromium_root_capture_width)
+			} else { original_grid }
+			if grid.tile_width != original_grid.tile_width && chromium_paint_layer_diagnostics {
+				eprintln('VOX_ROOT_CAPTURE_WIDTH from=${original_grid.tile_width} to=${grid.tile_width} rows=${grid.tile_height} columns=${grid.columns}')
+			}
 			if grid.columns > 0 {
 				set_document_geometry_grid(grid, x, y, layer.bounds.height, scale, raster_index == 0)
 				cell_pointer := if grid.native_cells.len > 0 {

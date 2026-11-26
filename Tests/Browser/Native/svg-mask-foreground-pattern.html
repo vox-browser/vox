@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Patterned SVG fills with masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+image { image-rendering: pixelated; }
+</style>
+<header></header>
+<svg width="334" height="116" viewBox="0 0 334 116">
+  <defs>
+    <pattern id="vector" patternUnits="userSpaceOnUse" x="8" y="8" width="24" height="20"
+             patternTransform="translate(5 3)">
+      <g id="tile-opacity" opacity=".75">
+        <rect width="8" height="20" fill="red"/>
+        <rect x="8" width="8" height="20" fill="lime"/>
+      </g>
+    </pattern>
+    <pattern id="bitmap" patternUnits="userSpaceOnUse" x="170" y="10" width="32" height="16">
+      <image width="32" height="16" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAG0lEQVR4nGP4z8DwHwgbGIDgPxCAaRATKtAAAN7QDfSnnA7mAAAAAElFTkSuQmCC"/>
+    </pattern>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="24" y="12" width="102" height="98">
+      <rect width="150" height="114" fill="white"/>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="184" y="20" width="116" height="74">
+      <rect x="154" width="178" height="114" fill="#808080"/>
+    </mask>
+  </defs>
+  <path d="M14 22H145V102H14Z" fill="url(#vector)" fill-opacity=".5" stroke="black"
+        stroke-width="6" paint-order="stroke fill" mask="url(#alpha)"/>
+  <path d="M158 12H324V110H158Z" fill="url(#bitmap)" mask="url(#luminance)"/>
+</svg>
+<script>
+let frame = 0;
+function editPattern() {
+    if (++frame === 12)
+        document.getElementById('tile-opacity').setAttribute('opacity', '.5');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-foreground-pattern-ready', '');
+    else
+        requestAnimationFrame(editPattern);
+}
+requestAnimationFrame(editPattern);
+</script>

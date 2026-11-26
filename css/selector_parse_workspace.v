@@ -26,6 +26,29 @@ fn parse_owned_selector(text string) Selector {
 	return selector_from_text_impl(text)
 }
 
+// Author stylesheets use worker graphs from a short-lived staging entry.
+// Publish the final graph in the converter's owner before retiring that entry.
+fn own_prepared_selector_list(source SelectorList) SelectorList {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('prepared stylesheet selector copy')
+		defer { scratch.finish() }
+		mut copy := ParsedSelectorCopy{}
+		for selector in source.selectors { copy.prepare(selector) }
+		scratch.leave()
+		mut selectors := []Selector{cap: source.selectors.len}
+		for selector in source.selectors { selectors << copy.selector(selector) }
+		return SelectorList{selectors: selectors}
+	}
+	return source
+}
+
+// Copy the live stack entries into storage owned by the parsed graph.
+fn copy_selector_entries[T](entries [4]T, count int, capacity int) []T {
+	mut values := []T{cap: capacity}
+	unsafe { values.push_many(&entries[0], count) }
+	return values
+}
+
 struct ParsedSelectorCopy {
 mut:
 	selectors map[voidptr]&ParsedSelectorCopyEntry
@@ -71,7 +94,11 @@ fn (mut copy ParsedSelectorCopy) prepare_simple(source &SimpleSelector) {
 }
 
 fn own_parsed_selector_name(source SelectorName) SelectorName {
-	return SelectorName{ name: source.name.clone(), lowercase_name: source.lowercase_name.clone() }
+	name := source.name.clone()
+	return SelectorName{
+		name: name
+		lowercase_name: if source.lowercase_name == source.name { name } else { source.lowercase_name.clone() }
+	}
 }
 
 fn own_parsed_qualified_name(source SelectorQualifiedName) SelectorQualifiedName {

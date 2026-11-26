@@ -78,11 +78,24 @@ fn patch_header(source string) !string {
 	return private_helper(text, 'header_value_without_ows')
 }
 
+// The system Brotli decoder streams its output into the response's bounded
+// sink. The staged V decoder returns the whole stream, which the same sink
+// then bounds and copies.
+const streamed_brotli_response = 'brotli.decompress_with_callback(decoded, callback, voidptr(&sink)) or {\n\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t0\n\t\t\t\t}'
+const collected_brotli_response = 'mut expanded := brotli.decompress(decoded) or {\n\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t[]u8{}\n\t\t\t\t}\n\t\t\t\tif !decode_failed {\n\t\t\t\t\tcallback(expanded, voidptr(&sink))\n\t\t\t\t}\n\t\t\t\tunsafe { expanded.free() }'
+
 fn patch_response(source string) !string {
-	if source.count('import x.compress.brotli\n') == 1 && !source.contains('import compress.brotli\n') {
-		return source
+	mut text := source
+	if !(text.count('import x.compress.brotli\n') == 1 && !text.contains('import compress.brotli\n')) {
+		text = replace_once(text, 'import compress.brotli\n', 'import x.compress.brotli\n')!
 	}
-	return replace_once(source, 'import compress.brotli\n', 'import x.compress.brotli\n')
+	if text.contains(streamed_brotli_response) {
+		text = replace_once(text, streamed_brotli_response, collected_brotli_response)!
+	}
+	if text.contains('brotli.decompress_with_callback') {
+		return error('Unsupported adapter source: streaming Brotli response decoder')
+	}
+	return text
 }
 
 fn patch_brotli(source string) !string {
@@ -237,11 +250,26 @@ fn patch_transport(source string) !string {
 	return text[..first] + dial + text[last..] + '\n' + read(join(root_dir(), 'tools/http_tls_dial.v.inc'))!
 }
 
-fn patch_h2_pooled(source string) !string {
+fn patch_h2_admission(source string) !string {
+	if source.contains('fn (mut t H2PooledTransport) lock_io()') {
+		start, end := function_span(source, 'fn (mut t H2PooledTransport) lock_io(')!
+		gate := 'fn (mut t H2PooledTransport) lock_io() { t.io_admission.lock() t.io_mu.lock() t.io_admission.unlock() }'
+		if source[start..end].fields().join('') != gate.fields().join('')
+			|| source.count('t.lock_io()') != 4 {
+			return error('Unsupported upstream HTTP/2 admission layout')
+		}
+		return source + '\nfn (mut t H2PooledTransport) vox_lock_io() { t.lock_io() }\n'
+	}
 	field := '\tio_mu  &sync.Mutex  = sync.new_mutex()'
 	mut text := replace_once(source, field, field + '\n\tvox_admission_mu &sync.Mutex = sync.new_mutex()')!
 	if text.count('t.io_mu.lock()') != 4 { return error('Unsupported HTTP/2 locking layout') }
-	text = text.replace('t.io_mu.lock()', 't.vox_lock_io()') + snippet('h2_admission')
+	return text.replace('t.io_mu.lock()', 't.vox_lock_io()') + snippet('h2_admission')
+}
+
+fn patch_h2_pooled(source string) !string {
+	mut text := patch_h2_admission(source)!
+	// Current vlib aligns the state fields after adding its admission mutex.
+	text = text.replace('\tclosed       bool\n}', '\tclosed bool\n}')
 	text = replace_once(text, '\tclosed bool\n}', '\tvox_wake voidptr\n\tvox_wait_before_read bool\n\tclosed bool\n}')!
 	text += snippet('h2_wake_declarations')
 	text = replace_function(text, 'fn new_h2_pooled_transport(', snippet('h2_transport_new'))!

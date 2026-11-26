@@ -1520,6 +1520,11 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 
 	mut automatic_width := CSSPixels.new(0)
 	mut line_cross_sizes := []CSSPixels{cap: lines.len}
+	// first_call_answer.v: the automatic-height call of an item that the loop
+	// after line sizing lays out again. Baseline-aligned items are excluded:
+	// line sizing reads their descendants' baselines between the two calls.
+	offers_first_call_answers := !container_state.has_definite_height() && layout_mode != .intrinsic_sizing
+	mut answered_items := []voidptr{}
 	for line_index in 0 .. lines.len {
 		mut current_line := lines[line_index]
 		mut line_edges := []CSSPixels{cap: current_line.items.len}
@@ -1543,11 +1548,22 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 					natural_cross = calculate_max_content_height(mut state, box, current_line.targets[index])
 				}
 			}
-			item_state := layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
-				container_state.content_height()
+			item_container_height := if container_state.has_definite_height() {
+				?CSSPixels(container_state.content_height())
 			} else {
-				none
-			}, current_line.targets[index], natural_cross)
+				?CSSPixels(none)
+			}
+			item_state := if offers_first_call_answers
+				&& !flex_item_participates_in_baseline_alignment(container, item) {
+				laid_out, answered := layout_first_call_of_flex_item_with_height(mut state, item,
+					mut container_state, container_width, item_container_height,
+					current_line.targets[index], natural_cross)
+				if answered { answered_items << voidptr(item) }
+				laid_out
+			} else {
+				layout_independent_child(mut state, item, mut container_state, container_width,
+					item_container_height, current_line.targets[index], natural_cross)
+			}
 			cross_size = css_pixels_max(cross_size, item_state.margin_box_height())
 			used_main = used_main.plus(item_state.margin_box_width())
 		}
@@ -1593,15 +1609,19 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 	// This second inside-layout pass is observable when an item's authored
 	// percentage height was initially unresolved: its own used height remains
 	// content-derived, but nested percentage heights now resolve against it.
-	if !container_state.has_definite_height() && layout_mode != .intrinsic_sizing {
+	second_item_layouts := !container_state.has_definite_height() && layout_mode != .intrinsic_sizing
+	if second_item_layouts || answered_items.len > 0 {
 		for current_line in lines {
 			for item_index, item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
 				mut item_state := state.mutable_internal_box_values(styled)
-				if item_state.has_definite_height() {
+				// An answered first call left the item's descendants unplaced:
+				// this call restores or lays them out.
+				answered := answered_items.len > 0 && voidptr(item) in answered_items
+				if !answered && (!second_item_layouts || item_state.has_definite_height()) {
 					continue
 				}
-				if !flex_subtree_depends_on_definite_height(mut state, item) {
+				if !answered && !flex_subtree_depends_on_definite_height(mut state, item) {
 					item_state.set_has_definite_height(true)
 					continue
 				}
@@ -1825,7 +1845,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	mut bases := []CSSPixels{cap: items.len}
 	mut edges := []CSSPixels{cap: items.len}
 	mut contributions := []CSSPixels{cap: items.len}
-	for item in items {
+	// first_call_answer.v: items laid out below without their subtrees.
+	mut answered := []bool{len: items.len}
+	for item_index, item in items {
 		styled := item.as_node_with_style() or { continue }
 		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
@@ -1856,7 +1878,8 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, item_state, true)
 		}
-		laid_out := layout_independent_child(mut state, item, mut container_state, container_width, container_height, forced_width, none)
+		laid_out, first_call_answered := layout_first_call_of_flex_item(mut state, item, mut container_state, container_width, container_height, forced_width)
+		answered[item_index] = first_call_answered
 		base := flex_base_height(mut state, item, container_height, laid_out.content_height(), laid_out)
 		bases << base
 		edges << flex_or_grid_item_outer_block_edges(laid_out)
@@ -1930,7 +1953,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		// Repeating unchanged inside-layout at every nested column multiplies
 		// the work. Promote the used height to a definite basis in place when
 		// no descendant consumes that transition; changed sizes still rerun.
-		reuse_geometry := current.content_height() == line.targets[index]
+		reuse_geometry := !answered[index] && current.content_height() == line.targets[index]
 			&& (if width := forced_width { width == current.content_width() } else { true })
 			&& (current.has_definite_height()
 				|| !flex_subtree_depends_on_definite_height(mut state, item))

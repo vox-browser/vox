@@ -943,3 +943,38 @@ fn test_longhand_reuse_is_independent_of_active_head_order_and_removed_history()
 	readded := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
 	longhand_reuse_assert_oracle(readded, computer, element, mut second)
 }
+
+// SVG elements reuse longhands as HTML ones do: the cascaded inputs, including
+// presentation attributes, and the parent's inherited values decide the
+// result. A sibling restores the first one's longhands and both equal the
+// ordinary computation.
+fn test_longhand_reuse_covers_svg_elements_and_matches_full_computation() {
+	computer, parent, _, _ := longhand_reuse_fixture()
+	svg_ns := 'http://www.w3.org/2000/svg'
+	mut document := parent.document()
+	mut parent_node := parent.as_node()
+	mut svgs := []&dom.Element{}
+	for _ in 0 .. 2 {
+		svg := document.create_element_ns(svg_ns, 'svg') or { panic(err) }
+		parent_node.append_child(svg.as_node()) or { panic(err) }
+		svgs << svg
+	}
+	mut cascaded := longhand_reuse_cascade(parse_css_value(ParsingParams{}, '16px', .width) or { panic('width') })
+	cascaded.set_property(.fill, parse_css_value(ParsingParams{}, 'currentcolor', .fill) or { panic('fill') },
+		.no, .author_presentational_hint, none, unsafe { nil }, none)
+	cascaded.set_property(.vertical_align, parse_css_value(ParsingParams{}, 'text-bottom', .vertical_align) or { panic('align') },
+		.no, .author, none, unsafe { nil }, none)
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	first := computer.compute_properties(dom.AbstractElement.new(svgs[0], none), mut cascaded)
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(svgs[1], none), cascaded,
+		parent_computed_properties(dom.AbstractElement.new(svgs[1], none)), false) or {
+		panic('simple SVG siblings must be eligible')
+	}
+	mut probe := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(key, cascaded, mut probe)
+	second := computer.compute_properties(dom.AbstractElement.new(svgs[1], none), mut cascaded)
+	longhand_reuse_assert_oracle(first, computer, svgs[0], mut cascaded)
+	longhand_reuse_assert_oracle(second, computer, svgs[1], mut cascaded)
+	assert voidptr(first.property_store_) != voidptr(second.property_store_)
+}

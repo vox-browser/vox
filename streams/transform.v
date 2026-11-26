@@ -80,7 +80,9 @@ pub fn TransformStream.create(realm StreamRealm, transformer Transformer, writab
 	mut start_promise := webidl.create_promise_for(realm.promise_context())
 	initialize_transform_stream_with_start_promise(mut transform, start_promise, writable_high_water_mark, extract_size_algorithm(writable_strategy), readable_high_water_mark, extract_size_algorithm(readable_strategy))!
 	transform.writable_.size_value_algorithm_ = writable_strategy.size_value
+	transform.writable_.size_algorithm_object_ = writable_strategy.size_object
 	transform.readable_.size_value_algorithm_ = readable_strategy.size_value
+	transform.readable_.size_algorithm_object_ = readable_strategy.size_object
 	prepare_transform_stream_readable_writable_wrappers(mut transform)
 	set_up_transform_stream_default_controller_from_transformer(mut transform, transformer)
 	transform.start_transformer(transformer, mut start_promise)!

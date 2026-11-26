@@ -2,13 +2,13 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/FileAPI`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
-Translation workspace: `~/code/vox2/fileapi`
+Translation workspace: `~/code/vox/fileapi`
 Source records, clone payloads and Blob URL owners reviewed: 2026-10-05
 
 | Upstream source | V mapping |
 | --- | --- |
-| `Blob.cpp` | `blob.v`, `utf16_records.v`, `../html/blob_operations.v`, `../html/structured_fileapi_codec.v` |
-| `BlobURLStore.cpp` | `blob_url_store.v`, `../html/blob_url_operations.v`, `../domurl/dom_url.v`; standalone adapter in `legacy_blob_url_store.v` |
+| `Blob.cpp` | `blob.v`, `utf16_records.v`, `../html/blob_operations.v`, `../html/structured_fileapi_codec.v`; native LibJS bindings in `../libjsdom/blobs.v`, `../libjsdom/blob_reads.v` |
+| `BlobURLStore.cpp` | `blob_url_store.v`, `../html/blob_url_operations.v`, `../domurl/dom_url.v`, `../libjsdom/object_urls.v`; standalone adapter in `legacy_blob_url_store.v` |
 | `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
 | `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
 | `FileReader.cpp` | `file_reader.v`, `file_reader_global_context.v`, `file_reader_stream_operation.v`, `../html/file_reader_operations.v`, `../browserjs/file_reader_binding_jsc.c.v` |
@@ -22,6 +22,34 @@ its compatibility abort/replacement adapter at loadstart and progress. Actual
 Window/Worker readers also distinguish read generations after a reentrant abort;
 this corrects the upstream shared-Boolean behavior. This inventory does not
 establish full source runtime or generated WebIDL binding parity.
+
+The 2026-11-15 native LibJS continuation installs Blob construction, native
+parts/slicing, size/type, and Promise-returning text/arrayBuffer/bytes methods
+in libjsdom. Reads queue owned FileReading tasks, and host close discards
+pending tasks and VM roots. URL.createObjectURL/revokeObjectURL use the actual
+native store and document settings; entries survive VM wrapper teardown until
+native document cleanup or explicit revocation. Fetch now accepts Blob bodies
+and returns native Blob results. The 2026-11-16 continuation also binds
+Blob.stream to the native HTML byte stream and owned FileReading task, including
+default-reader Promises, cancellation and teeing. Host close discards outstanding
+delivery tasks. A later slice binds public ReadableStream/source/controller
+construction and Promise-returning source callbacks to the native Streams
+records. The next native LibJS slice adds File construction, real File/Blob
+inheritance, name/lastModified and shared native Blob backing, plus File-valued
+FormData entries and Fetch multipart bodies/results. BYOB/pipe/async-iterator
+bindings, native LibJS FileReader,
+foreign-realm WebIDL fallback and Blob
+History serialization remain open. New focused regression source is uncompiled
+and unexecuted under the user's hold; normal/production compiler-only checks do not establish runtime
+parity. See the
+[native Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-blob-object-url-and-fetch-continuation).
+The [stream continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation)
+records the later compiler-only evidence and remaining runtime boundaries.
+The [authored-source continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-readable-source-and-controller-continuation)
+records the constructor/controller additions, their prepared regression source
+and the continuing runtime-test hold.
+The [File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation)
+records the later constructor, body-conversion and signed-timestamp work.
 
 Blob/File public constructors now follow File API's printable-ASCII gate and
 ASCII lowercase conversion, including parameter values and non-MIME strings.

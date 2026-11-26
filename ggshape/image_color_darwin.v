@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import imageraster
 import math
@@ -15,17 +16,34 @@ pub fn convert_image_color(source imageraster.Image, profile imageraster.PNGSamp
 		return none
 	}
 	for value in profile.gamut { if !math.is_finite(value) { return none } }
+	return convert_document_image_color(source,
+		canvas.DocumentImageColorTransform{ gamma: profile.gamma, gamut: profile.gamut })
+}
+
+// Convert the full source before generating mipmaps or sampling a reduced
+// destination. This retains the destination encoding in every mip level.
+pub fn convert_image_srgb_gamut(source imageraster.Image, gamut [9]f32) ?[]u8 {
+	if !canvas.document_image_srgb_gamut_supported()
+		|| source.width <= 0 || source.height <= 0 || source.width > 4096 || source.height > 4096
+		|| source.width * source.height > 4 * 1024 * 1024
+		|| source.pixels.len != source.width * source.height * 4
+		|| gamut.any(!math.is_finite(it)) || C.pthread_main_np() == 0 {
+		return none
+	}
+	return convert_document_image_color(source,
+		canvas.DocumentImageColorTransform{ gamma: -1, gamut: gamut })
+}
+
+fn convert_document_image_color(source imageraster.Image, transform canvas.DocumentImageColorTransform) ?[]u8 {
 	mut ctx := context() or { return none }
 	mut target := ctx.new_surface(width: source.width, height: source.height) or { return none }
 	defer { target.free() }
 	target.draw_document_color_rgba([source.pixels], source.width, source.height,
 		source.width, source.height, 0, 0, f32(source.width), f32(source.height),
-		canvas.DocumentImageColorTransform{ gamma: profile.gamma, gamut: profile.gamut }) or { return none }
+		transform, false) or { return none }
 	mut pixels := []u8{len: source.pixels.len}
 	target.read_pixels(pixels.data, source.width * 4) or { return none }
-	for i in 0 .. source.width * source.height {
-		pixels[i * 4], pixels[i * 4 + 2] = pixels[i * 4 + 2], pixels[i * 4]
-	}
+	unsafe { cpuraster.swap_rgba_red_blue(pixels.data, i32(source.width), i32(source.height), i32(source.width * 4)) }
 	return pixels
 }
 
@@ -49,9 +67,7 @@ fn gpu_image_mip_chain(source imageraster.Image) ?[]imageraster.Image {
 			return none
 		}
 		target.free()
-		for i in 0 .. width * height {
-			pixels[i * 4], pixels[i * 4 + 2] = pixels[i * 4 + 2], pixels[i * 4]
-		}
+		unsafe { cpuraster.swap_rgba_red_blue(pixels.data, i32(width), i32(height), i32(width * 4)) }
 		levels << imageraster.Image{ width: width, height: height, pixels: pixels }
 	}
 	return levels

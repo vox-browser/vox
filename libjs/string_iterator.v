@@ -17,7 +17,7 @@ pub fn StringIterator.create(realm &Realm, text Utf16String, prototype &Object) 
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'StringIterator'
 	iterator := &StringIterator{object: object, text: text.clone()}
-	object.string_iterator = iterator
+	object.mut_slots().string_iterator = iterator
 	return iterator
 }
 
@@ -28,11 +28,16 @@ pub fn (mut iterator StringIterator) next(mut vm VM) IteratorStepValue {
 		return IteratorStepValue{done: true, value: js_undefined()}
 	}
 	start := iterator.index
+	unit := iterator.text.data[start]
+	if unit < 0x80 {
+		iterator.index++
+		return IteratorStepValue{value: Value.from_string(vm.single_ascii_character_string(u8(unit)))}
+	}
 	mut width := 1
-	if is_utf16_high_surrogate(iterator.text.data[start]) && start + 1 < iterator.text.len()
+	if is_utf16_high_surrogate(unit) && start + 1 < iterator.text.len()
 		&& is_utf16_low_surrogate(iterator.text.data[start + 1]) { width = 2 }
-	// AK decodes and re-encodes a valid surrogate pair and preserves lone units.
-	code_point := Utf16String.from_slice(iterator.text.data[start..start + width])
+	// The iterator owns this span. create_string retains its own code units.
+	code_point := Utf16String{data: iterator.text.data[start..start + width]}
 	iterator.index += width
 	return IteratorStepValue{value: Value.from_string(vm.create_string(code_point))}
 }

@@ -1,0 +1,54 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Non-scaling strokes in repeated SVG tiles</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="418" height="118" viewBox="0 0 418 118">
+  <defs>
+    <pattern id="small" patternUnits="userSpaceOnUse" width="40" height="40" patternTransform="scale(.5)">
+      <path id="tile-width" d="M0 20H40" fill="none" stroke="lime" stroke-width="6"
+            stroke-dasharray="6 4" stroke-dashoffset="2"/>
+    </pattern>
+    <linearGradient id="split" gradientUnits="userSpaceOnUse" x1="0" x2="40">
+      <stop stop-color="white"/>
+      <stop offset=".5" stop-color="white"/>
+      <stop offset=".5" stop-color="#808080"/>
+      <stop offset="1" stop-color="#808080"/>
+    </linearGradient>
+    <pattern id="large" patternUnits="userSpaceOnUse" width="40" height="40"
+             patternTransform="translate(120 0) scale(2 1.5)">
+      <path d="M0 40H40" transform="scale(1 .5)" fill="none" stroke="url(#split)"
+            stroke-width="6" vector-effect="non-scaling-stroke"/>
+    </pattern>
+    <mask id="gradient" maskUnits="userSpaceOnUse" x="120" y="0" width="166" height="116">
+      <path d="M120 0H286V116H120Z" fill="url(#large)"/>
+    </mask>
+    <pattern id="sheared" patternUnits="userSpaceOnUse" width="32" height="32"
+             patternTransform="matrix(1 0 1 1 300 0)">
+      <path d="M10 4V28" fill="none" stroke="white" stroke-width="6"
+            stroke-dasharray="12 7" vector-effect="non-scaling-stroke"/>
+    </pattern>
+    <mask id="diagonal" mask-type="alpha" maskUnits="userSpaceOnUse" x="300" y="0" width="110" height="116">
+      <path d="M300 0H410V116H300Z" fill="url(#sheared)"/>
+    </mask>
+  </defs>
+  <path d="M0 0H104V116H0Z" fill="url(#small)"/>
+  <path d="M120 0H286V116H120Z" fill="blue" mask="url(#gradient)"/>
+  <path d="M300 0H410V116H300Z" fill="blue" mask="url(#diagonal)"/>
+</svg>
+<script>
+let frame = 0;
+function editStroke() {
+    if (++frame === 12)
+        document.getElementById('tile-width').setAttribute('vector-effect', 'non-scaling-stroke');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-tile-width-ready', '');
+    else
+        requestAnimationFrame(editStroke);
+}
+requestAnimationFrame(editStroke);
+</script>

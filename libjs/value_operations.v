@@ -181,14 +181,13 @@ pub fn (value Value) to_i32(mut vm VM) !i32 {
 }
 
 pub fn add(mut vm VM, lhs Value, rhs Value) !Value {
+	if lhs.is_number() && rhs.is_number() { return Value.from_f64(lhs.number + rhs.number) }
 	left := lhs.to_primitive(mut vm)!
 	right := rhs.to_primitive(mut vm)!
 	if left.is_string() || right.is_string() {
 		left_string := left.to_primitive_string(mut vm)!
 		right_string := right.to_primitive_string(mut vm)!
-		mut units := left_string.utf16.data.clone()
-		units << right_string.utf16.data
-		return Value.from_string(vm.create_string(Utf16String{ data: units }))
+		return Value.from_string(vm.concatenate_strings(left_string, right_string))
 	}
 	return numeric_binary_operation(mut vm, left, right, .add)
 }
@@ -216,17 +215,13 @@ pub fn exp(mut vm VM, lhs Value, rhs Value) !Value {
 // Runtime/Value.cpp::ApplyStringOrNumericBinaryOperator. Dispatch both numeric
 // types only after converting the left and right operands, in that order.
 fn numeric_binary_operation(mut vm VM, lhs Value, rhs Value, op OpCode) !Value {
+	if lhs.is_number() && rhs.is_number() {
+		return Value.from_f64(number_binary_operation(lhs.number, rhs.number, op))
+	}
 	x := lhs.to_numeric(mut vm)!
 	y := rhs.to_numeric(mut vm)!
 	if x.is_number() && y.is_number() {
-		return Value.from_f64(match op {
-			.add { x.number + y.number }
-			.sub { x.number - y.number }
-			.mul { x.number * y.number }
-			.div { x.number / y.number }
-			.mod_ { math.fmod(x.number, y.number) }
-			else { number_exponentiate(x.number, y.number) }
-		})
+		return Value.from_f64(number_binary_operation(x.number, y.number, op))
 	}
 	if x.is_bigint() && y.is_bigint() {
 		a := x.as_bigint().big_integer
@@ -259,6 +254,32 @@ fn numeric_binary_operation(mut vm VM, lhs Value, rhs Value, op OpCode) !Value {
 	}
 
 	return vm.throw_error_type(.type_error, .big_int_bad_operator_other_type, name)
+}
+
+// The Number cases of ApplyStringOrNumericBinaryOperator. Number operands need
+// no coercion, so callers may use this before ToNumeric without changing order.
+@[inline]
+fn number_binary_operation(x f64, y f64, op OpCode) f64 {
+	return match op {
+		.add { x + y }
+		.sub { x - y }
+		.mul { x * y }
+		.div { x / y }
+		.mod_ { math.fmod(x, y) }
+		else { number_exponentiate(x, y) }
+	}
+}
+
+// 7.1.6 ToInt32 for a Number. In-range values truncate directly; NaN fails both
+// comparisons and takes the modular path with infinities.
+@[inline]
+fn number_to_i32(number f64) i32 {
+	if number > -2147483649.0 && number < 2147483648.0 { return i32(number) }
+	if math.is_nan(number) || math.is_inf(number, 0) { return 0 }
+	mut result := math.fmod(math.trunc(number), 4294967296.0)
+	if result < 0 { result += 4294967296.0 }
+	unsigned := u32(result)
+	return if unsigned >= 0x80000000 { i32(i64(unsigned) - 4294967296) } else { i32(unsigned) }
 }
 
 // Runtime/Value.cpp::Number::exponentiate. The ordered special cases matter:
@@ -303,6 +324,18 @@ pub fn bitwise_not(mut vm VM, value Value) !Value {
 	return Value.from_bigint(BigInt.create(numeric.as_bigint().big_integer.bitwise_com()))
 }
 
+@[inline]
+fn number_bitwise_operation(a i32, b i32, op OpCode) i32 {
+	return match op {
+		.bitwise_and { a & b }
+		.bitwise_or { a | b }
+		.bitwise_xor { a ^ b }
+		.left_shift { i32(u32(a) << (u32(b) & 31)) }
+		.right_shift { a >> (u32(b) & 31) }
+		else { i32(u32(a) >> (u32(b) & 31)) }
+	}
+}
+
 pub fn bitwise_and(mut vm VM, lhs Value, rhs Value) !Value {
 	return bitwise_binary_operation(mut vm, lhs, rhs, .bitwise_and)
 }
@@ -316,6 +349,10 @@ pub fn bitwise_xor(mut vm VM, lhs Value, rhs Value) !Value {
 }
 
 fn bitwise_binary_operation(mut vm VM, lhs Value, rhs Value, op OpCode) !Value {
+	if lhs.is_number() && rhs.is_number() {
+		return Value.from_i32(number_bitwise_operation(number_to_i32(lhs.number),
+			number_to_i32(rhs.number), op))
+	}
 	x := lhs.to_numeric(mut vm)!
 	y := rhs.to_numeric(mut vm)!
 	if x.is_number() && y.is_number() {
@@ -348,6 +385,10 @@ fn bitwise_binary_operation(mut vm VM, lhs Value, rhs Value, op OpCode) !Value {
 }
 
 pub fn left_shift(mut vm VM, lhs Value, rhs Value) !Value {
+	if lhs.is_number() && rhs.is_number() {
+		return Value.from_i32(number_bitwise_operation(number_to_i32(lhs.number),
+			number_to_i32(rhs.number), .left_shift))
+	}
 	x := lhs.to_numeric(mut vm)!
 	y := rhs.to_numeric(mut vm)!
 	if x.is_number() && y.is_number() {
@@ -375,6 +416,10 @@ pub fn left_shift(mut vm VM, lhs Value, rhs Value) !Value {
 }
 
 pub fn right_shift(mut vm VM, lhs Value, rhs Value) !Value {
+	if lhs.is_number() && rhs.is_number() {
+		return Value.from_i32(number_bitwise_operation(number_to_i32(lhs.number),
+			number_to_i32(rhs.number), .right_shift))
+	}
 	x := lhs.to_numeric(mut vm)!
 	y := rhs.to_numeric(mut vm)!
 	if x.is_number() && y.is_number() {
@@ -387,6 +432,10 @@ pub fn right_shift(mut vm VM, lhs Value, rhs Value) !Value {
 }
 
 pub fn unsigned_right_shift(mut vm VM, lhs Value, rhs Value) !Value {
+	if lhs.is_number() && rhs.is_number() {
+		return Value.from_f64(f64(u32(number_bitwise_operation(number_to_i32(lhs.number),
+			number_to_i32(rhs.number), .unsigned_right_shift))))
+	}
 	x := lhs.to_numeric(mut vm)!
 	y := rhs.to_numeric(mut vm)!
 	if x.is_number() && y.is_number() {
@@ -416,7 +465,7 @@ pub fn is_strictly_equal(lhs Value, rhs Value) bool {
 pub fn in_operator(mut vm VM, lhs Value, rhs Value) !Value {
 	if !rhs.is_object() { return vm.throw_error_type(.type_error, .in_operator_with_object) }
 	key := lhs.to_property_key(mut vm)!
-	return Value.from_bool(rhs.as_object().has_property(key))
+	return Value.from_bool(rhs.as_object().has_property_checked(mut vm, key)!)
 }
 
 pub enum ComparisonResult {
@@ -428,6 +477,7 @@ pub enum ComparisonResult {
 
 // IsLessThan's primitive paths. UTF-16 ordering differs from scalar ordering.
 pub fn compare_primitive_values(mut vm VM, lhs Value, rhs Value) !ComparisonResult {
+	if lhs.is_number() && rhs.is_number() { return compare_numbers(lhs.number, rhs.number) }
 	left := lhs.to_primitive_with_hint(mut vm, .number)!
 	right := rhs.to_primitive_with_hint(mut vm, .number)!
 	if left.is_string() && right.is_string() {
@@ -460,6 +510,15 @@ pub fn compare_primitive_values(mut vm VM, lhs Value, rhs Value) !ComparisonResu
 	if math.is_nan(x.number) || math.is_nan(y.number) { return .unordered }
 	if x.number == y.number { return .equal }
 	return if x.number < y.number { ComparisonResult.less } else { ComparisonResult.greater }
+}
+
+// Number::lessThan and Number::equal; NaN compares unordered.
+@[inline]
+fn compare_numbers(x f64, y f64) ComparisonResult {
+	if x < y { return .less }
+	if x > y { return .greater }
+	if x == y { return .equal }
+	return .unordered
 }
 
 // Runtime/Value.cpp::IsLooselyEqual, including object and BigInt coercion.

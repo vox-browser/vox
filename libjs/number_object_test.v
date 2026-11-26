@@ -11,11 +11,11 @@ fn test_number_wrapper_preserves_numeric_payload_brand_and_explicit_prototype() 
 		math.nan()] {
 		wrapper := NumberObject.create(vm.realm(), value, parent)
 		assert same_value(Value.from_f64(wrapper.value), Value.from_f64(value))
-		assert voidptr(wrapper.object.number_object?) == voidptr(wrapper)
+		assert voidptr(wrapper.object.slots.number_object?) == voidptr(wrapper)
 		assert wrapper.object.class_name == 'NumberObject' && wrapper.object.properties.len == 0
 		assert voidptr(wrapper.object.prototype?) == voidptr(parent)
 		assert wrapper.object.get(mut vm, PropertyName.from_str('inherited'))!.number == 42
-		assert wrapper.object.boolean_object == none && wrapper.object.bigint_object == none
+		assert wrapper.object.slots.boolean_object == none && wrapper.object.slots.bigint_object == none
 	}
 }
 

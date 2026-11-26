@@ -53,6 +53,7 @@ fn extend_conditional_style_rule_invalidation(mut result StyleSheetInvalidationS
 }
 
 fn invalidate_owners_for_inserted_conditional_style_rule(mut sheet CSSStyleSheet, rule &CSSRule) {
+	note_style_sheet_content_mutation(sheet, .style_sheet_insert_rule)
 	sheet.did_match = none
 	sheet.invalidate_shared_style_cache()
 	if document := sheet.owning_document() {

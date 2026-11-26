@@ -200,7 +200,7 @@ fn retained_flow_ordinary_rejection(node &Node) string {
 	if node.is_replaced_element() && !node.is_svg_box() && !node.is_svg_svg_box() && !retained_flow_raster_image_is_ordinary(node) { return 'replaced' }
 	if node.is_list_item_box() && !retained_flow_list_item_box_is_static(node) { return 'list-item' }
 	if node.is_list_item_marker_box() && !retained_flow_marker_box_is_static(node) { return 'marker' }
-	if node.is_absolutely_positioned() && !node.is_image_box() { return 'absolute' }
+	if node.is_absolutely_positioned() && !node.is_image_box() && !retained_flow_absolute_is_ordinary(node) { return 'absolute' }
 	if !node.is_text_node() && !retained_tree_display_is_supported(node.display()) {
 		return 'display:${node.display().to_string()}'
 	}
@@ -240,9 +240,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		if computed.content_visibility() != .visible {
 			return note_retained_flow_rejection('content-visibility', element)
 		}
-		if computed.position() !in [.static_, .relative]
-			&& !(computed.position() == .absolute && element.as_node().is_html_image_element()
-				&& !disable_extended_image_trees) {
+		if !retained_flow_position_is_supported(element, computed) {
 			return note_retained_flow_rejection('position', element)
 		}
 		if !retained_flow_element_name_is_generic(element.local_name()) {
@@ -251,9 +249,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	}
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
-		|| (computed.position() !in [.static_, .relative]
-			&& !(computed.position() == .absolute && element.as_node().is_html_image_element()
-				&& !disable_extended_image_trees))
+		|| !retained_flow_position_is_supported(element, computed)
 		|| !retained_flow_element_name_is_generic(element.local_name()) {
 		return false
 	}
@@ -314,7 +310,8 @@ fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| (node.is_replaced_element() && !node.is_svg_box() && !node.is_svg_svg_box() && !retained_flow_raster_image_is_ordinary(node))
 		|| (node.is_list_item_box() && !retained_flow_list_item_box_is_static(node))
-		|| (node.is_absolutely_positioned() && !node.is_image_box()) {
+		|| (node.is_absolutely_positioned() && !node.is_image_box()
+		&& !retained_flow_absolute_is_ordinary(node)) {
 		return false
 	}
 	if node.is_flex_item() || node.is_grid_item_ {
@@ -362,4 +359,29 @@ fn retained_flow_anonymous_layout_is_ordinary(node &Node) bool {
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
 	return true
+}
+
+// Experimental: VOX_RETAINED_FLOW_ABSOLUTE=1 also retains absolutely positioned
+// boxes whose parent box is a block container. The tree builder places such a
+// box under its parent like an in-flow block, and layout runs again in a fresh
+// state, so containing blocks and static positions resolve normally. Boxes
+// inside inline parents keep the rebuild path.
+const retained_flow_absolute_from_env = os.getenv('VOX_RETAINED_FLOW_ABSOLUTE') == '1'
+
+// Tests enable the experiment without the environment variable.
+__global retained_flow_absolute_for_test bool
+
+fn retained_flow_position_is_supported(element &dom.Element, computed &css.ComputedProperties) bool {
+	position := computed.position()
+	if position in [.static_, .relative] { return true }
+	if position != .absolute { return false }
+	return retained_flow_absolute_from_env || retained_flow_absolute_for_test
+		|| (element.as_node().is_html_image_element() && !disable_extended_image_trees)
+}
+
+fn retained_flow_absolute_is_ordinary(node &Node) bool {
+	if !(retained_flow_absolute_from_env || retained_flow_absolute_for_test)
+		|| node.is_fixed_position() { return false }
+	parent := node.parent() or { return false }
+	return !parent.is_inline_node() && !parent.is_anonymous()
 }

@@ -23,10 +23,6 @@ fn parse_css_value_in_workspace(context ParsingParams, property PropertyID, text
 // Component payloads may be shared by cached syntax or custom-property input.
 // Publish new headers and vectors; changing a borrowed header would transfer a
 // document-owned string into the shared input and shorten its lifetime.
-fn own_value_component_text(mut components []ComponentValue) {
-	components = own_value_components(components)
-}
-
 fn own_value_components(components []ComponentValue) []ComponentValue {
 	mut owned := []ComponentValue{cap: components.len}
 	for component in components {

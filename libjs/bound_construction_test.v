@@ -90,7 +90,7 @@ fn test_bound_construction_compares_new_target_identity_even_when_host_records_s
 	distinct.class_name = bound.object.class_name
 	distinct.callable = bound.object.callable
 	distinct.constructor = bound.object.constructor
-	distinct.bound_function = bound.object.bound_function
+	distinct.mut_slots().bound_function = bound.object.slots.bound_function
 	assert voidptr(distinct) != voidptr(bound.object)
 	result := construct(mut vm, Value.from_object(bound.object), []Value{}, distinct)!
 	assert voidptr(result) == voidptr(distinct)

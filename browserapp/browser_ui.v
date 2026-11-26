@@ -27,6 +27,7 @@ mut:
 	link            string
 	select_node     &dom.Node = unsafe { nil }
 	select_document dom.UniqueNodeID
+	select_popup_timer &platform.Timer = unsafe { nil }
 	tab_color       browsertabs.TabColor
 	tab_color_target string
 	custom_tab_title string
@@ -64,7 +65,10 @@ fn (mut app BrowserApp) refresh_browser_ui() {
 fn (app &BrowserApp) browser_popup_elements(width int, height int) []ui2.Element {
 	state := app.browser_ui()
 	if editor := state.tab_title_editor { return editor.elements(f64(width), f64(height)) }
-	if popup := state.popup { return popup.elements(f64(width), f64(height)) }
+	if popup := state.popup {
+		if state.select_popup_timer != unsafe { nil } { return []ui2.Element{} }
+		return popup.elements(f64(width), f64(height))
+	}
 	if bar := state.find_bar { return bar.elements(f64(width), f64(app.page_top())) }
 	return []ui2.Element{}
 }
@@ -78,6 +82,13 @@ fn (mut app BrowserApp) dismiss_browser_popup() {
 	if state.select_node != unsafe { nil } && app.document != unsafe { nil }
 		&& state.select_document == app.document.unique_id() {
 		app.close_browser_select_picker(state.select_node)
+	}
+	$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+		if state.select_popup_timer != unsafe { nil } {
+			state.select_popup_timer.stop()
+			state.select_popup_timer = unsafe { nil }
+			if popup := state.popup { browserui.cancel_native_popup(popup.token) }
+		}
 	}
 	state.select_node = unsafe { nil }
 	state.inspect_node = unsafe { nil }
@@ -132,6 +143,7 @@ fn (mut app BrowserApp) browser_popup_action(action string) {
 fn (mut app BrowserApp) handle_browser_popup_key(key string) bool {
 	mut state := app.browser_ui()
 	mut popup := state.popup or { return false }
+	if state.select_popup_timer != unsafe { nil } && key != 'escape' { return false }
 	if key !in ['up', 'down', 'home', 'end', 'enter', 'space', 'escape', 'tab'] { return false }
 	action := if key == 'tab' { 'browser-menu:${popup.token}:dismiss' } else { popup.key(key) }
 	state.popup = popup
@@ -152,6 +164,10 @@ fn browser_ui_event(event string) {
 	mut app := address_bar_owner.app.active_browser_tab()
 	if event.starts_with('update-') || event == 'panel-close:update' {
 		browser_update_event(event)
+		return
+	}
+	if event.starts_with('settings-') || event.starts_with('extensions-') || event == 'panel-close:settings' {
+		browser_settings_event(event)
 		return
 	}
 	if event == 'host-reopen' {
@@ -203,15 +219,6 @@ fn browser_ui_event(event string) {
 		app.update_address_suggestions(ui2.text('address'))
 		return
 	}
-	if event == 'panel-close:settings' {
-		browser_settings_event(event)
-		return
-	}
-	if event.starts_with('settings-') {
-		browser_settings_event(event)
-		app.refresh_browser_ui()
-		return
-	}
 	app.activate_browser_chrome(event)
 }
 
@@ -233,6 +240,22 @@ fn browser_ui_key(event ui2.KeyEvent) {
 		// Keep focus traversal and focused-button activation with UI2.
 		$if !vox_ui2 ? {
 			if event.code !in [.tab, .space] { ui2.consume_key() }
+		}
+		return
+	}
+	mut settings_keys := browser_settings_visible()
+	$if vox_ui2 ? {
+		settings_keys = settings_keys && ui2.embedded_key_panel() == 'settings'
+	}
+	if settings_keys {
+		if event.code == .escape || (event.code == .w && (event.cmd || event.ctrl)) {
+			close_browser_settings()
+			ui2.consume_key()
+		} else if event.code == .tab && event.ctrl {
+			if next := ui2.tab_bar_key(browser_settings_sidebar(browser_settings_ui.section), event) {
+				browser_settings_event(ui2.tab_bar_tab_action(browser_settings_sidebar_id, next.state.selected))
+				ui2.consume_key()
+			}
 		}
 		return
 	}
@@ -260,20 +283,10 @@ fn browser_ui_key(event ui2.KeyEvent) {
 			return
 		}
 	}
-	mut settings_keys := browser_settings_visible()
-	$if vox_ui2 ? {
-		settings_keys = settings_keys && ui2.embedded_key_panel() == 'settings'
-	}
-	if settings_keys && event.code in [.escape, .w] && (event.code == .escape || event.cmd || event.ctrl) {
-		close_browser_settings()
-		ui2.consume_key()
-		return
-	}
 	if app.handle_browser_popup_key(event.code.name()) {
 		ui2.consume_key()
 		return
 	}
-	if settings_keys { return }
 	app.note_address_key(event)
 	if app.handle_address_suggestion_key(event) {
 		ui2.consume_key()

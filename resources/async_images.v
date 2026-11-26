@@ -258,6 +258,7 @@ fn persistent_preloaded_resource(resource PreloadedResource) PreloadedResource {
 		final_url: resource.final_url.clone()
 		request_type: resource.request_type.clone()
 		response_headers: headers
+		retained_for_process: true
 	}
 }
 

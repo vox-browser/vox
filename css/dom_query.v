@@ -18,6 +18,10 @@ struct DocumentQueryPlan {
 	// Every simple selector compares a name, an ID or a class. Outside quirks
 	// mode such a match allocates nothing and needs no scratch workspace.
 	scalar bool
+mut:
+	// general_scope_query.v: the selector list by subject requirement, built
+	// by the first general walk of this plan.
+	buckets &QuerySubjectBuckets = unsafe { nil }
 }
 
 // Same-binary control: open a scratch workspace for every query, as before.
@@ -225,6 +229,8 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 	if !recompute_document_query_plans {
 		if compounds := plan.independent {
 			if independent_query_tags_are_absent(root.as_node(), compounds) { return []&dom.Node{} }
+		} else {
+			return general_scope_query(plan, root, first)
 		}
 	}
 	// Parsed selectors are document-owned. Only the independent matching walk
@@ -285,6 +291,16 @@ pub fn require_document_selector(document &dom.Document, selector_text string) !
 	_ = document_query_plan(document, selector_text) or {
 		return error('SyntaxError: Failed to parse selector')
 	}
+}
+
+// Whether every compound of a valid query selector names an element tag that
+// `document` has never seen: then nothing below the document or any connected
+// root matches it (independent_query_tags_are_absent), until the document's
+// local name history gains that name.
+pub fn document_selector_absent_by_name_history(document &dom.Document, selector_text string) bool {
+	plan := document_query_plan(document, selector_text) or { return false }
+	compounds := plan.independent_compounds() or { return false }
+	return independent_query_tags_are_absent(document.as_node(), compounds)
 }
 
 fn parse_query_selector_list(selector_text string) ?SelectorList {

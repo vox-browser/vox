@@ -381,6 +381,43 @@ static void test_damage_rects_repaint_only_changed_content(int scale) {
     native_discard_scroll_raster();
 }
 
+static void test_large_wrapped_damage_region(void) {
+    const size_t width = 2049, height = 1027, pitch = width * 4 + 20, chrome = 7;
+    const size_t left = 13, right = 1823, top = 3, bottom = 1001;
+    size_t ring_bytes = width * height * 4, canvas_bytes = pitch * (height + chrome + 2);
+    uint8_t *ring = malloc(ring_bytes), *canvas = malloc(canvas_bytes);
+    uint8_t *expected_ring = malloc(ring_bytes), *expected_canvas = malloc(canvas_bytes);
+    assert(ring && canvas && expected_ring && expected_canvas);
+    VoxScrollRaster raster = {
+        .pixels = ring, .width = width, .height = height, .top = chrome,
+        .row_origin = height - 127, .tiled = 1,
+    };
+    for (int store = 0; store <= 1; ++store) {
+        for (size_t i = 0; i < ring_bytes; ++i) ring[i] = (uint8_t)(i * 13 + i / 251);
+        for (size_t i = 0; i < canvas_bytes; ++i) canvas[i] = (uint8_t)(i * 29 + i / 263);
+        memcpy(expected_ring, ring, ring_bytes);
+        memcpy(expected_canvas, canvas, canvas_bytes);
+        BOOL expected_dirty[VOX_SCROLL_TILE_LIMIT] = {0};
+        for (size_t y = top; y < bottom; ++y) {
+            size_t row = (raster.row_origin + y) % height;
+            uint8_t *cached = expected_ring + (row * width + left) * 4;
+            uint8_t *viewport = expected_canvas + (chrome + y) * pitch + left * 4;
+            if (store) {
+                memcpy(cached, viewport, (right - left) * 4);
+                expected_dirty[row / VOX_SCROLL_TILE_ROWS] = YES;
+            } else memcpy(viewport, cached, (right - left) * 4);
+        }
+        native_scroll_raster_copy_rect(&raster, canvas, pitch, left, top, right, bottom, store);
+        assert(memcmp(ring, expected_ring, ring_bytes) == 0);
+        assert(memcmp(canvas, expected_canvas, canvas_bytes) == 0);
+        assert(memcmp(raster.tile_dirty, expected_dirty, sizeof(expected_dirty)) == 0);
+    }
+    free(expected_canvas);
+    free(expected_ring);
+    free(canvas);
+    free(ring);
+}
+
 int main(void) {
     @autoreleasepool {
         for (int scale = 1; scale <= 2; ++scale) {
@@ -451,6 +488,16 @@ int main(void) {
             test_damage_rects_repaint_only_changed_content(scale);
         for (int scale = 1; scale <= 2; ++scale)
             test_video_backdrop_composites_new_frames_exactly(scale);
+        test_large_wrapped_damage_region();
+        setenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS", "1", 1);
+        canvas_extra_width = 17;
+        native_discard_scroll_raster();
+        frame(1024, 768, 17, 2, 0, 8, 1, 1, 0, 0);
+        frame(1024, 768, 17, 2, 5, 8, 1, 1, 1, 0);
+        frame(1024, 768, 17, 2, 0, 8, 1, 1, 1, 0);
+        native_discard_scroll_raster();
+        canvas_extra_width = 0;
+        unsetenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS");
         test_redraw_survives_layer_display();
         test_completed_frame_covers_queued_redraw();
         puts("Scroll raster: exact pixels across scroll direction, overlay fades, revision, navigation, resize, density and fallback");

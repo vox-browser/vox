@@ -1,11 +1,24 @@
 module libjsdom
 
 import dom
+import domurl
+import encoding
+import css
+import fetch
+import fileapi
+import geometry
+import html
+import intersectionobserver
 import libjs
 import platform
+import resizeobserver
+import streams
+import webidl
+import xhr
 
 pub struct Hooks {
 pub:
+	execution_limits libjs.ExecutionLimits = libjs.ExecutionLimits{max_instructions:1000000}
 	before_callback  ?fn ()
 	after_callback   ?fn ()
 	can_run_callback ?fn () bool
@@ -23,10 +36,159 @@ pub struct Host {
 mut:
 	node_prototype       &libjs.Object = unsafe { nil }
 	element_prototype    &libjs.Object = unsafe { nil }
+	html_element_prototype &libjs.Object = unsafe { nil }
+	html_element_prototypes map[string]&libjs.Object
+	html_element_tags map[string]string
 	document_prototype   &libjs.Object = unsafe { nil }
+	fragment_prototype   &libjs.Object = unsafe { nil }
+	dataset_prototype &libjs.Object = unsafe { nil }
+	dataset_wrappers map[u64]&libjs.Object
+	shadow_root_prototype &libjs.Object = unsafe { nil }
+	character_data_prototype &libjs.Object = unsafe { nil }
+	text_prototype &libjs.Object = unsafe { nil }
+	comment_prototype &libjs.Object = unsafe { nil }
+	cdata_prototype &libjs.Object = unsafe { nil }
 	collection_prototype &libjs.Object = unsafe { nil }
+	collection_wrappers map[voidptr]&libjs.Object
+	class_query_cache map[u64]ClassQueryCacheEntry
+	inline_handlers []InlineHandler
+	screen_prototype &libjs.Object = unsafe { nil }
+	screens map[voidptr]&css.Screen
+	form_controls_collection_prototype &libjs.Object = unsafe { nil }
+	form_controls_collections map[voidptr]&html.HTMLFormControlsCollection
+	radio_node_list_prototype &libjs.Object = unsafe { nil }
+	radio_node_lists map[voidptr]&html.RadioNodeList
+	options_collection_prototype &libjs.Object = unsafe { nil }
+	options_collections map[voidptr]&html.HTMLOptionsCollection
+	selected_options_wrappers map[voidptr]&libjs.Object
+	node_list_prototype &libjs.Object = unsafe { nil }
+	node_list_wrappers map[voidptr]&libjs.Object
+	token_list_prototype &libjs.Object = unsafe { nil }
+	token_list_wrappers map[voidptr]&libjs.Object
 	event_prototype      &libjs.Object = unsafe { nil }
+	custom_event_prototype &libjs.Object = unsafe { nil }
+	pop_state_event_prototype &libjs.Object = unsafe { nil }
+	pop_state_values map[voidptr]libjs.Value
+	message_event_prototype &libjs.Object = unsafe { nil }
+	message_port_prototype &libjs.Object = unsafe { nil }
+	message_channel_prototype &libjs.Object = unsafe { nil }
+	message_ports map[voidptr]&html.MessagePort
+	message_channels map[voidptr]&html.MessageChannel
+	message_event_data map[voidptr]libjs.Value
+	message_event_ports map[voidptr]libjs.Value
+	ui_event_prototype &libjs.Object = unsafe { nil }
+	mouse_event_prototype &libjs.Object = unsafe { nil }
+	keyboard_event_prototype &libjs.Object = unsafe { nil }
+	selection_prototype &libjs.Object = unsafe { nil }
+	selections map[voidptr]&dom.Selection
+	selection_wrappers map[voidptr]&libjs.Object
+	tree_walker_prototype &libjs.Object = unsafe { nil }
+	tree_walkers map[voidptr]&TreeWalkerBinding
+	dom_rect_prototype &libjs.Object = unsafe { nil }
+	client_rect_list_prototype &libjs.Object = unsafe { nil }
+	dom_rects map[voidptr]&geometry.DOMRect
+	event_target_prototype &libjs.Object = unsafe { nil }
+	event_target_constructor &libjs.Object = unsafe { nil }
+	event_targets map[voidptr]&dom.EventTarget
+	event_target_wrappers map[voidptr]&libjs.Object
+	read_only_rect_prototype &libjs.Object = unsafe { nil }
+	read_only_rects map[voidptr]&geometry.DOMRectReadOnly
+	read_only_rect_wrappers map[voidptr]&libjs.Object
+	intersection_observer_prototype &libjs.Object = unsafe { nil }
+	intersection_entry_prototype &libjs.Object = unsafe { nil }
+	intersection_observers map[voidptr]&IntersectionBinding
+	intersection_entries map[voidptr]&intersectionobserver.IntersectionObserverEntry
+	intersection_entry_wrappers map[voidptr]&libjs.Object
+	resize_observer_prototype &libjs.Object = unsafe { nil }
+	resize_entry_prototype &libjs.Object = unsafe { nil }
+	resize_size_prototype &libjs.Object = unsafe { nil }
+	resize_observers map[voidptr]&resizeobserver.ResizeObserver
+	resize_targets map[u32]&resizeobserver.ResizeTarget
+	resize_entries map[voidptr]&ResizeEntryBinding
+	resize_entry_wrappers map[voidptr]&libjs.Object
+	resize_sizes map[voidptr]resizeobserver.ResizeObserverSize
 	url_prototype        &libjs.Object = unsafe { nil }
+	urls map[voidptr]&domurl.DOMURL
+	url_wrappers map[voidptr]&libjs.Object
+	location_url &domurl.DOMURL = unsafe { nil }
+	text_encoder_prototype &libjs.Object = unsafe { nil }
+	text_decoder_prototype &libjs.Object = unsafe { nil }
+	text_encoders map[voidptr]&encoding.TextEncoder
+	text_decoders map[voidptr]&encoding.TextDecoder
+	blob_prototype &libjs.Object = unsafe { nil }
+	blobs map[voidptr]&fileapi.Blob
+	blob_wrappers map[voidptr]&libjs.Object
+	file_prototype &libjs.Object = unsafe { nil }
+	files map[voidptr]&fileapi.File
+	file_wrappers map[voidptr]&libjs.Object
+	form_data_prototype &libjs.Object = unsafe { nil }
+	form_data_iterator_prototype &libjs.Object = unsafe { nil }
+	form_data_event_prototype &libjs.Object = unsafe { nil }
+	submit_event_prototype &libjs.Object = unsafe { nil }
+	form_data map[voidptr]&xhr.FormData
+	form_data_wrappers map[voidptr]&libjs.Object
+	form_data_iterators map[voidptr]&FormDataIteratorBinding
+	form_event_data map[voidptr]&xhr.FormData
+	form_submission_host ?FormSubmissionHost
+	validity_state_prototype &libjs.Object = unsafe { nil }
+	validity_states map[voidptr]&html.ValidityState
+	validity_state_wrappers map[voidptr]&libjs.Object
+	blob_reads map[u64]&BlobReadBinding
+	blob_stream_tasks map[voidptr]&BlobStreamTaskBinding
+	readable_stream_prototype &libjs.Object = unsafe { nil }
+	default_reader_prototype &libjs.Object = unsafe { nil }
+	readable_streams map[voidptr]&streams.ReadableStream
+	readable_stream_wrappers map[voidptr]&libjs.Object
+	stream_readers map[voidptr]&streams.ReadableStreamDefaultReader
+	stream_reader_wrappers map[voidptr]&libjs.Object
+	stream_reads map[voidptr]&StreamReadRequestBinding
+	stream_promises map[voidptr]&StreamPromiseBinding
+	stream_errors map[voidptr]libjs.Value
+	stream_source_realm ?streams.StreamRealm
+	stream_sources map[voidptr]&StreamSourceBinding
+	stream_source_jobs map[voidptr]&StreamSourceJob
+	retired_stream_source_jobs []voidptr
+	stream_source_job_depth int
+	stream_inline_native_job bool
+	stream_adoptions map[voidptr]&StreamPromiseAdoption
+	default_controller_prototype &libjs.Object = unsafe { nil }
+	byte_controller_prototype &libjs.Object = unsafe { nil }
+	stream_default_controllers map[voidptr]&streams.ReadableStreamDefaultController
+	stream_byte_controllers map[voidptr]&streams.ReadableByteStreamController
+	stream_controller_wrappers map[voidptr]&libjs.Object
+	history_object &libjs.Object = unsafe { nil }
+	history_binding ?&HistoryBinding
+	local_storage_binding ?&StorageBinding
+	session_storage_binding ?&StorageBinding
+	attribute_prototype &libjs.Object = unsafe { nil }
+	attribute_maps map[voidptr]&libjs.Object
+	attribute_nodes map[voidptr]&libjs.Object
+	query_prototype &libjs.Object = unsafe { nil }
+	query_iterator_prototype &libjs.Object = unsafe { nil }
+	queries map[voidptr]&domurl.URLSearchParams
+	query_wrappers map[voidptr]&libjs.Object
+	query_iterators map[voidptr]&QueryIteratorBinding
+	style_prototype      &libjs.Object = unsafe { nil }
+	headers_prototype &libjs.Object = unsafe { nil }
+	headers_iterator_prototype &libjs.Object = unsafe { nil }
+	headers map[voidptr]&fetch.Headers
+	headers_wrappers map[voidptr]&libjs.Object
+	headers_iterators map[voidptr]&HeadersIteratorState
+	fetch_client ?fetch.RequestClient
+	fetch_transport &fetch.FetchHost = unsafe { nil }
+	request_prototype &libjs.Object = unsafe { nil }
+	response_prototype &libjs.Object = unsafe { nil }
+	fetch_requests map[voidptr]&fetch.RequestObject
+	fetch_responses map[voidptr]&fetch.ResponseObject
+	fetch_wrappers map[voidptr]&libjs.Object
+	fetch_operations []&DocumentFetchOperation
+	fetch_signal_operations map[voidptr]&DocumentFetchOperation
+	fetch_abort_callback_depth int
+	retired_fetch_abort_closures []voidptr
+	fetch_json_parse libjs.Value
+	style_wrappers       map[u32]&libjs.Object
+	style_elements       map[voidptr]&dom.Element
+	computed_styles      map[voidptr]&css.CSSStyleProperties
 	wrappers             map[u32]&libjs.Object
 	nodes                map[voidptr]&dom.Node
 	events               map[voidptr]&dom.Event
@@ -34,6 +196,43 @@ mut:
 	listeners            []Listener
 	closures             []voidptr
 	closed               bool
+	animation_frames map[u32]&AnimationFrameBinding
+	retired_frame_closures []voidptr
+	idle_callbacks map[u32]&IdleCallbackBinding
+	retired_idle_closures []voidptr
+	idle_deadline_prototype &libjs.Object = unsafe { nil }
+	idle_deadlines map[voidptr]&IdleDeadlineBinding
+	microtasks map[u64]&QueuedMicrotaskBinding
+	timer_scope_ ?&html.WindowOrWorkerGlobalScopeMixin
+	timers map[i32]&TimerBinding
+	timer_callback_depth int
+	retired_timer_closures []voidptr
+	media_query_prototype &libjs.Object = unsafe { nil }
+	media_event_prototype &libjs.Object = unsafe { nil }
+	media_queries map[voidptr]&css.MediaQueryList
+	abort_controller_prototype &libjs.Object = unsafe { nil }
+	abort_signal_prototype &libjs.Object = unsafe { nil }
+	abort_controllers map[voidptr]&dom.AbortController
+	abort_signals map[voidptr]&dom.AbortSignal
+	abort_signal_wrappers map[voidptr]&libjs.Object
+	owned_documents []&dom.Document
+	dom_exception_prototype &libjs.Object = unsafe { nil }
+	dom_exceptions map[voidptr]&webidl.DOMException
+	dom_exception_wrappers map[voidptr]&libjs.Object
+	registry_prototype &libjs.Object = unsafe { nil }
+	registries map[voidptr]&RegistryBinding
+	active_registries map[u64]voidptr
+	navigator_prototype &libjs.Object = unsafe { nil }
+	navigator_object &libjs.Object = unsafe { nil }
+	navigator_native &html.Navigator = unsafe { nil }
+	navigator_languages []string
+	navigator_frozen_languages &libjs.Object = unsafe { nil }
+	mutation_observer_prototype &libjs.Object = unsafe { nil }
+	mutation_record_prototype &libjs.Object = unsafe { nil }
+	mutation_queue &dom.MutationObserverDeliveryQueue = unsafe { nil }
+	mutation_observers map[voidptr]&ObserverBinding
+	mutation_records map[voidptr]&MutationRecordBinding
+	mutation_record_wrappers map[voidptr]&libjs.Object
 }
 
 pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hooks Hooks) !&Host {
@@ -41,7 +240,67 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 	defer { platform.leave_persistent(persistent) }
 	mut host := &Host{ vm: vm, realm: realm, document: document, hooks: hooks }
 	host.install_nodes()!
+	host.install_node_interfaces()!
+	host.install_attribute_nodes()
+	host.install_attribute_maps()
+	host.install_shadow_roots()!
+	host.install_character_data()!
+	host.install_node_utilities()
+	host.install_document_state()
+	host.install_selections()!
+	host.install_element_selectors()
+	host.install_html_element_interfaces()!
+	host.install_datasets()!
+	host.install_template_elements()!
+	host.install_node_lists()!
+	host.install_parent_node_properties()
+	host.install_token_lists()!
+	host.install_dom_exceptions()!
+	host.install_tree_walkers()!
+	host.install_custom_events()!
+	host.install_pop_state_events()!
+	host.install_message_channels()!
+	host.install_ui_events()!
+	host.install_mouse_events()!
+	host.install_keyboard_events()!
+	host.install_abort_signals()!
+	host.install_custom_elements()!
+	host.install_navigator()!
+	host.install_crypto()
+	host.install_mutation_observers()!
+	host.install_read_only_rects()
+	host.install_client_rects()!
+	host.install_element_focus()
+	host.install_element_offsets()
+	host.install_intersection_observers()
+	host.install_resize_observers()
+	host.install_animation_frames()
+	host.install_window_scrolling()
+	host.install_window_geometry()
+	host.install_timers()
+	host.install_microtasks()
+	host.install_idle_callbacks()
+	host.install_media_queries()!
+	host.install_styles()
+	host.install_computed_styles()
+	host.install_css_namespace()
+	host.install_query_params()!
 	host.install_urls()!
+	host.install_text_encoding()
+	host.install_binary_string_codecs()
+	host.install_readable_streams()
+	host.install_blobs()
+	host.install_files()
+	host.install_form_data()!
+	host.install_form_controls()!
+	host.install_form_collections()!
+	host.install_select_collections()!
+	host.install_text_control_selection()!
+	host.install_constraint_validation()!
+	host.install_forms()!
+	host.install_history()
+	host.install_storage()
+	host.install_headers()!
 	mut global := realm.global_object_record()
 	global.define_direct_property(libjs.PropertyName.from_str('document'), host.wrap_node(document.as_node()), libjs.attribute_enumerable)
 	for name in ['window', 'self'] {
@@ -52,24 +311,35 @@ pub fn Host.create(vm &libjs.VM, realm &libjs.Realm, document &dom.Document, hoo
 		host.method(mut console, name, 0, fn [host] (mut vm libjs.VM) !libjs.Value {
 			mut messages := []string{}
 			for index in 0 .. vm.argument_count() {
-				messages << vm.argument(index).to_primitive_string(mut vm)!.str()
+				messages << console_argument(mut vm, vm.argument(index))!
 			}
 			if callback := host.hooks.console { callback(messages.join(' ')) }
 			return libjs.js_undefined()
 		})
 	}
 	global.define_direct_property(libjs.PropertyName.from_str('console'), libjs.Value.from_object(console), libjs.attribute_writable | libjs.attribute_configurable)
+	host.install_inline_event_handlers()
 	return host
 }
 
 fn (mut host Host) method(mut object libjs.Object, name string, length int, callback libjs.NativeFunctionPointer) {
+	host.method_attributes(mut object, name, length, callback, libjs.attribute_writable | libjs.attribute_configurable)
+}
+
+fn (mut host Host) method_attributes(mut object libjs.Object, name string, length int, callback libjs.NativeFunctionPointer, attributes u8) {
+	object.enable_indexed_properties()
 	mut vm := host.vm
 	method := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, callback, f64(length), libjs.PropertyName.from_str(name), none)
-	object.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(method.object), libjs.attribute_writable | libjs.attribute_configurable)
+	object.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(method.object), attributes)
 	host.closures << voidptr(callback)
 }
 
 fn (mut host Host) accessor(mut object libjs.Object, name string, getter libjs.NativeFunctionPointer, setter libjs.NativeFunctionPointer) {
+	host.accessor_attributes(mut object, name, getter, setter, libjs.attribute_enumerable | libjs.attribute_configurable)
+}
+
+fn (mut host Host) accessor_attributes(mut object libjs.Object, name string, getter libjs.NativeFunctionPointer, setter libjs.NativeFunctionPointer, attributes u8) {
+	object.enable_indexed_properties()
 	mut vm := host.vm
 	get := libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, getter, 0, libjs.PropertyName.from_str(name), 'get')
 	host.closures << voidptr(getter)
@@ -78,7 +348,7 @@ fn (mut host Host) accessor(mut object libjs.Object, name string, getter libjs.N
 		set = libjs.NativeFunction.create(mut vm, host.realm, host.realm.function_prototype, setter, 1, libjs.PropertyName.from_str(name), 'set').object
 		host.closures << voidptr(setter)
 	}
-	object.define_direct_accessor(libjs.PropertyName.from_str(name), get.object, set, libjs.attribute_enumerable | libjs.attribute_configurable)
+	object.define_direct_accessor(libjs.PropertyName.from_str(name), get.object, set, attributes)
 }
 
 fn (host &Host) require_open(mut vm libjs.VM) ! {
@@ -97,7 +367,65 @@ fn (mut host Host) changed() {
 pub fn (mut host Host) close() {
 	if host.closed { return }
 	host.closed = true
+	host.close_blob_reads()
+	host.close_blob_stream_tasks()
+	host.close_idle_callbacks()
+	host.close_microtasks()
+	host.close_timers()
+	host.close_animation_frames()
+	host.close_mutation_observers()
+	host.close_intersection_observers()
+	host.close_resize_observers()
+	mut owner_document := unsafe { &dom.Document(host.document) }
+	owner_document.clear_inline_event_handler_compiler(voidptr(&host))
+	for handler in host.inline_handlers {
+		if callback := handler.target.get_current_value_of_event_handler(handler.name) {
+			if voidptr(callback) == voidptr(handler.callback) { handler.target.set_event_handler_attribute(handler.name, none) }
+		}
+	}
+	host.inline_handlers = []
+	host.screens.clear()
+	owner_document.clear_custom_element_construction_hook(voidptr(&host))
+	host.registries.clear()
+	host.active_registries.clear()
+	host.html_element_prototypes.clear()
+	host.html_element_tags.clear()
+	host.navigator_object = unsafe { nil }
+	host.navigator_native = unsafe { nil }
+	host.navigator_frozen_languages = unsafe { nil }
+	host.navigator_languages = []
+	if mut binding := host.history_binding {
+		binding.state = libjs.js_undefined()
+		binding.state_cached = false
+	}
+	host.history_binding = none
+	host.history_object = unsafe { nil }
+	host.local_storage_binding = none
+	host.session_storage_binding = none
+	host.attribute_maps.clear()
+	host.attribute_nodes.clear()
+	host.location_url = unsafe { nil }
+	host.urls.clear()
+	host.url_wrappers.clear()
+	host.text_encoders.clear()
+	host.text_decoders.clear()
+	host.blobs.clear()
+	host.blob_wrappers.clear()
+	host.files.clear()
+	host.file_wrappers.clear()
+	host.form_data.clear()
+	host.form_data_wrappers.clear()
+	host.form_data_iterators.clear()
+	host.form_event_data.clear()
+	host.form_submission_host = none
+	host.validity_states.clear()
+	host.validity_state_wrappers.clear()
+	host.close_fetch()
+	host.close_readable_streams()
 	for listener in host.listeners {
+		if signal := listener.abort_signal {
+			if id := listener.abort_algorithm { mut owner := unsafe { &dom.AbortSignal(signal) }; owner.remove_abort_algorithm(id) }
+		}
 		if listener.attribute {
 			listener.target.set_event_handler_attribute(listener.type_, none)
 		} else {
@@ -105,12 +433,51 @@ pub fn (mut host Host) close() {
 		}
 	}
 	host.listeners = []
+	host.close_message_channels()
+	for mut document in host.owned_documents {
+		document.destroy()
+		document.finalize()
+	}
+	host.owned_documents = []
 	for callback in host.closures { platform.release_closure(callback) }
 	host.closures = []
 	host.nodes.clear()
 	host.wrappers.clear()
+	host.node_list_wrappers.clear()
+	host.collection_wrappers.clear()
+	host.class_query_cache.clear()
+	host.form_controls_collections.clear()
+	host.radio_node_lists.clear()
+	host.options_collections.clear()
+	host.selected_options_wrappers.clear()
+	host.token_list_wrappers.clear()
+	host.dataset_wrappers.clear()
 	host.events.clear()
 	host.event_wrappers.clear()
+	host.pop_state_values.clear()
+	host.selections.clear()
+	host.selection_wrappers.clear()
+	host.tree_walkers.clear()
+	host.dom_rects.clear()
+	host.computed_styles.clear()
+	host.event_targets.clear()
+	host.media_queries.clear()
+	host.abort_controllers.clear()
+	host.abort_signals.clear()
+	host.abort_signal_wrappers.clear()
+	host.dom_exception_wrappers.clear()
+	host.event_target_wrappers.clear()
+	host.read_only_rects.clear()
+	host.read_only_rect_wrappers.clear()
+	host.style_wrappers.clear()
+	host.style_elements.clear()
+	host.headers.clear()
+	host.headers_wrappers.clear()
+	host.headers_iterators.clear()
+	host.queries.clear()
+	host.query_wrappers.clear()
+	host.query_iterators.clear()
+	host.dom_exceptions.clear()
 	for callback in [host.hooks.before_callback, host.hooks.after_callback, host.hooks.changed] {
 		if function := callback { platform.release_closure(voidptr(function)) }
 	}

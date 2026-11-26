@@ -80,6 +80,14 @@ pub mut:
 	yield_value_is_iterator_result bool
 	caller_is_construct            bool
 	frame_initialized              bool
+	async_execution ?&AsyncExecution
+	async_resuming bool
+	async_resume_value Value
+	async_resume_rejected bool
+	generator_execution ?&GeneratorExecution
+	generator_resuming bool
+	generator_resume_kind GeneratorResumeKind
+	generator_resume_value Value
 
 	this_value ?Value
 	executable ?&Executable
@@ -98,30 +106,31 @@ pub mut:
 	// InterpreterStack bookkeeping: the byte offset of this frame on the stack.
 	stack_offset    uint
 	stack_allocated bool
+mut:
+	cached_call_environment ?&FunctionEnvironment
+	call_environment ?&FunctionEnvironment
+	reusable bool
+	exposed bool
+	// HeldConstants (context_reuse.v): the executable constants still in this
+	// frame's value storage and where, so a pooled frame reused by the same
+	// body neither clears nor copies them again.
+	held HeldConstants
 }
 
-// ExecutionContextAllocator rounds the value tail up to a size class so freed
-// frames can be reused.
-fn tail_allocation_size(tail_size int) int {
-	if tail_size <= 4 {
-		return 4
+fn (mut context ExecutionContext) leave_lexical_scope() ! {
+	environment := context.lexical_environment or { return error('Frame has no lexical environment') }
+	if environment is ObjectEnvironment {
+		if !environment.is_with_environment() || context.lexical_scope_depth == 0 {
+			return error('Cannot leave a non-block environment')
+		}
+	} else if !environment.is_declarative_environment() || environment.is_function_environment() {
+		return error('Cannot leave a non-block environment')
 	}
-	if tail_size <= 16 {
-		return 16
+	if environment is DeclarativeEnvironment {
+		if environment.restores_private_environment { context.private_environment = environment.outer_private_environment }
 	}
-	if tail_size <= 64 {
-		return 64
-	}
-	if tail_size <= 128 {
-		return 128
-	}
-	if tail_size <= 256 {
-		return 256
-	}
-	if tail_size <= 512 {
-		return 512
-	}
-	return tail_size
+	context.lexical_environment = environment.outer_environment()
+	if context.lexical_scope_depth > 0 { context.lexical_scope_depth-- }
 }
 
 pub fn ExecutionContext.create(registers_and_locals_count u32, constants []Value, arguments_count u32) &ExecutionContext {
@@ -129,7 +138,7 @@ pub fn ExecutionContext.create(registers_and_locals_count u32, constants []Value
 	if total > u64(0xFFFFFFFF) {
 		panic('ExecutionContext.create: value tail overflows u32')
 	}
-	mut values := []Value{len: int(total), cap: tail_allocation_size(int(total))}
+	mut values := []Value{len: int(total), cap: context_value_capacity(int(total))}
 	// NB: Enter initializes the remaining registers and locals; the reserved
 	//     registers start out as the special empty value.
 	reserved := if registers_and_locals_count < reserved_register_count {
@@ -146,6 +155,12 @@ pub fn ExecutionContext.create(registers_and_locals_count u32, constants []Value
 	return &ExecutionContext{
 		values:         values
 		argument_count: arguments_count
+		held:           HeldConstants{
+			constants: constants.data
+			start:     registers_and_locals_count
+			count:     u32(constants.len)
+			storage:   values.data
+		}
 	}
 }
 
@@ -165,6 +180,7 @@ fn (context &ExecutionContext) arguments_offset() int {
 }
 
 pub fn (context &ExecutionContext) arguments() []Value {
+	expose_execution_context(context)
 	return context.values[context.arguments_offset()..]
 }
 
@@ -176,12 +192,14 @@ pub fn (mut context ExecutionContext) set_argument(index u32, value Value) {
 }
 
 pub fn (context &ExecutionContext) local_variables() []Value {
+	expose_execution_context(context)
 	executable := context.executable or { panic('local_variables() requires an executable') }
 	start := int(executable.local_index_base)
 	return context.values[start..start + executable.local_variable_names.len]
 }
 
 pub fn (context &ExecutionContext) copy() &ExecutionContext {
+	expose_call_environment(context)
 	// NB: The entire non-argument count is passed as registers_and_locals_count with 0 constants.
 	non_argument_count := u32(context.values.len) - context.argument_count
 	mut duplicate := ExecutionContext.create(non_argument_count, []Value{}, context.argument_count)
@@ -199,6 +217,14 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 	duplicate.yield_value_is_iterator_result = context.yield_value_is_iterator_result
 	duplicate.caller_is_construct = context.caller_is_construct
 	duplicate.frame_initialized = context.frame_initialized
+	duplicate.async_execution = context.async_execution
+	duplicate.async_resuming = context.async_resuming
+	duplicate.async_resume_value = context.async_resume_value
+	duplicate.async_resume_rejected = context.async_resume_rejected
+	duplicate.generator_execution = context.generator_execution
+	duplicate.generator_resuming = context.generator_resuming
+	duplicate.generator_resume_kind = context.generator_resume_kind
+	duplicate.generator_resume_value = context.generator_resume_value
 	duplicate.this_value = context.this_value
 	duplicate.executable = context.executable
 	duplicate.passed_argument_count = context.passed_argument_count
@@ -215,6 +241,12 @@ pub fn (context &ExecutionContext) copy() &ExecutionContext {
 
 // ExecutionContext::visit_edges: report the cells this frame keeps alive.
 pub fn (context &ExecutionContext) visit_roots(mut roots HeapRoots) {
+	expose_call_environment(context)
+	if cached := context.cached_call_environment { expose_function_environment(cached); roots.add(voidptr(cached)) }
+	roots.add_value(context.async_resume_value)
+	if execution := context.async_execution { roots.add(voidptr(execution)) }
+	if execution := context.generator_execution { roots.add(voidptr(execution)) }
+	roots.add_value(context.generator_resume_value)
 	if function := context.function {
 		roots.add(function_object_identity(function))
 	}
@@ -252,8 +284,8 @@ pub fn (context &ExecutionContext) visit_roots(mut roots HeapRoots) {
 		for index in 0 .. live_registers {
 			roots.add_value(context.values[index])
 		}
-		for value in context.arguments() {
-			roots.add_value(value)
+		for index in 0 .. context.argument_count {
+			roots.add_value(context.argument(index))
 		}
 	}
 	match context.script_or_module.kind {

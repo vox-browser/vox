@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Dashed SVG resource strokes</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="340" height="118" viewBox="0 0 340 118">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="150" height="54">
+      <path id="phase" d="M8 25H136" pathLength="64" fill="none" stroke="white"
+            stroke-width="8" stroke-dasharray="8 4"/>
+    </mask>
+    <linearGradient id="gray" gradientUnits="userSpaceOnUse" x1="0" x2="75">
+      <stop stop-color="#808080"/>
+      <stop offset="1" stop-color="#808080"/>
+    </linearGradient>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="170" y="0" width="150" height="54">
+      <path d="M0 25H75" transform="translate(170 0) scale(2 1)" fill="none"
+            stroke="url(#gray)" stroke-width="8" stroke-dasharray="12 8" stroke-dashoffset="3"/>
+    </mask>
+    <pattern id="tile" patternUnits="userSpaceOnUse" width="32" height="16">
+      <path id="tile-dash" d="M0 8H28" fill="none" stroke="lime" stroke-width="6" stroke-dasharray="6 2"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H150V54H0Z" fill="blue" mask="url(#alpha)"/>
+  <path d="M170 0H320V54H170Z" fill="blue" mask="url(#luminance)"/>
+  <path d="M0 68H150V116H0Z" fill="url(#tile)"/>
+</svg>
+<script>
+let frame = 0;
+function editDash() {
+    if (++frame === 12) {
+        document.getElementById('phase').setAttribute('stroke-dashoffset', '4');
+        document.getElementById('tile-dash').setAttribute('stroke-dasharray', '3 5');
+    }
+    if (frame === 24)
+        document.body.setAttribute('data-mask-dash-stroke-ready', '');
+    else
+        requestAnimationFrame(editDash);
+}
+requestAnimationFrame(editDash);
+</script>

@@ -1,8 +1,8 @@
 module libjs
 
 // Runtime/ReflectObject.{h,cpp}. Reflect is an ordinary, noncallable object.
-// Object/Array intrinsics are explicit dependencies until their graph exists;
-// this complete record is not installed as a production global yet.
+// Object/Array intrinsics are explicit dependencies shared by the default realm
+// and embedders constructing an isolated record.
 @[heap]
 pub struct ReflectObject {
 pub:

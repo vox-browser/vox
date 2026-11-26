@@ -3,7 +3,6 @@ module layout
 import css
 import dom
 import os
-import platform
 
 const disable_grid_track_resolution_reuse = os.getenv('VOX_DISABLE_GRID_TRACK_RESOLUTION_REUSE') != ''
 const grid_track_resolution_diagnostics = os.getenv('VOX_GRID_TRACK_RESOLUTION_DIAGNOSTICS') != ''
@@ -94,7 +93,7 @@ fn resolve_grid_axis_tracks_in_state(mut state LayoutState, container &Node, col
 	tracks := resolve_grid_tracks_for_axis(container, list, implicit, available, gap, definite, implicit_before, required, columns)
 	if revision == 0 || computed.has_animated_properties()
 		|| !grid_track_list_is_context_free(list) || !grid_track_list_is_context_free(implicit) { return tracks }
-	mut retained := platform.enter_retained_allocations()
+	mut retained := pool.enter_measurement_cache()
 	defer { retained.finish() }
 	cached := &GridTrackResolutionCache{
 		style: computed

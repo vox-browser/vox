@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG fill and stroke share a pattern tile</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="160" height="96">
+  <defs>
+    <pattern id="stripes" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0 0H4V8H0Z" fill="red"/>
+      <path d="M4 0H8V8H4Z" fill="lime"/>
+    </pattern>
+    <pattern id="replacement" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M0 0H8V8H0Z" fill="blue"/>
+    </pattern>
+    <pattern id="tile" width="48" height="32" patternUnits="userSpaceOnUse">
+      <path id="paired" d="M8 6H36V22H8Z" fill="url(#stripes)" stroke="url(#stripes)"
+            stroke-width="4" stroke-opacity=".6" paint-order="stroke fill"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H120V94H0Z" fill="url(#tile)" stroke="url(#tile)"
+        stroke-width="2" stroke-opacity=".5" paint-order="stroke fill"/>
+</svg>
+<script>
+let frame = 0;
+function replaceStroke() {
+    if (++frame === 12)
+        document.getElementById('paired').setAttribute('stroke', 'url(#replacement)');
+    if (frame === 24)
+        document.body.setAttribute('data-pattern-ready', '');
+    else
+        requestAnimationFrame(replaceStroke);
+}
+requestAnimationFrame(replaceStroke);
+</script>

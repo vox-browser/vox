@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {lazyParserFunction, lazyParserObject, parserStub} from './lazy_parser.mjs';
+import {eagerParserFunctions, lazyParserFunction, lazyParserObject, parserStub} from './lazy_parser.mjs';
+import * as parserExports from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 
 test('parser function exports preserve calls, construction, subclassing and instance checks', () => {
     let reads = 0;
@@ -34,4 +35,24 @@ test('parser objects preserve collection receivers and unbound nested classes', 
 test('parser export generation keeps numeric constants eager and rejects unsupported export kinds', () => {
     assert.match(parserStub({FLAG:17}), /export const FLAG=17/);
     assert.throws(()=>parserStub({unsupported:undefined}), /Unsupported parser export/);
+});
+
+test('removeparam and redirect value parsers run without loading the parser bundle', () => {
+    const stub = parserStub(parserExports);
+    const inputs = {
+        parseQueryPruneValue: ['', 'utm_source', '~type', '/^utm_/i', '/[/', '|ref', '|[', 'a|b'],
+        parseRedirectValue: ['noopjs', ' noopjs:10 ', '%vox-github:-5', 'none', 'noop.txt:x'],
+    };
+    const previous = globalThis.voxAdblockLoadParser;
+    globalThis.voxAdblockLoadParser = () => { throw new Error('parser bundle loaded'); };
+    try {
+        for (const name of eagerParserFunctions) {
+            assert.ok(stub.includes(`export const ${name}=function ${name}(`), name);
+            const eager = new Function(`return (${parserExports[name].toString()});`)();
+            for (const input of inputs[name]) {
+                const expected = parserExports[name](input), actual = eager(input);
+                assert.deepEqual({...actual, re: actual.re?.source}, {...expected, re: expected.re?.source}, `${name}(${input})`);
+            }
+        }
+    } finally { globalThis.voxAdblockLoadParser = previous; }
 });

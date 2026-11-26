@@ -104,4 +104,11 @@ static void vox_resource_release_slot(void) {
     pthread_cond_broadcast(&vox_resource_slots_changed);
     pthread_mutex_unlock(&vox_resource_slots_mutex);
 }
+// Transports between acquiring a slot and leaving their transfer.
+static unsigned vox_resource_slots_in_flight(void) {
+    pthread_mutex_lock(&vox_resource_slots_mutex);
+    unsigned active = vox_resource_slots_active;
+    pthread_mutex_unlock(&vox_resource_slots_mutex);
+    return active;
+}
 #endif

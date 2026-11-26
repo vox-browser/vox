@@ -1,8 +1,12 @@
 module css
 
+import os
+
 $if prealloc {
 	import platform
 }
+
+const disable_shared_single_character_spellings = os.getenv('VOX_DISABLE_SHARED_SINGLE_CHARACTER_SPELLINGS') != ''
 
 // The syntax cache owns the immutable component tree, while tokenizer builders,
 // raw token copies and growing temporary vectors can retire after construction.
@@ -22,16 +26,27 @@ fn stylesheet_components_from_source(input string) []ComponentValue {
 	return ParserTokenStream.from_source(input, 'utf-8').values
 }
 
+// A single printable character, the spelling of most punctuation and
+// delimiter tokens, is already an immutable, terminated literal in the
+// tokenizer's spelling table. Every other text gets its own terminated copy.
+fn own_stylesheet_text(text string) string {
+	if text.len == 1 && !disable_shared_single_character_spellings {
+		byte := text[0]
+		if byte >= 0x20 && byte <= 0x7e { return tokenizer_ascii_source_text[int(byte) - 0x20] }
+	}
+	return text.clone()
+}
+
 fn own_stylesheet_token(token Token) Token {
 	// Unescaped identifiers and delimiters already share their immutable
 	// source spelling. Preserve that sharing in the new owner, without
 	// conflating escaped values or different spans of the same source.
-	source := token.original_source_text_.clone()
+	source := own_stylesheet_text(token.original_source_text_)
 	value := if token.value.str == token.original_source_text_.str
 		&& token.value.len == token.original_source_text_.len {
 		source
 	} else {
-		token.value.clone()
+		own_stylesheet_text(token.value)
 	}
 	return Token{
 		...token

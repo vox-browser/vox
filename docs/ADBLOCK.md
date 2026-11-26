@@ -350,6 +350,19 @@ effect in both DOM implementations. Use `--extension PATH` if automatic
 discovery cannot find the extension, and `--checker PATH` for a separately built
 native checker.
 
+Pixel references record their image readiness protocol. Direct oracle captures
+keep `--image-decode-preparation visible-image-decode`, which awaits visible
+`img.decode()` calls. `--image-decode-preparation load-and-paint` retains loaded
+fonts/resources and paint checkpoints without calling `decode()`. Both require
+complete visible resources and consecutive identical PNGs. These protocols can
+populate different image upload caches and produce different sampled pixels.
+
+`tools/forum_news_pixels.py` preserves the preparation recorded in a sealed
+archive's source receipts. Older sources without decode-preparation metadata use
+their original load/paint protocol. New archives record the policy explicitly;
+contradictory source receipts or a mismatched replay override fail. Changing the
+protocol requires a new candidate, with the old references and failures retained.
+
 For repeated audits, `--profile-template PATH` copies an explicitly supplied,
 closed prepared uBO profile into the temporary directory. It omits process
 locks and the old debugging endpoint, disables Shields, clears user filters,

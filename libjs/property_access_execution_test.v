@@ -115,7 +115,7 @@ fn test_property_access_failures_leave_later_scripts_runnable() {
 		} else {
 			object := thrown_value(err).as_object()
 			assert object.error_kind()? == .type_error
-			assert object.error_data?.stack_string(false).contains('properties.js')
+			assert object.slots.error_data?.stack_string(false).contains('properties.js')
 		}
 		assert vm.running_execution_context() == base
 		assert vm.interpreter_stack().depth() == 0

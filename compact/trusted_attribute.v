@@ -1,5 +1,6 @@
 module main
 
+import browserjs
 import dom
 import platform
 import trustedtypes
@@ -7,7 +8,21 @@ import x.json2
 
 // Only the private, strict Trusted Types closure calls this native transport.
 // Its type tag comes from the value's WeakMap brand, not from author JSON.
-fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, encoded_state string) !string {
+fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, encoded_state string, temporary_reply bool) !browserjs.HostFunctionReply {
+	element := binding.apply_trusted_attribute(key, namespace, name, input, namespaced, encoded_state)!
+	workspace := if temporary_reply {
+		platform.begin_thread_scratch('trusted attribute reply')
+	} else {
+		platform.ThreadScratchScope{}
+	}
+	defer { workspace.leave() }
+	value := compact_replay_json_result(json2.encode({
+		'refresh': binding.element_attribute_snapshot(element)
+	}))
+	return browserjs.HostFunctionReply{value: value, workspace: workspace}
+}
+
+fn (mut binding CompactElementQueryBinding) apply_trusted_attribute(key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, encoded_state string) !&dom.Element {
 	mut allocation := platform.RetainedArenaScope{}
 	mut storage := binding.document.native_storage()
 	if storage != unsafe { nil } { allocation = storage.enter_nested() }
@@ -60,7 +75,6 @@ fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, na
 		element.set_attribute_for_bindings(owned_name, owned_input)!
 	}
 	change.finish(element)
-	return compact_replay_json_result(json2.encode({
-		'refresh': binding.element_attribute_refresh(element)
-	}))
+	binding.note_node_tree_mutation()
+	return element
 }

@@ -194,15 +194,29 @@ fn append_viewport_fragment_ink(fragment &TextFragment, mut rects []LayoutRect) 
 
 fn viewport_cached_entry_ink_is_outside(cache &ViewportEntryInkCache, index int,
 	transform [6]f64, width f64, height f64, mut ink_probe PaintCommand) bool {
+	if !disable_direct_viewport_rect_culling {
+		return viewport_cached_entry_ink_is_outside_direct(cache, index, transform, width, height)
+	}
 	entry := cache.entries[index]
 	if !entry.bounded { return false }
-	if entry.has_bounds && !disable_viewport_ink_bounds && !disable_direct_viewport_rect_culling
-		&& viewport_rect_is_outside(entry.bounds, transform, width, height, mut ink_probe) {
-		return true
-	}
 	for offset in 0 .. entry.count {
 		if !viewport_rect_is_outside(cache.rects[entry.first + offset], transform,
 			width, height, mut ink_probe) { return false }
+	}
+	return true
+}
+
+fn viewport_cached_entry_ink_is_outside_direct(cache &ViewportEntryInkCache, index int,
+	transform [6]f64, width f64, height f64) bool {
+	entry := cache.entries[index]
+	if !entry.bounded { return false }
+	if entry.has_bounds && !disable_viewport_ink_bounds
+		&& viewport_rect_outside_native_canvas(entry.bounds, transform, width, height) {
+		return true
+	}
+	for offset in 0 .. entry.count {
+		if !viewport_rect_outside_native_canvas(cache.rects[entry.first + offset],
+			transform, width, height) { return false }
 	}
 	return true
 }

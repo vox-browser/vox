@@ -236,6 +236,10 @@ fn collect_nodes_for_scope(root &Node, scope CollectionScope, filter fn(&Node) b
 
 fn collect_elements_for_scope(root &Node, scope CollectionScope, filter fn(&Element) bool) []&Element {
 	mut elements := []&Element{}
+	if use_direct_collection_walk() {
+		append_collection_elements(root, scope, filter, mut elements)
+		return elements
+	}
 	elements_ptr := &elements
 	node_filter := fn [elements_ptr, filter] (node &Node) TraversalDecision {
 		if element := node.as_element() {
@@ -338,39 +342,49 @@ fn collection_scope_from_live_node_list_scope(scope LiveNodeListScope) Collectio
 	return if scope == .descendants { .descendants } else { .children }
 }
 
-pub fn (nl &NodeList) collection() []&Node {
+// Readers may borrow an unfiltered list for the duration of the operation.
+// Full collection snapshots still own their vector.
+fn (nl &NodeList) unfiltered_nodes() ?[]&Node {
+	if nl.is_live && nl.node_root != unsafe { nil } {
+		if nl.live_scope == .children && voidptr(nl.live_filter) == voidptr(always_accept_node) {
+			return nl.node_root.children
+		}
+		return none
+	}
+	if nl.nodes.len > 0 || (nl.node_root == unsafe { nil } && nl.root == unsafe { nil }) {
+		return nl.nodes
+	}
+	if nl.node_root != unsafe { nil } && nl.name_filter.len == 0 {
+		return nl.node_root.children
+	}
+	return none
+}
+
+fn (nl &NodeList) filtered_nodes() []&Node {
 	if nl.is_live && nl.node_root != unsafe { nil } {
 		return collect_nodes_for_scope(nl.node_root, collection_scope_from_live_node_list_scope(nl.live_scope), nl.live_filter)
 	}
-	if nl.nodes.len > 0 {
-		return nl.nodes.clone()
-	}
-	if nl.node_root != unsafe { nil } {
-		if nl.name_filter.len == 0 {
-			return nl.node_root.children.clone()
-		}
-		return collect_nodes_for_scope(nl.node_root, .descendants, fn [nl] (node &Node) bool {
-			return node_matches_name_filter(node, nl.name_filter)
-		})
-	}
-	if nl.root != unsafe { nil } {
-		root_node := unsafe { &Node(nl.root) }
-		return collect_nodes_for_scope(root_node, .descendants, fn [nl] (node &Node) bool {
-			return node_matches_name_filter(node, nl.name_filter)
-		})
-	}
-	return []
+	root_node := if nl.node_root != unsafe { nil } { nl.node_root } else { unsafe { &Node(nl.root) } }
+	return collect_nodes_for_scope(root_node, .descendants, fn [nl] (node &Node) bool {
+		return node_matches_name_filter(node, nl.name_filter)
+	})
+}
+
+pub fn (nl &NodeList) collection() []&Node {
+	if nodes := nl.unfiltered_nodes() { return nodes.clone() }
+	return nl.filtered_nodes()
 }
 
 // https://dom.spec.whatwg.org/#dom-nodelist-length
 pub fn (nl &NodeList) length() int {
-	return nl.collection().len
+	if nodes := nl.unfiltered_nodes() { return nodes.len }
+	return nl.filtered_nodes().len
 }
 
 // https://dom.spec.whatwg.org/#dom-nodelist-item
 pub fn (nl &NodeList) item(index int) ?&Node {
 	// The item(index) method must return the indexth node in the collection. If there is no indexth node in the collection, then the method must return null.
-	nodes := nl.collection()
+	nodes := nl.unfiltered_nodes() or { nl.filtered_nodes() }
 	if index < 0 || index >= nodes.len {
 		return none
 	}
@@ -411,16 +425,12 @@ pub fn (l &LiveNodeList) first_matching(filter fn(&Node) bool) ?&Node {
 
 // https://dom.spec.whatwg.org/#dom-nodelist-length
 pub fn (l &LiveNodeList) length() int {
-	return l.collection().len
+	return l.NodeList.length()
 }
 
 // https://dom.spec.whatwg.org/#dom-nodelist-item
 pub fn (l &LiveNodeList) item(index int) ?&Node {
-	nodes := l.collection()
-	if index < 0 || index >= nodes.len {
-		return none
-	}
-	return nodes[index]
+	return l.NodeList.item(index)
 }
 
 pub fn StaticNodeList.create(static_nodes []&Node) &NodeList {
@@ -450,14 +460,18 @@ pub fn (s &StaticNodeList) item(index int) ?&Node {
 
 // --- HTMLCollection ---
 pub fn HTMLCollection.create(root &ParentNode, scope HTMLCollectionScope, filter fn(&Element) bool, sort fn(&Element, &Element) bool) &HTMLCollection {
-	mut collection := &HTMLCollection{
+	collection := HTMLCollection.create_without_cache(root, scope, filter, sort)
+	collection.update_cache_if_needed()
+	return collection
+}
+
+fn HTMLCollection.create_without_cache(root &ParentNode, scope HTMLCollectionScope, filter fn(&Element) bool, sort fn(&Element, &Element) bool) &HTMLCollection {
+	return &HTMLCollection{
 		root: root
 		scope: scope
 		filter: filter
 		sort: sort
 	}
-	collection.update_cache_if_needed()
-	return collection
 }
 
 fn sort_elements_with_comparator(mut elements []&Element, sort fn(&Element, &Element) bool) {
@@ -602,8 +616,26 @@ pub fn (c &HTMLCollection) length() int {
 // https://dom.spec.whatwg.org/#dom-htmlcollection-item
 pub fn (c &HTMLCollection) item(index int) ?&Element {
 	// The item(index) method steps are to return the indexth element in the collection. If there is no indexth element in the collection, then the method must return null.
+	if index < 0 {
+		return none
+	}
+	// Unsorted tag queries start without a cache. An index-zero read only
+	// needs the first match in tree order. Other readers can build the cache.
+	if index == 0 && !c.cache_initialized && c.root != unsafe { nil }
+		&& c.scope == .descendants && voidptr(c.sort) == voidptr(never_sort_elements) {
+		root := c.root.as_node()
+		mut node := root.first_child() or { return none }
+		for {
+			if element := node.as_element() {
+				if c.filter(element) {
+					return element
+				}
+			}
+			node = node.next_in_pre_order(root) or { return none }
+		}
+	}
 	c.update_cache_if_needed()
-	if index < 0 || index >= c.cached_elements.len {
+	if index >= c.cached_elements.len {
 		return none
 	}
 	return c.cached_elements[index]
@@ -2003,13 +2035,14 @@ pub fn (mut p ParentNode) children_collection() &HTMLCollection {
 pub fn (mut p ParentNode) get_elements_by_tag_name(qualified_name string) &HTMLCollection {
 	// 1. If qualifiedName is "*" (U+002A), return a HTMLCollection rooted at root, whose filter matches only descendant elements.
 	if qualified_name == '*' {
-		return HTMLCollection.create(&p, .descendants, always_accept_element, never_sort_elements)
+		return HTMLCollection.create_without_cache(&p, .descendants, always_accept_element,
+			never_sort_elements)
 	}
 	root_node := p.as_node()
 	// 2. Otherwise, if root's node document is an HTML document, return a HTMLCollection rooted at root, whose filter matches the following descendant elements:
 	if root_node.document().document_type() == .html {
 		qualified_name_in_ascii_lowercase := to_ascii_lowercase(qualified_name)
-		return HTMLCollection.create(&p, .descendants, fn [qualified_name, qualified_name_in_ascii_lowercase] (element &Element) bool {
+		return HTMLCollection.create_without_cache(&p, .descendants, fn [qualified_name, qualified_name_in_ascii_lowercase] (element &Element) bool {
 			// - Whose namespace is the HTML namespace and whose qualified name is qualifiedName, in ASCII lowercase.
 			if element.namespace_uri() or { '' } == namespace_html_uri {
 				return element.qualified_name_str() == qualified_name_in_ascii_lowercase
@@ -2019,7 +2052,7 @@ pub fn (mut p ParentNode) get_elements_by_tag_name(qualified_name string) &HTMLC
 		}, never_sort_elements)
 	}
 	// 3. Otherwise, return a HTMLCollection rooted at root, whose filter matches descendant elements whose qualified name is qualifiedName.
-	return HTMLCollection.create(&p, .descendants, fn [qualified_name] (element &Element) bool {
+	return HTMLCollection.create_without_cache(&p, .descendants, fn [qualified_name] (element &Element) bool {
 		return element.qualified_name_str() == qualified_name
 	}, never_sort_elements)
 }

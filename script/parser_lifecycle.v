@@ -1,5 +1,6 @@
 module main
 
+import browserextensions
 import browserjs
 import dom
 import html
@@ -18,6 +19,7 @@ struct BrowserParserScriptHost {
 	media_loader      ?browserjs.MediaElementCreatedHook
 	on_runtime_created ?BrowserParserRuntimeCreated
 mut:
+	site_native_warmup ?&browserjs.SiteNativeWarmup
 	runtime           &browserjs.Runtime = unsafe { nil }
 	initial_resources map[string]PreloadedResource
 	svg_resources     map[string]PreloadedResource
@@ -26,6 +28,7 @@ mut:
 	initialization_attempted bool
 	closed            bool
 	parser_generation u64
+	extension_scripts []browserextensions.Injection
 }
 
 fn install_browser_parser_script_host(document &dom.Document, engine browserjs.Engine,
@@ -82,6 +85,23 @@ fn browser_parser_created(target voidptr, parser &html.HTMLParser) {
 		mut binding := unsafe { &BrowserParserScriptHost(host) }
 		binding.did_finish_parsing()
 	})
+	first_parser := host.parser_generation == 1
+	if (first_parser && host.extension_scripts.len > 0) || host.site_native_warmup != none {
+		owner.set_navigation_readiness_callback(fn [host, first_parser] (readiness dom.DocumentReadyState) {
+			mut binding := unsafe { &BrowserParserScriptHost(host) }
+			if first_parser {
+				binding.run_browser_extensions(if readiness == .interactive { .document_end } else { .document_idle })
+			}
+			if readiness == .complete {
+				if mut warmup := binding.site_native_warmup {
+					// The compiler publishes from its worker. Native wake delivery
+					// schedules the chrome update on the browser thread.
+					warmup.start_after_load(fn () { C.native_wake_browser() })
+				}
+			}
+		})
+		if first_parser { host.run_browser_extensions(.document_start) }
+	}
 }
 
 fn (mut host BrowserParserScriptHost) initialize() bool {
@@ -90,11 +110,12 @@ fn (mut host BrowserParserScriptHost) initialize() bool {
 	if !host.document.as_node().is_scripting_enabled() { return false }
 	host.initialization_attempted = true
 	host.runtime = create_browser_script_runtime(host.engine)
+	mut runtime := host.runtime
+	runtime.set_site_native_warmup(host.site_native_warmup)
 	if callback := host.on_runtime_created { callback(host.runtime) }
 	host.initialized = initialize_document_script_runtime(host.document, host.document.url.serialize(),
 		[]browserjs.ScriptSource{}, host.runtime, browser_fetch_image_request, host.images.callback(),
 		host.scripts, host.media_loader, mut host.messages)
-	mut runtime := host.runtime
 	runtime.add_close_handler(fn [host] () {
 		mut binding := unsafe { &BrowserParserScriptHost(host) }
 		binding.closed = true

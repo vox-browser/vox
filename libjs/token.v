@@ -330,10 +330,15 @@ mut:
 	value_len                  u32
 	line_number                u32
 	line_column                u32
-	offset                     u32
 	trivia_has_line_terminator bool
-	identifier_value           ?Utf16String
-	message                    ?string
+	// Tokens are copied several times each. Only escaped identifiers and
+	// invalid tokens carry these payloads.
+	identifier_value &Utf16String = unsafe { nil }
+	message          &TokenMessage = unsafe { nil }
+}
+
+struct TokenMessage {
+	text string
 }
 
 fn Token.new(tt TokenType) Token {

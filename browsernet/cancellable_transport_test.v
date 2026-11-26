@@ -121,7 +121,7 @@ fn serve_cancellable_resource(mut listener net.TcpListener) {
 	assert request.contains('User-Agent: Vox lifecycle test')
 	assert request.to_lower().contains('accept-encoding: ')
 	assert !request.contains('vox-unsupported'), 'curl must advertise its own supported decoders'
-	connection.write_string('HTTP/1.1 201 Native reason\r\nContent-Length: 4\r\nContent-Type: image/test\r\nSet-Cookie: first=1\r\nSet-Cookie: second=2\r\nConnection: close\r\n\r\nbody') or { panic(err) }
+	connection.write_string('HTTP/1.1 201 Native reason\r\nContent-Length: 4\r\nContent-Type: image/test\r\nSet-Cookie: first=1\r\nSet-Cookie: second=2\r\nConnection: close\r\n\r\nb\x00dy') or { panic(err) }
 }
 
 fn test_cancellable_transport_preserves_response_and_request_metadata() {
@@ -142,7 +142,7 @@ fn test_cancellable_transport_preserves_response_and_request_metadata() {
 	}, scope, mut progress) or { panic(err) }
 	assert result.response.status_code == 201
 	assert result.response.status_msg == 'Native reason'
-	assert result.response.body == 'body'
+	assert result.response.body == 'b\x00dy'
 	assert result.response.header.custom_values('Set-Cookie') == ['first=1', 'second=2']
 	assert result.response.header.get(.content_type) or { '' } == 'image/test'
 	assert result.response_time >= before

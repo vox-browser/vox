@@ -51,7 +51,7 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 		return unsafe { host.elements[key] }
 	}, fn [host_handle] (element &dom.Element) []string {
 		host := unsafe { &ImageHost(host_handle) }
-		return native_canvas_element_identity_keys(host.elements, element)
+		return native_canvas_element_identity_keys(voidptr(host), host.elements, element)
 	}, fn [host_handle] (registry &CanvasElementRegistry) {
 		host := unsafe { &ImageHost(host_handle) }
 		for key, element in host.elements { registry.set(key, element) }

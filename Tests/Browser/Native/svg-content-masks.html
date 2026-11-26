@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG content masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+.nested { position: absolute; left: 420px; top: 8px; transform: translateX(.5px); }
+</style>
+<header></header>
+<img class="nested" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cmask id='m' mask-type='alpha' maskUnits='userSpaceOnUse' x='1' y='5' width='55' height='60'%3E%3Cpath fill='black' d='M0 0h80v80H0Z'/%3E%3C/mask%3E%3Cpath fill='blue' mask='url(%23m)' d='M0 0h80v80H0Z'/%3E%3C/svg%3E">
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="12" y="12" width="126" height="100">
+      <path fill="black" fill-rule="evenodd" d="M8 14h72v86H8Z M30 32h20v20H30Z"/>
+      <path fill="black" fill-opacity=".5" d="M58 18h100v84H58Z"/>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="190" y="12" width="170" height="100">
+      <path fill="#f00" d="M190 18h54v82h-54Z"/>
+      <path fill="#0f0" fill-opacity=".5" d="M238 18h52v82h-52Z"/>
+      <path fill="black" d="M290 18h36v82h-36Z"/>
+      <path fill="white" d="M326 18h30v82h-30Z"/>
+    </mask>
+  </defs>
+  <g id="sample">
+    <g mask="url(#alpha)">
+      <path fill="#f00" d="M0 0H610V180H0Z"/>
+      <path fill="#00f" d="M70 0H620V180H70Z"/>
+    </g>
+    <path mask="url(#luminance)" fill="#00f" d="M180 0H620V180H180Z"/>
+    <path fill="#f80" d="M370 27h40v40h-40Z"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/>
+  <use href="#sample" y="540"/><use href="#sample" y="720"/>
+  <use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/>
+  <use href="#sample" y="1620"/>
+</svg>

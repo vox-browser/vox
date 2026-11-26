@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG masks and independently transformed viewports</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+.viewport { position: absolute; top: 20px; left: 0; width: 112px; height: 88px; overflow: hidden; transform-origin: 0 0; }
+svg { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+#skew { transform: matrix(1, .5, -.5, 1, 86, 0); }
+#skew svg { transform: matrix(1, -.5, .25, 1, 38, 4); }
+#reflect { transform: matrix(-1, .5, .5, 1, 380, 0); }
+#reflect svg { transform: matrix(-.8, .4, .4, .8, 80, 8); }
+</style>
+<header></header>
+<div id="skew" class="viewport">
+  <svg width="200" height="130">
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="4" y="6" width="88" height="102">
+      <path d="M0 0H200V130H0Z" fill="black"/>
+    </mask>
+    <g mask="url(#alpha)">
+      <path d="M0 0H200V130H0Z" fill="blue"/>
+      <path d="M12 54H32V78H12Z" fill="red"/>
+    </g>
+  </svg>
+</div>
+<div id="reflect" class="viewport">
+  <svg width="140" height="100">
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="10" y="4" width="90" height="80">
+      <path d="M0 0H140V100H0Z" fill="white" opacity=".5"/>
+    </mask>
+    <path d="M0 0H140V100H0Z" fill="blue" mask="url(#luminance)"/>
+  </svg>
+</div>
+<script>
+let frame = 0;
+function moveMask() {
+    if (++frame === 12)
+        document.getElementById('luminance').setAttribute('x', '24');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-mixed-ready', '');
+    else
+        requestAnimationFrame(moveMask);
+}
+requestAnimationFrame(moveMask);
+</script>

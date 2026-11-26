@@ -11,7 +11,7 @@ struct DeviceLayoutStyleProjection {
 }
 
 pub fn (style &ComputedProperties) layout_coordinate_scale() f64 {
-	return style.computed_layout_cache().layout_coordinate_scale_
+	return if style.layout_coordinate_scale_ == 0 { 1.0 } else { style.layout_coordinate_scale_ }
 }
 
 // Anonymous table, button and fieldset styles also pass through the ordinary
@@ -20,7 +20,7 @@ pub fn (style &ComputedProperties) layout_coordinate_scale() f64 {
 fn (mut style ComputedProperties) inherit_layout_coordinate_context(source &ComputedProperties) {
 	scale := source.layout_coordinate_scale()
 	if scale == 1 { return }
-	style.ensure_computed_layout_cache().layout_coordinate_scale_ = scale
+	style.layout_coordinate_scale_ = scale
 	style.cached_computed_font_list_ = source.cached_computed_font_list_
 	style.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
 	style.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
@@ -115,8 +115,14 @@ fn device_layout_font_matches_projection(source &PlatformFont, projected &Platfo
 }
 
 fn device_layout_fonts_match_projection(source &FontCascadeList, projected &FontCascadeList, factor f64, pixel_size f64) bool {
-	if source.pending_faces.len != 0 || projected.pending_faces.len != 0
-		|| source.fonts.len != projected.fonts.len {
+	if source.pending_faces.len != 0 || projected.pending_faces.len != 0 {
+		return false
+	}
+	return device_layout_font_entries_match_projection(source, projected, factor, pixel_size)
+}
+
+fn device_layout_font_entries_match_projection(source &FontCascadeList, projected &FontCascadeList, factor f64, pixel_size f64) bool {
+	if source.fonts.len != projected.fonts.len {
 		return false
 	}
 	for index, entry in source.fonts {
@@ -132,6 +138,25 @@ fn device_layout_fonts_match_projection(source &FontCascadeList, projected &Font
 				projected.last_resort_font, factor, pixel_size)
 	}
 	return projected.last_resort_font == unsafe { nil }
+}
+
+// Whether `projected` selects, for every code point, the projection of the
+// font that `source` selects. A list with author faces that have not loaded
+// is never shared between styles, but two lists that keep the same faces
+// pending at the same positions still resolve text alike.
+fn device_layout_fonts_select_alike(source &FontCascadeList, projected &FontCascadeList, factor f64, pixel_size f64) bool {
+	if source.pending_faces.len != projected.pending_faces.len {
+		return false
+	}
+	for index, pending in source.pending_faces {
+		other := projected.pending_faces[index]
+		if pending.font_index != other.font_index
+			|| voidptr(pending.font_face) != voidptr(other.font_face)
+			|| pending.unicode_ranges != other.unicode_ranges {
+			return false
+		}
+	}
+	return device_layout_font_entries_match_projection(source, projected, factor, pixel_size)
 }
 
 fn device_layout_fonts_can_cache(source &FontCascadeList) bool {
@@ -169,6 +194,8 @@ fn device_layout_fonts(source &FontCascadeList, factor f64, pixel_size f64) &Fon
 		last_resort := device_layout_font(*source.last_resort_font, factor, pixel_size)
 		result.last_resort_font = owned_platform_font_ref(&last_resort)
 	}
+	// Text shaped with these faces stays valid while the source cascade does.
+	result.device_layout_source_ = unsafe { &FontCascadeList(source) }
 	if can_cache {
 		mut mutable_source := unsafe { &FontCascadeList(source) }
 		mutable_source.device_layout_font_projection_ = result
@@ -458,12 +485,13 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 				mut target.property_store_, page_index, factor, mask)
 		}
 	}
-	target.ensure_computed_layout_cache().layout_coordinate_scale_ = scale
+	target.layout_coordinate_scale_ = scale
 	if source.mutation_revision() != 0 {
 		provenance := &ComputedGeometryProvenance{
 			token:                         source.computed_property_graph_token_
 			generation:                    source.mutation_revision()
 			viewport:                      source.viewport_rect_
+			layout_scale:                  current_scale
 			root_font_size:                source.root_font_size_px_
 			root_line_height:              source.root_line_height_px_
 			root_font_depends_on_viewport: source.root_font_metrics_depend_on_viewport_metrics_

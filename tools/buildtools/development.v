@@ -67,11 +67,12 @@ fn build_windows(a Args) ! {
 	scratch := temporary(os.temp_dir(), 'vox-windows-compile-')!
 	defer { remove(scratch) or {} }
 	os.setenv('VTMP', scratch, true)
-	mut flags := ['-b', 'c', '-prod', '-no-prod-options']
+	mut flags := ['-b', 'c', '-prod', '-no-prod-options', '-d', 'vox_gg_svg']
 	if a.has('--console') { flags << ['-subsystem', 'console'] }
+	if !a.has('--opengl') { flags << ['-d', 'sokol_d3d11'] }
 	checked([selected, '-memory-limit', '10G', ...flags, '-enable-globals', '-gc', 'none', '-os',
-		'windows', '-arch', 'amd64', '-cc', os.getenv('CC'), '-d', 'ui2_custom_rendering', '-d',
-		'sokol_d3d11', '-path', '${root_dir()}|${modules}|@vmodules|@vlib', '-o', output, root_dir()])!
+		'windows', '-arch', 'amd64', '-cc', os.getenv('CC'), '-d', 'ui2_custom_rendering',
+		'-path', '${root_dir()}|${modules}|@vmodules|@vlib', '-o', output, root_dir()])!
 	if !read(output)!.starts_with('MZ') {
 		return error('Compiler did not produce a Windows executable')
 	}
@@ -97,11 +98,11 @@ fn development_command(a Args) ! {
 		if os.user_os() == 'windows' { 'gcc' } else { 'clang' }, '-path',
 		[root_dir(), ...modules, '@vmodules', '@vlib'].join('|')]
 	if os.user_os() == 'linux' {
-		flags << ['-d', 'dynamic_boehm', '-d', 'use_openssl', '-exclude', '@vlib/time/zoneinfo.native.v',
+		flags << ['-d', 'dynamic_boehm', '-d', 'use_openssl', '-d', 'vox_gg_svg', '-exclude', '@vlib/time/zoneinfo.native.v',
 			'-cflags', '-D_GNU_SOURCE=1', '-o', join(root_dir(), 'Build/linux/vox')]
 	}
 	if os.user_os() == 'windows' {
-		flags << ['-gc', 'none', '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11', '-prod',
+		flags << ['-gc', 'none', '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11', '-d', 'vox_gg_svg', '-prod',
 			'-no-prod-options']
 	}
 	mut values := {

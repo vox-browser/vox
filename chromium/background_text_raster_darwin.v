@@ -16,6 +16,6 @@ fn draw_background_glyph_mask(glyphs &u16, positions &f64, count i32, size f32,
 		return i32(draw_document_glyph_raster([]u16{len: int(count), init: glyphs[index]},
 			[]f64{len: int(count) * 2, init: positions[index]}, font_path, int(face_index), size,
 			int(weight), baseline_x, baseline_y, [a, b, c, d, e, f]!, page_x, page_y,
-			scroll_y, width, height, u32(0xff000000), int(smoothing), [f32(0), 0, 0, 1]!))
+			scroll_y, width, height, u32(0xff000000), int(smoothing), [f32(0), 0, 0, 1]!, none))
 	}
 }

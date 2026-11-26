@@ -16,7 +16,7 @@ pub fn DataView.create(realm &Realm, viewed_buffer ?&ArrayBufferObject, byte_len
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'DataView'
 	view := &DataView{object: object, viewed_buffer: viewed_buffer, byte_length: byte_length, offset: byte_offset}
-	object.data_view = view
+	object.mut_slots().data_view = view
 	return view
 }
 

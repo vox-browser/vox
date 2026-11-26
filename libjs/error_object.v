@@ -74,7 +74,7 @@ pub fn create_error(mut vm VM, realm &Realm, kind ErrorKind, message ?Utf16Strin
 	prototype := if intrinsic := realm.error_prototypes[kind] { ?&Object(intrinsic) } else { none }
 	mut object := Object.create(realm, prototype)
 	object.class_name = kind.name()
-	object.error_data = &ErrorData{
+	object.mut_slots().error_data = &ErrorData{
 		kind:      kind
 		realm:     realm
 		traceback: populate_stack(vm)
@@ -92,17 +92,17 @@ pub fn (mut object Object) set_error_message(mut vm VM, message Utf16String) {
 }
 
 pub fn (object &Object) error_kind() ?ErrorKind {
-	data := object.error_data or { return none }
+	data := object.slots.error_data or { return none }
 	return data.kind
 }
 
 pub fn (object &Object) error_realm() ?&Realm {
-	data := object.error_data or { return none }
+	data := object.slots.error_data or { return none }
 	return data.realm
 }
 
 pub fn (object &Object) error_message() ?string {
-	if object.error_data == none {
+	if object.slots.error_data == none {
 		return none
 	}
 	// Embedding diagnostics inspect the error's stored message without

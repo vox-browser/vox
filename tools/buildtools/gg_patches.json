@@ -1,4 +1,133 @@
 {
+  "prepare_sokol_d3d11_transfers": [
+    {
+      "old": "        info->msaa   = 0 != (rtv_dxgi_fmt_caps & D3D11_FORMAT_SUPPORT_MULTISAMPLE_RENDERTARGET);",
+      "new": "        // Depth images are bound through the typed DSV, not the color RTV format.\n        const UINT msaa_caps = depth ? dsv_dxgi_fmt_caps : rtv_dxgi_fmt_caps;\n        info->msaa   = 0 != (msaa_caps & D3D11_FORMAT_SUPPORT_MULTISAMPLE_RENDERTARGET);"
+    },
+    {
+      "old": "    D3D11_SUBRESOURCE_DATA subres_data[SG_MAX_MIPMAPS * SG_MAX_TEXTUREARRAY_LAYERS];\n} _sg_d3d11_backend_t;",
+      "new": "    D3D11_SUBRESOURCE_DATA subres_data[SG_MAX_MIPMAPS * SG_MAX_TEXTUREARRAY_LAYERS];\n    ID3D11Texture2D* vox_readback;\n    UINT vox_readback_width;\n    UINT vox_readback_height;\n    DXGI_FORMAT vox_readback_format;\n} _sg_d3d11_backend_t;"
+    },
+    {
+      "old": "_SOKOL_PRIVATE void _sg_d3d11_discard_backend(void) {\n    SOKOL_ASSERT(_sg.d3d11.valid);\n    _sg.d3d11.valid = false;",
+      "new": "_SOKOL_PRIVATE void _sg_d3d11_discard_backend(void) {\n    SOKOL_ASSERT(_sg.d3d11.valid);\n    if (_sg.d3d11.vox_readback) {\n        _sg_d3d11_Release(_sg.d3d11.vox_readback);\n        _sg.d3d11.vox_readback = NULL;\n    }\n    _sg.d3d11.valid = false;"
+    },
+    {
+      "old": "/* V_SOKOL_IMAGE_TRANSFER_IMPL_BEGIN */",
+      "new": "/* V_SOKOL_IMAGE_TRANSFER_IMPL_BEGIN */\n#if defined(SOKOL_D3D11)\n#include \"native_gg_d3d11_transfer.h\"\n#endif"
+    },
+    {
+      "old": "return _sg_v_gl_transfer(img, x, y, width, height, pixels, pitch, false);\n    #else",
+      "new": "return _sg_v_gl_transfer(img, x, y, width, height, pixels, pitch, false);\n    #elif defined(SOKOL_D3D11)\n        return vox_gg_d3d11_transfer(img, x, y, width, height, pixels, pitch, false);\n    #else"
+    },
+    {
+      "old": "return _sg_v_gl_transfer(img, x, y, width, height, (void*)pixels, pitch, true);\n    #else",
+      "new": "return _sg_v_gl_transfer(img, x, y, width, height, (void*)pixels, pitch, true);\n    #elif defined(SOKOL_D3D11)\n        return vox_gg_d3d11_transfer(img, x, y, width, height, (void*)pixels, pitch, true);\n    #else"
+    }
+  ],
+  "prepare_gg_windows_canvas": [
+    {
+      "file": "rrect.v",
+      "old": "fn compute_min_scale(rad1 f32, rad2 f32, limit f64, current f64) f64 {\n\tsum := f64(rad1) + f64(rad2)",
+      "new": "fn compute_min_scale(first_radius f32, second_radius f32, limit f64, current f64) f64 {\n\tsum := f64(first_radius) + f64(second_radius)"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\t$if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS or Linux')\n\t}",
+      "new": "\t$if windows {\n\t\tif !gfx.is_valid() {\n\t\t\treturn error('gg.canvas: GPU rendering requires an initialized Sokol context on Windows')\n\t\t}\n\t} $else $if !macos && !linux {\n\t\treturn error('gg.canvas: GPU rendering requires macOS, Linux or Windows')\n\t}"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\t} $else {\n\t\tif gfx.query_backend() != .metal_macos",
+      "new": "\t} $else $if windows {\n\t\t$if sokol_d3d11 ? {\n\t\t\tif gfx.query_backend() != .d3d11 || !gfx.query_features().storage_buffer {\n\t\t\t\treturn error('gg.canvas: D3D11 requires vertex shader storage buffers')\n\t\t\t}\n\t\t\tctx.is_d3d11 = true\n\t\t} $else {\n\t\t\tif gfx.query_backend() != .glcore33 || !gfx.query_features().storage_buffer\n\t\t\t\t|| !windows_gpu_has_storage_buffers() {\n\t\t\t\treturn error('gg.canvas: GPU rendering requires OpenGL 4.3 with vertex and fragment storage buffers and at least 16 storage bindings')\n\t\t\t}\n\t\t\tctx.is_gl = true\n\t\t}\n\t} $else {\n\t\tif gfx.query_backend() != .metal_macos"
+    }
+  ],
+  "prepare_gg_d3d11_canvas": [
+    {
+      "file": "gpu_path.v",
+      "old": "\tif path.is_a == .rrect {\n\t\t// Device::drawPath()",
+      "new": "\tif path.is_a == .rrect {\n\t\t$if windows && sokol_d3d11 ? {\n\t\t\tif s.ctx.is_d3d11 {\n\t\t\t\tif paint.style == .stroke {\n\t\t\t\t\ts.draw_stroke(path, path_shape(path), paint)!\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\tif paint.anti_alias && paint.layer_image == none {\n\t\t\t\t\ts.draw_path_fill(path, paint)!\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\t// Device::drawPath()"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "// new_gpu_context creates a context for GPU rendering using Metal on macOS\n// or OpenGL 4.3 on Linux. An initialized sokol.gfx context is borrowed;\n// otherwise the context owns an offscreen device. Use and free it on the",
+      "new": "// new_gpu_context creates a context for GPU rendering using Metal on macOS,\n// OpenGL 4.3 on Linux, or an initialized D3D11 or OpenGL 4.3 context on\n// Windows. It borrows initialized Sokol contexts and creates an offscreen\n// device on macOS or Linux when needed. Use and free it on the"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "fn (mut ctx GpuContext) shader(step RenderStep, clipped bool, shading Shading) gfx.Shader {",
+      "new": "fn (mut ctx GpuContext) shader(render_step RenderStep, clipped bool, shading Shading) gfx.Shader {\n\tmut step := render_step\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tstep = d3d11_canvas_shader_step(step)\n\t\t}\n\t}"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\tis_gl              bool\n",
+      "new": "\tis_gl              bool\n\tis_d3d11           bool\n"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\tmut vs_source, mut fs_source := solid_shader_sources(step, clipped)",
+      "new": "\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tshader := d3d11_canvas_shader(step, clipped, shading)\n\t\t\tctx.shaders << GpuShaderEntry{step, clipped, shading, shader}\n\t\t\treturn shader\n\t\t}\n\t}\n\tmut vs_source, mut fs_source := solid_shader_sources(step, clipped)"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "pub fn (mut ctx GpuContext) precompile() {",
+      "new": "pub fn (mut ctx GpuContext) precompile() {\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tctx.precompile_d3d11_canvas()\n\t\t\treturn\n\t\t}\n\t}"
+    },
+    {
+      "file": "gpu_context.v",
+      "old": "\t\tvs_source, fs_source = glsl_load_msaa_sources()\n\t}\n\tmut desc := gfx.ShaderDesc{}",
+      "new": "\t\tvs_source, fs_source = glsl_load_msaa_sources()\n\t}\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 {\n\t\t\tvs_source, fs_source = d3d11_canvas_msaa_vertex, d3d11_canvas_msaa_fragment\n\t\t}\n\t}\n\tmut desc := gfx.ShaderDesc{}"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tmut ctx := s.ctx\n\t// A pass with a draw",
+      "new": "\tmut ctx := s.ctx\n\t$if windows && sokol_d3d11 ? {\n\t\tif ctx.is_d3d11 && s.draws.any(!d3d11_canvas_supports_draw(it)) {\n\t\t\ts.reset_draws()\n\t\t\ts.free_retired_layers()\n\t\t\treturn error('gg.canvas: unsupported D3D11 render step and paint combination')\n\t\t}\n\t}\n\td3d11 := $if windows && sokol_d3d11 ? { true } $else { false }\n\tuses_storage_buffers := d3d11 || ctx.is_gl\n\t// A pass with a draw"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif ctx.is_gl && has_uniforms(first_draw.step) {\n\t\t\t// Each shader",
+      "new": "\t\tif uses_storage_buffers && has_uniforms(first_draw.step) {\n\t\t\t// Each shader"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif ctx.is_gl && has_uniforms(first_draw.step) {\n\t\t\tstorage_uniforms",
+      "new": "\t\tif uses_storage_buffers && has_uniforms(first_draw.step) {\n\t\t\tstorage_uniforms"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif ctx.is_gl && has_uniforms(draw.step) {\n\t\t\tbindings.vs.storage_buffers[0] = paint_buffer\n\t\t\tbindings.fs.storage_buffers[0] = paint_buffer\n\t\t}",
+      "new": "\t\tif uses_storage_buffers && has_uniforms(draw.step) {\n\t\t\tbindings.vs.storage_buffers[0] = paint_buffer\n\t\t\tif !d3d11 || draw.uniforms.clipped || draw.uniforms.shading.is_gradient() {\n\t\t\t\tbindings.fs.storage_buffers[0] = paint_buffer\n\t\t\t}\n\t\t}"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tif writes_color(draw.step) {\n\t\t\tgfx.apply_uniforms(.fs, 0, &intrinsic_range)\n\t\t}\n\t\tif !ctx.is_gl {",
+      "new": "\t\tif (!d3d11 || draw.uniforms.clipped) && writes_color(draw.step) {\n\t\t\tgfx.apply_uniforms(.fs, 0, &intrinsic_range)\n\t\t}\n\t\tif !uses_storage_buffers {"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tload_msaa := s.load && samples > 1\n\tif load_msaa {",
+      "new": "\tload_msaa := s.load && samples > 1\n\tload_pipeline := if load_msaa { ctx.load_msaa_pipeline() } else { gfx.Pipeline{} }\n\tif load_msaa && gfx.query_pipeline_state(load_pipeline) != .valid {\n\t\ts.reset_draws()\n\t\ts.free_retired_layers()\n\t\treturn error('gg.canvas: could not create the MSAA load pipeline')\n\t}\n\tif load_msaa {"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\tgfx.apply_pipeline(ctx.load_msaa_pipeline())",
+      "new": "\t\tgfx.apply_pipeline(load_pipeline)"
+    }
+  ],
+  "prepare_gg_gl_image": [
+    {
+      "file": "gpu_shader_glsl.v",
+      "old": "\tsource = glsl_vector_comparisons(source)!",
+      "new": "\tsource = source.replace('as_type<float>(', 'uintBitsToFloat(')\n\tsource = glsl_vector_comparisons(source)!"
+    }
+  ],
+  "prepare_gg_gl_msaa_resolve": [
+    {
+      "file": "gpu_surface.v",
+      "old": "\tgfx.end_pass()\n\ts.reset_draws()\n\t// The pass sampled the restored layers.",
+      "new": "\t// Sokol resolves OpenGL multisample passes with glBlitFramebuffer,\n\t// which uses the current scissor. Resolve the entire backing texture\n\t// so pass clears and earlier batches outside the final scissor survive.\n\tif ctx.is_gl && samples > 1 && batches.len > 1 {\n\t\tfinal_scissor := real_scissors[batches[batches.len - 2]]\n\t\tbacking := Rect.ltrb(0, 0, f32(s.texture_width), f32(s.texture_height))\n\t\tif !rect_equal(final_scissor, backing) {\n\t\t\tgfx.apply_scissor_rect(0, 0, s.texture_width, s.texture_height, false)\n\t\t}\n\t}\n\tgfx.end_pass()\n\ts.reset_draws()\n\t// The pass sampled the restored layers."
+    }
+  ],
   "prepare_gg_shadow": [
     {
       "file": "gpu_layer.v",
@@ -102,7 +231,331 @@
     {
       "file": "shaders/paint_snippets.metal",
       "old": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n",
-      "new": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\nfloat _11_gamma = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.x;\nif (_11_gamma > 0.0f) {\n    float3 _12_rgb = _10_mask.xyz / max(_10_mask.w, 0.0001f);\n    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    _13_linear = float3x3(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;\n    float3 _14_abs = abs(_13_linear);\n    float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),\n                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < as_type<float>(0x3b4d2e31u));\n    _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);\n}\n"
+      "new": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\nfloat _11_gamma = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.x;\nif (_11_gamma > 0.0f) {\n    float3 _12_rgb = _10_mask.xyz / max(_10_mask.w, 0.0001f);\n    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    _13_linear = float3x3(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;\n    float3 _14_abs = abs(_13_linear);\n    float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),\n                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < float3(as_type<float>(0x3b4d2e31u)));\n    _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);\n}\n"
+    }
+  ],
+  "prepare_gg_yuv": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tout << u.color_transform.gamma\n\tout << 0\n",
+      "new": "\tout << u.color_transform.gamma\n\tout << if u.color_transform.yuv_rec601_limited { f32(1) } else { f32(0) }\n"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "const image_uniform_size = 112",
+      "new": "const image_uniform_size = 112\n\nfn document_image_yuv_upload_supported() bool {\n\treturn gradient_snippet_file.to_string().contains('gammaParameters_7.y > 0.0f')\n}\n"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n",
+      "new": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\nif (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    _10_mask = float4(clamp(float3(1.164384f * yuv.x + 1.596027f * yuv.z - 0.874202f,\n                                  1.164384f * yuv.x - 0.391762f * yuv.y - 0.812968f * yuv.z + 0.531668f,\n                                  1.164384f * yuv.x + 2.017232f * yuv.y - 1.085631f), 0.0f, 1.0f), 1.0f);\n}\n"
+    }
+  ],
+  "prepare_gg_yuv_atlas_uniform": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tout << if u.color_transform.yuv_rec601_limited { f32(1) } else { f32(0) }\n\tout << 0\n",
+      "new": "\tout << if u.color_transform.yuv_rec601_limited { f32(1) } else { f32(0) }\n\tout << if u.color_transform.yuv420_atlas { f32(1) } else { f32(0) }\n"
+    }
+  ],
+  "prepare_gg_yuv_atlas_support": [
+    {
+      "file": "gpu_layer.v",
+      "old": "fn document_image_yuv_upload_supported() bool {",
+      "new": "fn document_image_yuv_atlas_upload_supported() bool {\n\treturn gradient_snippet_file.to_string().contains('gammaParameters_7.z > 0.0f')\n}\n\nfn document_image_yuv_upload_supported() bool {"
+    }
+  ],
+  "prepare_gg_yuv_atlas_shader": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n",
+      "new": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.z > 0.0f) {\n        yuv.yz = sample(_globals.image_4, _in.CoordNormalize_3_Var * 0.5f).yz;\n    }\n"
+    }
+  ],
+  "prepare_gg_jpeg_uniform": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tout << if u.color_transform.yuv420_atlas { f32(1) } else { f32(0) }\n\tout << 0\n",
+      "new": "\tout << if u.color_transform.yuv420_atlas { f32(1) } else { f32(0) }\n\tout << if u.color_transform.yuv_jpeg_full { f32(1) } else { f32(0) }\n"
+    }
+  ],
+  "prepare_gg_jpeg_shader": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;",
+      "new": "if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.w > 0.0f) {\n    float3 yuv = _10_mask.xyz;\n    _10_mask = float4(clamp(float3(yuv.x + 1.402000f * yuv.z - 0.703749f,\n                                  yuv.x - 0.344136f * yuv.y - 0.714136f * yuv.z + 0.531211f,\n                                  yuv.x + 1.772000f * yuv.y - 0.889475f), 0.0f, 1.0f), 1.0f);\n} else if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    float3 yuv = _10_mask.xyz;"
+    }
+  ],
+  "prepare_gg_jpeg_support": [
+    {
+      "file": "gpu_layer.v",
+      "old": "const image_uniform_size = 112",
+      "new": "const image_uniform_size = 112\n\nfn document_image_jpeg_upload_supported() bool {\n\treturn gradient_snippet_file.to_string().contains('gammaParameters_7.w > 0.0f')\n}\n"
+    }
+  ],
+  "prepare_gg_opaque_layer": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_scale [2]f32 = [f32(1),1]!\n",
+      "new": "\tdocument_scale [2]f32 = [f32(1),1]!\n\tdocument_opaque bool\n"
+    }
+  ],
+  "prepare_gg_opaque_surface": [
+    {
+      "file": "gpu_surface.v",
+      "old": "\tmut image := ImageUniforms{}\n\tmut texture := TextureBinding{}\n\tif layer := paint.layer_image {\n\t\tshading = .image\n\t\timage = ImageUniforms{\n\t\t\t// The identity local matrix of drawSpecial()'s Rect2Rect(src, dst).\n\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!\n\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform\n\t\t}\n\t\ttexture = TextureBinding{\n\t\t\tkind:  .image\n\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t}\n\t}\n\topaque := color.is_opaque() && shading != .image\n\t\t&& (!shading.is_gradient() || gradient.opaque)",
+      "new": "\tmut image_opaque := false\n\tmut image := ImageUniforms{}\n\tmut texture := TextureBinding{}\n\tif layer := paint.layer_image {\n\t\tshading = .image\n\t\timage_opaque = layer.document_opaque && layer.mask_color.a == 1\n\t\timage = ImageUniforms{\n\t\t\t// The identity local matrix of drawSpecial()'s Rect2Rect(src, dst).\n\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!\n\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform\n\t\t}\n\t\ttexture = TextureBinding{\n\t\t\tkind:  .image\n\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t}\n\t}\n\topaque := color.is_opaque() && (shading != .image || image_opaque)\n\t\t&& (!shading.is_gradient() || gradient.opaque)"
+    }
+  ],
+  "prepare_gg_yuv_coordinates": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "_out.CoordNormalize_3_Var = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * LocalMatrix_1_Var;",
+      "new": "_out.CoordNormalize_3_Var = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f\n    ? LocalMatrix_1_Var\n    : _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * LocalMatrix_1_Var;"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);",
+      "new": "float2 documentImageCoords = _in.CoordNormalize_3_Var;\nif (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.y > 0.0f) {\n    documentImageCoords *= _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3;\n}\nfloat4 _10_mask = sample(_globals.image_4, documentImageCoords);"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "yuv.yz = sample(_globals.image_4, _in.CoordNormalize_3_Var * 0.5f).yz;",
+      "new": "yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;"
+    }
+  ],
+  "prepare_gg_conical_gradient": [
+    {
+      "file": "gpu_gradient.v",
+      "old": "// gradients that start at a point are radial gradients. Other two-point\n// conical gradients are not supported yet.",
+      "new": "// gradients that start at a point are radial gradients. Expanding concentric\n// gradients also support repeat and mirror tiling with a focal radius.\n// Off-center gradients can expand from a contained or internally tangent\n// focal circle. Tangent repeat with a point focus follows SVG's edge rule."
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\tlocal_matrix Matrix = Matrix.identity()\n}",
+      "new": "\tlocal_matrix Matrix = Matrix.identity()\n\tradial_bias f32\n\tradial_focus f32\n\tradial_unit ?Matrix\n\tradial_tangent bool\n\tradial_average bool\n}"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\treturn error('gg.canvas: two-point conical gradients are not supported')",
+      "new": "\tif start.x == end.x && start.y == end.y {\n\t\treturn concentric_tile_gradient(start_radius, end_radius, start, g)\n\t}\n\treturn nested_circle_gradient(start, start_radius, end, end_radius, g)"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t// A texture sampled with hardware tiling (a restored layer).\n\timage\n}",
+      "new": "\t// A texture sampled with hardware tiling (a restored layer).\n\timage\n\t// Tangent gradients always use the alpha paint block, including with unit opacity.\n\tradial_tangent_4\n\tradial_tangent_8\n}\n\nfn (s Shading) is_tangent() bool {\n\treturn s in [.radial_tangent_4, .radial_tangent_8]\n}"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "s in [.linear_8, .radial_8, .linear_8_alpha, .radial_8_alpha]",
+      "new": "s in [.linear_8, .radial_8, .linear_8_alpha, .radial_8_alpha, .radial_tangent_8]"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "return s in [.linear_4_alpha, .linear_8_alpha, .radial_4_alpha, .radial_8_alpha]",
+      "new": "return s in [.linear_4_alpha, .linear_8_alpha, .radial_4_alpha, .radial_8_alpha] || s.is_tangent()"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "if stops == 4 { Shading.radial_4 } else { Shading.radial_8 }",
+      "new": "if g.radial_tangent {\n\t\t\t\tif stops == 4 { Shading.radial_tangent_4 } else { Shading.radial_tangent_8 }\n\t\t\t} else {\n\t\t\t\tif stops == 4 { Shading.radial_4 } else { Shading.radial_8 }\n\t\t\t}"
+    },
+    {
+      "file": "paint.v",
+      "old": "\tif p.color.a != 1 {\n\t\tshading = shading.with_alpha()",
+      "new": "\tif shading.is_tangent() {\n\t\t// Tangent shaders use paintColor.xyz for the premultiplied color outside the tangent.\n\t\tu.paint_color = Color4f{u.paint_color.r, u.paint_color.g, u.paint_color.b, p.color.a}\n\t\tu.opaque = false\n\t} else if p.color.a != 1 {\n\t\tshading = shading.with_alpha()"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\trange       f32\n\t// The paint does not read",
+      "new": "\trange       f32\n\tradial_bias f32\n\tradial_focus f32\n\ttangent_outside_alpha f32\n\t// The paint does not read"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "a.mode != b.mode || a.range != b.range",
+      "new": "a.mode != b.mode || a.range != b.range || a.radial_bias != b.radial_bias\n\t\t|| a.radial_focus != b.radial_focus || a.tangent_outside_alpha != b.tangent_outside_alpha"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\tout << u.range\n\tfor out.len",
+      "new": "\tout << u.range\n\t// Fit the radial parameters into the existing tail padding.\n\tout << u.radial_bias\n\tout << u.radial_focus\n\tout << u.tangent_outside_alpha\n\tfor out.len"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t\trange:       f32(1) / f32(255)",
+      "new": "\t\trange:       f32(1) / f32(255)\n\t\tradial_bias: g.radial_bias\n\t\tradial_focus: g.radial_focus"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t// GradientShaderBlocks::GradientData: the stops, padded with the last.",
+      "new": "\tif g.radial_average {\n\t\taverage := gradient_average_color(colors, positions)\n\t\tu.paint_color = average\n\t\tu.tangent_outside_alpha = average.a\n\t}\n\t// GradientShaderBlocks::GradientData: the stops, padded with the last."
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "\t\t\t// rad_to_unit_matrix()\n\t\t\tinv := f32(1) / g.radius\n\t\t\tpts_to_unit = RasterMatrix.translate(-g.p0.x, -g.p0.y)\n\t\t\tpts_to_unit.post_scale(inv, inv)",
+      "new": "\t\t\tif unit := g.radial_unit {\n\t\t\t\tpts_to_unit = RasterMatrix.from(unit)\n\t\t\t} else {\n\t\t\t\t// rad_to_unit_matrix()\n\t\t\t\tinv := f32(1) / g.radius\n\t\t\t\tpts_to_unit = RasterMatrix.translate(-g.p0.x, -g.p0.y)\n\t\t\t\tpts_to_unit.post_scale(inv, inv)\n\t\t\t}"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "t = t.replace('float4 color_1;\\n', snippets['fields_${shading.stops()}'])",
+      "new": "t = t.replace('float4 color_1;\\n', gradient_fields(snippets['fields_${shading.stops()}'], shading))"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "t = t.replace('float4 color_1;\\n', snippets['fields_${stops}'])",
+      "new": "t = t.replace('float4 color_1;\\n', gradient_fields(snippets['fields_${stops}'], shading))"
+    },
+    {
+      "file": "gpu_gradient.v",
+      "old": "mut body := snippets['main_${kind}${alpha}']",
+      "new": "mut body := gradient_conical_body(snippets['main_${kind}${alpha}'], shading)"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float _25_b = length(_in.LocalMatrix_2_Var);",
+      "new": "float _25_b = length(_in.LocalMatrix_2_Var) + _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].radialBias;"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float _34_b = length(_in.LocalMatrix_3_Var);",
+      "new": "float _34_b = length(_in.LocalMatrix_3_Var) + _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].radialBias;"
+    }
+  ],
+  "prepare_gg_document_gradient_hole": [
+    {
+      "file": "gpu_surface.v",
+      "old": "\torigin_y int\n\t// The saves made on this device",
+      "new": "\torigin_y int\n\tdocument_gradient_hole bool\n\t// The saves made on this device"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tif outer.is_rect() {\n\t\ts.device_draw_rect(o, paint)!",
+      "new": "\tif outer.is_rect() {\n\t\t$if vox_gg_svg ? {\n\t\t\tif inner.is_rect() && paint.gradient != none && s.ctx.is_gl && !s.ctx.owns_gfx {\n\t\t\t\ts.document_gradient_hole = true\n\t\t\t\tdefer { s.document_gradient_hole = false }\n\t\t\t\ts.device_draw_rect(o, paint)!\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t\ts.device_draw_rect(o, paint)!"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tuniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tpixel_aligned :=",
+      "new": "\tmut uniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tpixel_aligned :="
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tdepends_on_dst := coverage || clipped || !opaque\n\ts.check_uniform_capacity([uniforms], clip.elements)!",
+      "new": "\tdepends_on_dst := coverage || clipped || !opaque\n\tgradient_hole := $if vox_gg_svg ? {\n\t\ts.document_gradient_hole && step == .cover_bounds\n\t} $else {\n\t\tfalse\n\t}\n\tif gradient_hole && !clipped {\n\t\tuniforms = document_unclipped_gradient_uniforms(uniforms)\n\t}\n\ts.check_uniform_capacity([uniforms], clip.elements)!"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\ts.record(step, coverage || depends_on_dst, instance, uniforms, order,\n\t\tdraw_clip)",
+      "new": "\t// Keep the OpenGL blend state stable as the hole enters or leaves the clip.\n\ts.record(step, coverage || depends_on_dst || gradient_hole, instance, uniforms, order,\n\t\tdraw_clip)"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\tuniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tcolor := uniforms.color",
+      "new": "\tmut uniforms, opaque := shaded_uniforms(paint, clip.analytic)!\n\tgradient_hole := $if vox_gg_svg ? { s.document_gradient_hole } $else { false }\n\tif gradient_hole && !clipped {\n\t\tuniforms = document_unclipped_gradient_uniforms(uniforms)\n\t}\n\tcolor := uniforms.color"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\ts.record(.cover_bounds, depends_on_dst, instance, uniforms, order, DrawClip{",
+      "new": "\ts.record(.cover_bounds, depends_on_dst || gradient_hole, instance, uniforms, order, DrawClip{"
+    }
+  ],
+  "prepare_gg_image_repeat": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_linear_filter bool\n}\n\nfn same_texture_binding",
+      "new": "\tdocument_linear_filter bool\n\tdocument_repeat_filter bool\n}\n\nfn same_texture_binding"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "a.document_linear_filter == b.document_linear_filter",
+      "new": "a.document_linear_filter == b.document_linear_filter && a.document_repeat_filter == b.document_repeat_filter"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_linear_filter bool\n\tmask_color",
+      "new": "\tdocument_linear_filter bool\n\tdocument_repeat_filter bool\n\tmask_color"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tdocument_linear_filter: layer.document_linear_filter",
+      "new": "\t\t\tdocument_linear_filter: layer.document_linear_filter\n\t\t\tdocument_repeat_filter: layer.document_repeat_filter"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "if draw.texture.document_linear_filter { document_image_sampler() } else { ctx.layer_sampler() }",
+      "new": "if draw.texture.document_repeat_filter { document_image_repeat_sampler() } else if draw.texture.document_linear_filter { document_image_sampler() } else { ctx.layer_sampler() }"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tdocument_scale [2]f32 = [f32(1),1]!",
+      "new": "\tdocument_scale [2]f32 = [f32(1),1]!\n\tdocument_translation [2]f32"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!",
+      "new": "\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\ttranslation: layer.document_translation"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tv = rename_clip_block(lines.join('\\n'))",
+      "new": "\tv = rename_clip_block(lines.join('\\n'))\n\tif v.contains('analytic_rrect_vertex_fn') {\n\t\tv = v.replace('_out.sk_Position = ', 'if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.w > 0.0f) { stepLocalCoords = (mat3_inverse(float3x3(_in.mat0, _in.mat1, _in.mat2)) * float3(devPosition.xy / devPosition.w, 1.0)).xy; }\\n_out.sk_Position = ')\n\t}"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tcolor_transform DocumentImageColorTransform\n}\n\n// image_uniform_size",
+      "new": "\tcolor_transform DocumentImageColorTransform\n\tdocument_local_coords bool\n}\n\n// image_uniform_size"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "return a.upper2x2 == b.upper2x2 && a.translation == b.translation",
+      "new": "return a.document_local_coords == b.document_local_coords && a.upper2x2 == b.upper2x2 && a.translation == b.translation"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\ttranslation: layer.document_translation",
+      "new": "\t\t\ttranslation: layer.document_translation\n\t\t\tdocument_local_coords: layer.document_repeat_filter"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\t\tout << 0\n\t}\n}\n\n// LayerImage",
+      "new": "\t\tout << if column == 2 && u.document_local_coords { f32(1) } else { f32(0) }\n\t}\n}\n\n// LayerImage"
+    }
+  ],
+  "prepare_gg_yuv_subset": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\t\tfor row in 0 .. 3 { out << u.color_transform.gamut[column * 3 + row] }",
+      "new": "\t\tfor row in 0 .. 3 {\n\t\t\tindex := column * 3 + row\n\t\t\t// The planar variant has no RGB gamut transform. Reuse that\n\t\t\t// payload for its strict chroma bounds without changing the ABI.\n\t\t\tout << if u.color_transform.yuv420_atlas && index < 4 {\n\t\t\t\tu.color_transform.yuv_chroma_bounds[index]\n\t\t\t} else { u.color_transform.gamut[index] }\n\t\t}"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "        yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;",
+      "new": "        float4 chromaBounds = float4(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                                    _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.x);\n        if (chromaBounds.z > chromaBounds.x && chromaBounds.w > chromaBounds.y) {\n            float2 chromaImageCoords = clamp(_in.CoordNormalize_3_Var, chromaBounds.xy, chromaBounds.zw)\n                * _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3 * 0.5f;\n            yuv.yz = sample(_globals.image_4, chromaImageCoords).yz;\n        } else {\n        yuv.yz = sample(_globals.image_4, documentImageCoords * 0.5f).yz;\n        }"
+    }
+  ],
+  "prepare_gg_image_quad": [
+    {
+      "file": "gpu_surface.v",
+      "old": "document_local_coords: layer.document_repeat_filter",
+      "new": "document_local_coords: layer.document_repeat_filter || layer.color_transform.image_quad_coords"
+    }
+  ],
+  "prepare_gg_srgb_gamut": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "if (_11_gamma > 0.0f) {",
+      "new": "if (_11_gamma != 0.0f) {"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));",
+      "new": "    float3 _13_linear;\n    if (_11_gamma < 0.0f) {\n        float3 encoded = max(_12_rgb, 0.0f);\n        _13_linear = select(powr(encoded * (1.0f / 1.055f) + (0.055f / 1.055f), float3(2.4f)),\n                            encoded * (1.0f / 12.92f), encoded < float3(0.04045f));\n    } else {\n        _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    }"
+    }
+  ],
+  "prepare_gg_yuv_luma_subset": [
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "    float3 yuv = _10_mask.xyz;\n    if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.z > 0.0f) {",
+      "new": "    float3 yuv = _10_mask.xyz;\n    if (_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.z > 0.0f) {\n        float4 lumaBounds = float4(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.yz,\n                                  _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xy);\n        if (lumaBounds.z > lumaBounds.x && lumaBounds.w > lumaBounds.y) {\n            float2 lumaImageCoords = clamp(_in.CoordNormalize_3_Var, lumaBounds.xy, lumaBounds.zw)\n                * _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].invDimensions_3;\n            yuv.x = sample(_globals.image_4, lumaImageCoords).x;\n        }"
     }
   ]
 }

@@ -132,10 +132,16 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		mut allow_reuse := 0
 		mut stats := ScrollRasterDiffStats{}
 		if ring_eligible {
+			keys_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_keys')
 			keys = scroll_raster_frame_keys_with_scrollbars(app.paint_commands, key_scroll,
 				app.overlay_scrollbars.paint_opacity, css.width, css.height, inline_scrollbars)
+			keys_stage.finish()
+			marks_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_key_marks')
 			app.mark_video_backdrop_keys(mut keys)
 			app.mark_background_image_keys(mut keys)
+			app.mix_raster_layer_keys(mut keys)
+			marks_stage.finish()
+			diff_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_content_diff')
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
@@ -153,6 +159,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 					}
 				}
 			}
+			diff_stage.finish()
 		}
 		mut clipped := rects.clone()
 		for restore in damage.restores { clipped << restore.rect }
@@ -172,8 +179,10 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			damage.rects = clipped
 			mut region := scroll_raster_strip_region(damage.delta, damage.width, damage.height)
 			region << rects
+			plan_stage := processmetrics.begin_thread_instruction_substage('scroll_raster_skip_plan')
 			damage.skip_plan = plan_scroll_raster_skips_with_restores(app.paint_commands, keys,
 				region, damage.restores, damage.unoptimized)
+			plan_stage.finish()
 			// Leaf rasters crop to the clip rectangles they intersect rather
 			// than to the bounding box Quartz reports for all of them.
 			for restore in damage.restores { region << restore.rect }
@@ -196,6 +205,26 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 				if value { skipped++ }
 			}
 			eprintln('VOX_SCROLL_RASTER_DAMAGE eligible=${eligible} deferred=${app.scroll_raster_frame_deferred} reused=${damage.reused} revision=${revision} previous_valid=${app.scroll_raster_keys.valid} delta=${damage.delta} changed=${stats.changed} rects=${rects.len} restores=${damage.restores.len}/${stats.restores.len} skipped=${skipped}/${app.paint_commands.len} fallback=${stats.fallback}')
+			if damage.reused && damage.skip_plan.len == app.paint_commands.len && keys.len == app.paint_commands.len {
+				mut replayed := []string{}
+				for index, value in damage.skip_plan {
+					if value || replayed.len >= 80 { continue }
+					key := keys[index]
+					replayed << '${index}:${app.paint_commands[index].kind}@${int(key.ink.x)},${int(key.ink.y)},${int(key.ink.width)}x${int(key.ink.height)}'
+				}
+				eprintln('VOX_SCROLL_RASTER_REPLAYED ${replayed.join(' ')}')
+			}
+			if region := scroll_raster_diagnostic_region() {
+				mut listed := []string{}
+				for index in 0 .. keys.len {
+					key := keys[index]
+					if !key.has_ink || !scroll_raster_rects_overlap(key.ink, region) { continue }
+					command := unsafe { &app.paint_commands[index] }
+					suppressed := damage.reused && index < damage.skip_plan.len && damage.skip_plan[index]
+					listed << '${index}:${command.kind}@${int(key.ink.x)},${int(key.ink.y)},${int(key.ink.width)}x${int(key.ink.height)} hash=${key.hash:016x} underlays=${command.underlays_next} skipped=${suppressed}'
+				}
+				eprintln('VOX_SCROLL_RASTER_REGION_COMMANDS ${listed.join(' | ')}')
+			}
 		}
 		// Retain this frame's identities only when its pixels enter the ring:
 		// a frame that paints without eligibility leaves no reusable pixels.
@@ -289,6 +318,23 @@ fn (damage &ScrollRasterDamage) skips_index(commands []layout.PaintCommand, inde
 	if !damage.reused { return false }
 	if damage.skip_plan.len == commands.len { return damage.skip_plan[index] }
 	return damage.skips(&commands[index])
+}
+
+// Same-binary control: cull every command before consulting the damage plan.
+const cull_damage_skipped_leaves = os.getenv('VOX_CULL_DAMAGE_SKIPPED_LEAVES') != ''
+
+// A leaf the damage plan skips draws nothing, culled or not, and canvas
+// culling only tracks the nesting of group commands. Answering the plan first
+// spares each skipped leaf its ink bounds; a reused animation frame replays
+// about 20 of GitHub's 910 commands. Group commands still reach culling, and
+// videos keep it first, because a culled video invalidates its backdrop.
+fn (damage &ScrollRasterDamage) skips_leaf(commands []layout.PaintCommand, index int) bool {
+	if cull_damage_skipped_leaves || !damage.reused { return false }
+	kind := commands[index].kind
+	if kind.starts_with('begin_') || kind.starts_with('end_') || kind == 'draw_video' {
+		return false
+	}
+	return damage.skips_index(commands, index)
 }
 
 // A video can be composited over its retained backdrop when it is outside

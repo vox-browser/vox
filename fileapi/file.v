@@ -90,6 +90,11 @@ pub fn (file &File) last_modified() i64 {
 	return file.last_modified_
 }
 
+// Bindings expose inherited Blob operations on the same native object.
+pub fn (file &File) as_blob() &Blob {
+	return &file.Blob
+}
+
 pub struct SerializedFile {
 pub:
 	type_         string

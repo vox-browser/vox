@@ -38,6 +38,12 @@ pub fn UniversalGlobalScopeMixin.create(event_target &dom.EventTarget, realm &Sc
 }
 
 pub fn (scope &UniversalGlobalScopeMixin) btoa(data string) !string {
+	return binary_string_to_base64(data)
+}
+
+// The codec is independent of the scope's event target. Native engine bindings
+// share it without constructing a Window just to encode a binary string.
+pub fn binary_string_to_base64(data string) !string {
 	mut bytes := []u8{cap: data.len}
 	for code_point in data.runes() {
 		if code_point > 0xff {
@@ -49,6 +55,10 @@ pub fn (scope &UniversalGlobalScopeMixin) btoa(data string) !string {
 }
 
 pub fn (scope &UniversalGlobalScopeMixin) atob(data string) !string {
+	return forgiving_base64_to_binary_string(data)
+}
+
+pub fn forgiving_base64_to_binary_string(data string) !string {
 	mut stripped := []u8{cap: data.len}
 	for character in data.bytes() {
 		if character !in [` `, `\t`, `\n`, `\x0c`, `\r`] {

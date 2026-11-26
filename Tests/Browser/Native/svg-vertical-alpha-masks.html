@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Vertical SVG alpha masks</title>
+<style>
+body { margin: 0; background: white; }
+svg { display: block; }
+</style>
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <linearGradient id="down" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="100"
+        gradientTransform="translate(0 20) scale(1 .65)">
+      <stop stop-opacity="0"/>
+      <stop offset=".4" stop-opacity=".75"/>
+      <stop offset="1"/>
+    </linearGradient>
+    <linearGradient id="up" gradientUnits="userSpaceOnUse" x1="12" x2="12" y1="110" y2="25">
+      <stop stop-opacity="0"/>
+      <stop offset="1"/>
+    </linearGradient>
+    <mask id="down-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="15" y="5" width="200" height="118">
+      <path d="M21 11h180v100H21Z" fill="url(#down)" fill-opacity=".8"/>
+    </mask>
+    <mask id="up-mask" mask-type="alpha" maskUnits="userSpaceOnUse" x="265" y="12" width="180" height="100">
+      <path d="M255 15h200v90H255Z" fill="url(#up)"/>
+    </mask>
+  </defs>
+  <g id="sample">
+    <path d="M0 0h220v125H0Z" mask="url(#down-mask)" fill="blue"/>
+    <path d="M240 0h230v125H240Z" mask="url(#up-mask)" fill="red"/>
+    <path d="M490 27h40v40h-40Z" fill="#f80"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/><use href="#sample" y="540"/>
+  <use href="#sample" y="720"/><use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/><use href="#sample" y="1620"/>
+</svg>

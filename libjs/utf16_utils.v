@@ -2,15 +2,21 @@ module libjs
 
 // Utf16String wraps []u16 to provide UTF-16 string functionality. Public
 // intrinsic-operation dependencies can return it without exposing its storage.
+@[heap]
+struct Utf16Storage {
+	bytes []u8
+	raw_ascii bool
+	ascii bool
+}
+
 pub struct Utf16String {
 	// AK's unchecked ASCII constructor owns bytes independently of their
 	// code-unit projection. Utf16View::to_utf8 returns these bytes verbatim.
-	ascii_bytes_ ?[]u8
+	// Only unchecked byte and IPC constructors need storage metadata. Keep
+	// it off ordinary code-unit strings and every PropertyName/Reference copy.
+	storage_ &Utf16Storage = unsafe { nil }
 mut:
 	data []u16
-	// IPC strings retain their actual ASCII/UTF16 storage form even when all
-	// units happen to be ASCII. Ordinary standalone strings infer the form.
-	ascii_storage_ ?bool
 }
 
 fn Utf16String.new() Utf16String {
@@ -29,7 +35,7 @@ pub fn utf16_string_from_code_units(units []u16) Utf16String {
 	// AK/Utf16String::from_utf16 delegates long input to
 	// Utf16StringData::from_utf16, which also compresses all-ASCII code units.
 	mut text := Utf16String.from_slice(units)
-	text.ascii_storage_ = text.has_ascii_storage()
+	text = Utf16String{data: text.data, storage_: &Utf16Storage{ascii: text.has_ascii_storage()}}
 	return text
 }
 
@@ -44,13 +50,15 @@ pub fn utf16_string_from_code_units_with_storage(units []u16, ascii bool) !Utf16
 			if unit >= 128 { return error('Stream contains invalid ASCII data') }
 		}
 	}
-	return Utf16String{data: units.clone(), ascii_storage_: ascii}
+	return Utf16String{data: units.clone(), storage_: &Utf16Storage{ascii: ascii}}
 }
 
 pub fn (text Utf16String) has_ascii_storage() bool {
-	if text.ascii_bytes_ != none {
-		if _ := text.retained_ascii_bytes() { return true }
-	} else if storage := text.ascii_storage_ { return storage }
+	if text.storage_ != unsafe { nil } {
+		if text.storage_.raw_ascii {
+			if _ := text.retained_ascii_bytes() { return true }
+		} else { return text.storage_.ascii }
+	}
 	for unit in text.data { if unit >= 128 { return false } }
 	return true
 }
@@ -58,7 +66,8 @@ pub fn (text Utf16String) has_ascii_storage() bool {
 pub fn (text Utf16String) has_short_ascii_storage() bool {
 	// AK/StringData.h::MAX_SHORT_STRING_BYTE_COUNT and Utf16String.h's
 	// actual ASCII inline-storage predicate, including IPC storage metadata.
-	return text.has_ascii_storage() && text.data.len <= int(sizeof(voidptr)) - int(sizeof(u8))
+	// Test the length first: has_ascii_storage() scans every code unit.
+	return text.data.len <= int(sizeof(voidptr)) - int(sizeof(u8)) && text.has_ascii_storage()
 }
 
 fn (u Utf16String) len() int {
@@ -74,15 +83,14 @@ fn (u Utf16String) as_slice() []u16 {
 }
 
 fn (u Utf16String) clone() Utf16String {
-	mut ascii_bytes := ?[]u8(none)
-	if bytes := u.retained_ascii_bytes() { ascii_bytes = bytes.clone() }
-	mut storage := u.ascii_storage_
-	if u.ascii_bytes_ != none { storage = u.has_ascii_storage() }
-	return Utf16String{
-		data: u.data.clone()
-		ascii_storage_: storage
-		ascii_bytes_: ascii_bytes
+	mut storage := unsafe { &Utf16Storage(nil) }
+	if u.storage_ != unsafe { nil } {
+		storage = &Utf16Storage{ascii: u.has_ascii_storage()}
+		if bytes := u.retained_ascii_bytes() {
+			storage = &Utf16Storage{bytes: bytes.clone(), raw_ascii: true, ascii: true}
+		}
 	}
+	return Utf16String{data: u.data.clone(), storage_: storage}
 }
 
 // WTF-8 preserves even unpaired UTF-16 surrogates in internal map keys.
@@ -92,6 +100,7 @@ pub fn (u Utf16String) str() string {
 }
 
 fn (a Utf16String) == (b Utf16String) bool {
+	if use_string_key_scans() { return utf16_equals(a.data, b.data) }
 	return a.data == b.data
 }
 
@@ -112,6 +121,9 @@ fn utf16_equals(a []u16, b []u16) bool {
 	if a.len != b.len {
 		return false
 	}
+	if use_string_key_scans() {
+		return a.len == 0 || a.data == b.data || unsafe { vmemcmp(a.data, b.data, a.len * int(sizeof(u16))) } == 0
+	}
 	for i in 0 .. a.len {
 		if a[i] != b[i] {
 			return false
@@ -120,8 +132,89 @@ fn utf16_equals(a []u16, b []u16) bool {
 	return true
 }
 
+// Compare decoded identifier units with a fixed ASCII spelling without
+// allocating and decoding the same keyword for every token/scope entry.
+@[inline]
+fn utf16_equals_ascii(units []u16, spelling string) bool {
+	if units.len != spelling.len { return false }
+	for index, byte in spelling {
+		if byte > 0x7f || units[index] != u16(byte) { return false }
+	}
+	return true
+}
+
 // Source offsets remain UTF-16 code-unit offsets, including supplementary text.
+// One pass into storage of the byte length (no UTF-8 sequence yields more code
+// units than bytes): ASCII bytes directly and well-formed multi-byte sequences
+// decoded in place. Any other byte sequence converts through runes(), which
+// defines the result for malformed input.
+@[direct_array_access]
 pub fn utf16(s string) []u16 {
+	mut units := []u16{len: s.len}
+	mut count := 0
+	mut i := 0
+	for i < s.len {
+		// Test a group of bytes together and widen it without a branch per
+		// byte. The word copy also handles unaligned string views.
+		for i <= s.len - 8 {
+			mut bytes := u64(0)
+			unsafe { vmemcpy(&bytes, s.str + i, 8) }
+			if bytes & 0x8080808080808080 != 0 { break }
+			for lane in 0 .. 8 {
+				units[count + lane] = u16(s[i + lane])
+			}
+			count += 8
+			i += 8
+		}
+		// Decode a window before trying another group, so Unicode-heavy
+		// text keeps the ordinary decoder loop. A sequence may cross the
+		// window boundary as long as it fits in the remaining source.
+		scalar_end := if s.len - i < 256 { s.len } else { i + 256 }
+		for i < scalar_end {
+			b := s[i]
+			if b < 0x80 {
+				units[count] = u16(b)
+				count++
+				i++
+				continue
+			}
+			if b >= 0xc2 && b <= 0xdf && i + 1 < s.len && s[i + 1] & 0xc0 == 0x80 {
+				units[count] = (u16(b & 0x1f) << 6) | u16(s[i + 1] & 0x3f)
+				count++
+				i += 2
+				continue
+			}
+			if b >= 0xe0 && b <= 0xef && i + 2 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80 {
+				code_point := (u32(b & 0x0f) << 12) | (u32(s[i + 1] & 0x3f) << 6) | u32(s[i + 2] & 0x3f)
+				if code_point >= 0x800 && (code_point < 0xd800 || code_point > 0xdfff) {
+					units[count] = u16(code_point)
+					count++
+					i += 3
+					continue
+				}
+			}
+			if b >= 0xf0 && b <= 0xf4 && i + 3 < s.len && s[i + 1] & 0xc0 == 0x80 && s[i + 2] & 0xc0 == 0x80
+				&& s[i + 3] & 0xc0 == 0x80 {
+				code_point := (u32(b & 0x07) << 18) | (u32(s[i + 1] & 0x3f) << 12) | (u32(s[i + 2] & 0x3f) << 6) | u32(s[i + 3] & 0x3f)
+				if code_point >= 0x10000 && code_point <= 0x10ffff {
+					value := code_point - 0x10000
+					units[count] = u16(0xD800 + (value >> 10))
+					units[count + 1] = u16(0xDC00 + (value & 0x3FF))
+					count += 2
+					i += 4
+					continue
+				}
+			}
+			return utf16_from_runes(s)
+		}
+	}
+	unsafe {
+		units.len = count
+	}
+	return units
+}
+
+fn utf16_from_runes(s string) []u16 {
 	mut result := []u16{cap: s.len}
 	for character in s.runes() {
 		code_point := u32(character)

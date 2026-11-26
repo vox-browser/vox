@@ -30,6 +30,9 @@ const incremental_layout_diagnostics = os.getenv('VOX_INCREMENTAL_LAYOUT_DIAGNOS
 const verify_incremental_layout = os.getenv('VOX_VERIFY_INCREMENTAL_LAYOUT') != ''
 // With the above: compare two complete passes instead (determinism control).
 const verify_incremental_layout_control = os.getenv('VOX_VERIFY_INCREMENTAL_LAYOUT_CONTROL') != ''
+// Same-binary control: a node the committed pass did not lay out blocks the
+// reuse of its ancestors again, as before committed_pass_did_not_lay_out().
+const disable_unlaid_node_reuse = os.getenv('VOX_DISABLE_UNLAID_NODE_REUSE') != ''
 // More separate changes than this run the complete pass.
 const incremental_layout_max_origins = 64
 // Each rejected root may be replaced by the next one above it this many times.
@@ -53,8 +56,6 @@ pub fn incremental_layout_verification_mismatch_count() u64 {
 // space and the result.
 struct RelayoutRecord {
 	node   &Node = unsafe { nil }
-	before UsedValues
-	after  UsedValues
 	space  AvailableSpace
 	result FormattingContextResult
 	// measurement_subtree_reuse.v: the pass that recorded or carried this
@@ -62,6 +63,9 @@ struct RelayoutRecord {
 	serial        u64
 	baselines     TextControlBaselines
 	has_baselines bool
+mut:
+	before UsedValues
+	after  UsedValues
 }
 
 enum SubtreeLayoutDecision as u8 {
@@ -74,8 +78,9 @@ struct ReplacedSizeEntry {
 	hash u64
 }
 
-fn mark_sized_by_ancestor_measurement(node &Node) {
+fn mark_sized_by_ancestor_measurement(node &Node, reason MeasurementMark) {
 	if node.sized_by_ancestor_measurement_ { return }
+	if incremental_layout_diagnostics { note_measurement_mark(node, reason) }
 	mut mutable := unsafe { &Node(node) }
 	mutable.sized_by_ancestor_measurement_ = true
 }
@@ -87,18 +92,38 @@ fn relayout_root_candidate(box &Node) bool {
 		&& box.as_node_with_style() != none
 }
 
-fn layout_record_snapshot(values &UsedValues) UsedValues {
-	mut snapshot := *values
-	snapshot.line_boxes = []LineBox{}
-	snapshot.line_boxes_are_shared_ = false
+const empty_relayout_record = RelayoutRecord{}
+
+__global relayout_shared_scalar_snapshots u64
+
+fn layout_record_snapshot(values &UsedValues, share_scalar_geometry bool) UsedValues {
+	mut snapshot_rare := values.rare_
+	mut shared := false
 	if rare := values.rare_ {
-		snapshot.rare_ = rare.clone()
-		snapshot.rare_is_shared_ = false
+		if share_scalar_geometry && rare.grid_geometry_ == none && rare.svg_geometry_ == none {
+			// The source and this snapshot both belong to the document.
+			// A later geometry setter detaches the source before writing.
+			mut source := unsafe { &UsedValues(values) }
+			source.rare_is_shared_ = true
+			shared = true
+			if incremental_layout_diagnostics { relayout_shared_scalar_snapshots++ }
+		} else {
+			snapshot_rare = rare.clone()
+		}
 	}
-	return snapshot
+	// Construct the final value directly. A mutable UsedValues temporary is boxed.
+	return UsedValues{
+		...*values
+		line_boxes: empty_relayout_record.before.line_boxes
+		line_boxes_are_shared_: false
+		// Replay binds to the containing block of the destination pass.
+		containing_block_used_values_: none
+		rare_: snapshot_rare
+		rare_is_shared_: shared
+	}
 }
 
-fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, after &UsedValues,
+fn record_relayout_root(mut state LayoutState, box &Node, snapshots RelayoutRecord,
 	space AvailableSpace, result FormattingContextResult) {
 	styled := box.as_node_with_style() or { return }
 	index := styled.layout_index()
@@ -106,12 +131,11 @@ fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, af
 	// compare with those its first record kept (measurement_subtree_reuse.v).
 	repeated := relayout_root_has_first_record_of_this_pass(state, box, index)
 	baselines := if repeated { layout_box_baselines(state, box) } else { TextControlBaselines{} }
-	mut retained := retain_geometry_allocations()
-	defer { retained.finish() }
+	mut allocations := state.enter_relayout_record_allocations()
+	defer { allocations.finish() }
 	state.relayout_records_[index] = RelayoutRecord{
+		...snapshots
 		node:          box
-		before:        layout_record_snapshot(before)
-		after:         layout_record_snapshot(after)
 		space:         space
 		result:        result
 		serial:        state.pass_serial_
@@ -122,11 +146,12 @@ fn record_relayout_root(mut state LayoutState, box &Node, before &UsedValues, af
 }
 
 fn note_incremental_layout_origin(mut state LayoutState, node &Node) {
+	if incremental_layout_diagnostics { note_relayout_origin_for_census(state, node) }
 	if state.layout_invalidation_unbounded_ { return }
 	for existing in state.layout_invalidation_origins_ {
 		if voidptr(existing) == voidptr(node) { return }
 	}
-	if state.layout_invalidation_origins_.len >= incremental_layout_max_origins {
+	if state.layout_invalidation_origins_.len >= noted_layout_origin_limit() {
 		state.layout_invalidation_unbounded_ = true
 		state.layout_invalidation_origins_ = []&Node{}
 		return
@@ -251,6 +276,7 @@ fn clear_scrollable_overflow_in_state(mut state LayoutState) {
 fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutState,
 	pass CommittedLayoutPass, replaced map[u32]ReplacedSizeEntry) ?&LayoutState {
 	if disable_incremental_layout { return none }
+	report_relayout_origin_census(previous, root)
 	if previous.layout_invalidation_unbounded_ {
 		incremental_layout_reject('too-many-changes')
 		return none
@@ -275,6 +301,7 @@ fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutSt
 			}
 		}
 	}
+	origins = attached_layout_origins(origins, root)
 	if origins.len == 0 {
 		incremental_layout_reject('unrecorded-change')
 		return none
@@ -286,12 +313,17 @@ fn relayout_incrementally(document &dom.Document, root &Node, previous &LayoutSt
 	mut roots := []&Node{}
 	for origin in origins {
 		relayout_root := incremental_relayout_root_above(previous, origin) or {
+			report_missing_relayout_root(previous, origin)
 			incremental_layout_reject('no-root')
 			return none
 		}
 		add_incremental_relayout_root(mut roots, relayout_root)
 	}
 	for _ in 0 .. incremental_layout_max_escalations + 1 {
+		if incremental_roots_are_too_large(root, roots) {
+			incremental_layout_reject('large-root')
+			return none
+		}
 		attempt := try_incremental_relayout(document, root, previous, pass, roots)
 		if attempt.state != unsafe { nil } {
 			return attempt.state
@@ -324,16 +356,18 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 		collect_layout_subtree_indices(relayout_root, mut skipped)
 	}
 	mut state := LayoutState.new()
+	state.enable_native_layout_pass_storage(document)
 	unsafe {
 		state.previous_inline_layouts_ = previous.inline_layouts_
 		state.previous_block_layouts_ = previous.block_layouts_
 	}
-	state.block_layouts_ = previous.block_layouts_.clone()
-	state.inline_layouts_ = previous.inline_layouts_.clone()
-	state.text_control_layouts_ = previous.text_control_layouts_.clone()
-	state.relayout_records_ = previous.relayout_records_.clone()
-	state.first_relayout_records_ = previous.first_relayout_records_.clone()
+	state.block_layouts_ = block_layouts_outside_relayout_roots(previous.block_layouts_, root, roots,
+		skipped)
+	state.inline_layouts_ = inline_layouts_outside_relayout_roots(previous.inline_layouts_, root,
+		roots, skipped)
+	state.copy_relayout_records(previous, true)
 	state.pass_serial_ = next_layout_pass_serial()
+	state.layout_tree_order_ = voidptr(root.tree_order_)
 	state.subgrid_storage_ = previous.subgrid_storage_
 	state.begin_retained_block_backoff_pass(previous.block_layout_backoff_)
 	state.previous_state_ = unsafe { &LayoutState(previous) }
@@ -348,11 +382,13 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			values := unsafe { &UsedValues(entry) }
 			node := values.node_
 			if node == unsafe { nil } || node.layout_index() in skipped { continue }
+			// A box an in-place tree update removed (in_place_tree_update.v).
+			if voidptr(unsafe { &Node(node) }.root()) != voidptr(root) { continue }
 			mut containing := ?&UsedValues(none)
 			if parent := committed_geometry_parent(unsafe { &Node(node) }, values) {
 				containing = state.get(parent)
 			}
-			_ = state.restore_retained_values(node, values, containing)
+			_ = state.restore_layout_values(node, values, containing, true)
 		}
 	}
 	state.enable_measurement_chunk_pool()
@@ -366,6 +402,7 @@ fn try_incremental_relayout(document &dom.Document, root &Node, previous &Layout
 			geometry_scratch.finish()
 			state.previous_state_ = unsafe { nil }
 			state.subtree_reuse_source_ = unsafe { nil }
+			state.release_native_layout_pass_storage()
 			return IncrementalRelayoutAttempt{
 				failed: relayout_root
 			}
@@ -551,8 +588,12 @@ fn reuse_committed_subtree_layout(mut state LayoutState, box &Node, mut box_stat
 		}
 		return none
 	}
-	if block_contents_need_alignment(box) || subtree_reuse_blocked(previous, box, box) {
-		if incremental_layout_diagnostics { incremental_layout_fresh_counts[5]++ }
+	if block_contents_need_alignment(box) || subtree_reuse_blocked_with(previous, box, box, !retain_escaping_absolute_blocking) {
+		if incremental_layout_diagnostics {
+			incremental_layout_fresh_counts[5]++
+			reason := if block_contents_need_alignment(box) { 'alignment' } else { subtree_reuse_block_reason(previous, box, box) }
+			eprintln('VOX_INCREMENTAL_LAYOUT reuse=blocked tag=${layout_debug_tag(box)} reason=${reason}')
+		}
 		return none
 	}
 	mut retained := retain_geometry_allocations()
@@ -638,8 +679,9 @@ fn report_incremental_layout_pass(same_tree bool) {
 	report_retained_flow_rejections()
 	report_measurement_subtree_reuse()
 	report_automatic_height_answers()
+	report_inline_layout_outcomes()
 	if !incremental_layout_diagnostics { return }
-	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]}')
+	eprintln('VOX_INCREMENTAL_LAYOUT pass same_tree=${same_tree} reused=${incremental_layout_reused_subtrees} no_source=${incremental_layout_fresh_counts[0]} dirty=${incremental_layout_fresh_counts[1]} uncommitted=${incremental_layout_fresh_counts[2]} unrecorded=${incremental_layout_fresh_counts[3]} changed_inputs=${incremental_layout_fresh_counts[4]} blocked=${incremental_layout_fresh_counts[5]} shared_scalar_snapshots=${relayout_shared_scalar_snapshots}')
 }
 
 // Reused subtree roots in this process (tests and diagnostics).
@@ -672,7 +714,7 @@ fn restore_committed_layout_node(mut state LayoutState, previous &LayoutState, n
 			if parent := committed_geometry_parent(node, values) {
 				containing = state.get(parent)
 			}
-			mut restored := state.restore_retained_values(styled, values, containing)
+			mut restored := state.restore_layout_values(styled, values, containing, true)
 			restored.scrollable_overflow_rect_ = none
 			restored.has_scrollable_overflow_ = false
 		}
@@ -690,6 +732,7 @@ fn carry_committed_layout_records(mut state LayoutState, previous &LayoutState, 
 	if lookup.values != unsafe { nil } {
 		index := styled.layout_index()
 		old_index := lookup.index
+		mut allocations := state.enter_relayout_record_allocations()
 		if record := previous.relayout_records_[old_index] {
 			if voidptr(record.node) == voidptr(node) {
 				state.relayout_records_[index] = RelayoutRecord{
@@ -702,6 +745,7 @@ fn carry_committed_layout_records(mut state LayoutState, previous &LayoutState, 
 		if record := previous.text_control_layouts_[old_index] {
 			state.text_control_layouts_[index] = record
 		}
+		allocations.finish()
 		if previous.subgrid_storage_ != unsafe { nil } {
 			if subgrid := previous.subgrid_storage_.values[old_index] {
 				mut storage := state.ensure_subgrid_storage()
@@ -739,6 +783,8 @@ fn subtree_height_is_not_an_input(a &UsedValues, b &UsedValues) bool {
 	return !retain_indefinite_height_input && !a.has_definite_height_ && !b.has_definite_height_
 }
 
+const empty_subtree_layout_inputs = &UsedValuesRareData{}
+
 // The values a parent sets before FormattingContext::layout_inside() that the
 // inner layout reads. Offsets and margins only place the box.
 fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
@@ -752,8 +798,8 @@ fn subtree_layout_inputs_match(a &UsedValues, b &UsedValues) bool {
 		|| a.border_top != b.border_top || a.border_bottom != b.border_bottom {
 		return false
 	}
-	x := a.rare_ or { &UsedValuesRareData{} }
-	y := b.rare_ or { &UsedValuesRareData{} }
+	x := a.rare_ or { empty_subtree_layout_inputs }
+	y := b.rare_ or { empty_subtree_layout_inputs }
 	if x.override_borders_data_ != none || y.override_borders_data_ != none {
 		return false
 	}
@@ -785,8 +831,8 @@ fn subtree_layout_inputs_difference(a &UsedValues, b &UsedValues) string {
 		|| a.border_bottom != b.border_bottom {
 		return 'border'
 	}
-	x := a.rare_ or { &UsedValuesRareData{} }
-	y := b.rare_ or { &UsedValuesRareData{} }
+	x := a.rare_ or { empty_subtree_layout_inputs }
+	y := b.rare_ or { empty_subtree_layout_inputs }
 	if x.override_borders_data_ != none || y.override_borders_data_ != none { return 'override-borders' }
 	if x.static_position_rect_ != y.static_position_rect_ { return 'static-position' }
 	if !subtree_optional_pixels_equal(x.box_model_percentage_basis_, y.box_model_percentage_basis_) {
@@ -824,17 +870,34 @@ const retain_static_generated_blocking = os.getenv('VOX_RETAIN_STATIC_GENERATED_
 // or pseudo-element box that contains it, which is examined as its parent.
 fn generated_box_depends_on_document_order(node &Node) bool {
 	if node.is_generated_text_node() { return false }
-	if node.is_list_item_marker_box() { return !retained_flow_marker_box_is_static(node) }
-	if node.is_list_item_box() { return !retained_flow_list_item_box_is_static(node) }
+	if node.is_list_item_marker_box() {
+		return !retained_flow_marker_box_is_static(node) && !marker_ordinal_text_is_current(node)
+	}
+	if node.is_list_item_box() {
+		return !retained_flow_list_item_box_is_static(node) && !list_item_ordinal_marker_is_current(node)
+	}
 	if node.is_generated_for_pseudo_element() { return generated_content_uses_document_state(node) }
 	return false
 }
+
+// Same-binary control: an out-of-flow descendant positioned against a box
+// outside the subtree blocks its reuse in layout passes, as in measurements.
+const retain_escaping_absolute_blocking = os.getenv('VOX_RETAIN_ESCAPING_ABSOLUTE_BLOCKING') != ''
 
 // An out-of-flow descendant positioned against a box outside `boundary`
 // depends on geometry the subtree does not own. Layout indices are not unique
 // across trees laid out in one state, so each committed value must belong to
 // its node.
 fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool {
+	return subtree_reuse_blocked_with(previous, node, boundary, false)
+}
+
+// `allow_escaping_absolute`: a layout pass positions absolute boxes after all
+// formatting contexts. Its walk lays out again each one inside a reused
+// subtree whose containing block lies outside it (absolute_positioning.v),
+// from the static position its restored parent recorded and the containing
+// block's current geometry, so such a box need not block the reuse.
+fn subtree_reuse_blocked_with(previous &LayoutState, node &Node, boundary &Node, allow_escaping_absolute bool) bool {
 	// Counter-generated content can depend on preceding siblings outside the
 	// boundary. Its text and marker sizing must run through layout again.
 	// Bullets, authored strings and other content that no counter or quote
@@ -850,20 +913,56 @@ fn subtree_reuse_blocked(previous &LayoutState, node &Node, boundary &Node) bool
 	for child in node.children() {
 		if child.is_absolutely_positioned() || child.is_fixed_position() {
 			containing := child.containing_block() or { return true }
-			if !node_is_inclusive_ancestor(boundary, unsafe { &Node(containing) }) { return true }
+			if !allow_escaping_absolute
+				&& !node_is_inclusive_ancestor(boundary, unsafe { &Node(containing) }) {
+				return true
+			}
 		}
 		if styled := child.as_node_with_style() {
 			lookup := committed_values_lookup(previous, styled)
-			if lookup.values == unsafe { nil } && lookup.conflict {
+			if lookup.values == unsafe { nil } && lookup.conflict
+				&& !committed_pass_did_not_lay_out(previous, child, styled) {
 				if incremental_layout_diagnostics {
-					eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(child)} reason=index-conflict')
+					eprintln('VOX_INCREMENTAL_LAYOUT reuse=rejected tag=${layout_debug_tag(child)} reason=index-conflict ${index_conflict_detail(previous, child, styled)}')
 				}
 				return true
 			}
 		}
-		if subtree_reuse_blocked(previous, child, boundary) { return true }
+		if subtree_reuse_blocked_with(previous, child, boundary, allow_escaping_absolute) { return true }
 	}
 	return false
+}
+
+// VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS: the first condition that makes
+// subtree_reuse_blocked() refuse `node`, with the box it concerns.
+fn subtree_reuse_block_reason(previous &LayoutState, node &Node, boundary &Node) string {
+	if retain_static_generated_blocking {
+		if node.is_list_item_box() || node.is_list_item_marker_box()
+			|| node.is_generated_text_node() || node.is_generated_for_pseudo_element() {
+			return 'generated:${layout_debug_tag(node)}'
+		}
+	} else if generated_box_depends_on_document_order(node) {
+		return 'document-order:${layout_debug_tag(node)}'
+	}
+	for child in node.children() {
+		if child.is_absolutely_positioned() || child.is_fixed_position() {
+			containing := child.containing_block() or { return 'out-of-flow-without-containing-block:${layout_debug_tag(child)}' }
+			if retain_escaping_absolute_blocking
+				&& !node_is_inclusive_ancestor(boundary, unsafe { &Node(containing) }) {
+				return 'outside-containing-block:${layout_debug_tag(child)}<${layout_debug_tag(unsafe { &Node(containing) })}'
+			}
+		}
+		if styled := child.as_node_with_style() {
+			lookup := committed_values_lookup(previous, styled)
+			if lookup.values == unsafe { nil } && lookup.conflict
+				&& !committed_pass_did_not_lay_out(previous, child, styled) {
+				return 'index-conflict:${layout_debug_tag(child)}'
+			}
+		}
+		reason := subtree_reuse_block_reason(previous, child, boundary)
+		if reason != '' { return reason }
+	}
+	return ''
 }
 
 // Whether `node` lies in a subtree that this pass restored from the reuse
@@ -880,6 +979,21 @@ fn (state &LayoutState) in_reused_subtree(node &Node, inclusive bool) bool {
 		current = candidate.parent()
 	}
 	return false
+}
+
+// The box whose subtree this pass restored and that contains `node` (`node`
+// itself when `inclusive`), if any.
+fn (state &LayoutState) reused_subtree_root(node &Node, inclusive bool) ?&Node {
+	if state.subtree_layout_decisions_.len == 0 { return none }
+	mut current := if inclusive { ?&Node(node) } else { node.parent() }
+	for current != none {
+		candidate := current or { break }
+		if decision := state.subtree_layout_decisions_[u64(voidptr(candidate))] {
+			return if decision == .reused { candidate } else { none }
+		}
+		current = candidate.parent()
+	}
+	return none
 }
 
 // Whether `node`'s descendants were restored by subtree reuse, given whether
@@ -1029,3 +1143,44 @@ fn used_values_differing_fields(a &UsedValues, b &UsedValues) string {
 
 // Process-wide mismatch count of VOX_VERIFY_INCREMENTAL_LAYOUT (tests).
 __global incremental_layout_verify_mismatches u64
+
+// VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS: which kind of box lost its committed
+// values, and which boxes hold its current and previous layout indexes.
+fn index_conflict_detail(previous &LayoutState, node &Node, styled &NodeWithStyle) string {
+	kind := if node.is_generated_for_pseudo_element() {
+		'pseudo'
+	} else if node.is_generated_text_node() {
+		'generated-text'
+	} else if node.is_list_item_marker_box() {
+		'marker'
+	} else if node.is_anonymous() {
+		'anonymous'
+	} else {
+		'dom'
+	}
+	parent := if p := node.parent() { layout_debug_tag(p) } else { '' }
+	mut holders := []string{}
+	for index in [styled.layout_index(), styled.previous_layout_index_] {
+		values := previous.used_values_store.get(index) or {
+			holders << '${index}:empty'
+			continue
+		}
+		holder := values.node_
+		holders << if holder == unsafe { nil } { '${index}:nil' } else { '${index}:${layout_debug_tag(unsafe { &Node(holder) })}' }
+	}
+	return 'kind=${kind} parent=${parent} holders=${holders.join(',')}'
+}
+
+// Whether the committed pass left `node` without values. Under the tree order
+// that pass was keyed by, a node's values can only be at its current index:
+// a free slot there means that pass did not lay the node out (for example a
+// whitespace-only anonymous flex item), and a restored subtree reproduces
+// that exactly. After a rebuild the indexes moved, and a node without
+// values found under either index may have lost them, so it still blocks.
+fn committed_pass_did_not_lay_out(previous &LayoutState, node &Node, styled &NodeWithStyle) bool {
+	if disable_unlaid_node_reuse || previous.layout_tree_order_ == unsafe { nil }
+		|| previous.layout_tree_order_ != voidptr(node.tree_order_) {
+		return false
+	}
+	return previous.used_values_store.get(styled.layout_index()) == none
+}

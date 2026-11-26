@@ -11,14 +11,28 @@ pub const maximum_argument_count = u64(interpreter_stack_size) / u64(sizeof(Valu
 
 pub struct InterpreterStack {
 mut:
-	contexts      []&ExecutionContext
+	call_argument_workspaces []&CallArgumentWorkspace
+	call_argument_depth int
+	contexts      []&ExecutionContext // Owned by this stack and never sliced.
+	recycled      []&ExecutionContext
+	recycled_bytes uint
+	// context_reuse.v: parked call_body() frames. A separate record keeps the
+	// VM's later fields within short load offsets.
+	parked &ParkedFrames = unsafe { nil }
 	top_          uint
 	limit         uint = interpreter_stack_size
 	next_frame_id u64   = 1
+	native_calls  []&NativeInvocation
+	native_depth  int
+	// native_call_frames.v: one argument-only frame per native nesting depth.
+	native_frames      []&ExecutionContext
+	native_frame_depth int
 }
 
 pub fn InterpreterStack.new() InterpreterStack {
-	return InterpreterStack{}
+	return InterpreterStack{
+		parked: &ParkedFrames{}
+	}
 }
 
 // top returns the current allocation mark.
@@ -56,13 +70,22 @@ pub fn (mut stack InterpreterStack) allocate(registers_and_locals_count u32, con
 }
 
 // deallocate releases every frame allocated at or above the mark.
+@[direct_array_access]
 pub fn (mut stack InterpreterStack) deallocate(mark uint) {
 	if mark > stack.top_ {
 		panic('InterpreterStack.deallocate: mark ${mark} is above the top ${stack.top_}')
 	}
-	for stack.contexts.len > 0 && stack.contexts.last().stack_offset >= mark {
-		mut released := stack.contexts.pop()
+	for stack.contexts.len > 0 {
+		last := stack.contexts.len - 1
+		mut released := stack.contexts[last]
+		if released.stack_offset < mark { break }
+		// A conservative collector also scans the array's unused capacity.
+		unsafe {
+			stack.contexts[last] = nil
+			stack.contexts.len = last
+		}
 		released.stack_allocated = false
+		stack.recycle_context(mut released)
 	}
 	stack.top_ = mark
 }

@@ -59,13 +59,26 @@ fn test_committed_flex_measurement_restores_published_root_baselines() {
 		assert actual_first == first
 		assert actual_last == last
 		mut reused_lines := false
+		mut published_node := unsafe { &NodeWithStyle(nil) }
+		mut expected_width := CSSPixels{}
 		for entry in entries[0].values {
 			if entry.values.line_boxes.len == 0 { continue }
 			if current := source.try_get(entry.node) {
-				if current.line_boxes.data == entry.values.line_boxes.data { reused_lines = true }
+				if current.line_boxes_are_shared_
+					&& published_line_boxes_equal(current.line_boxes, entry.values.line_boxes) {
+					$if prealloc {
+						assert current.line_boxes.data != entry.values.line_boxes.data
+						assert source.measurement_chunk_pool_.flex_grid_measurement_cache_.contains(entry.values.line_boxes.data)
+					}
+					reused_lines = true
+					published_node = entry.node
+					expected_width = current.line_boxes[0].fragments_[0].inline_length_
+				}
 			}
 		}
 		assert reused_lines
 		source.release_measurement_chunk_pool()
+		published := source.try_get(published_node) or { panic('published line boxes') }
+		assert published.line_boxes[0].fragments_[0].inline_length_ == expected_width
 	}
 }

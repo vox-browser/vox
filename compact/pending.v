@@ -11,6 +11,11 @@ const __pendingApply=Reflect.apply,__pendingSetSize=Object.getOwnPropertyDescrip
 function __compactHasPendingDOMState(){
  return __state.operations.length!==0||__pendingApply(__pendingSetSize,__dirtyElementStates,[])!==0||!!__state.bodyHTMLDirty||!!__state.bodyTextDirty;
 }
+// Whether a native write must replay the facade first: pending edits, or
+// canvases, whose state every replay carries.
+function __compactNeedsNativeReplay(){
+ return __compactHasPendingDOMState()||__pendingKeys(__canvases).length!==0;
+}
 function __trackElementEdits(state){
  if(__trackedElementStates.has(state))return state;
  __trackedElementStates.add(state);

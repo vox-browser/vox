@@ -10,12 +10,7 @@
 #include "native_rgba_is_opaque.h"
 #include "native_crc32.h"
 #include "native_presented_pixels_darwin.h"
-
-static void native_png_write_u32(unsigned char *bytes, uint32_t value)
-{
-    bytes[0] = value >> 24; bytes[1] = value >> 16;
-    bytes[2] = value >> 8; bytes[3] = value;
-}
+#include "native_snapshot_png_deflate_darwin.h"
 
 static void native_png_append_chunk(NSMutableData *output, const char *type,
     const unsigned char *bytes, uint32_t length)
@@ -44,6 +39,42 @@ static void native_png_exif_entry(unsigned char *entry, unsigned tag, unsigned t
     native_png_write_u32(entry + 8, value);
 }
 
+static NSData *native_snapshot_optional_compression(const unsigned char *source,
+    size_t row_bytes, size_t height, size_t row_pitch)
+{
+    size_t filtered_pitch = row_bytes + 1;
+    size_t size = filtered_pitch * height;
+    // The repeated-pixel codec reads unfiltered rows straight from the
+    // bitmap. Its output equals compressing the materialized rows below.
+    typedef size_t (*SnapshotRowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
+    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
+    SnapshotRowCompressor row_compressor = (SnapshotRowCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_png_rows");
+    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_zlib");
+    if (!row_compressor && !compressor) return nil;
+    // zlib's compressBound, the capacity the libdeflate entry points expect.
+    size_t bound = size + (size >> 12) + (size >> 14) + (size >> 25) + 13;
+    NSMutableData *compressed = [NSMutableData dataWithLength:bound];
+    size_t written = row_compressor ? row_compressor(source, row_bytes, height,
+        row_pitch, compressed.mutableBytes, compressed.length) : 0;
+    if (!written) {
+        NSMutableData *rows = [NSMutableData dataWithLength:size];
+        unsigned char *filtered = rows.mutableBytes;
+        for (size_t y = 0; y < height; ++y) {
+            unsigned char *output = filtered + y * filtered_pitch;
+            output[0] = 0;
+            memcpy(output + 1, source + y * row_pitch, row_bytes);
+        }
+        written = compressor ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
+        if (!written) return nil;
+    }
+    if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
+    compressed.length = written;
+    return compressed;
+}
+
 // Only opaque, byte-ordered RGBA in the named sRGB space is eligible. The
 // standard sRGB, Exif dimension and integer-density chunks retain the ordinary
 // encoder's metadata without initializing ImageIO's pixel encoder. Other spaces,
@@ -60,8 +91,8 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     if (width <= 0 || height <= 0 || width > UINT32_MAX || height > UINT32_MAX
         || width > (64 * 1024 * 1024 - 1) / 4) return nil;
     size_t row_bytes = (size_t)width * 4, filtered_pitch = row_bytes + 1;
-    // A presented capture already verified its bytes as opaque sRGB; read
-    // them directly rather than materializing the wrapping rep's own copy.
+    // A presented capture already verified its opaque RGBA bytes; read them
+    // directly. The named-sRGB eligibility check below still applies.
     NativePresentedPixels presented;
     BOOL trusted = native_presented_pixels_for(bitmap, &presented)
         && presented.width == (size_t)width && presented.height == (size_t)height;
@@ -86,82 +117,69 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     const unsigned char *source = trusted ? presented.pixels : bitmap.bitmapData;
     if (!trusted && !vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
-    size_t size = filtered_pitch * (size_t)height;
-    // Vox links no zlib: this encoder needs the optional libdeflate backend.
-    // Without it (or when it cannot allocate or fit its output) the ordinary
-    // ImageIO encoder writes the snapshot instead.
     if (getenv("VOX_DISABLE_LIBDEFLATE_PNG")) return nil;
-    // The repeated-pixel codec reads unfiltered rows straight from the
-    // bitmap. Its output equals compressing the materialized rows below.
-    typedef size_t (*SnapshotRowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
-    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
-    SnapshotRowCompressor row_compressor = (SnapshotRowCompressor)dlsym(RTLD_DEFAULT,
-        "ladybird_v_snapshot_compress_png_rows");
-    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
-        "ladybird_v_snapshot_compress_zlib");
-    if (!row_compressor && !compressor) return nil;
-    // zlib's compressBound, the capacity the libdeflate entry points expect.
-    size_t bound = size + (size >> 12) + (size >> 14) + (size >> 25) + 13;
-    NSMutableData *compressed = [NSMutableData dataWithLength:bound];
-    size_t written = row_compressor ? row_compressor(source, row_bytes, (size_t)height,
-        (size_t)row_pitch, compressed.mutableBytes, compressed.length) : 0;
-    if (!written) {
-        NSMutableData *rows = [NSMutableData dataWithLength:size];
-        unsigned char *filtered = rows.mutableBytes;
-        for (NSInteger y = 0; y < height; ++y) {
-            unsigned char *output = filtered + (size_t)y * filtered_pitch;
-            output[0] = 0;
-            memcpy(output + 1, source + (size_t)y * row_pitch, row_bytes);
-        }
-        written = compressor ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
-        if (!written) return nil;
-        if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
-            fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
-    } else if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
-        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
-    compressed.length = written;
-
-    const unsigned char signature[] = {137,80,78,71,13,10,26,10};
-    NSMutableData *result = [NSMutableData dataWithCapacity:compressed.length + 256];
-    [result appendBytes:signature length:sizeof signature];
-    unsigned char header[13] = {0};
-    native_png_write_u32(header, (uint32_t)width);
-    native_png_write_u32(header + 4, (uint32_t)height);
-    header[8] = 8; header[9] = 6;
-    native_png_append_chunk(result, "IHDR", header, sizeof header);
-    unsigned char intent = 0;
-    native_png_append_chunk(result, "sRGB", &intent, 1);
-
-    unsigned char exif[120] = {0};
-    exif[0] = exif[1] = 'M'; exif[3] = 42;
-    native_png_write_u32(exif + 4, 8);
-    native_png_write_u16(exif + 8, density ? 4 : 1);
-    size_t directory = density ? 78 : 26;
-    if (density) {
-        native_png_exif_entry(exif + 10, 0x11a, 5, 62);
-        native_png_exif_entry(exif + 22, 0x11b, 5, 70);
-        native_png_exif_entry(exif + 34, 0x128, 3, 0x20000);
-        native_png_exif_entry(exif + 46, 0x8769, 4, (uint32_t)directory);
-        native_png_write_u32(exif + 62, (uint32_t)dpi_x);
-        native_png_write_u32(exif + 66, 1);
-        native_png_write_u32(exif + 70, (uint32_t)dpi_y);
-        native_png_write_u32(exif + 74, 1);
-    } else native_png_exif_entry(exif + 10, 0x8769, 4, (uint32_t)directory);
-    native_png_write_u16(exif + directory, 3);
-    native_png_exif_entry(exif + directory + 2, 0xa001, 3, 0x10000);
-    native_png_exif_entry(exif + directory + 14, 0xa002, 4, (uint32_t)width);
-    native_png_exif_entry(exif + directory + 26, 0xa003, 4, (uint32_t)height);
-    native_png_append_chunk(result, "eXIf", exif, density ? 120 : 68);
-    if (density) {
-        unsigned char physical[9] = {0};
-        native_png_write_u32(physical, (uint32_t)meter_x);
-        native_png_write_u32(physical + 4, (uint32_t)meter_y);
-        physical[8] = 1;
-        native_png_append_chunk(result, "pHYs", physical, sizeof physical);
+    VoxSnapshotIDAT chunks[VOX_SNAPSHOT_PNG_MAX_BANDS];
+    size_t chunk_count = native_snapshot_deflate_rows(source, row_bytes, (size_t)height,
+        (size_t)row_pitch, chunks);
+    NSData *compressed = nil;
+    if (!chunk_count) {
+        compressed = native_snapshot_optional_compression(source, row_bytes,
+            (size_t)height, (size_t)row_pitch);
+        if (!compressed) return nil;
     }
-    native_png_append_chunk(result, "IDAT", compressed.bytes, (uint32_t)compressed.length);
-    native_png_append_chunk(result, "IEND", NULL, 0);
-    return result;
+
+    @try {
+        const unsigned char signature[] = {137,80,78,71,13,10,26,10};
+        size_t capacity = compressed.length + 256;
+        for (size_t index = 0; index < chunk_count; ++index) capacity += chunks[index].size;
+        NSMutableData *result = [NSMutableData dataWithCapacity:capacity];
+        [result appendBytes:signature length:sizeof signature];
+        unsigned char header[13] = {0};
+        native_png_write_u32(header, (uint32_t)width);
+        native_png_write_u32(header + 4, (uint32_t)height);
+        header[8] = 8; header[9] = 6;
+        native_png_append_chunk(result, "IHDR", header, sizeof header);
+        unsigned char intent = 0;
+        native_png_append_chunk(result, "sRGB", &intent, 1);
+
+        unsigned char exif[120] = {0};
+        exif[0] = exif[1] = 'M'; exif[3] = 42;
+        native_png_write_u32(exif + 4, 8);
+        native_png_write_u16(exif + 8, density ? 4 : 1);
+        size_t directory = density ? 78 : 26;
+        if (density) {
+            native_png_exif_entry(exif + 10, 0x11a, 5, 62);
+            native_png_exif_entry(exif + 22, 0x11b, 5, 70);
+            native_png_exif_entry(exif + 34, 0x128, 3, 0x20000);
+            native_png_exif_entry(exif + 46, 0x8769, 4, (uint32_t)directory);
+            native_png_write_u32(exif + 62, (uint32_t)dpi_x);
+            native_png_write_u32(exif + 66, 1);
+            native_png_write_u32(exif + 70, (uint32_t)dpi_y);
+            native_png_write_u32(exif + 74, 1);
+        } else native_png_exif_entry(exif + 10, 0x8769, 4, (uint32_t)directory);
+        native_png_write_u16(exif + directory, 3);
+        native_png_exif_entry(exif + directory + 2, 0xa001, 3, 0x10000);
+        native_png_exif_entry(exif + directory + 14, 0xa002, 4, (uint32_t)width);
+        native_png_exif_entry(exif + directory + 26, 0xa003, 4, (uint32_t)height);
+        native_png_append_chunk(result, "eXIf", exif, density ? 120 : 68);
+        if (density) {
+            unsigned char physical[9] = {0};
+            native_png_write_u32(physical, (uint32_t)meter_x);
+            native_png_write_u32(physical + 4, (uint32_t)meter_y);
+            physical[8] = 1;
+            native_png_append_chunk(result, "pHYs", physical, sizeof physical);
+        }
+        if (chunk_count) {
+            for (size_t index = 0; index < chunk_count; ++index)
+                [result appendBytes:chunks[index].bytes length:chunks[index].size];
+        } else {
+            native_png_append_chunk(result, "IDAT", compressed.bytes, (uint32_t)compressed.length);
+        }
+        native_png_append_chunk(result, "IEND", NULL, 0);
+        return result;
+    } @finally {
+        for (size_t index = 0; index < chunk_count; ++index) free(chunks[index].bytes);
+    }
 }
 
 #endif

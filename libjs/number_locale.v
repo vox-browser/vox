@@ -1,7 +1,17 @@
 module libjs
 
-// Retained %Intl.NumberFormat% and Intl::format_numeric dependencies. The Intl
-// record remains untranslated; no host formatter or replacement global is used.
+// Production intrinsic path: preserve receiver validation before locale/options
+// effects and construct the retained realm intrinsic, even if Intl is replaced.
+fn number_prototype_to_intl_locale_string(mut vm VM) !Value {
+	value := this_number_value(mut vm, vm.this_value())!
+	constructor := vm.realm().intl_number_format_constructor or { return vm.throw_error(.internal_error, 'Missing Intl.NumberFormat') }
+	object := construct(mut vm, Value.from_object(constructor), [vm.argument(0), vm.argument(1)], none)!
+	formatter := object.slots.intl_number_format or { return vm.throw_error(.internal_error, 'Missing Intl.NumberFormat slots') }
+	return intl_number_parts_string(mut vm, intl_format_number_parts(mut vm, formatter, intl_mathematical_value(mut vm, value)!)!)
+}
+
+// Retained dependency-injection surface for the translated upstream adapter.
+// Production bindings above use the native formatter and propagate its errors.
 pub type NumberFormatConstructorGetter = fn (realm &Realm) &Object
 
 pub type NumberFormatNumeric = fn (number_format &Object, number Value) Utf16String

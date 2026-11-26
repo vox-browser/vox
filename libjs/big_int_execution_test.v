@@ -100,7 +100,7 @@ fn test_compiled_bigint_errors_are_completions_with_tracebacks_and_clean_frames(
 		} else {
 			object := thrown_value(err).as_object()
 			assert object.error_message()? == expected, source
-			assert object.error_data?.stack_string(false).contains('bigint.js')
+			assert object.slots.error_data?.stack_string(false).contains('bigint.js')
 		}
 		assert vm.running_execution_context() == base
 		assert vm.execution_context_stack().len == 1

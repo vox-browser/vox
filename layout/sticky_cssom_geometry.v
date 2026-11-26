@@ -10,7 +10,7 @@ fn viewport_sticky_position_offset(target voidptr, layout_handle voidptr) dom.CS
  if result.paint_projection_incomplete && result.retained_box_for_layout(layout_handle) == none { restore_complete_paint_projection(mut result) }
  box := result.retained_box_for_layout(layout_handle) or { return dom.CSSPixelPoint_{} }
  mut index := box.own_scroll_frame_index
- if index == 0 { index = paintable_box_nearest_scroll_frame_index(box,result.boxes_by_layout_cache) }
+ if index == 0 { index = paintable_box_nearest_scroll_frame_index(box,result.box_index.last) }
  mut offset := dom.CSSPixelPoint_{}
  for index > 0 && index < result.scroll_state.frames.len {
   frame := result.scroll_state.frame_at(index)

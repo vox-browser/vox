@@ -4,6 +4,41 @@ import browserjs
 import dom
 import html
 
+fn test_attribute_setter_replies_retire_without_releasing_the_native_values() {
+	mut document := html.parse_document('<!doctype html><div id="target"></div>')
+	document.enable_native_storage()
+	mut runtime := browserjs.Runtime.create()
+	mut owner := document.enter_native_storage()
+	defer {
+		owner.finish()
+		runtime.close()
+		document.finalize()
+		document.release_native_storage()
+	}
+	mut target := document.get_element_by_id('target') or { panic('missing attribute target') }
+	target.set_attribute_value('aria-label', 'unrelated'.repeat(4096))
+	mut binding := &CompactElementQueryBinding{document: document, runtime: runtime}
+	binding.elements['target'] = target
+	binding.keys[voidptr(target)] = 'target'
+	storage := document.native_storage()
+	before := if storage != unsafe { nil } { storage.arena.usage().used } else { i64(0) }
+	for _ in 0 .. 8 {
+		native := binding.set_trusted_attribute('target', none, 'data-native', 'λ😀', false, '', true)!
+		assert native.value.contains('unrelatedunrelated')
+		assert native.value.contains('"data-native":"λ😀"')
+		$if prealloc { assert !storage.arena.contains(native.value.str) }
+		native.workspace.finish()
+		fallback := binding.query_with_temporary_reply(r'{"key":"target","action":"nativeAttribute","selector":"{\"op\":\"set\",\"name\":\"data-fallback\",\"value\":\"μ😀\"}"}')!
+		assert fallback.value.contains('unrelatedunrelated')
+		assert fallback.value.contains('"data-fallback":"μ😀"')
+		$if prealloc { assert !storage.arena.contains(fallback.value.str) }
+		fallback.workspace.finish()
+	}
+	assert target.get_attribute_value('data-native') == 'λ😀'
+	assert target.get_attribute_value('data-fallback') == 'μ😀'
+	$if prealloc { assert storage.arena.usage().used - before < 64 * 1024 }
+}
+
 fn run_trusted_attribute_check(source string) {
 	url := dom.URL{value: 'https://trusted-attributes.test/'}
 	mut document := html.create_navigation_document(url, url.origin(), none) or { panic(err) }

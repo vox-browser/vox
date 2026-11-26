@@ -7,6 +7,7 @@ module layout
 import css
 import math
 import platform
+import processmetrics
 
 pub struct InlineFormattingResult {
 pub:
@@ -155,6 +156,16 @@ fn measure_disposable_inline_width(mut state LayoutState, containing_block &Bloc
 fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, containing_block &BlockContainer,
 	mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace,
 	parent_block_context ?&BlockFormattingContext, width_only bool) InlineFormattingResult {
+	mut run_kind := ''
+	mut run_start := u64(0)
+	if inline_run_repeat_diagnostics {
+		run_kind = note_uncached_inline_run(state, containing_block, containing_block_used_values,
+			layout_mode, available_space, width_only, parent_block_context)
+		run_start = processmetrics.thread_instruction_snapshot().instructions
+	}
+	defer {
+		if inline_run_repeat_diagnostics { note_inline_run_cost(run_kind, run_start) }
+	}
 	containing_block_used_values.clear_line_boxes()
 	if inline_context_has_only_discarded_text(containing_block) {
 		containing_block_used_values.set_inline_end_static_position_rect(StaticPositionRect{})

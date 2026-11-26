@@ -30,8 +30,9 @@ fn test_link_type_never_overrides_response_content_type() {
 		model.set_type('text/css; charset=utf-8')
 		model.set_fetch_hook(stylesheet_mime_test_fetch)
 		model.fetch_and_process_linked_resource()
-		assert (model.sheet() != none) == (content_type != 'text/plain')
-		assert model.event_count(if content_type == 'text/plain' { 'error' } else { 'load' }) == 1
+		rejected := content_type == 'text/plain'
+		assert model.sheet()? == if rejected { '' } else { 'p { color: red }' }
+		assert model.event_count(if rejected { 'error' } else { 'load' }) == 1
 		assert !model.document_load_event_delaying_
 	}
 }
@@ -131,7 +132,8 @@ fn test_link_mime_quirk_is_limited_to_quirks_documents_and_same_origin_response_
 				body: 'p { color: red }'.bytes()
 				url: dom.URL{value: if same_origin { 'https://styles.test/resource' } else { 'https://other.test/resource' }}
 			})
-			assert (css.style_sheet_for_owner_node(document, element) != none) == (quirks && same_origin)
+			sheet := css.style_sheet_for_owner_node(document, element)?
+			assert sheet.css_rules().length() == if quirks && same_origin { 1 } else { 0 }
 		}
 	}
 }

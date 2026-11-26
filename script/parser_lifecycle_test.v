@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import browserjs
 import browsernet
 import browsersettings
 import dom
@@ -20,14 +21,19 @@ fn parser_lifecycle_fixture() &BrowserParserScriptHost {
 }
 
 fn parser_lifecycle_fixture_at(url string) &BrowserParserScriptHost {
+	return parser_lifecycle_fixture_with_resources(url, .javascriptcore, {})
+}
+
+fn parser_lifecycle_fixture_with_resources(url string, engine browserjs.Engine,
+	resources map[string]PreloadedResource) &BrowserParserScriptHost {
 	address := dom.URL{value: url}
 	document := create_browser_navigation_document_input_with_source('UTF-8', address,
 		none, none, none, 1_000_000, true, none)
 	images := new_browser_image_request_loader(document, {})
-	mut scripts := new_browser_script_request_loader(document, {})
+	mut scripts := new_browser_script_request_loader(document, resources)
 	// Tests deliver completions on the owner thread, independently of wall time.
 	scripts.fetch = fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
-	return install_browser_parser_script_host(document, .javascriptcore, images, scripts, {}, none, none)
+	return install_browser_parser_script_host(document, engine, images, scripts, resources, none, none)
 }
 
 fn serve_parser_svg_sprite(mut listener net.TcpListener, requests chan string, stop chan bool) {
@@ -229,6 +235,70 @@ fn test_external_classic_script_resumes_before_later_markup_and_runs_once() {
 	mut messages := []string{}
 	host.flush(mut messages)
 	assert messages == []
+}
+
+fn test_libjs_preparse_queues_only_external_modules() {
+	$if !darwin && !linux { return }
+	base := 'https://parser-lifecycle.example/'
+	mut host := parser_lifecycle_fixture_with_resources(base + 'page', .libjs, {
+		base + 'cached-classic.js': PreloadedResource{body: 'var cachedClassic = document.currentScript.id;'}
+		base + 'cached-module.js': PreloadedResource{body: 'export const cached = 1; runs.push(cached);'}
+	})
+	defer { parser_lifecycle_close(host) }
+	parser_lifecycle_parse(host, '<!doctype html><script>globalThis.runs = [];</script><script id=cached src=cached-classic.js></script><script type=module src=cached-module.js></script><script id=fetched src=fetched-classic.js></script><script type=module src=fetched-module.js></script>')
+	assert host.runtime.frontend_code_cache_stats().background_parses == 1
+	parser_lifecycle_respond(mut host, 'fetched-classic.js', 'var fetchedClassic = document.currentScript.id;', '')
+	assert host.runtime.frontend_code_cache_stats().background_parses == 1
+	parser_lifecycle_respond(mut host, 'fetched-module.js', 'export const fetched = 2; runs.push(fetched);', '')
+	assert host.runtime.frontend_code_cache_stats().background_parses == 2
+	assert host.runtime.evaluate_host('[window.cachedClassic, window.fetchedClassic, ...runs].join("|")')! == 'cached|fetched|1|2'
+	assert host.document.ready_state() == 'complete'
+	mut messages := []string{}
+	host.flush(mut messages)
+	assert messages == []
+}
+
+fn test_libjs_external_classic_script_reads_and_writes_native_local_storage() {
+	$if !darwin && !linux { return }
+	base := 'https://parser-lifecycle.example/'
+	mut first := parser_lifecycle_fixture_with_resources(base + 'storage', .libjs, {})
+	defer { parser_lifecycle_close(first) }
+	parser_lifecycle_parse(first, '<!doctype html><script src="storage.js"></script>')
+	parser_lifecycle_respond(mut first, 'storage.js', r'
+		const local = window.localStorage;
+		const session = window.sessionStorage;
+		Storage.prototype.setItem.call(local, "native-state", "shared");
+		session["native-state"] = "tab";
+		local["empty"] = "";
+		globalThis.storageWorks = local === localStorage && local instanceof Storage &&
+			local !== session && Object.getPrototypeOf(local) === Object.getPrototypeOf(session) &&
+			Object.keys(local).join(",") === "native-state,empty" && local.key(0) === "native-state" &&
+			local.empty === "" && local.getItem("missing") === null && local.getItem("native-state") === "shared";
+		delete local.empty;
+		globalThis.storageWorks &&= local.length === 1 && local.empty === undefined;
+	', '')
+	assert first.document.ready_state() == 'complete'
+	assert first.runtime.evaluate_host('storageWorks && sessionStorage.getItem("native-state") === "tab"')! == 'true'
+	mut messages := []string{}
+	first.flush(mut messages)
+	assert messages == []
+
+	mut foreign := parser_lifecycle_fixture_with_resources('https://parser-lifecycle.example:444/storage', .libjs, {})
+	defer { parser_lifecycle_close(foreign) }
+	parser_lifecycle_parse(foreign, '<!doctype html><script>globalThis.tabState = localStorage.getItem("native-state");</script>')
+	assert foreign.runtime.evaluate_host('tabState === null')! == 'true'
+
+	mut other_tab := parser_lifecycle_fixture_with_resources(base + 'next', .libjs, {})
+	defer { parser_lifecycle_close(other_tab) }
+	parser_lifecycle_parse(other_tab, '<!doctype html><script>globalThis.tabState = localStorage.getItem("native-state");</script>')
+	assert other_tab.runtime.evaluate_host('tabState === "shared" && sessionStorage.getItem("native-state") === null')! == 'true'
+	other_tab.runtime.evaluate_host('localStorage.removeItem("native-state")')!
+	assert first.runtime.evaluate_host('localStorage.length === 0 && sessionStorage.getItem("native-state") === "tab"')! == 'true'
+
+	mut opaque := parser_lifecycle_fixture_with_resources('about:blank', .libjs, {})
+	defer { parser_lifecycle_close(opaque) }
+	parser_lifecycle_parse(opaque, '<!doctype html><script>try { localStorage; } catch (e) { globalThis.denied = e instanceof DOMException && e.name === "SecurityError"; }</script>')
+	assert opaque.runtime.evaluate_host('globalThis.denied')! == 'true'
 }
 
 fn test_defer_delays_dom_content_loaded_while_async_only_delays_load() {

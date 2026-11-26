@@ -152,6 +152,21 @@ fn stage_linux_module(source string, target string, package string) ! {
 		expected << 'vox_fontstash_callbacks.h'
 		write_changed(join(target, 'vox_fontstash_callbacks.h'), read(join(root_dir(), 'tools/linux_fontstash_callbacks.h'))!)!
 	}
+	if package == 'gg' {
+		// The portable canvas needs clip eligibility without the Metal image
+		// upload implementation that UI2 stages for the macOS GPU backend.
+		expected << 'canvas/vox_document_clip.v'
+		write_changed(join(target, 'canvas/vox_document_clip.v'),
+			read(join(root_dir(), 'tools/ui2/gg_document_clip.v'))!)!
+		if os.is_file(join(target, 'canvas/gpu_context.v')) {
+			gg_repair_patches(join(target, 'canvas'), 'prepare_gg_gl_msaa_resolve')!
+			gg_repair_patches(join(target, 'canvas'), 'prepare_gg_document_gradient_hole')!
+			gg_repair_patches(join(target, 'canvas'), 'prepare_gg_conical_gradient')!
+			expected << 'canvas/vox_document_surface.v'
+			write_changed(join(target, 'canvas/vox_document_surface.v'),
+				read(join(root_dir(), 'tools/ui2/gg_document_surface.v'))!)!
+		}
+	}
 	for path in files(target)! { if relative(path, target) !in expected { remove(path)! } }
 }
 

@@ -5,10 +5,10 @@ $if macos {
 	fn C.malloc_zone_pressure_relief(zone voidptr, goal uint) uint
 }
 
-// Shaping is synchronous. Retained glyph runs contain glyph indices, positions
-// and their V font identity, with no borrowed hb_font/hb_face storage. Static
-// idle can retire these native lookup caches as well as the V glyph-run cache.
+// Retained glyph runs contain glyph indices, positions and their V font
+// identity. Join prepared layout shaping before retiring native handles.
 fn release_unused_harfbuzz_fonts() {
+	join_pending_ascii_shape_batches()
 	mut released := false
 	for index in 0 .. harfbuzz_scaled_fonts.len {
 		mut entry := unsafe { &harfbuzz_scaled_fonts[index] }

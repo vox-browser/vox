@@ -20,6 +20,7 @@ pub fn typed_array_prototype_reduce(mut vm VM, prototypes PrimitiveObjectPrototy
 		k++
 	}
 	for k < length {
+		vm.consume_execution_budget()!
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		accumulator = call(mut vm, Value.from_object(callback), js_undefined(), [
 			accumulator,
@@ -52,6 +53,7 @@ pub fn typed_array_prototype_reduce_right(mut vm VM, prototypes PrimitiveObjectP
 		accumulator = array.object.get(mut vm, PropertyName.from_number(end))!
 	}
 	for end > 0 {
+		vm.consume_execution_budget()!
 		end--
 		k := end
 		value := array.object.get(mut vm, PropertyName.from_number(k))!

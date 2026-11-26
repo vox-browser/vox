@@ -57,6 +57,10 @@ fn dispatch(name string, args []string) !int {
 		'pre_commit_check' { return pre_commit(os.getwd()) }
 		'production_source_manifest' { return manifest_command(args) }
 		'freeze_browser_compile' { return freeze_command(args) }
+		'stage_compact_browser' {
+			stage_compact_browser(arguments(args, []string{})!)!
+			return 0
+		}
 		'parallel_browser_compile' { return parallel_command(args) }
 		'localize_bundle_rpaths' {
 			if args.len != 2 { return error('Expected executable and build directory') }
@@ -113,7 +117,7 @@ fn dispatch(name string, args []string) !int {
 			return 0
 		}
 		'build_windows_browser' {
-			build_windows(arguments(args, ['--console'])!)!
+			build_windows(arguments(args, ['--console', '--opengl'])!)!
 			return 0
 		}
 		'dev_build_env' {

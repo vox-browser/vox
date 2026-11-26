@@ -1,7 +1,6 @@
 module main
 
 import layout
-import os
 import math
 
 fn chromium_svg_compositor_clip_outs_supported(command &layout.PaintCommand) bool {
@@ -25,11 +24,9 @@ fn chromium_svg_opacity_group_end(commands []layout.PaintCommand, start int) int
 		|| commands[start + 2].kind != 'end_css_effect_layer' {
 		return start
 	}
-	layer := commands[start].visual_layer_data or { return start }
+	layer := normal_opacity_paint_layer(&commands[start]) or { return start }
 	end_layer := commands[start + 2].visual_layer_data or { return start }
-	if layer.kind != .css_effect || layer.opacity <= 0 || layer.opacity >= 1
-		|| layer.blend_mode != .normal || layer.filter != none || layer.scope_id == 0
-		|| end_layer.scope_id != layer.scope_id || end_layer.kind != layer.kind {
+	if end_layer.scope_id != layer.scope_id || end_layer.kind != layer.kind {
 		return start
 	}
 	inner := unsafe { &commands[start + 1] }
@@ -83,7 +80,7 @@ fn chromium_svg_compositor_layer_supported(commands []layout.PaintCommand,
 }
 
 fn chromium_svg_compositor_layer_declined(layer int, command int, reason string, kind string) bool {
-	if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+	if chromium_paint_layer_diagnostics {
 		eprintln('VOX_PAINT_LAYER_DECLINED layer=${layer} command=${command} reason=${reason} kind=${kind}')
 	}
 	return false
@@ -234,7 +231,7 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 			'fill_ellipse', 'stroke_ellipse', 'stroke_rounded_rect' {}
 			else { return chromium_svg_compositor_layer_declined(index, command_index, 'unsupported leaf', command.kind) }
 		}
-		if has_svg && !had_svg && os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+		if has_svg && !had_svg && chromium_paint_layer_diagnostics {
 			eprintln('VOX_PAINT_LAYER_RECORDING_FEATURE layer=${index} command=${command_index} kind=${command.kind} xywh=${command.x},${command.y},${command.width},${command.height} transform=${command.transform}')
 		}
 	}

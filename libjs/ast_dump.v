@@ -505,7 +505,7 @@ fn dump_statement(statement &Statement, state DumpState) {
 		}
 		.labelled {
 			dump_node_with(state, 'LabelledStatement', statement.range, color_string_utf16(state,
-				statement.kind.label))
+				statement.kind.label_text()))
 			if item := statement.kind.labelled_item {
 				dump_statement(item, child_state(state, true))
 			}
@@ -657,7 +657,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.string_literal {
 			dump_node_with(state, 'StringLiteral', expression.range, color_string_utf16(state,
-				expression.kind.string_value))
+				expression.kind.literal_string()))
 		}
 		.boolean_literal {
 			dump_node_with(state, 'BooleanLiteral', expression.range, color_number_bool(state,
@@ -668,10 +668,10 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.big_int_literal {
 			dump_node_with(state, 'BigIntLiteral', expression.range, color_number_str(state,
-				expression.kind.big_int_value))
+				expression.kind.big_int_value()))
 		}
 		.regexp_literal {
-			if rd := expression.kind.regexp_data {
+			if rd := expression.kind.regexp_data() {
 				pattern := rd.pattern.str()
 				flags := rd.flags.str()
 				dump_node_with(state, 'RegExpLiteral', expression.range, '/${pattern}/${flags}')
@@ -683,7 +683,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 			}
 		}
 		.private_identifier_expr {
-			if pi := expression.kind.private_identifier {
+			if pi := expression.kind.private_identifier() {
 				dump_node_with(state, 'PrivateIdentifier', expression.range, color_string_utf16(state,
 					pi.name))
 			}
@@ -726,7 +726,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 		.assignment {
 			dump_node_with(state, 'AssignmentExpression', expression.range, color_op(state,
 				assignment_op_to_string(expression.kind.assignment_op)))
-			if assign_lhs := expression.kind.assignment_lhs {
+			if assign_lhs := expression.kind.assignment_lhs() {
 				match assign_lhs {
 					AssignmentLhsExpression {
 						dump_expression(assign_lhs.expression, child_state(state, false))
@@ -742,21 +742,16 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.conditional {
 			dump_node(state, 'ConditionalExpression', expression.range)
-			if test := expression.kind.test {
-				dump_labeled_expression('test', test, false, state)
-			}
-			if consequent := expression.kind.consequent {
-				dump_labeled_expression('consequent', consequent, false, state)
-			}
-			if alt := expression.kind.alternate_expr {
-				dump_labeled_expression('alternate', alt, true, state)
-			}
+			branches := expression.kind.conditional_data or { return }
+			dump_labeled_expression('test', &branches.test, false, state)
+			dump_labeled_expression('consequent', &branches.consequent, false, state)
+			dump_labeled_expression('alternate', &branches.alternate, true, state)
 		}
 		.sequence {
 			dump_node(state, 'SequenceExpression', expression.range)
-			for i, child in expression.kind.expressions {
+			for i, child in expression.kind.expressions() {
 				dump_expression(&child,
-					child_state(state, i == expression.kind.expressions.len - 1))
+					child_state(state, i == expression.kind.expressions().len - 1))
 			}
 		}
 		.member {
@@ -775,11 +770,10 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.optional_chain {
 			dump_node(state, 'OptionalChain', expression.range)
-			if base := expression.kind.base {
-				dump_expression(base, child_state(state, expression.kind.references.len == 0))
-			}
-			for i, ref_ in expression.kind.references {
-				ref_state := child_state(state, i == expression.kind.references.len - 1)
+			chain := expression.kind.optional_chain_data() or { return }
+			dump_expression(&chain.base, child_state(state, chain.references.len == 0))
+			for i, ref_ in chain.references {
+				ref_state := child_state(state, i == chain.references.len - 1)
 				match ref_ {
 					OptionalChainCall {
 						print_node(ref_state, 'Call(${optional_mode_str(ref_.mode)})')
@@ -828,7 +822,7 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.super_call {
 			dump_node(state, 'SuperCall', expression.range)
-			if sd := expression.kind.super_call_data {
+			if sd := expression.kind.super_call_data() {
 				for i, arg in sd.arguments {
 					dump_expression(&arg.value, child_state(state, i == sd.arguments.len - 1))
 				}
@@ -851,14 +845,14 @@ fn dump_expression(expression &Expression, state DumpState) {
 			dump_function(function_data, 'FunctionExpression', expression.range, state)
 		}
 		.class_expr {
-			if cd := expression.kind.class_data {
+			if cd := expression.kind.class_data() {
 				dump_class(cd, expression.range, state, state)
 			}
 		}
 		.array_expr {
 			dump_node(state, 'ArrayExpression', expression.range)
-			for i, elem in expression.kind.array_elements {
-				cs := child_state(state, i == expression.kind.array_elements.len - 1)
+			for i, elem in expression.kind.array_elements() {
+				cs := child_state(state, i == expression.kind.array_elements().len - 1)
 				if e := elem {
 					dump_expression(&e, cs)
 				} else {
@@ -868,14 +862,14 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.object_expr {
 			dump_node(state, 'ObjectExpression', expression.range)
-			for i, prop in expression.kind.object_properties {
+			for i, prop in expression.kind.object_properties() {
 				dump_object_property(&prop, child_state(state,
-					i == expression.kind.object_properties.len - 1), state)
+					i == expression.kind.object_properties().len - 1), state)
 			}
 		}
 		.template_literal {
 			dump_node(state, 'TemplateLiteral', expression.range)
-			if td := expression.kind.template_data {
+			if td := expression.kind.template_data() {
 				for i, child in td.expressions {
 					dump_expression(&child, child_state(state, i == td.expressions.len - 1))
 				}
@@ -883,10 +877,10 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.tagged_template_literal {
 			dump_node(state, 'TaggedTemplateLiteral', expression.range)
-			if tag_expr := expression.kind.tag_expr {
+			if tag_expr := expression.kind.tag_expr() {
 				dump_labeled_expression('tag', tag_expr, false, state)
 			}
-			if tl_expr := expression.kind.template_literal_expr {
+			if tl_expr := expression.kind.template_literal_expr() {
 				dump_labeled_expression('template', tl_expr, true, state)
 			}
 		}
@@ -900,10 +894,10 @@ fn dump_expression(expression &Expression, state DumpState) {
 		}
 		.import_call {
 			dump_node(state, 'ImportCall', expression.range)
-			if spec := expression.kind.specifier {
-				dump_expression(spec, child_state(state, expression.kind.options == none))
+			if spec := expression.kind.specifier() {
+				dump_expression(spec, child_state(state, expression.kind.options() == none))
 			}
-			if opts := expression.kind.options {
+			if opts := expression.kind.options() {
 				dump_labeled_expression('options', opts, true, state)
 			}
 		}

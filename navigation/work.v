@@ -68,6 +68,7 @@ fn (mut app BrowserApp) begin_navigation_work() NavigationWorkScope {
 	app.navigation_work_depth++
 	$if macos {
 		if app.navigation_work_depth == 1 { C.vox_set_navigation_work_active(1) }
+		browserwindow.begin_cooperative_application_work()
 	}
 	return NavigationWorkScope{
 		app:  &app
@@ -92,6 +93,9 @@ fn (mut scope NavigationWorkScope) finish() {
 			}
 		}
 	}
+	$if macos {
+		browserwindow.end_cooperative_application_work()
+	}
 }
 
 fn (app &BrowserApp) native_frame_consumed_work() bool {
@@ -107,6 +111,9 @@ fn (app &BrowserApp) native_frame_consumed_work() bool {
 		// Fetches can finish after the resource poll, while a layout checkpoint
 		// consumes their wake. Their buffered responses still need another frame.
 		if loader := app.image_request_loader {
+			if loader.results.len > 0 { return false }
+		}
+		if loader := app.script_request_loader {
 			if loader.results.len > 0 { return false }
 		}
 		if app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state() {

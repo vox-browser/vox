@@ -4,6 +4,7 @@
 #include "sampler_darwin.h"
 typedef struct { VoxMetalDrawingBuffer storage; CFTypeRef sampler; } VoxMetalTexture;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static int vox_metal_texture_sampler(void* handle, int min_filter, int mag_filter, int wrap_s, int wrap_t)
 {
     VoxMetalTexture* texture = handle;
@@ -57,5 +58,6 @@ static void* vox_metal_texture_create(void* owner, int width, int height)
     }
     return texture;
 }
+#endif
 #include "texture_storage_darwin.h"
 #endif

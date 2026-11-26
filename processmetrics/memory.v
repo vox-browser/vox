@@ -1,7 +1,7 @@
 module processmetrics
 
 // The browser hosts the document, JavaScript and renderer in one process.
-// Its physical footprint includes their memory and shared browser overhead.
+// This is the physical footprint on macOS and current resident memory on Linux.
 pub struct MemorySnapshot {
 pub:
 	bytes     u64

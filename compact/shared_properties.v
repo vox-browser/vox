@@ -38,10 +38,17 @@ const __compactCommonProperties={
 for(const key in __compactCommonProperties)__compactCommonProperties[key].configurable=true;
 // SVG elements inherit className, an SVGAnimatedString, from SVGElement.
 const __compactSVGCommonProperties=Object.assign({},__compactCommonProperties);delete __compactSVGCommonProperties.className;
+// Elements with records read firstChild through Element.prototype, which
+// performs the same native query and reuses it while the tree is unchanged;
+// only legacy fragment facades need the own accessor (their child list).
+const __compactRecordCommonProperties=Object.assign({},__compactCommonProperties),__compactRecordSVGCommonProperties=Object.assign({},__compactSVGCommonProperties);
+if(typeof globalThis.__ladybirdTreeVersion==="function"){delete __compactRecordCommonProperties.firstChild;delete __compactRecordSVGCommonProperties.firstChild;}
 function __compactElementCommonProperties(object,state){
- if(__compactCommonElementGet(object))for(const name of ["getAttribute","hasAttribute","setAttribute","removeAttribute"])delete object[name];
- if(!__compactCommonElementGet(object))__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
- __compactDefineCommonProperties(object,state&&state.namespaceURI==="http://www.w3.org/2000/svg"?__compactSVGCommonProperties:__compactCommonProperties);
+ const record=!!__compactCommonElementGet(object);
+ if(record)for(const name of ["getAttribute","hasAttribute","setAttribute","removeAttribute"])delete object[name];
+ if(!record)__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
+ const svg=state&&state.namespaceURI==="http://www.w3.org/2000/svg";
+ __compactDefineCommonProperties(object,record?(svg?__compactRecordSVGCommonProperties:__compactRecordCommonProperties):(svg?__compactSVGCommonProperties:__compactCommonProperties));
 }
 // data is a URL-reflecting member of HTMLObjectElement, rather than Element.
 const __compactObjectString=String,__compactObjectWellFormed=String.prototype.toWellFormed;

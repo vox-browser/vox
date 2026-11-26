@@ -1,4 +1,5 @@
 #pragma once
+#include "native_document_color_darwin.h"
 #include "native_presented_pixels_darwin.h"
 #include "native_rgba_is_opaque.h"
 
@@ -9,7 +10,7 @@ static void native_presented_capture_release_data(void *info, const void *data, 
 }
 
 // Export an unchanged, opaque document region directly from its immutable
-// presented sRGB frame. Overlays, scaling, clipping or unsupported formats keep
+// presented document frame. Overlays, scaling, clipping or unsupported formats keep
 // AppKit's normal subtree capture and color conversion.
 static NSBitmapImageRep *native_presented_capture_bitmap(NSView *root, NSRect bounds,
     NSInteger width, NSInteger height) {
@@ -66,9 +67,9 @@ static NSBitmapImageRep *native_presented_capture_bitmap(NSView *root, NSRect bo
         if (!image) return nil;
         if (CGImageGetBitsPerComponent(image) != 8 || CGImageGetBitsPerPixel(image) != 32
             || CGImageGetBitmapInfo(image) != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)) return nil;
-        CGColorSpaceRef srgb = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-        BOOL same_space = srgb && CGImageGetColorSpace(image) && CFEqual(srgb, CGImageGetColorSpace(image));
-        if (srgb) CGColorSpaceRelease(srgb);
+        CGColorSpaceRef expected_space = native_copy_document_render_space();
+        BOOL same_space = expected_space && CGImageGetColorSpace(image) && CFEqual(expected_space, CGImageGetColorSpace(image));
+        if (expected_space) CGColorSpaceRelease(expected_space);
         if (!same_space) return nil;
         NSRect region = [canvas convertRect:bounds fromView:root];
         double left = (NSMinX(region) - NSMinX(canvas.bounds)) * scale;
@@ -87,7 +88,7 @@ static NSBitmapImageRep *native_presented_capture_bitmap(NSView *root, NSRect bo
             if ((size_t)CFDataGetLength(data) < pitch * rows) return nil;
             const uint8_t *pixels = CFDataGetBytePtr(data) + (size_t)top * pitch + (size_t)left * 4;
             if (!vox_rgba8_is_opaque(pixels, width, height, pitch)) return nil;
-            // Present the region as an sRGB image over the same bytes. Copying
+            // Present the region in its existing color space over the same bytes. Copying
             // them into a device-RGB rep and retagging it costs two image-sized
             // copies; the rep below materializes its own data only if read, and
             // the PNG encoder reads the attached bytes instead.

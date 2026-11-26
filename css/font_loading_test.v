@@ -2,6 +2,7 @@
 module css
 
 import fetch
+import gfxfont
 import http
 import os
 import platform
@@ -34,6 +35,49 @@ fn test_font_loading_uses_source_format_dispatch_and_legacy_woff_alias() {
 	if _ := try_load_vector_font(font, 'font/collection', 'Unsupported declared format') { assert false
 	 }
 	assert try_load_vector_font(font, none, 'Undeclared format')!.source_path != ''
+}
+
+fn test_font_typeface_retires_the_conversion_workspace_and_preserves_output() {
+	$if prealloc {
+		woff := font_loading_fixture('HashSans.woff')
+		woff2 := font_loading_fixture('incorrect_sfnt_size.woff2')
+		expected_woff := gfxfont.convert_woff_to_sfnt(woff) or { panic(err) }
+		expected_woff2 := gfxfont.convert_woff2_to_sfnt(woff2) or { panic(err) }
+		mut caller := platform.new_arena('font decode caller')
+		entry := caller.enter()
+		defer {
+			caller.leave(entry)
+			caller.release()
+		}
+		before := caller.usage().used
+		mut loaded_woff := unsafe { &PlatformTypeface(nil) }
+		mut loaded_woff2 := unsafe { &PlatformTypeface(nil) }
+		for _ in 0 .. 8 {
+			loaded_woff = try_load_vector_font(woff, 'font/woff', 'Owner WOFF') or { panic(err) }
+			loaded_woff2 = try_load_vector_font(woff2, 'font/woff2', 'Owner WOFF2') or { panic(err) }
+		}
+		assert caller.usage().used - before < 64 * 1024
+		assert loaded_woff.family_name == 'Owner WOFF'
+		assert loaded_woff2.family_name == 'Owner WOFF2'
+		assert os.read_bytes(loaded_woff.source_path) or { panic(err) } == expected_woff
+		assert os.read_bytes(loaded_woff2.source_path) or { panic(err) } == expected_woff2
+	}
+}
+
+fn test_font_worker_completion_preserves_bytes_and_errors_after_retirement() {
+	woff2 := font_loading_fixture('incorrect_sfnt_size.woff2')
+	expected := gfxfont.convert_woff2_to_sfnt(woff2) or { panic(err) }
+	prepared := convert_woff2_for_font_completion(woff2)
+	assert prepared.error_message == none
+	assert prepared.data == expected
+	invalid := convert_woff2_for_font_completion([]u8{})
+	assert invalid.data.len == 0
+	assert (invalid.error_message or { '' }).contains('WOFF2')
+	if _ := try_load_vector_font([]u8{}, 'font/woff2', 'Invalid WOFF2') {
+		assert false
+	} else {
+		assert err.msg().contains('WOFF2')
+	}
 }
 
 fn test_font_preparation_uses_the_source_woff2_mime_or_signature_rule() {

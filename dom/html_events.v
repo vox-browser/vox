@@ -317,6 +317,7 @@ pub struct PopStateEventInit {
 	EventInit
 pub mut:
 	state JSValue = js_null()
+	has_ua_visual_transition bool
 }
 
 @[heap]
@@ -324,6 +325,7 @@ pub struct PopStateEvent {
 	Event
 pub mut:
 	state_ JSValue = js_null()
+	has_ua_visual_transition bool
 }
 
 pub fn PopStateEvent.create(event_name string, event_init PopStateEventInit) &PopStateEvent {
@@ -338,6 +340,7 @@ pub fn PopStateEvent.create(event_name string, event_init PopStateEventInit) &Po
 			time_stamp_:  current_event_timestamp()
 		}
 		state_: event_init.state
+		has_ua_visual_transition: event_init.has_ua_visual_transition
 	}
 }
 

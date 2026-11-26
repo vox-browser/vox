@@ -2,7 +2,14 @@
 #include <assert.h>
 #include <stdio.h>
 #include <GL/glx.h>
+/* A host renderer may already request extension prototypes. Preserve its
+ * definition; use a distinct nonzero value to catch replacement by the bridge. */
+#undef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES 7
 #include "../webgl/native_egl.h"
+#if GL_GLEXT_PROTOTYPES != 7
+#error WebGL must preserve the host GL_GLEXT_PROTOTYPES definition
+#endif
 #if defined(glCompileShader) || defined(glGetError) || defined(glBindBuffer)
 #error WebGL aliases must not intercept the host renderer
 #endif

@@ -93,28 +93,28 @@ pub fn to_property_descriptor(mut vm VM, argument Value) !PropertyDescriptor {
 	}
 	object := argument.as_object()
 	mut descriptor := PropertyDescriptor{}
-	if object.has_property(PropertyName.from_str('enumerable')) {
+	if object.has_property_checked(mut vm, PropertyName.from_str('enumerable'))! {
 		descriptor.enumerable =
 			object.get(mut vm, PropertyName.from_str('enumerable'))!.to_boolean()
 	}
-	if object.has_property(PropertyName.from_str('configurable')) {
+	if object.has_property_checked(mut vm, PropertyName.from_str('configurable'))! {
 		descriptor.configurable =
 			object.get(mut vm, PropertyName.from_str('configurable'))!.to_boolean()
 	}
-	if object.has_property(PropertyName.from_str('value')) {
+	if object.has_property_checked(mut vm, PropertyName.from_str('value'))! {
 		descriptor.value = object.get(mut vm, PropertyName.from_str('value'))!
 	}
-	if object.has_property(PropertyName.from_str('writable')) {
+	if object.has_property_checked(mut vm, PropertyName.from_str('writable'))! {
 		descriptor.writable = object.get(mut vm, PropertyName.from_str('writable'))!.to_boolean()
 	}
-	if object.has_property(PropertyName.from_str('get')) {
+	if object.has_property_checked(mut vm, PropertyName.from_str('get'))! {
 		getter := object.get(mut vm, PropertyName.from_str('get'))!
 		if !getter.is_function() && !getter.is_undefined() {
 			return vm.throw_error_type(.type_error, .accessor_bad_field, 'get')
 		}
 		descriptor.getter = getter
 	}
-	if object.has_property(PropertyName.from_str('set')) {
+	if object.has_property_checked(mut vm, PropertyName.from_str('set'))! {
 		setter := object.get(mut vm, PropertyName.from_str('set'))!
 		if !setter.is_function() && !setter.is_undefined() {
 			return vm.throw_error_type(.type_error, .accessor_bad_field, 'set')

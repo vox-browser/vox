@@ -144,7 +144,7 @@ native bridges and UI2, then runs the equivalent of:
 ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -b c -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
-  -d ui2_custom_rendering -d sokol_d3d11 \
+  -d ui2_custom_rendering -d sokol_d3d11 -d vox_gg_svg \
   -path "$PWD|$ui2_modules|@vmodules|@vlib" -o /tmp/Vox.exe .
 ```
 
@@ -153,6 +153,18 @@ try to reopen files such as the public suffix list from the build machine's
 source checkout. `-no-prod-options` retains the existing C optimization level.
 Add `--console` to the helper when capturing startup diagnostics: V's GUI entry
 point otherwise reopens stdout and stderr on a console or `NUL`.
+
+Use `--opengl` to build the experimental Sokol OpenGL window and set
+`VOX_GG_SVG=1` at launch to exercise the shared `gg.canvas` SVG path renderer.
+Canvas checks the window's current context for OpenGL 4.3 and shader storage
+buffers in both shader stages. A window below that capability uses portable
+SVG rasterization. WGL drivers can return the requested version or a
+compatible newer one. [WGL context creation](https://registry.khronos.org/OpenGL/extensions/ARB/WGL_ARB_create_context.txt)
+
+The standard build uses the D3D11 window with its WARP fallback. Both window
+backends can replay supported SVG fills and strokes through the same CPU
+rasterizer and texture cache that Linux uses. The OpenGL build tries the GG
+Canvas GPU renderer first when enabled.
 
 The Windows build uses `-gc none`; scoped `-prealloc` remains unavailable.
 Process tab grouping uses the existing in-process fallback. Dedicated script
@@ -197,6 +209,48 @@ metric from the host Python guard's sampled process-tree RSS. The integration
 checks exercise Unicode/quoted arguments, both output streams, exit propagation,
 timeout termination and a rejected allocation above the job limit.
 
+Check mixed SVG pattern tiles from the interactive Windows desktop with the
+built browser and its DLLs available:
+
+```sh
+python tools/test_windows_svg_pattern_tiles.py C:/path/to/Vox.exe \
+  --guard C:/path/to/runtime-guard.exe --output Build/windows-pattern-tiles
+```
+
+The check serves a delayed PNG from loopback, launches fresh guarded
+windows with the portable SVG group cache enabled and disabled, and
+compares the captured document pixels. It records both child exits, the
+browser and adjacent DLL hashes, and the SVG cache diagnostics. Pass
+`--nested` to run both nested bitmap fixtures, including the case that
+checks tile reuse after the bitmap arrives.
+
+Run the portable gradient, rounded raster image, video poster and canvas
+pixel checks from the same desktop using this command.
+
+```sh
+python tools/test_windows_portable_replay.py C:/path/to/Vox.exe \
+  --guard C:/path/to/runtime-guard.exe --output Build/windows-portable-replay
+```
+
+The checks use the Linux fixtures and pixel assertions. Each fresh window
+runs inside a 3 GiB job with a private profile. The runner compares gradient
+ramps against full raster output and checks cached clipping against uncached
+replay. The canvas checks cover delayed Canvas 2D and WebGL initialization,
+subsequent WebGL frames, texture upload reuse, and transformed canvases and
+video posters. Pass `--canvas-only` to run those checks separately. The
+runner records captures, logs, guard receipts and input hashes.
+
+Run the same runner with `--gg-svg-d3d11` against the standard D3D11
+browser. It enables `VOX_GG_SVG=1` for solid, linear-gradient, concentric
+radial, strictly contained focal and internally tangent SVG fills and
+strokes. It checks cache hits, paint order, gradient ramps, and the color
+and transparency outside a tangent.
+
+Use `--gg-svg` against an `--opengl` browser with the
+staged Mesa WGL DLLs and `GALLIUM_DRIVER=llvmpipe`. It checks Canvas draws
+and texture cache hits, then forces Mesa GL 4.2 and compares the fallback
+pixels with the portable reference.
+
 Run the graphics check on the interactive Windows desktop, also through the
 3 GiB guard:
 
@@ -211,8 +265,10 @@ render target and checks the pixels read back from it with both the default
 driver and explicit WARP. Check GG's projection and font pipelines separately:
 
 ```sh
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
 v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc gcc -d sokol_d3d11 -subsystem console \
+  -path "$PWD|$ui2_modules|@vmodules|@vlib" \
   -file-list native/graphics_windows.c.v,native/paint.v \
   -o projection-smoke.exe tools/windows_graphics_smoke.v
 runtime-guard.exe 180000 3072 projection.out projection.err \
@@ -220,8 +276,58 @@ runtime-guard.exe 180000 3072 projection.out projection.err \
 python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
 ```
 
+The D3D11 smoke test checks pitched BGRA8 and RGBA8 texture transfers
+and verifies Canvas pixels for solid rectangles, blended fills, curved
+paths, winding rules, path clipping, multisample reloads and solid strokes.
+The analytic shape checks cover a fractional rectangle, mixed rounded
+corners, a translated and clipped gradient oval, and a hollow rounded stroke.
+The analytic clip checks cover a fractional rectangular hole in solid
+fills, a rounded intersect clip on a gradient wedge fill, and a fractional
+intersect clip on a tessellated stroke.
+The gradient checks cover linear bounds, wedges and strokes, and radial
+fills and strokes. They exercise reflected tiling, a hard stop, paint
+opacity, a contained focal circle and a repeating tangent point focus.
+The saved-layer checks cover translated nested layers, premultiplied
+blending, fractional and rounded intersect clips, and a fractional
+difference clip. The test also checks recovery after a rejected document
+image with unsupported sampling.
+
+For the OpenGL variant, prepare the current Canvas adapter before building
+the same smoke tool. This opens a GL 4.3 window, checks the shared solid
+fills and SVG gradient stroke pixels, and then captures the projection
+and font checks.
+Use the staged Mesa WGL DLLs beside the executable for a software run.
+
+```sh
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
+v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
+  -os windows -arch amd64 -cc gcc -subsystem console \
+  -path "$PWD|$ui2_modules|@vmodules|@vlib" \
+  -file-list native/graphics_windows.c.v,native/paint.v \
+  -o opengl-smoke.exe tools/windows_graphics_smoke.v
+GALLIUM_DRIVER=llvmpipe runtime-guard.exe 240000 3072 opengl.out opengl.err \
+  C:/path/to/opengl-smoke.exe C:/path/to/opengl.png
+python tools/check_windows_graphics_smoke.py C:/path/to/opengl.png
+```
+
 The PNG checker uses Pillow and can run on the host after copying the PNG out
 of the VM. It checks rectangle positions, full areas, colors and text coverage.
+The Windows CI workflow runs both GG modes with the same job-object guard and
+uploads the screenshots, compiler logs, and guard receipts. The OpenGL run uses
+the pinned Mesa WGL runtime with llvmpipe and also checks the Canvas SVG stroke.
+[Windows workflow](../.github/workflows/windows-build.yml)
+
+Run the same Canvas SVG probe offscreen on macOS or Linux to compare Metal
+or EGL with Windows WGL. It checks the gradient endpoints and midpoint,
+the transparent pixels outside the stroke, and padding in the BGRA readback.
+
+```sh
+ui2_modules=$(sh tools/run_v_tool.sh prepare_ui2)
+v -b c -memory-limit 10G -enable-globals -gc none \
+  -path "$PWD|$ui2_modules|@vmodules|@vlib" \
+  run tools/windows_graphics_smoke.v --offscreen
+```
+
 The browser fixture
 `Tests/Browser/Windows/smoke.html` separately checks page rendering, a script
 mutation and a clickable DOM event target.
@@ -349,6 +455,8 @@ Run it on the interactive desktop with an empty `VOX_PROFILE_DIR`, matching
 runtime DLLs on `PATH`, and update checking disabled in that private profile.
 The driver raises its browser window before reading desktop pixels, and emits
 physical scan codes for shortcuts, matching Sokol's Win32 input boundary.
+The startup fixture checks gradient endpoint colors, an even-odd hole, and
+the width and gap of a dashed, non-scaling SVG stroke.
 Earlier driver attempts failed because the window was obscured or keyboard
 scan codes were absent; these attempts remain local evidence. The earlier
 900-second browser timeout is also retained and is not a passing close check.
@@ -389,7 +497,7 @@ sh tools/run_v_tool.sh prepare_windows_mesa
 mkdir -p Build/windows-webgl
 runtime-guard.exe 300000 12288 compile.out compile.err \
   "$(cygpath -w "${V_BIN:-$(command -v v)}")" \
-  -new-compiler -b c -memory-limit 10G -subsystem console \
+  -b c -memory-limit 10G -subsystem console \
   -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v
 export PATH="$MINGW_PREFIX/bin:$PWD/Build/deps/windows/mesa/release-mingw/x64:$PATH"
 export GALLIUM_DRIVER=llvmpipe

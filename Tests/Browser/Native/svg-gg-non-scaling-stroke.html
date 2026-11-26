@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shared GG non-scaling SVG strokes</title>
+<style>
+  body { margin: 0; min-height: 4096px; background: white; }
+  .stage { position: fixed; top: 0; left: 0; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+  .scrolling { position: absolute; top: 0; left: 330px; }
+</style>
+<div class="stage">
+  <header></header>
+  <svg width="320" height="150" fill="none">
+    <path id="enlarged" vector-effect="non-scaling-stroke"
+          d="M8 8H52" transform="translate(8 8) scale(2 3)"
+          stroke="#154fbc" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path vector-effect="non-scaling-stroke"
+          d="M20 80H180 M190 80V240" transform="translate(130 18) scale(.5 .25)"
+          stroke="#b94015" stroke-width="12" stroke-linecap="square" stroke-linejoin="bevel"/>
+    <path vector-effect="non-scaling-stroke"
+          d="M4 8H24" transform="matrix(2 1 1 3 220 69)"
+          stroke="#098746" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+<svg class="scrolling" width="200" height="92">
+  <path vector-effect="non-scaling-stroke"
+        d="M10 40H160" transform="translate(0 58) scale(1 .125)"
+        fill="none" stroke="#8c2fa5" stroke-width="12" stroke-linejoin="bevel"/>
+</svg>

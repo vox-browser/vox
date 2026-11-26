@@ -15,6 +15,7 @@ pub fn typed_array_prototype_join(mut vm VM, prototypes PrimitiveObjectPrototype
 	mut builder := []u16{}
 	mut result_length := uint(0)
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		if k > 0 {
 			result_length = checked_js_string_length_sum(mut vm, result_length, uint(sep.len()),
 				.string_size_must_not_overflow)!

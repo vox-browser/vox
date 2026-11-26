@@ -44,6 +44,18 @@ static void check(size_t width, size_t height, size_t padding, size_t offset,
         actual + offset, mask_stride, width, height, color, luminance);
     assert(memcmp(expected, actual, mask_size) == 0);
     assert(memcmp(source, before, source_size) == 0);
+    if (color) {
+        native_convert_rgba_svg_mask_pixels(before + offset, source_stride,
+            before + offset, source_stride, width, height, luminance);
+        assert(memcmp(source, before, offset) == 0);
+        for (size_t y = 0; y < height; ++y) {
+            size_t row = offset + y * source_stride;
+            assert(memcmp(expected + row, before + row, width * 4) == 0);
+            assert(memcmp(source + row + width * 4, before + row + width * 4, padding) == 0);
+        }
+        size_t tail = source_stride * height + offset;
+        assert(memcmp(source + tail, before + tail, source_size - tail) == 0);
+    }
     free(actual);
     free(expected);
     free(before);
@@ -54,7 +66,7 @@ static void check_all_colors(void)
 {
     // Every RGB triple, including channels greater than alpha, checks the
     // exact truncating luminance formula rather than a floating approximation.
-    uint8_t source[256 * 4], output[256 * 4];
+    uint8_t source[256 * 4], output[256 * 4], in_place[256 * 4];
     for (unsigned r = 0; r < 256; ++r) {
         for (unsigned g = 0; g < 256; ++g) {
             for (unsigned b = 0; b < 256; ++b) {
@@ -65,6 +77,10 @@ static void check_all_colors(void)
             }
             native_convert_svg_mask_pixels(source, sizeof(source), output,
                 sizeof(output), 256, 1, 1, 1);
+            memcpy(in_place, source, sizeof(source));
+            native_convert_rgba_svg_mask_pixels(in_place, sizeof(in_place), in_place,
+                sizeof(in_place), 256, 1, 1);
+            assert(memcmp(output, in_place, sizeof(output)) == 0);
             for (unsigned b = 0; b < 256; ++b) {
                 uint8_t alpha = (uint8_t)((54u * r + 183u * g + 19u * b) >> 8);
                 for (unsigned channel = 0; channel < 4; ++channel) {
@@ -82,8 +98,53 @@ static void check_all_colors(void)
     }
     for (unsigned x = 0; x < 256; ++x) source[x * 4 + 3] = (uint8_t)x;
     native_convert_svg_mask_pixels(source, 1024, output, 1024, 256, 1, 1, 0);
+    native_convert_rgba_svg_mask_pixels(source, 1024, source, 1024, 256, 1, 0);
+    assert(memcmp(output, source, sizeof(output)) == 0);
     for (unsigned x = 0; x < 256; ++x)
         for (unsigned c = 0; c < 4; ++c) assert(output[x * 4 + c] == x);
+}
+
+static void check_overlapping_rgba_rows(void)
+{
+    const size_t width = 1027, height = 1025, pitch = width * 4 + 7;
+    const size_t size = pitch * (height + 1);
+    uint8_t *actual = malloc(size), *expected = malloc(size);
+    assert(actual && expected);
+    for (size_t i = 0; i < size; ++i) actual[i] = random_byte();
+    memcpy(expected, actual, size);
+    for (size_t row = 0; row < height; ++row)
+        native_convert_rgba_svg_mask_pixels(expected + row * pitch, pitch,
+            expected + (row + 1) * pitch, pitch, width, 1, 1);
+    native_convert_rgba_svg_mask_pixels(actual, pitch, actual + pitch, pitch, width, height, 1);
+    assert(memcmp(actual, expected, size) == 0);
+    free(expected);
+    free(actual);
+}
+
+static void check_overlapping_rgba_pixels(void)
+{
+    enum {width = 37, height = 3, pitch = width * 4 + 7, margin = 65};
+    const int offsets[] = {-65, -5, -4, -1, 1, 4, 5, 63, 64, 65};
+    uint8_t actual[pitch * height + 2 * margin], expected[sizeof(actual)];
+    for (size_t trial = 0; trial < sizeof(offsets) / sizeof(offsets[0]); ++trial) {
+        int destination = margin + offsets[trial];
+        for (int luminance = 0; luminance < 2; ++luminance) {
+            for (size_t i = 0; i < sizeof(actual); ++i) actual[i] = random_byte();
+            memcpy(expected, actual, sizeof(actual));
+            for (size_t y = 0; y < height; ++y) {
+                for (size_t x = 0; x < width; ++x) {
+                    const uint8_t *pixel = expected + margin + y * pitch + x * 4;
+                    uint8_t alpha = luminance
+                        ? (uint8_t)((54u * pixel[0] + 183u * pixel[1] + 19u * pixel[2]) >> 8)
+                        : pixel[3];
+                    memset(expected + destination + y * pitch + x * 4, alpha, 4);
+                }
+            }
+            native_convert_rgba_svg_mask_pixels(actual + margin, pitch, actual + destination, pitch,
+                width, height, luminance);
+            assert(memcmp(actual, expected, sizeof(actual)) == 0);
+        }
+    }
 }
 
 int main(void)
@@ -99,13 +160,16 @@ int main(void)
         }
     }
     for (int mode = 0; mode < 4; ++mode) {
+        check(1024, 1024, 5, 3, mode / 2, mode % 2);
         check(1492, 1696, 13, 3, mode / 2, mode % 2);
         check(1476, 1461, 7, 1, mode / 2, mode % 2);
-        cases += 2;
+        cases += 3;
     }
     native_convert_svg_mask_pixels(NULL, 0, NULL, 0, 0, 12, 1, 1);
     native_convert_svg_mask_pixels(NULL, 0, NULL, 0, 12, 0, 1, 1);
     check_all_colors();
-    printf("SVG mask pixels: %zu stride/tail/guard scenes, all 16777216 RGB triples and all alpha values passed\n", cases);
+    check_overlapping_rgba_rows();
+    check_overlapping_rgba_pixels();
+    printf("SVG mask pixels: %zu stride/tail/guard scenes, overlap, all 16777216 RGB triples and all alpha values passed\n", cases);
     return 0;
 }

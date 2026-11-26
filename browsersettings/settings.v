@@ -166,7 +166,7 @@ pub fn initialize(path string) ! {
 	if configured { state.file_version = version }
 }
 
-// Windows and detached tabs have independent processes. Settings Apply uses
+// Windows and detached tabs have independent processes. Saving settings uses
 // atomic replacement, so the inode also detects equal-size saves in the same
 // second. Unchanged requests need only stat the file, without parsing JSON.
 // Keep the last valid route if a replacement cannot yet be read or validated.
@@ -199,8 +199,17 @@ pub fn current() Proxy {
 	return state.proxy
 }
 
-// None preserves ambient proxies; an empty string explicitly selects direct
-// connections. Readers snapshot under the lock while requests run on workers.
+// None preserves ambient routing; a configured profile owns proxy policy even
+// when it explicitly disables proxying or limits it to selected destinations.
+pub fn proxy_policy_override() ?bool {
+	mut state := unsafe { runtime }
+	state.lock.lock()
+	defer { state.lock.unlock() }
+	state.refresh()
+	if !state.configured { return none }
+	return state.proxy.enabled
+}
+
 pub fn proxy_override(resource_url string) ?string {
 	mut state := unsafe { runtime }
 	state.lock.lock()
@@ -228,7 +237,7 @@ pub fn save(input Proxy) ! {
 	}
 	file.close()
 	platform.atomic_replace_file(temporary, state.path)!
-	// Publish only after persistence succeeds. Failed Apply keeps the old route.
+	// Publish only after persistence succeeds so a failed save keeps the old route.
 	state.proxy = Proxy{ ...proxy, javascript_engine: proxy.javascript_engine.clone(), host: proxy.host.clone(), port: proxy.port.clone(), sites: proxy.sites.clone() }
 	state.configured = true
 	// Read the persisted identity on the next access rather than caching a stat

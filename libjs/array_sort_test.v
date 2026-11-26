@@ -128,6 +128,27 @@ fn test_array_merge_sort_is_stable_and_preserves_the_upstream_comparison_sequenc
 	}
 }
 
+fn test_array_merge_sort_preserves_the_caller_buffer_at_each_abrupt_exit() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	for failing_comparison in [1, 4] {
+		mut trace := &ArraySortEffects{}
+		mut items := [Value.from_i32(4), Value.from_i32(3), Value.from_i32(2),
+			Value.from_i32(1)]
+		array_merge_sort(mut vm, fn [mut trace, failing_comparison] (mut vm VM, x Value, y Value) !f64 {
+			trace.pairs << '${x.str()},${y.str()}'
+			if trace.pairs.len == failing_comparison { return throw_completion(Value.from_i32(42)) }
+			return x.number - y.number
+		}, mut items) or {
+			assert thrown_value(err).number == 42
+			assert trace.pairs.len == failing_comparison
+			assert items.map(it.number) == if failing_comparison == 1 { [4.0, 3, 2, 1] } else { [1.0] }
+			continue
+		}
+		assert false
+	}
+}
+
 fn test_compare_array_elements_orders_utf16_and_undefined_and_normalizes_comparator_nan() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

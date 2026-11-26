@@ -82,13 +82,18 @@ fn (mut cache BrowserAdblockTokenCache) survey(document &dom.Document) []string 
 // the filter bridge's string-keyed memo. Procedural actions still run live.
 fn (mut cache BrowserAdblockTokenCache) document_css(document &dom.Document) !string {
 	tokens := cache.survey(document)
+	work := platform.begin_thread_scratch('adblock CSS lookup')
+	defer { work.finish() }
 	address := document.url.serialize()
 	enabled := adblock.is_enabled()
 	memo := os.getenv('VOX_DISABLE_DOCUMENT_FILTER_MEMO') != '1' && !disable_adblock_token_reuse
 	if memo && cache.css_valid && cache.css_enabled == enabled && cache.css_url == address {
 		return cache.css_source
 	}
-	source := adblock.document_css(address, tokens)!
+	source := adblock.document_css(address, tokens) or {
+		work.leave()
+		return error(err.msg().clone())
+	}
 	if cache.css_storage == unsafe { nil } {
 		persistent := platform.enter_persistent()
 		cache.css_storage = platform.new_arena('adblock CSS cache')

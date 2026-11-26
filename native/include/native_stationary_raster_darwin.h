@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../cpuraster/scan_workers.h"
 #include "native_frame_snapshot_darwin.h"
 #include "native_scroll_tile_presentation_darwin.h"
 
@@ -42,11 +43,40 @@ static int native_stationary_raster_same_key(VoxStationaryRasterKey a,
         && a.scroll == b.scroll && a.page_top == b.page_top && a.zoom == b.zoom
         && a.scrollbar_opacity == b.scrollbar_opacity;
 }
+
+typedef struct {
+    uint8_t *destination;
+    const uint8_t *source;
+    size_t pitch;
+} VoxStationaryRasterCopy;
+
+static void native_stationary_raster_copy_rows(void *context, int32_t first, int32_t end) {
+    const VoxStationaryRasterCopy *copy = (const VoxStationaryRasterCopy *)context;
+    size_t offset = (size_t)first * copy->pitch;
+    memcpy(copy->destination + offset, copy->source + offset, (size_t)(end - first) * copy->pitch);
+}
+
+// The bitmaps stay owned by the caller until the copy finishes. Borrowing
+// complete pitched rows keeps the fallback identical to the full byte copy.
+static void native_stationary_raster_copy(const VoxStationaryRaster *cache,
+    uint8_t *destination, const uint8_t *source) {
+    size_t lanes = cache->bytes / (2u * 1024u * 1024u);
+    if (lanes > VOX_SCAN_WORKERS_MAX) lanes = VOX_SCAN_WORKERS_MAX;
+    if (lanes > cache->height) lanes = cache->height;
+    if (lanes > 1 && !vox_scan_workers_disabled()) {
+        VoxStationaryRasterCopy copy = {destination, source, cache->pitch};
+        vox_scan_workers_run(&copy, (int32_t)cache->height, (int32_t)lanes,
+            native_stationary_raster_copy_rows);
+    } else {
+        memcpy(destination, source, cache->bytes);
+    }
+}
+
 static int native_stationary_raster_copy_image(VoxStationaryRaster *cache, uint8_t *pixels) {
     if (!cache->image) return 0;
     CFDataRef data = CGDataProviderCopyData(CGImageGetDataProvider(cache->image));
     int valid = data && CFDataGetLength(data) == (CFIndex)cache->bytes;
-    if (valid) memcpy(pixels, CFDataGetBytePtr(data), cache->bytes);
+    if (valid) native_stationary_raster_copy(cache, pixels, CFDataGetBytePtr(data));
     if (data) CFRelease(data);
     return valid;
 }
@@ -127,7 +157,7 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
                 fprintf(stderr, "Vox stationary raster: retained immutable frame\n");
         } else {
             CGContextFlush(context);
-            if (cache->pixels) memcpy(pixels, cache->pixels, bytes);
+            if (cache->pixels) native_stationary_raster_copy(cache, pixels, cache->pixels);
             else if (!native_stationary_raster_copy_image(cache, pixels)) {
                 // The caller can repaint a complete fresh frame if a provider
                 // cannot expose its exact bytes. Never publish partial reuse.
@@ -170,7 +200,7 @@ static void native_end_stationary_raster(void) {
             } else {
                 if (!cache->pixels) cache->pixels = malloc(cache->bytes);
                 if (cache->pixels) {
-                    memcpy(cache->pixels, pixels, cache->bytes);
+                    native_stationary_raster_copy(cache, cache->pixels, pixels);
                     cache->valid = 1;
                 }
             }

@@ -2,10 +2,62 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 
-Translation workspace: `~/code/vox2/html`
+Translation workspace: `~/code/vox/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
 Selected Source owner slices reviewed: 2026-10-13
+
+The 2026-11-16 native LibJS bridge now forwards common control values, defaults,
+checkedness/indeterminate state, select/option selection and form ownership to
+these HTML models. It also binds form properties, reset/validation/submission,
+submitter overrides and native SubmitEvent, with a traced browser navigation
+service. Empty checked values survive submission, lazy select initialization
+runs once, and requestSubmit without a button honors form noValidate.
+
+The follow-up binds native input/textarea selection and live control validation,
+including ValidityState and invalid-event dispatch. Range replacement updates
+the concrete value/dirty owner; textarea selection counts normalized newlines.
+Constraint reads refresh input/textarea/select owners, and custom messages
+normalize to LF. Thirty-six additional focused functions remain uncompiled and
+unexecuted under the user's hold. Normal and production/preallocation
+compiler-only import and browser checks pass; runtime and pixel parity remain
+unverified. Full control IDL, FileList, collections/named properties, reporting
+UI and broader native ownership remain open. See the
+[selection/validation continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-text-selection-and-constraint-validation-continuation)
+and earlier [control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
+
+The collection follow-up binds native form.elements/length, radio lists and
+select options/selectedOptions, with live iteration, lookup and explicit option
+mutators. Form length now discovers lazy/external controls, and radio-list value
+writes use the actual input group. Twenty-three additional functions remain
+uncompiled and unexecuted. Import and whole-browser compiler-only checks pass
+in normal and production/preallocation modes; runtime and pixel parity remain
+unverified. Legacy named/indexed property semantics and collection roots across
+form moves still need work. See the
+[collection continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-form-and-select-collection-continuation).
+
+The indexed-property follow-up adds WebIDL engine hooks for live native index
+descriptors, definitions, assignment, deletion and extensibility. Native select
+and options indices now share the actual option setter, including nullish
+removal and gap creation; nested options are replaced in their real parent.
+Readonly list/collection/token indices use the same engine protocol. Twenty-one
+focused functions remain uncompiled and unexecuted under the user's hold.
+Normal and production/preallocation compiler-only import and whole-browser
+checks pass; runtime and pixel parity remain unverified. Named-property
+visibility, form indexed/named access and broader ownership remain open. See the
+[indexed-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-indexed-property-continuation).
+
+The named-property follow-up now exposes form/collection/option names through
+checked WebIDL visibility, including prototype Proxy traps and the native
+LegacyOverrideBuiltIns/LegacyUnenumerableNamedProperties flags. Forms also have
+native indexed access. Past-name aliases leave with the control's owner;
+same-owner queries preserve them. Saved form collections and radio views follow
+root moves, including external controls and conversion side effects. Twenty-six
+focused functions remain uncompiled and unexecuted under the user's hold.
+Final import and whole-browser compiler-only checks pass in normal and
+production/preallocation modes; runtime and pixel parity remain unverified.
+Global named objects and broader cross-document ownership remain open. See the
+[named-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-named-property-continuation).
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier

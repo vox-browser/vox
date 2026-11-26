@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS opacity filters in reusable SVG pattern tiles</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="256" height="100" viewBox="0 0 256 100">
+  <defs>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <g id="fade" style="filter: opacity(80%) opacity(50%)">
+        <path d="M0 4h24v24H0Z" fill="red"/>
+        <path d="M8 4h24v24H8Z" fill="blue"/>
+      </g>
+      <path d="M0 32h40v8H0Z" fill="lime"/>
+      <g style="filter: opacity(0)">
+        <path d="M0 28h40v4H0Z" fill="black"/>
+      </g>
+    </pattern>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+  <path d="M0 50H120" fill="none" stroke="url(#tile)" stroke-width="100"
+        transform="translate(128)"/>
+</svg>
+<script>
+let frame = 0;
+function editFilter() {
+    if (++frame === 12)
+        document.getElementById('fade').setAttribute('style', 'filter: opacity(60%)');
+    if (frame === 24)
+        document.body.setAttribute('data-opacity-filter-ready', '');
+    else
+        requestAnimationFrame(editFilter);
+}
+requestAnimationFrame(editFilter);
+</script>

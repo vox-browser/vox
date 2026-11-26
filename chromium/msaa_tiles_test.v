@@ -4,8 +4,10 @@ import layout
 import css
 import dom
 import html
+import os
 import painting
 import platform
+import runtime
 
 fn test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile() {
 	commands := [layout.PaintCommand{
@@ -22,6 +24,17 @@ fn test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile() {
 	assert triggers[0].top == 519
 	assert triggers[0].bottom == 541
 	assert chromium_msaa_tiles(commands, 1, 256) == [2]
+
+	mut reused := []ChromiumMSAATrigger{cap: 1}
+	append_chromium_msaa_triggers(commands, none, mut reused)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 100 {
+		reused.clear()
+		append_chromium_msaa_triggers(commands, none, mut reused)
+		assert reused.len == 1
+		assert reused[0].top == 519 && reused[0].bottom == 541
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
 
 fn msaa_test_svg_path(top f64, bottom f64, role string) layout.PaintCommand {
@@ -314,29 +327,30 @@ fn test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths() {
 	assert chromium_msaa_tiles([msaa_test_underline(140, 2)], 2, 256) == [1]
 }
 
-fn test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms() {
+fn test_explicit_svg_ellipse_uses_analytic_fill_and_stroked_msaa_bounds() {
 	data := &layout.PaintSVGPathData{
 		path_data: [f32(6), 10, 250, 20, 270, 0, 0, 0, 0, 0, 0, 0]
 	}
 	command := layout.PaintCommand{
 		kind: 'draw_svg_path'
 		force_dark_role: .svg
+		color: '#cc0000'
 		svg_data: data
 	}
-	assert chromium_msaa_trigger_bounds(command)? == [f64(249), 271]
-	assert chromium_msaa_tiles([command], 1, 256) == [0, 1]
-	assert chromium_msaa_tiles([command], 2, 256) == [1, 2]
-	stroked := layout.PaintCommand{ ...command, stroke_width: 2 }
+	assert chromium_msaa_tiles([command], 1, 256) == []int{}
+	stroked := layout.PaintCommand{ ...command, stroke_color: 'red', stroke_width: 2 }
+	assert chromium_msaa_tiles([stroked], 1, 256) == [0, 1]
+	assert chromium_msaa_tiles([stroked], 2, 256) == [1, 2]
 	assert chromium_msaa_trigger_bounds(stroked)? == [f64(248), 272]
 	rotated := layout.PaintCommand{
-		...command
+		...stroked
 		transform: [f64(1), 0, 0, 1, 0, 300]!
 		svg_data: &layout.PaintSVGPathData{
 			...data
 			path_transform: [f64(0), 1, -1, 0, 0, 0]!
 		}
 	}
-	assert chromium_msaa_trigger_bounds(rotated)? == [f64(309), 321]
+	assert chromium_msaa_trigger_bounds(rotated)? == [f64(308), 322]
 	assert chromium_msaa_tiles([rotated], 1, 256) == [1]
 	assert command.svg().path_data == [f32(6), 10, 250, 20, 270, 0, 0, 0, 0, 0, 0, 0]
 }
@@ -411,6 +425,129 @@ fn test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer() {
  assert chromium_msaa_tiles([command],1,256)==[0,1]
  assert chromium_msaa_layer_tiles([command],layout.ChromiumRasterLayer{bounds:layout.LayoutRect{y:230},command_indices:[0]},1,256,false)==[0]
  assert image.cached_display_list()!=none
+}
+
+fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
+	$if !prealloc {
+		return
+	}
+	mut document := html.parse_document('<style>div {width:20px;height:20px;background:no-repeat url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22%3E%3Cpath fill-opacity=%220%22 d=%22M1 1L19 1L19 19Z%22/%3E%3Cpath d=%22M1 1L19 1L19 19Z%22/%3E%3C/svg%3E")}</style><div></div>')
+	defer { document.finalize() }
+	document.enable_native_storage()
+	layout.enable_native_paint_tree_storage(document)
+	layout.enable_native_static_svg_backgrounds(document)
+	mut scope := document.enter_native_storage()
+	_ = layout.layout_document_typed_in_viewport(document, 800, 600)
+	recording := layout.display_list_commands(document.record_display_list() or { panic('missing recording') })
+	scope.finish()
+	mut background := layout.PaintCommand{}
+	for command in recording {
+		if command.kind == 'draw_background_image' && command.image_data != unsafe { nil }
+			&& command.image_data.background_static_svg_resource != none {
+			background = command
+			break
+		}
+	}
+	assert background.kind == 'draw_background_image'
+	mut commands := []layout.PaintCommand{}
+	for index in 0 .. 160 {
+		commands << layout.PaintCommand{
+			...background
+			transform: [f64(1), 0, 0, 1, 0, f64(index * 15)]!
+		}
+		if index == 80 {
+			commands << layout.PaintCommand{
+				kind: 'paint_nested_display_list'
+				nested_viewport_paintable: &painting.NavigableContainerViewportPaintable{
+					viewport_rect: painting.Rect{10, 1200, 80, 80}
+				}
+				nested_viewport_commands: [msaa_test_svg_path(10, 30, 'svg'), msaa_test_svg_path(50, 70, 'svg')]
+			}
+		}
+		commands << msaa_test_underline(f64(index * 15), 2)
+	}
+	mut storage := ChromiumMSAAStorage{}
+	// The short list gives a 32-path prefix and a 22-path tail, followed
+	// by an ordinary trigger and a retained background outside the viewport.
+	mut short_commands := commands[..54].clone()
+	short_commands << msaa_test_svg_path(600, 610, 'svg')
+	short_commands << layout.PaintCommand{
+		...background
+		transform: [f64(1), 0, 0, 1, 0, 5000]!
+	}
+	leaf_start := short_commands.len
+	for index in 0 .. 128 {
+		short_commands << if index % 2 == 0 {
+			msaa_test_underline(f64(index), 2)
+		} else {
+			layout.PaintCommand{kind: 'draw_text', has_clip: true}
+		}
+	}
+	radius := painting.BorderRadiusData{4.5, 10}
+	short_commands << layout.PaintCommand{
+		kind: 'draw_replaced_image'
+		has_clip: true
+		clip_width: 9
+		clip_height: 20
+		image_paintable: &painting.ImagePaintable{
+			image_rect: painting.Rect{16, 260, 9, 20}
+			border_radii: painting.BorderRadiiData{radius, radius, radius, radius}
+		}
+	}
+	oversized_suffix := []layout.PaintCommand{len: chromium_msaa_path_overlap_commands + 7}
+	bounded_end, bounded_leaves := chromium_msaa_collection_ranges(oversized_suffix, none, true)
+	assert bounded_end == 7 && bounded_leaves == oversized_suffix.len
+	// The long list crosses the job capacity and reuses the same storage.
+	for visible_commands in [short_commands, commands] {
+		short := visible_commands.len == short_commands.len
+		viewport := ChromiumMSAAViewport{scroll_y: if short { 0 } else { 85 }, height: 2100, fringe: 7}
+		expected := chromium_msaa_triggers_for_viewport(visible_commands, viewport)
+		if short {
+			assert expected.len == 120
+			assert expected.last().command_index == visible_commands.len - 1
+			visible_path_end, visible_leaves := chromium_msaa_collection_ranges(visible_commands, viewport, true)
+			unclipped_path_end, _ := chromium_msaa_collection_ranges(visible_commands, none, false)
+			assert visible_path_end == 53 && visible_leaves == leaf_start
+			assert unclipped_path_end == leaf_start
+		} else {
+			assert expected.len > 288 && expected.len < 320
+		}
+		for _ in 0 .. 3 {
+			tail := storage.queue_triggers(visible_commands, viewport, true)
+			$if macos {
+				if short && !chromium_serial_msaa_path_tail && !chromium_sync_msaa_paths
+					&& runtime.nr_cpus() > 1 && os.getenv('VOX_SERIAL_CPU_RASTER') != '1' {
+					assert storage.path_work.running == 32
+					assert storage.path_work.count - storage.path_work.running == 22
+					assert tail != unsafe { nil }
+					if chromium_parallel_msaa_leaf_tail && !chromium_late_msaa_path_tail {
+						assert storage.leaf_work.ticket != unsafe { nil }
+						assert storage.leaf_work.first == leaf_start
+					} else {
+						assert storage.leaf_work.ticket == unsafe { nil }
+					}
+				}
+				if chromium_parallel_msaa_leaves && !short {
+					if runtime.nr_cpus() > 1 && os.getenv('VOX_SERIAL_CPU_RASTER') != '1' {
+						assert storage.leaf_work.ticket != unsafe { nil }
+						assert storage.leaf_work.first == 0
+						assert storage.leaf_work.jobs == 3 && storage.leaf_work.lanes >= 2
+					} else {
+						assert storage.leaf_work.ticket == unsafe { nil }
+					}
+				}
+			}
+			storage.finish_triggers(tail)
+			assert storage.path_work.jobs.len == chromium_msaa_max_path_jobs
+			assert storage.path_work.count == 0
+			assert storage.path_work.ticket == unsafe { nil }
+			assert storage.leaf_work.ticket == unsafe { nil } && storage.leaf_work.commands.len == 0
+			assert storage.triggers.len == expected.len
+			for index, trigger in storage.triggers {
+				assert trigger == expected[index]
+			}
+		}
+	}
 }
 
 fn test_rounded_svg_backgrounds_use_parent_msaa_without_triggering_it() {
@@ -519,19 +656,35 @@ fn test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers() {
 	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
 
-fn test_replaced_images_select_msaa_for_nonanalytic_rounded_clips() {
+fn test_replaced_images_absorb_their_own_elliptical_clip_without_multisampling() {
 	for radii in [painting.BorderRadiusData{4.5, 10}, painting.BorderRadiusData{4.5, 4.5},
 		painting.BorderRadiusData{0.25, 10}, painting.BorderRadiusData{}] {
 		command := layout.PaintCommand{
-			kind: 'draw_replaced_image'
+			kind:            'draw_replaced_image'
 			image_paintable: &painting.ImagePaintable{
-				image_rect: painting.Rect{16, 260, 9, 20}
+				image_rect:   painting.Rect{16, 260, 9, 20}
 				border_radii: painting.BorderRadiiData{radii, radii, radii, radii}
 			}
 		}
-		expected := if radii == painting.BorderRadiusData{4.5, 10} { [1] } else { []int{} }
-		assert chromium_msaa_tiles([command], 1, 256) == expected
-		shifted := layout.PaintCommand{...command, transform: [f64(1), 0, 0, 1, 0, 254]!}
-		assert chromium_msaa_tiles([shifted], 1, 256) == if expected.len == 1 { [2] } else { []int{} }
+		assert chromium_msaa_tiles([command], 1, 256) == []int{}
+		assert chromium_msaa_tiles([layout.PaintCommand{ ...command, transform: [
+			f64(0.5),
+			0,
+			0,
+			0.5,
+			0,
+			0,
+		]! }], 1, 256) == []int{}
+		// An independent path still selects the tile's shared four-sample pass.
+		assert chromium_msaa_tiles([command, msaa_test_svg_path(270, 280, 'svg')], 1, 256) == [1]
+		image := command.image_paintable or { panic('image') }
+		for constrained in [
+			layout.PaintCommand{ ...command, has_clip: true, clip_width: 9, clip_height: 20 },
+			layout.PaintCommand{ ...command, image_paintable: &painting.ImagePaintable{ ...image, object_fit: .contain } },
+			layout.PaintCommand{ ...command, image_paintable: &painting.ImagePaintable{ ...image, is_svg_image: true } },
+		] {
+			expected := if radii == painting.BorderRadiusData{4.5, 10} { [1] } else { []int{} }
+			assert chromium_msaa_tiles([constrained], 1, 256) == expected
+		}
 	}
 }

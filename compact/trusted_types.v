@@ -146,7 +146,7 @@ const __compactTrustedTypes=(function(){
    if(name==="src")__setElementSource(state,converted.value);else if(name==="data")__setElementData(state,converted.value);else __setAttribute(state,name,converted.value);
    return;
   }
-  const result=JSON.parse(nativeAttribute(state.bridgeKey,namespace,name,converted.kind,converted.value,namespaced,state.created?JSON.stringify(state):""));
+  const result=JSON.parse(nativeAttribute(state.bridgeKey,namespace,name,converted.kind,converted.value,namespaced,state.created?JSON.stringify(state):"",__compactNeedsNativeReplay()));
   refresh(result);
   state.src=state.attributes.src||"";state.styleText=state.attributes.style||"";state.disabled=Object.prototype.hasOwnProperty.call(state.attributes,"disabled");
   if((namespace===null||namespace==="")&&state.tagName==="canvas"&&(name==="width"||name==="height")){state[name]=converted.value;}

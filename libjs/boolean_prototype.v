@@ -27,7 +27,7 @@ pub fn BooleanPrototype.create(mut vm VM, realm &Realm, object_prototype ?&Objec
 fn this_boolean_value(mut vm VM, value Value) !bool {
 	if value.is_boolean() { return value.as_bool() }
 	if value.is_object() {
-		if boolean := value.as_object().boolean_object { return boolean.value }
+		if boolean := value.as_object().slots.boolean_object { return boolean.value }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'Boolean')
 }

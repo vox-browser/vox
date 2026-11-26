@@ -853,6 +853,10 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		iterator.skip_to_next()
 		return item
 	}
+	// Not reached: every path through the loop returns or continues. The
+	// tab-stop scan's inner `break` makes the compiler treat the loop as one
+	// that can end.
+	return none
 }
 
 fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, word_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {

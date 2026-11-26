@@ -3,9 +3,27 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "platform/native_state.h"
+#define VOX_DOCUMENT_COLOR_BRIDGE 1
 #include "native/include/native_layer_presentation_darwin.h"
 #include "native/include/native_snapshot_png_darwin.h"
 #include "native/include/native_presented_capture_darwin.h"
+
+int vox_document_display_p3_enabled(void) {
+    return getenv("VOX_TEST_CAPTURE_P3") != NULL;
+}
+uint8_t *vox_document_display_p3_profile(int *length) {
+    *length = 0;
+    if (!vox_document_display_p3_enabled()) return NULL;
+    static CFDataRef profile;
+    if (!profile) {
+        CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceDisplayP3);
+        profile = CGColorSpaceCopyICCData(color);
+        CGColorSpaceRelease(color);
+    }
+    *length = (int)CFDataGetLength(profile);
+    return (uint8_t *)CFDataGetBytePtr(profile);
+}
 
 static unsigned termination_calls;
 @interface CaptureApplication : NSApplication
@@ -31,6 +49,7 @@ static unsigned termination_calls;
 @property NSInteger bitmapWidth;
 @property NSInteger bitmapHeight;
 @property BOOL flippedCapture;
+@property BOOL captureSpaceMatchesFrame;
 @end
 @implementation MyView2
 - (BOOL)isFlipped { return self.flippedCapture; }
@@ -45,15 +64,27 @@ static unsigned termination_calls;
     self.sourceHeight = CGImageGetHeight(image);
     self.sourceScale = self.layer.contentsScale;
     self.captureOverride = native_layer_capture_scale;
+    self.captureSpaceMatchesFrame = CFEqual(CGImageGetColorSpace(image), bitmap.colorSpace.CGColorSpace);
+    CGContextRef target = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap].CGContext;
+    CGContextDrawImage(target, CGRectMake(0, 0, bitmap.pixelsWide, bitmap.pixelsHigh), image);
 }
 @end
 static MyView2 *capture_view;
 static unsigned draws;
+static double draw_raster_scale;
+static CGFloat draw_mask_scale;
+static double native_display_device_pixel_ratio(void);
+double native_raster_device_pixel_ratio(void);
+static CGFloat native_svg_mask_backing_scale(void);
 static void capture_draw(id view, SEL command, NSRect bounds) {
     (void)view; (void)command;
     ++draws;
+    draw_raster_scale = native_raster_device_pixel_ratio();
+    draw_mask_scale = native_svg_mask_backing_scale();
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    CGContextSetRGBFillColor(context, 1, 1, 1, 1);
+    CGContextSetFillColorSpace(context, CGBitmapContextGetColorSpace(context));
+    const CGFloat red[] = {1, .25, 0, 1};
+    CGContextSetFillColor(context, red);
     CGContextFillRect(context, bounds);
 }
 typedef struct { const char *str; int len; } string;
@@ -89,6 +120,11 @@ static void vox_coalition_instruction_checkpoint(const char *label) {
 // The runner extracts the real entry points and shared scheduling/scale helpers,
 // preserving their deferred scheduling, encoding, and write behavior.
 #include "native_capture_entry_points.inc"
+
+static double native_display_device_pixel_ratio(void) {
+    if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")) return native_screenshot_scale();
+    return capture_view.window.backingScaleFactor;
+}
 
 static void pump_for(double seconds) {
     CFAbsoluteTime until = CFAbsoluteTimeGetCurrent() + seconds;
@@ -155,6 +191,8 @@ int main(int argc, char **argv) {
                 assert(native_layer_capture_scale == 0 && !native_layer_presenting);
                 NSString *path = [NSString stringWithFormat:@"%s/entry-%u-busy-%u.png", argv[1], entry, busy];
                 assert([[NSFileManager defaultManager] fileExistsAtPath:path]);
+                NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithContentsOfFile:path];
+                assert(image && CFEqual(CGImageGetColorSpace(image.CGImage), NSColorSpace.sRGBColorSpace.CGColorSpace));
                 pump_for(.01);
                 assert(capture_view.captures == previous + 1); // No duplicate retry delivery.
                 assert(termination_calls == (entry == 0 ? 0 : busy + 1));
@@ -168,8 +206,13 @@ int main(int argc, char **argv) {
         // A top inset describes the same crop in flipped and unflipped views.
         // A nonzero bounds origin catches accidental frame-coordinate cropping.
         [capture_view setBounds:NSMakeRect(7, 11, 32, 16)];
+        unsetenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS");
         for (unsigned flipped = 0; flipped < 2; ++flipped) {
+            NSInteger scale = vox_document_display_p3_enabled() && flipped ? 2 : 1;
+            setenv("LADYBIRD_SCREENSHOT_SCALE", scale == 2 ? "2" : "1", 1);
             capture_view.flippedCapture = flipped;
+            native_layer_update(capture_view, @selector(updateLayer));
+            assert(draw_raster_scale == 2 && draw_mask_scale == 2);
             NSUInteger previous = capture_view.captures;
             unsigned previous_terminations = termination_calls;
             native_layer_document_work_active = YES;
@@ -188,15 +231,32 @@ int main(int argc, char **argv) {
             assert(capture_view.captures == previous + 1);
             assert(termination_calls == previous_terminations + 1);
             assert(NSEqualRects(capture_view.capturedBounds, NSMakeRect(7, flipped ? 14 : 16, 20, 8)));
-            assert(capture_view.bitmapWidth == 20 && capture_view.bitmapHeight == 8);
+            assert(capture_view.bitmapWidth == 20 * scale && capture_view.bitmapHeight == 8 * scale);
+            assert(draw_raster_scale == scale && draw_mask_scale == scale);
+            assert(native_display_device_pixel_ratio() == 2);
+            assert(native_raster_device_pixel_ratio() == 2 && native_svg_mask_backing_scale() == 2);
             NSString *path = [NSString stringWithFormat:@"%s/document-%u.png", argv[1], flipped];
             NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithContentsOfFile:path];
-            assert(image != nil && image.pixelsWide == 20 && image.pixelsHigh == 8);
+            assert(image != nil && image.pixelsWide == 20 * scale && image.pixelsHigh == 8 * scale);
+            assert(NSEqualSizes(image.size, NSMakeSize(image.pixelsWide, image.pixelsHigh)));
+            CGColorSpaceRef expected = native_copy_document_render_space();
+            assert(CFEqual(CGImageGetColorSpace(image.CGImage), expected));
+            if (vox_document_display_p3_enabled()) {
+                assert(capture_view.captureSpaceMatchesFrame);
+                NSUInteger sample[4] = {0};
+                [image getPixel:sample atX:10 y:4];
+                assert(sample[0] == 255 && sample[1] >= 63 && sample[1] <= 64 && sample[2] == 0);
+            }
+            CGColorSpaceRelease(expected);
             assert(document_process_checkpoints == flipped + 1);
             assert(document_coalition_checkpoints == flipped + 1);
             assert(document_audit_callbacks == flipped + 1);
-            printf("document flipped=%u deferred=1 bounds=1 png=20x8 process=1 coalition=1\n", flipped);
+            printf("document flipped=%u deferred=1 bounds=1 png=%ldx%ld process=1 coalition=1\n",
+                flipped, (long)image.pixelsWide, (long)image.pixelsHigh);
         }
+        setenv("LADYBIRD_SCREENSHOT_SCALE", "1", 1);
+        setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "0", 1);
+        native_layer_update(capture_view, @selector(updateLayer));
         const double invalid[][3] = {
             { NAN, 20, 8 }, { 3, INFINITY, 8 }, { 3, 20, NAN },
             { -1, 20, 8 }, { 3, 0, 8 }, { 3, 20, 0 },

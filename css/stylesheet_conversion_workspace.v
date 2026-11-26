@@ -4,6 +4,11 @@ import processmetrics
 import dom
 
 import platform
+import os
+
+// VOX_CSS_PARSE_DIAGNOSTICS: one line per parsed style sheet, to find sources
+// converted more than once per load.
+const stylesheet_parse_diagnostics = os.getenv('VOX_CSS_PARSE_DIAGNOSTICS') != ''
 
 // The public token-stream API still owns its input. Whole-sheet parsing can
 // instead retire that input after conversion: selectors and query preludes own
@@ -16,23 +21,26 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	// top-level stylesheets share a template; all conversion context is fresh.
 	cache_rules := !disable_stylesheet_rule_cache && params.rule_context.len == 0
 		&& stylesheet_rule_cache_.eligible(text)
+	if stylesheet_parse_diagnostics {
+		eprintln('VOX_CSS_PARSE location=${location or { '-' }} bytes=${text.len} deferred=${deferred} cached=${cache_rules && stylesheet_rule_cache_.contains(text)} rule_context=${params.rule_context.len}')
+	}
 	if cache_rules {
 		if entry := stylesheet_rule_cache_.lookup(text) {
 			defer { entry.release() }
-			mut parser := RuleSelectorParser{
-				document: params.document
-				mode: params.mode
-				value_context: params.value_context.clone()
-				rule_context: params.rule_context.clone()
-				declared_namespaces: params.declared_namespaces.clone()
-				is_ua_style_sheet: params.is_ua_style_sheet
-				defer_style_declarations: deferred
-				raw_rules_transient: true
-				component_input_transient: true
+			return convert_transient_stylesheet_rules(params, entry.rules, location, media_list,
+				deferred: deferred, syntax_id: entry.id)
+		}
+	}
+	if params.rule_context.len == 0 && params.is_ua_style_sheet == .no {
+		if mut staged := preloaded_stylesheet_syntax_.take(text) {
+			defer { staged.storage.discard(preloaded_stylesheet_syntax_label) }
+			if preloaded_stylesheet_syntax_diagnostics {
+				off_thread := staged.thread_id != platform.native_thread_identity()
+				eprintln('VOX_PRELOADED_STYLESHEET_SYNTAX bytes=${text.len} rules=${staged.rules.len} off_thread=${off_thread}')
 			}
-			rules := CSSRuleList.create(parser.convert_rules(entry.rules))
-			media := media_list or { MediaList.create_empty() }
-			return CSSStyleSheet.create(rules, media, location)
+			id := if cache_rules { stylesheet_rule_cache_.store(text, staged.rules) } else { u64(0) }
+			return convert_transient_stylesheet_rules(params, staged.rules, location, media_list,
+				deferred: deferred, syntax_id: id, prepared_selectors: staged.selectors)
 		}
 	}
 	$if prealloc {
@@ -50,27 +58,61 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		raw := parser.parse_a_stylesheet(location)
 		scratch.leave()
 		defer { scratch.finish() }
-		if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) }
-		parser.raw_rules_transient = true
-		parser.component_input_transient = true
-		parser.token_stream = ParserTokenStream{}
-		parser.value_context = params.value_context.clone()
-		parser.rule_context = params.rule_context.clone()
-		parser.declared_namespaces = params.declared_namespaces.clone()
-		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
-		media := if provided := media_list { provided } else { MediaList.create_empty() }
-		return CSSStyleSheet.create(rules, media, location)
+		syntax_id := if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) } else { u64(0) }
+		return convert_transient_stylesheet_rules(params, raw.rules, location, media_list,
+			deferred: deferred, syntax_id: syntax_id)
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred
+	parser.share_empty_deferred_style_params()
 	if cache_rules {
 		raw := parser.parse_a_stylesheet(location)
-		stylesheet_rule_cache_.store(text, raw.rules)
+		syntax_id := stylesheet_rule_cache_.store(text, raw.rules)
 		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
 		media := media_list or { MediaList.create_empty() }
-		return CSSStyleSheet.create(rules, media, location)
+		mut sheet := CSSStyleSheet.create(rules, media, location)
+		sheet.source_syntax_id_ = syntax_id
+		return sheet
 	}
 	return parser.parse_as_css_stylesheet(location, media_list)
+}
+
+@[params]
+struct TransientStylesheetOptions {
+	deferred bool
+	syntax_id u64
+	prepared_selectors &PreparedStyleRuleSelectors = unsafe { nil }
+}
+
+// Raw syntax can belong to a scratch arena, a retained cache or a worker.
+// Conversion owns every span that survives the input's lifetime.
+fn convert_transient_stylesheet_rules(params ParsingParams, raw_rules []Rule, location ?string,
+	media_list ?&MediaList, options TransientStylesheetOptions) &CSSStyleSheet {
+	mut parser := RuleSelectorParser{
+		document: params.document
+		mode: params.mode
+		value_context: params.value_context.clone()
+		rule_context: params.rule_context.clone()
+		declared_namespaces: params.declared_namespaces.clone()
+		is_ua_style_sheet: params.is_ua_style_sheet
+		defer_style_declarations: options.deferred
+		raw_rules_transient: true
+		component_input_transient: true
+		prepared_rule_selectors: options.prepared_selectors
+	}
+	parser.share_empty_deferred_style_params()
+	rules := CSSRuleList.create(parser.convert_rules(raw_rules))
+	if options.prepared_selectors != unsafe { nil } {
+		if params.is_ua_style_sheet == .yes && user_agent_syntax_diagnostics {
+			eprintln('VOX_UA_STYLESHEET_SELECTORS prepared=${options.prepared_selectors.lists.len} used=${parser.prepared_rule_selector_hits}')
+		} else if params.is_ua_style_sheet == .no && preloaded_stylesheet_syntax_diagnostics {
+			eprintln('VOX_PRELOADED_STYLESHEET_SELECTORS prepared=${options.prepared_selectors.lists.len} used=${parser.prepared_rule_selector_hits}')
+		}
+	}
+	media := media_list or { MediaList.create_empty() }
+	mut sheet := CSSStyleSheet.create(rules, media, location)
+	sheet.source_syntax_id_ = options.syntax_id
+	return sheet
 }
 
 fn own_transient_rule_prelude(rule Rule) Rule {
@@ -79,7 +121,7 @@ fn own_transient_rule_prelude(rule Rule) Rule {
 			name := rule.name.to_lower()
 			// Descriptor converters may retain nested component values directly,
 			// including function defaults and font-feature declaration lists.
-			if name in ['font-face', 'font-feature-values', 'counter-style', 'property', 'function',
+			if name in ['font-feature-values', 'counter-style', 'property', 'function',
 				'page', 'keyframes', '-webkit-keyframes'] {
 				return own_transient_rule_tree(rule)
 			}

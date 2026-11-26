@@ -3,17 +3,30 @@ module main
 import browserjs
 import dom
 import html
+import platform
 import x.json2
 
-fn compact_dataset_query(root &dom.Node, input string) !string {
+fn (mut binding CompactElementQueryBinding) dataset_query(root &dom.Node, input string) !string {
 	element := root.as_element() or { return error('TypeError: Invalid dataset owner') }
+	mut reply := platform.ThreadScratchScope{}
+	$if prealloc {
+		if binding.temporary_reply_enabled {
+			reply = platform.begin_thread_scratch('compact dataset reply')
+			binding.reply_workspace = reply
+		}
+	}
+	defer { reply.leave() }
 	request := json2.decode[map[string]json2.Any](input)!
 	op := json_string_property(request, 'op') or { 'read' }
 	name := json_string_property(request, 'name') or { '' }
 	mut string_map := html.DOMStringMap.create(element)
 	if op == 'set' {
 		value := json_string_property(request, 'value') or { return error('TypeError: Missing dataset value') }
-		string_map.set_value_of_named_property(name, value) or {
+		// New Attr records and their value bytes belong to the document.
+		mut retained := platform.enter_retained_allocations()
+		owned_value := if binding.temporary_reply_enabled { value.clone() } else { value }
+		string_map.set_value_of_named_property(name, owned_value) or {
+			retained.finish()
 			kind := if err.msg().contains("'-' followed") {
 				'SyntaxError'
 			} else {
@@ -21,8 +34,11 @@ fn compact_dataset_query(root &dom.Node, input string) !string {
 			}
 			return error('${kind}: ${err.msg()}')
 		}
+		retained.finish()
 	} else if op == 'delete' {
+		mut retained := platform.enter_retained_allocations()
 		string_map.delete_value(name)
+		retained.finish()
 	}
 	// Refresh the compact attribute view after native writes and native-side
 	// mutations. Later getAttribute()/setAttribute() calls share this state.

@@ -22,6 +22,7 @@ struct ComputedGeometryProvenance {
 	raw_generation                u64
 	compositor_only_animations    bool
 	viewport                      CSSPixelRect
+	layout_scale                  f64
 	root_font_size                f64
 	root_line_height              f64
 	root_font_depends_on_viewport bool
@@ -130,6 +131,7 @@ fn (p &ComputedGeometryProvenance) matches(c &ComputedProperties) bool {
 fn (p &ComputedGeometryProvenance) matches_context(c &ComputedProperties) bool {
 	fonts := c.cached_computed_font_list_ or { return false }
 	return voidptr(p.token) == voidptr(c.computed_property_graph_token_) && p.viewport == c.viewport_rect_
+		&& p.layout_scale == c.layout_coordinate_scale()
 		&& p.root_font_size == c.root_font_size_px_ && p.root_line_height == c.root_line_height_px_
 		&& p.root_font_depends_on_viewport == c.root_font_metrics_depend_on_viewport_metrics_
 		&& p.subject_is_pseudo == c.subject_is_pseudo_
@@ -157,6 +159,7 @@ fn (mut c ComputedProperties) publish_computed_geometry_provenance(previous &Com
 		raw_generation:                c.computed_property_graph_token_.raw_generation
 		compositor_only_animations:    c.has_only_compositor_animated_properties()
 		viewport:                      c.viewport_rect_
+		layout_scale:                  c.layout_coordinate_scale()
 		root_font_size:                c.root_font_size_px_
 		root_line_height:              c.root_line_height_px_
 		root_font_depends_on_viewport: c.root_font_metrics_depend_on_viewport_metrics_
@@ -179,7 +182,8 @@ fn (c &ComputedProperties) anonymous_computed_geometry_source(clone &ComputedPro
 	// The clone has an independent raw property array but must retain the
 	// exact context against which these inherited geometry values resolved.
 	p := c.geometry_provenance()
-	if p.viewport != clone.viewport_rect_ || p.root_font_size != clone.root_font_size_px_
+	if p.viewport != clone.viewport_rect_ || p.layout_scale != clone.layout_coordinate_scale()
+		|| p.root_font_size != clone.root_font_size_px_
 		|| p.root_line_height != clone.root_line_height_px_
 		|| p.root_font_depends_on_viewport != clone.root_font_metrics_depend_on_viewport_metrics_
 		|| p.subject_is_pseudo != clone.subject_is_pseudo_

@@ -16,15 +16,15 @@ pub fn utf16_string_from_ascii_without_validation(input []u8) Utf16String {
 	}
 	return Utf16String{
 		data:           units
-		ascii_storage_: true
-		ascii_bytes_:   bytes
+		storage_: &Utf16Storage{bytes: bytes, raw_ascii: true, ascii: true}
 	}
 }
 
 // Existing standalone package code can edit code-unit storage internally.
 // Such edits must not retain a stale unchecked-ASCII byte projection.
 fn (text Utf16String) retained_ascii_bytes() ?[]u8 {
-	if bytes := text.ascii_bytes_ {
+	if text.storage_ != unsafe { nil } && text.storage_.raw_ascii {
+		bytes := text.storage_.bytes
 		if bytes.len != text.data.len { return none }
 		for index, byte in bytes {
 			if text.data[index] != u16(char(byte)) { return none }

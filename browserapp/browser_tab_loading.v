@@ -100,12 +100,11 @@ fn (mut app BrowserApp) animate_browser_tab_loading() {
 		// Reconcile load completion normally, then refresh only the animated icons.
 		// The address editor, tab actions and document pixels stay untouched.
 		app.update_browser_chrome(app.browser_chrome.width, app.browser_chrome.height)
-		persistent := platform.enter_persistent()
-		defer { platform.leave_persistent(persistent) }
-		for index, loading in app.browser_chrome.tab_loading {
-			if loading {
-				icon := browserui.tab_loading_icon(index, state.tab_loading_frame)
-				ui2.refresh_element(icon.id, icon)
+		chrome := app.browser_chrome
+		first, end := browser_visible_tabs(chrome.width, chrome.tab_titles.len, chrome.selected_tab)
+		for index in first .. end {
+			if index < chrome.tab_loading.len && chrome.tab_loading[index] {
+				browserui.refresh_tab_loading_icon(index, state.tab_loading_frame)
 			}
 		}
 	} $else {

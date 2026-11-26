@@ -136,6 +136,14 @@ fn export_property_value(value StyleValue) StyleValue {
 		}
 		UnresolvedStyleValue, StringStyleValue, CustomIdentStyleValue { export_retained_text_value(value) }
 		CalculatedStyleValue { StyleValue(export_calculated_property_value(value)) }
+		FontStyleStyleValue {
+			angle := if parsed := value.angle() { ?StyleValue(export_property_value(parsed)) } else { none }
+			StyleValue(FontStyleStyleValue.create(value.font_style_, angle))
+		}
+		OpenTypeTaggedStyleValue {
+			StyleValue(OpenTypeTaggedStyleValue.create(value.mode_, value.tag_.clone(),
+				export_property_value(value.value())))
+		}
 		TransformationStyleValue { StyleValue(export_transformation_property_value(value)) }
 		RatioStyleValue {
 			StyleValue(RatioStyleValue.create_from_style_values(export_property_value(value.numerator_[0]),

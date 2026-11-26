@@ -5,7 +5,7 @@ import time
 
 fn with_snapshot_assets_fixture() (string, string) {
 	previous := os.getenv('VOX_ADBLOCK_ENGINE_ASSETS')
-	directory := os.join_path(os.temp_dir(), 'vox-snapshot-assets-${os.getpid()}-${time.sys_mono_now()}')
+	directory := os.join_path(os.vtmp_dir(), 'vox-snapshot-assets-${os.getpid()}-${time.sys_mono_now()}')
 	os.mkdir_all(directory) or { panic(err) }
 	root := os.dir(@FILE)
 	for name in ['engine.js.gz', 'engine.snapshot.bin', 'engine.snapshot.json.gz'] {
@@ -64,7 +64,7 @@ fn test_diagnostic_missing_source_releases_context_and_does_not_use_embedded_sou
 }
 
 fn test_packaged_codec_and_metadata_follow_the_snapshot_for_browser_and_worker() {
-	directory := os.join_path(os.temp_dir(), 'vox-packaged-assets-${os.getpid()}-${time.sys_mono_now()}')
+	directory := os.join_path(os.vtmp_dir(), 'vox-packaged-assets-${os.getpid()}-${time.sys_mono_now()}')
 	resources := os.join_path(directory, 'Vox.app', 'Contents', 'Resources')
 	os.mkdir_all(resources)!
 	os.mkdir_all(os.join_path(os.dir(resources), 'MacOS'))!
@@ -90,15 +90,37 @@ fn test_packaged_codec_and_metadata_follow_the_snapshot_for_browser_and_worker()
 	}
 }
 
-fn test_standalone_tools_keep_the_embedded_fallback_without_a_packaged_set() {
-	executable := os.join_path(os.temp_dir(), 'vox-no-package-${os.getpid()}', 'tool')
+fn test_build_mode_selects_the_asset_source_when_no_resources_exist() {
+	executable := os.join_path(os.vtmp_dir(), 'vox-no-package-${os.getpid()}', 'tool')
 	for name in ['engine.snapshot.bin', 'engine.snapshot.json.gz', 'engine.js.gz'] {
-		assert snapshot_asset_path_for_executable(executable, none, name) == none
+		path := snapshot_asset_path_for_executable(executable, none, name)
+		$if vox_packaged_adblock_assets ? {
+			assert (path or { panic('missing packaged path') }) == snapshot_resource_path(executable,
+				name)
+		} $else {
+			assert path == none
+		}
+	}
+}
+
+fn test_packaged_build_rejects_a_missing_resource_set() {
+	$if vox_packaged_adblock_assets ? {
+		previous := os.getenv_opt('VOX_ADBLOCK_ENGINE_ASSETS')
+		os.unsetenv('VOX_ADBLOCK_ENGINE_ASSETS')
+		defer {
+			if value := previous { os.setenv('VOX_ADBLOCK_ENGINE_ASSETS', value, true) }
+		}
+		context := create_context(none) or {
+			assert err.msg().contains('Cannot restore bundled adblock snapshot')
+			return
+		}
+		C.JSGlobalContextRelease(context)
+		assert false, 'missing package restored the adblock engine'
 	}
 }
 
 fn test_a_partial_package_cannot_restore_the_checkout_snapshot() {
-	directory := os.join_path(os.temp_dir(), 'vox-partial-assets-${os.getpid()}-${time.sys_mono_now()}')
+	directory := os.join_path(os.vtmp_dir(), 'vox-partial-assets-${os.getpid()}-${time.sys_mono_now()}')
 	resources := os.join_path(directory, 'Contents', 'Resources')
 	os.mkdir_all(resources)!
 	os.mkdir_all(os.join_path(os.dir(resources), 'MacOS'))!

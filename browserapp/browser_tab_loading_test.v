@@ -117,6 +117,17 @@ fn test_loading_animation_timer_refreshes_icons_and_stops_on_completion_and_unmo
 		assert app.browser_ui().tab_loading_frame == 1
 		assert ui2.embedded_browser_control('address') == address
 		assert app.paint_commands.len == paint_count
+		$if macos && prealloc && !ui2_custom_rendering ? {
+			used := platform.thread_arena_usage().used
+			for _ in 0 .. 600 {
+				timer.fire()
+			}
+			retained := platform.thread_arena_usage().used - used
+			println('loading timer: ${retained} bytes retained by 600 ticks')
+			assert retained < 4096
+			assert ui2.embedded_browser_control('address') == address
+			assert app.paint_commands.len == paint_count
+		}
 		app.document.update_readiness(.complete)
 		timer.fire()
 		assert !timer.is_active()

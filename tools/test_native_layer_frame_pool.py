@@ -37,6 +37,8 @@ def main():
                                         stderr=subprocess.STDOUT) if compiled == 0 else None
             grow = subprocess.call([str(binary), '--grow'], stdout=log,
                                    stderr=subprocess.STDOUT) if compiled == 0 else None
+            large = subprocess.call([str(binary), '--large-clear'], stdout=log,
+                                    stderr=subprocess.STDOUT) if compiled == 0 else None
             skipped = {}
             for name, overrides in (
                 ('shared', {}),
@@ -49,10 +51,11 @@ def main():
                     env={**os.environ, **overrides}, stdout=log,
                     stderr=subprocess.STDOUT) if compiled == 0 else None
         failed = (failed or tested != 0 or cleared != 0 or spare != 0
-                  or readiness != 0 or grow != 0 or any(code != 0 for code in skipped.values()))
+                  or readiness != 0 or grow != 0 or large != 0 or any(code != 0 for code in skipped.values()))
         print(json.dumps(dict(mode=mode, compile_exit=compiled, test_exit=tested,
                              cleared_test_exit=cleared, spare_test_exit=spare,
                              readiness_test_exit=readiness, grow_test_exit=grow,
+                             large_transparent_clear_exit=large,
                              skipped_frame_exits=skipped,
                              log=str(output / (mode + ".log")))), flush=True)
     return 1 if failed else 0

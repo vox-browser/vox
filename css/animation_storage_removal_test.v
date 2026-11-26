@@ -136,3 +136,42 @@ fn test_animation_storage_real_removal_cancels_only_matching_target_names_in_ord
 	assert storage.animation(after, 'remove') != none
 	assert storage.animation(other, 'remove') != none
 }
+
+// Every style computation asks the storage about its element while any
+// animation exists. The per-target counts answer for elements without one.
+fn test_animation_storage_tracks_targets_with_entries() {
+	document := dom.Document.create(dom.url_about_blank())
+	owner := animation_storage_removal_target(document)
+	plain_owner := animation_storage_removal_target(document)
+	target := dom.AbstractElement.new(owner, none)
+	before := dom.AbstractElement.new(owner, .before)
+	plain := dom.AbstractElement.new(plain_owner, none)
+	mut storage := CSSAnimationStorage{}
+	assert !storage.has_entries_for(target)
+	storage.set(target, 'spin', animation_storage_removal_animation(target, 'spin', false))
+	storage.set(target, 'pulse', animation_storage_removal_animation(target, 'pulse', false))
+	// Replacing an existing name keeps one entry.
+	storage.set(target, 'spin', animation_storage_removal_animation(target, 'spin', false))
+	storage.set(before, 'spin', animation_storage_removal_animation(before, 'spin', false))
+	assert storage.entries.len == 3
+	assert storage.has_entries_for(target) && storage.has_entries_for(before)
+	assert !storage.has_entries_for(plain)
+	assert storage.animation(plain, 'spin') == none
+	assert storage.animations_for(plain).len == 0
+	storage.remove_animations_not_named(plain, {})
+	assert storage.entries.len == 3
+
+	storage.remove_animations_not_named(target, {
+		'pulse': true
+	})
+	assert storage.has_entries_for(target)
+	assert storage.animation(target, 'spin') == none
+	assert storage.animation(target, 'pulse') != none
+	storage.remove_animations_not_named(target, {})
+	assert !storage.has_entries_for(target)
+	assert storage.has_entries_for(before)
+	assert storage.animations_for(target).len == 0
+	storage.remove_animations_not_named(before, {})
+	assert !storage.has_entries_for(before)
+	assert storage.entries.len == 0
+}

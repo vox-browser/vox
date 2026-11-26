@@ -19,6 +19,7 @@ struct BrowserChromeState {
 	address                string
 	status                 string
 	footer                 string
+	javascript_compilation ?int
 	back                   bool
 	forward                bool
 	reload                 bool
@@ -126,8 +127,13 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		address:                app.address
 		status:                 app.status
 		footer:                 app.chrome_footer()
-		back:                   app.history_index > 0
-		forward:                app.history_index + 1 < app.history.len
+		javascript_compilation: if app.js_runtime != unsafe { nil } {
+			app.js_runtime.javascript_compilation_progress()
+		} else {
+			?int(none)
+		}
+		back:                   app.can_traverse_history(-1)
+		forward:                app.can_traverse_history(1)
 		reload:                 app.history_index >= 0
 		debug:                  app.chrome_debug
 		bookmarks_visible:      app.bookmark_bar_visible()
@@ -206,7 +212,7 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 			},
 		]),
 		browserui.status_bar(ui2.rect(0, f64(chrome.height) - status_bar_height, width,
-			status_bar_height), chrome.footer, memory),
+			status_bar_height), chrome.footer, memory, javascript_compilation: chrome.javascript_compilation),
 	]
 }
 
@@ -227,6 +233,7 @@ $if vox_ui2 ? {
 			title: 'Browser'
 			items: [
 				ui2.menu_item_with_shortcut('settings-open', 'Settings…', 'cmd+,'),
+				ui2.menu_item('extensions-open', 'Extensions…'),
 				ui2.menu_item_with_shortcut('history', 'History', 'cmd+y'),
 				ui2.menu_item_with_shortcut('devtools-toggle', 'Developer Tools', 'cmd+alt+i'),
 				ui2.menu_item_with_shortcut('devtools-inspect', 'Inspect Element', 'cmd+shift+c'),

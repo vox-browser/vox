@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import os
 
 // List items keep their boxes across a tree rebuild only when their marker
 // cannot depend on the item's ordinal or on resources: no marker, a string,
@@ -11,6 +12,19 @@ import dom
 // retained list item (retained_flow_counters.v).
 
 fn retained_flow_marker_style_is_static(element &dom.Element, list_item &css.ComputedProperties) bool {
+	return retained_flow_marker_style_is_built_alike(element, list_item, false)
+}
+
+// Same-binary control: a marker whose text is a counter representation of its
+// item's ordinal keeps blocking clean subtree and layout reuse.
+const retain_ordinal_marker_blocking = os.getenv('VOX_RETAIN_ORDINAL_MARKER_BLOCKING') != ''
+
+// A marker whose text is a counter representation of its item's ordinal
+// (decimal, roman, alphabetic) is constructed alike for every ordinal: an empty
+// text box that layout_list_item_marker() fills from the current ordinal. Its
+// boxes can be kept across a tree rebuild. A committed layout of it stays
+// valid while that text is unchanged (list_item_ordinal_marker_is_current).
+fn retained_flow_marker_style_is_built_alike(element &dom.Element, list_item &css.ComputedProperties, ordinal bool) bool {
 	if image := list_item.typed_property_value(.list_style_image) {
 		if image.is_abstract_image() { return false }
 	}
@@ -25,7 +39,9 @@ fn retained_flow_marker_style_is_static(element &dom.Element, list_item &css.Com
 		.counter_style {
 			style := list_style_type.counter_style or { return false }
 			algorithm := style.algorithm_
-			if algorithm is css.GenericCounterStyleAlgorithm {
+			if ordinal {
+				true
+			} else if algorithm is css.GenericCounterStyleAlgorithm {
 				algorithm.type_ == .cyclic && algorithm.symbol_list.len == 1
 			} else {
 				false
@@ -59,10 +75,115 @@ fn retained_flow_marker_box_is_static(node &Node) bool {
 	element := owner.as_element() or { return false }
 	// The marker keeps the style it was built with; a restyled ::marker rebuilds.
 	if marker := css.computed_properties_for_pseudo_element(element, .marker) {
-		if voidptr(node.computed_values()) != voidptr(marker) { return false }
+		if !marker_box_keeps_style(node, marker) { return false }
 	}
 	for child in node.children() {
 		if !child.is_text_node() || child.children().len != 0 { return false }
 	}
 	return true
+}
+
+fn retained_flow_list_item_box_is_built_alike(node &Node) bool {
+	if retain_ordinal_marker_blocking { return retained_flow_list_item_box_is_static(node) }
+	owner := node.dom_node() or { return false }
+	element := owner.as_element() or { return false }
+	computed := css.computed_properties_for_element(element) or { return false }
+	return computed.display().is_list_item()
+		&& retained_flow_marker_style_is_built_alike(element, computed, true)
+}
+
+fn retained_flow_marker_box_is_built_alike(node &Node) bool {
+	if retain_ordinal_marker_blocking { return retained_flow_marker_box_is_static(node) }
+	parent := node.parent() or { return false }
+	if !parent.is_list_item_box() || !retained_flow_list_item_box_is_built_alike(parent) { return false }
+	owner := parent.dom_node() or { return false }
+	element := owner.as_element() or { return false }
+	if marker := css.computed_properties_for_pseudo_element(element, .marker) {
+		if !marker_box_keeps_style(node, marker) { return false }
+	}
+	for child in node.children() {
+		if !child.is_text_node() || child.children().len != 0 { return false }
+	}
+	return true
+}
+
+// Whether a marker box still carries the ::marker style it was built with,
+// or one with identical layout inputs, compared as element styles are
+// (retained_flow_style_matches). A box keeps its style projected into layout
+// coordinates under device layout, which never shares the source's identity.
+// Clean subtree reuse gives a kept marker its current style
+// (refresh_kept_marker_style).
+fn marker_box_keeps_style(node &Node, marker &css.ComputedProperties) bool {
+	if voidptr(node.computed_values()) == voidptr(marker) { return true }
+	if retain_marker_style_identity { return false }
+	if box := node.as_list_item_marker_box() {
+		if box.source_style_ == voidptr(marker) { return true }
+	}
+	return retained_flow_style_matches(node, marker)
+}
+
+// Same-binary control: a marker whose style object was replaced rebuilds, as
+// before.
+const retain_marker_style_identity = os.getenv('VOX_RETAIN_MARKER_STYLE_IDENTITY') != ''
+
+// A kept marker box shows its item's current ::marker style.
+fn refresh_kept_marker_style(node &Node) {
+	parent := node.parent() or { return }
+	owner := parent.dom_node() or { return }
+	element := owner.as_element() or { return }
+	marker := css.computed_properties_for_pseudo_element(element, .marker) or { return }
+	if voidptr(node.computed_values()) == voidptr(marker) { return }
+	box := node.as_list_item_marker_box() or { return }
+	if box.source_style_ == voidptr(marker) { return }
+	styled := node.as_node_with_style() or { return }
+	mut mutable := unsafe { &NodeWithStyle(styled) }
+	mutable.apply_style(marker)
+	mut mutable_box := unsafe { &ListItemMarkerBox(box) }
+	mutable_box.source_style_ = voidptr(marker)
+}
+
+// Whether the text a marker built alike would show now is the text its last
+// layout gave it, so restoring that layout shows the current ordinal.
+fn marker_ordinal_text_is_current(node &Node) bool {
+	if !retained_flow_marker_box_is_built_alike(node) { return false }
+	marker := node.as_list_item_marker_box() or { return false }
+	child := node.first_child() or { return false }
+	text := child.as_text_node() or { return false }
+	current := marker.text() or { return false }
+	return text.source_text_ == current
+}
+
+fn list_item_ordinal_marker_is_current(node &Node) bool {
+	if !retained_flow_list_item_box_is_built_alike(node) { return false }
+	list_item := node.as_list_item_box() or { return false }
+	marker := list_item.marker() or { return true }
+	return retained_flow_marker_box_is_static(marker) || marker_ordinal_text_is_current(marker)
+}
+
+// VOX_CLEAN_SUBTREE_REUSE_DIAGNOSTICS: the first condition that keeps a
+// marker box from being built alike.
+fn retained_flow_marker_rejection(node &Node) string {
+	parent := node.parent() or { return 'detached' }
+	if !parent.is_list_item_box() { return 'parent:${layout_debug_tag(parent)}' }
+	owner := parent.dom_node() or { return 'anonymous-item' }
+	element := owner.as_element() or { return 'anonymous-item' }
+	computed := css.computed_properties_for_element(element) or { return 'unstyled' }
+	if !computed.display().is_list_item() { return 'display' }
+	if image := computed.typed_property_value(.list_style_image) {
+		if image.is_abstract_image() { return 'image' }
+	}
+	if marker := css.computed_properties_for_pseudo_element(element, .marker) {
+		if value := marker.typed_property_value(.content) {
+			if value.to_keyword() != .normal { return 'content' }
+		}
+		if !marker_box_keeps_style(node, marker) { return 'style' }
+	}
+	if !retained_flow_marker_style_is_built_alike(element, computed, true) {
+		list_style_type := computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
+		return 'type:${list_style_type.kind}:${list_style_type.name}'
+	}
+	for child in node.children() {
+		if !child.is_text_node() || child.children().len != 0 { return 'children:${layout_debug_tag(child)}' }
+	}
+	return 'control'
 }

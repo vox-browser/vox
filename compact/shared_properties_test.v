@@ -34,7 +34,18 @@ fn test_compact_common_accessors_share_functions_and_preserve_own_descriptors() 
 	run_document_javascript(document, document.url.serialize(), [r'
 const originals=[first,second,drawing],wrappers=originals.slice();
 for(let i=0;i<256;i++)wrappers.push(document.createElement(i%2?"span":"div"));
+// With the tree-version query, record-backed elements inherit firstChild
+// from Element.prototype, whose cached navigation getter the own accessor
+// would hide.
+const inheritedFirstChild=typeof __ladybirdTreeVersion==="function";
+if(inheritedFirstChild){
+ const inherited=Object.getOwnPropertyDescriptor(Element.prototype,"firstChild");
+ for(const object of wrappers)if(Object.getOwnPropertyDescriptor(object,"firstChild"))throw new Error("own firstChild");
+ if(!inherited||typeof inherited.get!=="function")throw new Error("Element.prototype.firstChild");
+ if(first.firstChild===null||first.firstChild.nodeValue!=="one"||drawing.firstChild!==null||wrappers[3].firstChild!==null)throw new Error("inherited firstChild value");
+}
 for(const name of ["id","firstChild","parentNode","parentElement","textContent","innerHTML","className","name","hidden","disabled","checked","indeterminate","complete","sheet"]){
+ if(inheritedFirstChild&&name==="firstChild")continue;
  const getter=Object.getOwnPropertyDescriptor(first,name).get,setter=Object.getOwnPropertyDescriptor(first,name).set;
  for(const object of wrappers){
   const descriptor=Object.getOwnPropertyDescriptor(object,name);

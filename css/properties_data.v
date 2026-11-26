@@ -388,19 +388,9 @@ fn parse_substituted_property_value(property_id PropertyID, result []ComponentVa
 	// 3. Parse result according to prop's grammar. If this returns failure, prop is invalid at computed-value time; return.
 	// NB: Custom properties have no grammar as such, so we skip this step for them.
 	// FIXME: Parse according to @property syntax once we support that.
-	// Substitution has already materialized this immutable input. The parser
-	// only advances a separate cursor, so it need not copy the component slots.
-	mut parsed_value := parse_property_components_with_export(ParsingParams{}, property_id,
-		result, false) or {
+	parsed_value := parse_property_components_with_export(ParsingParams{}, property_id,
+		result, transient) or {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
-	}
-	if transient {
-		if mut parsed_value is UnresolvedStyleValue {
-			parsed_value.tokens = own_stylesheet_components(parsed_value.tokens)
-			if original := parsed_value.original_source_text {
-				parsed_value.original_source_text = original.clone()
-			}
-		}
 	}
 
 	// 4. Otherwise, replace prop's value with the parsed result.

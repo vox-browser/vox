@@ -3,9 +3,9 @@ module libjs
 import math
 
 // Translated from LibJS/Runtime/Value.h. Upstream NaN-boxes every value into 64
-// bits; this translation keeps an explicit tag beside the payload so the VM,
-// environment, and execution-context records can run before the interpreter and
-// the full object model exist in V.
+// bits; this translation keeps an explicit tag beside a shared number/cell
+// payload. The two payload forms are mutually exclusive, and all accesses are
+// selected by the value tag. A 16-byte record also fits the ARM64 register ABI.
 
 pub enum ValueTag as u8 {
 	empty
@@ -21,11 +21,16 @@ pub enum ValueTag as u8 {
 	accessor
 }
 
-pub struct Value {
+pub union ValuePayload {
 pub:
-	tag    ValueTag = .undefined
 	number f64
-	cell   voidptr = unsafe { nil }
+	cell voidptr
+}
+
+pub struct Value {
+	ValuePayload
+pub:
+	tag ValueTag = .undefined
 }
 
 pub fn js_undefined() Value {

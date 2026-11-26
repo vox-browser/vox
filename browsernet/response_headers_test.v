@@ -21,8 +21,10 @@ fn test_pikabu_response_header_blocks_payload_before_browser_return() {
 	assert headers[0].value == '1'
 	assert headers[1].value == '2'
 	filter_response(request, response) or {
-		assert err.msg().starts_with('Blocked by adblock:'), err.msg()
-		assert err.msg().contains('responseheader=llasalbbubrrl')
+		message := err.msg()
+		filter_response(adblock.Request{...request, request_type: 'script'}, response)!
+		assert message.starts_with('Blocked by adblock:'), message
+		assert message.contains('responseheader=llasalbbubrrl')
 		return
 	}
 	assert false, 'Pikabu ad response headers were ignored'

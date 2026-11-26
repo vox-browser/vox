@@ -3,6 +3,10 @@ module css
 import dom
 import math
 import time
+import os
+
+// Same-binary control: every animation storage query scans all entries.
+const disable_animation_target_counts = os.getenv('VOX_DISABLE_ANIMATION_TARGET_COUNTS') != ''
 
 pub struct CSSPixelPoint {
 pub mut:
@@ -1060,9 +1064,22 @@ pub mut:
 pub struct CSSAnimationStorage {
 pub mut:
 	entries []CSSAnimationStorageEntry
+mut:
+	// Entries per target (abstract_element_storage_key). Every style
+	// computation asks about its element while any animation exists anywhere;
+	// most elements have none, and skip the scan of every entry.
+	target_entry_counts map[i64]int
+}
+
+// Whether `abstract_element` may have entries; false is exact.
+pub fn (storage &CSSAnimationStorage) has_entries_for(abstract_element dom.AbstractElement) bool {
+	if storage.entries.len == 0 { return false }
+	if disable_animation_target_counts { return true }
+	return abstract_element_storage_key(abstract_element) in storage.target_entry_counts
 }
 
 pub fn (storage &CSSAnimationStorage) animation(abstract_element dom.AbstractElement, name string) ?&CSSAnimation {
+	if !storage.has_entries_for(abstract_element) { return none }
 	for entry in storage.entries {
 		if entry.name == name && abstract_elements_equal(entry.abstract_element, abstract_element) {
 			return entry.animation
@@ -1073,6 +1090,7 @@ pub fn (storage &CSSAnimationStorage) animation(abstract_element dom.AbstractEle
 
 pub fn (storage &CSSAnimationStorage) animations_for(abstract_element dom.AbstractElement) []&CSSAnimation {
 	mut result := []&CSSAnimation{}
+	if !storage.has_entries_for(abstract_element) { return result }
 	for entry in storage.entries {
 		if abstract_elements_equal(entry.abstract_element, abstract_element) {
 			result << entry.animation
@@ -1093,6 +1111,7 @@ pub fn (mut storage CSSAnimationStorage) set(abstract_element dom.AbstractElemen
 		name: name
 		animation: animation
 	}
+	storage.target_entry_counts[abstract_element_storage_key(abstract_element)]++
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_css_defined_animation(name, &dom.CSSAnimation_{
 		target: voidptr(animation)
@@ -1104,6 +1123,7 @@ pub fn (mut storage CSSAnimationStorage) set(abstract_element dom.AbstractElemen
 }
 
 pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_element dom.AbstractElement, defined_names map[string]bool) {
+	if !storage.has_entries_for(abstract_element) { return }
 	// Most style recomputations leave the target's animation names unchanged.
 	// Keep the global storage in place unless this target actually lost a name.
 	mut needs_removal := false
@@ -1118,6 +1138,7 @@ pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_el
 		return
 	}
 	mut kept := []CSSAnimationStorageEntry{}
+	mut removed := 0
 	for entry in storage.entries {
 		if !abstract_elements_equal(entry.abstract_element, abstract_element)
 			|| entry.name in defined_names {
@@ -1127,9 +1148,17 @@ pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_el
 			animation.cancel()
 			mut mutable_abstract_element := abstract_element
 			mutable_abstract_element.remove_css_defined_animation(entry.name)
+			removed++
 		}
 	}
 	storage.entries = kept
+	key := abstract_element_storage_key(abstract_element)
+	remaining := (storage.target_entry_counts[key] or { 0 }) - removed
+	if remaining > 0 {
+		storage.target_entry_counts[key] = remaining
+	} else {
+		storage.target_entry_counts.delete(key)
+	}
 }
 
 fn dom_css_animation_cancel(target voidptr) {

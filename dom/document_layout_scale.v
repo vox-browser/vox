@@ -12,7 +12,7 @@ pub fn (mut d Document) set_layout_coordinate_scale(value f64) {
 	scale := if value <= 0 || math.is_nan(value) || math.is_inf(value, 0) { 1.0 } else { value }
 	if d.layout_coordinate_scale() == scale { return }
 	d.layout_coordinate_scale_ = scale
-	d.set_needs_full_layout_tree_update(true)
+	d.request_full_layout_tree_update('layout-scale')
 	d.request_frame()
 }
 

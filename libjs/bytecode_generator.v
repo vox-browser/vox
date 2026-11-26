@@ -1,27 +1,49 @@
 module libjs
 
 // Selected paths from Rust/src/bytecode/{generator,codegen}.rs.
-// The V stream uses instruction indices and monotonically allocated registers;
-// upstream's register reuse, caches and packed instruction ABI remain pending.
+// The V stream uses instruction indices. Complete body statements reuse their
+// temporary range; control-flow liveness allocation and packed ABI remain pending.
 // Ordinary functions retain their defining source and compile on first call.
 // Unsupported top-level syntax fails before the program executes.
 struct BytecodeLoop {
 mut:
+	is_iteration bool = true
 	breaks      []u32
 	continues   []u32
 	scope_depth int
+	iterator    ?Operand
+	returns     []LoopReturnExit
+	abrupts     []LoopAbruptExit
 }
 
 struct BytecodeGenerator {
 mut:
+	// Identifier-table positions by name hash once the table is large
+	// (identifier()); every identifier use looked its name up.
+	identifier_positions PositionTable
+	register_bindings []FunctionRegisterBinding
+	// Per register binding: a lexical binding's initialization has been emitted.
+	lexical_initialized []bool
+	rejected_lexicals   []u32
+	// Register binding position per function-scope local index, or -1.
+	variable_positions []int
 	executable    &Executable
 	strict        bool
 	starting_line u32 = 1
 	range         SourceRange
 	scope_depth   int
+	with_depth    int
 	loops         []BytecodeLoop
+	labels        []BytecodeLabel
+	finalizers    []BytecodeFinally
 	function_body bool
-	initialized_functions []u32
+	generator_function bool
+	// Function-table ids whose declarations were instantiated (any position).
+	initialized_functions PositionTable
+	// Non-lexical global_bindings names by hash, for the first entries indexed.
+	var_binding_names   PositionTable
+	var_binding_indexed int
+	annex_b_function_names []Utf16String
 	compile_stack_ ?StackInfo
 }
 
@@ -32,11 +54,16 @@ fn (mut generator BytecodeGenerator) check_compile_stack() ! {
 	}
 }
 
+@[direct_array_access]
 fn (mut generator BytecodeGenerator) emit(instruction Instruction) u32 {
 	index := u32(generator.executable.instructions.len)
 	mut start := generator.range.start
 	if start.line > 0 { start.line += generator.starting_line - 1 }
 	generator.executable.instructions << instruction
+	last := generator.executable.source_map.len - 1
+	if last >= 0 && generator.executable.source_map[last].source_range.start == start {
+		return index
+	}
 	generator.executable.source_map << SourceMapEntry{
 		bytecode_offset: index
 		source_range:    SourceCodeRange{
@@ -63,13 +90,68 @@ fn (mut generator BytecodeGenerator) constant(value Value) Operand {
 	return Operand.constant(index)
 }
 
-fn (mut generator BytecodeGenerator) identifier(name Utf16String) u32 {
-	for index, existing in generator.executable.identifier_table {
-		if existing == name { return u32(index) }
+const identifier_index_minimum = 16
+
+// Whether global_bindings has a non-lexical entry named `name`. The list
+// only grows, so entries are indexed once, after the first sixteen.
+fn (mut generator BytecodeGenerator) has_var_binding(name Utf16String) bool {
+	bindings := generator.executable.global_bindings
+	if bindings.len < identifier_index_minimum {
+		return bindings.any(it.name == name && !it.is_lexical)
 	}
-	index := u32(generator.executable.identifier_table.len)
+	if generator.var_binding_indexed > bindings.len {
+		generator.var_binding_names.clear()
+		generator.var_binding_indexed = 0
+	}
+	for generator.var_binding_indexed < bindings.len {
+		entry := bindings[generator.var_binding_indexed]
+		if !entry.is_lexical {
+			mut slot := binding_lookup_hash(entry.name)
+			for generator.var_binding_names.get(slot) != none { slot++ }
+			generator.var_binding_names.set(slot, generator.var_binding_indexed)
+		}
+		generator.var_binding_indexed++
+	}
+	mut hash := binding_lookup_hash(name)
+	for {
+		position := generator.var_binding_names.get(hash) or { return false }
+		if bindings[position].name == name { return true }
+		hash++
+	}
+	return false
+}
+
+fn (mut generator BytecodeGenerator) identifier(name Utf16String) u32 {
+	table := generator.executable.identifier_table
+	if table.len < identifier_index_minimum {
+		for index, existing in table {
+			if existing == name { return u32(index) }
+		}
+	} else {
+		if generator.identifier_positions.count != table.len {
+			// The first lookup past the minimum (or after a direct table edit)
+			// indexes every entry.
+			generator.identifier_positions.clear()
+			for index, existing in table { generator.index_identifier(existing, index) }
+		}
+		mut hash := binding_lookup_hash(name)
+		for {
+			position := generator.identifier_positions.get(hash) or { break }
+			if table[position] == name { return u32(position) }
+			hash++
+		}
+	}
+	index := u32(table.len)
 	generator.executable.identifier_table << name.clone()
+	if table.len >= identifier_index_minimum { generator.index_identifier(name, int(index)) }
 	return index
+}
+
+// Equal-hash names take the following free hash, as IndexedProperties does.
+fn (mut generator BytecodeGenerator) index_identifier(name Utf16String, position int) {
+	mut hash := binding_lookup_hash(name)
+	for generator.identifier_positions.get(hash) != none { hash++ }
+	generator.identifier_positions.set(hash, position)
 }
 
 fn (generator &BytecodeGenerator) unsupported(description string) IError {
@@ -134,16 +216,36 @@ fn compound_assignment_opcode(op AssignmentOp) !OpCode {
 // codegen.rs::{generate_member_expression,generate_call_expression}: retain the
 // base before evaluating a computed key and reuse it as a method's receiver.
 fn (mut generator BytecodeGenerator) member_reference(mut vm VM, expression &Expression) !(Operand, Operand) {
+	return generator.member_reference_retained(mut vm, expression, true)
+}
+
+// `retained` keeps the base and key across later evaluation that may assign
+// this frame's locals; otherwise the caller consumes them first.
+fn (mut generator BytecodeGenerator) member_reference_retained(mut vm VM, expression &Expression, retained bool) !(Operand, Operand) {
 	kind := expression.kind
-	base := generator.expression(mut vm, kind.object or { return error('Missing member base') })!
+	object := kind.object or { return error('Missing member base') }
 	property := kind.property or { return error('Missing member property') }
+	mut base := Operand{}
+	if object.kind.tag == .super_expr {
+		base = generator.temporary()
+		generator.emit(Instruction{op: .resolve_this_binding, dst: base})
+	} else if !retained && (!kind.computed || !might_contain_assignment(property)) {
+		base = generator.immediate_value(mut vm, object)!
+	} else { base = generator.expression(mut vm, object)! }
 	key := if kind.computed {
-		generator.expression(mut vm, property)!
+		if retained { generator.expression(mut vm, property)! } else { generator.immediate_value(mut vm, property)! }
+	} else if identifier := property.kind.private_identifier() {
+		generator.constant(Value.from_string(vm.create_string(identifier.name)))
 	} else {
 		name := identifier_name(property) or {
 			return generator.unsupported('private property access')
 		}
 		generator.constant(Value.from_string(vm.create_string(name)))
+	}
+	if object.kind.tag == .super_expr {
+		receiver := base
+		base = generator.temporary()
+		generator.emit(Instruction{op: .resolve_super_reference, dst: base, lhs: receiver})
 	}
 	return base, key
 }
@@ -167,12 +269,12 @@ fn (mut generator BytecodeGenerator) short_circuit(op LogicalOp, operand Operand
 // base and property are Values, as upstream: GetByValue and PutByValue each
 // perform ToPropertyKey, without re-evaluating either AST expression.
 fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expression, op AssignmentOp, rhs &Expression) !Operand {
-	base, key := generator.member_reference(mut vm, target)!
+	base, key := generator.member_reference_retained(mut vm, target, might_contain_assignment(rhs))!
 	dst := generator.temporary()
 	mut jumps := []u32{}
 	if op != .assignment {
 		generator.emit(Instruction{
-			op:     .get_property
+			op:     member_property_opcode(target, .get_property)
 			dst:    dst
 			lhs:    base
 			rhs:    key
@@ -188,7 +290,7 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 			jumps = generator.short_circuit(logical, dst)
 		}
 	}
-	right := generator.expression(mut vm, rhs)!
+	right := generator.immediate_value(mut vm, rhs)!
 	if op == .assignment || jumps.len > 0 {
 		generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
 	} else {
@@ -200,7 +302,7 @@ fn (mut generator BytecodeGenerator) member_assignment(mut vm VM, target &Expres
 		})
 	}
 	generator.emit(Instruction{
-		op:     .put_property
+		op:     member_property_opcode(target, .put_property)
 		lhs:    base
 		rhs:    key
 		src:    dst
@@ -217,34 +319,108 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 	previous_range := generator.range
 	generator.range = expression.range
 	defer { generator.range = previous_range }
-	kind := expression.kind
+	// ExpressionKind is large and its accessors take references; do not copy it.
+	kind := &expression.kind
 	match kind.tag {
+		.yield_expr { return generator.yield_expression(mut vm, expression) }
+		.import_call {
+			specifier := generator.expression(mut vm, kind.specifier() or { return error('Missing import specifier') })!
+			options := if options_expression := kind.options() { generator.expression(mut vm, options_expression)! } else { generator.constant(js_undefined()) }
+			result := generator.temporary()
+			generator.emit(Instruction{op: .import_call, dst: result, lhs: specifier, rhs: options})
+			return result
+		}
+		.tagged_template_literal { return generator.tagged_template(mut vm, expression) }
+		.template_literal {
+			data := kind.template_data() or { return error('Missing template literal') }
+			mut text := generator.constant(Value.from_string(vm.create_string(Utf16String.new())))
+			// codegen.rs::generate_template_literal: evaluate each substitution
+			// and ToString it before evaluating the next one. Addition itself
+			// uses the default primitive hint and cannot perform this conversion.
+			// Index the AST lists: a `for x in` loop copies each 312-byte Expression.
+			for part_index in 0 .. data.expressions.len {
+				part := unsafe { &data.expressions[part_index] }
+				value := generator.expression(mut vm, part)!
+				mut segment := value
+				if part.kind.tag != .string_literal {
+					segment = generator.temporary()
+					generator.emit(Instruction{op: .to_string, dst: segment, lhs: value})
+				}
+				joined := generator.temporary()
+				generator.emit(Instruction{op: .add, dst: joined, lhs: text, rhs: segment})
+				text = joined
+			}
+			return text
+		}
+		.class_expr { return generator.class_expression(mut vm, kind.class_data() or { return error('Missing class expression') }) }
 		.meta_property {
-			if kind.meta_property_type!=.import_meta { return generator.unsupported('new.target') }
 			dst := generator.temporary()
-			generator.emit(Instruction{op:.get_import_meta,dst:dst})
+			generator.emit(Instruction{op: if kind.meta_property_type == .import_meta { OpCode.get_import_meta } else { OpCode.get_new_target },dst:dst})
 			return dst
 		}
+		.super_call {
+			data := kind.super_call_data() or { return error('Missing super call data') }
+			callee := generator.temporary()
+			generator.emit(Instruction{op: .get_super_constructor, dst: callee})
+			if !data.is_synthetic && data.arguments.any(it.is_spread) {
+				arguments := generator.arguments_array(mut vm, data.arguments)!
+				result := generator.temporary()
+				generator.emit(Instruction{op: .super_construct_with_array, dst: result, lhs: callee, rhs: arguments})
+				return result
+			}
+			mut arguments := []Operand{}
+			if !data.is_synthetic {
+				for argument_index in 0 .. data.arguments.len {
+					arguments << generator.expression(mut vm, unsafe { &data.arguments[argument_index].value })!
+				}
+			}
+			result := generator.temporary()
+			// A default derived constructor forwards the actual argument list;
+			// its synthetic spread must not consult Array's iterator.
+			generator.emit(Instruction{op: .super_construct, dst: result, lhs: callee, arguments: arguments, strict: data.is_synthetic})
+			return result
+		}
+		.await_expr {
+			value := generator.expression(mut vm, kind.operand or { return error('Missing await operand') })!
+			generator.emit(Instruction{op: .await_value, lhs: value})
+			result := generator.temporary()
+			generator.emit(Instruction{op: .resume_async, dst: result})
+			return result
+		}
 		.regexp_literal {
-			data := kind.regexp_data or { return error('Missing regular expression') }
-			compile_regexp_engine(data.pattern, data.flags) or { return error('SyntaxError: ' + err.msg()) }
+			data := kind.regexp_data() or { return error('Missing regular expression') }
+			engine := compile_regexp_engine(data.pattern, data.flags) or {
+				return error('SyntaxError: ' + err.msg())
+			}
 			dst := generator.temporary()
-			generator.emit(Instruction{op: .new_regexp, dst: dst, lhs: generator.constant(Value.from_string(vm.create_string(data.pattern))), rhs: generator.constant(Value.from_string(vm.create_string(data.flags)))})
+			pattern := generator.constant(Value.from_string(vm.create_string(data.pattern)))
+			flags := generator.constant(Value.from_string(vm.create_string(data.flags)))
+			generator.executable.regexp_literal_programs << RegExpLiteralProgram{
+				constant_index: pattern.index()
+				engine: engine
+			}
+			generator.emit(Instruction{op: .new_regexp, dst: dst, lhs: pattern, rhs: flags})
 			return dst
 		}
 		.array_expr {
+			for element in kind.array_elements() {
+				if value := element {
+					if value.kind.tag == .spread { return generator.array_literal_with_spread(mut vm, kind.array_elements()) }
+				}
+			}
 			dst := generator.temporary()
-			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements.len)))})
-			for index, element in kind.array_elements {
+			generator.emit(Instruction{op: .new_array, dst: dst, lhs: generator.constant(Value.from_f64(f64(kind.array_elements().len)))})
+			for index, element in kind.array_elements() {
 				if value := element {
 					item := generator.expression(mut vm, &value)!
-					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item})
+					// Each element index is distinct, so every definition is fresh.
+					generator.emit(Instruction{op: .define_property, lhs: dst, rhs: generator.constant(Value.from_f64(f64(index))), src: item, annex_b: true})
 				}
 			}
 			return dst
 		}
 		.object_expr {
-			return generator.object_literal(mut vm, kind.object_properties)
+			return generator.object_literal(mut vm, kind.object_properties())
 		}
 		.function_expr {
 			dst := generator.temporary()
@@ -257,14 +433,14 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		.big_int_literal {
 			// codegen.rs::bigint_literal_digits and RustIntegration.cpp's BigInt
 			// constant reader; SignedBigInteger::from_base removes separators.
-			digits := kind.big_int_value.trim_string_right('n').replace('_', '')
+			digits := kind.big_int_value().trim_string_right('n').replace('_', '')
 			integer := string_to_bigint(utf16_string(digits)) or {
 				return error('Invalid parsed BigInt literal')
 			}
 			return generator.constant(Value.from_bigint(integer))
 		}
 		.string_literal {
-			return generator.constant(Value.from_string(vm.create_string(kind.string_value)))
+			return generator.constant(Value.from_string(vm.create_string(kind.literal_string())))
 		}
 		.boolean_literal {
 			return generator.constant(Value.from_bool(kind.bool_value))
@@ -274,12 +450,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.identifier_expr {
 			dst := generator.temporary()
-			generator.emit(Instruction{
-				op:         .get_binding
-				dst:        dst
-				identifier: generator.identifier(identifier_name(expression)!)
-				strict:     generator.strict
-			})
+			generator.load_identifier(expression, dst)!
 			return dst
 		}
 		.this_expr {
@@ -296,53 +467,26 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				// A new-expression evaluates its callee as a value; no method
 				// receiver or environment this-binding is supplied to [[Construct]].
 				callee = generator.expression(mut vm, &data.callee)!
-			} else if data.callee.kind.tag == .member {
-				base, key := generator.member_reference(mut vm, &data.callee)!
-				callee = generator.temporary()
-				this_value = base
-				generator.emit(Instruction{
-					op:     .get_property
-					dst:    callee
-					lhs:    base
-					rhs:    key
-					strict: generator.strict
-				})
-			} else if data.callee.kind.tag == .identifier_expr {
-				callee = generator.temporary()
-				this_value = generator.temporary()
-				generator.emit(Instruction{
-					op:         .get_callee_and_this
-					dst:        callee
-					rhs:        this_value
-					identifier: generator.identifier(identifier_name(&data.callee)!)
-					strict:     generator.strict
-				})
 			} else {
-				callee = generator.expression(mut vm, &data.callee)!
+				callee, this_value = generator.call_reference_retained(mut vm, &data.callee,
+					arguments_might_contain_assignment(data.arguments, 0))!
 			}
 			// codegen.rs::generate_call_expression: evaluate arguments left to
 			// right after retaining the callee and receiver. This generator's
 			// temporaries are never reused, so later arguments cannot overwrite them.
-			mut call_arguments := []Operand{cap: data.arguments.len}
-			for argument in data.arguments {
-				if argument.is_spread { return generator.unsupported('spread call arguments') }
-				call_arguments << generator.expression(mut vm, &argument.value)!
-			}
 			dst := generator.temporary()
-			generator.emit(Instruction{
-				op:        if is_new { OpCode.construct } else { OpCode.call }
-				dst:       dst
-				lhs:       callee
-				rhs:       this_value
-				arguments: call_arguments
-			})
+			generator.emit_call_arguments(mut vm, dst, callee, this_value, data.arguments, is_new)!
 			return dst
 		}
+		.optional_chain {
+			value, _ := generator.optional_chain_reference(mut vm, expression, false)!
+			return value
+		}
 		.member {
-			base, key := generator.member_reference(mut vm, expression)!
+			base, key := generator.member_reference_retained(mut vm, expression, false)!
 			dst := generator.temporary()
 			generator.emit(Instruction{
-				op:     .get_property
+				op:     member_property_opcode(expression, .get_property)
 				dst:    dst
 				lhs:    base
 				rhs:    key
@@ -351,22 +495,32 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.binary {
+			if kind.binary_op == .in_op {
+				if lhs := kind.lhs {
+					if identifier := lhs.kind.private_identifier() {
+						base := generator.expression(mut vm, kind.rhs or { return error('Missing private in object') })!
+						dst := generator.temporary()
+						generator.emit(Instruction{op: .has_private, dst: dst, lhs: base, rhs: generator.constant(Value.from_string(vm.create_string(identifier.name)))})
+						return dst
+					}
+				}
+			}
 			op := binary_opcode(kind.binary_op)
-			left :=
-				generator.expression(mut vm, kind.lhs or { return error('Missing binary lhs') })!
-			right := generator.expression(mut vm,
-				kind.rhs or { return error('Missing binary rhs') })!
+			rhs := kind.rhs or { return error('Missing binary rhs') }
+			left := generator.value_before(mut vm, kind.lhs or { return error('Missing binary lhs') },
+				rhs)!
+			right := generator.immediate_value(mut vm, rhs)!
 			dst := generator.temporary()
 			generator.emit(Instruction{ op: op, dst: dst, lhs: left, rhs: right })
 			return dst
 		}
 		.logical {
 			dst := generator.temporary()
-			left := generator.expression(mut vm,
+			left := generator.immediate_value(mut vm,
 				kind.lhs or { return error('Missing logical lhs') })!
 			generator.emit(Instruction{ op: .mov, dst: dst, lhs: left })
 			jumps := generator.short_circuit(kind.logical_op, dst)
-			right := generator.expression(mut vm, kind.rhs or {
+			right := generator.immediate_value(mut vm, kind.rhs or {
 				return error('Missing logical rhs')
 			})!
 			generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
@@ -380,8 +534,9 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 		}
 		.sequence {
 			mut last := generator.constant(js_undefined())
-			for part in kind.expressions {
-				last = generator.expression(mut vm, &part)!
+			parts := kind.expressions()
+			for part_index in 0 .. parts.len {
+				last = generator.expression(mut vm, unsafe { &parts[part_index] })!
 			}
 			return last
 		}
@@ -389,6 +544,10 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			operand := kind.operand or { return error('Missing unary operand') }
 			dst := generator.temporary()
 			if kind.unary_op == .typeof_op && operand.kind.tag == .identifier_expr {
+				if local := generator.expression_register(operand) {
+					generator.emit(Instruction{op: .typeof_op, dst: dst, lhs: local})
+					return dst
+				}
 				generator.emit(Instruction{
 					op:         .typeof_binding
 					dst:        dst
@@ -401,16 +560,23 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				// codegen.rs::emit_delete_reference: identifiers are resolved
 				// without GetValue; non-references run only for their side effects.
 				if operand.kind.tag == .identifier_expr {
+					if _ := generator.expression_register(operand) {
+						generator.emit(Instruction{op: .mov, dst: dst, lhs: generator.constant(Value.from_bool(false))})
+						return dst
+					}
 					generator.emit(Instruction{
 						op:         .delete_binding
 						dst:        dst
 						identifier: generator.identifier(identifier_name(operand)!)
 						strict:     generator.strict
 					})
+				} else if operand.kind.tag == .optional_chain {
+					value, _ := generator.optional_chain_reference(mut vm, operand, true)!
+					return value
 				} else if operand.kind.tag == .member {
-					base, key := generator.member_reference(mut vm, operand)!
+					base, key := generator.member_reference_retained(mut vm, operand, false)!
 					generator.emit(Instruction{
-						op:     .delete_property
+						op:     member_property_opcode(operand, .delete_property)
 						dst:    dst
 						lhs:    base
 						rhs:    key
@@ -422,7 +588,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				}
 				return dst
 			}
-			value := generator.expression(mut vm, operand)!
+			value := generator.immediate_value(mut vm, operand)!
 			if kind.unary_op == .void_op { return generator.constant(js_undefined()) }
 			op := match kind.unary_op {
 				.plus { OpCode.unary_plus }
@@ -436,32 +602,59 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 			return dst
 		}
 		.assignment {
-			target := kind.assignment_lhs or { return error('Missing assignment target') }
+			target := kind.assignment_lhs() or { return error('Missing assignment target') }
+			if target is AssignmentLhsPattern {
+				if kind.assignment_op != .assignment { return error('Invalid destructuring assignment operator') }
+				value := generator.expression(mut vm, kind.rhs or { return error('Missing assignment rhs') })!
+				generator.assignment_pattern(mut vm, target.pattern, value)!
+				return value
+			}
 			if target !is AssignmentLhsExpression {
-				return generator.unsupported('destructuring assignment')
+				return error('Invalid assignment target')
 			}
 			if target.expression.kind.tag == .member {
 				return generator.member_assignment(mut vm, target.expression, kind.assignment_op, kind.rhs or {
 					return error('Missing assignment rhs')
 				})
 			}
-			name := identifier_name(target.expression) or {
+			identifier := target.expression.kind.identifier or {
 				return generator.unsupported('property assignment')
 			}
-			identifier := generator.identifier(name)
-			dst := generator.temporary()
+			rhs := kind.rhs or { return error('Missing assignment rhs') }
+			reference := if identifier.is_inside_with {
+				?PreparedAssignmentTarget(generator.prepare_identifier_assignment(identifier.name))
+			} else { none }
 			if kind.assignment_op == .assignment {
-				right := generator.expression(mut vm, kind.rhs or {
-					return error('Missing assignment rhs')
-				})!
-				generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
-			} else {
-				generator.emit(Instruction{
-					op:         .get_binding
-					dst:        dst
-					identifier: identifier
-					strict:     generator.strict
-				})
+				right := generator.expression(mut vm, rhs)!
+				// The right side's own result register already holds the value.
+				value := if generator.is_expression_temporary(right) { right } else {
+					dst := generator.temporary()
+					generator.emit(Instruction{op: .mov, dst: dst, lhs: right})
+					dst
+				}
+				if prepared := reference {
+					generator.store_assignment_target(mut vm, prepared, value)!
+				} else {
+					generator.store_identifier(target.expression, value)!
+				}
+				return value
+			}
+			dst := generator.temporary()
+			logical_assignment := kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment]
+			if reference == none && !logical_assignment && !might_contain_assignment(rhs) {
+				if local := generator.in_place_register(target.expression) {
+					right := generator.immediate_value(mut vm, rhs)!
+					generator.emit(Instruction{ op: compound_assignment_opcode(kind.assignment_op)!, dst: dst, lhs: local, rhs: right })
+					generator.store_identifier(target.expression, dst)!
+					return dst
+				}
+			}
+			{
+				if prepared := reference {
+					generator.emit(Instruction{op: .read_binding_reference, dst: dst, lhs: prepared.binding})
+				} else {
+					generator.load_identifier(target.expression, dst)!
+				}
 				mut jumps := []u32{}
 				if kind.assignment_op in [.and_assignment, .or_assignment, .nullish_assignment] {
 					logical := match kind.assignment_op {
@@ -472,9 +665,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 
 					jumps = generator.short_circuit(logical, dst)
 				}
-				right := generator.expression(mut vm, kind.rhs or {
-					return error('Missing assignment rhs')
-				})!
+				right := generator.immediate_value(mut vm, rhs)!
 				if jumps.len > 0 {
 					generator.emit(Instruction{ op: .mov, dst: dst, lhs: right })
 				} else {
@@ -482,34 +673,26 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 
 					generator.emit(Instruction{ op: actual, dst: dst, lhs: dst, rhs: right })
 				}
-				generator.emit(Instruction{
-					op:         .set_binding
-					lhs:        dst
-					identifier: identifier
-					strict:     generator.strict
-				})
+				if prepared := reference {
+					generator.store_assignment_target(mut vm, prepared, dst)!
+				} else {
+					generator.store_identifier(target.expression, dst)!
+				}
 				for jump in jumps {
 					generator.patch(jump)
 				}
 				return dst
 			}
-			generator.emit(Instruction{
-				op:         .set_binding
-				lhs:        dst
-				identifier: identifier
-				strict:     generator.strict
-			})
-			return dst
 		}
 		.update {
 			operand := kind.argument or { return error('Missing update operand') }
 			if operand.kind.tag == .member {
 				// generate_update_expression: retain base/key for store-back, and
 				// preserve the numeric old value for postfix results.
-				base, key := generator.member_reference(mut vm, operand)!
+				base, key := generator.member_reference_retained(mut vm, operand, false)!
 				old := generator.temporary()
 				generator.emit(Instruction{
-					op:     .get_property
+					op:     member_property_opcode(operand, .get_property)
 					dst:    old
 					lhs:    base
 					rhs:    key
@@ -527,7 +710,7 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 					lhs: old
 				})
 				generator.emit(Instruction{
-					op:     .put_property
+					op:     member_property_opcode(operand, .put_property)
 					lhs:    base
 					rhs:    key
 					src:    dst
@@ -535,28 +718,31 @@ fn (mut generator BytecodeGenerator) expression(mut vm VM, expression &Expressio
 				})
 				return if kind.prefixed { dst } else { old }
 			}
-			name := identifier_name(operand) or { return generator.unsupported('property update') }
-			identifier := generator.identifier(name)
+			identifier := operand.kind.identifier or { return generator.unsupported('property update') }
+			reference := if identifier.is_inside_with {
+				?PreparedAssignmentTarget(generator.prepare_identifier_assignment(identifier.name))
+			} else { none }
 			old := generator.temporary()
-			generator.emit(Instruction{
-				op:         .get_binding
-				dst:        old
-				identifier: identifier
-				strict:     generator.strict
-			})
-			generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
+			if prepared := reference {
+				generator.emit(Instruction{op: .read_binding_reference, dst: old, lhs: prepared.binding})
+				generator.emit(Instruction{op: .to_numeric, dst: old, lhs: old})
+			} else if local := generator.in_place_register(operand) {
+				generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: local })
+			} else {
+				generator.load_identifier(operand, old)!
+				generator.emit(Instruction{ op: .to_numeric, dst: old, lhs: old })
+			}
 			dst := generator.temporary()
 			generator.emit(Instruction{
 				op:  if kind.update_op == .increment { OpCode.increment } else { OpCode.decrement }
 				dst: dst
 				lhs: old
 			})
-			generator.emit(Instruction{
-				op:         .set_binding
-				lhs:        dst
-				identifier: identifier
-				strict:     generator.strict
-			})
+			if prepared := reference {
+				generator.store_assignment_target(mut vm, prepared, dst)!
+			} else {
+				generator.store_identifier(operand, dst)!
+			}
 			return if kind.prefixed { dst } else { old }
 		}
 		else {
@@ -575,7 +761,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	kind := statement.kind
 	if kind.tag == .function_declaration {
 		name := kind.func_name or { return error('Missing function declaration name') }
-		if !generator.executable.global_bindings.any(it.name == name.name && !it.is_lexical) {
+		if !generator.has_var_binding(name.name) {
 			generator.executable.global_bindings << GlobalBinding{name: name.name.clone()}
 		}
 		return
@@ -583,7 +769,7 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	if kind.tag == .variable_declaration && kind.decl_kind == .var_kind {
         for declaration in kind.declarations {
             for name in declaration_bound_names(declaration) {
-                if !generator.executable.global_bindings.any(it.name==name && !it.is_lexical) {
+                if !generator.has_var_binding(name) {
                     generator.executable.global_bindings << GlobalBinding{name:name.clone()}
                 }
             }
@@ -592,42 +778,91 @@ fn (mut generator BytecodeGenerator) collect_vars(statement &Statement) ! {
 	if kind.tag in [.program, .block, .function_body] {
 		scope := if kind.tag == .program { (kind.program_data or { return error('Missing program') }).scope } else { kind.scope or {
 				return error('Missing block')} }
-		for child in scope.children {
-			generator.collect_vars(&child)!
+		child_items := scope.children
+		for child_index in 0 .. child_items.len {
+			child := unsafe { &child_items[child_index] }
+			if kind.tag == .block && child.function_declaration_for_labelled_item() != none {
+				continue
+			}
+			generator.collect_vars(child)!
 		}
-	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt] {
+		if kind.tag in [.program, .function_body] && !generator.strict {
+			generator.annex_b_function_names = scope.annexb_function_names.clone()
+			for name in scope.annexb_function_names {
+				if !generator.has_var_binding(name) {
+					generator.executable.global_bindings << GlobalBinding{name: name.clone(), is_annex_b: true}
+				}
+			}
+		}
+	} else if kind.tag in [.if_stmt, .while_stmt, .do_while, .for_stmt, .for_in_of, .with_stmt] {
 		if body := kind.body { generator.collect_vars(body)! }
 		if consequent := kind.consequent { generator.collect_vars(consequent)! }
 		if alternate := kind.alternate { generator.collect_vars(alternate)! }
 		if init := kind.for_init {
 			if init is ForInitDeclaration { generator.collect_vars(init.statement)! }
 		}
+		if lhs := kind.for_in_of_lhs {
+			if lhs is ForInOfLhsDeclaration { generator.collect_vars(lhs.statement)! }
+		}
+	} else if kind.tag == .switch_stmt {
+		data := kind.switch_data or { return error('Missing switch statement') }
+		for clause in data.cases {
+			child_items := clause.scope.children
+			for child_index in 0 .. child_items.len {
+				child := unsafe { &child_items[child_index] }
+				if child.function_declaration_for_labelled_item() == none { generator.collect_vars(child)! }
+			}
+		}
 	} else if kind.tag==.try_stmt {
 		data := kind.try_data or { return error('Missing try statement') }
 		generator.collect_vars(&data.block)!
 		if handler := data.handler { generator.collect_vars(&handler.body)! }
 		if finalizer := data.finalizer { generator.collect_vars(&finalizer)! }
+	} else if kind.tag == .labelled {
+		generator.collect_vars(kind.labelled_item or { return error('Missing labelled statement') })!
 	}
 }
 
 fn (mut generator BytecodeGenerator) lexical_declarations(children []Statement, global bool) ! {
-	for child in children {
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
+		if child.kind.tag == .class_declaration {
+			data := child.kind.class_data or { return error('Missing class declaration') }
+			name := data.name or { return error('Missing class name') }
+			if global { generator.executable.global_bindings << GlobalBinding{ name: name.name.clone(), is_lexical: true } }
+			else { generator.emit(Instruction{ op: .create_mutable_binding, identifier: generator.identifier(name.name) }) }
+			continue
+		}
 		if child.kind.tag != .variable_declaration || child.kind.decl_kind == .var_kind { continue
 		 }
         for declaration in child.kind.declarations {
-            for name in declaration_bound_names(declaration) {
-                constant := child.kind.decl_kind==.const_kind
-                if global {
+            constant := child.kind.decl_kind==.const_kind
+            if global {
+                for name in declaration_bound_names(declaration) {
                     generator.executable.global_bindings << GlobalBinding{name:name.clone(),is_lexical:true,is_constant:constant}
-                } else {
-                    generator.emit(Instruction{op:if constant { OpCode.create_immutable_binding } else { OpCode.create_mutable_binding },identifier:generator.identifier(name)})
                 }
+                continue
+            }
+            mut identifiers := []&Identifier{}
+            collect_declarator_identifiers(declaration.target, mut identifiers)
+            for identifier in identifiers {
+                if generator.lexical_register_position(identifier) != none { continue }
+                generator.emit(Instruction{op:if constant { OpCode.create_immutable_binding } else { OpCode.create_mutable_binding },identifier:generator.identifier(identifier.name)})
             }
         }
 	}
 }
 
+// A function body never writes the accumulator, so its completion reads as
+// undefined; scripts and eval code still propagate statement completions.
+fn (mut generator BytecodeGenerator) completion_value() Operand {
+	if generator.drops_completions() { return generator.constant(js_undefined()) }
+	return Operand.register(register_accumulator)
+}
+
 fn (mut generator BytecodeGenerator) clear_completion() {
+	if generator.drops_completions() { return }
 	undefined := generator.constant(js_undefined())
 	generator.emit(Instruction{
 		op:  .mov
@@ -637,12 +872,14 @@ fn (mut generator BytecodeGenerator) clear_completion() {
 }
 
 fn (mut generator BytecodeGenerator) initialize_functions(children []Statement) {
-	for child in children {
-		if child.kind.tag != .function_declaration { continue }
-		generator.initialized_functions << child.kind.function_id.id
-		name := child.kind.func_name or { continue }
+	child_items := children
+	for child_index in 0 .. child_items.len {
+		child := unsafe { &child_items[child_index] }
+		declaration := child.function_declaration_for_labelled_item() or { continue }
+		generator.initialized_functions.set(u64(declaration.kind.function_id.id), 0)
+		name := declaration.kind.func_name or { continue }
 		dst := generator.temporary()
-		generator.emit(Instruction{op: .new_function, dst: dst, identifier: child.kind.function_id.id})
+		generator.emit(Instruction{op: .new_function, dst: dst, identifier: declaration.kind.function_id.id})
 		generator.emit(Instruction{op: .set_variable, lhs: dst, identifier: generator.identifier(name.name), strict: generator.strict})
 	}
 }
@@ -654,39 +891,77 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 	defer { generator.range = previous_range }
 	kind := statement.kind
 	match kind.tag {
+		.class_declaration {
+			data := kind.class_data or { return error('Missing class declaration') }
+			name := data.name or { return error('Missing class name') }
+			value := generator.class_expression(mut vm, data)!
+			generator.emit(Instruction{ op: .initialize_binding, lhs: value, identifier: generator.identifier(name.name), strict: true })
+		}
+		.for_in_of { generator.for_in_statement(mut vm, statement)! }
+		.switch_stmt { generator.switch_statement(mut vm, statement)! }
 		.try_stmt { generator.try_catch_statement(mut vm,statement)! }
+		.labelled { generator.labelled_statement(mut vm, statement)! }
+		.with_stmt {
+			object := generator.immediate_value(mut vm, kind.object or { return error('Missing with object') })!
+			generator.emit(Instruction{op: .enter_object_scope, lhs: object})
+			generator.scope_depth++
+			generator.with_depth++
+			generator.clear_completion()
+			generator.statement(mut vm, kind.body or { return error('Missing with body') })!
+			generator.with_depth--
+			generator.scope_depth--
+			generator.emit(Instruction{op: .leave_scope})
+		}
 		.function_declaration {
-			if kind.function_id.id !in generator.initialized_functions {
+			if generator.initialized_functions.get(u64(kind.function_id.id)) == none {
 				return generator.unsupported('conditional function declarations')
+			}
+			if kind.is_hoisted && !generator.strict {
+				generator.copy_annex_b_function(statement)!
 			}
 		}
 		.return_stmt {
 			if !generator.function_body { return generator.unsupported('return outside function') }
-			value := if argument := kind.return_arg { generator.expression(mut vm, argument)! } else { generator.constant(js_undefined()) }
-			generator.emit(Instruction{op: .end, lhs: value})
+			value := if argument := kind.return_arg { generator.immediate_value(mut vm, argument)! } else { generator.constant(js_undefined()) }
+			generator.emit_return(value)
 		}
 		.empty, .debugger_stmt {}
 		.expression_stmt {
 			value := generator.expression(mut vm, kind.expression or {
 				return error('Missing expression')
 			})!
-			generator.emit(Instruction{
-				op:  .mov
-				dst: Operand.register(register_accumulator)
-				lhs: value
-			})
+			// A function's completion value is unobservable; its End names
+			// undefined or a returned operand, never the accumulator.
+			if !generator.drops_completions() {
+				generator.emit(Instruction{
+					op:  .mov
+					dst: Operand.register(register_accumulator)
+					lhs: value
+				})
+			}
 		}
 		.block {
 			scope := kind.scope or { return error('Missing block scope') }
-			if scope.children.any(it.kind.tag == .function_declaration) {
-				return generator.unsupported('block-scoped function declarations')
+			if elide_empty_block(scope, generator.lexicals_in_registers(scope.children)) {
+				// Keep budgeted boundary operations, without allocating an empty
+				// environment or changing the actual lexical-depth metadata.
+				generator.emit(Instruction{op: .nop})
+				child_items := scope.children
+				for child_index in 0 .. child_items.len {
+					child := unsafe { &child_items[child_index] }
+					generator.statement(mut vm, child)!
+				}
+				generator.emit(Instruction{op: .nop})
+				return
 			}
 			generator.emit(Instruction{ op: .enter_scope })
 			generator.scope_depth++
 			generator.lexical_declarations(scope.children, false)!
-			generator.initialize_functions(scope.children)
-			for child in scope.children {
-				generator.statement(mut vm, &child)!
+			generator.initialize_lexical_functions(scope.children)!
+			child_items := scope.children
+			for child_index in 0 .. child_items.len {
+				child := unsafe { &child_items[child_index] }
+				generator.statement(mut vm, child)!
 			}
 			generator.scope_depth--
 			generator.emit(Instruction{ op: .leave_scope })
@@ -694,13 +969,25 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
         .variable_declaration {
             for declaration in kind.declarations {
                 if declaration.init==none && kind.decl_kind==.var_kind { continue }
-                value := if init := declaration.init { generator.expression(mut vm,&init)! } else { generator.constant(js_undefined()) }
+				if kind.decl_kind == .var_kind && generator.with_depth > 0 && declaration.target is IdentifierVarTarget {
+					// Resolve before the initializer runs, since it can change the
+					// object environment's properties or @@unscopables.
+					name := declaration.target.identifier.name
+					target := generator.prepare_identifier_assignment(name)
+					init := declaration.init or { return error('Missing var initializer') }
+					value := generator.immediate_value(mut vm, &init)!
+					generator.store_assignment_target(mut vm, target, value)!
+					continue
+				}
+                value := if init := declaration.init {
+                    if declaration.target is IdentifierVarTarget { generator.immediate_value(mut vm, &init)! } else { generator.expression(mut vm, &init)! }
+                } else { generator.constant(js_undefined()) }
                 generator.initialize_declaration_target(mut vm,declaration.target,value,kind.decl_kind!=.var_kind)!
             }
         }
 		.if_stmt {
 			generator.clear_completion()
-			test := generator.expression(mut vm, kind.test or { return error('Missing if test') })!
+			test := generator.immediate_value(mut vm, kind.test or { return error('Missing if test') })!
 			alternate := generator.emit(Instruction{ op: .jump_if_false, lhs: test })
 			generator.statement(mut vm,
 				kind.consequent or { return error('Missing if consequent') })!
@@ -712,24 +999,38 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 		.while_stmt, .do_while, .for_stmt {
 			generator.clear_completion()
 			mut for_scope := false
+			mut per_iteration := []Utf16String{}
 			if init := kind.for_init {
 				if init is ForInitDeclaration {
-					if init.statement.kind.decl_kind != .var_kind {
+					// Register bindings need neither the loop environment nor
+					// per-iteration copies: no closure can capture them.
+					if init.statement.kind.decl_kind != .var_kind
+						&& !generator.declaration_in_registers(init.statement) {
 						for_scope = true
 						generator.emit(Instruction{ op: .enter_scope })
 						generator.scope_depth++
 						generator.lexical_declarations([*init.statement], false)!
+						if init.statement.kind.decl_kind == .let_kind {
+							for declaration in init.statement.kind.declarations {
+								mut identifiers := []&Identifier{}
+								collect_declarator_identifiers(declaration.target, mut identifiers)
+								for identifier in identifiers {
+									if generator.lexical_register_position(identifier) == none { per_iteration << identifier.name }
+								}
+							}
+						}
 					}
 					generator.statement(mut vm, init.statement)!
 				} else if init is ForInitExpression {
 					generator.expression(mut vm, init.expression)!
 				}
 			}
+			generator.copy_for_iteration_bindings(per_iteration)
 			start := u32(generator.executable.instructions.len)
 			mut exit_jump := ?u32(none)
 			if kind.tag != .do_while {
 				if test := kind.test {
-					value := generator.expression(mut vm, test)!
+					value := generator.immediate_value(mut vm, test)!
 					exit_jump = generator.emit(Instruction{ op: .jump_if_false, lhs: value })
 				}
 			}
@@ -738,9 +1039,10 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			}
 			generator.statement(mut vm, kind.body or { return error('Missing loop body') })!
 			continue_target := u32(generator.executable.instructions.len)
+			generator.copy_for_iteration_bindings(per_iteration)
 			if update := kind.update { generator.expression(mut vm, update)! }
 			if kind.tag == .do_while {
-				value := generator.expression(mut vm, kind.test or {
+				value := generator.immediate_value(mut vm, kind.test or {
 					return error('Missing do-while test')
 				})!
 				generator.emit(Instruction{ op: .jump_if_true, lhs: value, target: start })
@@ -761,21 +1063,10 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 			}
 		}
 		.break_stmt, .continue_stmt {
-			if kind.target_label != none { return generator.unsupported('labelled loop control') }
-			if generator.loops.len == 0 { return error('Loop control outside loop') }
-			loop_index := generator.loops.len - 1
-			for _ in generator.loops[loop_index].scope_depth .. generator.scope_depth {
-				generator.emit(Instruction{ op: .leave_scope })
-			}
-			jump := generator.emit(Instruction{ op: .jump })
-			if kind.tag == .break_stmt {
-				generator.loops[loop_index].breaks << jump
-			} else {
-				generator.loops[loop_index].continues << jump
-			}
+			generator.loop_control_statement(statement)!
 		}
 		.throw_stmt {
-			value := generator.expression(mut vm, kind.throw_expr or {
+			value := generator.immediate_value(mut vm, kind.throw_expr or {
 				return error('Missing throw value')
 			})!
 			generator.emit(Instruction{ op: .throw_op, lhs: value })
@@ -807,6 +1098,7 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 				utf16_string(script.parsed.source_text))
 			parsed_source: script.parsed
 			starting_line: script.starting_line
+			native_cache_scope: 'script'
 		}
 		strict:        script.is_strict_mode
 		starting_line: script.starting_line
@@ -816,12 +1108,11 @@ pub fn (mut script Script) compile(mut vm VM) !&Executable {
 	generator.lexical_declarations(program.scope.children, true)!
 	generator.clear_completion()
 	generator.initialize_functions(program.scope.children)
-	for statement in program.scope.children {
-		generator.statement(mut vm, &statement)!
-	}
+	generator.body_statements(mut vm, program.scope.children)!
 	generator.emit(Instruction{ op: .end, lhs: Operand.register(register_accumulator) })
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
+	vm.remember_compiler_validation(generator.executable)
 	script.cached_executable = generator.executable
 	return generator.executable
 }

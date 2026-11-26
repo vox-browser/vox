@@ -93,6 +93,28 @@ fn test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires() {
 				reused := measurement_inline_compare(mut source, container, space, mode, width_only)
 				assert reused == !disable_inline_measurement_reuse
 			}
+			$if prealloc {
+				if !disable_inline_measurement_reuse {
+					pool := source.measurement_chunk_pool_
+					entries := pool.inline_measurements_[u64(voidptr(container))]
+					for entry in entries {
+						assert pool.measurement_cache_arena_.contains(entry.lines.data)
+						for line in entry.lines {
+							for fragment in line.fragments_ {
+								if !isnil(fragment.intrinsic_glyph_runs_) {
+									runs := fragment.intrinsic_glyph_runs_
+									assert pool.measurement_cache_arena_.contains(runs.runs.data)
+									for run in runs.runs {
+										if run.glyphs_.len > 0 {
+											assert pool.measurement_cache_arena_.contains(run.glyphs_.data)
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	pool := source.measurement_chunk_pool_
@@ -270,8 +292,14 @@ fn test_committed_inline_consumes_measured_lines_with_document_ownership_and_cop
 	assert used.offset == css.CSSPixelPoint.from_values(11, 13)
 	assert used.line_boxes_are_shared_ == (!disable_inline_measurement_reuse
 		&& !disable_committed_inline_measurement_reuse)
-	// The cache does not own its payload's lifetime. Releasing the pool and
-	// collecting the producer must leave committed lines and glyphs usable.
+	$if prealloc {
+		if !disable_inline_measurement_reuse && !disable_committed_inline_measurement_reuse {
+			arena := state.measurement_chunk_pool_.measurement_cache_arena_
+			assert !arena.contains(used.line_boxes.data)
+			assert document.native_storage().arena.contains(used.line_boxes.data)
+		}
+	}
+	// The committed result and its retained inline snapshot outlive the pool.
 	state.release_measurement_chunk_pool()
 	gc_collect()
 	assert measurement_inline_lines(used.line_boxes) == lines

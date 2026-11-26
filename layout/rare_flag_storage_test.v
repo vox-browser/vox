@@ -2,6 +2,33 @@ module layout
 
 import css
 import dom
+import platform
+import svg
+
+fn test_ordinary_rare_geometry_copy_storage() {
+	assert sizeof(UsedValuesRareData) <= 512
+	mut values := UsedValues{}
+	mut storage := platform.new_arena('ordinary rare geometry copies')
+	entry := storage.enter()
+	for index in 0 .. 1024 {
+		values = UsedValues{}
+		values.set_relative_inset_basis(CSSPixels.new(index), CSSPixels.new(20))
+		values.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(3, 4, 20, 30)})
+		rare := values.rare_?
+		copy := rare.clone()
+		assert copy.grid_geometry_ == none
+		assert copy.svg_geometry_ == none
+		assert copy.relative_inset_basis_width_?.raw_value() == CSSPixels.new(index).raw_value()
+		assert copy.static_position_rect_?.rect.left_value() == 3
+	}
+	storage.leave(entry)
+	used := storage.usage().used
+	println('ordinary rare geometry: ${sizeof(UsedValuesRareData)} B per record, ${used} B in the fixture')
+	$if prealloc {
+		assert used <= 1024 * 1024
+	}
+	storage.release()
+}
 
 fn set_all_rare_flags(mut values UsedValues, value bool) {
 	values.set_has_line_clamp_point(value)
@@ -56,4 +83,105 @@ fn test_unchanged_rare_flags_preserve_measurement_sharing_and_real_changes_detac
 	set_all_rare_flags(mut original, false)
 	assert_all_rare_flags(original, false)
 	assert_all_rare_flags(copy, false)
+}
+
+fn test_committed_layout_replay_shares_scalars_and_detaches_from_both_sides() {
+	document := dom.Document.create(dom.url_about_blank())
+	node := NodeWithStyle.new(document, none, css.ComputedProperties.new())
+	mut before := LayoutState.new()
+	mut original := before.get_mutable(node)
+	original.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(3, 4, 20, 30)})
+	original.set_has_line_clamp_point(true)
+	mut after := LayoutState.new()
+	mut restored := after.restore_layout_values(node, original, none, true)
+	assert original.rare_is_shared_ && restored.rare_is_shared_
+	assert voidptr(original.rare_?) == voidptr(restored.rare_?)
+	original.set_has_line_clamp_point(false)
+	assert restored.has_line_clamp_point()
+	assert voidptr(original.rare_?) != voidptr(restored.rare_?)
+	restored.set_static_position_rect(StaticPositionRect{rect: css.CSSPixelRect.new(7, 8, 20, 30)})
+	assert restored.static_position() != original.static_position()
+}
+
+fn test_committed_layout_replay_owns_svg_and_grid_geometry() {
+	document := dom.Document.create(dom.url_about_blank())
+	node := NodeWithStyle.new(document, none, css.ComputedProperties.new())
+	mut before := LayoutState.new()
+	mut original := before.get_mutable(node)
+	original.set_grid_template_columns([CSSPixels.new(10)])
+	original.set_computed_svg_path(svg.Path{
+		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
+	})
+	mut after := LayoutState.new()
+	restored := after.restore_layout_values(node, original, none, true)
+	assert !restored.rare_is_shared_
+	assert voidptr(original.rare_?) != voidptr(restored.rare_?)
+	path := restored.computed_svg_path()?
+	mut coordinates := unsafe { path.instructions[0].data }
+	coordinates[0] = 99
+	assert original.computed_svg_path()?.instructions[0].data[0] == 7
+}
+
+fn test_relayout_scalar_snapshot_detaches_on_later_geometry_writes() {
+	mut values := UsedValues{}
+	values.set_relative_inset_basis(CSSPixels.new(20), CSSPixels.new(30))
+	mut before := layout_record_snapshot(&values, true)
+	assert before.rare_is_shared_ && values.rare_is_shared_
+	assert voidptr(before.rare_?) == voidptr(values.rare_?)
+	assert before.line_boxes.len == 0
+
+	values.set_relative_inset_basis(CSSPixels.new(40), CSSPixels.new(50))
+	assert values.rare_?.relative_inset_basis_width_? == CSSPixels.new(40)
+	assert before.rare_?.relative_inset_basis_width_? == CSSPixels.new(20)
+	assert voidptr(before.rare_?) != voidptr(values.rare_?)
+
+	mut after := layout_record_snapshot(&values, true)
+	after.set_relative_inset_basis(CSSPixels.new(60), CSSPixels.new(70))
+	assert values.rare_?.relative_inset_basis_width_? == CSSPixels.new(40)
+	assert after.rare_?.relative_inset_basis_width_? == CSSPixels.new(60)
+	before.set_has_line_clamp_point(true)
+	assert !values.has_line_clamp_point()
+}
+
+fn test_relayout_snapshot_keeps_its_grid_and_svg_records_independent() {
+	mut values := UsedValues{}
+	values.set_grid_template_columns([CSSPixels.new(10)])
+	values.set_computed_svg_path(svg.Path{
+		instructions: [svg.PathInstruction{type_: .move, data: [f64(7), 8]}]
+	})
+	snapshot := layout_record_snapshot(&values, true)
+	assert !values.rare_is_shared_ && !snapshot.rare_is_shared_
+	assert voidptr(snapshot.rare_?) != voidptr(values.rare_?)
+	values.set_grid_template_columns([CSSPixels.new(20)])
+	values.set_computed_svg_path(svg.Path{
+		instructions: [svg.PathInstruction{type_: .move, data: [f64(9), 10]}]
+	})
+	assert snapshot.grid_template_columns()[0] == CSSPixels.new(10)
+	assert snapshot.computed_svg_path()?.instructions[0].data[0] == 7
+}
+
+fn test_relayout_scalar_snapshots_reuse_storage() {
+	$if !prealloc { return }
+	mut values := UsedValues{}
+	values.set_relative_inset_basis(CSSPixels.new(20), CSSPixels.new(30))
+	mut record := empty_relayout_record
+	for share in [false, true] {
+		mut storage := platform.new_arena('relayout scalar snapshot fixture')
+		entry := storage.enter()
+		start := storage.usage().used
+		for _ in 0 .. 1024 {
+			record.before = layout_record_snapshot(&values, share)
+			assert record.before.rare_?.relative_inset_basis_width_? == CSSPixels.new(20)
+			assert (voidptr(record.before.rare_?) == voidptr(values.rare_?)) == share
+		}
+		used := storage.usage().used - start
+		storage.leave(entry)
+		storage.release()
+		println('relayout scalar snapshot fixture sharing=${share}: ${used} B')
+		if share {
+			assert used == 0
+		} else {
+			assert used >= 1024 * i64(sizeof(UsedValuesRareData))
+		}
+	}
 }

@@ -13,6 +13,7 @@ mut:
 	literal      ?[]u16
 	word_literal ?[]u16
 	alternatives ?[][]u16
+	suffix_starts ?&RegexSuffixStartPlan
 	scratch      &RegexVmScratch @[required]
 }
 
@@ -30,6 +31,7 @@ pub fn RegexEngine.compile(source []rune, flags RegexAstFlags) !&RegexEngine {
 		literal:      regex_engine_literal(parsed, flags)
 		word_literal: regex_engine_word_literal(parsed, flags)
 		alternatives: regex_engine_alternatives(parsed, flags)
+		suffix_starts: regex_engine_suffix_start_plan(parsed, flags)
 		scratch:      RegexVmScratch.new()
 	}
 }
@@ -210,7 +212,20 @@ pub fn (mut engine RegexEngine) exec(input RegexInput, start uint, mut output []
 			.no_match
 		}
 	}
-	return regex_execute_into_with_scratch(engine.program, input, start, engine.hints, mut output, mut engine.scratch)
+	mut search_start := start
+	if plan := engine.suffix_starts {
+		search_start = engine.suffix_start_candidate(input, start, plan) or {
+			$if test { if regex_suffix_starts_diagnostics { regex_suffix_rejections++ } }
+			return .no_match
+		}
+		$if test {
+			if regex_suffix_starts_diagnostics && search_start > start {
+				regex_suffix_searches++
+				regex_suffix_skipped_positions += u64(search_start - start)
+			}
+		}
+	}
+	return regex_execute_into_with_scratch(engine.program, input, search_start, engine.hints, mut output, mut engine.scratch)
 }
 
 pub fn (mut engine RegexEngine) test(input RegexInput, start uint) RegexVmResult {

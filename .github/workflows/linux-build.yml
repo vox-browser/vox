@@ -50,6 +50,8 @@ jobs:
       - name: Check the Linux build entrypoint
         run: |
           python3 tools/build_linux_browser_test.py
+          python3 tools/deploy_linux_test.py
+          python3 tools/release_macos_test.py
           python3 tools/rebuild_browser_test.py
           python3 tools/prepare_http_compat_test.py
           python3 tools/prepare_ui2_test.py
@@ -70,10 +72,11 @@ jobs:
             libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
             libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
             libwebp-dev libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core \
-            xvfb xauth xdotool scrot
+            xvfb xauth xdotool scrot libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav glib-networking
           pkg-config --modversion javascriptcoregtk-4.1
 
-      - name: Check tab process exit diagnostics
+      - name: Check tab process exit diagnostics and X11 focus
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 2
         run: |
@@ -82,6 +85,22 @@ jobs:
             --lock "$RUNNER_TEMP/vox-tab-process.lock" \
             --report "$RUNNER_TEMP/vox-tab-process.json" --limit-gib 3 --timeout 60 -- \
             python3 tools/test_tab_process_lifecycle.py
+          cc -Wall -Wextra -Werror -Wno-unused-function -I. \
+            tools/native_browser_tab_focus_linux_test.c -lX11 -o "$RUNNER_TEMP/vox-tab-focus"
+          PYTHONPATH=tools python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-tab-focus.lock" \
+            --report "$RUNNER_TEMP/vox-tab-focus.json" --limit-gib 3 --timeout 30 -- \
+            python3 -c 'import sys; from test_linux_browser import run_windowed; run_windowed(sys.argv[1:])' \
+            "$RUNNER_TEMP/vox-tab-focus"
+
+      - name: Check portable binary16 conversions
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 2
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-float16.lock" \
+            --report "$RUNNER_TEMP/vox-float16.json" --limit-gib 3 --timeout 90 -- \
+            python3 libjs/float16_test.py
 
       - name: Add swap for the C compilation
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' }}
@@ -275,6 +294,16 @@ jobs:
             --report "$RUNNER_TEMP/vox-window-$LADYBIRD_V_GC.json" \
             --limit-gib 3 --timeout 600 -- \
             python3 tools/test_linux_browser.py Build/linux/vox
+
+      - name: Check native Linux video playback
+        if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
+        timeout-minutes: 2
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-media-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-media-$LADYBIRD_V_GC.json" \
+            --limit-gib 3 --timeout 90 -- \
+            python3 tools/test_linux_browser.py --media-only Build/linux/vox --output "$RUNNER_TEMP/vox-media"
 
       # Focused C-backend suites depend on prepared native libraries, not on
       # the FastC browser build or on preceding test results. Keep collecting
