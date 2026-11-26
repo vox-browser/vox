@@ -4983,8 +4983,13 @@ fn native_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
 	mut data []f32, mut samples []layout.GradientStop) {
 	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	defer { platform.leave_persistent(persistent) }
+	pack_native_gradient_stops(gradient, opacity, mut data, mut samples)
+}
+
+fn pack_native_gradient_stops(gradient layout.LinearGradient, opacity f64,
+	mut data []f32, mut samples []layout.GradientStop) {
 	// Preserve duplicate-position hard stops and sample each resolved span.
-	layout.sampled_gradient_stops_into(gradient, 16, mut samples)
+	layout.sampled_gradient_stops_into(gradient, native_gradient_subdivisions, mut samples)
 	data.clear()
 	for stop in samples {
 		data << f32(stop.color.r) / 255.0
@@ -5969,6 +5974,12 @@ fn replaced_image_pixels_for_renderer(command &layout.PaintCommand, native_rende
 	return bitmap
 }
 
+@[inline]
+fn native_paint_leaf_opacity(command &layout.PaintCommand) f64 {
+	// A zero-opacity group suppresses every pixel. Use one to avoid dividing by zero.
+	return if command.group_opacity > 0 { command.opacity / command.group_opacity } else { 1.0 }
+}
+
 fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32,
 	window_height int, options PaintCommandReplayOptions) {
 	leaf_instructions := paint_leaf_instruction_stage(source_command.kind)
@@ -6012,13 +6023,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 	}
 	$if macos {
 		if app.ctx.native_rendering {
-			if command.group_opacity > 0 {
-				command.opacity /= command.group_opacity
-			} else {
-				// The enclosing zero-opacity group suppresses every pixel. Its leaf
-				// alpha is unobservable, and using one avoids a division by zero.
-				command.opacity = 1
-			}
+			command.opacity = native_paint_leaf_opacity(command)
 		}
 	}
 	// A command group only marks its extent for scroll raster reuse and clip
@@ -6762,9 +6767,18 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						}
 					}
 				}
+				mut native_stops := unsafe { app.native_gradient_storage.stops }
 				$if macos {
 					if app.ctx.native_rendering {
-						native_gradient_stop_data_into(gradient, command.opacity, mut app.native_gradient_storage.stops, mut app.native_gradient_storage.samples)
+						if options.gradient_stops == unsafe { nil } {
+							native_gradient_stop_data_into(gradient, command.opacity, mut app.native_gradient_storage.stops, mut app.native_gradient_storage.samples)
+							native_stops = unsafe { app.native_gradient_storage.stops }
+						} else {
+							native_stops = options.gradient_stops.packed()
+							if paint_gradient_stops_diagnostics {
+								eprintln('VOX_PAINT_GRADIENT_STOPS_USED samples=${native_stops.len / 5}')
+							}
+						}
 					}
 				}
 				for tile in tiles {
@@ -6773,7 +6787,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					}
 					$if macos {
 						if app.ctx.native_rendering
-							&& draw_native_css_gradient_tile(command, gradient, tile, app.native_gradient_storage.stops, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium, mut app.native_gradient_storage.path, mut app.native_gradient_storage.gpu_stops) {
+							&& draw_native_css_gradient_tile(command, gradient, tile, native_stops, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium, mut app.native_gradient_storage.path, mut app.native_gradient_storage.gpu_stops) {
 							continue
 						}
 					}
@@ -8087,6 +8101,9 @@ fn (mut app BrowserApp) draw() {
 				screen_geometry := if has_canvas_bounds {
 					canvas_bounds.screen_geometry_at(command_index)
 				} else { unsafe { &PaintCommandScreenGeometry(nil) } }
+				gradient_stops := if parallel_gradient_stops && has_canvas_bounds && command.kind == 'fill_gradient' {
+					canvas_bounds.gradient_stops_at(command_index)
+				} else { unsafe { &PaintGradientStops(nil) } }
 				$if macos && !cpuraster_freetype ? {
 					if frame_glyph_prefetch != unsafe { nil } && command.kind == 'draw_text'
 						&& command_index >= frame_glyph_prefetch_at {
@@ -8097,11 +8114,11 @@ fn (mut app BrowserApp) draw() {
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
 					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry,
-						screen_geometry: screen_geometry)
+						screen_geometry: screen_geometry, gradient_stops: gradient_stops)
 					app.scroll_profile.record_replay_allocation(command.kind, platform.thread_arena_usage().used - before)
 				} else {
 					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry,
-						screen_geometry: screen_geometry)
+						screen_geometry: screen_geometry, gradient_stops: gradient_stops)
 				}
 				$if macos {
 					if app.ctx.native_rendering && command.kind == 'begin_css_filter_layer' {

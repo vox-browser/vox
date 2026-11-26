@@ -22,6 +22,7 @@ struct PaintCommandScreenGeometry {
 struct PaintCommandReplayOptions {
 	glyph_geometry  &layout.RetainedGlyphReplayGeometry = unsafe { nil }
 	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
+	gradient_stops  &PaintGradientStops = unsafe { nil }
 }
 
 fn project_paint_screen_point(matrix [6]f64, x f64, y f64, page_x f32, page_y f32,

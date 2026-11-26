@@ -26,6 +26,7 @@ struct PaintCanvasBoundsWork {
 	bounds         &u8
 	glyph_geometry &layout.RetainedGlyphReplayGeometry = unsafe { nil }
 	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
+	gradient_stops PaintGradientStopsBatch
 	glyph_positions []f32
 	threads        &u64
 	page_y         f64
@@ -67,6 +68,12 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 			&& command.checkbox_theme_data == unsafe { nil } {
 			unsafe {
 				work.screen_geometry[index] = paint_command_screen_geometry(command, 0, f32(work.page_y), 0)
+			}
+		}
+		if work.gradient_stops.slots != unsafe { nil } && result != .outside {
+			mut prepared := work.gradient_stops.slot_at(index)
+			if prepared != unsafe { nil } {
+				prepared.prepare(command)
 			}
 		}
 		if work.glyph_geometry != unsafe { nil } && kind == 'draw_text' {
@@ -112,13 +119,15 @@ fn paint_canvas_bounds_lanes(count int) int {
 struct PaintCanvasBoundsInputs {
 	recorded_ink []layout.RecordedCanvasInk
 	recorded_glyphs []layout.RetainedGlyphReplayGeometry
+	prepare_gradient_stops bool
 }
 
 fn (app &BrowserApp) new_document_canvas_bounds_batch(lanes int, page_y f64, width f64,
 	height f64) PaintCanvasBoundsBatch {
 	return new_paint_canvas_bounds_batch(app.paint_commands, lanes, page_y, width, height,
 		recorded_ink: layout.display_list_canvas_ink(app.paint_display_list, app.paint_commands),
-		recorded_glyphs: layout.display_list_glyph_geometry(app.paint_display_list, app.paint_commands))
+		recorded_glyphs: layout.display_list_glyph_geometry(app.paint_display_list, app.paint_commands),
+		prepare_gradient_stops: parallel_gradient_stops && app.ctx.native_rendering)
 }
 
 fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page_y f64,
@@ -133,8 +142,12 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 	} else {
 		[]PaintCommandScreenGeometry{}
 	}
+	gradient_stops := if inputs.prepare_gradient_stops && lanes >= 2 {
+		reserve_paint_gradient_stops(commands)
+	} else { PaintGradientStopsBatch{} }
 	mut threads := []u64{}
-	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics || paint_screen_geometry_diagnostics {
+	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics
+		|| paint_screen_geometry_diagnostics || paint_gradient_stops_diagnostics {
 		threads = []u64{len: commands.len}
 	}
 	recorded_ink := if inputs.recorded_ink.len == commands.len {
@@ -160,6 +173,7 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 			bounds: unsafe { &u8(bounds.data) }
 			glyph_geometry: unsafe { if geometry.len > 0 { &layout.RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
 			screen_geometry: unsafe { if screen_geometry.len > 0 { &PaintCommandScreenGeometry(screen_geometry.data) } else { nil } }
+			gradient_stops: gradient_stops
 			glyph_positions: glyph_positions
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 			page_y: page_y
@@ -280,6 +294,17 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 		}
 		eprintln('VOX_PAINT_SCREEN_GEOMETRY_BATCH prepared=${prepared} off_thread=${off_thread} ready_at_join=${ready}')
 	}
+	if paint_gradient_stops_diagnostics && batch.work.gradient_stops.command_count > 0 {
+		caller := platform.native_thread_identity()
+		mut prepared := 0
+		mut off_thread := 0
+		for index in 0 .. batch.work.gradient_stops.command_count {
+			if batch.work.gradient_stops.at(index) == unsafe { nil } { continue }
+			prepared++
+			if batch.threads[index] != caller { off_thread++ }
+		}
+		eprintln('VOX_PAINT_GRADIENT_STOPS_BATCH prepared=${prepared} off_thread=${off_thread}')
+	}
 	return batch.bounds
 }
 
@@ -288,4 +313,8 @@ fn (batch &PaintCanvasBoundsBatch) screen_geometry_at(index int) &PaintCommandSc
 		return unsafe { &batch.screen_geometry[index] }
 	}
 	return unsafe { nil }
+}
+
+fn (batch &PaintCanvasBoundsBatch) gradient_stops_at(index int) &PaintGradientStops {
+	return batch.work.gradient_stops.at(index)
 }

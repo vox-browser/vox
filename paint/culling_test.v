@@ -1,5 +1,6 @@
 module main
 
+import css
 import gg
 import dom
 import html
@@ -293,6 +294,57 @@ fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
 }
 
 $if macos {
+	fn test_canvas_workers_prepare_gradient_stops_for_ordered_replay() {
+		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1' { return }
+		red := css.Color{255, 0, 0, 255}
+		blue := css.Color{0, 0, 255, 128}
+		gradient := layout.LinearGradient{
+			colors: [red, red, blue, blue]
+			stops: [layout.GradientStop{red, .125}, layout.GradientStop{red, .5},
+				layout.GradientStop{blue, .5}, layout.GradientStop{blue, .875}]
+			interpolation_method: css.ColorInterpolationMethod(css.RectangularColorSpace.oklab)
+		}
+		leaf := layout.PaintCommand{
+			kind: 'fill_gradient'
+			width: 20
+			height: 20
+			gradient: &gradient
+			opacity: .25
+			group_opacity: .5
+		}
+		other_stops := layout.LinearGradient{
+			...gradient
+			stops: [layout.GradientStop{red, .1}, layout.GradientStop{blue, .4},
+				layout.GradientStop{red, .6}, layout.GradientStop{blue, .9}]
+		}
+		legacy := layout.LinearGradient{colors: [blue]}
+		large := layout.LinearGradient{colors: [red, blue, red, blue, red]}
+		commands := [leaf, layout.PaintCommand{...leaf, x: 150},
+			layout.PaintCommand{...leaf, scrollbar_axis: 'vertical'},
+			layout.PaintCommand{...leaf, gradient: &other_stops, opacity: .75, group_opacity: 1.0},
+			layout.PaintCommand{...leaf, gradient: &legacy, group_opacity: 0.0},
+			layout.PaintCommand{...leaf, gradient: &large}]
+		mut batch := new_paint_canvas_bounds_batch(commands, 2, 0, 100, 100,
+			prepare_gradient_stops: true)
+		batch.submit(replay_ranges: true)
+		assert batch.background_lanes == 2
+		assert batch.begin_replay(true)
+		assert batch.replay_bounds_at(0) == .retain
+		assert batch.gradient_stops_at(0).packed() == native_gradient_stop_data(gradient, .5)
+		assert batch.replay_bounds_at(1) == .outside
+		assert batch.gradient_stops_at(1) == unsafe { nil }
+		assert batch.gradient_stops_at(2) == unsafe { nil }
+		assert batch.replay_bounds_at(3) == .retain
+		assert batch.gradient_stops_at(3).packed() == native_gradient_stop_data(other_stops, .75)
+		assert batch.gradient_stops_at(4).packed() == native_gradient_stop_data(legacy, 1)
+		assert batch.gradient_stops_at(5) == unsafe { nil }
+		assert batch.finish(true).len == commands.len
+		mut serial := new_paint_canvas_bounds_batch(commands, 0, 0, 100, 100,
+			prepare_gradient_stops: true)
+		assert !serial.begin_replay(true)
+		assert serial.gradient_stops_at(0) == unsafe { nil }
+	}
+
 	fn test_replay_workers_project_screen_rectangles_for_unchanged_leaves() {
 		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1'
 			|| serial_paint_screen_geometry { return }
