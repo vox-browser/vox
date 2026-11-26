@@ -4342,3 +4342,251 @@ Vox settled 258–271 MB above this Brave pair. After the last endpoint,
 memory, 108.9 MiB of dirty WebKit Malloc memory, 41.3 MiB of dirty
 IOSurface memory, and 34.6 MiB of dirty graphics accelerator memory
 in the Vox process. These mappings identify memory categories.
+
+## Reusing document URL records and returning oversized arena pages
+
+The control was single-unit C `-prod` receipt `20261126-041234-a3ba947b`
+at `37600e7cb`. Its executable SHA-256 was
+`1857de39258ee5a344ceb711e9a15cbcf292d699dcd7901094acc863ce24913d`.
+Fresh Vox windows opened the live URL over direct HTTPS with empty private
+profiles and HTTP caches, retained OS caches, and a visible 1024×768
+viewport at scale two. The 22-second document audit checked complete
+readiness, initialized JavaScriptCore, loaded fonts, 133 images and the
+same normalized 15,620-byte text used above. Footprint observations ran
+from launch to 12 seconds after audit. The settled value is the median
+of 50 ms process-tree samples from the final three seconds.
+
+| Control | PID | Audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Arena inventory | 86846 | 22.29 s | 607,555,304 B | 1,063,571,344 B | 55 |
+| Standard A | 89485 | 22.17 s | 592,924,440 B | 1,053,970,920 B | 55 |
+| Standard B | 90351 | 22.17 s | 601,296,664 B | 1,061,360,008 B | 55 |
+
+Each browser, driver and 3 GiB guard exited 0. Peak guard RSS was
+933,429,248 B, 901,955,584 B and 921,337,856 B. One-minute host load
+on 18 CPUs was 5.37→6.42, 5.98→4.86 and 4.79→4.64.
+
+### Resident allocator blocks
+
+The diagnostic verified the matching Mach-O UUID, executable code
+range for `vmemory_block_new_sized` and the compiler-emitted 80-byte
+block header. It counted main-thread block headers in `calloc` and
+retired them in `free`. At 35 seconds, `mincore` checked every live
+block's mapped pages and counted complete resident pages beyond its
+cursor. There were 112,908 creations, 112,619 retirements, and no
+dropped or invalid records. The probe compile and 3 GiB guard exited
+0 at 2,719,744 B peak RSS.
+
+| Arena owner | Live blocks | Cursor bytes | Observed resident bytes | Resident complete suffix pages |
+| --- | ---: | ---: | ---: | ---: |
+| Main document | 181 | 199,707,865 B | 197,165,056 B | 1,097,728 B |
+| Main thread base | 6 | 74,902,595 B | 74,186,752 B | 0 B |
+| All observed blocks | 289 | 292,525,908 B | 317,784,064 B | 29,376,512 B |
+
+`vmmap -summary` exited 0 and showed 324.0 MiB of dirty untagged
+mappings and 109.1 MiB of dirty WebKit Malloc. The allocator counts
+describe resident pages in tracked main-thread blocks.
+
+Blocks opened by `platform.new_arena` with capacity of at least
+1 MiB and cursor use of at most 256 KiB had 23,773,184 B resident
+on complete pages beyond their cursors. One SVG background's
+initial display-list arena held 4,702,208 B of resident suffix with
+2,928 B of cursor use. Other examples included the layout box index,
+paint tree projection and computed property page index. A main-thread
+base block with 12,337,152 resident bytes opened while parsing the
+document URL during a cosmetic-filter refresh. The opening call
+classifies the entire block, whose later allocations can have other
+owners.
+
+### Focused fixes
+
+`5f2fed87a` keeps the normal warm prefix when a newly created arena
+acquires an oversized mapping. It discards complete unused pages
+beyond that prefix while the detached first block is still empty.
+The test seeded a dirty 2 MiB mapping through the real allocator
+pool and forced a new arena to reuse that address. It checked zero
+resident suffix pages, preserved capacity and successful later
+allocation into the same block. With
+`VOX_KEEP_OVERSIZED_ARENA_PAGES=1`, the fixture found more than
+1 MiB still resident. The focused tests for empty arenas, live
+tails and the shared block pool passed. The tail suite also passed
+under arena poisoning. Compile guards exited 0 with 331,628,544 B,
+329,613,312 B and 336,379,904 B peak RSS. The three short runtime
+guards exited 0, and the control and poison guards peaked at
+4,915,200 B and 4,587,520 B.
+
+`55c5c1115` reads the scheme and host from the document's existing
+URL record for the GitHub eligibility checks. The ChatGPT cosmetic
+check consults the full serialized URL only for its matching host.
+The eight focused browser cases passed. They covered GitHub
+host normalization and synchronous layout, cosmetic token changes,
+URL changes on a live document, ChatGPT authority boundaries, and
+zero additional thread-arena cursor bytes for 1,024 repeated Dota
+cosmetic-token checks. Both C-backend preallocation compiler guards
+exited 0 at 6,500,433,920 B and 6,464,028,672 B peak RSS, and both
+3 GiB test guards exited 0. An earlier compile encountered an
+in-progress change in the native gradient caller and exited 1 at
+1,577,140,224 B guard RSS. Both test binaries were built after that
+caller was corrected.
+
+Two attempted readiness controls against the arena-inventory bundle
+were rejected at the executable pin before launch after shared
+publication. Their drivers and 3 GiB guards exited 1 at 393,216 B
+and 770,048 B peak RSS. Fresh controls used the next single-unit C
+`-prod` build at `dab58498a` with executable SHA-256
+`6bcb5ae36d7c882923a94522315d37b9a1618f19c9bd1200db514526c0b0539a`.
+The 250 ms audit schedule first observed the complete patch at
+3.59 s and 3.80 s. PIDs 3255 and 3402, drivers and 3 GiB guards
+exited 0 with 838,139,904 B and 729,137,152 B peak guard RSS. The
+one-minute host loads were 7.40→7.69 and 7.69→7.64.
+
+### Published build
+
+The first production receipt, `20261126-042750-bdec00ed`, ran out
+of disk space during Clang. Its compile guard exited 1 at
+7,743,504,384 B peak RSS. The managed retry, single-unit C `-prod`
+receipt `20261126-043220-919da5d8`, published both fixes at
+`55c5c1115`. Its executable SHA-256 was
+`94f46582046d4e678e034864bfaf91c731490a38a8cb6d7f24b912c7a2879832`.
+The production and startup smoke guards exited 0 at 7,720,910,848 B
+and 134,971,392 B peak RSS. This build also includes the native
+gradient preparation change in `26b442628`.
+The AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The bundled adblock worker SHA-256 was
+`ab958692215c0dfb1fc44009b54a827bb6e4bef4801d859cfafa9ff25e346582`.
+
+### Page retirement on the live patch
+
+In the same published executable, the warm control set
+`VOX_KEEP_OVERSIZED_ARENA_PAGES=1`. Both diagnostic runs pinned the
+browser UUID and the address ranges of the allocator and arena
+initialization functions. The probe counted successful fixed remaps
+whose main-thread stack reached an arena initialization range. Its
+compile and guard exited 0 at 2,818,048 B peak RSS.
+
+| Diagnostic | PID | Header creations / retirements | Observed live-block residency | Resident suffix | Fixed remaps / mapped bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Keep warm | 11812 | 109,994 / 109,722 | 318,226,432 B | 33,259,520 B | 0 / 0 B |
+| Retire suffixes | 12847 | 109,540 / 109,265 | 294,633,472 B | 10,846,208 B | 106 / 91,996,160 B |
+
+No probe records were dropped or invalid. All remaps succeeded. The
+mapped-byte count is cumulative across reuse. At the snapshot, suffix
+residency was 22,413,312 B lower with retirement. Dirty untagged
+memory in `vmmap` was 324.5 MiB with warm pages and 302.0 MiB with
+retirement. The matched diagnostic physical-footprint medians were
+623,251,248 B and 602,181,352 B. Their sampled peaks were 1,087,820,360 B
+and 1,068,732,880 B. The complete patch audit passed at 22.34 and
+22.16 seconds, with 55 samples in each settled window. Both browsers,
+`vmmap`, drivers and 3 GiB guards exited 0 at 960,020,480 B and
+928,808,960 B peak guard RSS. Host one-minute load was 6.04→5.55
+and 5.51→5.17.
+
+### Uninstrumented settled memory
+
+The same executable ran four fresh private-profile launches in the
+order below, with the same viewport, network and audit conditions as
+the controls above. Only the warm launches set the page-retirement
+override. Each browser, driver and 3 GiB guard exited 0.
+
+| Trial | PID | Audit | Settled footprint | Sampled peak | Settled samples | Peak guard RSS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Warm A | 13288 | 22.15 s | 616,533,736 B | 1,080,267,144 B | 56 | 933,085,184 B |
+| Retire A | 13861 | 22.16 s | 590,155,616 B | 1,041,158,656 B | 56 | 906,297,344 B |
+| Retire B | 15312 | 22.18 s | 590,483,248 B | 1,038,503,704 B | 55 | 907,083,776 B |
+| Warm B | 16480 | 22.18 s | 608,931,656 B | 1,078,186,472 B | 55 | 925,171,712 B |
+
+Page retirement lowered settled footprint by 26,378,120 B in pair A
+and 18,448,408 B in pair B. One-minute host load on 18 CPUs was
+5.17→6.54, 6.58→6.78, 7.12→7.08 and 7.08→6.60. The published
+retirement measurements were also 2–11 MB below this turn's
+preceding-bundle controls. The bundles included different renderer
+and URL code, so the same-executable pairs isolate page retirement.
+The two preceding native-viewport Brave runs settled at 324–330 MB.
+The published Vox build still exceeds that RAM target.
+
+### Patch readiness and reference pixels
+
+The four fresh readiness runs used the 250 ms audit schedule and the
+same published executable. The endpoint is the first host observation
+of a passing patch audit. This includes browser startup and sampling
+delay.
+
+| Trial | PID | First complete audit | Peak guard RSS | One-minute host load |
+| --- | ---: | ---: | ---: | ---: |
+| Warm A | 20565 | 3.72 s | 786,087,936 B | 9.03→9.19 |
+| Retire A | 20735 | 3.58 s | 785,039,360 B | 9.19→9.33 |
+| Retire B | 20901 | 3.56 s | 785,842,176 B | 9.71→9.71 |
+| Warm B | 21188 | 4.12 s | 864,763,904 B | 10.37→10.74 |
+
+All browsers, drivers and 3 GiB guards exited 0. The retirement
+observations overlap the preceding build's load-time observations.
+Host load also varied within the published-build comparison.
+
+`compare_screenshots.sh` passed `svg-image-source-switch-same-size`,
+`selection-focus-between-text-controls` and
+`selection-moves-between-subtrees` with zero pixel differences at
+800×600. Its driver and 3 GiB guard exited 0 at 190,873,600 B peak RSS.
+
+### Native scrolling on the published build
+
+`tools/measure_precise_scroll.py` used fresh visible windows, the
+same live patch audit, `VOX_TEST_WINDOW=1`, automatic scripts, and
+`--width 1024 --height 768 --chrome-height 112 --settle-seconds 23`.
+The input schedule was `--inputs 720 --delta 16 --reverse-every 360
+--input-hz 60 --target-hz 60`, and the required title was
+`Dota Patch Notes - 7.42a`. The driver pinned the executable, bundled
+libraries, resources and probe inputs. The warm controls used the
+same oversized-page override as the memory comparison.
+
+| Launch order | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Retire A | 14.81 | 69.68 / 111.79 / 137.08 ms | 183/199 | 720 / 212 | 53.52 Hz | 68.86 / 233.72 ms |
+| Retire B | 13.80 | 74.32 / 116.87 / 172.95 ms | 176/190 | 720 / 214 | 52.23 Hz | 85.16 / 173.88 ms |
+| Warm A | 11.26 | 92.21 / 141.35 / 207.44 ms | 148/159 | 720 / 166 | 50.92 Hz | 109.21 / 203.56 ms |
+| Retire C | 11.69 | 86.28 / 168.15 / 215.70 ms | 151/169 | 720 / 196 | 49.72 Hz | 79.30 / 179.18 ms |
+| Warm B | 12.36 | 86.50 / 129.36 / 177.00 ms | 160/173 | 720 / 195 | 51.36 Hz | 87.46 / 183.67 ms |
+
+Rates use the complete first-to-last input windows of 13.4341,
+13.7669, 14.1199, 14.4617 and 13.9992 seconds. The page reached
+12,034, 12,099, 12,060.5, 12,060 and 12,063.5 CSS pixels.
+Final positions were 4, 1.5, 0, 1 and 1 CSS pixels. The endpoint
+was completed native frame installation. All five browsers, drivers
+and 3 GiB guards exited 0 and each passed the document audit.
+
+| Trial | PID | Start MSK | Peak guard RSS | One-minute host load |
+| --- | ---: | ---: | ---: | ---: |
+| Retire A | 17367 | 04:41:40 | 1,183,875,072 B | 6.60→7.53 |
+| Retire B | 18572 | 04:42:25 | 1,174,814,720 B | 7.80→9.49 |
+| Warm A | 21491 | 04:43:59 | 1,163,329,536 B | 10.76→14.25 |
+| Retire C | 22977 | 04:44:45 | 1,139,654,656 B | 13.99→11.63 |
+| Warm B | 24277 | 04:45:32 | 1,165,066,240 B | 11.63→12.95 |
+
+Both warm controls also measured well below the preceding
+23.50–23.81 publications/s. The runs had substantially different
+host load and overlapping rates at the later higher load. These
+measurements leave the source of the scrolling slowdown unresolved.
+
+The first stall diagnostic added `--sample-stalls-ms 5` and
+`VOX_CSS_FILTER_STAGE_TIMES=1` to the 720-input workload. It hit
+the 1,024-sample capacity and dropped 1,564 samples. Browser PID
+25811 exited 0, and the driver and guard exited 1 at 1,160,953,856 B
+peak RSS. One-minute host load was 12.95→13.17. Its partial
+filter timing log included 379 shared-input drop shadows with a
+9.16 ms median filter completion.
+
+A separate diagnostic shortened the schedule to 200 inputs, with
+reversal after 100. It passed the patch audit and completed 109
+publications over the short input workload. It recorded 635 validated
+stacks across 88 slow frames, with zero dropped samples or snapshot
+failures. Main-executable addresses used the loaded image base and
+Mach-O UUID `BB17BB53-E34D-36F9-B3A1-BB4B2D93EF81`.
+Portable shadow drawing appeared in 250 samples, CSS spatial filters
+in 139, and gradient drawing in 81. These stack counts can overlap.
+Arena creation did not appear in the sampled stacks. All 97 direct
+drop-shadow inputs used shared surfaces at 2048×1760. Median filter
+completion was 7.17 ms, including 0.105 ms source import, 4.32 ms
+filter rendering and 2.08 ms drawing. This diagnostic covers a
+shorter wheel path with instrumentation. PID 27805, driver and
+guard exited 0 at 1,103,872,000 B peak guard RSS. One-minute
+host load was 11.28→16.50.
