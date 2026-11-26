@@ -267,7 +267,9 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		C.pthread_threadid_np(unsafe { nil }, &caller)
 		for mode in [CanvasGlyphBackdrop{}, CanvasGlyphBackdrop{pipeline_masks: true},
 			CanvasGlyphBackdrop{copy_pending: true}] {
+			// This short run batches by pixel area under the current blend budget.
 			late := late_glyph_backdrop_join && mode.copy_pending && !serial_glyph_blend
+				&& !previous_glyph_blend_budget
 			mut deferred := []u8{len: serial.len}
 			mut cache := new_glyph_cache()
 			mut backdrop := TestGlyphBackdrop{
