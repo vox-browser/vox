@@ -621,3 +621,27 @@ fn test_http_redirect_and_cors_preflight_boundaries() {
 	assert redirect_transfer_releases == 1
 	assert redirect_request_stops == 1
 }
+
+fn test_fetch_metadata_uses_redirect_destination_and_preserves_browser_ui_initiator() {
+	secure := dom.URL{ value: 'https://example.test/' }
+	insecure := dom.URL{ value: 'http://example.test/' }
+	mut request := Request.create()
+	request.mode = .navigate
+	request.destination = .document
+	request.url_list = [insecure, secure]
+	request.user_agent_initiated = true
+	mut navigation := request.clone()
+	append_fetch_metadata_headers_for_request(mut navigation)
+	assert navigation.header_list.get('Sec-Fetch-Site')? == 'none'
+
+	request.url_list = [secure, insecure]
+	append_fetch_metadata_headers_for_request(mut request)
+	assert request.header_list.get('Sec-Fetch-Site') == none
+
+	mut image := navigation.clone()
+	image.header_list = http.HeaderList.create()
+	image.mode = .no_cors
+	image.destination = .image
+	append_fetch_metadata_headers_for_request(mut image)
+	assert image.header_list.get('Sec-Fetch-Site')? == 'cross-site'
+}
