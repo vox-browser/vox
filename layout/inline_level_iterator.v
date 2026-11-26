@@ -643,6 +643,27 @@ fn (mut iterator InlineLevelIterator) resolve_text_direction_from_context() plat
 	return next_known or { platform.GlyphRunTextType.context_dependent }
 }
 
+// Each preserved tab consumes one code unit even when tab-size is zero.
+// Keep a non-painting glyph for it so caret and Range offsets still line up
+// with the text, and leave the cached shaped run unchanged.
+fn glyph_run_after_tab_spacers(run &platform.GlyphRun, advances []f32) &platform.GlyphRun {
+	mut glyphs := []platform.Glyph{cap: advances.len + run.glyphs_.len}
+	mut x := f32(0)
+	y := if run.glyphs_.len > 0 { run.glyphs_[0].position.y } else { f32(0) }
+	for advance in advances {
+		glyphs << platform.Glyph{
+			code_point:           u32(`\t`)
+			position:             platform.GlyphPosition{ x: x, y: y }
+			advance:              advance
+			length_in_code_units: 1
+			should_paint:         false
+		}
+		x += advance
+	}
+	glyphs << run.glyphs_
+	return platform.GlyphRun.new_with_face(run.font(), run.text_type(), glyphs, run.face())
+}
+
 fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	// Nodes with no item advance in a loop, so long runs of empty inlines
 	// and exhausted text nodes do not consume one stack frame per node.
@@ -697,6 +718,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			word_spacing := context.word_spacing
 			mut shaped_text := chunk.view
 			mut x := 0.0
+			mut tab_advances := []f32{}
 			if chunk.has_breaking_tab {
 				tab_size := computed.tab_size()
 				tab_width := if tab_size.is_length {
@@ -705,14 +727,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 					tab_size.number * (f64(chunk.font.glyph_width(u32(` `))) + word_spacing + letter_spacing)
 				}
 				accumulated := iterator.accumulated_width_for_tabs.to_double()
-				mut stop_distance := if accumulated > 0 && tab_width > 0 {
-					math.ceil(accumulated / tab_width) * tab_width - accumulated
-				} else {
-					tab_width
-				}
-				if stop_distance < f64(chunk.font.glyph_width(u32(`0`))) * 0.5 {
-					stop_distance += tab_width
-				}
+				half_zero_advance := f64(chunk.font.glyph_width(u32(`0`))) * 0.5
 				mut tab_count := 0
 				for character in shaped_text.runes() {
 					if character != `\t` {
@@ -720,10 +735,26 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 					}
 					tab_count++
 				}
-				stop_distance *= tab_count
+				mut position := accumulated
+				mut previous_end := f32(0)
+				for _ in 0 .. tab_count {
+					mut distance := 0.0
+					// https://drafts.csswg.org/css-text-3/#white-space-phase-2
+					// A zero tab size advances nothing. Every other preserved tab
+					// reaches its own next stop, skipping one closer than 0.5ch.
+					if tab_width != 0 {
+						distance = math.ceil(position / tab_width) * tab_width - position
+						if distance <= 0 { distance += tab_width }
+						if distance < half_zero_advance { distance += tab_width }
+					}
+					position += distance
+					end := f32(position - accumulated)
+					tab_advances << end - previous_end
+					previous_end = end
+				}
 				units := utf16_code_units_for_line_box(shaped_text)
 				shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
-				x = stop_distance
+				x = f64(previous_end)
 			}
 			shaped := if run := context.chromium_context_run {
 				chromium_context_slice_with_cursor(run, chunk, mut context.chromium_slice_cursor) or {
@@ -735,8 +766,12 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 					iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
 				}
 			}
-			glyph_run := shaped.glyph_run
-			chunk_width := shaped_inline_width(glyph_run, x)
+			glyph_run := if tab_advances.len > 0 {
+				glyph_run_after_tab_spacers(shaped.glyph_run, tab_advances)
+			} else {
+				shaped.glyph_run
+			}
+			chunk_width := shaped_inline_width(glyph_run, 0)
 			is_empty_editable := chunk.length == 0 && text_node.produces_line_box_fragment_when_empty_
 			is_generated_empty_string := is_empty_editable
 				|| (text_node.retains_empty_generated_fragment_ && chunk.length == 0)
