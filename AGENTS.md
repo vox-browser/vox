@@ -120,16 +120,58 @@
   runtime work. The VM record (`vm.v` and the runtime records it depends on)
   translates `Runtime/VM.{h,cpp}` directly; keep new runtime slices in the same
   package with focused tests.
-- Run `v -enable-globals test libjs` with current V; exercise heap ownership
-  with the same command plus `-gc none`. Both modes also pass with the 0.5.2
-  compatibility compiler (`-old-compiler`).
+- The goal is to compile and correctly execute as much real JavaScript as
+  possible. Follow [the compilation coverage review](docs/LIBJS_COMPILATION_REVIEW.md)
+  for the current pipeline, source-backed blockers, priorities, and acceptance
+  criteria. Its findings describe the audited revision; verify the current
+  implementation before treating an item as still open.
+- The port already has bytecode generation, an interpreter, a native RegExp
+  implementation, synchronous module graphs, dynamic imports, ordinary async
+  functions, synchronous generators, and an experimental native C tier. Keep
+  syntax acceptance, bytecode compilation, runtime correctness, native entry
+  coverage, and direct native operation coverage separate. Dynamic operations
+  may use correct shared VM helpers from compiled code; a native entry or cache
+  hit alone does not establish that every operation was lowered directly.
+- JavaScriptCore remains the default engine. Explicit LibJS documents enable
+  the persistent native cache unless disabled; site warmup can use JavaScriptCore
+  for the initial visit and select LibJS after its readiness check. Record the
+  actual selected/executing backend and cache mode. Do not attribute a
+  JavaScriptCore result to LibJS or describe current bytecode, interpreter,
+  RegExp, and module implementations as wholly absent.
+- Prioritize compilation progress and language coverage: finish template
+  enumeration, prevent quiet-period starvation, isolate failed executables,
+  bound compiler jobs, and implement the remaining async/eval semantics.
+  Fix directive-prologue and RegExp early-error handling alongside coverage
+  expansion; accepting invalid code or rejecting valid sloppy code is not parity.
+  Compile uncalled function bodies without executing author code. Preserve
+  supported work when a different function or resource is unsupported, and
+  report partial preparation honestly instead of marking it fully ready.
+- Keep parser and compiler resource limits explicit. The standalone parser
+  defaults to 32 guarded calls, browser parsing requests 256, and the options
+  cap is 1024 with an additional native-stack reserve. Dynamic Function parsing
+  currently takes the standalone path. Prefer iterative parsing/emission for
+  long AST spines over removing stack checks or accepting invalid syntax.
+- Keep a pinned corpus of unmodified classic scripts, modules, lazy factories,
+  and generated function bodies. Classify failures by phase and stable reason;
+  use Test262 language tests and focused differential cases alongside site
+  workloads. Extend existing native/cache diagnostics with denominators for
+  discovered, compiled, executed, deferred, and unsupported bodies, plus
+  interpreter steps, native fast steps, helper steps, and compiler failures.
+- Run relevant focused regressions with current V and `-enable-globals`, in
+  default GC and `-gc none`; check production/preallocation ownership for
+  changes to native cache lifetimes or generated code. Use the memory guard
+  and compiler memory limit below. Record the actual compiler revision,
+  commands, exits, and unexecuted checks; older compatibility results and
+  compiler-only import checks are not current runtime validation. Honor any
+  explicit user constraint on running tests.
 - Compare the current upstream AST fixtures with
   `v -enable-globals run tools/libjs_ast_corpus.v --all`.
   Keep these comparisons exact; the driver has no case overrides.
-- The browser still uses JavaScriptCore. The parser's 32-call recursion limit,
-  absent regex backend, and the pending bytecode generation, interpreter loop,
-  builtin objects, and module linking must not be described as full LibJS
-  parity.
+- For native coverage, separately check a cold cache, same-VM execution after
+  compilation, a fresh-process revisit with the compiler disabled, and later
+  callbacks/lazy imports. Assert observable results and exceptions as well as
+  cache counters. Do not claim full ECMAScript, DOM, site, pixel, or performance
+  parity from a parse pass, successful native build, or warm-cache result.
 
 ## Build and run Vox
 

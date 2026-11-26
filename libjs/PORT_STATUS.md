@@ -1,5 +1,31 @@
 # LibJS V translation status
 
+## Compilation coverage guidance — 2026-11-26
+
+The goal is to compile and correctly execute as much JavaScript as possible.
+See [the compilation coverage review](../docs/LIBJS_COMPILATION_REVIEW.md) for
+the pipeline at audited revision `3170240316e66be0b8d97c4c6e5a56d1f299a61c`,
+source-backed findings, a prioritized implementation plan, and validation gates.
+The review is static analysis, not a new runtime or conformance result.
+
+Bytecode generation, interpretation, native RegExp execution, synchronous module
+graphs, dynamic imports, ordinary async functions, synchronous generators, and
+the persistent native C tier already exist. Top-level await, async iteration,
+async-generator execution, eval, and some dynamic constructor semantics still
+need work at that revision. Native compilation progress and complete template
+enumeration also have concrete gaps. Recheck each finding against current code
+before implementation.
+
+The frontend review additionally identifies incorrect directive-prologue
+recognition that rejects valid sloppy code, and missing parse-time RegExp early
+errors. These correctness fixes belong alongside coverage expansion.
+
+The entries below retain historical checkpoints and their original verification
+limits. Earlier statements that these implemented subsystems are wholly absent
+are not a current feature inventory; historical pass counts are not new results.
+
+## Historical translation and runtime checkpoints
+
 Audited: 2026-10-02.
 
 The opt-in browser backend and its 2026-11-14 validation are documented in
