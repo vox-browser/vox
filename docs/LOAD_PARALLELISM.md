@@ -7345,3 +7345,99 @@ the same eight replay records, including the repeated logo and favicon
 miss. The executable, linked native libraries, helper, fixtures and
 measurement inputs stayed pinned. All browser, driver and guard exits
 were zero. Peak benchmark RSS was 325,910,528 bytes under the 3 GiB guard.
+
+### Join backdrop copies when glyph masks start blending
+
+Commit `390172cef` adds the macOS opt-in
+`VOX_LATE_GLYPH_BACKDROP_JOIN=1` for runs with
+`VOX_PREFETCH_GLYPH_BACKDROP_COPY=1`. The glyph renderer can look up and
+rasterize masks and collect their clipped bounds while the worker copies
+the backdrop. The first nonempty batch joins before writing destination
+pixels. A sprite also joins before its draw, even if the batch is empty.
+Outline and color strikes consume the backdrop before painting.
+
+The 12 focused glyph tests passed with arena poisoning and
+ThreadSanitizer. The loader test observes prepared masks with an
+untouched pixel buffer, then checks that the result matches the eager
+path. It also checks that a failed load leaves pixels untouched. A
+separate test flushes two batches and verifies one load. The native
+copy fixture passed with address, undefined-behavior and thread
+sanitizers.
+
+The production receipt `20261126-041234-a3ba947b` verified
+`37600e7cb`, which contains the change, in single-C-unit V `-prod`
+mode. Production build and headless smoke exits were zero. The
+published bundle passed strict signature verification. Both schedules
+used that executable and enabled `VOX_PREFETCH_GLYPH_BACKDROP_COPY=1`.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `1857de39258ee5a344ceb711e9a15cbcf292d699dcd7901094acc863ce24913d` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Unchanged pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+The four copy diagnostics each moved 1,865,616 bytes across the same
+11 backdrops off-thread. With the early join, zero workers had started
+when the caller reached the join. With the late join, the worker had
+started before the join in 10 and 11 copies and finished in 10 in each
+capture. Both late diagnostics used the mask-blend join for all 11
+copies. The wait timer covers the native join and ticket release.
+
+| Pair | Early copies ready | Late copies ready | Early join total, µs | Late join total, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 0 of 11 | 10 of 11 | 118.417 | 11.000 |
+| 2 | 0 of 11 | 10 of 11 | 109.293 | 17.085 |
+
+A fifth capture set the late-join switch alone and submitted zero worker
+copies. The focused loader also passed with serial glyph blending and
+with the previous glyph blend budget, which sends its short run to
+individual blending.
+
+The driver held the bundle lease and used the
+`tools/measure_load_parallelism.py` trial runner with 1 ms polling.
+Each browser launched with `--enable-javascript --js-engine=javascriptcore
+--window-width 1024 --window-height 880 --screenshot-viewport-height 768`.
+Both schedules used the archived author script, empty private profiles
+and HTTP caches, retained OS caches, `tr.athing` readiness, and 60 ms
+of replay delay per logo response. Unprofiled timing ran from process
+launch through the complete 2× document PNG. Two seven-pair cohorts
+alternated the schedules, starting the second with the late join.
+
+| Pair | Early 1, ms | Late 1, ms | Early 2, ms | Late 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 306.641 | 314.901 | 305.695 | 311.386 |
+| 2 | 295.969 | 306.473 | 309.946 | 298.003 |
+| 3 | 309.914 | 294.848 | 318.546 | 307.757 |
+| 4 | 292.625 | 305.996 | 301.467 | 303.089 |
+| 5 | 295.578 | 321.494 | 310.945 | 312.292 |
+| 6 | 325.325 | 325.359 | 315.651 | 314.133 |
+| 7 | 330.856 | 306.640 | 337.381 | 313.826 |
+| Median | 306.641 | 306.640 | 310.945 | 311.386 |
+
+Median paired changes were +8.260 ms and −1.519 ms, with two and four
+late-join wins. Sampled main-thread CPU medians changed from 168.924 to
+171.847 ms and from 168.562 to 168.841 ms. One-minute load on 18 CPUs
+ranged from 6.13 to 6.34 and from 6.11 to 6.13. The full-page result
+was mixed, so the later join stays opt-in.
+
+Four separate traced captures enabled `VOX_PROFILE_INSTRUCTIONS=1`,
+`VOX_DIAGNOSTIC_LOAD_STAGES=1` and `VOX_DIAGNOSTIC_THREAD_LOAD_STAGES=1`.
+Each recorded JavaScript runtime initialization and execution scopes
+and 333 `paint_leaf_text` scopes. The totals below sum the inclusive
+browser-thread counters and clocks for those text leaves.
+
+| Pair | Early instructions | Late instructions | Early text CPU, ms | Late text CPU, ms | Early text wall, ms | Late text wall, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 128,278,409 | 127,400,766 | 10.894 | 10.825 | 13.282 | 13.061 |
+| 2 | 128,167,685 | 127,474,624 | 11.003 | 10.750 | 13.243 | 12.781 |
+
+All 37 captures matched the established Vox PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+All five copy diagnostics compared the 3,145,728 pixels directly against
+the unchanged reference with zero differences. The URL, ready state,
+viewport, all 30 ordered story IDs, and eight replay fingerprints matched
+throughout. Executable, helper, native libraries, fixture and harness
+inputs stayed pinned. Browser, driver and 3 GiB guard exits were zero.
+Peak benchmark RSS was 324,206,592 bytes.
