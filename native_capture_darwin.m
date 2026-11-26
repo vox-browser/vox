@@ -1948,7 +1948,7 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     extern int vox_draw_document_svg_pixels(uint8_t*,int,int,int,int,VoxGraphitePath*,int,float*,float*,float*);
     int drawn=vox_draw_document_svg_pixels(pixels,w,h,w*4,backdrop,(VoxGraphitePath*)paths,count,(float*)parent,(float*)viewport,(float*)rounded_clip);
     if(drawn)drawn=native_text_raster_finish_in_space(pixels,geometry[0],geometry[1],w,h,
-        geometry[5],geometry[6],canvas_height,backdrop,p3);
+        geometry[5],geometry[6],canvas_height,backdrop,p3,NO);
     free(pixels);return drawn;
 }
 
