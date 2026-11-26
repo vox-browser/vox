@@ -7073,7 +7073,7 @@ The one-minute host load was 53.45 on 18 CPUs during both cohorts.
 The harness executable SHA-256 was
 `d88b0c204302edcbdb2945475379f05727c1f6b93382d74304921e273a8a425c`.
 
-#### Full-page candidate validation pending
+#### Earlier full-page validation attempts
 
 The ordinary shared build `20261126-025333-3e75e108` exhausted disk
 space while writing generated C. The compact retry
@@ -7091,6 +7091,68 @@ The existing bundle's two baseline launches reached the encoded PNG at
 `a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
 They used the archived origin with an empty private profile and HTTP
 cache, JavaScriptCore, and 1024×768 CSS pixels at 2×. These are baseline
-observations. The isolated benchmark and focused native checks verify
-worker output, while candidate launch timings and full-page pixel
-validation remain pending. The schedule remains opt-in.
+observations. At that point, the isolated benchmark and focused native
+checks had verified worker output.
+
+#### Matched captures from the published build
+
+Production receipt `20261126-031702-c5d3fabd` sealed `97a6416bf`,
+which contains `05a45d80d`, in single-C-unit V `-prod` mode. The build
+and headless smoke guards exited zero. The measured bundle was the
+published `Build/v/Vox.app`, held under its read lease. Its strict code
+signature verified before the launches.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `af7de5b17a896b9ff6a430ad4123ac3bca6ef2d0e8c973e7b1566c755af940dd` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| `VoxAdblockWorker` | `250d882e774027d278f5e62b9181b2d31cb887040133fee0a8191ee9c201a967` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Both 2× diagnostics with overlap enabled submitted a 14,417,920-byte
+clear across four workers. All four finished before the join in both
+captures. The first white draw consumed the completed clear without a
+second fill. The control used the ordinary four-lane clear, and all four
+2× diagnostics recorded a deferred frame without scroll reuse. At 1×,
+both settings cleared the 1024×880 bitmap on one lane and produced
+identical pixels.
+
+Each timing trial ran from fresh process launch to the completed
+1024×768 CSS-pixel document PNG at 2× scale, observed with nominal 1 ms
+polling. Both settings used JavaScriptCore, empty private profiles and
+HTTP caches, retained OS caches, and archived original-origin replay
+with a 60 ms response delay on the logo. The cohorts each alternated
+seven pairs and the second started with overlap enabled. Clear and
+scroll diagnostics were disabled during timing.
+
+| Pair | Current 1, ms | Overlap 1, ms | Current 2, ms | Overlap 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 389.744 | 408.272 | 463.304 | 467.039 |
+| 2 | 393.379 | 400.291 | 466.772 | 421.768 |
+| 3 | 389.751 | 407.810 | 416.926 | 444.619 |
+| 4 | 398.493 | 429.962 | 399.673 | 412.428 |
+| 5 | 387.617 | 370.987 | 422.399 | 418.861 |
+| 6 | 388.520 | 361.877 | 442.358 | 383.139 |
+| 7 | 387.046 | 390.776 | 383.593 | 381.571 |
+| Median | 389.744 | 400.291 | 422.399 | 418.861 |
+
+Median paired changes were +6.912 ms and −2.022 ms, with the overlap
+schedule faster in two and four pairs, respectively. One-minute load on
+18 CPUs ranged from 18.55 to 21.57 in the first cohort and from 17.01 to
+18.55 in the second. Sampled browser-thread CPU medians went from
+237.949 to 240.932 ms and from 263.916 to 262.623 ms. The diagnostics
+establish overlap with tile setup. Launch timings showed no consistent
+speedup, so the schedule remains opt-in.
+
+All 34 launches passed the URL, readiness, viewport and 30-story order
+audits and reproduced the eight request and response fingerprints,
+including the repeated logo request and favicon miss. All 32 Retina
+captures reproduced the established Vox PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The four Retina diagnostics matched all 3,145,728 pixels of the unchanged
+reference. The 1× captures shared PNG SHA-256
+`4ae418b3c41fe4a69a4c565fe5a2fb758ee941506d6abae94aaeb2c91d4e71dd`.
+Executable, native dependencies, helper, fonts, fixtures and test inputs
+stayed pinned. All browser, benchmark and 3 GiB guard exits were zero.
+The timing and diagnostic job peaked at 320,454,656 bytes of sampled RSS.
