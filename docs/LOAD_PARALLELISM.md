@@ -7441,3 +7441,81 @@ viewport, all 30 ordered story IDs, and eight replay fingerprints matched
 throughout. Executable, helper, native libraries, fixture and harness
 inputs stayed pinned. Browser, driver and 3 GiB guard exits were zero.
 Peak benchmark RSS was 324,206,592 bytes.
+
+### Prepare native CSS gradient stops on paint workers
+
+Commit `26b442628` adds the macOS opt-in `VOX_PARALLEL_GRADIENT_STOPS=1`.
+Canvas-bounds workers sample and pack short CSS gradients into frame
+scratch. The caller uses each result after its worker range completes
+and composites in display-list order. The same sampler preserves
+duplicate offsets, premultiplied interpolation, and leaf opacity in both
+schedules. Replay samples on the caller when no worker result is
+available, including gradients with more than four source stops and
+scrollbar gradients whose opacity comes from live replay state.
+
+The focused paint/culling suite passed under ThreadSanitizer and arena
+poisoning, including exact packed-stop comparisons across two worker
+ranges, recorded geometry, and a serial fallback run. The first managed
+production build ran out of disk space in Clang. Lossless filesystem
+compression of two retained compiler files recovered 341 MiB and
+preserved both SHA-256 hashes. The managed retry published receipt
+`20261126-043220-919da5d8` with sealed source head `55c5c1115`, which
+contains the feature. The single-C-unit V `-prod` build, headless smoke,
+and strict bundle signature check passed.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `94f46582046d4e678e034864bfaf91c731490a38a8cb6d7f24b912c7a2879832` |
+| `VoxAdblockWorker` | `ab958692215c0dfb1fc44009b54a827bb6e4bef4801d859cfafa9ff25e346582` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Diagnostics verified that native replay consumed all 22 worker results,
+with 17 samples per gradient, both with the ordinary batch join and
+with `VOX_STREAM_PAINT_CANVAS_BOUNDS=1`. All four streamed ranges were
+ready when reached. A separate launch enabled the gradient flag with
+`VOX_SERIAL_PAINT_CANVAS_BOUNDS=1` and used the caller fallback.
+
+The trial runner in `tools/measure_load_parallelism.py` used fresh
+processes, 1 ms polling, private profiles and HTTP caches, retained OS
+caches, and original-origin replay with a 60 ms delay per archived logo
+response. Each launch used `--enable-javascript --js-engine=javascriptcore
+--window-width 1024 --window-height 880 --screenshot-viewport-height 768`,
+`tr.athing` readiness, and a 2× document PNG. The unprofiled endpoint
+was process launch through complete PNG availability. Each cohort
+alternated caller and worker sampling, starting the second cohort with
+workers. Both schedules used the same binary.
+
+| Pair | Caller 1, ms | Workers 1, ms | Caller 2, ms | Workers 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 334.498 | 302.267 | 295.527 | 304.485 |
+| 2 | 313.911 | 308.256 | 313.325 | 321.007 |
+| 3 | 288.432 | 288.493 | 299.331 | 300.082 |
+| 4 | 292.974 | 289.741 | 321.699 | 299.795 |
+| 5 | 295.179 | 306.315 | 296.113 | 300.929 |
+| 6 | 297.908 | 298.061 | 296.000 | 279.330 |
+| 7 | 299.019 | 314.148 | 287.834 | 282.057 |
+| Median | 297.908 | 302.267 | 296.113 | 300.082 |
+
+Median paired changes were +0.061 and +0.751 ms, with three worker wins
+in each cohort. Sampled main-thread CPU medians changed from 162.865
+to 161.736 ms and from 158.487 to 159.341 ms. One-minute host load
+ranged from 5.87 to 6.04 and from 5.65 to 5.88 on 18 CPUs. The switch
+stays opt-in because neither cohort showed a repeatable load-time gain.
+
+Two separate traced pairs confirmed JavaScriptCore runtime setup and
+execution. The inclusive main-thread counters over 25 fill leaves
+changed from 57,594,683 to 68,328,232 instructions in the first pair and
+from 57,735,645 to 57,446,016 in the second. These scopes include all
+fill replay and its native calls. The variation prevents attribution
+of the instruction difference to gradient sampling alone.
+
+All 36 captures compared pixel-for-pixel against the existing reference
+with zero differences across 3,145,728 pixels. Each matched the existing
+Vox PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`,
+the URL, complete ready state, viewport, 30 ordered story IDs, and eight
+replay fingerprints. The executable, helper, linked native libraries,
+fixture and harness inputs stayed pinned. Browser, benchmark driver
+and 3 GiB guard exits were zero. Peak benchmark RSS was 328,925,184 bytes.
