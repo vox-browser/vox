@@ -2825,7 +2825,8 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 		})
 	}
 	if is_function {
-		if !pseudo_class_valid_as_function(pseudo_class_type) || argument.trim_space().len == 0 {
+		if !pseudo_class_valid_as_function(pseudo_class_type)
+			|| (argument.trim_space().len == 0 && pseudo_class_type !in [.is_, .where]) {
 			return invalid_simple_selector(':${name}(${argument})')
 		}
 	} else if !pseudo_class_valid_as_identifier(pseudo_class_type) {
