@@ -41,13 +41,22 @@ fn test_search_maps_transformed_first_letter_and_supplementary_text_to_source_co
 	assert document.find_matching_text('ß', .case_insensitive).len == 0
 }
 
-fn test_search_rechecks_live_layout_and_preserves_source_post_match_advance() {
+fn test_search_finds_adjacent_matches_and_rechecks_live_layout() {
 	mut document := search_fixture('<p id="p">foofoo foo</p>')
-	assert document.find_matching_text('foo', .case_sensitive).len == 2
+	matches := document.find_matching_text('foo', .case_sensitive)
+	assert matches.map(it.start_offset()) == [0, 3, 7]
+	assert matches.map(it.end_offset()) == [3, 6, 10]
 	p := document.get_element_by_id('p') or { panic('missing p') }
 	mut text := p.as_node().first_child() or { panic('missing text') }
 	text.set_text_content('changed')!
 	assert document.find_matching_text('foo', .case_sensitive).len == 0
 	assert document.find_matching_text('changed', .case_sensitive).len == 1
 	assert document.find_matching_text('', .case_sensitive).len == 0
+}
+
+fn test_search_deduplicates_expanded_letters_at_the_same_dom_range() {
+	document := search_fixture('<style>p{text-transform:uppercase}</style><p>ßß</p>')
+	matches := document.find_matching_text('s', .case_insensitive)
+	assert matches.map(it.start_offset()) == [0, 1]
+	assert matches.map(it.end_offset()) == [1, 2]
 }
