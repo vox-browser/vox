@@ -29,6 +29,8 @@ jobs:
       # FastC must support JSON enum attributes and dynamic-array decoding.
       # XML allocation fixes: https://github.com/vlang/v/pull/32104
       V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
+      # The C bootstrap snapshot must understand this revision's compiler sources.
+      VC_REVISION: f28b01336a3e54d888e5711f1f25a31e164ba9c0
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
@@ -121,10 +123,18 @@ jobs:
           git -C "$RUNNER_TEMP/v" remote add origin https://github.com/vlang/v.git
           git -C "$RUNNER_TEMP/v" fetch --depth 1 origin "$V_REVISION"
           git -C "$RUNNER_TEMP/v" checkout --detach FETCH_HEAD
+          git init "$RUNNER_TEMP/v/vc"
+          git -C "$RUNNER_TEMP/v/vc" remote add origin https://github.com/vlang/vc.git
+          git -C "$RUNNER_TEMP/v/vc" fetch --depth 1 origin "$VC_REVISION"
+          git -C "$RUNNER_TEMP/v/vc" checkout --detach FETCH_HEAD
+          git -C "$RUNNER_TEMP/v" rev-parse HEAD > "$RUNNER_TEMP/vox-v-revision.txt"
+          git -C "$RUNNER_TEMP/v/vc" rev-parse HEAD > "$RUNNER_TEMP/vox-vc-revision.txt"
+          # Keep the bundled toolchain libraries while preventing make from replacing vc.
+          make -C "$RUNNER_TEMP/v" latest_tcc
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
-            make -C "$RUNNER_TEMP/v" -j2 VFLAGS='-memory-limit 10G'
+            make -C "$RUNNER_TEMP/v" -j2 local=1 CC=clang 'VFLAGS=-cc clang -memory-limit 10G'
           "$RUNNER_TEMP/v/v" version
           git init "$RUNNER_TEMP/ui2"
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
@@ -132,7 +142,6 @@ jobs:
           git -C "$RUNNER_TEMP/ui2" checkout --detach FETCH_HEAD
           # UI2 intentionally follows upstream HEAD; preserve the exact inputs
           # alongside the results so this run can be reproduced.
-          git -C "$RUNNER_TEMP/v" rev-parse HEAD > "$RUNNER_TEMP/vox-v-revision.txt"
           git -C "$RUNNER_TEMP/ui2" rev-parse HEAD > "$RUNNER_TEMP/vox-ui2-revision.txt"
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
