@@ -1619,7 +1619,12 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 	}
 	computed := cell.computed_values()
 	edges := table_cell_measurement_inline_edges(values, collapsed)
-	mut min_width := computed.size_value(.min_width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	// CSS Tables excludes percentage min-width from a cell's contribution.
+	mut min_width := if computed.size_value(.min_width).is_length() {
+		computed.size_value(.min_width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	} else {
+		CSSPixels.new(0)
+	}
 	mut width := if computed.size_value(.width).is_length() {
 		computed.size_value(.width).to_px(layout_length_resolution_context(cell), percentage_basis)
 	} else {
