@@ -29,7 +29,9 @@ fn editing_character_data(node &dom.Node) &dom.CharacterData {
 
 fn editing_parent_preserves_white_space(node &dom.Node) bool {
 	parent := node.parent() or { return false }
-	return resolved_keyword(parent, 'white-space-collapse') or { '' } == 'preserve'
+	// These longhand values preserve spaces, including white-space: break-spaces.
+	return (resolved_keyword(parent, 'white-space-collapse') or { '' }) in ['preserve',
+		'preserve-spaces', 'break-spaces']
 }
 
 // INTEROP: Chromium canonicalizes caret positions for editing into the nearest equivalent text position. An
