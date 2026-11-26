@@ -996,7 +996,9 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 			mutable_parser.stop_the_speculative_html_parser()
 			return
 		}
-		mutable_parser.tokenizer.undefine_insertion_point()
+		// document.close() can finish this parser while an executing script
+		// still has an old insertion point waiting to be restored.
+		mutable_parser.tokenizer.discard_insertion_points()
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.update_readiness(.interactive)

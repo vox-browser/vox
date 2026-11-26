@@ -636,6 +636,15 @@ pub fn (mut t HTMLTokenizer) undefine_insertion_point() {
 	t.insertion_point = none
 }
 
+// A stopped parser must not restore an insertion point saved by a script
+// that is still unwinding. Keep the stack entries for the matching restores.
+pub fn (mut t HTMLTokenizer) discard_insertion_points() {
+	t.insertion_point = none
+	for index in 0 .. t.old_insertion_points.len {
+		t.old_insertion_points[index] = none
+	}
+}
+
 pub fn (mut t HTMLTokenizer) store_insertion_point() {
 	t.old_insertion_points << t.insertion_point
 }
