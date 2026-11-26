@@ -41,6 +41,16 @@ fn test_fingerprints_detect_changed_and_deleted_inputs() ! {
 	assert rejected
 }
 
+fn test_atomic_write_replaces_the_existing_file() ! {
+	root := temporary(os.temp_dir(), 'vox-atomic-write-test-')!
+	defer { remove(root) or {} }
+	path := join(root, 'staged file.v')
+	write_changed(path, 'upstream source')!
+	write_changed(path, 'patched source')!
+	assert read(path)! == 'patched source'
+	assert listing(root)! == [path]
+}
+
 fn test_compiler_manifest_rejects_conflicts_and_unverified_buffers() ! {
 	root := temporary(os.temp_dir(), 'vox-manifest-test-')!
 	defer { remove(root) or {} }
