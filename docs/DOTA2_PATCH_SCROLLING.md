@@ -4590,3 +4590,219 @@ filter rendering and 2.08 ms drawing. This diagnostic covers a
 shorter wheel path with instrumentation. PID 27805, driver and
 guard exited 0 at 1,103,872,000 B peak guard RSS. One-minute
 host load was 11.28→16.50.
+
+## Passing finished shape raster storage to Quartz
+
+The preceding shared single-unit C `-prod` build used receipt
+`20261126-043959-f3ffda7f` at `ce7f0f945`, with executable SHA-256
+`3ec951a1dab52502a1f3b2522ebe43a549bdd4f7bcf860a2006997b74828a0d5`.
+The native AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+Fresh Vox processes opened the live patch over direct HTTPS with
+private empty profiles and caches and retained OS caches. The document
+was 1024×768 at backing scale two with 112 pixels of browser chrome.
+Each complete patch audit at the configured 22-second observation
+checked loaded fonts, the initialized JavaScriptCore context, 133 images
+and the existing normalized text digest of 15,620 bytes. The wheel runs
+used `tools/measure_precise_scroll.py` under 3 GiB guards with
+`VOX_TEST_WINDOW=1`, the required patch title, 23 seconds of title settle,
+720 precise wheel inputs of delta 16 at nominal 60 Hz, and reversal after
+360. Throughput covers the full first-to-last input interval. The endpoint
+is completed native frame installation.
+
+| Preceding build | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A | 18.51 | 55.60 / 82.21 / 156.45 ms | 226/246 | 720 / 275 | 54.11 Hz | 65.70 / 0.24 ms |
+| B | 17.68 | 58.91 / 86.76 / 122.95 ms | 214/236 | 720 / 271 | 53.86 Hz | 59.83 / 169.68 ms |
+
+The input windows were 13.2867 and 13.3501 seconds. The page moved
+12,035.5 and 12,067.5 CSS pixels and returned to zero. The browser
+PIDs were 31157 and 32577. Browser, driver and guard exits were 0
+throughout. Peak guard RSS was 1,131,167,744 B and 1,138,573,312 B.
+Runs started at 04:49:45 and 04:50:27 MSK with one-minute host load
+of 7.65→6.94 and 7.43→7.64 on 18 CPUs.
+
+### Shadow publication diagnostics
+
+A separate short profile used 200 inputs with reversal after 100
+and a 5 ms stall threshold. PID 33699 recorded 518 valid stacks
+across 112 slow frames with zero dropped samples or snapshot
+failures. The Mach-O UUID was `CCE88D66-2246-3990-84BA-68BD17122D51`.
+Portable shadow replay appeared in 221 sampled stacks,
+`draw_shape_on_surface` in 116 and GPU surface readback in 62.
+The audit, browser, driver and guard passed at 1,068,515,328 B
+peak guard RSS and host load 7.64→8.07.
+
+A second short run enabled `VOX_GG_DIAGNOSTICS=1` and
+`VOX_LEAF_RASTER_CACHE_DIAGNOSTICS=1`. It recorded 428 shape geometry
+entries during wheel input, including 41 successful full-surface
+outer shadow draws of 2048×1760 pixels. Those 41 draws alone supplied
+591,134,720 B of shape raster output to its repeated Quartz finish.
+PID 34628, driver and guard exited 0 at 1,074,266,112 B peak guard
+RSS with host load 7.67→6.67. Both short profiles passed the complete
+patch audit.
+
+### Finished raster ownership
+
+`3aef090ab` hands the malloc-backed output of single, grouped and
+cropped shape callbacks to the immutable CFData held by the Quartz
+provider. That owner keeps the bytes available for deferred drawing
+and releases them when Quartz is done. Shape failures before transfer
+still free their pending allocation. `VOX_COPY_DOCUMENT_SHAPE_RASTERS=1`
+selects the existing copied finish for same-executable comparisons.
+
+The optimized and ASan/UBSan canvas suite passed all 20 checks. The
+shape cases compared eight small and large clipped, layered and
+backdrop rasters pixel for pixel and exercised missing-context cleanup.
+The ownership diagnostic reported the same backing pointer in every
+owned test case. The driver used a 16 MiB sanitizer quarantine and
+exited 0 with its guard at 602,259,456 B peak RSS. The native CSS and
+SVG filter-source fixture also passed, with its driver and guard
+exiting 0 at 778,682,368 B peak RSS.
+
+The focused timing fixture ran the two production finish functions
+on a 2048×1760 premultiplied bitmap. Each fresh process measured
+96 finish-and-flush operations after eight warmups. Source
+allocation and initialization preceded the timer.
+
+| Mode in launch order | Mean finish and flush |
+| --- | ---: |
+| Copy A | 0.424 ms |
+| Owned A | 0.213 ms |
+| Owned B | 0.212 ms |
+| Copy B | 0.434 ms |
+| Copy C | 0.424 ms |
+| Owned C | 0.211 ms |
+
+The compile, fixture processes and 3 GiB guards exited 0. The
+fixture timings isolate bitmap publication on synthetic data.
+
+Two fresh launches of the preceding production bundle with no
+wheel input used the same live audit and waited another 12 seconds.
+The settled statistic is the median sampled process-tree physical
+footprint over the final three seconds.
+
+| Preceding build | PID | Audit | Settled footprint | Sampled peak | Settled samples | Peak guard RSS | One-minute load |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| A | 45337 | 22.16 s | 599,346,920 B | 1,040,191,904 B | 51 | 912,670,720 B | 5.60→5.65 |
+| B | 46400 | 22.17 s | 572,985,136 B | 1,025,675,776 B | 51 | 887,537,664 B | 5.52→5.54 |
+
+Both browsers, drivers and guards exited 0.
+
+### Production validation
+
+The first full compile that picked up the shape change, receipt
+`20261126-045718-eb5590e3`, caught a private SVG batch caller missing
+the new ownership argument. `585ee9b50` restored copied publication
+for that caller. A guarded syntax check compiled the actual batch
+function and updated signature with exit 0 at 94,158,848 B peak RSS.
+The intervening build `20261126-050015-a7c71006` detected the source
+change during its input freeze and kept the preceding bundle.
+Those compile guards exited 1 at 7,694,581,760 B and
+1,018,396,672 B peak RSS.
+
+The managed single-unit C `-prod` receipt
+`20261126-050146-23dbe30c` published `585ee9b50`, with complete
+frozen input verification and executable SHA-256
+`fb49d064e5ea9b54753ae87a171cf63567f6f8ac941e7a5086c5e7069f4fdc08`.
+Its compile and startup smoke guards exited 0 at 7,669,170,176 B
+and 100,745,216 B peak RSS. The verified source inventory records
+concurrent work in the shared checkout. The comparison below uses
+one executable for both modes.
+
+The short owned-path diagnostic verified that Quartz retained the
+supplied storage in 160 transfers before wheel input and 614 during
+wheel input. During input those transfers accounted for 2,103,975,552 B
+of cumulative raster data, including 45 full 2048×1760 rasters.
+This sum measures bytes repeatedly processed during input.
+The complete audit, browser PID 51941, driver and guard passed at
+1,079,738,368 B peak guard RSS and one-minute load 4.91→5.87.
+
+### Native wheel input on the published bundle
+
+Four fresh launches used the live patch conditions above and
+alternated Copy A, Owned A, Owned B, Copy B. The copy trials set
+`VOX_COPY_DOCUMENT_SHAPE_RASTERS=1`; the owned trials used the default.
+The AVIF library SHA-256 was the same as in the preceding bundle.
+All four passed the complete patch audit with pinned executable,
+bundled helpers and runtime resource identities.
+
+| Mode | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Copy A | 24.50 | 40.35 / 62.45 / 120.33 ms | 289/314 | 720 / 353 | 56.09 Hz | 73.46 / 10.20 ms |
+| Owned A | 26.53 | 37.80 / 57.50 / 119.03 ms | 319/340 | 720 / 379 | 56.10 Hz | 60.07 / 8.37 ms |
+| Owned B | 26.63 | 37.23 / 56.11 / 119.69 ms | 317/340 | 720 / 380 | 56.31 Hz | 55.58 / 3.85 ms |
+| Copy B | 23.20 | 43.43 / 64.89 / 128.76 ms | 276/299 | 720 / 337 | 55.80 Hz | 54.91 / 8.26 ms |
+
+The first-to-last input windows were 12.8182, 12.8172, 12.7686
+and 12.8853 seconds. The document reached 12,023.5, 12,051,
+12,049 and 12,060.5 CSS pixels, and ended at 0.5, 0, 0 and 0.
+All browsers, drivers and 3 GiB guards exited 0.
+
+| Trial | PID | Start MSK | Peak guard RSS | One-minute load |
+| --- | ---: | ---: | ---: | ---: |
+| Copy A | 52796 | 05:07:38 | 1,127,841,792 B | 5.72→5.43 |
+| Owned A | 53561 | 05:08:20 | 1,145,405,440 B | 5.43→5.60 |
+| Owned B | 54470 | 05:09:00 | 1,141,587,968 B | 5.60→6.02 |
+| Copy B | 55645 | 05:09:41 | 1,148,289,024 B | 6.02→6.23 |
+
+Ownership improved observed native publication throughput by
+8.3% and 14.8% in the alternating pairs, with lower median and p95
+intervals in both. Host load rose during the run order. The default
+path still took longer than 16.67 ms between 93–94% of its
+scroll-changing publications. The published build contains other
+changes since the preceding 17.68–18.51 publications/s controls.
+
+### Complete-patch readiness and reference pixels
+
+Four separate launches used the same live viewport, bundle and
+fresh-profile conditions with `VOX_NATIVE_OBSERVATION_INTERVAL_MS=250`.
+The endpoint was the first host observation of a passing full
+patch audit, including launch and observation delay. Each browser,
+driver and 3 GiB guard exited 0.
+
+| Mode | PID | First complete audit | Peak guard RSS | One-minute load |
+| --- | ---: | ---: | ---: | ---: |
+| Copy A | 58248 | 4.25 s | 719,781,888 B | 7.07→6.99 |
+| Owned A | 58488 | 2.77 s | 831,569,920 B | 6.83→6.83 |
+| Owned B | 58632 | 3.17 s | 765,820,928 B | 6.83→6.76 |
+| Copy B | 58840 | 3.52 s | 841,957,376 B | 6.76→6.78 |
+
+The audit completed sooner in both owned trials. The two copied
+launches differed by 0.73 s. Startup and live network variation
+limit the timing attribution.
+
+The production `compare_screenshots.sh` runs passed
+`svg-image-source-switch-same-size`,
+`selection-focus-between-text-controls` and
+`selection-moves-between-subtrees` with zero differing pixels at
+800×600 in both modes. The corresponding nine PNG files were
+byte-identical across modes. The copy and owned drivers and guards
+exited 0 at 176,111,616 B and 161,284,096 B peak RSS.
+
+### Settled process-tree footprint
+
+The initial no-wheel driver invocations failed before launch after a
+syntax error in the temporary readiness-driver edit. Their guards
+exited 1 at 229,376 B and 393,216 B peak RSS. After correcting the
+driver, four fresh no-wheel launches ran in alternating order with
+the same bundle, viewport and patch audit. Each browser, driver and
+3 GiB guard exited 0. The process trees were sampled every 50 ms
+through 12 seconds after audit, with the last three seconds used
+for the settled median.
+
+| Mode | PID | Audit | Settled footprint | Sampled peak | Settled samples | Peak guard RSS | One-minute load |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Copy A | 59082 | 22.13 s | 615,108,376 B | 1,069,896,048 B | 51 | 924,073,984 B | 6.88→6.72 |
+| Owned A | 60253 | 22.17 s | 580,144,944 B | 1,025,461,944 B | 50 | 880,607,232 B | 6.72→5.57 |
+| Owned B | 61340 | 22.12 s | 590,515,920 B | 1,053,151,552 B | 51 | 912,261,120 B | 5.57→4.87 |
+| Copy B | 62056 | 22.16 s | 591,318,784 B | 1,052,135,864 B | 52 | 904,658,944 B | 4.87→4.84 |
+
+Settled footprint was lower by 34,963,432 B in pair A and by
+802,864 B in pair B. The peak improved in pair A and rose
+1,015,688 B in pair B. The copy launches themselves differed by
+23,789,592 B after settling. The observed memory differences vary
+substantially across pairs. The deployed path still used
+250–267 MB more settled memory than the earlier same-viewport
+Brave observations of 323,968,968 B and 329,588,776 B.
