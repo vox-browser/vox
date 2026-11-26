@@ -8441,7 +8441,8 @@ fn (mut parser Parser) parse_visibility_value(mut tokens ComponentValueStream) ?
 
 fn (mut parser Parser) parse_white_space_collapse_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['collapse', 'discard', 'preserve',
+	// The unsupported discard value must not win over an earlier declaration.
+	return parse_property_keyword_value(mut tokens, ['collapse', 'preserve',
 		'preserve-breaks', 'preserve-spaces', 'break-spaces'])
 }
 
