@@ -1146,11 +1146,23 @@ int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int wid
 // Composite a finished raster: a backdrop raster replaces its pixels under
 // the current clip, a transparent one blends over them.
 static int native_text_raster_finish_in_space(const uint8_t *pixels, int left, int top, int width, int height,
-	int logical_width, int logical_height, float canvas_height, int backdrop, int p3) {
+	int logical_width, int logical_height, float canvas_height, int backdrop, int p3, BOOL take_pixels) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
-	if (context == NULL || pixels == NULL) return 0;
-	CFDataRef data = CFDataCreate(kCFAllocatorDefault, pixels, (CFIndex)width * height * 4);
-	if (data == NULL) return 0;
+	if (context == NULL || pixels == NULL) {
+		if (take_pixels) free((void *)pixels);
+		return 0;
+	}
+	CFIndex length = (CFIndex)width * height * 4;
+	CFDataRef data = take_pixels
+		? CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, pixels, length, kCFAllocatorMalloc)
+		: CFDataCreate(kCFAllocatorDefault, pixels, length);
+	if (data == NULL) {
+		if (take_pixels) free((void *)pixels);
+		return 0;
+	}
+	if (take_pixels && getenv("VOX_DOCUMENT_SHAPE_RASTER_DIAGNOSTICS"))
+		fprintf(stderr, "VOX_DOCUMENT_SHAPE_RASTER width=%d height=%d borrowed=%d bytes=%ld\n",
+			width, height, CFDataGetBytePtr(data) == pixels, (long)length);
 	CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
 	CFRelease(data);
 	if (provider == NULL) return 0;
@@ -1176,13 +1188,25 @@ static int native_text_raster_finish_in_space(const uint8_t *pixels, int left, i
 int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
     int logical_width, int logical_height, float canvas_height, int backdrop) {
     return native_text_raster_finish_in_space(pixels, left, top, width, height,
-        logical_width, logical_height, canvas_height, backdrop, vox_document_png_space_is_p3());
+        logical_width, logical_height, canvas_height, backdrop, vox_document_png_space_is_p3(), NO);
 }
 
 int native_document_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
     int logical_width, int logical_height, float canvas_height, int backdrop) {
     return native_text_raster_finish_in_space(pixels, left, top, width, height,
-        logical_width, logical_height, canvas_height, backdrop, native_document_raster_uses_p3());
+        logical_width, logical_height, canvas_height, backdrop, native_document_raster_uses_p3(), NO);
+}
+
+// The shape callbacks allocate these rows with malloc. CFData can keep them
+// alive through deferred Quartz drawing and release them with the provider.
+static int native_finish_owned_document_shape_raster(uint8_t *pixels, int left, int top,
+    int width, int height, int logical_width, int logical_height, float canvas_height, int backdrop) {
+    BOOL transfer = getenv("VOX_COPY_DOCUMENT_SHAPE_RASTERS") == NULL;
+    int drawn = native_text_raster_finish_in_space(pixels, left, top, width, height,
+        logical_width, logical_height, canvas_height, backdrop,
+        native_document_raster_uses_p3(), transfer);
+    if (!transfer) free(pixels);
+    return drawn;
 }
 
 // The native boundary supplies the destination pixels; geometry and GPU
@@ -1255,12 +1279,14 @@ static int native_try_scroll_shape_region(CGContextRef context, VoxGraphiteShape
         return 0;
     uint8_t *pixels = malloc((size_t)width * height * 4);
     if (!pixels) return 0;
-    int drawn = native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale)
-        && vox_draw_document_shape_region_pixels(pixels, width, height, geometry[4], first_x,
-            first_y, geometry[2], geometry[3], x, y, shape)
-        && native_document_text_raster_finish(pixels, left, top, width, height,
-            (int)CGRectGetWidth(cropped), (int)CGRectGetHeight(cropped), canvas_height, geometry[4]);
-    free(pixels);
+    if (!native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale)
+        || !vox_draw_document_shape_region_pixels(pixels, width, height, geometry[4], first_x,
+            first_y, geometry[2], geometry[3], x, y, shape)) {
+        free(pixels);
+        return 0;
+    }
+    int drawn = native_finish_owned_document_shape_raster(pixels, left, top, width, height,
+        (int)CGRectGetWidth(cropped), (int)CGRectGetHeight(cropped), canvas_height, geometry[4]);
     if (drawn && getenv("VOX_SCROLL_SHAPE_REGION_DIAGNOSTICS"))
         fprintf(stderr, "VOX_SCROLL_SHAPE_REGION fill=%d full=%dx%d region=%dx%d\n",
             shape->fill, geometry[2], geometry[3], width, height);
@@ -1303,11 +1329,11 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     if (backdrop && !native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
         free(pixels); return 0;
     }
-    int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,first_x,first_y,&shape);
-    if (drawn) drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+    if (vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,first_x,first_y,&shape))
+        return native_finish_owned_document_shape_raster(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);
-    return drawn;
+    return 0;
 }
 
 // Shared paint descriptors; native code only transfers pixels and coordinates.
@@ -1343,10 +1369,12 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
         native_v_shape_filter_clip(&copy[j],geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
     }
     extern int vox_draw_document_shape_group_pixels(uint8_t*,int,int,int,int,int,int,VoxGraphiteShape*,int);
-    int drawn=vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
-        (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count);
-    if(drawn)drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,geometry[5],geometry[6],canvas_height,backdrop);
-    free(pixels);return drawn;
+    if (vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
+        (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count))
+        return native_finish_owned_document_shape_raster(pixels,geometry[0],geometry[1],w,h,
+            geometry[5],geometry[6],canvas_height,backdrop);
+    free(pixels);
+    return 0;
 }
 
 #include "native/include/native_svg_drop_shadow_darwin.h"

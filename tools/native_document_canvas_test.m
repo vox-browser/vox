@@ -198,6 +198,72 @@ static void check_background_initial_clear(void) {
     puts("PASS background initial clear with guarded layout and row padding");
 }
 
+static CGImageRef render_shape_raster(int copy, int backdrop, int clipped, int width, int height, int scale) {
+    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef context = CGBitmapContextCreate(NULL, width * scale, height * scale, 8,
+        width * scale * 4, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color);
+    assert(context);
+    NSGraphicsContext *previous = NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    CGContextScaleCTM(context, scale, scale);
+    pattern(context, width, height);
+    if (clipped) {
+        CGContextClipToRect(context, CGRectMake(6.25, 11.5, width - 13, height - 21));
+        CGContextBeginTransparencyLayer(context, NULL);
+    }
+    int raster_width = (width - 4) * scale;
+    int raster_height = (height - 6) * scale;
+    size_t length = (size_t)raster_width * raster_height * 4;
+    uint8_t *pixels = malloc(length);
+    assert(pixels);
+    for (size_t i = 0; i < length; i += 4) {
+        uint8_t alpha = (i / 4) % 256;
+        pixels[i] = alpha / 3;
+        pixels[i + 1] = alpha / 2;
+        pixels[i + 2] = alpha;
+        pixels[i + 3] = alpha;
+    }
+    if (copy) setenv("VOX_COPY_DOCUMENT_SHAPE_RASTERS", "1", 1);
+    assert(native_finish_owned_document_shape_raster(pixels, 1, 3, raster_width,
+        raster_height, width - 4, height - 6, height, backdrop));
+    unsetenv("VOX_COPY_DOCUMENT_SHAPE_RASTERS");
+    // Force allocator reuse before a deferred Quartz layer is composited.
+    volatile uint8_t *churn = malloc(length);
+    assert(churn);
+    for (size_t i = 0; i < length; i += 4096) churn[i] = 255;
+    free((void *)churn);
+    if (clipped) CGContextEndTransparencyLayer(context);
+    CGImageRef image = CGBitmapContextCreateImage(context);
+    assert(image);
+    NSGraphicsContext.currentContext = previous;
+    CGContextRelease(context);
+    return image;
+}
+
+static void check_shape_raster_ownership(void) {
+    for (int large = 0; large <= 1; ++large)
+        for (int clipped = 0; clipped <= 1; ++clipped)
+            for (int backdrop = 0; backdrop <= 1; ++backdrop) @autoreleasepool {
+                int width = large ? 1024 : 61, height = large ? 880 : 45;
+                int scale = large ? 2 : 1;
+                CGImageRef expected = render_shape_raster(1, backdrop, clipped, width, height, scale);
+                CGImageRef actual = render_shape_raster(0, backdrop, clipped, width, height, scale);
+                CFDataRef a = CGDataProviderCopyData(CGImageGetDataProvider(expected));
+                CFDataRef b = CGDataProviderCopyData(CGImageGetDataProvider(actual));
+                assert(a && b && CFEqual(a, b));
+                CFRelease(b);
+                CFRelease(a);
+                CGImageRelease(actual);
+                CGImageRelease(expected);
+            }
+    NSGraphicsContext *previous = NSGraphicsContext.currentContext;
+    NSGraphicsContext.currentContext = nil;
+    assert(!native_finish_owned_document_shape_raster(malloc(4), 0, 0, 1, 1, 1, 1, 1, 0));
+    NSGraphicsContext.currentContext = previous;
+    puts("PASS 8 exact owned-versus-copied shape rasters and missing-context cleanup");
+}
+
 int main(void) {
  @autoreleasepool {
   const CGFloat scales[] = {1, 1.25, 2};
@@ -211,5 +277,6 @@ int main(void) {
   int rejected = check_rejections();
   fprintf(stderr, "PASS %d exact root/nested/CSS/SVG/backdrop/overflow/state/immutable-frame comparisons; %d guarded rejections plus NULL\n", comparisons, rejected);
   check_background_initial_clear();
+  check_shape_raster_ownership();
  }
 }

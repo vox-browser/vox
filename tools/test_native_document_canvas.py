@@ -28,12 +28,15 @@ def entry_points(text):
     functions = ['#include "native/include/native_sparse_bitmap_context_darwin.h"',
                  '#ifndef VOX_DOCUMENT_COLOR_BRIDGE\n'
                  'static int vox_document_display_p3_enabled(void) { return 0; }\n'
+                 'static int native_document_raster_uses_p3(void) { return 0; }\n'
                  '#endif']
     functions += [function(signature) for signature in (
         "static void native_add_elliptical_arc(",
         "static CGPathRef native_create_corner_rounded_rect_path(",
         "static void native_initialize_css_filter_renderer(",
         "void native_prepare_css_filter_renderer(",
+        "static int native_text_raster_finish_in_space(",
+        "static int native_finish_owned_document_shape_raster(",
         "static void native_release_css_filter_surface(",
         "static void native_css_filter_context_released(",
         "static CGContextRef native_create_css_filter_surface_context(",
