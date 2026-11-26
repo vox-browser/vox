@@ -115,11 +115,13 @@ $if prealloc {
 // scratch arenas once or twice per element; remapping them each time costs a
 // syscall and a fresh zero-filled page fault for a few hundred bytes.
 const arena_warm_reset_bytes = i64(256 * 1024)
+const arena_page_retirement_min_capacity = i64(1024 * 1024)
+const keep_oversized_arena_pages = os.getenv('VOX_KEEP_OVERSIZED_ARENA_PAGES') != ''
 
 // Only large arenas whose last cycle wrote beyond the warm allowance remap
 // their pages on reset.
 fn arena_reset_retires_pages(used i64, capacity i64) bool {
-	return used > arena_warm_reset_bytes && capacity >= 1024 * 1024
+	return used > arena_warm_reset_bytes && capacity >= arena_page_retirement_min_capacity
 }
 
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
@@ -296,6 +298,18 @@ fn (mut arena Arena) begin_scope() {
 		// The detached first block is not chained to the block it was begun
 		// after, so walks of one arena never reach another.
 		arena.tail.previous = unsafe { nil }
+		// The shared pool can supply a large dirty mapping for this empty
+		// scope. Keep a normal first block's worth warm and discard the
+		// unused suffix before the new owner starts allocating into it.
+		first := arena.tail
+		capacity := i64(first.stop) - i64(first.start)
+		if !keep_oversized_arena_pages && first.mmap_allocated
+			&& capacity >= arena_page_retirement_min_capacity {
+			cold_start := unsafe { first.start + arena_warm_reset_bytes }
+			if C.vox_retire_unused_arena_pages(cold_start, uint(capacity - arena_warm_reset_bytes)) != 0 {
+				panic('could not retire oversized arena pages')
+			}
+		}
 	}
 }
 
