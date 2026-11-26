@@ -25,7 +25,7 @@ fn site_animation_wakeup_fallback(reason string) int {
 // timeline sampling and event delivery. Completed effects can remain registered.
 fn site_animation_wakeup_delay(document &dom.Document) int {
 	if disable_github_animation_wakeup_throttling
-		|| !site_batches_image_completion_layout(document.url.serialize()) { return 16 }
+		|| !site_is_github_http_url(document.url) { return 16 }
 	if !document.layout_is_up_to_date() { return site_animation_wakeup_fallback('pending layout') }
 	workspace := platform.begin_thread_scratch('site animation wakeups')
 	records := css.document_css_animations(document)

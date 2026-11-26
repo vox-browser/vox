@@ -12,7 +12,7 @@ const github_raster_input_diagnostics = os.getenv('VOX_GITHUB_RASTER_INPUT_DIAGN
 // identify supported static recordings by their paint values and resource bytes.
 fn (app &BrowserApp) site_stationary_raster_inputs() ?[2]u64 {
 	if disable_github_raster_input_reuse || app.document == unsafe { nil }
-		|| !site_batches_image_completion_layout(app.document.url.serialize()) { return none }
+		|| !site_is_github_http_url(app.document.url) { return none }
 	key := app.github_static_raster_inputs()?
 	if github_raster_input_diagnostics {
 		eprintln('Vox site raster inputs: key=${key[0]},${key[1]} generation=${app.paint_generation}')

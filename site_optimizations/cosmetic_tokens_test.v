@@ -1,6 +1,7 @@
 module main
 
 import dom
+import platform
 
 fn test_github_cosmetic_token_stamp_ignores_only_unread_attributes() {
 	mut document := parse_browser_navigation_document('<!doctype html><div id="first" class="one"></div>', dom.URL{value:'https://github.com/vlang/v'}, none)
@@ -68,4 +69,34 @@ fn test_cosmetic_token_epoch_kinds_cannot_alias_when_document_url_changes() {
 		assert site_cosmetic_token_attribute_stamp(document).version == cache.attribute_version
 	}
 	assert cache.survey(document) == ['#item', '.${last_class}']
+}
+
+fn test_cosmetic_token_scope_keeps_chatgpt_url_boundaries() {
+	mut document := parse_browser_navigation_document('<!doctype html><div></div>',
+		dom.URL{value: 'https://chatgpt.com/'}, none)
+	defer { document.finalize() }
+	for address in ['https://chatgpt.com', 'HTTPS://CHATGPT.COM:443/chat'] {
+		document.url = dom.URL{value: address}
+		assert site_cosmetic_token_attribute_stamp(document).id_class_only == !disable_chatgpt_cosmetic_token_reuse
+	}
+	for address in ['http://chatgpt.com/', 'https://chatgpt.com.:443/',
+		'https://chatgpt.com:8443/', 'https://user@chatgpt.com/', 'https://chatgpt.com.example/'] {
+		document.url = dom.URL{value: address}
+		assert !site_cosmetic_token_attribute_stamp(document).id_class_only
+	}
+}
+
+fn test_cosmetic_token_stamp_reuses_the_current_document_url_without_allocating() {
+	$if prealloc {
+		mut document := parse_browser_navigation_document('<!doctype html><div></div>',
+			dom.URL{value: 'https://www.dota2.com/patches/7.42a'}, none)
+		defer { document.finalize() }
+		expected := site_cosmetic_token_attribute_stamp(document)
+		assert !expected.id_class_only
+		before := platform.thread_arena_usage().used
+		for _ in 0 .. 1024 {
+			assert site_cosmetic_token_attribute_stamp(document) == expected
+		}
+		assert platform.thread_arena_usage().used == before
+	}
 }

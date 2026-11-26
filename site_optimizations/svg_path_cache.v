@@ -13,7 +13,7 @@ fn C.native_small_svg_path_cache_hits() u64
 fn (app &BrowserApp) begin_site_svg_path_cache() i32 {
 	$if macos {
 		enabled := !disable_github_svg_path_cache && app.document != unsafe { nil }
-			&& site_batches_image_completion_layout(app.document.url.serialize())
+			&& site_is_github_http_url(app.document.url)
 		return C.native_set_small_svg_path_cache(i32(int(enabled)))
 	}
 	return 0
