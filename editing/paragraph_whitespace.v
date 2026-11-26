@@ -37,6 +37,10 @@ fn (space ResolvedWhiteSpace) white_space_value() ?string {
 			if nowrap { return none }
 			'pre-line'
 		}
+		'break-spaces' {
+			if nowrap { return none }
+			'break-spaces'
+		}
 		else { return none }
 	}
 }
