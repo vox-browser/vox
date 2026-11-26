@@ -79,7 +79,7 @@ fn (prepared &PreparedStyleRuleSelectors) matches_namespaces(namespaces map[stri
 }
 
 fn prepare_user_agent_selector_lists(rules []Rule) (&PreparedStyleRuleSelectors, platform.DetachedThreadScratch) {
-	return prepare_user_agent_selector_lists_with_namespaces(rules, map[string]bool{})
+	return prepare_user_agent_selector_lists_with_namespaces(rules, stylesheet_leading_namespaces(rules))
 }
 
 fn prepare_user_agent_selector_lists_with_namespaces(rules []Rule, namespaces map[string]bool) (&PreparedStyleRuleSelectors, platform.DetachedThreadScratch) {
