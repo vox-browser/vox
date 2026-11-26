@@ -99,15 +99,19 @@ fn (mut storage ChromiumMSAAStorage) queue_triggers(commands []layout.PaintComma
 	}
 	mut path_end := commands.len
 	mut leaf_start := commands.len
+	mut all_leaves := false
 	$if macos {
+		all_leaves = chromium_parallel_msaa_leaves && storage.leaf_work.submit_all(commands)
 		if !chromium_late_msaa_path_tail && !chromium_serial_msaa_path_tail && !chromium_sync_msaa_paths {
 			path_end, leaf_start = chromium_msaa_collection_ranges(commands, viewport,
-				chromium_parallel_msaa_leaf_tail)
+				chromium_parallel_msaa_leaf_tail && !all_leaves)
 		}
 	}
-	serial_end := storage.leaf_work.submit(commands, leaf_start)
+	serial_end := if all_leaves { commands.len } else { storage.leaf_work.submit_tail(commands, leaf_start) }
 	for index in 0 .. path_end {
-		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, true,
+		command := unsafe { &commands[index] }
+		if all_leaves && chromium_msaa_worker_leaf(command) { continue }
+		append_chromium_msaa_trigger(command, index, viewport, true,
 			mut storage.path_work, mut storage.triggers)
 	}
 	tail := storage.path_work.submit_tail()
@@ -117,7 +121,9 @@ fn (mut storage ChromiumMSAAStorage) queue_triggers(commands []layout.PaintComma
 	// Later commands can append synchronous triggers while the workers fill
 	// their job slots. The trigger vector is published in order at the join.
 	for index in path_end .. serial_end {
-		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, false,
+		command := unsafe { &commands[index] }
+		if all_leaves && chromium_msaa_worker_leaf(command) { continue }
+		append_chromium_msaa_trigger(command, index, viewport, false,
 			mut storage.path_work, mut storage.triggers)
 	}
 	return tail

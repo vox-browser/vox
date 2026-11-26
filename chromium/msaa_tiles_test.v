@@ -455,6 +455,15 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 			...background
 			transform: [f64(1), 0, 0, 1, 0, f64(index * 15)]!
 		}
+		if index == 80 {
+			commands << layout.PaintCommand{
+				kind: 'paint_nested_display_list'
+				nested_viewport_paintable: &painting.NavigableContainerViewportPaintable{
+					viewport_rect: painting.Rect{10, 1200, 80, 80}
+				}
+				nested_viewport_commands: [msaa_test_svg_path(10, 30, 'svg'), msaa_test_svg_path(50, 70, 'svg')]
+			}
+		}
 		commands << msaa_test_underline(f64(index * 15), 2)
 	}
 	mut storage := ChromiumMSAAStorage{}
@@ -514,6 +523,15 @@ fn test_retained_svg_background_path_batches_preserve_order_and_clipping() {
 					if chromium_parallel_msaa_leaf_tail && !chromium_late_msaa_path_tail {
 						assert storage.leaf_work.ticket != unsafe { nil }
 						assert storage.leaf_work.first == leaf_start
+					} else {
+						assert storage.leaf_work.ticket == unsafe { nil }
+					}
+				}
+				if chromium_parallel_msaa_leaves && !short {
+					if runtime.nr_cpus() > 1 && os.getenv('VOX_SERIAL_CPU_RASTER') != '1' {
+						assert storage.leaf_work.ticket != unsafe { nil }
+						assert storage.leaf_work.first == 0
+						assert storage.leaf_work.jobs == 3 && storage.leaf_work.lanes >= 2
 					} else {
 						assert storage.leaf_work.ticket == unsafe { nil }
 					}
