@@ -3874,3 +3874,104 @@ at 948,633,600 B peak guard RSS. The installed bundle produced the same
 12 reference, actual and diff PNG hashes as the control and staged
 builds. Its comparison driver and guard exited 1 for the same flex case,
 at 251,150,336 B peak guard RSS.
+
+## Releasing native layout slots between passes
+
+`512fd034a` gives each native layout pass its own paged UsedValues
+directory, slot chunks and relayout-record maps. Replacement and
+deactivation release the entire pass. Rejected relayout and verification
+passes use the same release path. Cached documents keep their current
+pass while inactive. A copied record rebinds its containing block on
+replay. Retired text projections keep references to their original
+document-owned line buffers in a smaller lookup.
+
+The focused runner compiled 32 test entry points, covering repeated
+native passes, rejected incremental relayout, inactive documents,
+retained paint readers, escaped general layout geometry, and copied lazy
+text projections. The tests passed in preallocation, with arena reuse
+disabled for `native layout pass` and `document geometry`, and in Boehm.
+Compile guards exited 0 at 3,020,374,016 B and 2,980,823,040 B peak RSS.
+The three 3 GiB runtime guards exited 0 at 82,231,296 B, 43,794,432 B and
+64,208,896 B. Focused builds used the C compiler for the generic instance
+check within the same build and process-tree budgets.
+
+### Live settled footprint
+
+The control was the single-unit C `-prod` bundle from receipt
+`20261126-022701-0b2e9807`, verified at `9cdb87bd0`, with executable
+SHA-256 `c484fe2dae9eab8c9ad35782aa142a34a71f96ae2a69b57bbf4f29dbc18ff8ad`.
+Fresh launches used direct HTTPS, an empty private profile and HTTP cache,
+retained OS caches, native JavaScript and a visible 1024×768 viewport
+at scale two. The observation began at 22 seconds and checked the complete
+patch, 133 images, 15,620 UTF-8 bytes and the existing normalized digest.
+The document font set was loaded with four loaded faces and 732 unloaded
+declarations. The settled value is the median for the final three seconds
+of a 12-second settle after the audit. Sampling used 50 ms intervals.
+
+| Trial | PID | Audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Control A | 8017 | 22.14 s | 616,288,072 B | 1,077,924,256 B | 52 |
+| Control B | 9404 | 22.17 s | 577,244,928 B | 1,035,080,048 B | 52 |
+
+Both control browsers and 3 GiB guards exited 0. The guards sampled
+996,392,960 B and 937,492,480 B peak RSS. One-minute host load on 18 CPUs
+was 4.47→5.94 and 5.94→6.52. Two earlier audit attempts incorrectly
+required every declared face to load, including unused faces. They
+stopped before the settle window. Browser PIDs 4370 and 5269 exited 0.
+The drivers and guards exited 1 at 973,193,216 B and 965,771,264 B
+peak RSS. A separate diagnostic launch passed the corrected audit at
+22.15 seconds and recorded 41 retirement events over its lifetime.
+Browser 15482, the driver and guard exited 0 at 957,005,824 B peak RSS.
+
+Three pinned control reftests passed with zero differing pixels at
+800×600 for same-size SVG source switching and live selection between
+text controls and between subtrees. The driver and 3 GiB guard exited 0
+at 240,926,720 B peak RSS.
+
+
+### Scrolling control
+
+Two fresh launches of the published control used
+`tools/measure_precise_scroll.py` with the same live page audit, viewport,
+scale, cache and network policy. The 23-second settle began after the
+patch title matched. Each trial delivered 720 native precise wheel
+events, nominally at 60 Hz with a delta of 16 and reversal at event 360.
+The throughput denominator includes the entire first-to-last input
+window. The endpoint is completed native frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Control A | 21.52 | 47.46 / 73.05 / 131.69 ms | 254/278 | 720 / 316 | 55.66 Hz | 62.89 / 11.13 ms |
+| Control B | 21.53 | 46.55 / 71.78 / 144.01 ms | 264/287 | 720 / 325 | 53.93 Hz | 59.87 / 5.40 ms |
+
+Browser PIDs 20180 and 21356, drivers and 3 GiB guards exited 0.
+Peak guard RSS was 1,240,678,400 B and 1,172,488,192 B. One-minute
+load on 18 CPUs was 6.08→5.74 and 5.68→6.72. The page scrolled on both
+runs and passed the full patch audit.
+
+### Production build recovery
+
+The managed low-space worker reached frozen input staging in receipt
+`20261126-025608-f9bfc4c2`. The receipt did not fit on the local disk.
+The 12 GiB compile guard exited 1 at 7,764,918,272 B peak RSS. The
+existing request's next attempt, `20261126-025947-d898c2d2`, exhausted
+disk space during native module preparation. That attempt left an empty
+memory report, and the supervisor could not write its result receipt.
+
+The separate single-unit C `-prod` validation build used temporary
+storage for the bundle and receipt. It sealed `05a45d80d`, which includes
+the slot change, before its 600-second guard timeout during Clang. The
+child exited 137 with 7,695,810,560 B peak guard RSS. It produced no
+signed validation executable. The published executable remained the
+control for all live observations in this section.
+
+A second focused runner exercised SVG documents through host workspace
+retirement and checked incremental layout against full layout. Both
+normal and poisoned runs exited 0 under their 3 GiB guards. With
+incremental verification enabled, it checked 86 boxes in each of four
+comparisons and reported zero geometry mismatches.
+
+Brave's earlier matched live measurements were 334,291,032 B and
+339,927,104 B settled. The published Vox control is above both values.
+The live memory and scrolling changes for the new layout code still
+need a completed browser build.
