@@ -7519,3 +7519,91 @@ the URL, complete ready state, viewport, 30 ordered story IDs, and eight
 replay fingerprints. The executable, helper, linked native libraries,
 fixture and harness inputs stayed pinned. Browser, benchmark driver
 and 3 GiB guard exits were zero. Peak benchmark RSS was 328,925,184 bytes.
+
+### Skip fully transparent background gradients during native replay
+
+Commit `40894b0ec` adds the macOS opt-in
+`VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS=1`. Canvas-bounds workers
+classify normal-blend CSS backgrounds whose resolved gradient stops all
+have zero alpha. The result uses the same per-command byte as canvas
+culling. Ordered replay consumes it for top-level draws after checking
+group scope. Effect inputs, live scrollbar opacity, and other blends use
+their ordinary draw paths. A frame without prepared canvas bounds also uses
+the ordinary path.
+
+The focused paint-culling suite passed under ThreadSanitizer and arena
+poisoning on the worker and serial paths. The test covers explicit stop
+lists, the color-only compatibility representation, one-alpha-unit
+stops, blend modes, offscreen clips, and group culling. The initial test
+compile filled the scratch volume. The retry used a volume with space and
+exposed a fixture whose image clip needed explicit coordinates. The
+corrected test passed. Production attempts also encountered an out-of-space
+linker, concurrent source changes, and an incomplete native signature
+change. Receipt `20261126-050146-23dbe30c` sealed `585ee9b50`, which
+contains the gradient change and the native follow-up fixes. It passed
+single-C-unit V `-prod` compilation, headless smoke, and strict signature
+verification. Compressing the archived generated C preserved its sealed
+hash and saved 162 MiB.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `fb49d064e5ea9b54753ae87a171cf63567f6f8ac941e7a5086c5e7069f4fdc08` |
+| `VoxAdblockWorker` | `ab958692215c0dfb1fc44009b54a827bb6e4bef4801d859cfafa9ff25e346582` |
+| `libVoxAVIF.dylib` | `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+Batch and streamed diagnostics both classified 22 transparent gradients
+off-thread and skipped all 22 draws. The control and
+`VOX_SERIAL_PAINT_CANVAS_BOUNDS=1` fallback issued the ordinary draws.
+The benchmark measures the combined classification and draw elision.
+
+The runner from `tools/measure_load_parallelism.py` used fresh processes,
+private profiles and HTTP caches, retained OS caches, and 1 ms polling.
+Original-origin replay delayed each archived logo response by 60 ms.
+Browser arguments included `--enable-javascript --js-engine=javascriptcore
+--window-width 1024 --window-height 880 --screenshot-viewport-height 768`.
+The timing interval ran from launch through a complete 2× document PNG
+with `tr.athing` readiness. Each of the two unprofiled cohorts ran seven
+alternating pairs on the same executable. The second cohort started with
+the skip mode.
+
+| Pair | Draw 1, ms | Skip 1, ms | Draw 2, ms | Skip 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 298.201 | 293.794 | 308.036 | 294.951 |
+| 2 | 289.862 | 288.340 | 323.237 | 308.981 |
+| 3 | 302.166 | 277.117 | 309.671 | 305.575 |
+| 4 | 295.525 | 278.748 | 307.524 | 280.406 |
+| 5 | 329.524 | 314.878 | 311.679 | 306.746 |
+| 6 | 299.075 | 313.367 | 296.935 | 302.149 |
+| 7 | 305.190 | 278.257 | 309.058 | 296.325 |
+| Median | 299.075 | 288.340 | 309.058 | 302.149 |
+
+The median paired savings were 14.646 ms and 12.733 ms, with six wins in
+each cohort. Sampled main-thread CPU medians went from 161.010 to
+154.511 ms and from 165.236 to 167.446 ms. One-minute host load ranged
+from 5.21 to 6.00 and from 5.72 to 5.87 on 18 CPUs.
+
+Two separate traced pairs recorded JavaScriptCore initialization and
+execution. The inclusive main-thread counts across three
+`native_raster_replay` scopes changed from 258,931,004 to 244,149,161
+and from 257,666,195 to 240,513,232 instructions. The 25 fill scopes
+within those replays went from 57,914,801 to 1,460,111 and from
+57,898,957 to 1,452,603 instructions. The fill scope includes native
+setup. The broader replay scope includes the remaining paint work.
+
+All 36 Hacker News captures matched the unchanged reference across
+3,145,728 pixels and preserved the established PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+Every capture verified the URL, ready state, viewport, 30 ordered story
+IDs and eight replay fingerprints. The executable, helper, linked
+libraries, archive, reference and harness stayed pinned. All browser,
+driver and 3 GiB guard exits were zero. Peak benchmark RSS was 334,790,656
+bytes.
+
+Six additional same-binary fixture pairs matched every pixel. A mixed
+fixture classified 117 leaves off-thread and skipped 108. It included
+transparent OKLab hard stops, visible stops, multiply blends and blur
+groups. The five existing fixtures covered CSS masks, compositor
+backdrops, radial gradients, clipped gradient text and fractional
+gradient tiles. These fixture captures and their guard exited zero.
