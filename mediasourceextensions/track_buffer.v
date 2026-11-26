@@ -659,14 +659,12 @@ pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
 	demuxer.update_read_blocked(.no)
 	mut frame := demuxer.runs_[demuxer.current_run_].frames[demuxer.current_frame_]
 	if demuxer.cursor_jumped_ {
-		configuration := codec_configuration_after_frame_prefix(demuxer.runs_[demuxer.current_run_],
-			demuxer.current_frame_ + 1)
-		mut configuration_is_new := false
-		if value := configuration {
-			if delivered := demuxer.last_delivered_codec_configuration_ {
-				configuration_is_new = value != delivered
+		if value := codec_configuration_after_frame_prefix(demuxer.runs_[demuxer.current_run_],
+			demuxer.current_frame_ + 1) {
+			configuration_is_new := if delivered := demuxer.last_delivered_codec_configuration_ {
+				value != delivered
 			} else {
-				configuration_is_new = true
+				true
 			}
 			if configuration_is_new {
 				frame.new_codec_configuration = value.clone()
