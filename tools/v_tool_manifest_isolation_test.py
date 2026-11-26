@@ -15,8 +15,20 @@ class BootstrapManifestIsolation(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='vox-bootstrap-env-') as directory:
             folder = Path(directory)
             compiler = folder / 'compiler'
-            compiler.write_text('#!' + sys.executable + '\nimport json,os,sys\n'
-                                'print(json.dumps(dict(env=dict(os.environ),args=sys.argv[1:])))\n')
+            probe = '''import json, os, sys
+
+keys = ('V_MACOS_V3_SOURCE_MANIFEST', 'V_MACOS_V3_C_ERROR_DIR',
+        'V_MACOS_V3_NO_FALLBACK', 'VOX_TEST_PRESERVED_VALUE')
+print(json.dumps(dict(env={key: os.environ[key] for key in keys if key in os.environ},
+                      args=sys.argv[1:])))
+'''
+            interpreter = '#!' + sys.executable + '\n'
+            compiler.write_text(interpreter + probe + '''from pathlib import Path
+
+output = Path(sys.argv[sys.argv.index('-o') + 1])
+output.write_text(''' + repr(interpreter + probe) + ''')
+output.chmod(0o755)
+''')
             compiler.chmod(0o755)
             env = dict(os.environ, V_BIN=str(compiler),
                        V_MACOS_V3_SOURCE_MANIFEST='1',
@@ -26,14 +38,15 @@ class BootstrapManifestIsolation(unittest.TestCase):
                                      'production_source_manifest', 'compile', '--component-dir',
                                      str(folder / 'supervised-receipt')], env=env,
                                     text=True, capture_output=True, check=True)
-            observed = json.loads(result.stdout)
-            self.assertNotIn('V_MACOS_V3_SOURCE_MANIFEST', observed['env'])
-            self.assertNotIn('V_MACOS_V3_C_ERROR_DIR', observed['env'])
-            self.assertEqual(observed['env']['VOX_TEST_PRESERVED_VALUE'], 'preserved')
-            self.assertEqual(observed['env']['V_MACOS_V3_NO_FALLBACK'], '1')
-            self.assertIn('-memory-limit', observed['args'])
-            self.assertEqual(observed['args'][-3:], ['compile', '--component-dir',
-                                                    str(folder / 'supervised-receipt')])
+            compilation, execution = map(json.loads, result.stdout.splitlines())
+            for observed in (compilation, execution):
+                self.assertEqual(observed['env'], {
+                    'VOX_TEST_PRESERVED_VALUE': 'preserved',
+                    'V_MACOS_V3_NO_FALLBACK': '1',
+                })
+            self.assertIn('-memory-limit', compilation['args'])
+            self.assertEqual(execution['args'], ['compile', '--component-dir',
+                                                  str(folder / 'supervised-receipt')])
 
 
 if __name__ == '__main__':
