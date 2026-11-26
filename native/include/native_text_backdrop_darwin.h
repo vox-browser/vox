@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "../../cpuraster/scan_workers.h"
 
 typedef struct {
@@ -46,13 +47,17 @@ typedef struct {
     uint8_t *destination;
     void *ticket;
     uint64_t thread;
+    uint64_t started;
     bool diagnostics;
 } VoxTextBackdropCopy;
 
 static void vox_text_backdrop_worker(void *context, int32_t first, int32_t end) {
     (void)first; (void)end;
     VoxTextBackdropCopy *copy = (VoxTextBackdropCopy *)context;
-    if (copy->diagnostics) pthread_threadid_np(NULL, &copy->thread);
+    if (copy->diagnostics) {
+        pthread_threadid_np(NULL, &copy->thread);
+        copy->started = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+    }
     vox_copy_text_backdrop(copy->backdrop, copy->destination);
 }
 
@@ -75,13 +80,16 @@ static VoxTextBackdropCopy *vox_start_text_backdrop_copy(CGContextRef context, u
 
 static void vox_finish_text_backdrop_copy(VoxTextBackdropCopy *copy) {
     if (!copy) return;
+    uint64_t joining = copy->diagnostics ? clock_gettime_nsec_np(CLOCK_UPTIME_RAW) : 0;
     bool ready = vox_scan_worker_join(copy->ticket);
     if (copy->diagnostics) {
+        uint64_t waited = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - joining;
         uint64_t caller = 0;
         pthread_threadid_np(NULL, &caller);
-        fprintf(stderr, "VOX_GLYPH_BACKDROP_COPY bytes=%zu off_thread=%d ready_at_join=%d\n",
+        fprintf(stderr, "VOX_GLYPH_BACKDROP_COPY bytes=%zu off_thread=%d ready_at_join=%d started_before_join=%d wait_ns=%llu\n",
             copy->backdrop.row_bytes * (size_t)copy->backdrop.rows,
-            copy->thread != 0 && copy->thread != caller, ready);
+            copy->thread != 0 && copy->thread != caller, ready, copy->started < joining,
+            (unsigned long long)waited);
     }
     free(copy);
 }

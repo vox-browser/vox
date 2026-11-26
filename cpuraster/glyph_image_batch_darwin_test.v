@@ -8,6 +8,7 @@ struct TestGlyphBackdrop {
 	pixels []u8
 	caller u64
 	decline bool
+	prepared_cache &GlyphCache = unsafe { nil }
 mut:
 	calls int
 }
@@ -17,10 +18,35 @@ fn read_test_glyph_backdrop(context voidptr) bool {
 	mut current := u64(0)
 	C.pthread_threadid_np(unsafe { nil }, &current)
 	assert current == backdrop.caller
+	assert backdrop.pixels.all(it == 0)
+	if backdrop.prepared_cache != unsafe { nil } {
+		assert backdrop.prepared_cache.strikes.values().any(it.glyphs.len > 0)
+	}
 	backdrop.calls++
 	if backdrop.decline { return false }
 	unsafe { C.memset(backdrop.pixels.data, 255, backdrop.pixels.len) }
 	return true
+}
+
+fn test_mask_batch_loads_backdrop_once_across_flushes() {
+	mut pixels := []u8{len: 4}
+	mut caller := u64(0)
+	assert C.pthread_threadid_np(unsafe { nil }, &caller) == 0
+	mut backdrop := TestGlyphBackdrop{pixels: pixels, caller: caller}
+	mut batch := GlyphMaskBatch{
+		backdrop: CanvasGlyphBackdrop{context: &backdrop, read: read_test_glyph_backdrop}
+	}
+	mut blitter := Blitter(new_pipeline_blitter(mut pixels, 4, 0xff123456, 1, .src_over))
+	assert batch.flush(mut blitter)
+	assert backdrop.calls == 0
+	clip := IRect{0, 0, 1, 1}
+	mask := Mask{bounds: clip, row_bytes: 1, image: [u8(255)]}
+	for _ in 0 .. 2 {
+		batch.add(mask, clip)
+		assert batch.flush(mut blitter)
+		assert backdrop.calls == 1
+		assert pixels == [u8(0x12), 0x34, 0x56, 0xff]
+	}
 }
 
 fn test_glyph_mask_converts_padded_bitmap_in_place() {
@@ -241,9 +267,14 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 		C.pthread_threadid_np(unsafe { nil }, &caller)
 		for mode in [CanvasGlyphBackdrop{}, CanvasGlyphBackdrop{pipeline_masks: true},
 			CanvasGlyphBackdrop{copy_pending: true}] {
+			late := late_glyph_backdrop_join && mode.copy_pending && !serial_glyph_blend
 			mut deferred := []u8{len: serial.len}
-			mut backdrop := TestGlyphBackdrop{pixels: deferred, caller: caller}
 			mut cache := new_glyph_cache()
+			mut backdrop := TestGlyphBackdrop{
+				pixels: deferred
+				caller: caller
+				prepared_cache: if late { &cache } else { unsafe { nil } }
+			}
 			assert fill_canvas_glyphs_cached(mut cache, mut deferred, 256, 48, 1024, 2, run,
 				transform, 0xff123456, none, 1, .src_over, [], none,
 				CanvasGlyphBackdrop{...mode, context: &backdrop, read: read_test_glyph_backdrop})
@@ -258,7 +289,7 @@ fn test_prepared_glyph_masks_match_serial_at_subpixel_origins() {
 				CanvasGlyphBackdrop{...mode, context: &failing, read: read_test_glyph_backdrop})
 			assert failing.calls == 1
 			assert rejected.all(it == 0)
-			assert empty_cache.strikes.values().all(it.glyphs.len == 0)
+			assert empty_cache.strikes.values().all(it.glyphs.len == 0) == !late
 		}
 
 		mut culled := []u8{len: serial.len}

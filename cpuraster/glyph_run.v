@@ -104,6 +104,9 @@ pub:
 	copy_pending   bool
 }
 
+const late_glyph_backdrop_join = os.getenv('VOX_LATE_GLYPH_BACKDROP_JOIN') == '1'
+const glyph_backdrop_copy_diagnostics = os.getenv('VOX_GLYPH_BACKDROP_COPY_DIAGNOSTICS') != ''
+
 // fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
 // typeface facts and glyph masks for later draws.
 pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, backdrop CanvasGlyphBackdrop) bool {
@@ -378,7 +381,15 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if rc.is_empty {
 		return true
 	}
-	if has_backdrop {
+	// Mask-only routes can prepare the blitter and collect a whole batch
+	// without touching its destination. The batch joins before it paints.
+	join_at_blend := $if macos && !cpuraster_freetype ? {
+		has_backdrop && late_glyph_backdrop_join && backdrop.copy_pending && !backdrop.pipeline_masks
+			&& !strike.color && !draw_as_paths
+	} $else {
+		false
+	}
+	if has_backdrop && !join_at_blend {
 		mut loaded := false
 		$if macos && !cpuraster_freetype ? {
 			if backdrop.pipeline_masks {
@@ -397,8 +408,10 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		}
 		if !loaded { return false }
 	}
-	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
-		filter, legacy)
+	if !join_at_blend {
+		fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
+			filter, legacy)
+	}
 	$if linux || windows || cpuraster_freetype ? {
 		if routes.any(it.kind == .drawable) {
 			drawable_face := lazy.get() or { return true }
@@ -449,13 +462,17 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	} $else {
 		false
 	}
+	if join_at_blend && !batch_blend && !backdrop.read(backdrop.context) { return false }
+	if join_at_blend && batch_blend && glyph_backdrop_copy_diagnostics {
+		eprintln('VOX_GLYPH_BACKDROP_JOIN_AT_BLEND glyphs=${run.glyphs.len}')
+	}
 	mut mask_batch := if batch_blend {
-		&GlyphMaskBatch{blits: []GlyphMaskBlit{cap: math.min(run.glyphs.len, glyph_blend_batch_size)}}
+		&GlyphMaskBatch{
+			blits: []GlyphMaskBlit{cap: math.min(run.glyphs.len, glyph_blend_batch_size)}
+			backdrop: if join_at_blend { backdrop } else { CanvasGlyphBackdrop{} }
+		}
 	} else {
 		unsafe { &GlyphMaskBatch(nil) }
-	}
-	defer {
-		if batch_blend { mask_batch.flush(mut wrapped) }
 	}
 	$if macos && !cpuraster_freetype ? {
 		if pending_masks != unsafe { nil } {
@@ -494,7 +511,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 					entry.consume_streamed_glyph_mask(streamed_masks, key)
 				}
 			}
-			glyph = entry.glyph(mut strike, mut lazy, id, sub_x, sub_y) or { return true }
+			glyph = entry.glyph(mut strike, mut lazy, id, sub_x, sub_y) or { break }
 		}
 		if glyph.width == 0 || glyph.height == 0 || glyph.width >= glyph_max_width {
 			// Empty glyphs are dropped; A8 images too wide for SkGlyph are
@@ -508,7 +525,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		x := float_saturate2int(pos.x)
 		y := float_saturate2int(pos.y)
 		if glyph.image.len == glyph.width * glyph.height * 4 {
-			if batch_blend { mask_batch.flush(mut wrapped) }
+			if batch_blend && (!mask_batch.load_backdrop() || !mask_batch.flush(mut wrapped)) { return false }
 			draw_glyph_sprite(mut pixels, pitch, glyph, glyph.left + x, glyph.top + y, &rc, paint_color, alpha, mode, filter, legacy)
 			continue
 		}
@@ -525,14 +542,12 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		}
 		if batch_blend {
 			mask_batch.add(mask, bounds)
-			if mask_batch.blits.len == glyph_blend_batch_size {
-				mask_batch.flush(mut wrapped)
-			}
+			if mask_batch.blits.len == glyph_blend_batch_size && !mask_batch.flush(mut wrapped) { return false }
 		} else {
 			wrapped.blit_mask(&mask, bounds)
 		}
 	}
-	return true
+	return !batch_blend || mask_batch.flush(mut wrapped)
 }
 
 fn select_glyph_mask_gamma(mut strike GlyphStrike, run &CanvasGlyphRun, color u32, alpha f32,

@@ -23,6 +23,7 @@ struct GlyphMaskBatch {
 mut:
 	blits  []GlyphMaskBlit
 	pixels i64
+	backdrop CanvasGlyphBackdrop
 }
 
 fn (mut batch GlyphMaskBatch) add(mask Mask, clip IRect) {
@@ -30,8 +31,16 @@ fn (mut batch GlyphMaskBatch) add(mask Mask, clip IRect) {
 	batch.pixels += i64(clip.width()) * clip.height()
 }
 
-fn (mut batch GlyphMaskBatch) flush(mut blitter Blitter) {
-	if batch.blits.len == 0 { return }
+fn (mut batch GlyphMaskBatch) load_backdrop() bool {
+	if batch.backdrop.read == unsafe { nil } { return true }
+	loaded := batch.backdrop.read(batch.backdrop.context)
+	if loaded { batch.backdrop = CanvasGlyphBackdrop{} }
+	return loaded
+}
+
+fn (mut batch GlyphMaskBatch) flush(mut blitter Blitter) bool {
+	if batch.blits.len == 0 { return true }
+	if !batch.load_backdrop() { return false }
 	mut parallel := false
 	if mut blitter is PipelineBlitter {
 		parallel = batch.blend_parallel(blitter)
@@ -43,6 +52,7 @@ fn (mut batch GlyphMaskBatch) flush(mut blitter Blitter) {
 	}
 	batch.blits.clear()
 	batch.pixels = 0
+	return true
 }
 
 struct GlyphMaskBlend {
