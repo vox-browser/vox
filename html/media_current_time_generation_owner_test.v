@@ -90,7 +90,7 @@ fn test_position_notifications_and_compatibility_clock_do_not_overwrite_a_same_t
 	assert media.current_time() == 4
 }
 
-fn test_seek_commits_the_post_request_clock_sample_and_stamps_its_generation() {
+fn test_seek_preserves_the_requested_position_until_the_next_task() {
 	mut loop := main_thread_event_loop()
 	loop.process()
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
@@ -110,12 +110,22 @@ fn test_seek_commits_the_post_request_clock_sample_and_stamps_its_generation() {
 	}
 	media.set_playback_manager_hooks(hooks)
 	assert media.current_time() == 2 && state.reads == 1
+	generation := loop.task_generation()
 	media.seek_element(7, .accurate)
-	assert media.seeking() && media.current_time() == 4 && state.reads == 2
+	assert media.seeking() && state.position == 4
+	assert media.current_time() == 7 && state.reads == 1
 	state.position = 8
-	assert media.current_time() == 4 && state.reads == 2
+	queue_a_microtask(none, fn [state, media] () {
+		mut clock := unsafe { &MediaPositionClockObservation(state) }
+		clock.values << media.current_time()
+	})
+	loop.perform_a_microtask_checkpoint()
+	assert loop.task_generation() == generation
+	assert state.values == [7.0] && state.reads == 1
 	loop.process()
-	assert media.current_time() == 8 && state.reads == 3
+	assert loop.task_generation() == generation + 1
+	assert media.current_time() == 8 && state.reads == 2
+	assert media.current_time() == 8 && state.reads == 2
 	media.remove_queued_media_element_tasks()
 }
 
