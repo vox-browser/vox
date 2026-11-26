@@ -1067,6 +1067,18 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 		}
 		intrinsic_percentages = next_percentages.clone()
 	}
+	// In fixed layout, percentages above 100% share the assignable width
+	// proportionally. Automatic layout keeps its ordered clamping below.
+	if fixed_mode {
+		mut sum := 0.0
+		for percentage in intrinsic_percentages { sum += percentage }
+		if sum > 100.0 {
+			for index in 0 .. intrinsic_percentages.len {
+				intrinsic_percentages[index] = intrinsic_percentages[index] * 100.0 / sum
+			}
+		}
+		return intrinsic_percentages, has_intrinsic_percentage, percentage_offsets, has_originating_cells
+	}
 	mut total_intrinsic_percentage := 0.0
 	for index in 0 .. intrinsic_percentages.len {
 		intrinsic_percentages[index] = math.max(math.min(100.0 - total_intrinsic_percentage, intrinsic_percentages[index]), 0.0)
