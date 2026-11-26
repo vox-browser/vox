@@ -1542,12 +1542,12 @@ pub fn command_insert_linebreak_action(mut document dom.Document, _ string) bool
 	}
 
 	// AD-HOC: In preformatted white-space contexts, use newlines instead of <br> for line breaks. This matches
-	//         Chrome behavior and WPT expectations. The white-space: pre, pre-wrap, and pre-line styles all preserve
-	//         newlines, so inserting a literal newline character is more appropriate than a <br> element.
+	//         Chrome behavior and WPT expectations. The white-space: pre, pre-wrap, pre-line, and break-spaces styles
+	//         all preserve newlines, so inserting a literal newline character is more appropriate than a <br> element.
 	//         However, padding line breaks (needed for empty last lines) should still be <br> because they won't
 	//         appear in .textContent, making the content easier to work with programmatically.
 	if white_space_collapse := resolved_keyword(start_node, 'white-space-collapse') {
-		if white_space_collapse in ['preserve', 'preserve-breaks']
+		if white_space_collapse in ['preserve', 'preserve-breaks', 'break-spaces']
 			&& !white_space_is_from_default_style(start_node) {
 			if start_node.is_text() {
 				insert_data(editing_character_data(start_node), start_offset, '\n') or { panic(err) }
