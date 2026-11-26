@@ -3975,3 +3975,173 @@ Brave's earlier matched live measurements were 334,291,032 B and
 339,927,104 B settled. The published Vox control is above both values.
 The live memory and scrolling changes for the new layout code still
 need a completed browser build.
+
+
+### Published layout-slot build
+
+The managed worker published single-unit C `-prod` receipt
+`20261126-031702-c5d3fabd`, sealed at `97a6416bf` with the layout-slot
+change. Executable SHA-256 was
+`af7de5b17a896b9ff6a430ad4123ac3bca6ef2d0e8c973e7b1566c755af940dd`.
+The compiler and startup smoke guards exited 0 at 8,507,539,456 B and
+138,969,088 B peak RSS. The new build also contains the weighted glyph
+stripe and initial bitmap clear changes. The AVIF library and runtime
+resources matched the preceding control. The compiled adblock worker
+changed, and no worker was live in any Vox settled endpoint below.
+
+Fresh live launches used the same complete patch audit, viewport,
+backing scale, private profiles and caches, and settle window documented
+above. The Vox audit confirmed an initialized JavaScriptCore context.
+Brave 158.1.100.59 used Chromium 158.0.8127.92 and a CDP device-metrics
+override in a visible window. The Brave launch executable and its
+framework were identical in both trials. Their SHA-256 values were
+`16db606608c3101c4a2deace5822ec948acc4be8de524c0108e81356767fdcd3` and
+`eba91727c2d8408bd397d776c9561bc0480d75cbc671318e42517e7e1c8c1ecc`.
+
+| Trial in launch order | PID | Audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Brave A | 89563 | 22.00 s | 383,590,392 B | 871,210,976 B | 56 |
+| Fresh preceding Vox | 25533 | 22.28 s | 601,427,712 B | 1,039,323,624 B | 56 |
+| Published Vox A | 30287 | 22.26 s | 599,215,968 B | 1,062,130,248 B | 56 |
+| Brave B | 31468 | 22.00 s | 385,212,360 B | 883,400,672 B | 56 |
+| Published Vox B | 32520 | 22.22 s | 589,631,232 B | 1,037,586,752 B | 55 |
+
+All five browsers, drivers and 3 GiB guards exited 0. Peak guard RSS in
+order was 933,478,400 B, 897,024,000 B, 908,394,496 B, 926,334,976 B and
+897,728,512 B. One-minute host load on 18 CPUs was 36.67→34.76,
+26.32→30.87, 22.32→17.01, 16.53→11.66 and 11.66→10.11. The published
+Vox readings overlap the preceding cohort and are 204–216 MB above the
+fresh Brave observations. Build inputs and host load changed between
+the Vox cohorts.
+
+A separate launch with `VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS=1` and arena
+reuse disabled for `native layout pass` and `document geometry` finished
+the patch audit at 22.17 seconds. Before shutdown it recorded 23 arena
+retirements containing 3,997,296 B of geometry slot chunks and
+14,379,334 B of combined slot and relayout storage cursor use. These
+totals describe released allocations across passes. PID 33450, the
+memory-map sampler, driver and guard exited 0 at 906,543,104 B peak
+guard RSS.
+
+The three applicable reftests passed pixel-exactly at 800×600. All
+nine actual, reference and difference PNGs matched the preceding
+build byte for byte. Both drivers and guards exited 0 with 212,107,264 B
+and 209,485,824 B peak RSS.
+
+### Memory diagnostics on the preceding build
+
+The fully audited early and lazy filter-context runs used
+`VOX_CSS_FILTER_PREPARATION_DIAGNOSTICS=1` and
+`VOX_CSS_FILTER_STAGE_TIMES=1`. The lazy run also set
+`VOX_DISABLE_EARLY_CSS_FILTER_CONTEXT=1`. The early run prepared one
+context in 22.32 ms, and both recorded zero filter renders before the
+memory endpoint. Each showed 34.6 MiB resident in graphics accelerator
+mappings and 27.5 MiB resident in IOSurface mappings. Settled process-tree
+footprints were 570,502,936 B and 576,147,152 B. Both browsers, memory-map
+samplers, drivers and guards exited 0. Peak guard RSS was 907,378,688 B
+and 879,804,416 B. One-minute host load was 47.55→44.35 and 42.32→37.69.
+
+An injected diagnostic retained the last JavaScriptCore context created
+on the main thread through a scheduled callback. Both launches observed
+two such contexts, then released the retained reference at 28.45 seconds.
+The second launch also called `JSGarbageCollect`. Its process-tree median
+fell by 458,752 B from seconds 24–27 to seconds 31–34. The diagnostic
+control fell by 16,384 B over the same windows. WebKit Malloc dirty pages
+at the endpoint were 106.8 MiB for the control and 110.2 MiB for the
+collection trial. The browser PIDs were 10389 and 13129. Both full audits,
+browsers, memory-map samplers, drivers and 3 GiB guards succeeded. Peak
+guard RSS was 900,595,712 B and 878,477,312 B. These sampled observations
+describe the explicit collection and filter preparation experiments.
+
+### Native input and complete patch timing
+
+Four unprofiled application launches used the published bundle and the
+same 720-event native wheel schedule and full patch audit as the
+preceding control. Each used a separate 3 GiB process-tree guard. The
+document scrolled in both directions. The endpoint was completed native
+frame installation.
+
+| Trial | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Published A | 11.13 | 92.43 / 146.95 / 209.81 ms | 150/161 | 720 / 181 | 49.71 Hz | 105.82 / 184.09 ms |
+| Published B | 15.97 | 64.24 / 99.02 / 170.54 ms | 200/220 | 720 / 246 | 52.18 Hz | 83.46 / 0.25 ms |
+| Published repeat A | 16.80 | 61.07 / 96.99 / 142.49 ms | 204/226 | 720 / 259 | 53.45 Hz | 70.44 / 3.93 ms |
+| Published repeat B | 16.82 | 63.90 / 94.42 / 163.65 ms | 205/226 | 720 / 259 | 53.50 Hz | 62.55 / 0.25 ms |
+
+The first-to-last input windows were 14.464, 13.778, 13.452 and
+13.440 seconds. PIDs 35211, 36307, 39868 and 41306, all drivers and
+guards exited 0. Peak guard RSS was 1,203,077,120 B, 1,182,760,960 B,
+1,209,942,016 B and 1,229,897,728 B. One-minute host load was
+8.21→9.05, 9.05→8.60, 5.82→7.94 and 7.87→7.68. All four unprofiled
+runs were slower than the preceding 21.52 and 21.53. Build inputs and
+live runtime conditions changed, leaving the cause of that difference
+unresolved.
+
+A separate instrumented run with 35 ms stall sampling and filter
+stage timings reached 21.56 scroll publications/s over its 12.984 s
+input window. It delivered 720 inputs at 55.37 Hz and completed 317
+publications. Median, p95 and maximum scroll interval were 47.14,
+72.51 and 133.29 ms, with 254 of 280 intervals over budget. Leading
+and trailing gaps were 60.05 and 4.49 ms. PID 38329, its driver and
+guard exited 0 at 1,181,663,232 B peak guard RSS, with one-minute
+load 6.94→6.42. The executable hash and sampled addresses matched
+the published Mach-O text symbols. Of 774 samples across 209 slow
+frames, 621 included finishing a CSS filter layer, 297 included
+rendering the filtered image, and 127 included preparing the source
+bitmap. The 584 direct inputs during the wheel run were all 2048×1760
+drop shadows. Median source preparation, filtering, and drawing took
+1.48, 3.51 and 1.69 ms respectively, with 7.30 ms median total per
+completion. These counts describe the instrumented run.
+
+Separate 250 ms audit launches first observed the complete patch at
+5.19 and 3.86 seconds on the preceding build, and at 4.41 and 8.41
+seconds on the published build. PIDs 14565, 15328, 37163 and 37321,
+the drivers and guards exited 0. Peak guard RSS was 795,377,664 B,
+779,403,264 B, 777,617,408 B and 935,362,560 B. The timing reports
+the first matching audit rather than the exact instant the page became
+ready. The earlier runs started under substantially higher CPU load.
+
+### Confirmation on the next production build
+
+The next worker published single-unit C `-prod` receipt
+`20261126-033338-20264002`, sealed at `b03fb126e`. The new executable
+SHA-256 was
+`e0735f1b119bcaec907e0f027d377cc66effa3822939708107d7ee4ca6ae6f65`.
+The repository build-input digest matched the previous build at
+`b5707ad46b1cf5c827e06c9963a0f698eab508f6695703f47a8c02e7325dfe98`.
+This receipt and the earlier `c484fe2d` control used the
+`1c4b5a2b` preallocation compiler stage. The `af7de5b1` build used
+`6c908c49`. Compile and smoke guards for the new bundle exited 0 at
+7,721,418,752 B and 79,724,544 B peak RSS. The previous executable
+pin rejected one follow-up filter diagnostic before it launched
+a browser. Its driver and guard exited 1 at 31,195,136 B peak RSS.
+
+| Latest Vox | PID | Audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A | 44722 | 22.24 s | 612,519,728 B | 1,076,630,016 B | 56 |
+| B | 45483 | 22.14 s | 592,629,552 B | 1,040,420,728 B | 55 |
+
+Both audited browsers, drivers and 3 GiB guards exited 0. Peak guard
+RSS was 932,970,496 B and 905,265,152 B. One-minute load was 6.44→5.97
+and 5.97→5.99. These readings were 207–229 MB above the fresh Brave
+observations. Both fall within the preceding `c484fe2d` control range.
+
+| Latest Vox | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A | 19.10 | 53.31 / 83.56 / 146.66 ms | 232/254 | 720 / 290 | 54.06 Hz | 60.22 / 9.74 ms |
+| B | 19.87 | 52.00 / 79.84 / 134.27 ms | 240/261 | 720 / 295 | 54.74 Hz | 60.70 / 6.70 ms |
+
+The input windows were 13.300 and 13.134 seconds. Both runs passed
+the full patch audit, scrolled, and finished at the native frame
+installation endpoint. PIDs 46145 and 47254, drivers and guards
+exited 0. Peak guard RSS was 1,219,215,360 B and 1,211,809,792 B.
+One-minute load was 5.99→7.05 and 6.89→6.92. About 91–92% of
+intervals exceeded the 60 Hz budget. The three reftests produced the
+same nine PNG hashes as both preceding builds. The pixel driver and
+guard exited 0 at 204,652,544 B peak RSS.
+
+The first complete patch audits arrived at 3.72 and 3.30 seconds.
+PIDs 49356 and 49453, drivers and guards exited 0 with 849,494,016 B
+and 849,068,032 B peak guard RSS. One-minute load was 6.89→6.50 and
+6.50→6.54. Those load observations overlap prior live readiness
+results and use the same 250 ms observation schedule.
