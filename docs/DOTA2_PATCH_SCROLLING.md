@@ -4300,3 +4300,45 @@ and `selection-moves-between-subtrees` at 800×600. All nine actual,
 reference and diff PNGs agreed byte for byte across input modes.
 Both drivers and 3 GiB guards exited 0 at 210,157,568 B and
 191,463,424 B peak RSS.
+
+### Settled memory on the shared input build
+
+The no-wheel comparison launched fresh visible windows using direct
+live HTTPS, empty private profiles and HTTP caches, and retained OS
+caches. Vox used the executable and helper pins above, with
+`--window-width 1024 --window-height 880` and `VOX_TEST_WINDOW=1`.
+Brave 158.1.100.59 used Chromium 158.0.8127.92. CDP resized its native
+window before navigation. Both visible document viewports measured
+1024×768 at scale two. The Brave executable and framework SHA-256
+matched the preceding 158.1.100.59 cohort. The driver checked binary
+and library identity throughout each launch.
+
+At 22 seconds a native Vox audit and a Brave CDP audit checked the
+complete document, loaded fonts, 133 images and the normalized
+15,620-byte text. The Vox audit confirmed initialized JavaScriptCore.
+The observer sampled simultaneous physical footprint for each
+browser and its observed descendants every 50 ms. The settled value
+is the median of the final three seconds of the 12-second observation
+after audit. The peak covers launch through that endpoint.
+
+| Completed trial in launch order | PID | Audit | Settled footprint | Sampled peak | Settled samples |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Brave A | 80760 | 22.01 s | 329,588,776 B | 842,244,160 B | 55 |
+| Brave B | 81839 | 22.00 s | 323,968,968 B | 823,893,864 B | 55 |
+| Vox B | 82760 | 22.16 s | 595,037,976 B | 1,050,791,632 B | 55 |
+| Vox repeat | 83459 | 22.16 s | 587,534,152 B | 1,041,879,552 B | 55 |
+
+All four browsers, drivers and 3 GiB guards exited 0. Their peak
+guard RSS values were 904,019,968 B, 895,893,504 B, 918,880,256 B and
+915,619,840 B in launch order. One-minute host load on 18 CPUs was
+5.84→7.17, 7.08→6.35, 6.35→5.03 and 5.03→5.83. An initial Vox launch
+ended at the audit after the driver used the wrong key for the
+JavaScriptCore initialization check. PID 80198 ended with deliberate
+SIGTERM. Its driver and guard exited 1 at 931,119,104 B peak guard RSS.
+The two completed Vox launches used the corrected field.
+
+Vox settled 258–271 MB above this Brave pair. After the last endpoint,
+`vmmap -summary` exited 0 and reported 299.3 MiB of dirty untagged
+memory, 108.9 MiB of dirty WebKit Malloc memory, 41.3 MiB of dirty
+IOSurface memory, and 34.6 MiB of dirty graphics accelerator memory
+in the Vox process. These mappings identify memory categories.
