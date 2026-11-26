@@ -17,6 +17,7 @@ enum PaintLeafCanvasBounds as u8 {
 	unprepared
 	retain
 	outside
+	transparent_gradient
 }
 
 struct PaintCanvasBoundsWork {
@@ -27,6 +28,7 @@ struct PaintCanvasBoundsWork {
 	glyph_geometry &layout.RetainedGlyphReplayGeometry = unsafe { nil }
 	screen_geometry &PaintCommandScreenGeometry = unsafe { nil }
 	gradient_stops PaintGradientStopsBatch
+	classify_transparent_gradients bool
 	glyph_positions []f32
 	threads        &u64
 	page_y         f64
@@ -58,6 +60,8 @@ fn prepare_paint_canvas_bounds_range(context voidptr, first i32, end i32) {
 		}
 		result := if outside {
 			PaintLeafCanvasBounds.outside
+		} else if work.classify_transparent_gradients && transparent_background_gradient(command) {
+			PaintLeafCanvasBounds.transparent_gradient
 		} else {
 			PaintLeafCanvasBounds.retain
 		}
@@ -120,6 +124,7 @@ struct PaintCanvasBoundsInputs {
 	recorded_ink []layout.RecordedCanvasInk
 	recorded_glyphs []layout.RetainedGlyphReplayGeometry
 	prepare_gradient_stops bool
+	classify_transparent_gradients bool
 }
 
 fn (app &BrowserApp) new_document_canvas_bounds_batch(lanes int, page_y f64, width f64,
@@ -127,7 +132,8 @@ fn (app &BrowserApp) new_document_canvas_bounds_batch(lanes int, page_y f64, wid
 	return new_paint_canvas_bounds_batch(app.paint_commands, lanes, page_y, width, height,
 		recorded_ink: layout.display_list_canvas_ink(app.paint_display_list, app.paint_commands),
 		recorded_glyphs: layout.display_list_glyph_geometry(app.paint_display_list, app.paint_commands),
-		prepare_gradient_stops: parallel_gradient_stops && app.ctx.native_rendering)
+		prepare_gradient_stops: parallel_gradient_stops && app.ctx.native_rendering,
+		classify_transparent_gradients: skip_transparent_background_gradients && app.ctx.native_rendering)
 }
 
 fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page_y f64,
@@ -147,7 +153,8 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 	} else { PaintGradientStopsBatch{} }
 	mut threads := []u64{}
 	if paint_canvas_bounds_worker_diagnostics || retained_glyph_geometry_diagnostics
-		|| paint_screen_geometry_diagnostics || paint_gradient_stops_diagnostics {
+		|| paint_screen_geometry_diagnostics || paint_gradient_stops_diagnostics
+		|| transparent_background_gradient_diagnostics {
 		threads = []u64{len: commands.len}
 	}
 	recorded_ink := if inputs.recorded_ink.len == commands.len {
@@ -174,6 +181,7 @@ fn new_paint_canvas_bounds_batch(commands []layout.PaintCommand, lanes int, page
 			glyph_geometry: unsafe { if geometry.len > 0 { &layout.RetainedGlyphReplayGeometry(geometry.data) } else { nil } }
 			screen_geometry: unsafe { if screen_geometry.len > 0 { &PaintCommandScreenGeometry(screen_geometry.data) } else { nil } }
 			gradient_stops: gradient_stops
+			classify_transparent_gradients: inputs.classify_transparent_gradients
 			glyph_positions: glyph_positions
 			threads: unsafe { if threads.len > 0 { &u64(threads.data) } else { &u64(nil) } }
 			page_y: page_y
@@ -304,6 +312,17 @@ fn (mut batch PaintCanvasBoundsBatch) finish(use_bounds bool) []u8 {
 			if batch.threads[index] != caller { off_thread++ }
 		}
 		eprintln('VOX_PAINT_GRADIENT_STOPS_BATCH prepared=${prepared} off_thread=${off_thread}')
+	}
+	if transparent_background_gradient_diagnostics && batch.work.classify_transparent_gradients {
+		caller := platform.native_thread_identity()
+		mut classified := 0
+		mut off_thread := 0
+		for index, bounds in batch.bounds {
+			if bounds != u8(PaintLeafCanvasBounds.transparent_gradient) { continue }
+			classified++
+			if batch.threads[index] != caller { off_thread++ }
+		}
+		eprintln('VOX_TRANSPARENT_BACKGROUND_GRADIENT_BATCH classified=${classified} off_thread=${off_thread}')
 	}
 	return batch.bounds
 }

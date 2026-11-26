@@ -6737,6 +6737,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			}
 		}
 		'fill_gradient' {
+			if options.skip_transparent_gradient {
+				if transparent_background_gradient_diagnostics {
+					eprintln('VOX_TRANSPARENT_BACKGROUND_GRADIENT_SKIPPED')
+				}
+				return
+			}
 			image_data := command.image()
 			if gradient := command.gradient {
 				if gradient.colors.len == 0 {
@@ -8111,14 +8117,19 @@ fn (mut app BrowserApp) draw() {
 						if frame_glyph_prefetch_at < 0 { frame_glyph_prefetch = unsafe { nil } }
 					}
 				}
+				replay_options := PaintCommandReplayOptions{
+					glyph_geometry: glyph_geometry
+					screen_geometry: screen_geometry
+					gradient_stops: gradient_stops
+					// Group input needs its ordinary replay path.
+					skip_transparent_gradient: bounds == .transparent_gradient && culling.depth == 0
+				}
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
-					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry,
-						screen_geometry: screen_geometry, gradient_stops: gradient_stops)
+					app.draw_command(*command, 0, page_y, window.height, replay_options)
 					app.scroll_profile.record_replay_allocation(command.kind, platform.thread_arena_usage().used - before)
 				} else {
-					app.draw_command(*command, 0, page_y, window.height, glyph_geometry: glyph_geometry,
-						screen_geometry: screen_geometry, gradient_stops: gradient_stops)
+					app.draw_command(*command, 0, page_y, window.height, replay_options)
 				}
 				$if macos {
 					if app.ctx.native_rendering && command.kind == 'begin_css_filter_layer' {

@@ -294,6 +294,54 @@ fn test_prepared_canvas_leaf_bounds_preserve_scope_decisions() {
 }
 
 $if macos {
+	fn test_canvas_workers_classify_transparent_background_gradients() {
+		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1' { return }
+		clear := css.Color{255, 0, 128, 0}
+		visible := css.Color{0, 255, 255, 1}
+		transparent := layout.LinearGradient{
+			colors: [clear, clear]
+		}
+		override := layout.LinearGradient{
+			...transparent
+			stops: [layout.GradientStop{clear, 0}, layout.GradientStop{visible, 1}]
+		}
+		zero_stops := layout.LinearGradient{
+			colors: [visible, visible]
+			stops: [layout.GradientStop{clear, 0}, layout.GradientStop{clear, 1}]
+		}
+		image := layout.PaintImageData{image_clip_width: 20, image_clip_height: 20}
+		leaf := layout.PaintCommand{
+			kind: 'fill_gradient'
+			gradient_background_layer: true
+			gradient: &transparent
+			image_data: &image
+			width: 20
+			height: 20
+		}
+		commands := [leaf, layout.PaintCommand{...leaf, gradient: &override},
+			layout.PaintCommand{...leaf, x: 200, image_data: &layout.PaintImageData{...image, image_clip_x: 200}},
+			layout.PaintCommand{...leaf, gradient: &zero_stops},
+			layout.PaintCommand{...leaf, image_data: &layout.PaintImageData{...image, background_blend_mode: .multiply}},
+			layout.PaintCommand{...leaf, scrollbar_axis: 'vertical'},
+			layout.PaintCommand{...leaf, gradient_background_layer: false},
+			layout.PaintCommand{kind: 'begin_css_filter_layer'}]
+		expected := [PaintLeafCanvasBounds.transparent_gradient, .retain, .outside,
+			.transparent_gradient, .retain, .retain, .retain, .unprepared]
+		mut batch := new_paint_canvas_bounds_batch(commands, 2, 0, 100, 100,
+			classify_transparent_gradients: true)
+		batch.submit(replay_ranges: true)
+		assert batch.background_lanes == 2 && batch.begin_replay(true)
+		for index, result in expected {
+			assert batch.replay_bounds_at(index) == result
+		}
+		assert batch.finish(true).len == commands.len
+		mut culling := PaintCanvasCulling{enabled: true}
+		assert !culling.skip_with_leaf_bounds(leaf, 0, 0, 100, 100, .transparent_gradient)
+		assert !culling.skip(commands.last(), 0, 0, 100, 100)
+		assert culling.depth == 1 && culling.resource_depth == 1
+		assert !culling.skip_with_leaf_bounds(leaf, 0, 0, 100, 100, .transparent_gradient)
+	}
+
 	fn test_canvas_workers_prepare_gradient_stops_for_ordered_replay() {
 		if runtime.nr_cpus() < 2 || os.getenv('VOX_SERIAL_CPU_RASTER') == '1' { return }
 		red := css.Color{255, 0, 0, 255}

@@ -1,16 +1,34 @@
 module main
 
 import layout
+import math
 import os
 
 const parallel_gradient_stops = os.getenv('VOX_PARALLEL_GRADIENT_STOPS') == '1'
 const paint_gradient_stops_diagnostics = os.getenv('VOX_PAINT_GRADIENT_STOPS_DIAGNOSTICS') == '1'
+const skip_transparent_background_gradients = os.getenv('VOX_SKIP_TRANSPARENT_BACKGROUND_GRADIENTS') == '1'
+const transparent_background_gradient_diagnostics = os.getenv('VOX_TRANSPARENT_BACKGROUND_GRADIENT_DIAGNOSTICS') == '1'
 const native_gradient_subdivisions = 16
 const paint_gradient_source_stop_limit = 4
 // Each span can add a start, subdivisions - 1 interior samples, and an end.
 const paint_gradient_sample_limit = 2 + (paint_gradient_source_stop_limit - 1) * (native_gradient_subdivisions + 1)
 const paint_gradient_float_limit = paint_gradient_sample_limit * 5
 const paint_gradient_command_limit = 512
+
+// Every interpolated sample has zero alpha when all resolved stops do.
+fn transparent_background_gradient(command &layout.PaintCommand) bool {
+	if command.kind != 'fill_gradient' || !command.gradient_background_layer
+		|| command.scrollbar_axis != '' || command.checkbox_theme_data != unsafe { nil }
+		|| command.outer_shadow || command.blur != 0 || command.image_data == unsafe { nil }
+		|| command.image_data.background_blend_mode != .normal
+		|| !math.is_finite(native_paint_leaf_opacity(command)) {
+		return false
+	}
+	gradient := command.gradient or { return false }
+	if gradient.colors.len == 0 { return false }
+	if gradient.stops.len > 0 { return gradient.stops.all(it.color.a == 0) }
+	return gradient.colors.all(it.a == 0)
+}
 
 struct PaintGradientStops {
 mut:
