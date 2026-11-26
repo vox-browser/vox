@@ -536,6 +536,17 @@ fn (mut t HTMLTokenizer) switch_to_and_emit_current_token(new_state State) ?HTML
 	return t.dequeue()
 }
 
+fn (mut t HTMLTokenizer) accumulate_character_reference_digit(radix u32, digit u32) {
+	// Saturate before narrowing: a long reference must not wrap back into a
+	// valid Unicode code point. The end state maps this value to U+FFFD.
+	value := u64(t.character_reference_code) * u64(radix) + u64(digit)
+	t.character_reference_code = if value > u64(0xffff_ffff) {
+		u32(0xffff_ffff)
+	} else {
+		u32(value)
+	}
+}
+
 fn (mut t HTMLTokenizer) flush_codepoints_consumed_as_a_character_reference() {
 	for code_point in t.temporary_buffer {
 		if t.consumed_as_part_of_an_attribute() {
@@ -1970,13 +1981,11 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.hexadecimal_character_reference {
 					if c := current {
 						if is_ascii_digit(c) {
-							t.character_reference_code = t.character_reference_code * 16 + u32(c -
-								0x30)
+							t.accumulate_character_reference_digit(16, u32(c - 0x30))
 							continue
 						} else if is_ascii_hex_digit(c) {
 							hex_min := if is_ascii_upper_alpha(c) { rune(0x37) } else { rune(0x57) }
-							t.character_reference_code = t.character_reference_code * 16 + u32(c -
-								hex_min)
+							t.accumulate_character_reference_digit(16, u32(c - hex_min))
 							continue
 						} else if c == `;` {
 							t.state = .numeric_character_reference_end
@@ -1994,8 +2003,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.decimal_character_reference {
 					if c := current {
 						if is_ascii_digit(c) {
-							t.character_reference_code = t.character_reference_code * 10 + u32(c -
-								0x30)
+							t.accumulate_character_reference_digit(10, u32(c - 0x30))
 							continue
 						} else if c == `;` {
 							t.state = .numeric_character_reference_end
