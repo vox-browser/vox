@@ -7156,3 +7156,94 @@ reference. The 1× captures shared PNG SHA-256
 Executable, native dependencies, helper, fonts, fixtures and test inputs
 stayed pinned. All browser, benchmark and 3 GiB guard exits were zero.
 The timing and diagnostic job peaked at 320,454,656 bytes of sampled RSS.
+
+### Check ordinary MSAA geometry across the display list
+
+Commit `73ec32bdf` adds the macOS opt-in
+`VOX_PARALLEL_MSAA_LEAVES=1`. Raster tile setup divides display lists of
+192 to 4,096 commands into two to four ranges. Workers read retained
+geometry and write compact trigger runs. The caller collects resource-backed
+SVG and nested-viewport triggers, then merges the runs by command index
+after the join. If the worker submission fails, the caller collects every
+trigger. Separate SVG path batches can overlap the ordinary checks.
+
+All 23 focused MSAA tests passed with ThreadSanitizer and arena poisoning
+in six configurations. These covered the default, whole-list workers, the
+suffix worker, both options, late SVG submission with whole-list workers,
+and the serial raster fallback. Three ranges on the 321-command regression
+fixture emitted all 160 ordinary triggers and finished before the join.
+The ordered result matched serial collection, including the two triggers
+from one nested viewport and the retained SVG triggers.
+
+The shared production receipt `20261126-034242-4cae3b3b` verified
+`b58ff444d`, which contains the implementation, in single-C-unit V
+`-prod` mode. The build and startup smoke checks exited zero, and the
+published bundle passed strict signature verification.
+
+Two whole-list captures of the Hacker News homepage checked all 382
+eligible leaves from a 443-command list off-thread. Both used four worker
+ranges and completed before the join. The suffix mode checked 379 leaves
+on one worker. None of these ordinary leaves needed MSAA. Every diagnostic
+kept all 54 SVG path jobs off-thread and reproduced the same tile grids,
+56 root-layer triggers and pixels.
+
+| Pinned input | SHA-256 |
+| --- | --- |
+| Vox | `792761be87131d878a4659667905292000b4fe21dfabe8e725d92a11526b3c32` |
+| `VoxAdblockWorker` | `73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416` |
+| Archive manifest | `e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0` |
+| Existing pixel reference | `e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb` |
+
+The driver held a shared bundle lease and used
+`tools/measure_load_parallelism.py`'s trial runner with a 1 ms polling
+interval. Every trial launched a fresh Vox process with
+`--enable-javascript --js-engine=javascriptcore --window-width 1024
+--window-height 880 --screenshot-viewport-height 768`, captured the
+1024×768 CSS-pixel document at 2×, and timed through the completed PNG.
+Profiles and HTTP caches were empty. OS caches were retained. The sealed
+original-origin replay waited 60 ms before serving each logo response.
+Readiness required `tr.athing`. Both unprofiled cohorts alternated the
+default and whole-list modes in seven pairs, reversing the first mode in
+the second cohort.
+
+| Pair | Default 1, ms | Whole list 1, ms | Default 2, ms | Whole list 2, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 303.967 | 306.702 | 290.000 | 314.861 |
+| 2 | 314.054 | 302.474 | 312.665 | 292.195 |
+| 3 | 317.375 | 320.194 | 301.812 | 330.738 |
+| 4 | 342.132 | 330.870 | 299.831 | 312.838 |
+| 5 | 356.078 | 326.243 | 294.016 | 296.636 |
+| 6 | 333.652 | 329.865 | 315.955 | 303.823 |
+| 7 | 292.510 | 292.534 | 310.557 | 299.020 |
+| Median | 317.375 | 320.194 | 301.812 | 303.823 |
+
+Median paired changes were −3.788 ms and +2.619 ms, with four and three
+whole-list wins. The sampled main-thread CPU medians went from 162.344
+to 173.199 ms and from 161.232 to 161.135 ms. One-minute load on 18
+CPUs ranged from 5.31 to 5.77 and 5.19 to 5.31, respectively. The mixed
+launch-to-PNG results leave the mode opt-in.
+
+Four separate captures enabled `VOX_PROFILE_INSTRUCTIONS`,
+`VOX_DIAGNOSTIC_LOAD_STAGES` and `VOX_DIAGNOSTIC_THREAD_LOAD_STAGES`.
+The `raster_tile_setup` scope includes image-frame initialization,
+trigger collection and the native tile-state setters. Each capture
+recorded one scope with the following inclusive browser-thread
+instruction counts and monotonic wall times.
+All four captured script-runtime initialization and JavaScript execution
+and binding scopes.
+
+| Pair | Default instructions | Whole-list instructions | Default wall, µs | Whole-list wall, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 4,489,821 | 4,480,969 | 864.250 | 748.042 |
+| 2 | 4,484,791 | 4,507,915 | 899.792 | 782.583 |
+
+All 37 captures matched the established Vox PNG SHA-256
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+The five tile diagnostics also compared all 3,145,728 pixels directly
+against the unchanged reference with zero differences. Every launch
+passed the URL, ready-state, viewport and ordered 30-story audit and
+reproduced the same eight HTTP request and response fingerprints,
+including the repeated logo and favicon miss. The executable, linked
+dependencies, helper, archive, reference and harness hashes were
+verified throughout. All browser, benchmark and 3 GiB guard exits were
+zero. Peak benchmark RSS was 336,560,128 bytes.
