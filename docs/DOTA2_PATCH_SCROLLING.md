@@ -4145,3 +4145,158 @@ PIDs 49356 and 49453, drivers and guards exited 0 with 849,494,016 B
 and 849,068,032 B peak guard RSS. One-minute load was 6.89→6.50 and
 6.50→6.54. Those load observations overlap prior live readiness
 results and use the same 250 ms observation schedule.
+
+
+## Sharing spatial filter input surfaces with Core Image
+
+`840af1338` paints eligible isolated CSS blur and drop-shadow layers
+into an RGBA IOSurface. Quartz finishes drawing and unlocks the
+surface before Core Image reads it. The image retains the surface if
+the filter outlives the bitmap context. Core Image applies the filter over its full extent. If surface creation
+fails, Quartz draws into the ordinary bitmap. If the import fails,
+Core Image reads the bitmap through its existing data path.
+
+A prototype that omitted the alpha projection differed by one channel
+value in 52 of 1,008 comparisons, so the committed path keeps the
+projection. The IOSurface prototype matched all 1,008 comparisons
+across P3 and sRGB, padded RGBA and BGRA, fractional offsets and
+antialiased alpha. Its 3 GiB guard exited 0 at 191,938,560 B peak RSS.
+The alpha projection prototype exited 2 at 187,875,328 B.
+
+The native entry-point fixture checked context and IOSurface ownership
+after Quartz release and verified shared, ordinary bitmap and copied
+input pixel equality at two viewport widths. It included clipped and
+empty blur and drop-shadow layers and ran 200 filtered Retina frames
+per SVG and CSS repetition. The focused guard exited 0 at
+778,125,312 B peak RSS. An initial ownership fixture lacked a
+destination context and hit the direct path's guard. The corrected
+fixture supplies a destination and exercises the shared input.
+
+All 20 optimized and sanitized native canvas checks passed in a
+source-pinned rerun. An earlier run passed its 20 executables and
+rejected its receipt after concurrent edits elsewhere in the native
+translation unit. The final driver and its 3 GiB guard exited 0 at
+880,918,528 B peak RSS. The drop-shadow color fixture passed its
+3,072 comparisons at 150,519,808 B peak guard RSS. A focused
+sanitizer run reached the fixture's existing 1 GiB RSS assertion
+during its SVG repetition with default ASan quarantine settings.
+Running with a 16 MiB sanitizer quarantine retained that assertion
+and passed the same checks at 935,215,104 B peak guard RSS.
+
+### Native fixture timing
+
+Fresh optimized fixture processes ran the production begin and end
+entry points with 128 measured 2048×1760 drop-shadow frames after
+eight warmup frames. Timing runs cover frame raster, including
+bitmap allocation, drawing, filtering and publishing the fixture's
+frame image. Each process used the same compiled code and differed
+only in the shared-input switch.
+
+| Input in launch order | Mean per frame | Sampled peak guard RSS | One-minute host load |
+| --- | ---: | ---: | ---: |
+| Ordinary A | 10.261 ms | 486,457,344 B | 5.80 |
+| Shared A | 8.830 ms | 490,094,592 B | 5.80 |
+| Shared B | 8.909 ms | 493,518,848 B | 5.98 |
+| Ordinary B | 10.020 ms | 496,058,368 B | 5.98 |
+| Ordinary C | 10.373 ms | 495,927,296 B | 6.38 |
+| Shared C | 8.960 ms | 491,126,784 B | 6.38 |
+
+All six fixtures and 3 GiB guards exited 0. A separate direct
+input prototype measured 1.796–2.369 ms for ordinary bitmap import
+and 0.056–0.067 ms with shared storage. Both native fixtures use
+synthetic content and exclude native wheel delivery.
+
+### Published renderer
+
+The shared worker published single-unit C `-prod` receipt
+`20261126-035920-519ffcaf`, verified at `840af1338`.
+The executable SHA-256 was
+`150e18a517ec1fea4c8a0fbf3ffce2e073fce8e047ffe0fc6867ee19efc25682`.
+The compile and startup smoke guards exited 0 at 7,711,604,736 B
+and 93,175,808 B peak RSS.
+The bundled AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The adblock worker SHA-256 was
+`73e204046e221207eece84456bc7a27a1c31f61a3982710e4a77b4617684b416`.
+
+Separate live diagnostics used the complete 7.42a patch audit and
+the 720-event schedule with a visible 1024×768 document at backing
+scale two, automatic scripting, direct HTTPS, empty profiles and
+HTTP caches, and retained OS caches. They enabled
+`VOX_CSS_FILTER_STAGE_TIMES=1` and sampled macOS process-tree footprint
+at 50 ms intervals. The control switched off shared spatial input
+with `VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT=1`. The wheel memory
+window starts and ends at observation of the corresponding native
+log markers.
+
+| Diagnostic input | Live PID | Direct drop shadows | Median source | Median total filter completion | Wheel peak footprint |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Preceding bundle | 66560 | 575 | 1.484 ms | 7.226 ms | 1,306,644,440 B |
+| Published shared | 69098 | 672 | 0.068 ms | 5.262 ms | 1,255,247,856 B |
+| Published ordinary | 69948 | 608 | 1.389 ms | 6.881 ms | 1,251,643,328 B |
+
+Every direct source was 2048×1760. The shared trial recorded shared
+input for all 672 and the ordinary trial recorded ordinary input for
+all 608. No direct input was logged before wheel setup in any trial.
+The final three seconds before setup had median footprints of
+625,823,536 B, 602,197,832 B and 599,756,544 B. The same-binary wheel
+peaks were within 4 MB. This change addresses wheel rendering.
+The earlier settled target against Brave remains open.
+
+All three browsers, diagnostic drivers and 3 GiB guards exited 0.
+Peak guard RSS was 1,270,136,832 B, 1,171,111,936 B and 1,213,087,744 B.
+Host one-minute load on 18 CPUs was 5.46→6.13, 5.75→6.58 and
+6.86→5.75. The preceding app was verified at `baaede74a` with SHA-256
+`efc26952135c94d06b5639f07a6e48d67f5eebb8044b930ea27ac5125cc67de3`.
+
+### Unprofiled native wheel input
+
+Four fresh processes ran the published executable with filter stage
+timing disabled. Each used `tools/measure_precise_scroll.py` under
+`run_memory_bounded --limit-gib 3` with `VOX_TEST_WINDOW=1`, the live
+patch URL, and the following arguments.
+
+```sh
+--width 1024 --height 768 --chrome-height 112 --script-policy automatic \
+--inputs 720 --delta 16 --reverse-every 360 --input-hz 60 --target-hz 60 \
+--settle-seconds 23 --timeout 85 --require-title 'Dota Patch Notes - 7.42a'
+```
+
+The driver checked the audit at the configured 22-second observation.
+Each audit had all 133 images and the expected 15,620 bytes of patch
+text. After normalizing 39 UUIDs, the text SHA-256 was
+`a17a1ac87c46cd03abde2d0ae3f58d1a1ff600dd72c10e5ef7187f675ce922fe`
+in all four. The driver verified executable, library, resources and
+probe inputs throughout each trial. Only the ordinary input trials set
+`VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT=1`.
+
+| Trial in launch order | Scroll publications/s | Median / p95 / max interval | Over 16.67 ms | Inputs / completed publications | Actual input rate | Leading / trailing scroll gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Ordinary A | 22.48 | 45.35 / 69.85 / 120.20 ms | 269/293 | 720 / 329 | 55.16 Hz | 61.35 / 6.15 ms |
+| Shared A | 23.50 | 42.54 / 64.06 / 132.99 ms | 283/304 | 720 / 342 | 55.58 Hz | 60.65 / 2.16 ms |
+| Shared B | 23.81 | 42.38 / 63.00 / 125.48 ms | 287/306 | 720 / 343 | 55.95 Hz | 61.41 / 6.61 ms |
+| Ordinary B | 22.05 | 45.39 / 71.30 / 135.61 ms | 269/290 | 720 / 326 | 54.68 Hz | 58.19 / 8.27 ms |
+
+The throughput denominator is the first-to-last input interval.
+Those windows were 13.0342, 12.9357, 12.8509 and 13.1503 seconds.
+The scroll position reached 12,095.5, 12,055.5, 12,092.5 and 12,059
+CSS pixels and returned to zero in all four. Mean scroll-changing
+native publications rose 4.5% in pair A and 8.0% in pair B. The
+endpoint is completed native layer installation. Shared input missed
+the 16.67 ms interval budget in 93–94% of intervals, and its worst
+interval was longer in pair A. The live scrolling target remains open.
+
+PIDs 70609, 71372, 72412 and 73302, drivers and guards all exited 0.
+Peak guard RSS in launch order was 1,232,453,632 B, 1,201,209,344 B,
+1,191,444,480 B and 1,236,860,928 B. Starts were 04:06:25, 04:07:06,
+04:07:49 and 04:08:31 MSK on 26 November. One-minute host load on 18
+CPUs was 5.75→5.82, 5.75→6.59, 6.59→5.23 and 5.23→5.52. These are
+scrolling samples. The settled RAM comparison above used a separate
+no-input workload.
+
+Under both input modes, `compare_screenshots.sh` passed
+`svg-image-source-switch-same-size`, `selection-focus-between-text-controls`
+and `selection-moves-between-subtrees` at 800×600. All nine actual,
+reference and diff PNGs agreed byte for byte across input modes.
+Both drivers and 3 GiB guards exited 0 at 210,157,568 B and
+191,463,424 B peak RSS.
