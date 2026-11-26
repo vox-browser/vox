@@ -7018,3 +7018,79 @@ exits were zero for the completed cohorts. The first comparison attempt
 exited 1. The successful guard run peaked at 309,657,600 bytes of sampled
 aggregate RSS. Executable, library, helper, font, fixture, reference
 and harness hashes stayed pinned.
+
+### Overlap the initial document clear with tile setup
+
+Commit `05a45d80d` adds `VOX_OVERLAP_INITIAL_DOCUMENT_CLEAR=1` on
+macOS. The renderer starts the opaque white clear while the claimed
+bitmap is private and sets up raster tiles and image decode hints on
+the browser thread. The workers write disjoint bands and join before
+scroll setup or any draw can read the bitmap. The first white draw
+consumes the completed clear and still sets its Quartz graphics state.
+The schedule checks the existing bitmap format, full clip and transform
+and uses the same lane budget as the synchronous path. Reusable scroll
+frames, small bitmaps and explicitly serial modes keep the old schedule.
+
+Two archived Hacker News baseline captures on the published
+`c484fe2dae9eab8c9ad35782aa142a34a71f96ae2a69b57bbf4f29dbc18ff8ad`
+executable confirmed the fresh frame was deferred, did not reuse a
+scroll raster and cleared `2048×1760` device pixels on four lanes before
+replay. They reproduced the established document PNG, with zero browser,
+driver and memory-guard exits.
+
+The native document canvas suite passed all 20 optimized and ASan/UBSan
+runs after a compile fix for Objective-C++. The focused ThreadSanitizer
+run passed. It verified full rows, untouched padding and rejection of a
+partial clip, wrong dimensions and forced serial scheduling. After the
+join, the existing white draw consumed the clear exactly once. Independent
+canvas checks compared 48 frame outputs and rejected 24 incompatible
+layouts plus a null context. The native and ThreadSanitizer guards exited
+zero at sampled RSS peaks of 882,229,248 and 203,096,064 bytes.
+
+#### Isolated clear at the Hacker News bitmap size
+
+A native `clang -O2` harness replayed the captured frame dimensions and
+pitch, `2048×1760` with 8,192 bytes per row. It timed the original
+four-lane clear against starting and immediately joining the background
+clear, followed by consumption by the first white draw. Tile setup was
+outside this test. Each process verified every output byte after each
+call. Both seven-pair groups alternated fresh processes, measuring one
+first call and eight repeated calls per process. The warm columns are
+medians of the per-process warm medians.
+
+| Cohort | First synchronous, µs | First background, µs | Warm synchronous, µs | Warm background, µs |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 594.417 | 470.167 | 187.249 | 275.750 |
+| 2 | 353.750 | 487.833 | 204.063 | 250.355 |
+
+The immediate join showed mixed first-call timings and higher warm
+medians. This isolates the dispatch and clear and excludes the tile
+setup that can overlap the new schedule. All 28 processes and the
+3 GiB guard exited zero. Peak sampled RSS was 129,908,736 bytes.
+The corresponding first-call paired medians increased by 82.376 and
+100.792 µs. Warm paired medians increased by 111.042 and 60.501 µs.
+The one-minute host load was 53.45 on 18 CPUs during both cohorts.
+The harness executable SHA-256 was
+`d88b0c204302edcbdb2945475379f05727c1f6b93382d74304921e273a8a425c`.
+
+#### Full-page candidate validation pending
+
+The ordinary shared build `20261126-025333-3e75e108` exhausted disk
+space while writing generated C. The compact retry
+`20261126-025608-f9bfc4c2` exhausted disk space while sealing the native
+inputs. A subsequent signed-build attempt sealed the expected commit
+but hit its 600-second guard timeout while compiling. Its process exited
+137 at 600.150 seconds and 7,695,810,560 bytes of peak sampled RSS, below
+the 12 GiB memory limit. Attempts to prepare the build on RAM reached the
+source-state check or exhausted storage in the shared UI2 overlay. The
+shared build lock became busy again before the sealed compile could
+resume. The installed browser still had the earlier publication.
+
+The existing bundle's two baseline launches reached the encoded PNG at
+381.135 and 403.742 ms and produced the same pixel hash
+`a72f7c968e820bffe940c4ea7b49ce1ae92c3c81a7468a545c2d4e4fcf4e3293`.
+They used the archived origin with an empty private profile and HTTP
+cache, JavaScriptCore, and 1024×768 CSS pixels at 2×. These are baseline
+observations. The isolated benchmark and focused native checks verify
+worker output, while candidate launch timings and full-page pixel
+validation remain pending. The schedule remains opt-in.
