@@ -74,7 +74,9 @@ fn test_actual_navigation_population_reuses_context_for_new_and_preexisting_hist
 	context := window.browsing_context()
 	native := original.get_browsing_context()?
 	proxy := native.window_proxy()
-	mut model := navigable_model_for_host(original.navigable()?)?
+	host := &dom.Navigable{ active_document_: original }
+	original.set_cached_navigable(host)
+	mut model := NavigableModel.create(host, context)!
 	model.set_document_created_hook(fn (document &dom.Document) {
 		assert document.ready_state() == 'loading'
 	})
@@ -87,6 +89,7 @@ fn test_actual_navigation_population_reuses_context_for_new_and_preexisting_hist
 	}
 	model.populate_session_history_entry_document(entry, SourceSnapshotParams{}, TargetSnapshotParams{}, .none, none, none, none)
 	mut populated := entry.document()?
+	model.activate_history_entry(entry, populated)
 	assert populated.body() != none
 	assert voidptr(populated.get_browsing_context()?) == voidptr(native)
 	assert voidptr(native.window_proxy()) == voidptr(proxy)
