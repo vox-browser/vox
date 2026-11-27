@@ -41,6 +41,9 @@ fn (app &BrowserApp) browser_tab_loading_states() []bool {
 }
 
 fn (app &BrowserApp) browser_tab_is_loading(index int) bool {
+	if app.is_browser_tab_hibernated(index) {
+		return false
+	}
 	if app.process_tabs() {
 		tab := app.tabs.session.state.tabs[index]
 		return if tab.id == app.tabs.session.id {
