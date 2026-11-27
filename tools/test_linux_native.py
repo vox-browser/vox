@@ -51,6 +51,9 @@ def main():
         c_flags += " -Wno-error=incompatible-pointer-types-discards-qualifiers"
     environment = dict(os.environ, V_C_ERROR_BUG_REPORT_DISABLED="1",
                        V_MACOS_V3_NO_FALLBACK="1")
+    # Use V's subprocess mode for concrete generic diagnostics. Its default
+    # Linux checker forks the live compile graph, which can double sampled RSS.
+    environment.setdefault("V_CHECK_INSTANCES_IN_BUILD", "process")
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
     environment.update(NO_PROXY=bypass, no_proxy=bypass)
     environment["PKG_CONFIG_PATH"] = str(repo / "Build/deps/lib/pkgconfig") + ":" + environment.get("PKG_CONFIG_PATH", "")
