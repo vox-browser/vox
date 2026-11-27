@@ -395,6 +395,10 @@ fn test_document_open_resets_readiness_and_ignores_previous_stream_tasks() {
 		}
 		generation := document.html_parser_stream_generation()
 		document.open()!
+		window := unsafe { &WindowModel(document.get_window()?) }
+		navigation := unsafe { &Navigation(window.navigation()) }
+		current_entry := navigation.current_entry()?
+		assert current_entry.session_history_entry().url.serialize() == document.url.serialize()
 		assert document.html_parser_stream_generation() == generation + 1
 		assert document.readiness() == .loading
 		assert !document.fired_dom_content_loaded && !document.fired_load_event
