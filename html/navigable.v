@@ -1379,6 +1379,9 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				}
 			}
 		}
+		// Response-backed documents are loading before the host or parser can
+		// observe them, including when script readiness defers parser start.
+		if state.resource is string { document.update_readiness(.loading) }
 		if hook := model.document_created_hook_ { hook(document) }
 		mut payload := document.enter_native_storage()
 		match state.resource {
@@ -2431,6 +2434,7 @@ pub fn (mut model NavigableModel) set_has_been_destroyed() {
 	if model.delaying_load_events_ { model.set_delaying_load_events(false) }
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.set_has_been_destroyed()
+	model.clear_navigation_load_event_guard()
 	model.resolve_all_pending_main_thread_scrolls()
 	model.inform_the_navigation_api_about_child_navigable_destruction()
 }

@@ -75,6 +75,9 @@ fn test_actual_navigation_population_reuses_context_for_new_and_preexisting_hist
 	native := original.get_browsing_context()?
 	proxy := native.window_proxy()
 	mut model := navigable_model_for_host(original.navigable()?)?
+	model.set_document_created_hook(fn (document &dom.Document) {
+		assert document.ready_state() == 'loading'
+	})
 	entry := &SessionHistoryEntry{
 		url:            dom.URL{value: 'https://native-context-retention.example/populated'}
 		document_state: &DocumentState{

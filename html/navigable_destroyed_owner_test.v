@@ -28,7 +28,10 @@ fn test_actual_model_and_traversable_read_one_native_destroyed_flag() {
 	mut document, mut model, traversable, native := navigable_destroyed_owner_fixture('https://navigable-destroyed-owner.example/model')!
 	defer { document.finalize() }
 	assert !native.has_been_destroyed() && !model.has_been_destroyed() && !traversable.has_been_destroyed()
+	model.set_navigation_load_event_guard(document)
+	assert document.anything_is_delaying_the_load_event()
 	model.set_has_been_destroyed()
+	assert !document.anything_is_delaying_the_load_event()
 	assert native.has_been_destroyed() && model.has_been_destroyed() && traversable.has_been_destroyed()
 	assert voidptr(navigable_model_for_host(native)?) == voidptr(model)
 	assert voidptr(model.active_document()?) == voidptr(document)
