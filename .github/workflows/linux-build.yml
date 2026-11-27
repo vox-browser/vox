@@ -420,7 +420,8 @@ jobs:
             python3 tools/test_linux_native.py --gc prealloc \
               platform/closure_metadata_arena_test.v \
               platform/retained_arena_test.v \
-              platform/retained_arena_lifetime_test.v               platform/arena_page_retirement_test.v \
+              platform/retained_arena_lifetime_test.v \
+              platform/arena_page_retirement_test.v \
               dom/native_adoption_storage_test.v \
               html/native_document_storage_test.v \
               layout/hosted_scene_storage_test.v \
