@@ -113,14 +113,23 @@ def main():
                 command += ["-d", "dynamic_boehm"]
             # Compile separately so execution has the focused 3 GiB budget,
             # while the caller's build guard retains its compiler allowance.
-            binary = Path(temporary) / Path(case).stem
-            command += ["-o", str(binary), case]
-            result = subprocess.run(command, cwd=repo, env=environment, text=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            log = output / (Path(case).stem + ".log")
-            log.write_text(result.stdout)
-            if result.returncode:
-                raise SystemExit(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}")
+            stem = Path(case).stem
+            project = Path(temporary) / stem
+            binary = project / stem
+            log = output / (stem + ".log")
+            # Let the frontend exit before invoking Clang so their working
+            # sets do not overlap inside the same process-tree memory budget.
+            command += ["-no-parallel", "-n", "-generate-c-project", str(project), case]
+            with log.open("w") as stream:
+                for phase, args_ in (("V code generation", command),
+                                     ("C compilation", ["sh", str(project / "build.sh")])):
+                    print(f"{phase}: {case}", flush=True)
+                    result = subprocess.run(args_, cwd=repo, env=environment,
+                                            stdout=stream, stderr=subprocess.STDOUT)
+                    if result.returncode:
+                        stream.flush()
+                        raise SystemExit(f"FAIL {case} ({phase}, exit {result.returncode}):\n"
+                                         + log.read_text(errors="replace"))
             command = [sys.executable, str(repo / "tools/run_memory_bounded.py"),
                        "--limit-gib", "3", "--lock", str(output / (binary.name + ".lock")),
                        "--report", str(output / (binary.name + ".json")), "--", str(binary)]
