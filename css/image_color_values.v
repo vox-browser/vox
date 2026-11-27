@@ -2372,9 +2372,10 @@ pub fn (style_value LinearGradientStyleValue) serialize(mode SerializationMode) 
 }
 
 pub fn (style_value LinearGradientStyleValue) absolutized(context ComputationContext) LinearGradientStyleValue {
-	direction := match style_value.direction_[0] {
-		LinearGradientSideOrCorner { LinearGradientDirection(style_value.direction_[0]) }
-		StyleValue { LinearGradientDirection(style_value.direction_[0].absolutized(context)) }
+	specified_direction := style_value.direction_[0]
+	direction := match specified_direction {
+		LinearGradientSideOrCorner { LinearGradientDirection(specified_direction) }
+		StyleValue { LinearGradientDirection(specified_direction.absolutized(context)) }
 	}
 	mut absolutized_color_stops := []ColorStopListElement{}
 	for color_stop in style_value.color_stop_list_ {
