@@ -103,6 +103,7 @@ def main():
     output = Path(tempfile.mkdtemp(prefix="run-", dir=output_root))
     print(f"Logs: {output}", flush=True)
     print(f"C diagnostics: {c_compiler} -cstrict {c_flags}", flush=True)
+    failed_cases = []
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
             # v.mod selects fastc for the application; native ABI diagnostics
@@ -132,8 +133,12 @@ def main():
                                             stdout=stream, stderr=subprocess.STDOUT)
                     if result.returncode:
                         stream.flush()
-                        raise SystemExit(f"FAIL {case} ({phase}, exit {result.returncode}):\n"
-                                         + log.read_text(errors="replace"))
+                        print(f"FAIL {case} ({phase}, exit {result.returncode}):\n"
+                              + log.read_text(errors="replace"), flush=True)
+                        failed_cases.append(case)
+                        break
+            if result.returncode:
+                continue
             command = [sys.executable, str(repo / "tools/run_memory_bounded.py"),
                        "--limit-gib", "3", "--lock", str(output / (binary.name + ".lock")),
                        "--report", str(output / (binary.name + ".json")), "--", str(binary)]
@@ -142,8 +147,12 @@ def main():
             with log.open("a") as stream:
                 stream.write(result.stdout)
             if result.returncode:
-                raise SystemExit(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}")
+                print(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}", flush=True)
+                failed_cases.append(case)
+                continue
             print(f"PASS {case} ({args.gc})", flush=True)
+    if failed_cases:
+        raise SystemExit(f"{len(failed_cases)} native test case(s) failed: {', '.join(failed_cases)}")
 
 
 if __name__ == "__main__":
