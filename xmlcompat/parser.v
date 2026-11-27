@@ -509,19 +509,35 @@ fn xml_parse_literal_document(source string, borrow_text bool) ?Document {
 		|| source.contains_u8(`&`) {
 		return none
 	}
-	mut state := &XMLLiteralParseState{}
-	handler := fn [mut state] (input string, start int) !vxml.XMLInlineMarkupResult {
-		return state.inline_markup(input, start)
+	mut state := ?&XMLLiteralParseState(none)
+	mut handler := ?vxml.XMLInlineMarkup(none)
+	// An inline declaration or processing instruction requires one of these
+	// bytes. Plain documents can skip allocating a callback and its state.
+	if source.contains_u8(`!`) || source.contains_u8(`?`) {
+		mut inline_state := &XMLLiteralParseState{}
+		callback := fn [mut inline_state] (input string, start int) !vxml.XMLInlineMarkupResult {
+			return inline_state.inline_markup(input, start)
+		}
+		state = inline_state
+		handler = callback
 	}
 	parsed, consumed := vxml.XMLDocument.from_string_with_consumed(source,
-		preserve_text: true, strict_markup: true, inline_markup: handler, borrow_text: borrow_text) or { return none }
+		preserve_text: true
+		strict_markup: true
+		inline_markup: handler
+		borrow_text:   borrow_text
+	) or { return none }
 	if !xml_is_only_space(source.substr_unsafe(consumed, source.len)) {
 		return none
 	}
 	return Document{
-		children: [vxml.XMLNodeContents(parsed.root)]
-		marker: '!'
-		special_nodes: state.special_nodes
+		children:      [vxml.XMLNodeContents(parsed.root)]
+		marker:        '!'
+		special_nodes: if inline_state := state {
+			inline_state.special_nodes
+		} else {
+			[]SpecialNode{}
+		}
 	}
 }
 

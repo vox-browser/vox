@@ -153,8 +153,11 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 	}
 	// Prefix and local-name views are used only for lookups and validation.
 	// DOM constructors receive their own string in the restored document owner.
-	prefix := if colon < 0 { '' } else { node.name.substr_unsafe(0, colon) }
-	namespace_ := namespaces.uri_for_prefix(prefix)!
+	namespace_ := if colon < 0 {
+		namespaces.default_uri
+	} else {
+		namespaces.uri_for_prefix(node.name.substr_unsafe(0, colon))!
+	}
 	document := parent.document()
 	element_name := copies.owned_element_name(node.name)
 	namespace_option := if namespace_ == '' { ?string(none) } else { ?string(namespace_) }
@@ -218,7 +221,9 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 	}
 	mut mutable_parent := unsafe { &dom.Node(parent) }
 	mutable_parent.append_child(element.as_node())!
-	xml_append_vlib_children(element.as_node(), node.children, namespaces, prepared, mut copies)!
+	if node.children.len > 0 {
+		xml_append_vlib_children(element.as_node(), node.children, namespaces, prepared, mut copies)!
+	}
 }
 
 fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, namespaces XMLNamespaces, prepared xmlcompat.Document, mut copies XMLPublishedStrings) ! {
