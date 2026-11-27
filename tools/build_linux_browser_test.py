@@ -320,6 +320,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                                             v_prod=prod == '1'))
                 arguments = json.loads(self.compiler_log.read_text())['argv']
                 self.assertEqual('-prod' in arguments, mode['v_prod'])
+                self.assertEqual('-no-parallel' in arguments, backend == 'fastc')
 
     def test_explicit_compiler_name_is_found_on_path(self):
         compiler = self.compiler(self.helpers / 'v')
