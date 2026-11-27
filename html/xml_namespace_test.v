@@ -36,3 +36,24 @@ fn test_xml_duplicate_attributes_are_rejected_for_small_and_large_elements() {
 		}
 	}
 }
+
+fn test_xml_default_namespace_reset_and_reused_text_stay_local_to_each_node() {
+	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
+	mut document := parser.parse_from_string('<root xmlns="urn:outer"><first> repeated </first><second xmlns=""> repeated </second><third> repeated </third></root>', .application_xml)!
+	defer { document.finalize() }
+	root := document.document_element()?
+	first := root.as_node().children[0].as_element()?
+	second := root.as_node().children[1].as_element()?
+	third := root.as_node().children[2].as_element()?
+	assert first.namespace_uri()? == 'urn:outer'
+	assert second.namespace_uri() == none
+	assert third.namespace_uri()? == 'urn:outer'
+	mut first_text := first.as_node().children[0].as_character_data()?
+	second_text := second.as_node().children[0].as_character_data()?
+	third_text := third.as_node().children[0].as_character_data()?
+	assert first_text.data() == ' repeated '
+	first_text.set_data('changed')
+	assert first_text.data() == 'changed'
+	assert second_text.data() == ' repeated '
+	assert third_text.data() == ' repeated '
+}

@@ -611,12 +611,12 @@ pub fn (mut p HTMLParser) schedule_resume_check() {
 	parser_pointer := voidptr(p)
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [parser_pointer] () {
+	queue_parser_progress_task(p.document_, fn [parser_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_parser := unsafe { &HTMLParser(parser_pointer) }
 		mutable_parser.resume_check_pending = false
 		mutable_parser.resume_after_parser_blocking_script()
-	}, p.document_.native_storage())
+	})
 }
 
 fn (mut p HTMLParser) resume_after_parser_blocking_script() {
@@ -780,13 +780,13 @@ pub fn (mut state HTMLParserEndState) schedule_progress_check() {
 	state_pointer := voidptr(state)
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
+	queue_parser_progress_task(state.document, fn [state_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_state := unsafe { &HTMLParserEndState(state_pointer) }
 		// Cleared first: a check can schedule its own continuation.
 		mutable_state.check_pending = false
 		mutable_state.check_progress()
-	}, state.document.native_storage())
+	})
 }
 
 fn (mut state HTMLParserEndState) check_progress() {
@@ -966,15 +966,30 @@ fn (mut state HTMLParserEndState) complete() {
 		if mutable_document.claim_readiness_event('load') {
 			// Fire load at the Document's relevant global object, where the
 			// scripting runtime's readiness dispatch also delivers it.
+			mutable_document.mark_load_event_start()
 			if window := mutable_document.get_window() {
 				target := unsafe { &dom.EventTarget(window) }
 				target.dispatch_event(dom.Event.create('load', dom.EventInit{}))
 			} else {
 				mutable_document.dispatch_event_simple('load', false)
 			}
+			if document.has_been_destroyed()
+				|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
+			mutable_document.mark_load_event_end()
 		}
-		if end_state.document_stream_generation != document.html_parser_stream_generation() { return }
-		mutable_document.set_page_showing(true)
+		if document.has_been_destroyed()
+			|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
+		if !mutable_document.document_page_showing() {
+			mutable_document.set_page_showing(true)
+			if document.has_been_destroyed()
+				|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
+			if window := mutable_document.get_window() {
+				window.fire_a_page_transition_event('pageshow', false)
+			}
+		}
+		// A pageshow handler can replace this input stream with document.open().
+		if document.has_been_destroyed()
+			|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
 		mutable_document.completely_finish_loading()
 		if concrete_parser := parser {
 			if callback := concrete_parser.navigation_readiness_callback {

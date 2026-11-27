@@ -16,6 +16,8 @@ fn test_cached_page_eviction_keeps_process_blob_stores_after_frame_retirement() 
 		mut frame := platform.begin_thread_scratch('Blob URL cache eviction frame')
 		app.install_loaded_page(loaded, true)
 		frame.finish()
+		assert app.history[index].url == loaded.url
+		assert app.document.url.serialize() == loaded.url
 		documents << app.document
 		// Keep the persistent arena identity for inspection after the session
 		// drops the document's own storage lease; this is not a new lease.

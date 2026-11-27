@@ -18,6 +18,60 @@ fn xml_dom_owned_string(value string) string {
 	return value
 }
 
+struct XMLPublishedStrings {
+mut:
+	short_text [16]string
+	element_names [2]string
+	attribute_name string
+}
+
+// Reuse small immediate text values, including repeated indentation. DOM
+// mutations replace the value, so nodes can share these document-owned bytes.
+fn (mut copies XMLPublishedStrings) owned_text(value string) string {
+	$if prealloc {
+		if value.len > 0 && value.len <= 32 {
+			index := (value.len * 3 + int(value[0]) * 31 + int(value[value.len - 1])
+				+ int(value[value.len / 2]) * 7) & 15
+			previous := copies.short_text[index]
+			if previous == value {
+				return previous
+			}
+			owned := value.clone()
+			copies.short_text[index] = owned
+			return owned
+		}
+	}
+	return xml_dom_owned_string(value)
+}
+
+// Repeated names have immutable, document-owned bytes after leaving scratch.
+@[inline]
+fn (mut copies XMLPublishedStrings) owned_element_name(value string) string {
+	$if prealloc {
+		if copies.element_names[0] == value {
+			return copies.element_names[0]
+		}
+		if copies.element_names[1] == value {
+			return copies.element_names[1]
+		}
+		owned := value.clone()
+		copies.element_names[1] = copies.element_names[0]
+		copies.element_names[0] = owned
+		return owned
+	}
+	return value
+}
+
+fn (mut copies XMLPublishedStrings) owned_attribute_name(value string) string {
+	$if prealloc {
+		if value != copies.attribute_name {
+			copies.attribute_name = value.clone()
+		}
+		return copies.attribute_name
+	}
+	return value
+}
+
 fn xml_append_doctype(document &dom.Document, type_ vxml.DocumentType) ! {
 	mut doctype := dom.DocumentType.create(document)
 	doctype.set_name(xml_dom_owned_string(type_.name))
@@ -44,10 +98,33 @@ fn xml_append_doctype(document &dom.Document, type_ vxml.DocumentType) ! {
 	parent.append_child(doctype.as_node())!
 }
 
-fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespaces map[string]string, prepared xmlcompat.Document) ! {
+// Keep the inherited default separate from explicit prefix bindings. Most
+// XML/SVG elements need only the default and share the parent's scope.
+struct XMLNamespaces {
+mut:
+	default_uri string
+	prefixes ?map[string]string
+}
+
+fn (scope XMLNamespaces) uri_for_prefix(prefix string) !string {
+	if prefix == '' {
+		return scope.default_uri
+	}
+	if prefix == 'xml' {
+		return xml_namespace_uri
+	}
+	if prefixes := scope.prefixes {
+		if uri := prefixes[prefix] {
+			return uri
+		}
+	}
+	return error('unbound XML namespace prefix ${prefix}')
+}
+
+fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespaces XMLNamespaces, prepared xmlcompat.Document, mut copies XMLPublishedStrings) ! {
 	colon := xmlcompat.check_name_colon(node.name)!
 	mut namespaces := unsafe { inherited_namespaces }
-	mut owns_namespaces := false
+	mut owns_prefixes := false
 	for name, raw_value in node.attributes {
 		if name == 'xmlns' || name.starts_with('xmlns:') {
 			xmlcompat.check_name(name)!
@@ -58,26 +135,42 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 				|| (prefix != 'xml' && value == xml_namespace_uri) || (prefix != '' && value == '') {
 				return error('invalid XML namespace declaration ${name}')
 			}
-			if !owns_namespaces {
-				namespaces = inherited_namespaces.clone()
-				owns_namespaces = true
+			if prefix == '' {
+				namespaces.default_uri = xml_dom_owned_string(value)
+			} else if prefix != 'xml' {
+				mut prefixes := if owns_prefixes {
+					unsafe { namespaces.prefixes or { map[string]string{} } }
+				} else if inherited_prefixes := inherited_namespaces.prefixes {
+					inherited_prefixes.clone()
+				} else {
+					map[string]string{}
+				}
+				prefixes[prefix] = xml_dom_owned_string(value)
+				namespaces.prefixes = unsafe { prefixes }
+				owns_prefixes = true
 			}
-			namespaces[prefix] = xml_dom_owned_string(value)
 		}
 	}
 	// Prefix and local-name views are used only for lookups and validation.
 	// DOM constructors receive their own string in the restored document owner.
-	prefix := if colon < 0 { '' } else { node.name.substr_unsafe(0, colon) }
-	namespace_ := if prefix == '' {
-		namespaces[''] or { '' }
+	namespace_ := if colon < 0 {
+		namespaces.default_uri
 	} else {
-		namespaces[prefix] or { return error('unbound XML namespace prefix ${prefix}') }
+		namespaces.uri_for_prefix(node.name.substr_unsafe(0, colon))!
 	}
-	mut element := parent.document().create_element_ns(if namespace_ == '' {
-		none
+	document := parent.document()
+	element_name := copies.owned_element_name(node.name)
+	namespace_option := if namespace_ == '' { ?string(none) } else { ?string(namespace_) }
+	// The XML name scan already validated the unprefixed ASCII name. The
+	// exception for xmlns and namespace validation still use the DOM path.
+	mut element := if colon < 0 && node.name[0] < 0x80 && element_name != 'xmlns'
+		&& namespace_ != xmlns_namespace_uri {
+		dom.create_element_with_registry(document, element_name, namespace_option, none, none, true,
+			document.custom_element_registry())!
 	} else {
-		?string(namespace_)
-	}, xml_dom_owned_string(node.name))!
+		document.create_element_ns(namespace_option, element_name)!
+	}
+	if node.attributes.len > 4 { element.ensure_attribute_capacity(node.attributes.len) }
 	mut expanded_names := ?map[string]bool(none)
 	for name, raw_value in node.attributes {
 		value := prepared.attribute_value(raw_value)!
@@ -96,7 +189,7 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 		attribute_namespace := if is_declaration {
 			xmlns_namespace_uri
 		} else if attribute_prefix != '' {
-			namespaces[attribute_prefix] or { return error('unbound XML namespace prefix ${attribute_prefix}') }
+			namespaces.uri_for_prefix(attribute_prefix)!
 		} else {
 			''
 		}
@@ -112,25 +205,35 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 			names[expanded_name] = true
 			expanded_names = unsafe { names }
 		}
-		element.set_attribute_ns_for_bindings(if attribute_namespace == '' {
-			none
+		owned_name := copies.owned_attribute_name(name)
+		owned_value := xml_dom_owned_string(value)
+		if attribute_colon < 0 && !is_declaration {
+			// Unprefixed XML attributes have no namespace and passed the
+			// narrower XML name check above. Apply the same Trusted Types
+			// policy as setAttributeNS before publishing the value.
+			verified := document.trusted_types_compliant_attribute_value(element, owned_name,
+				none, owned_value)!
+			element.set_attribute_value(owned_name, verified)
 		} else {
-			?string(attribute_namespace)
-		}, xml_dom_owned_string(name), xml_dom_owned_string(value))!
+			element.set_attribute_ns_for_bindings(?string(attribute_namespace), owned_name,
+				owned_value)!
+		}
 	}
 	mut mutable_parent := unsafe { &dom.Node(parent) }
 	mutable_parent.append_child(element.as_node())!
-	xml_append_vlib_children(element.as_node(), node.children, namespaces, prepared)!
+	if node.children.len > 0 {
+		xml_append_vlib_children(element.as_node(), node.children, namespaces, prepared, mut copies)!
+	}
 }
 
-fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, namespaces map[string]string, prepared xmlcompat.Document) ! {
+fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, namespaces XMLNamespaces, prepared xmlcompat.Document, mut copies XMLPublishedStrings) ! {
 	mut mutable_parent := unsafe { &dom.Node(parent) }
 	document := parent.document()
 	for child in children {
 		match child {
-			vxml.XMLNode { xml_append_vlib_node(parent, child, namespaces, prepared)! }
+			vxml.XMLNode { xml_append_vlib_node(parent, child, namespaces, prepared, mut copies)! }
 			string {
-				mutable_parent.append_child(document.create_text_node(xml_dom_owned_string(child)).as_node())!
+				mutable_parent.append_child(document.create_text_node(copies.owned_text(child)).as_node())!
 			}
 			vxml.XMLCData {
 				mutable_parent.append_child(document.create_cdata_section(xml_dom_owned_string(child.text))!.as_node())!
@@ -143,7 +246,7 @@ fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, n
 					} else if special.is_comment {
 						mutable_parent.append_child(document.create_comment(xml_dom_owned_string(special.data)).as_node())!
 					} else if special.is_text {
-						mutable_parent.append_child(document.create_text_node(xml_dom_owned_string(special.data)).as_node())!
+						mutable_parent.append_child(document.create_text_node(copies.owned_text(special.data)).as_node())!
 					} else if special.is_cdata {
 						mutable_parent.append_child(document.create_cdata_section(xml_dom_owned_string(special.data))!.as_node())!
 					} else {
@@ -161,10 +264,11 @@ fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, n
 // fragments. vlib owns element structure, attributes and reference decoding;
 // this adapter supplies browser DOM namespaces and document-only node types.
 pub fn parse_xml_document_source(document &dom.Document, source string) ! {
+	mut copies := XMLPublishedStrings{}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('XML parse tree')
 		defer { scratch.finish() }
-		parsed := xmlcompat.parse(source, resolve_named_character_reference) or {
+		parsed := xmlcompat.parse(source, resolve_named_character_reference, borrow_text: true) or {
 			// The error object and message may also live in parser scratch.
 			// Restore the caller before copying the error that escapes this call.
 			scratch.leave()
@@ -173,13 +277,9 @@ pub fn parse_xml_document_source(document &dom.Document, source string) ! {
 		// Keep the temporary tree readable while all retained DOM allocations
 		// and copied payloads go to the caller's original allocation owner.
 		scratch.leave()
-		xml_append_vlib_children(document.as_node(), parsed.children, {
-			'xml': xml_namespace_uri
-		}, parsed)!
+		xml_append_vlib_children(document.as_node(), parsed.children, XMLNamespaces{}, parsed, mut copies)!
 		return
 	}
-	parsed := xmlcompat.parse(source, resolve_named_character_reference)!
-	xml_append_vlib_children(document.as_node(), parsed.children, {
-		'xml': xml_namespace_uri
-	}, parsed)!
+	parsed := xmlcompat.parse(source, resolve_named_character_reference, xmlcompat.ParseOptions{})!
+	xml_append_vlib_children(document.as_node(), parsed.children, XMLNamespaces{}, parsed, mut copies)!
 }

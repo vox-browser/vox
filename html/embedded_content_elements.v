@@ -678,6 +678,8 @@ pub enum ObjectRepresentation {
 
 pub struct ObjectResourceResponse {
 pub:
+	// Embedders retain the final URL here when a resource redirected.
+	url          ?dom.URL
 	status       u16 = 200
 	content_type string
 	body         []u8
@@ -945,6 +947,23 @@ pub fn (mut object HTMLObjectElementModel) run_object_representation_handler_ste
 		return
 	}
 	if object_mime_is_document(resource_type) && !object_mime_is_image(resource_type) {
+		mut response_url := response.url or { url }
+		owner_document := object.container_document()
+		if owner_document != unsafe { nil } && !url_matches_about_blank(response_url) {
+			response_url.set_fragment(none)
+			mut matching_ancestors := 0
+			for navigable in owner_document.inclusive_ancestor_navigables() {
+				mut ancestor_url := navigable.active_document_url() or { continue }
+				ancestor_url.set_fragment(none)
+				if ancestor_url.serialize() == response_url.serialize() { matching_ancestors++ }
+			}
+			// Allow one level of self-reference, then show fallback content so
+			// recursive object embedding cannot keep the document loading forever.
+			if matching_ancestors >= 2 {
+				object.run_object_representation_fallback_steps()
+				return
+			}
+		}
 		if object.container.content_navigable() == none {
 			object.container.create_new_child_navigable()
 		}

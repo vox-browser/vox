@@ -14,9 +14,12 @@ fn wrap_function(source string, signature string, before string, after string) !
 	hooks := ['closure_metadata_enter()', 'closure_metadata_leave()']
 	if hooks.any(body.contains(it)) {
 		expected := before + after
-		complete := (before == '' || body.trim_space().starts_with(before.trim_space()))
+		mut complete := (before == '' || body.trim_space().starts_with(before.trim_space()))
 			&& (after == '' || body.trim_space().ends_with(after.trim_space()))
-		if !complete || hooks.any(body.count(it) != expected.count(it)) {
+		for hook in hooks {
+			complete = complete && body.count(hook) == expected.count(hook)
+		}
+		if !complete {
 			return error('Unsupported closure metadata wrapper: ${signature}')
 		}
 		return source

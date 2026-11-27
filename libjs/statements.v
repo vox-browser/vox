@@ -394,6 +394,7 @@ fn (mut p Parser) parse_for_statement() Statement {
 			p.syntax_error('for-await-of not allowed outside of async context')
 		}
 		p.consume()
+		p.scope_collector.set_contains_await_expression()
 		true
 	} else {
 		false

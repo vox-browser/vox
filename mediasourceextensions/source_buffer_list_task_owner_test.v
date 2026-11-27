@@ -106,10 +106,48 @@ fn test_first_active_track_preserves_both_pinned_source_notifications() {
 	buffer.processor_.track_buffers_[1] = TrackBuffer.create(track)
 	list := source.active_source_buffers()
 	seen := observe_buffer_list_tasks(list)
+	mut source_tracks := buffer.video_tracks()
+	mut media_tracks := media.video_tracks()
+	observed := &InitialSourceTrackEvents{}
+	observe_initial_source_track_events(mut source_tracks.EventTarget, 'source', observed)
+	observe_initial_source_track_events(mut media_tracks.EventTarget, 'element', observed)
 	buffer.on_first_initialization_segment_processed(4, [track])
+	assert observed.names.len == 0
+	assert media_tracks.selected_index() == 0
+	selected := source_tracks.item(0)?
+	assert voidptr(selected) == voidptr(media_tracks.item(0)?)
 	assert list.length() == 1 && list.item(0)? == buffer
 	assert list.relevant_global_impl()? == settings.global_object()
 	drain_buffer_list_owner_tasks()
 	assert seen.identities == [true, true]
 	assert seen.lengths == [u32(1), 1]
+	assert observed.names == ['source:addtrack', 'element:addtrack']
+	assert observed.tracks == [voidptr(selected), voidptr(selected)]
+}
+
+@[heap]
+struct InitialSourceTrackEvents {
+mut:
+	names  []string
+	tracks []voidptr
+}
+
+fn observe_initial_source_track_events(mut target dom.EventTarget, label string, observed &InitialSourceTrackEvents) {
+	expected := voidptr(&target)
+	callback := &dom.CallbackType{
+		handle_event: fn [label, observed, expected] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			assert voidptr(event.target() or { panic('missing track list target') }) == expected
+			mut log := unsafe { &InitialSourceTrackEvents(observed) }
+			name := event.type_name()
+			log.names << label + ':' + name
+			if name == 'addtrack' {
+				track := unsafe { &html.TrackEvent(event) }.track()
+				assert track.kind == .video
+				log.tracks << voidptr(track.video or { panic('missing video track') })
+			}
+			return dom.js_undefined()
+		}
+	}
+	target.set_event_handler_attribute('addtrack', callback)
+	target.set_event_handler_attribute('change', callback)
 }

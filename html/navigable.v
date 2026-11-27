@@ -1179,6 +1179,7 @@ fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &Naviga
 	}
 	if navigable.is_top_level_traversable() {
 		request.top_level_navigation_initiator_origin = state.initiator_origin
+		request.user_agent_initiated = state.user_agent_initiated
 	}
 	if request.client == none {
 		request.origin = fetch.RequestOrigin{
@@ -1186,6 +1187,14 @@ fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &Naviga
 			origin: dom.origin_create_opaque()
 		}
 		request.referrer = fetch.Referrer{ sentinel: .no_referrer }
+	}
+	// Re-fetch an entry with the origin that created it, rather than the page
+	// asking to traverse or reload it. This also preserves a resubmitted POST's
+	// Origin header. Opaque initiators retain the ordinary fetch behavior.
+	if initiator_origin := state.initiator_origin {
+		if !initiator_origin.is_opaque() {
+			request.origin = fetch.RequestOrigin{ is_client: false, origin: initiator_origin }
+		}
 	}
 	match state.resource {
 		POSTResource {
@@ -1370,6 +1379,9 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				}
 			}
 		}
+		// Response-backed documents are loading before the host or parser can
+		// observe them, including when script readiness defers parser start.
+		if state.resource is string { document.update_readiness(.loading) }
 		if hook := model.document_created_hook_ { hook(document) }
 		mut payload := document.enter_native_storage()
 		match state.resource {
@@ -1560,6 +1572,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	mut state := &DocumentState{
 		origin: params.url.origin()
 		initiator_origin: initiator_origin
+		user_agent_initiated: params.source_document == unsafe { nil }
 		request_referrer_policy: params.referrer_policy
 		resource: params.document_resource
 		ever_populated: false
@@ -1898,9 +1911,16 @@ fn (mut model NavigableModel) navigate_to_a_javascript_url(url dom.URL, history_
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	mut user_agent_initiated := false
+	if old_entry := model.active_session_history_entry_ {
+		if old_state := old_entry.document_state {
+			user_agent_initiated = old_state.user_agent_initiated
+		}
+	}
 	state := &DocumentState{
 		document: document
 		document_id_: document.unique_id()
+		user_agent_initiated: user_agent_initiated
 		origin: initiator_origin
 		ever_populated: true
 		navigable_target_name: model.target_name()
@@ -2414,6 +2434,7 @@ pub fn (mut model NavigableModel) set_has_been_destroyed() {
 	if model.delaying_load_events_ { model.set_delaying_load_events(false) }
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.set_has_been_destroyed()
+	model.clear_navigation_load_event_guard()
 	model.resolve_all_pending_main_thread_scrolls()
 	model.inform_the_navigation_api_about_child_navigable_destruction()
 }

@@ -3929,6 +3929,10 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 }
 
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
+	// The document identity and navigation history outlive the caller's frame
+	// or document scope. DOM payloads still use the incoming document arena.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	load_instruction_stage := processmetrics.begin_instruction_stage('document_install')
 	defer { load_instruction_stage.finish() }
 	// A location.replace() commit overwrites the current entry; its outgoing

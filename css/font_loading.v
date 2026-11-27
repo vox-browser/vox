@@ -92,6 +92,12 @@ fn convert_woff2_for_font_completion(data []u8) PreparedVectorFontData {
 	}
 }
 
+pub fn is_supported_font_mimetype(mime_type_essence string) bool {
+	return mime_type_essence in ['font/ttf', 'application/x-font-ttf', 'font/otf',
+		'font/woff', 'application/font-woff', 'font/x-woff', 'font/woff2',
+		'application/font-woff2']
+}
+
 pub fn requires_off_thread_vector_font_preparation(data []u8, mime_type_essence ?string) bool {
 	if mime := mime_type_essence {
 		if mime in ['font/woff2', 'application/font-woff2'] { return true }

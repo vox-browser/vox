@@ -391,7 +391,8 @@ fn test_nested_viewport_commands_compose_translation_transform_clip_and_opacity(
 	assert transformed.mask_clip().cache_key != command.mask_clip().cache_key
 }
 
-fn test_font_smoothing_is_retained_by_text_paint_commands() {
+fn test_font_smoothing_and_text_shadow_color_are_retained_by_paint_commands() {
+	srgb := &PaintSRGBColor{}
 	fragment := TextFragment{
 		x: 10
 		y: 20
@@ -410,6 +411,7 @@ fn test_font_smoothing_is_retained_by_text_paint_commands() {
 			offset_x: 1
 			offset_y: 2
 			color: css.Color{4, 5, 6, 255}
+			srgb_color_data: srgb
 		}]
 	}
 	foreground := unselected_text_fragment_commands([fragment], 1)
@@ -422,6 +424,8 @@ fn test_font_smoothing_is_retained_by_text_paint_commands() {
 	}, 1)
 	assert shadows.len == 1
 	assert shadows[0].font_smoothing == .antialiased
+	assert voidptr(shadows[0].srgb_color_data) == voidptr(srgb)
+	assert shadows[0].force_dark_role_set && shadows[0].force_dark_role == .none_
 
 	box := &BlockBox{
 		paintable_with_lines: true

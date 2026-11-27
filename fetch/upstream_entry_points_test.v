@@ -302,18 +302,27 @@ fn test_http_cache_matches_out_of_order_completion_to_its_response() {
 	store_response_in_cache(request, mut first)
 	store_response_in_cache(request, mut second)
 
-	// Both producers have the same cache key and Vary selection. Completing
-	// the second one first must retain its own no-cache metadata.
+	key := fetch_cache_partition_key(request)?
+	first_token := first.cache_entry_token_
+	second_token := second.cache_entry_token_
+	assert first_token != 0 && second_token != 0
+	// The filtered response finalizes only its producer. Its no-cache metadata
+	// requires revalidation even after the older, reusable response completes.
 	finalize_response_in_cache(request, filtered_response(second, .basic))
+	assert first.cache_entry_token_ == first_token
+	assert second.cache_entry_token_ == 0
 	assert select_response_from_cache(request) == none
 	finalize_response_in_cache(request, first)
-	cached := select_response_from_cache(request)?
-	assert cached.status == 203
-	assert cached.fetch_response_body_bytes()? == 'first response'.bytes()
-	// Repeated or late completion of the second producer cannot consume the
-	// first producer's enrollment or overwrite its finished representation.
+	assert first.cache_entry_token_ == 0
+	assert select_response_from_cache(request) == none
+
+	// A repeated completion cannot replace the newer representation.
 	finalize_response_in_cache(request, second)
-	assert select_response_from_cache(request)?.fetch_response_body_bytes()? == 'first response'.bytes()
+	entries := fetch_http_memory_cache_complete[key] or { panic('missing completed cache entry') }
+	assert entries.len == 1
+	assert entries[0].response_token == second_token
+	assert entries[0].status_code == second.status
+	assert entries[0].response_body == 'second response'.bytes()
 }
 
 fn test_http_cache_clones_and_cleared_producers_cannot_finalize_other_entries() {

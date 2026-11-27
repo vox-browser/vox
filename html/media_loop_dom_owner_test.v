@@ -61,7 +61,7 @@ fn test_media_loop_reflection_reads_live_dom_preserves_adoption_and_keeps_ownerl
 	assert fallback.paused() && fallback.current_time() == 0 && fallback.queued_media_task_ids_.len == 0
 }
 
-fn test_media_loop_endpoint_captures_live_presence_honors_paused_guard_and_preserves_cached_nonloop_end() {
+fn test_media_loop_endpoint_follows_live_presence_and_preserves_paused_scrubbing() {
 	mut document := parse_document('<!doctype html><video id="loop-active"></video><audio id="loop-paused"></audio>')
 	_ := WindowModel.create_top_level(document, none, 'media-loop-endpoint-owner')!
 	defer { document.finalize() }
@@ -71,6 +71,7 @@ fn test_media_loop_endpoint_captures_live_presence_honors_paused_guard_and_prese
 	mut paused := html_media_element_for_dom_element(paused_element)?
 	for item in [active, paused] {
 		mut media := unsafe { &HTMLMediaElement(item) }
+		media.set_up_playback_manager()
 		media.set_ready_state(.have_metadata)
 		media.set_duration(1)
 		media.seekable_.add_range(0, 1)
@@ -79,12 +80,12 @@ fn test_media_loop_endpoint_captures_live_presence_honors_paused_guard_and_prese
 	mut event_loop := main_thread_event_loop()
 	event_loop.process()
 	assert document.is_fully_active() && !active.ended() && !paused.ended()
-	// Attribute mutations bypass the V setter, so endpoint capture must read the actual owner.
+	// Raw attribute mutations must reach the actual media owner.
 	active_element.set_attribute_value('loop', 'active loop')
 	active.set_current_playback_position(1)
 	active.set_paused(false)
 	active.reached_end_of_media_playback()
-	assert active.loop_was_specified_at_end_ && active.current_time() == 0 && active.seeking()
+	assert active.loop() && active.current_time() == 0 && active.seeking()
 	assert !active.paused() && active.event_count('pause') == 0 && active.event_count('ended') == 0
 	event_loop.perform_a_microtask_checkpoint()
 	assert !active.ended()
@@ -94,28 +95,20 @@ fn test_media_loop_endpoint_captures_live_presence_honors_paused_guard_and_prese
 	assert active.event_count('seeking') == 1 && active.event_count('seeked') == 1
 	assert active.event_count('pause') == 0 && active.event_count('ended') == 0
 	paused_element.set_attribute_value('loop', 'paused loop')
-	paused.set_current_playback_position(1)
+	paused.seek_from_media_controls(1)
+	media_loop_dom_drain_owner(paused)
+	assert paused.current_time() == 1 && paused.paused() && !paused.seeking()
 	paused.reached_end_of_media_playback()
-	assert paused.loop_was_specified_at_end_ && paused.current_time() == 1 && paused.paused()
-	assert !paused.seeking() && paused.queued_media_task_ids_.len == 0
 	event_loop.process()
-	assert !paused.ended() && paused.event_count('seeking') == 0 && paused.event_count('ended') == 0
-	// A later loop mutation cannot revise the endpoint's captured non-loop snapshot.
+	assert paused.current_time() == 1 && !paused.seeking() && !paused.ended()
+	assert paused.event_count('seeking') == 1 && paused.event_count('ended') == 0
+
 	active_element.remove_attribute('loop')
 	active.set_current_playback_position(1)
-	active.reached_end_of_media_playback()
-	assert !active.loop_was_specified_at_end_ && !active.ended() && !active.paused()
-	active_element.set_attribute_value('loop', 'added after endpoint')
-	assert active.loop() && !active.loop_was_specified_at_end_ && active.has_ended_playback()
-	event_loop.perform_a_microtask_checkpoint()
-	assert !active.ended()
-	media_loop_dom_drain_owner(active)
-	assert active.ended() && active.paused()
-	assert active.event_count('pause') == 1 && active.event_count('ended') == 1
-	active_element.remove_attribute('loop')
-	assert !active.loop() && active.ended()
-	active.set_current_playback_position(0)
-	assert active.ended()
 	event_loop.process()
-	assert !active.ended() && active.queued_media_task_ids_.len == 0
+	assert active.ended()
+	active_element.set_attribute_value('loop', 'added after endpoint')
+	assert active.loop() && !active.has_ended_playback() && !active.ended()
+	active_element.remove_attribute('loop')
+	assert !active.loop() && active.has_ended_playback() && active.ended()
 }

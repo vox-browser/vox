@@ -31,6 +31,27 @@ fn test_unassociated_progress_task_retains_its_explicit_document_owner() {
 	if mut timer := loop.system_event_loop_timer_ { timer.stop() }
 }
 
+fn test_destroying_document_cancels_queued_parser_progress_and_releases_storage() {
+	url := dom.URL{value: 'https://parser-retirement.example/'}
+	mut document := create_navigation_document(url, url.origin(), none)!
+	document.enable_native_storage()
+	storage := document.native_storage()
+	mut scope := document.enter_native_storage()
+	payload := 'retired parser progress'.bytes()
+	scope.finish()
+	probe := &NativeTaskStorageProbe{}
+	queue_parser_progress_task(document, fn [payload, probe] () {
+		assert payload.bytestr() == 'retired parser progress'
+		mut observation := unsafe { &NativeTaskStorageProbe(probe) }
+		observation.called = true
+	})
+	document.destroy_a_document_and_its_descendants()
+	document.finalize()
+	document.release_native_storage()
+	assert !probe.called
+	$if prealloc { assert storage.arena.usage().used == 0 }
+}
+
 fn test_inner_html_fragment_adoption_does_not_pin_the_native_document() {
 	url := dom.URL{value: 'https://fragment-storage.example/'}
 	mut document := create_navigation_document(url, url.origin(), none)!

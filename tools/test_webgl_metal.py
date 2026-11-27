@@ -47,7 +47,7 @@ def main():
             entry = Path(name)
             atexit.register(entry.unlink, missing_ok=True)
             entry.write_text('module metal\n#define main vox_native_suite_main\n#include "@DIR/' + suite + '_test.m"\n#undef main\nfn C.vox_native_suite_main() i32\nfn test_native_suite() { assert C.vox_native_suite_main() == 0 }\n')
-            compiler = [str(args.v_bin), '-new-compiler', '-skip-running', '-b', 'c', '-cc', 'clang',
+            compiler = [str(args.v_bin), '-skip-running', '-b', 'c', '-cc', 'clang',
                         '-memory-limit', '10G', '-enable-globals', '-cflags', ' '.join(flags),
                         *(['-ldflags', '-fsanitize=address,undefined'] if mode == 'sanitized' else []),
                         '-o', str(binary), str(entry)]
@@ -70,7 +70,7 @@ def main():
         for test in sorted((ROOT / 'webgl/metal').glob('*_test.v')):
             for gc, flags in [('default', []), ('none', ['-gc', 'none'])]:
                 binary = output / (test.stem + '-' + gc)
-                compiler = [str(args.v_bin), '-new-compiler', '-skip-running', '-b', 'c', '-cc', 'clang',
+                compiler = [str(args.v_bin), '-skip-running', '-b', 'c', '-cc', 'clang',
                             '-cflags', '-O0', '-memory-limit', '10G', '-enable-globals', *flags,
                             '-o', str(binary), str(test)]
                 for phase, command in [('compile', compiler), ('runtime', [str(binary)])]:

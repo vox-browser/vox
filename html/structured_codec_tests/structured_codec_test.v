@@ -1,0 +1,84 @@
+module structured_codec_tests
+
+// Import HTML so only the code reached by the codec tests is emitted.
+import html
+
+fn test_structured_storage_unsigned_leb128_goldens_and_following_bytes() {
+	html.check_structured_storage_unsigned_leb128_goldens_and_following_bytes()!
+}
+
+fn test_structured_storage_signed_leb128_goldens_and_following_bytes() {
+	html.check_structured_storage_signed_leb128_goldens_and_following_bytes()!
+}
+
+fn test_structured_storage_leb128_accepts_padding_within_each_integer_width() {
+	html.check_structured_storage_leb128_accepts_padding_within_each_integer_width()!
+}
+
+fn test_structured_storage_unsigned_leb128_terminal_width_and_failure_cursor() {
+	html.check_structured_storage_unsigned_leb128_terminal_width_and_failure_cursor()!
+}
+
+fn test_structured_storage_signed_leb128_terminal_width_and_failure_cursor() {
+	html.check_structured_storage_signed_leb128_terminal_width_and_failure_cursor()!
+}
+
+fn test_structured_storage_leb128_truncation_consumes_only_available_input() {
+	html.check_structured_storage_leb128_truncation_consumes_only_available_input()!
+}
+
+fn test_structured_storage_leb128_sequential_mixed_integer_reads() {
+	html.check_structured_storage_leb128_sequential_mixed_integer_reads()!
+}
+
+fn test_structured_ipc_signed_integer_bytes_remain_fixed_width() {
+	html.check_structured_ipc_signed_integer_bytes_remain_fixed_width()!
+}
+
+fn test_source_lbsc_storage_envelope_and_signed_int32_leb128_goldens() {
+	html.check_source_lbsc_storage_envelope_and_signed_int32_leb128_goldens()!
+}
+
+fn test_source_lbsc_utf16_length_header_bytes_and_storage_decode_construction() {
+	html.check_source_lbsc_utf16_length_header_bytes_and_storage_decode_construction()!
+}
+
+fn test_source_lbsc_collections_buffer_capacity_and_error_name_payload_goldens() {
+	html.check_source_lbsc_collections_buffer_capacity_and_error_name_payload_goldens()!
+}
+
+fn test_source_lbsc_bigint_signed_magnitude_and_object_cycles_keep_source_payloads() {
+	html.check_source_lbsc_bigint_signed_magnitude_and_object_cycles_keep_source_payloads()!
+}
+
+fn test_source_lbsc_rejects_bad_envelope_integer_width_and_trailing_bytes() {
+	html.check_source_lbsc_rejects_bad_envelope_integer_width_and_trailing_bytes()!
+}
+
+fn test_source_blob_file_ipc_storage_payload_goldens_raw_slots_and_owned_bytes() {
+	html.check_source_blob_file_ipc_storage_payload_goldens_raw_slots_and_owned_bytes()!
+}
+
+fn test_source_filelist_direct_nested_file_headers_exposure_and_distinct_memory() {
+	html.check_source_filelist_direct_nested_file_headers_exposure_and_distinct_memory()!
+}
+
+fn test_source_file_i64_timestamp_native_bytes_and_signed_storage_width_gates() {
+	html.check_source_file_i64_timestamp_native_bytes_and_signed_storage_width_gates()!
+}
+
+fn test_source_crypto_key_ipc_storage_full_payload_goldens_and_alias_memory() {
+	html.check_source_crypto_key_ipc_storage_full_payload_goldens_and_alias_memory()!
+}
+
+fn test_source_crypto_key_seven_algorithm_payloads_are_exact_in_both_encoders() {
+	html.check_source_crypto_key_seven_algorithm_payloads_are_exact_in_both_encoders()!
+}
+
+fn test_source_crypto_key_eleven_handle_tags_and_optional_ec_records_goldens() {
+	html.check_source_crypto_key_eleven_handle_tags_and_optional_ec_records_goldens()!
+}
+
+fn test_source_crypto_key_validation_preserves_raw_type_but_rejects_usage_and_storage_identifiers() {
+	html.check_source_crypto_key_validation_preserves_raw_type_but_rejects_usage_and_storage_identifiers()!
+}

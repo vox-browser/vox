@@ -127,6 +127,7 @@ mut:
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
 	owns_steps bool
+	runs_while_inactive bool
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
@@ -207,6 +208,7 @@ pub fn (task &Task) document() ?&dom.Document {
 // https://html.spec.whatwg.org/multipage/webappapis.html#concept-task-runnable
 pub fn (task &Task) is_runnable() bool {
 	if document := task.document_ {
+		if task.runs_while_inactive { return !document.has_been_destroyed() }
 		return document.is_fully_active()
 	}
 	return true
@@ -366,6 +368,7 @@ pub fn (mut queue TaskQueue) take_first_runnable_matching(predicate fn(&Task) bo
 		}
 		if task.is_permanently_unrunnable() {
 			queue.tasks.delete(index)
+			task.cancel()
 			continue
 		}
 		index++
@@ -584,6 +587,26 @@ pub fn (event_loop &EventLoop) running_rendering_task() bool {
 // satisfied by queued work. The browser host can continue waiting when there
 // is no runnable work; the standalone runtime yields back to its caller.
 pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
+	// Spinning runs other tasks and microtasks while the caller is suspended.
+	// Checkpoints require all execution context stacks to be empty.
+	mut suspended_vms := event_loop.embedding_vms_.clone()
+	if primary := event_loop.primary_vm_not_embedded() { suspended_vms << primary }
+	for vm in suspended_vms {
+		mut mutable_vm := unsafe { &libjs.VM(vm) }
+		mutable_vm.save_execution_context_stack()
+	}
+	saved_html_contexts := html_scripting_execution_context_stack
+	html_scripting_execution_context_stack = []&ScriptingRealm{}
+	saved_task := event_loop.currently_running_task_
+	event_loop.currently_running_task_ = none
+	defer {
+		for index := suspended_vms.len - 1; index >= 0; index-- {
+			mut vm := unsafe { &libjs.VM(suspended_vms[index]) }
+			vm.restore_execution_context_stack()
+		}
+		html_scripting_execution_context_stack = unsafe { saved_html_contexts }
+		event_loop.currently_running_task_ = saved_task
+	}
 	event_loop.perform_a_microtask_checkpoint()
 	for !goal_condition() {
 		mut queue := event_loop.task_queue_
@@ -1250,9 +1273,18 @@ pub fn queue_a_task(source TaskSource, event_loop ?&EventLoop, document ?&dom.Do
 }
 
 // A task's runnability association and the receiver's storage lifetime are
-// separate. Parser and font progress checks intentionally have no association.
+// separate. Some font work has no document association.
 fn queue_a_task_with_storage(source TaskSource, event_loop ?&EventLoop, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) u64 {
 	return enqueue_owned_task(event_loop, Task.create_with_storage(source, document, steps, storage))
+}
+
+// Parser progress can unblock navigation before activation. Keep the document
+// association so destruction still cancels its callback and storage lease.
+fn queue_parser_progress_task(document &dom.Document, steps fn()) {
+	mut task := Task.create_with_storage(.unspecified, document, steps, document.native_storage())
+	task.runs_while_inactive = true
+	task.owns_steps = true
+	enqueue_owned_task(main_thread_event_loop(), task)
 }
 
 fn enqueue_owned_task(event_loop ?&EventLoop, task &Task) u64 {

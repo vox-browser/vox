@@ -1,5 +1,6 @@
 #ifndef VOX_ARENA_PAGE_RETIREMENT_TEST_H
 #define VOX_ARENA_PAGE_RETIREMENT_TEST_H
+#include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -27,4 +28,16 @@ static size_t vox_arena_test_unused_resident_bytes(void *start, size_t bytes) {
     uintptr_t hi = ((uintptr_t)start + bytes) / page * page;
     return hi > lo ? vox_arena_test_resident_bytes((void *)lo, hi - lo) : 0;
 }
+#if defined(__linux__)
+static int vox_arena_test_read_is_blocked(const void *start) {
+    int descriptors[2];
+    if (pipe(descriptors) != 0) abort();
+    // Pipe writes ask the kernel to read the address, without faulting the
+    // test process or changing protection on the mapping.
+    int blocked = write(descriptors[1], start, 1) == -1 && errno == EFAULT;
+    close(descriptors[0]);
+    close(descriptors[1]);
+    return blocked;
+}
+#endif
 #endif

@@ -1480,7 +1480,7 @@ pub fn (mut controls MediaControls) toggle_playback() {
 
 pub fn (mut controls MediaControls) set_current_time(time f64) {
 	mut media := controls.media
-	media.set_current_time(time)
+	media.seek_from_media_controls(time)
 	controls.update_timeline()
 	controls.update_timestamp()
 	controls.show_controls()
@@ -1550,7 +1550,7 @@ fn (mut controls MediaControls) finish_timeline_scrubbing(time ?f64, was_playing
 	if value := time { controls.set_current_time(value) }
 	if was_playing {
 		mut media := controls.media
-		if !media.ended() || media.loop() {
+		if !media.ended() {
 			media.play_from_user_interaction()
 		}
 	}

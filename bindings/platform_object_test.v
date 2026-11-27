@@ -275,3 +275,14 @@ fn test_platform_object_mutations_preserve_wrappers_and_finalize_clears_cache() 
 	released_wrapper.finalize()
 	assert world.wrapper_for(released_implementation, realm) == none
 }
+
+fn test_ordinary_wrapper_keys_are_sorted_by_index_then_string_then_symbol() {
+	mut object := PlatformObject.create(platform_object_test_realm())
+	for key in [property_key('alpha'), property_key('10'), symbol_property_key('token'),
+		property_key('2'), property_key('01'), property_key('beta')] {
+		assert object.define_ordinary_property(key, data_property_descriptor(dom.js_number(1),
+			true, true, true))
+	}
+	assert object.internal_own_property_keys() == [property_key('2'), property_key('10'),
+		property_key('alpha'), property_key('01'), property_key('beta'), symbol_property_key('token')]
+}

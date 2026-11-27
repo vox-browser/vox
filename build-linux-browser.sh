@@ -93,6 +93,10 @@ set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl -d vox_gg_svg \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$module_paths"
+if [ "$v_backend" = fastc ]; then
+    # Sokol's native implementation headers define symbols once per C unit.
+    set -- "$@" -no-parallel
+fi
 if pkg-config --exists gstreamer-app-1.0 gstreamer-video-1.0; then
     set -- "$@" -d vox_gstreamer
 fi

@@ -48,7 +48,11 @@ fn atomic_write(path string, data string) ! {
 	tmp := path + '.tmp-${os.getpid()}-${time.sys_mono_now()}'
 	defer { if exists(tmp) { os.rm(tmp) or {} } }
 	os.write_file(tmp, data)!
-	os.rename(tmp, path)!
+	$if windows {
+		replace_file(tmp, path)!
+	} $else {
+		os.rename(tmp, path)!
+	}
 }
 
 fn write_changed(path string, data string) ! {

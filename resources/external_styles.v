@@ -139,12 +139,14 @@ struct BrowserLinkStylesheetOptions {
 // Install the actual link-owned CSSOM sheet before dispatching its completion
 // event. An adjacent synthetic <style> cannot supply LinkStyle.sheet or retain
 // CSSOM edits on the link, and makes late load listeners wait forever. Report
-// whether the owned sheet changed, including removal after a failed replacement.
+// whether sheet rules changed and may require another layout.
 fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResource, options BrowserLinkStylesheetOptions) bool {
 	mut allocations := link.document().enter_native_storage()
 	defer { allocations.finish() }
 	native_link := unsafe { &dom.HTMLLinkElement(link) }
 	previous_sheet := native_link.linked_style_sheet_
+	previous_has_rules := previous_sheet != unsafe { nil }
+		&& unsafe { (&css.CSSStyleSheet(previous_sheet)).css_rules().length() > 0 }
 	mut content_type := ''
 	for header in resource.response_headers {
 		if header.name.to_lower() == 'content-type' { content_type = header.value }
@@ -162,9 +164,11 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 			url:          dom.URL{ value: address }
 			// The browser adapter does not establish a CORS response. Opaque
 			// sheets may style the page, but their rules must remain private.
-			origin_clean: dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
+			origin_clean: resource.error == '' && dom.URL{ value: address }.origin().is_same_origin(link.document().origin())
 		}, retained_text: source)
-	return previous_sheet != native_link.linked_style_sheet_
+	current_sheet := native_link.linked_style_sheet_
+	return previous_sheet != current_sheet && (previous_has_rules || (current_sheet != unsafe { nil }
+		&& unsafe { (&css.CSSStyleSheet(current_sheet)).css_rules().length() > 0 }))
 }
 
 // Scripts can insert stylesheet links after the initial resources; 4chan's
@@ -172,7 +176,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 // new remote one in the background. The CSS bridge installs it, in the link's
 // tree position, once its text arrives. A sheet the disk cache holds is
 // installed at once, so the document is not laid out and painted without it
-// first. Returns whether an owned sheet was installed, removed, or replaced.
+// first. Returns whether rules were added or removed.
 fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 	if app.state == .retired || app.document == unsafe { nil } {
 		return false

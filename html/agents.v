@@ -31,9 +31,7 @@ pub mut:
 }
 
 pub fn (mut agent Agent) spin_event_loop_until(goal_condition fn () bool) {
-	for !goal_condition() {
-		agent.event_loop.process()
-	}
+	agent.event_loop.spin_until(goal_condition)
 }
 
 @[heap]

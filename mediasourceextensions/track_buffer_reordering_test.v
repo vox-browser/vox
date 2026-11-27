@@ -94,3 +94,23 @@ fn test_coded_frame_processing_uses_decode_timestamps_for_discontinuities() {
 	assert track_buffer.demuxer.run_count() == 1
 	assert track_buffer.last_decode_timestamp_ or { -1 } == 1
 }
+
+fn test_track_buffer_reads_the_replacement_group_after_overlapping_removal() {
+	mut demuxer := reordered_test_demuxer()
+	for index in 0 .. 6 {
+		demuxer.add_coded_frame(reordered_test_frame(f64(index), f64(index), 1, index % 2 == 0))
+	}
+	for timestamp in [f64(0), 1, 2] {
+		assert demuxer.next_frame()!.timestamp == timestamp
+	}
+	demuxer.remove_coded_frames_and_dependants_in_range(2, 4)
+	demuxer.add_coded_frame(DemuxedCodedFrame{
+		...reordered_test_frame(2, 20, 1, true)
+		data: [u8(42)]
+	})
+	demuxer.add_coded_frame(reordered_test_frame(3, 21, 1, false))
+
+	frame := demuxer.next_frame()!
+	assert frame.timestamp == 2 && frame.data == [u8(42)]
+	assert demuxer.next_frame()!.timestamp == 3
+}

@@ -64,6 +64,7 @@ pub mut:
 	resource                 DocumentResource = EmptyDocumentResource{}
 	reload_pending           bool
 	ever_populated           bool
+	user_agent_initiated     bool
 	navigable_target_name    string
 	nested_histories         []NestedHistory
 }
@@ -125,6 +126,7 @@ pub fn create_navigation_population_request(start_request NavigationStartRequest
 		request_referrer: start_request.request_referrer
 		request_referrer_policy: start_request.request_referrer_policy
 		initiator_origin: start_request.initiator_origin
+		user_agent_initiated: start_request.user_involvement == .browser_ui
 		origin: origin
 		about_base_url: about_base_url
 		resource: resource

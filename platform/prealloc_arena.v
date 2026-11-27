@@ -683,12 +683,17 @@ fn poison_prealloc_scope(scope &PreallocScopeView, label string) {
 		mut block := scope.first
 		for block != unsafe { nil } && block.scope == voidptr(scope) {
 			size := uint(i64(block.stop) - i64(block.start))
-			// Overwrite the old contents too: blocks that were not mapped on
-			// their own cannot be protected, and stale readers then see garbage.
-			unsafe { vmemset(block.start, 0xa5, int(size)) }
-			if block.mmap_allocated {
-				unsafe { C.mprotect(block.start, size, C.PROT_NONE) }
+			if block.mmap_allocated && unsafe { C.mprotect(block.start, size, C.PROT_NONE) } == 0 {
+				$if linux {
+					// Discard the backing pages while preserving the inaccessible
+					// mapping. Poisoning must not touch previously unused pages.
+					C.vox_retire_unused_arena_pages(block.start, size)
+				}
 				C.vox_note_poisoned_range(block.start, block.stop, label.str)
+			} else {
+				// Suballocated blocks cannot be protected without affecting
+				// other allocations. Overwrite those blocks in place.
+				unsafe { vmemset(block.start, 0xa5, int(size)) }
 			}
 			block = block.next
 		}

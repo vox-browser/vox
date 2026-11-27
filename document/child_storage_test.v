@@ -65,18 +65,31 @@ fn test_closing_a_rendered_hosted_child_reclaims_storage_after_the_parent_reader
 	assert child_storage.arena.usage().capacity == 0
 }
 
+fn child_storage_fixture(address string) !(&dom.Document, &BrowserChildDocumentHost, &BrowserChildDocument) {
+	page_owner := page.Page.create(1)!
+	mut root := parse_browser_navigation_document_for_page_with_response_time(
+		'<!doctype html><iframe></iframe>', dom.URL{value: address}, none, none,
+		unsafe { &dom.Page(page_owner) }, time.sys_mono_now())
+	root.set_scripting_enabled_by_embedder(false)
+	mut host := browser_child_document_host(root, .javascriptcore)
+	mut messages := []string{}
+	host.discover(root, mut messages)
+	if host.children.len != 1 {
+		return error('Expected one hosted iframe: ${messages.join(" ")}')
+	}
+	return root, host, host.children[0]
+}
+
 fn test_hosted_document_retires_before_the_roots_last_payload_reader() {
 	$if !prealloc { return }
-	mut root := dom.Document.create(dom.URL{value: 'https://host-storage.example/'})
-	root.enable_native_storage()
+	mut root, host, frame := child_storage_fixture('https://host-storage.example/')!
 	mut root_scope := root.enter_native_storage()
 	root_payload := 'retained root payload'.clone()
 	root_scope.finish()
 	mut root_storage := root.native_storage()
 	root_storage.retain()
-	mut host := browser_child_document_host(root, .javascriptcore)
 	mut child := dom.Document.create(dom.URL{value: 'https://host-storage.example/child'})
-	host.prepare_document(child)
+	host.prepare_document(frame, child)
 	mut child_scope := child.enter_native_storage()
 	mut element := child.create_element('p')!
 	element.set_attribute_value('data-value', 'retained child payload'.clone())
@@ -85,6 +98,7 @@ fn test_hosted_document_retires_before_the_roots_last_payload_reader() {
 	child_storage.retain()
 	assert child_storage.arena.contains(element)
 
+	root.destroy_a_document_and_its_descendants()
 	root.finalize()
 	root.release_native_storage()
 	assert host.closed
@@ -105,11 +119,9 @@ fn test_hosted_document_retires_before_the_roots_last_payload_reader() {
 
 fn test_adopting_a_child_node_does_not_cycle_with_hosted_document_cleanup() {
 	$if !prealloc { return }
-	mut root := dom.Document.create(dom.URL{value: 'https://adoption-host.example/'})
-	root.enable_native_storage()
-	mut host := browser_child_document_host(root, .javascriptcore)
+	mut root, host, frame := child_storage_fixture('https://adoption-host.example/')!
 	mut child := dom.Document.create(dom.URL{value: 'https://adoption-host.example/child'})
-	host.prepare_document(child)
+	host.prepare_document(frame, child)
 	mut child_scope := child.enter_native_storage()
 	mut element := child.create_element('p')!
 	element.set_attribute_value('data-value', 'adopted child payload'.clone())
@@ -119,6 +131,7 @@ fn test_adopting_a_child_node_does_not_cycle_with_hosted_document_cleanup() {
 	root.adopt_node(element.as_node())
 	root_storage.retain()
 
+	root.destroy_a_document_and_its_descendants()
 	root.finalize()
 	root.release_native_storage()
 	assert host.closed

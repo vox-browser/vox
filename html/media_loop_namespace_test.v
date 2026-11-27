@@ -56,8 +56,7 @@ fn test_media_loop_namespace_reflection_preserves_live_owner_attributes_adoption
 		assert media.loop() && live_null.value() == ''
 		assert voidptr(mln_namespace_attribute(element, none)!) == voidptr(live_null)
 		element.remove_attribute_ns(none, 'loop')
-		// The standalone cache cannot make a DOM-associated foreign-only owner loop.
-		assert media.loop_ && !media.loop() && live_null.owner_element() == none
+		assert !media.loop() && live_null.owner_element() == none
 		assert voidptr(mln_namespace_attribute(element, mln_namespace_first)!) == voidptr(first)
 		assert voidptr(mln_namespace_attribute(element, mln_namespace_second)!) == voidptr(second)
 		assert first.value() == 'first raw' && second.value() == 'second raw'
@@ -86,7 +85,7 @@ fn test_media_loop_namespace_reflection_preserves_live_owner_attributes_adoption
 	assert !fallback.loop() && !fallback.loop_ && fallback.queued_media_task_ids_.len == 0
 }
 
-fn test_media_loop_namespace_endpoint_uses_null_slot_and_retains_paused_guard_and_captured_decision() {
+fn test_media_loop_namespace_endpoint_uses_live_null_slot_and_preserves_scrubbing() {
 	mut document := parse_document('<!doctype html><video id="mln-end"></video><audio id="mln-restart"></audio><video id="mln-paused"></video>')
 	_ := WindowModel.create_top_level(document, none, 'media-loop-namespace-endpoint')!
 	defer { document.finalize() }
@@ -116,18 +115,18 @@ fn test_media_loop_namespace_endpoint_uses_null_slot_and_retains_paused_guard_an
 	assert !foreign.loop() && foreign_element.has_attribute('loop')
 	foreign.set_paused(false)
 	foreign.advance_playback(1)
-	assert !foreign.loop_was_specified_at_end_ && foreign.current_playback_position() == 1
+	assert !foreign.loop() && foreign.current_playback_position() == 1
 	assert !foreign.paused() && !foreign.seeking() && !foreign.ended()
-	// A real loop added after this endpoint cannot revise its queued non-loop decision.
+	// Adding the null-namespace loop updates ended before queued handlers run.
 	mut mutable_foreign_element := unsafe { &dom.Element(foreign_element) }
 	mutable_foreign_element.set_attribute_value('loop', 'added after endpoint')
-	assert foreign.loop() && !foreign.loop_was_specified_at_end_ && foreign.has_ended_playback()
+	assert foreign.loop() && !foreign.has_ended_playback() && !foreign.ended()
 	mut event_loop := main_thread_event_loop()
 	event_loop.perform_a_microtask_checkpoint()
 	assert !foreign.ended() && foreign.event_count('ended') == 0
 	mln_namespace_drain(foreign)
-	assert foreign.paused() && foreign.ended() && foreign.current_time() == 1
-	assert foreign.event_count('pause') == 1 && foreign.event_count('ended') == 1
+	assert !foreign.paused() && !foreign.ended() && foreign.current_time() == 1
+	assert foreign.event_count('pause') == 0 && foreign.event_count('ended') == 1
 	assert foreign.event_count('seeking') == 0 && foreign.event_count('seeked') == 0
 	assert voidptr(mln_namespace_attribute(foreign_element, mln_namespace_first)!) == voidptr(foreign_attr)
 	assert foreign_attr.value() == 'foreign endpoint raw'
@@ -136,10 +135,10 @@ fn test_media_loop_namespace_endpoint_uses_null_slot_and_retains_paused_guard_an
 	looping_foreign := mln_namespace_attribute(looping_element, mln_namespace_first)!
 	looping.set_paused(false)
 	looping.advance_playback(1)
-	assert looping.loop_was_specified_at_end_ && looping.current_playback_position() == 0
+	assert looping.loop() && looping.current_playback_position() == 0
 	assert looping.seeking() && !looping.paused() && !looping.ended()
 	looping_element.remove_attribute_ns(none, 'loop')
-	assert !looping.loop() && looping.loop_was_specified_at_end_
+	assert !looping.loop() && !looping.ended()
 	mln_namespace_drain(looping)
 	assert !looping.seeking() && !looping.paused() && !looping.ended()
 	assert looping.event_count('seeking') == 1 && looping.event_count('seeked') == 1
@@ -148,12 +147,13 @@ fn test_media_loop_namespace_endpoint_uses_null_slot_and_retains_paused_guard_an
 	assert looping_foreign.value() == 'foreign endpoint raw'
 
 	paused_element.set_attribute_value('loop', 'paused real loop')
-	paused.set_current_playback_position(1)
+	paused.seek_from_media_controls(1)
+	mln_namespace_drain(paused)
 	paused.reached_end_of_media_playback()
-	assert paused.loop_was_specified_at_end_ && paused.current_playback_position() == 1 && paused.paused()
+	assert paused.loop() && paused.current_playback_position() == 1 && paused.paused()
 	assert !paused.seeking() && paused.queued_media_task_ids_.len == 0
 	event_loop.process()
 	assert !paused.ended() && paused.event_count('pause') == 0 && paused.event_count('ended') == 0
-	assert paused.event_count('seeking') == 0 && paused.event_count('seeked') == 0
+	assert paused.event_count('seeking') == 1 && paused.event_count('seeked') == 1
 	assert probe.fetches == 3
 }
