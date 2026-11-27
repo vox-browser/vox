@@ -28,7 +28,7 @@ jobs:
     env:
       # Includes FastC native and generic lowering plus typed json2 decode slots.
       # https://github.com/vlang/v/pull/32996
-      V_REVISION: f55f5b8548b5d0a8ea1291d975f72ca07377c6f4
+      V_REVISION: ba0ce2c2f16bef65f4b3db52d5f2569a176e6903
       # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
       VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'
