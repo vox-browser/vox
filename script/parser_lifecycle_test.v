@@ -60,8 +60,12 @@ fn test_resumed_parser_loads_svg_use_resources_even_when_its_script_fails() {
 		listener.set_accept_timeout(10 * time.millisecond)
 		requests := chan string{cap: 8}
 		stop := chan bool{cap: 1}
-		spawn serve_parser_svg_sprite(mut listener, requests, stop)
-		defer { stop <- true; listener.close() or {} }
+		server := spawn serve_parser_svg_sprite(mut listener, requests, stop)
+		defer {
+			stop <- true
+			server.wait()
+			listener.close() or {}
+		}
 		address := 'http://${listener.addr()!}'
 		mut host := parser_lifecycle_fixture_at('${address}/page')
 		defer { parser_lifecycle_close(host) }
@@ -109,8 +113,12 @@ fn test_synchronous_parser_shares_no_store_svg_responses_with_the_shell() {
 	listener.set_accept_timeout(10 * time.millisecond)
 	requests := chan string{cap: 8}
 	stop := chan bool{cap: 1}
-	spawn serve_parser_svg_sprite(mut listener, requests, stop)
-	defer { stop <- true; listener.close() or {} }
+	server := spawn serve_parser_svg_sprite(mut listener, requests, stop)
+	defer {
+		stop <- true
+		server.wait()
+		listener.close() or {}
+	}
 	address := 'http://${listener.addr()!}'
 	mut app := BrowserApp{
 		page_model: page.Page.create(1)!
@@ -125,7 +133,7 @@ fn test_synchronous_parser_shares_no_store_svg_responses_with_the_shell() {
 		markup: '<!doctype html><svg><use id=target href="sprite.svg#logo"/></svg>'
 		content_type: 'text/html'
 	}, false)
-	assert requests.len == 1
+	assert requests.len == 1, 'Expected one request for ${address}/sprite.svg; document ${app.document.url.serialize()}, messages: ${app.js_messages.join(', ')}'
 	assert <-requests == 'GET /sprite.svg HTTP/1.1'
 	shadow := app.document.get_element_by_id('target')?.shadow_root()?
 	instance := unsafe { &dom.Node(shadow) }.first_child()?.as_element()?
