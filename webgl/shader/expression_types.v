@@ -39,8 +39,17 @@ fn vector_type(scalar string, width int) string {
 fn expression_type(tokens []string,offset int,locals []ShaderSymbol,globals []ShaderSymbol,functions []ShaderFunction,structures map[string]ShaderStruct) !ShaderExpression {
  if tokens.len==0 {return ShaderExpression{}}
  mut parser:=ExpressionParser{tokens:tokens,offset:offset,locals:locals,globals:globals,functions:functions,structures:structures}
- result:=parser.expression(0)!
+ result:=parser.expression_list()!
  if parser.at!=tokens.len {return error('Invalid shader expression near '+tokens[parser.at])}
+ return result
+}
+fn (mut p ExpressionParser) expression_list() !ShaderExpression {
+ mut result:=p.expression(0)!
+ for p.at<p.tokens.len && p.tokens[p.at]==',' {
+  p.at++
+  next:=p.expression(0)!
+  result=ShaderExpression{...next,source:'('+result.source+','+next.source+')',writable:false}
+ }
  return result
 }
 fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
@@ -58,7 +67,7 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
   if word in ['+','-','++','--'] && scalar_of(operand.typ)=='bool' {return error('Arithmetic requires numeric operands')}
   left=ShaderExpression{...operand,source:word+'('+operand.source+')',writable:false}
  } else if word=='(' {
-  left=p.expression(0)!
+  left=p.expression_list()!
   if p.at>=p.tokens.len || p.tokens[p.at]!=')' {return error('Expected ) in shader expression')};p.at++
   left=ShaderExpression{...left,source:'('+left.source+')'}
  } else if word in ['true','false'] {left=ShaderExpression{typ:'bool',source:word}}
@@ -94,15 +103,21 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
   op:=p.tokens[p.at]
   if op=='[' {
    p.at++
-   index:=p.expression(0)!
-   if index.typ!='' && index.typ !in ['int','uint'] {return error('Shader array index must be integral')}
+   index:=p.expression_list()!
+   if index.typ !in ['int','uint'] || index.length>0 {return error('Shader array index must be integral')}
    if p.at>=p.tokens.len || p.tokens[p.at]!=']' {return error('Expected ]')};p.at++
+   count:=if left.length>0 {left.length} else if is_matrix_type(left.typ) {_,columns:=interface_dimensions(left.typ);columns} else if is_vector_type(left.typ) {int(left.typ[left.typ.len-1]-`0`)} else {0}
+   if count<1 {return error('Cannot prove shader subscript bounds')}
+   mut bounded_index:=index.source
    if value:=constant_integer(lex(index.source)!,map[string]ConstantScalar{}) {
-    count:=if left.length>0 {left.length} else if is_matrix_type(left.typ) {_,columns:=interface_dimensions(left.typ);columns} else if is_vector_type(left.typ) {int(left.typ[left.typ.len-1]-`0`)} else {0}
-    if count>0 && (value<0 || value>=count) {return error('Constant shader index out of range')}
+    if value<0 || value>=count {return error('Constant shader index out of range')}
+   } else {
+    // A helper call evaluates side effects once and preserves unsigned values
+    // until after clamping, including indices above the signed integer range.
+    bounded_index='_webgl_safe_index('+index.source+','+count.str()+')'
    }
    typ:=if left.length>0 {left.typ} else if is_matrix_type(left.typ) {rows,_:=interface_dimensions(left.typ);vector_type('float',rows)} else if is_vector_type(left.typ) {scalar_of(left.typ)} else {''}
-   left=ShaderExpression{typ:typ,source:left.source+'['+index.source+']',writable:left.writable}
+   left=ShaderExpression{typ:typ,source:left.source+'['+bounded_index+']',writable:left.writable}
    continue
   }
   if op=='.' {
@@ -137,7 +152,7 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
   if op=='?' && minimum<=1 {
    if left.typ!='' && left.typ!='bool' {return error('Conditional expression requires bool')}
    p.at++
-   yes:=p.expression(0)!
+   yes:=p.expression_list()!
    if p.at>=p.tokens.len || p.tokens[p.at]!=':' {return error('Expected : in shader expression')};p.at++
    no:=p.expression(1)!
    if yes.typ!='' && no.typ!='' && (yes.typ!=no.typ || yes.length!=no.length) {return error('Conditional expression types differ')}
@@ -178,6 +193,12 @@ fn (mut p ExpressionParser) expression(minimum int) !ShaderExpression {
 }
 
 fn function_result_type(name string,args []ShaderExpression,functions []ShaderFunction,structures map[string]ShaderStruct,at int) !string {
+ // This identifier is reserved from input shaders and emitted only by the
+ // bounds lowering. Its overload clamps either signed or unsigned indices.
+ if name=='_webgl_safe_index' {
+  if args.len!=2 || args[0].typ !in ['int','uint'] || args[0].length>0 || args[1].typ!='int' || args[1].length>0 {return error('Invalid generated shader index')}
+  return 'int'
+ }
  if _:=metal_type(name) {return name}
  if name in structures {return name}
  targets:=functions.filter(it.name==name)
@@ -223,6 +244,55 @@ struct ExpressionReplacement {
  end int
  source string
 }
+
+fn normalize_declaration_initializers(tokens []string,declaration ShaderDeclaration,locals []ShaderSymbol,globals []ShaderSymbol,functions []ShaderFunction,structures map[string]ShaderStruct,mut replacements map[int]ExpressionReplacement) ! {
+ for field in declaration.fields {
+  if !field.initialized {continue}
+  begin:=field.after_name+1
+  expr:=expression_type(tokens[begin..field.delimiter],begin,locals,globals,functions,structures)!
+  if expr.typ!='' && (expr.typ!=field.typ || expr.length!=field.length) {return error('Implicit shader initialization conversion is forbidden')}
+  replacements[begin]=ExpressionReplacement{end:field.delimiter,source:expr.source}
+ }
+}
+
+// An expression form that the normalizer does not understand must never leave
+// a raw Metal subscript behind. Only parsed expressions and declared array
+// extents may consume brackets from the input shader.
+fn validate_subscript_coverage(tokens []string,functions []ShaderFunction,globals []ShaderSymbol,replacements map[int]ExpressionReplacement) ! {
+ mut declarations:=map[int]bool{}
+ for symbol in globals {if symbol.length>0 && symbol.start>=0 {declarations[symbol.start+1]=true}}
+ mut function_ends:=map[int]int{}
+ for function in functions {
+  function_ends[function.start]=function.end
+  for p in function.start..function.header_end {if tokens[p]=='[' {declarations[p]=true}}
+  if function.body<0 {continue}
+  for declaration in local_declarations(tokens,function) {
+   for field in declaration.fields {if field.length>0 {declarations[field.name_at+1]=true}}
+  }
+ }
+ mut at:=0
+ for at<tokens.len {
+  if end:=function_ends[at] {at=end;continue}
+  mut open:=-1
+  if tokens[at]=='struct' && at+2<tokens.len && tokens[at+2]=='{' {open=at+2}
+  else if uniform_at:=block_uniform_at(tokens,at) {
+   if uniform_at+2<tokens.len && tokens[uniform_at+2]=='{' {open=uniform_at+2}
+  }
+  if open>=0 {
+   end:=matching_token(tokens,open)!
+   // shader_structure_types has already validated these field declarations.
+   for p in open+1..end {if tokens[p]=='[' {declarations[p]=true}}
+   at=end+1
+  } else {at++}
+ }
+ at=0
+ for at<tokens.len {
+  if replacement:=replacements[at] {at=replacement.end;continue}
+  if tokens[at]=='[' && !declarations[at] {return error('Shader subscript is outside a checked expression')}
+  at++
+ }
+}
+
 fn normalize_shader_expressions(tokens []string,version int,stage Stage) ![]string {
  functions:=shader_functions(tokens)!
  globals:=shader_global_symbols(tokens,functions,stage)!
@@ -230,11 +300,20 @@ fn normalize_shader_expressions(tokens []string,version int,stage Stage) ![]stri
  mut types:=map[string]bool{}
  for p,word in tokens {if word=='struct' && p+1<tokens.len {types[tokens[p+1]]=true}}
  mut replacements:=map[int]ExpressionReplacement{}
+ for declaration in ordinary_global_declarations(tokens,functions) {
+  normalize_declaration_initializers(tokens,declaration,[]ShaderSymbol{},globals,functions,structures,mut replacements)!
+ }
  for function in functions {
   if function.body<0 {continue}
   locals:=function_symbols(tokens,function,types,version)!
+  mut declarations:=map[int]ShaderDeclaration{}
+  for declaration in local_declarations(tokens,function) {
+   declarations[declaration.start]=declaration
+   normalize_declaration_initializers(tokens,declaration,locals,globals,functions,structures,mut replacements)!
+  }
   mut p:=function.body+1
   for p<function.end-1 {
+   if declaration:=declarations[p] {p=declaration.end;continue}
    word:=tokens[p]
    if word=='for' && p+1<tokens.len && tokens[p+1]=='(' {
     end:=matching_token(tokens,p+1)!
@@ -245,23 +324,21 @@ fn normalize_shader_expressions(tokens []string,version int,stage Stage) ![]stri
     for i,begin in clauses {
      finish:=if i<2 {clauses[i+1]-1} else {end}
      if begin==finish {continue}
-     mut expression_begin:=begin
-     mut expected:=''
-     if i==0 && begin+2<finish && source_type(tokens[begin],types) && identifier(tokens[begin+1]) && tokens[begin+2]=='=' {expression_begin=begin+3;expected=tokens[begin]}
-     expr:=expression_type(tokens[expression_begin..finish],expression_begin,locals,globals,functions,structures)!
-     if expr.typ!='' && ((i==1 && expr.typ!='bool') || (expected!='' && expr.typ!=expected)) {return error('Invalid for clause type')}
-     replacements[expression_begin]=ExpressionReplacement{end:finish,source:expr.source}
+     if declaration:=declarations[begin] {
+      if i>1 || declaration.end!=finish+1 || (i==1 && (declaration.fields.len!=1 || declaration.fields[0].typ!='bool' || !declaration.fields[0].initialized)) {return error('Invalid for declaration')}
+      continue
+     }
+     expr:=expression_type(tokens[begin..finish],begin,locals,globals,functions,structures)!
+     if expr.typ!='' && i==1 && expr.typ!='bool' {return error('Invalid for clause type')}
+     replacements[begin]=ExpressionReplacement{end:finish,source:expr.source}
     }
     p=end+1;continue
    }
    if word in ['if','while','switch'] && p+1<tokens.len && tokens[p+1]=='(' {
     end:=matching_token(tokens,p+1)!
-    // Condition declarations are checked at their declarator below.
-    if p+4<end && source_type(tokens[p+2],types) && identifier(tokens[p+3]) && tokens[p+4]=='=' {
-     if word=='switch' || tokens[p+2]!='bool' {return error('Condition declaration must be bool')}
-     expr:=expression_type(tokens[p+5..end],p+5,locals,globals,functions,structures)!
-     if expr.typ!='' && expr.typ!='bool' {return error('Condition initializer must be bool')}
-     replacements[p+5]=ExpressionReplacement{end:end,source:expr.source};p=end+1;continue
+    if declaration:=declarations[p+2] {
+     if word=='switch' || declaration.end!=end+1 || declaration.fields.len!=1 || declaration.fields[0].typ!='bool' || !declaration.fields[0].initialized {return error('Condition declaration must be bool')}
+     p=end+1;continue
     }
     expr:=expression_type(tokens[p+2..end],p+2,locals,globals,functions,structures)!
     if expr.typ!='' && ((word!='switch' && expr.typ!='bool') || (word=='switch' && expr.typ !in ['int','uint'])) {return error('Invalid shader condition type')}
@@ -277,19 +354,7 @@ fn normalize_shader_expressions(tokens []string,version int,stage Stage) ![]stri
     } else if function.typ!='void' {return error('Missing shader return value')}
     p=end+1;continue
    }
-   if word=='=' {
-    // Initializers are the only assignments not beginning a statement.
-    target:=resolve_symbol(tokens[p-1],p-1,locals,globals) or {p++;continue}
-    if target.start!=p-1 {p++;continue}
-    mut end:=p+1
-    for end<function.end && tokens[end] !in [';',','] {if tokens[end] in ['(', '['] {end=matching_token(tokens,end)!};end++}
-    // ESSL array constructors are lowered separately by the generator.
-    if p+2<end && tokens[p+2]=='[' {p=end;continue}
-    expr:=expression_type(tokens[p+1..end],p+1,locals,globals,functions,structures)!
-    if expr.typ!='' && expr.typ!=target.typ {return error('Implicit shader initialization conversion is forbidden')}
-    replacements[p+1]=ExpressionReplacement{end:end,source:expr.source};p=end;continue
-   }
-   if (p==function.body+1 || tokens[p-1] in ['{','}',';','else',')',':']) && (identifier(word) || word in ['++','--','(']) && word !in ['for','if','while','switch','do','case','default','else','break','continue','discard','const','lowp','mediump','highp'] && !source_type(word,types) {
+   if (p==function.body+1 || tokens[p-1] in ['{','}',';','else',')',':']) && (identifier(word) || word in ['++','--','(']) && word !in ['for','if','while','switch','do','case','default','else','break','continue','discard','const','lowp','mediump','highp'] {
     mut end:=p
     for end<function.end && tokens[end] !in [';','}'] {if tokens[end] in ['(', '['] {end=matching_token(tokens,end)!};end++}
     if end>p && end<function.end && tokens[end]==';' {
@@ -300,6 +365,7 @@ fn normalize_shader_expressions(tokens []string,version int,stage Stage) ![]stri
    p++
   }
  }
+ validate_subscript_coverage(tokens,functions,globals,replacements)!
  mut result:=[]string{}
  mut at:=0
  for at<tokens.len {
@@ -308,7 +374,6 @@ fn normalize_shader_expressions(tokens []string,version int,stage Stage) ![]stri
    at=replacement.end
   } else {result << tokens[at];at++}
  }
- _=version
  return result
 }
 
