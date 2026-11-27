@@ -98,6 +98,7 @@ fn test_hosted_document_retires_before_the_roots_last_payload_reader() {
 	child_storage.retain()
 	assert child_storage.arena.contains(element)
 
+	root.destroy_a_document_and_its_descendants()
 	root.finalize()
 	root.release_native_storage()
 	assert host.closed
@@ -130,6 +131,7 @@ fn test_adopting_a_child_node_does_not_cycle_with_hosted_document_cleanup() {
 	root.adopt_node(element.as_node())
 	root_storage.retain()
 
+	root.destroy_a_document_and_its_descendants()
 	root.finalize()
 	root.release_native_storage()
 	assert host.closed

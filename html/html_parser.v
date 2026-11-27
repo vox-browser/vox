@@ -611,12 +611,12 @@ pub fn (mut p HTMLParser) schedule_resume_check() {
 	parser_pointer := voidptr(p)
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [parser_pointer] () {
+	queue_parser_progress_task(p.document_, fn [parser_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_parser := unsafe { &HTMLParser(parser_pointer) }
 		mutable_parser.resume_check_pending = false
 		mutable_parser.resume_after_parser_blocking_script()
-	}, p.document_.native_storage())
+	})
 }
 
 fn (mut p HTMLParser) resume_after_parser_blocking_script() {
@@ -780,13 +780,13 @@ pub fn (mut state HTMLParserEndState) schedule_progress_check() {
 	state_pointer := voidptr(state)
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
+	queue_parser_progress_task(state.document, fn [state_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_state := unsafe { &HTMLParserEndState(state_pointer) }
 		// Cleared first: a check can schedule its own continuation.
 		mutable_state.check_pending = false
 		mutable_state.check_progress()
-	}, state.document.native_storage())
+	})
 }
 
 fn (mut state HTMLParserEndState) check_progress() {

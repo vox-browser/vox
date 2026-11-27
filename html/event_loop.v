@@ -127,6 +127,7 @@ mut:
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
 	owns_steps bool
+	runs_while_inactive bool
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
@@ -207,6 +208,7 @@ pub fn (task &Task) document() ?&dom.Document {
 // https://html.spec.whatwg.org/multipage/webappapis.html#concept-task-runnable
 pub fn (task &Task) is_runnable() bool {
 	if document := task.document_ {
+		if task.runs_while_inactive { return !document.has_been_destroyed() }
 		return document.is_fully_active()
 	}
 	return true
@@ -366,6 +368,7 @@ pub fn (mut queue TaskQueue) take_first_runnable_matching(predicate fn(&Task) bo
 		}
 		if task.is_permanently_unrunnable() {
 			queue.tasks.delete(index)
+			task.cancel()
 			continue
 		}
 		index++
@@ -1270,9 +1273,18 @@ pub fn queue_a_task(source TaskSource, event_loop ?&EventLoop, document ?&dom.Do
 }
 
 // A task's runnability association and the receiver's storage lifetime are
-// separate. Parser and font progress checks intentionally have no association.
+// separate. Some font work has no document association.
 fn queue_a_task_with_storage(source TaskSource, event_loop ?&EventLoop, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) u64 {
 	return enqueue_owned_task(event_loop, Task.create_with_storage(source, document, steps, storage))
+}
+
+// Parser progress can unblock navigation before activation. Keep the document
+// association so destruction still cancels its callback and storage lease.
+fn queue_parser_progress_task(document &dom.Document, steps fn()) {
+	mut task := Task.create_with_storage(.unspecified, document, steps, document.native_storage())
+	task.runs_while_inactive = true
+	task.owns_steps = true
+	enqueue_owned_task(main_thread_event_loop(), task)
 }
 
 fn enqueue_owned_task(event_loop ?&EventLoop, task &Task) u64 {
