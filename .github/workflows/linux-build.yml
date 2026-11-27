@@ -298,6 +298,17 @@ jobs:
           sh build-prod-browser.sh
           test -x Build/linux/vox
 
+      - name: Preserve production build and smoke evidence
+        if: ${{ always() && !cancelled() && (steps.production_build.outcome == 'success' || steps.production_build.outcome == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-production-receipts-${{ matrix.gc }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            Build/linux/production-build/receipts/*/*.log
+            Build/linux/production-build/receipts/*/*.json
+
       - name: Check the native window and tab lifecycle
         if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
         timeout-minutes: 12
