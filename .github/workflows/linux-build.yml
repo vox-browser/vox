@@ -26,9 +26,9 @@ jobs:
       matrix:
         gc: [boehm, prealloc]
     env:
-      # Includes the XML allocation fixes and FastC channel, generic-call, and enum lowering.
-      # https://github.com/vlang/v/pull/32910
-      V_REVISION: 63f668fbc1336b30d00f4bf3d87ca3c4e2329d1a
+      # Includes FastC native and generic lowering plus typed json2 decode slots.
+      # https://github.com/vlang/v/pull/32996
+      V_REVISION: f55f5b8548b5d0a8ea1291d975f72ca07377c6f4
       # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
       VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'
