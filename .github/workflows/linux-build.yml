@@ -244,6 +244,7 @@ jobs:
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" cpuraster/shadow_command_test.v
 
       - name: Check structured storage integer codecs
+        id: structured_storage
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 25
         run: |
@@ -254,6 +255,17 @@ jobs:
             --report "$RUNNER_TEMP/vox-structured-codec-$LADYBIRD_V_GC.json" --timeout 1440 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
               html/structured_codec_tests/structured_codec_test.v
+
+      - name: Preserve structured storage check evidence
+        if: ${{ !cancelled() && steps.structured_storage.outcome == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-structured-storage-receipts-${{ matrix.gc }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/vox-structured-codec-${{ matrix.gc }}.json
+            Build/linux/tests/${{ matrix.gc }}/run-*/structured_codec_test.log
 
       - name: Compare XML parser CPU and retained memory
         id: xml_performance
