@@ -443,16 +443,18 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 				audio_track := media_element.on_audio_track_added_for_source_buffer(metadata)
 				mut list := buffer.audio_tracks_
 				list.add_track(audio_track)
+				element_list := media_element.audio_tracks()
 				queue_track_list_addtrack_events(media_source, media_element, &list.EventTarget,
-					&media_element.audio_tracks().EventTarget, html.TrackEventTrack.from_audio(audio_track))
+					&element_list.EventTarget, html.TrackEventTrack.from_audio(audio_track))
 				has_active_track = true
 			}
 			.video {
 				video_track := media_element.on_video_track_added_for_source_buffer(metadata)
 				mut list := buffer.video_tracks_
 				list.add_track(video_track)
+				element_list := media_element.video_tracks()
 				queue_track_list_addtrack_events(media_source, media_element, &list.EventTarget,
-					&media_element.video_tracks().EventTarget, html.TrackEventTrack.from_video(video_track))
+					&element_list.EventTarget, html.TrackEventTrack.from_video(video_track))
 				has_active_track = true
 			}
 			.text {
