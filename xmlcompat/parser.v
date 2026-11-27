@@ -549,8 +549,8 @@ fn xml_parse_literal_document(source string, borrow_text bool) ?Document {
 @[params]
 pub struct ParseOptions {
 pub:
-	// Treat the tree as scoped to this parse's input storage. Text without
-	// reference expansion may borrow from that storage.
+	// Plain character data and ASCII attribute values may borrow this input.
+	// Keep the input alive until consumers finish reading or copy the values.
 	borrow_text bool
 }
 

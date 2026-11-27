@@ -29,7 +29,7 @@ jobs:
       # Combine the FastC fixes and the XML string parser until both land in V.
       # https://github.com/vlang/v/pull/32996
       # https://github.com/vlang/v/pull/32998
-      V_REVISION: 3ea0b3de56d411dadf250f7f37e2b3ee054c9a11
+      V_REVISION: e56410795a17252decb76e8f253ff5b1431569d6
       # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
       VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'
