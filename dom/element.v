@@ -7578,8 +7578,27 @@ fn (mut e Element) svg_use_process_the_url() {
 	e.svg_use_clone_element_tree_as_our_shadow_tree(target)
 }
 
+// An identifier-only fragment survives URL parsing unchanged. Reject unrelated
+// mutations before parsing the URL or looking up the target. Other hrefs can
+// contain escaped IDs or whitespace, so they still go through URL resolution.
+fn svg_use_href_can_reference_changed_element(href string, changed_element &Element) bool {
+	if href.len == 0 { return false }
+	if href[0] != `#` || href.len == 1 { return true }
+	fragment := href.substr_unsafe(1, href.len)
+	if !fragment.is_identifier() { return true }
+	for element := ?&Element(changed_element); element != none; {
+		ancestor := element or { break }
+		if id := ancestor.id() {
+			if id == fragment { return true }
+		}
+		element = ancestor.as_node().parent_element()
+	}
+	return false
+}
+
 pub fn (mut e Element) svg_element_changed(svg_element &Element) {
-	if !e.is_svg_element() || e.local_name() != 'use' {
+	if !e.is_svg_element() || e.local_name() != 'use'
+		|| !svg_use_href_can_reference_changed_element(e.svg_use_href(), svg_element) {
 		return
 	}
 	to_clone := e.svg_use_referenced_element() or { return }
@@ -7606,7 +7625,8 @@ pub fn (mut e Element) svg_element_removed(svg_element &Element) {
 
 pub fn (mut e Element) update_use_elements_that_reference_this() {
 	if !e.is_svg_element() || e.local_name() == 'use' || !e.is_connected()
-		|| e.document().readiness() == .loading || e.as_node().root().as_shadow_root() != none {
+		|| e.document().readiness() == .loading || !e.document().has_seen_element_local_name('use')
+		|| e.as_node().root().as_shadow_root() != none {
 		return
 	}
 	document_root := unsafe { &Node(e.document()) }

@@ -422,6 +422,7 @@ jobs:
             --lock "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.json" --timeout 1200 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              dom/svg_use_lifecycle_test.v \
               compact/native_attributes_test.v \
               compact/mutation_boundary_test.v \
               compact/pending_iteration_test.v \

@@ -343,3 +343,54 @@ fn test_svg_use_direct_external_use_target_initializes_the_cloned_root() {
 	assert cloned_root.local_name() == 'use'
 	assert svg_use_test_instance(cloned_root)?.get_attribute_value('data-owner') == resource.url.serialize()
 }
+
+fn test_svg_use_refreshes_idless_descendants_without_rebuilding_unrelated_instances() {
+	mut document := svg_use_test_document_with_nested_symbol('https://example.test/image.svg')!
+	defer { document.finalize() }
+	mut root_node := document.document_element()?.as_node()
+	mut target := svg_use_test_element(mut document, 'g')
+	target.set_attribute_value('id', 'shape')
+	mut child := svg_use_test_element(mut document, 'rect')
+	mut target_node := target.as_node()
+	target_node.append_child(child.as_node())!
+	root_node.append_child(target_node)!
+
+	mut literal := svg_use_test_element(mut document, 'use')
+	literal.set_attribute_value('href', '#shape')
+	root_node.append_child(literal.as_node())!
+	mut escaped := svg_use_test_element(mut document, 'use')
+	escaped.set_attribute_value('href', '#%73hape')
+	root_node.append_child(escaped.as_node())!
+	mut unrelated := svg_use_test_element(mut document, 'use')
+	unrelated.set_attribute_value('href', '#leaf')
+	root_node.append_child(unrelated.as_node())!
+	unrelated_instance := svg_use_test_instance(unrelated)?
+
+	child.set_attribute_value('data-version', 'new')
+	for use_element in [literal, escaped] {
+		instance := svg_use_test_instance(use_element)?
+		instance_child := instance.as_node().first_child()?.as_element()?
+		assert instance_child.get_attribute_value('data-version') == 'new'
+	}
+	assert voidptr(svg_use_test_instance(unrelated)?) == voidptr(unrelated_instance)
+}
+
+fn test_svg_use_forward_reference_is_resolved_at_interactive_readiness() {
+	mut document := Document.create(URL{ value: 'https://example.test/image.svg' })
+	defer { document.finalize() }
+	document.update_readiness(.loading)
+	mut root := svg_use_test_element(mut document, 'svg')
+	mut document_node := document.as_node()
+	document_node.append_child(root.as_node())!
+	mut root_node := root.as_node()
+	mut use_element := svg_use_test_element(mut document, 'use')
+	use_element.set_attribute_value('href', '#shape')
+	root_node.append_child(use_element.as_node())!
+	mut target := svg_use_test_element(mut document, 'rect')
+	target.set_attribute_value('id', 'shape')
+	root_node.append_child(target.as_node())!
+	assert svg_use_test_instance(use_element) == none
+
+	document.update_readiness(.interactive)
+	assert svg_use_test_instance(use_element)?.local_name() == 'rect'
+}
