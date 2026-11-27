@@ -26,9 +26,10 @@ jobs:
       matrix:
         gc: [boehm, prealloc]
     env:
-      # Includes FastC native and generic lowering plus typed json2 decode slots.
+      # Combine the FastC fixes and the XML string parser until both land in V.
       # https://github.com/vlang/v/pull/32996
-      V_REVISION: ba0ce2c2f16bef65f4b3db52d5f2569a176e6903
+      # https://github.com/vlang/v/pull/32998
+      V_REVISION: 3ea0b3de56d411dadf250f7f37e2b3ee054c9a11
       # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
       VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'

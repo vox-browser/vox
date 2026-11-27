@@ -291,3 +291,22 @@ fn test_normalized_source_stays_bounded_for_large_spaced_payloads() {
 	assert prepared.special_nodes[0].is_text
 	assert prepared.special_nodes[0].data == text
 }
+
+fn test_literal_document_preserves_mixed_inline_nodes_and_marker_like_comments() {
+	source := '<root>  alpha <!--!42--><![CDATA[<sample>]]><?work with data?> omega  </root>'
+	document := xml_parse_literal_document(source, false) or { panic('expected the direct XML string path') }
+	root := document.children[0] as vxml.XMLNode
+	assert root.children.len == 5
+	assert (root.children[0] as string) == '  alpha '
+	comment := document.special_node(root.children[1] as vxml.XMLComment) or { panic('missing comment') }
+	assert comment.is_comment
+	assert comment.data == '!42'
+	assert (root.children[2] as vxml.XMLCData).text == '<sample>'
+	instruction := document.special_node(root.children[3] as vxml.XMLComment) or { panic('missing processing instruction') }
+	assert instruction.target == 'work'
+	assert instruction.data == 'with data'
+	assert (root.children[4] as string) == ' omega  '
+	assert xml_parse_literal_document('<root>]]></root>', false) == none
+	assert xml_parse_literal_document('<root><?XML version="1.0"?></root>', false) == none
+	assert xml_parse_literal_document('<root><!--invalid--data--></root>', false) == none
+}
