@@ -26,11 +26,11 @@ jobs:
       matrix:
         gc: [boehm, prealloc]
     env:
-      # FastC must support JSON enum attributes and dynamic-array decoding.
-      # XML allocation fixes: https://github.com/vlang/v/pull/32104
-      V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
-      # The C bootstrap snapshot must understand this revision's compiler sources.
-      VC_REVISION: f28b01336a3e54d888e5711f1f25a31e164ba9c0
+      # Includes the XML allocation fixes and FastC channel, generic-call, and enum lowering.
+      # https://github.com/vlang/v/pull/32910
+      V_REVISION: 63f668fbc1336b30d00f4bf3d87ca3c4e2329d1a
+      # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
+      VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
@@ -134,7 +134,7 @@ jobs:
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
-            make -C "$RUNNER_TEMP/v" -j2 local=1 CC=clang 'VFLAGS=-cc clang -memory-limit 10G'
+            make -C "$RUNNER_TEMP/v" -j2 local=1 CC=clang VEXE=./v 'VFLAGS=-cc clang -memory-limit 10G'
           # Collect temporary compiler allocations during the large native C checks.
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-collector.lock" \
