@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_linux_modules import patch_fontstash_callbacks, patch_module, stage_module
+from prepare_linux_modules import patch_fontstash_callbacks, patch_module, restore_vox_canvas, stage_module
 
 
 class LinuxModuleStagingTest(unittest.TestCase):
@@ -221,6 +221,85 @@ const recorder_settings = new_gg_recorder_settings()
             stage_module(source, target, 'net/openssl')
             self.assertEqual((target / 'ssl_connection.c.v').read_text(), patched)
             self.assertEqual((source / 'ssl_connection.c.v').read_text(), original)
+
+    @staticmethod
+    def vox_canvas_sources(canvas):
+        (canvas).mkdir(parents=True)
+        (canvas / 'gpu_layer.v').write_text(
+            'module canvas\n'
+            '\n'
+            'pub struct Texture {\n'
+            '\tmode           f32\n'
+            '\ttexture_height int\n'
+            '}\n'
+            '\n'
+            'pub struct Binding {\n'
+            '\timage gfx.Image\n'
+            '}\n'
+            '\n'
+            'fn same(a Texture, b Texture) bool {\n'
+            '\treturn a.mode == b.mode\n'
+            '}\n'
+            '\n'
+            'fn same_image(a Binding, b Binding) bool {\n'
+            '\treturn a.image.id == b.image.id\n'
+            '}\n'
+            '\n'
+            'fn emit(u Uniform) {\n'
+            '\tout << u.mode\n'
+            '\tout << 0\n'
+            '\tout << 0\n'
+            '\tout << 0\n'
+            '}\n'
+            '\n'
+            'const image_uniform_size = 48\n')
+        (canvas / 'gpu_surface.v').write_text(
+            'module canvas\n'
+            '\n'
+            'fn make() {\n'
+            '\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n'
+            '\t\t\tupper2x2:       [f32(1), 0, 0, 1]!\n'
+            '\t\t\timage: layer.image\n'
+            '\tbindings.fs.samplers[0] = ctx.layer_sampler()\n'
+            '}\n')
+        (canvas / 'gpu_gradient.v').write_text(
+            'module canvas\n'
+            '\n'
+            'fn build(snippets map[string]string) string {\n'
+            "\tbodies_tile := (snippets['bodies_tile'] + snippets['body_colorize_${stops}']).replace('_skTemp', 'x')\n"
+            '\treturn bodies_tile\n'
+            '}\n')
+
+    @staticmethod
+    def vox_canvas_metal() -> str:
+        return ('float mode_6;\n// @@ vertex_image\n// @@ main_image\n'
+                'float4 outColor_1 = _10_sk_csxform_prealpha;\n')
+
+    def test_pristine_linux_staging_drops_vox_canvas_until_restored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, modules = root / 'compiler/gg', root / 'modules'
+            self.vox_canvas_sources(source / 'canvas')
+            stage_module(source, modules / 'gg', 'gg')
+            canvas = modules / 'gg' / 'canvas'
+            self.assertFalse((canvas / 'vox_document_image.v').exists())
+            self.assertNotIn('mask_color', (canvas / 'gpu_layer.v').read_text())
+            # Linux staging links the shader asset; seed it where the
+            # platform cannot create the link.
+            metal = canvas / 'shaders/paint_snippets.metal'
+            if not metal.exists():
+                metal.parent.mkdir(parents=True, exist_ok=True)
+                metal.write_text(self.vox_canvas_metal())
+            restore_vox_canvas(modules)
+            layer = (canvas / 'gpu_layer.v').read_text()
+            self.assertIn('mask_color', layer)
+            self.assertIn('document_linear_filter', layer)
+            self.assertIn('color_transform', layer)
+            self.assertTrue((canvas / 'vox_document_image.v').is_file())
+            self.assertTrue((canvas / 'vox_shadow_mask.v').is_file())
+            self.assertIn('tile_source :=', (canvas / 'gpu_gradient.v').read_text())
+            restore_vox_canvas(modules)
+            self.assertEqual((canvas / 'gpu_layer.v').read_text(), layer)
 
 
 if __name__ == '__main__':
