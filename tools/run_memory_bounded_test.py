@@ -101,6 +101,10 @@ class BoundedCommandTests(unittest.TestCase):
                 report = json.loads((root / 'report.json').read_text())
                 self.assertEqual(report['reason'], 'memory_limit')
                 self.assertIn(str(external.pid), report['adopted_processes'])
+                sample = report['memory_limit_processes']
+                self.assertIn(external.pid, [process['pid'] for process in sample])
+                self.assertEqual(sum(process['rss_bytes'] for process in sample),
+                                 report['observed_peak_rss_bytes'])
                 self.assertGreater(report['observed_peak_rss_bytes'], report['limit_bytes'])
                 self.assertEqual(external.wait(timeout=5), -9)
             finally:
