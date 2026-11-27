@@ -32,6 +32,7 @@ jobs:
       # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
       VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'
+      VJOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
     steps:
@@ -135,12 +136,15 @@ jobs:
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
             make -C "$RUNNER_TEMP/v" -j2 local=1 CC=clang VEXE=./v 'VFLAGS=-cc clang -memory-limit 10G'
-          # Collect temporary compiler allocations during the large native C checks.
+          # The compiler's default arena can retain a large imported graph. Build
+          # a collected compiler with FastC included so both backends use this binary.
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-collector.lock" \
             --report "$RUNNER_TEMP/vox-v-collector.json" --timeout 300 -- \
-            "$RUNNER_TEMP/v/v" -b c -memory-limit 10G -nocache -gc boehm -d dynamic_boehm \
-              -cc clang -o "$RUNNER_TEMP/v/v-collector" "$RUNNER_TEMP/v/cmd/v"
+            "$RUNNER_TEMP/v/v" -b c -all-backends -no-prealloc -memory-limit 10G \
+              -nocache -gc boehm -d dynamic_boehm -cc clang \
+              -o "$RUNNER_TEMP/v/v-collector" "$RUNNER_TEMP/v/cmd/v"
+          ldd "$RUNNER_TEMP/v/v-collector" | grep 'libgc\.so'
           "$RUNNER_TEMP/v/v-collector" version
           git init "$RUNNER_TEMP/ui2"
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
