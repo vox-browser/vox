@@ -66,8 +66,11 @@ jobs:
         id: system_dependencies
         if: ${{ !cancelled() && steps.reviewed_checkout.outcome == 'success' }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          # These packages come from Ubuntu. Hosted images also include
+          # unrelated vendor feeds whose availability need not block this job.
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y --no-install-recommends \
             build-essential clang ninja-build generate-ninja pkg-config \
             python3 git curl ca-certificates nodejs openssl libjavascriptcoregtk-4.1-dev \
             libglib2.0-dev libharfbuzz-dev \
