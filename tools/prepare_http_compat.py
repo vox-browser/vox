@@ -157,11 +157,24 @@ def patch_response(source):
     pure = 'import x.compress.brotli'
     imports = (len(re.findall(native, source, re.MULTILINE)),
                len(re.findall(r'^import x\.compress\.brotli$', source, re.MULTILINE)))
-    if imports == (0, 1):
-        return source
-    if imports != (1, 0):
+    if imports == (1, 0):
+        source = re.sub(native, pure, source, flags=re.MULTILINE)
+    elif imports != (0, 1):
         raise RuntimeError('Unsupported HTTP Brotli import')
-    return re.sub(native, pure, source, flags=re.MULTILINE)
+
+    # Match the production V staging adapter. The pure V codec returns a
+    # complete stream, which the same response sink then bounds and copies.
+    streamed = ('brotli.decompress_with_callback(decoded, callback, voidptr(&sink)) or {\n'
+                '\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t0\n\t\t\t\t}')
+    collected = ('mut expanded := brotli.decompress(decoded) or {\n'
+                 '\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t[]u8{}\n\t\t\t\t}\n'
+                 '\t\t\t\tif !decode_failed {\n'
+                 '\t\t\t\t\tcallback(expanded, voidptr(&sink))\n\t\t\t\t}\n'
+                 '\t\t\t\tunsafe { expanded.free() }')
+    source = source.replace(streamed, collected, 1)
+    if 'brotli.decompress_with_callback' in source:
+        raise RuntimeError('Unsupported streaming Brotli response decoder')
+    return source
 
 
 def patch_brotli_compressor(source):
