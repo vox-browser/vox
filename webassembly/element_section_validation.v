@@ -6,6 +6,9 @@ module webassembly
 fn (mut validator BinaryInstructionValidator) validate_element_section(mut segments []BinaryElementSegment) ! {
 	for mut segment in segments {
 		validate_binary_value_type(segment.element_type, validator.context.types)!
+		if !segment.element_type.is_reference() {
+			return error('CompileError: invalid element reference type')
+		}
 		if segment.mode == .active {
 			index := segment.table_index or { panic('missing parsed active table index') }
 			table := validator.table_for_index(index)!

@@ -129,9 +129,7 @@ fn parse_constructor_string(input string) !PatternInitRecord {
 				if parser.is_ipv6_open() {
 					parser.hostname_ipv6_bracket_depth++
 				} else if parser.is_ipv6_close() {
-					if parser.hostname_ipv6_bracket_depth > 0 {
-						parser.hostname_ipv6_bracket_depth--
-					}
+					parser.hostname_ipv6_bracket_depth--
 				} else if parser.is_port_prefix() && parser.hostname_ipv6_bracket_depth == 0 {
 					parser.change_state(.port, 1)
 				} else if parser.is_pathname_start() {

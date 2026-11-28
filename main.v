@@ -1334,7 +1334,8 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
 				continue
 			}
-			resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
+			source := script.get_attribute_ns(none, 'src') or { continue }
+			resource_url := resolve_document_reference(source, base_url)
 			if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
 				seen[resource_url] = true
 				urls << resource_url
@@ -7574,6 +7575,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		}
 		'draw_text' {
 			{
+				if command.glyph_orientation == .vertical && command.glyph_run != none {
+					app.draw_portable_shadow(layout.PaintCommand{...command, kind: 'draw_text_shadow', blur: 0}, page_x, page_y, scroll_y)
+					return
+				}
 				$if linux || windows {
 					if portable_web_font_enabled {
 						if run := command.glyph_run {
@@ -7618,6 +7623,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		}
 		'draw_text_shadow' {
 			{
+				if command.glyph_orientation == .vertical {
+					app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
+					return
+				}
 				$if macos {
 					if app.draw_chromium_text_shadow(command, page_x, page_y, scroll_y) {
 						return

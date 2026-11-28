@@ -54,8 +54,9 @@ fn ecdsa_verify(params EcdsaParams, key &CryptoKey, signature []u8, message []u8
 	if key.type_ != .public_key { return error('InvalidAccessError: Key is not a public key') }
 	digest := ecdsa_digest(params.hash, message)!
 	curve := (key.algorithm as EcKeyAlgorithm).named_curve
-	if ec_scalar_size(curve) == 0 { return error('NotSupportedError: Invalid algorithm') }
-	// Source splits at floor(size / 2), preserving its ignored final odd byte.
+	size := ec_scalar_size(curve)
+	if size == 0 { return error('NotSupportedError: Invalid algorithm') }
+	if signature.len != size * 2 { return false }
 	return native_ec_verify(curve, key.internal_handle_ as EcPublicKeyHandle, signature, digest)
 }
 

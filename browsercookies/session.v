@@ -135,8 +135,14 @@ fn (mut jar Jar) set_cookie_at(record &url.URL, parsed httpcookie.ParsedCookie, 
 	if source == .http && parsed.same_site_attribute != .none && !context.same_site && !context.top_level { return }
 	lower_name := parsed.name.to_lower()
 	if lower_name.starts_with('__secure-') && !secure { return }
+	if lower_name.starts_with('__http-') && (!secure || !parsed.http_only_attribute_present) { return }
+	if lower_name.starts_with('__host-http-') && !parsed.http_only_attribute_present { return }
 	if lower_name.starts_with('__host-') && (!secure || !host_only || (parsed.path or { '' }) != '/') { return }
-	if parsed.name == '' && (parsed.value.to_lower().starts_with('__secure-') || parsed.value.to_lower().starts_with('__host-')) { return }
+	if parsed.name == '' {
+		lower_value := parsed.value.to_lower()
+		if lower_value.starts_with('__secure-') || lower_value.starts_with('__host-')
+			|| lower_value.starts_with('__http-') { return }
+	}
 	// Both strings and the array can outlive a document's scratch arena or a
 	// background resource thread. Own all retained fields in persistent storage.
 	entry := platform.enter_persistent()

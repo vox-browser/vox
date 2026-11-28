@@ -106,11 +106,11 @@ pub fn scheme_part_matches(a string, b string) MatchResult {
 
 pub fn host_part_matches(pattern string, maybe_host ?url.Host) MatchResult {
 	host := maybe_host or { return .does_not_match }
-	if host.is_empty_host() {
+	// Opaque hosts are not network hosts. Preserve the later upstream support
+	// for numeric IP hosts while excluding opaque and empty hosts.
+	if host is url.OpaqueHost || host.is_empty_host() {
 		return .does_not_match
 	}
-	// Match numeric IP hosts by their serialization too. IPv6 includes
-	// brackets, which cannot occur in a parsed host-source except via '*'.
 	host_string := host.serialize()
 	if pattern == '*' {
 		return .matches

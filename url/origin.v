@@ -23,6 +23,7 @@ pub:
 pub enum OpaqueOriginType {
 	standard
 	file
+	sandboxed_file
 }
 
 pub struct OpaqueOriginData {
@@ -111,6 +112,16 @@ pub fn (origin Origin) is_opaque_file_origin() bool {
 		return opaque.type_ == .file
 	}
 	return false
+}
+
+// Sandboxing preserves a local document's ability to fetch adjacent files,
+// while its fresh opaque nonce still isolates storage and same-origin access.
+pub fn (origin Origin) is_file_origin() bool {
+	if opaque := origin.as_opaque() {
+		return opaque.type_ in [.file, .sandboxed_file]
+	}
+	tuple := origin.as_tuple() or { return false }
+	return (tuple.scheme or { '' }) == 'file'
 }
 
 // https://html.spec.whatwg.org/multipage/origin.html#ascii-serialisation-of-an-origin

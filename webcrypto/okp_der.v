@@ -19,6 +19,11 @@ fn (mut reader OkpDerReader) byte() !u8 {
 }
 
 fn (mut reader OkpDerReader) read(sequence bool) ![]u8 {
+	return reader.read_contents(sequence, sequence)
+}
+
+// Container entry points validate their own tag kind before reading contents.
+fn (mut reader OkpDerReader) read_contents(sequence bool, constructed_value bool) ![]u8 {
 	mut tag := reader.byte()!
     constructed := tag & 0x20 != 0
 	mut kind := tag & 0x1f
@@ -32,13 +37,19 @@ fn (mut reader OkpDerReader) read(sequence bool) ![]u8 {
 	if sequence && (kind != 16 || !constructed) {
 		return error('DataError: ASN1::Decoder: Expected a constructed Sequence')
 	}
+	if !constructed_value && constructed {
+		return error('DataError: ASN1::Decoder: Trying to read a constructed value as primitive')
+	}
+	if constructed_value && !constructed {
+		return error('DataError: ASN1::Decoder: Entering a non-constructed type')
+	}
 	// READ_OBJECT supplies universal class/kind overrides in the source. Its
 	// primitive reads decode the bytes without checking the original tag kind.
 	first := reader.byte()!
 	mut length := u64(first)
 	if first & 0x80 != 0 {
 		count := int(first & 0x7f)
-		if count == 0x7f {
+		if count == 0 || count == 0x7f {
 			return error('DataError: ASN1::Decoder: Length has an invalid count value')
 		}
 		if count > 8 {

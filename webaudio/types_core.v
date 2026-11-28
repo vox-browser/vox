@@ -369,6 +369,8 @@ pub fn (node AudioNode) queue_render_node_creation(render_node &RenderNode) {
 		kind: .add_node
 		render_node: render_node
 	})
+	// Constructor options settled before the render node existed.
+	node.queue_channel_config_update()
 }
 
 pub fn (node AudioNode) queue_connection_update() {

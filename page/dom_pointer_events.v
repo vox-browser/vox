@@ -59,16 +59,25 @@ pub fn (handler &EventHandler) last_click_target_node() ?&dom.Node {
 }
 
 fn (handler &EventHandler) click_target_for_mouseup(released InputTarget) ?InputTarget {
-	if handler.mousedown_target_ == released.id { return released }
-	if released.chrome_widget_id != '' || handler.has_captured_chrome_widget() { return none }
 	pressed := handler.mousedown_node_ or { return none }
 	node := released.node or { return none }
-	// Pointer Events: a click targets the nearest common inclusive ancestor of
-	// the press and release, even when they hit different children of a link.
+	if !pressed.is_connected() || voidptr(pressed.document()) != voidptr(node.document()) {
+		return none
+	}
+	if voidptr(pressed) == voidptr(node) { return released }
+	if released.chrome_widget_id != '' || handler.has_captured_chrome_widget() { return none }
+	// Use the flat tree so slotted nodes and shadow hosts share the same click
+	// target selection as ordinary descendants.
+	mut ancestors := map[i64]bool{}
 	for current := ?&dom.Node(pressed); current != none; {
 		ancestor := current or { break }
-		if ancestor.is_inclusive_ancestor_of(node) { return InputTarget.from_node(ancestor) }
-		current = ancestor.parent()
+		ancestors[ancestor.unique_id().value()] = true
+		current = ancestor.flat_tree_parent()
+	}
+	for current := ?&dom.Node(node); current != none; {
+		ancestor := current or { break }
+		if ancestor.unique_id().value() in ancestors { return InputTarget.from_node(ancestor) }
+		current = ancestor.flat_tree_parent()
 	}
 	return none
 }

@@ -109,8 +109,8 @@ fn parse_rsa_jwk(params RsaHashedImportParams, jwk JsonWebKey, extractable bool,
 	if private_key {
 		mut meets_requirements := jwk.e != none && jwk.n != none && jwk.d != none
 		if jwk.p != none || jwk.q != none || jwk.dp != none || jwk.dq != none || jwk.qi != none {
-			// Source uses |= rather than &=; keep its partial-CRT parse behavior.
-			meets_requirements = meets_requirements || (jwk.p != none && jwk.q != none && jwk.dp != none && jwk.dq != none && jwk.qi != none)
+			// CRT parameters are optional only as a complete group.
+			meets_requirements = meets_requirements && (jwk.p != none && jwk.q != none && jwk.dp != none && jwk.dq != none && jwk.qi != none)
 		}
 		if jwk.oth != none { meets_requirements = false }
 		if !meets_requirements { return error('DataError: Invalid JWK private key') }

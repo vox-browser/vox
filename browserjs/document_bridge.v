@@ -621,7 +621,7 @@ pub fn run_inline_document_scripts(document &dom.Document, current_url string, r
 		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
 			continue
 		}
-		if script_element.get_attribute('src') != none {
+		if script_element.get_attribute_ns(none, 'src') != none {
 			continue
 		}
 		sources << ScriptSource{

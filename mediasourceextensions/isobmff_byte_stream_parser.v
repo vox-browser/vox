@@ -33,6 +33,7 @@ struct ISOTrackContext {
 	default_duration          u32
 	default_size              u32
 	default_flags             u32
+	composition_to_presentation_offset i64
 	sample_description_codecs []string
 	sample_descriptions       [][]u8
 }
@@ -255,6 +256,44 @@ fn validate_iso_sample_entry_configuration(bytes []u8, entry ISOBoxHeader, type_
 	}
 }
 
+fn parse_iso_edit_list(bytes []u8, box ISOBoxHeader) !i64 {
+	if box.end - box.content_start < 8 {
+		return error('ISO BMFF edit list header is incomplete')
+	}
+	version := iso_box_version(bytes, box)!
+	if version > 1 {
+		return error('ISO BMFF edit list has an unsupported version')
+	}
+	entry_count := iso_read_u32(bytes, box.content_start + 4)!
+	entry_size := if version == 0 { 12 } else { 20 }
+	mut position := box.content_start + 8
+	if u64(entry_count) > u64((box.end - position) / entry_size) {
+		return error('ISO BMFF edit list is smaller than its declared entries')
+	}
+	mut offset := i64(0)
+	for index := u32(0); index < entry_count; index++ {
+		position += if version == 0 { 4 } else { 8 } // segment_duration
+		media_time := if version == 0 {
+			i64(iso_read_i32(bytes, position)!)
+		} else {
+			i64(iso_read_u64(bytes, position)!)
+		}
+		position += if version == 0 { 4 } else { 8 }
+		media_rate_integer := i16(iso_read_u16(bytes, position)!)
+		media_rate_fraction := i16(iso_read_u16(bytes, position + 2)!)
+		position += 4
+		if media_rate_integer != 1 || media_rate_fraction != 0 {
+			return error('ISO BMFF edit list media rates other than one are unsupported')
+		}
+		// The first edit alone removes the composition offset. An initial empty
+		// edit contributes no offset; later edits still undergo rate validation.
+		if index == 0 && media_time >= 0 {
+			offset = -media_time
+		}
+	}
+	return offset
+}
+
 fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 	tkhd := iso_find_child(bytes, trak, 'tkhd')!
 	tkhd_version := iso_box_version(bytes, tkhd)!
@@ -303,6 +342,15 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 		description_position = entry.end
 	}
 	codec_id := sample_description_codecs[0]
+	mut composition_to_presentation_offset := i64(0)
+	for child in iso_child_boxes(bytes, trak)! {
+		if child.type_ != 'edts' { continue }
+		for edit in iso_child_boxes(bytes, child)! {
+			if edit.type_ == 'elst' {
+				composition_to_presentation_offset = parse_iso_edit_list(bytes, edit)!
+			}
+		}
+	}
 
 	for child in iso_child_boxes(bytes, stbl)! {
 		mut entry_count := u32(0)
@@ -332,6 +380,7 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 			label: iso_handler_name(bytes, handler)!
 		}
 		timescale: timescale
+		composition_to_presentation_offset: composition_to_presentation_offset
 		sample_description_count: sample_description_count
 		sample_description_codecs: sample_description_codecs
 		sample_descriptions: sample_descriptions
@@ -601,8 +650,8 @@ fn parse_iso_track_fragment(bytes []u8, moof ISOBoxHeader, traf ISOBoxHeader, co
 				track_id: track_id
 				data_position: data_position
 				data_size: int(size)
-				presentation_timestamp: f64(i64(decode_time) + composition_offset) / f64(context.timescale)
-				decode_timestamp: f64(decode_time) / f64(context.timescale)
+				presentation_timestamp: (f64(decode_time) + f64(context.composition_to_presentation_offset) + f64(composition_offset)) / f64(context.timescale)
+				decode_timestamp: (f64(decode_time) + f64(context.composition_to_presentation_offset)) / f64(context.timescale)
 				duration: f64(duration_ticks) / f64(context.timescale)
 				is_keyframe: sample_flags & 0x0001_0000 == 0
 				sample_description_index: description_index

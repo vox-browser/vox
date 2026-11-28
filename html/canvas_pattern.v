@@ -15,6 +15,9 @@ import math
 pub struct ImageBitmapCanvasSource {
 pub:
 	value &ImageBitmap = unsafe { nil }
+	// Canvas hosts snapshot their pixels into ImageBitmap storage. Carry the
+	// source canvas's security state alongside that snapshot.
+	origin_clean bool = true
 }
 
 pub struct DecodedImageCanvasSource {

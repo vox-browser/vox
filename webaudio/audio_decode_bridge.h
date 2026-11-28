@@ -177,13 +177,18 @@ static float *ladybird_v_decode_audio(const uint8_t *bytes, int byte_count,
     if (packet == NULL || frame == NULL)
         goto cleanup;
 
-    while (av_read_frame(format, packet) >= 0) {
+    int decode_result = 0;
+    while ((decode_result = av_read_frame(format, packet)) >= 0) {
         if (packet->stream_index == audio_stream) {
-            if (avcodec_send_packet(codec, packet) < 0) {
+            decode_result = avcodec_send_packet(codec, packet);
+            if (decode_result < 0) {
                 av_packet_unref(packet);
+                // A corrupt suffix must not discard samples already decoded.
+                if (decode_result == AVERROR_INVALIDDATA && frame_count > 0)
+                    break;
                 goto cleanup;
             }
-            while (avcodec_receive_frame(codec, frame) == 0) {
+            while ((decode_result = avcodec_receive_frame(codec, frame)) == 0) {
                 if (ladybird_v_append_audio_frame(&resampler, frame,
                     requested_sample_rate, &samples, &frame_count,
                     &sample_capacity, &channel_count) < 0) {
@@ -192,18 +197,32 @@ static float *ladybird_v_decode_audio(const uint8_t *bytes, int byte_count,
                 }
                 av_frame_unref(frame);
             }
+            if (decode_result != AVERROR(EAGAIN) && decode_result != AVERROR_EOF) {
+                av_packet_unref(packet);
+                if (decode_result == AVERROR_INVALIDDATA && frame_count > 0)
+                    break;
+                goto cleanup;
+            }
         }
         av_packet_unref(packet);
     }
-    if (avcodec_send_packet(codec, NULL) < 0)
+    if (decode_result != AVERROR_EOF
+        && !(decode_result == AVERROR_INVALIDDATA && frame_count > 0))
         goto cleanup;
-    while (avcodec_receive_frame(codec, frame) == 0) {
+    decode_result = avcodec_send_packet(codec, NULL);
+    if (decode_result < 0 && decode_result != AVERROR_EOF
+        && !(decode_result == AVERROR_INVALIDDATA && frame_count > 0))
+        goto cleanup;
+    while ((decode_result = avcodec_receive_frame(codec, frame)) == 0) {
         if (ladybird_v_append_audio_frame(&resampler, frame,
             requested_sample_rate, &samples, &frame_count, &sample_capacity,
             &channel_count) < 0)
             goto cleanup;
         av_frame_unref(frame);
     }
+    if (decode_result != AVERROR_EOF && decode_result != AVERROR(EAGAIN)
+        && !(decode_result == AVERROR_INVALIDDATA && frame_count > 0))
+        goto cleanup;
     while (resampler != NULL) {
         int output_capacity = swr_get_out_samples(resampler, 0);
         if (output_capacity <= 0)

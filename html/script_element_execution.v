@@ -9,7 +9,7 @@ fn document_script_element_post_connection(_ voidptr, element &dom.Element) {
 	if settings.realm().evaluate_script_element_ == none { return }
 	if element.is_html_element() {
 		// The browser owns external fetching; an empty src still takes that path.
-		if element.has_attribute('src') { return }
+		if element.has_attribute_ns(none, 'src') { return }
 		html_script_element_post_connection(unsafe { &dom.HTMLScriptElement(element) })
 	} else if element.is_svg_element() && !element.has_attribute('href') {
 		mut model := svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(element) })

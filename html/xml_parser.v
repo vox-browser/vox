@@ -264,6 +264,13 @@ fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, n
 // fragments. vlib owns element structure, attributes and reference decoding;
 // this adapter supplies browser DOM namespaces and document-only node types.
 pub fn parse_xml_document_source(document &dom.Document, source string) ! {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	batched := mutable_document.begin_initial_xml_svg_use_batch()
+	defer {
+		if batched {
+			mutable_document.finish_initial_xml_svg_use_batch()
+		}
+	}
 	mut copies := XMLPublishedStrings{}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('XML parse tree')

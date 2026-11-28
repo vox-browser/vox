@@ -64,9 +64,11 @@ fn native_ec_sign(curve string, d []u8, digest []u8) ![]u8 {
 }
 
 fn native_ec_verify(curve string, point EcPublicKeyHandle, signature []u8, digest []u8) !bool {
+	size := ec_scalar_size(curve)
+	if size == 0 || signature.len != size * 2 { return false }
 	bytes := ec_point_to_uncompressed(point)
 	mut result := 0
-	failure := C.vox_ec_verify(curve.str, bytes.data, uint(bytes.len), digest.data, uint(digest.len), signature.data, uint(signature.len / 2), &result)
+	failure := C.vox_ec_verify(curve.str, bytes.data, uint(bytes.len), digest.data, uint(digest.len), signature.data, uint(size), &result)
 	if failure != unsafe { nil } {
 		return error('OperationError: ' + unsafe { cstring_to_vstring(failure) })
 	}

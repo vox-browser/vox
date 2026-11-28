@@ -27,6 +27,18 @@ fn (s &StyleComputer) compute_highlight_inherited_values(mut properties Computed
 		computer.cached_line_height_computation_context = line_context
 		computer.cached_generic_computation_context = generic_context
 	}
+	// Default highlight colors are a pair. An authored color anywhere in the
+	// highlight inheritance chain suppresses both defaults, even if it is
+	// transparent or the other color retains its initial value.
+	properties.highlight_colors_authored_ = if parent := parent_highlight {
+		parent.highlight_colors_authored_
+	} else { false }
+	for id in [PropertyID.color, .background_color] {
+		entry_index := cascaded.winning_entry_index(id)
+		if entry_index >= 0 && cascaded.entry_node(entry_index).entry.origin == .author {
+			properties.highlight_colors_authored_ = true
+		}
+	}
 	for index in 0 .. number_of_longhand_properties {
 		id := property_id_from_longhand_index(index) or { continue }
 		if !pseudo_element_supports_property(pseudo, id) { continue }
@@ -34,6 +46,11 @@ fn (s &StyleComputer) compute_highlight_inherited_values(mut properties Computed
 		keyword := if specified := declaration {
 			computed_interpolation_style_value_keyword(specified.value) or { Keyword.invalid }
 		} else { Keyword.invalid }
+		if id == .color {
+			properties.highlight_color_is_current_color_ = if declaration == none || keyword in [.inherit, .unset] {
+				if parent := parent_highlight { parent.highlight_color_is_current_color_ } else { true }
+			} else { keyword == .currentcolor }
+		}
 		if declaration == none || keyword in [.inherit, .unset] {
 			value := if inherited := parent_highlight {
 				inherited.property(id, .no) or { computed_interpolation_property_initial_value(id) }
@@ -47,4 +64,14 @@ fn (s &StyleComputer) compute_highlight_inherited_values(mut properties Computed
 			properties.set_property_inherited(id, .no)
 		}
 	}
+}
+
+// The painter preserves the color of the layer underneath currentColor,
+// which can differ from the originating element for ::first-letter text.
+pub fn (properties &ComputedProperties) highlight_colors_authored() bool {
+	return properties.highlight_colors_authored_
+}
+
+pub fn (properties &ComputedProperties) highlight_color_is_current_color() bool {
+	return properties.highlight_color_is_current_color_
 }

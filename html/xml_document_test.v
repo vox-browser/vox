@@ -120,3 +120,29 @@ fn test_xml_document_queues_browsing_context_lifecycle_events() {
 	assert document.document_ready_for_post_load_tasks()
 	assert document.is_completely_loaded()
 }
+
+fn test_inert_xml_svg_use_instances_resolve_in_both_directions_and_refresh_after_parse() {
+	parser := DOMParser.create(dom.Document.create(dom.URL{ value: 'https://example.test/image.svg' }))
+	mut document := parser.parse_from_string('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#shape"/><rect id="shape" width="12"/><use xlink:href="#%73hape"/></svg>',
+		.image_svg_xml)!
+	defer { document.finalize() }
+	root := document.document_element()?
+	children := root.as_node().children_as_vector()
+	first_use := children[0].as_element()?
+	last_use := children[2].as_element()?
+	mut target := children[1].as_element()?
+	for instance in [first_use, last_use] {
+		shadow := instance.shadow_root()?
+		shadow_node := unsafe { &dom.Node(shadow) }
+		clone := shadow_node.first_child()?.as_element()?
+		assert clone.local_name() == 'rect'
+		assert clone.get_attribute_value('width') == '12'
+	}
+	target.set_attribute_value('width', '24')
+	for instance in [first_use, last_use] {
+		shadow := instance.shadow_root()?
+		shadow_node := unsafe { &dom.Node(shadow) }
+		clone := shadow_node.first_child()?.as_element()?
+		assert clone.get_attribute_value('width') == '24'
+	}
+}
