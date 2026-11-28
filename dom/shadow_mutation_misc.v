@@ -3592,7 +3592,8 @@ fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.Mime
 		img_element.set_inline_style(image_style)
 		img_element.set_attribute_value('src', url_string)
 		host_element = img_element
-	} else if type_.type_() == 'video' {
+	} else if type_.type_() == 'video' || type_.essence() == 'application/ogg' {
+		// application/ogg can contain both audio and video.
 		mut video_element := create_element(document, 'video', namespace_html_, none, none, false)!
 		video_element.set_attribute_value('src', url_string)
 		video_element.set_attribute_value('autoplay', '')
@@ -3605,8 +3606,6 @@ fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.Mime
 		audio_element.set_attribute_value('controls', '')
 		host_element = audio_element
 	} else {
-		// FIXME: According to https://mimesniff.spec.whatwg.org/#audio-or-video-mime-type we might have to deal with
-		//        "application/ogg" and figure out whether it's audio or video.
 		panic('VERIFY_NOT_REACHED')
 	}
 	if media_element := host_element {

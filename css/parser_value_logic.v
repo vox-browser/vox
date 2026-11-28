@@ -4138,6 +4138,14 @@ fn (mut parser Parser) longhand_initial_first_value(property_id PropertyID) ?Sty
 // Each comma-separated item is a `||` of longhand components. Selection is
 // delegated to the same generated property metadata as standalone values.
 fn (mut parser Parser) parse_coordinating_value_list_shorthand(mut tokens ComponentValueStream, shorthand PropertyID, longhand_ids []PropertyID, reset_only_longhand_ids []PropertyID) ?StyleValue {
+	// A custom identifier claims a keyword only after the other components
+	// have had a chance to consume it (for example, transition: 0.15s ease).
+	custom_ident_longhand := if shorthand == .animation {
+		PropertyID.animation_name
+	} else {
+		PropertyID.transition_property
+	}
+
 	mut longhand_vectors := [][]StyleValue{}
 	for _ in longhand_ids {
 		longhand_vectors << []StyleValue{}
@@ -4158,7 +4166,12 @@ fn (mut parser Parser) parse_coordinating_value_list_shorthand(mut tokens Compon
 			if next.is(.comma) {
 				break
 			}
-			property_and_value := parser.parse_css_value_for_properties(remaining_longhands, mut transaction) or { return none }
+			// The generic component parser tries custom-ident before typed
+			// easings, so probe the other longhands separately first.
+			non_ident_longhands := remaining_longhands.filter(it != custom_ident_longhand)
+			property_and_value := parser.parse_css_value_for_properties(non_ident_longhands, mut transaction) or {
+				parser.parse_css_value_for_properties(remaining_longhands, mut transaction) or { return none }
+			}
 			mut longhand_index := -1
 			for i, longhand_id in longhand_ids {
 				if longhand_id == property_and_value.property {
@@ -8428,7 +8441,8 @@ fn (mut parser Parser) parse_visibility_value(mut tokens ComponentValueStream) ?
 
 fn (mut parser Parser) parse_white_space_collapse_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['collapse', 'discard', 'preserve',
+	// The unsupported discard value must not win over an earlier declaration.
+	return parse_property_keyword_value(mut tokens, ['collapse', 'preserve',
 		'preserve-breaks', 'preserve-spaces', 'break-spaces'])
 }
 

@@ -5263,7 +5263,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['normal', 'pre', 'pre-line', 'pre-wrap']
 		}
 		.white_space_collapse {
-			lowercase_value in ['collapse', 'discard', 'preserve', 'preserve-breaks',
+			lowercase_value in ['collapse', 'preserve', 'preserve-breaks',
 				'preserve-spaces', 'break-spaces']
 		}
 		.white_space_trim {

@@ -28,7 +28,7 @@ fn chromium_menu_list_auto_size(node &Node) css.SizeWithAspectRatio {
 	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
 	mut maximum := f32(0)
 	for option in css.query_selector_all(element.as_node(), 'option') {
-		mut label := html.html_option_element_label(unsafe { &dom.HTMLOptionElement(option) })
+		mut label := html.html_option_element_display_label(unsafe { &dom.HTMLOptionElement(option) })
 		if parent := option.as_node().parent_element() {
 			if parent.local_name() == 'optgroup' { label = '    ' + label }
 		}

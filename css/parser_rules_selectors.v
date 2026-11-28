@@ -4360,12 +4360,48 @@ fn parse_substitution_name_argument_spans(values []ComponentValue) ?Substitution
 	return arguments
 }
 
+// Reject malformed names before the cascade so a typo does not override an
+// earlier valid declaration. As upstream, this intentionally validates the
+// literal var()/env() name before arbitrary substitution takes place.
+fn substitution_name_argument_is_valid(function ArbitrarySubstitutionFunction, values []ComponentValue) bool {
+	mut tokens := ParserTokenStream.from_values(values)
+	tokens.discard_whitespace()
+	name_token := tokens.consume_a_token()
+	if !name_token.is(.ident) {
+		return false
+	}
+	name := name_token.token().ident()
+	tokens.discard_whitespace()
+	if function == .var_ {
+		return is_a_custom_property_name_string(name) && !tokens.has_next_token()
+	}
+	if !is_valid_custom_ident(name, []) {
+		return false
+	}
+	for tokens.has_next_token() {
+		index := tokens.consume_a_token()
+		if !index.is(.number) {
+			return false
+		}
+		number := index.token().number()
+		if !number.is_integer() || number.integer_value() < 0 {
+			return false
+		}
+		tokens.discard_whitespace()
+	}
+	return true
+}
+
 fn arbitrary_substitution_arguments_are_valid(function ArbitrarySubstitutionFunction, values []ComponentValue) bool {
 	mut tokens := ParserTokenStream.from_values(values)
 	match function {
 		.attr, .env, .inherit, .var_ {
-			_ := parse_substitution_argument_spans(mut tokens, .comma) or { return false }
-			return !tokens.has_next_token()
+			arguments := parse_substitution_argument_spans(mut tokens, .comma) or { return false }
+			if tokens.has_next_token() {
+				return false
+			}
+			return function !in [.var_, .env]
+				|| substitution_name_argument_is_valid(function, arguments.first_argument)
 		}
 		.if_ {
 			mut branch_count := 0

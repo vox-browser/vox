@@ -15586,7 +15586,7 @@ fn collect_html_presentational_hints(mut cascaded_properties []StyleProperty, el
 			set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .text_wrap_mode, StyleValue(KeywordStyleValue.create(.nowrap)))
 		}
 	}
-	if tag_name in ['td', 'th', 'tr'] {
+	if tag_name in ['td', 'th', 'tr', 'thead', 'tbody', 'tfoot'] {
 		if valign := element.get_attribute('valign') {
 			if value := parse_css_value_logic(.vertical_align, valign) {
 				set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, .vertical_align, value)
@@ -15725,7 +15725,7 @@ pub fn html_table_row_element_apply_presentational_hints(element &dom.HTMLTableR
 }
 
 pub fn html_table_section_element_is_presentational_hint(_ &dom.HTMLTableSectionElement, name string) bool {
-	return name in ['align', 'background', 'bgcolor', 'height']
+	return name in ['align', 'background', 'bgcolor', 'height', 'valign']
 }
 
 pub fn html_table_section_element_apply_presentational_hints(element &dom.HTMLTableSectionElement, mut properties CascadedProperties) {

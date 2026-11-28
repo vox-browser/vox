@@ -41,6 +41,9 @@ pub:
 	status                u16
 	content_type          string
 	body                  string
+	// Fetch adapters provide the response URL after redirects. Standalone
+	// callers without a redirected response keep the constructor URL.
+	final_url             ?dom.URL
 	network_error         bool
 	aborted_network_error bool
 }
@@ -52,13 +55,16 @@ pub struct EventSource {
 	dom.EventTarget
 mut:
 	url_                  dom.URL
+	final_url_origin_     dom.Origin
 	request_              EventSourceRequest
 	reconnection_time_ms_ i64 = 3000
 	last_event_id_        string
+	last_event_id_buffer_ string
 	event_type_           string
 	data_                 string
-	pending_input_        string
+	pending_input_        []u8
 	is_start_of_stream_   bool = true
+	last_was_cr_          bool
 	with_credentials_     bool
 	ready_state_          EventSourceReadyState = .connecting
 	fetch_hook_           ?EventSourceFetchHook
@@ -79,6 +85,7 @@ pub fn EventSource.construct_impl(url string, base_url dom.URL, init EventSource
 	potential_request := create_potential_cors_request(url_record, none, cors_state, .no)
 	return &EventSource{
 		url_:              url_record
+		final_url_origin_: url_record.origin()
 		request_:          EventSourceRequest{
 			url:              url_record
 			mode:             potential_request.mode
@@ -158,6 +165,8 @@ pub fn (mut source EventSource) receive_response(response EventSourceResponse) {
 		source.fail_the_connection()
 		return
 	}
+	final_url := response.final_url or { source.url_ }
+	source.final_url_origin_ = final_url.origin()
 	source.announce_the_connection()
 	source.feed(response.body)
 	source.end_of_body(false)
@@ -179,10 +188,12 @@ pub fn (mut source EventSource) announce_the_connection() {
 	}
 	// Parser buffers belong to one response stream. In particular, a partial
 	// line or CR from a failed connection must not precede the next stream's BOM.
-	source.pending_input_ = ''
+	source.pending_input_.clear()
 	source.data_ = ''
 	source.event_type_ = ''
+	source.last_event_id_buffer_ = source.last_event_id_
 	source.is_start_of_stream_ = true
+	source.last_was_cr_ = false
 	source.ready_state_ = .open
 	open_event := dom.Event.create('open', dom.EventInit{})
 	unsafe { &dom.EventTarget(source) }.dispatch_event(open_event)
@@ -196,6 +207,9 @@ pub fn (mut source EventSource) reestablish_the_connection() {
 	source.reconnect_pending_ = true
 	if source.last_event_id_ != '' {
 		source.request_.headers['Last-Event-ID'] = source.last_event_id_
+	} else {
+		// The same request is reused, so remove an ID sent by an earlier retry.
+		source.request_.headers.delete('Last-Event-ID')
 	}
 	error_event := dom.Event.create('error', dom.EventInit{})
 	unsafe { &dom.EventTarget(source) }.dispatch_event(error_event)
@@ -250,31 +264,29 @@ fn (mut source EventSource) process_line(input string) {
 // Incrementally interpret UTF-8 event-stream text, preserving partial lines
 // and treating CR, LF, and CRLF as line endings.
 pub fn (mut source EventSource) feed(chunk string) {
-	source.pending_input_ += chunk
-	for source.pending_input_.len > 0 {
-		mut break_index := -1
-		for index, byte in source.pending_input_.bytes() {
-			if byte == `\r` || byte == `\n` {
-				break_index = index
-				break
-			}
+	// Retained bytes contain no line break. Scan only the new chunk, and grow
+	// an array so a long line arriving in small chunks is not copied each time.
+	mut line_start := 0
+	for index in 0 .. chunk.len {
+		byte := chunk[index]
+		if byte != `\r` && byte != `\n` {
+			source.last_was_cr_ = false
+			continue
 		}
-		if break_index < 0 {
-			return
+		if byte == `\n` && source.last_was_cr_ {
+			// CR already ended the line, even when it was in the previous chunk.
+			source.last_was_cr_ = false
+			line_start = index + 1
+			continue
 		}
-		if source.pending_input_[break_index] == `\r`
-			&& break_index + 1 == source.pending_input_.len {
-			return
-		}
-		line := source.pending_input_[..break_index]
-		mut consumed := break_index + 1
-		if source.pending_input_[break_index] == `\r` && consumed < source.pending_input_.len
-			&& source.pending_input_[consumed] == `\n` {
-			consumed++
-		}
-		source.pending_input_ = source.pending_input_[consumed..]
+		source.pending_input_ << chunk[line_start..index].bytes()
+		line := source.pending_input_.bytestr()
+		source.pending_input_.clear()
+		source.last_was_cr_ = byte == `\r`
+		line_start = index + 1
 		source.process_line(line)
 	}
+	source.pending_input_ << chunk[line_start..].bytes()
 }
 
 pub fn (mut source EventSource) interpret_response(response string) {
@@ -282,14 +294,13 @@ pub fn (mut source EventSource) interpret_response(response string) {
 }
 
 pub fn (mut source EventSource) end_of_body(network_error bool) {
-	if source.pending_input_ != '' {
-		mut line := source.pending_input_
-		if line.ends_with('\r') {
-			line = line[..line.len - 1]
-		}
-		source.pending_input_ = ''
-		source.process_line(line)
-	}
+	// EOF is not a line break. Discard the incomplete event and its uncommitted
+	// ID; only a blank line commits the ID for a subsequent reconnection.
+	source.pending_input_.clear()
+	source.data_ = ''
+	source.event_type_ = ''
+	source.last_event_id_buffer_ = source.last_event_id_
+	source.last_was_cr_ = false
 	if !network_error && source.ready_state_ != .closed {
 		source.reestablish_the_connection()
 	}
@@ -317,7 +328,7 @@ pub fn (mut source EventSource) process_field(field string, value string) {
 		}
 		'id' {
 			if !value.contains_u8(0) {
-				source.last_event_id_ = value
+				source.last_event_id_buffer_ = value
 			}
 		}
 		'retry' {
@@ -333,6 +344,8 @@ pub fn (mut source EventSource) process_field(field string, value string) {
 }
 
 pub fn (mut source EventSource) dispatch_the_event() {
+	// An ID-only event updates the reconnection ID even without message data.
+	source.last_event_id_ = source.last_event_id_buffer_
 	if source.data_ == '' {
 		source.event_type_ = ''
 		return
@@ -343,11 +356,12 @@ pub fn (mut source EventSource) dispatch_the_event() {
 		source.data_
 	}
 	type_ := if source.event_type_ == '' { 'message' } else { source.event_type_ }
-	event := MessageEvent.create(type_, MessageEventInit{
+	mut event := MessageEvent.create(type_, MessageEventInit{
 		data:          dom.js_string(data)
-		origin:        source.url_.origin()
+		origin:        source.final_url_origin_
 		last_event_id: source.last_event_id_
 	})
+	event.set_is_trusted(true)
 	source.event_type_ = ''
 	source.data_ = ''
 	source.last_message_event_ = event

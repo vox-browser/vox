@@ -126,7 +126,7 @@ pub fn html_option_element_update_selection_label(option &dom.HTMLOptionElement)
 		return
 	}
 	mut inner := border_children[0]
-	inner.string_replace_all(html_option_element_label(option))
+	inner.string_replace_all(html_option_element_display_label(option))
 }
 
 pub fn html_option_element_attribute_changed(option &dom.HTMLOptionElement, name string, old_value ?string, value ?string, namespace_ ?string) {
@@ -177,6 +177,15 @@ pub fn html_option_element_text(option &dom.HTMLOptionElement) string {
 pub fn set_html_option_element_text(option &dom.HTMLOptionElement, text string) {
 	mut node := unsafe { &dom.Node(option_node(option)) }
 	node.string_replace_all(text)
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#concept-option-label
+// Display falls back for an empty label; the DOM label getter still reflects it.
+pub fn html_option_element_display_label(option &dom.HTMLOptionElement) string {
+	if label := option_dom_element(option).get_attribute_ns(none, 'label') {
+		if label != '' { return label }
+	}
+	return html_option_element_text(option)
 }
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-label

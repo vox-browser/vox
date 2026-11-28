@@ -5,6 +5,21 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 Translation workspace: `~/code/vox2`
 Audited: 2026-09-30
 
+## November 16–26 upstream correctness ports — 2026-11-26
+
+The [November 26 audit](docs/upstream-sync/2026-11-26.md) screens 1,515 Ladybird
+commits and translates 28 upstream changes into 22 focused implementation
+slices. They cover table sizing, CSS parsing and UA links, option labels,
+HTML parser state and character references, preserved tabs and editing
+whitespace, EventSource, TextDecoder, DataTransfer, srcdoc/media documents,
+and singleton array sorting. All 24 changed V files passed syntax checks and
+the selected module import graph passed V's semantic checker. Tests were
+left untouched and unrun at the user's request; the draft PR identifies
+three superseded regression contracts that require migration before merge.
+The audit records native build limitations, model/browser integration
+boundaries, already-present behavior, and deferred coordinated ports.
+The dated inventory totals below are unchanged.
+
 ## November 1 upstream correctness ports — 2026-11-10
 
 The [November 1 audit](docs/upstream-sync/2026-11-01.md) reviews all 149

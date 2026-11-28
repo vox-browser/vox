@@ -1067,6 +1067,18 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 		}
 		intrinsic_percentages = next_percentages.clone()
 	}
+	// In fixed layout, percentages above 100% share the assignable width
+	// proportionally. Automatic layout keeps its ordered clamping below.
+	if fixed_mode {
+		mut sum := 0.0
+		for percentage in intrinsic_percentages { sum += percentage }
+		if sum > 100.0 {
+			for index in 0 .. intrinsic_percentages.len {
+				intrinsic_percentages[index] = intrinsic_percentages[index] * 100.0 / sum
+			}
+		}
+		return intrinsic_percentages, has_intrinsic_percentage, percentage_offsets, has_originating_cells
+	}
 	mut total_intrinsic_percentage := 0.0
 	for index in 0 .. intrinsic_percentages.len {
 		intrinsic_percentages[index] = math.max(math.min(100.0 - total_intrinsic_percentage, intrinsic_percentages[index]), 0.0)
@@ -1607,7 +1619,12 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 	}
 	computed := cell.computed_values()
 	edges := table_cell_measurement_inline_edges(values, collapsed)
-	mut min_width := computed.size_value(.min_width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	// CSS Tables excludes percentage min-width from a cell's contribution.
+	mut min_width := if computed.size_value(.min_width).is_length() {
+		computed.size_value(.min_width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	} else {
+		CSSPixels.new(0)
+	}
 	mut width := if computed.size_value(.width).is_length() {
 		computed.size_value(.width).to_px(layout_length_resolution_context(cell), percentage_basis)
 	} else {
@@ -1941,12 +1958,17 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 			}
 		}
 	}
+	fixed_mode := table_uses_fixed_mode_layout(table)
 	for placement in placements {
+		// Only a measured, non-spanning cell can constrain its column. In
+		// fixed layout the cells of later rows do not measure the columns.
+		if placement.column_span != 1 || (fixed_mode && placement.row != 0) {
+			continue
+		}
 		if placement.column < constrained_columns.len && placement.cell.computed_values().size_value(.width).is_length() {
 			constrained_columns[placement.column] = true
 		}
 	}
-	fixed_mode := table_uses_fixed_mode_layout(table)
 	mut cell_measures := []TableCellIntrinsicWidthMeasures{cap: placements.len}
 	for placement in placements {
 		cell_measures << table_cell_intrinsic_width_measures(mut state, placement.cell, computed.border_collapse() == .collapse, constrained_columns[placement.column], fixed_mode, percentage_basis)

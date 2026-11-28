@@ -1072,9 +1072,10 @@ fn create_navigation_params_from_a_srcdoc_resource(entry &SessionHistoryEntry, n
 	mut response := fetch.Response.create()
 	srcdoc_url := dom.URL{ value: 'about:srcdoc' }
 	response.url_list = [srcdoc_url]
+	// The resource is already UTF-8; do not let encoding sniffing reinterpret it.
 	response.header_list.append(http.Header{
 		name: 'Content-Type'
-		value: 'text/html'
+		value: 'text/html;charset=utf-8'
 	})
 	response.set_body_bytes(resource.bytes())
 	creator := navigable.container_document() or { navigable.active_document() or { return error('Missing srcdoc creator') } }

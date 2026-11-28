@@ -2420,7 +2420,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	mut selected_text := ''
 	for option in options {
 		if html.html_option_element_selected(unsafe { &dom.HTMLOptionElement(option) }) {
-			selected_text = html.html_option_element_label(unsafe {
+			selected_text = html.html_option_element_display_label(unsafe {
 				&dom.HTMLOptionElement(option)
 			})
 			break

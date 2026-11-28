@@ -309,7 +309,7 @@ fn html_select_element_visible_picker_items(select_element &dom.HTMLSelectElemen
 					selected: html_option_element_selected(option)
 					disabled: html_option_element_disabled(option)
 					option_element: option
-					label: infra.strip_and_collapse_whitespace(html_option_element_label(option))
+					label: infra.strip_and_collapse_whitespace(html_option_element_display_label(option))
 					value: html_option_element_value(option)
 				}
 				id_counter++
@@ -325,7 +325,7 @@ fn html_select_element_visible_picker_items(select_element &dom.HTMLSelectElemen
 				selected: html_option_element_selected(option)
 				disabled: html_option_element_disabled(option)
 				option_element: option
-				label: infra.strip_and_collapse_whitespace(html_option_element_label(option))
+				label: infra.strip_and_collapse_whitespace(html_option_element_display_label(option))
 				value: html_option_element_value(option)
 			}
 			id_counter++
@@ -500,7 +500,7 @@ pub fn (mut model HTMLSelectElementModel) clone_selected_option_into_select_butt
 	mut text := ''
 	for option in model.cached_list_of_options_ {
 		if html_option_element_selected(option) {
-			text = html_option_element_label(option)
+			text = html_option_element_display_label(option)
 			break
 		}
 	}
