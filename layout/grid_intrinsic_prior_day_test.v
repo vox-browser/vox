@@ -88,3 +88,13 @@ fn test_fit_content_grid_items_contribute_intrinsic_sizes() {
 		assert prior_day_grid_columns(document, 'flex') == [0.0, 0.0]
 	}
 }
+
+fn test_equal_span_grid_items_plan_increases_before_changing_track_bases() {
+	left := GridSpanGroupContribution{ start: 0, span: 2, minimum: CSSPixels.new(100) }
+	right := GridSpanGroupContribution{ start: 1, span: 2, minimum: CSSPixels.new(100) }
+	for items in [[left, right], [right, left]] {
+		mut tracks := []GridTrack{len: 3, init: GridTrack{ minimum_intrinsic: true }}
+		resolve_grid_intrinsic_span_group(mut tracks, items, CSSPixels.new(0), AvailableSize.make_min_content())
+		assert tracks.map(it.base_size) == [CSSPixels.new(50), CSSPixels.new(50), CSSPixels.new(50)]
+	}
+}

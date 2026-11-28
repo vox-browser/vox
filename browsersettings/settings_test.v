@@ -113,3 +113,14 @@ fn test_saved_site_scope_survives_restart_and_invalid_apply_preserves_route() {
 	save(Proxy{ ...current(), enabled: true, sites: '' })!
 	assert proxy_override('https://unlisted.test/') or { panic('missing override') } != ''
 }
+
+fn test_force_dark_defaults_off_and_survives_profile_reload() {
+	directory := os.join_path(os.temp_dir(), 'vox-settings-force-dark-${os.getpid()}-${time.sys_mono_now()}')
+	defer { os.rmdir_all(directory) or {} }
+	path := os.join_path(directory, 'settings.json')
+	initialize(path)!
+	assert !current().force_dark_enabled
+	save(Proxy{ ...current(), force_dark_enabled: true })!
+	initialize(path)!
+	assert current().force_dark_enabled
+}

@@ -127,12 +127,15 @@ fn browser_settings_advanced_elements(draft browsersettings.Proxy) []ui2.Element
 	style := ui2.TextStyle{ size: 13 }
 	help := ui2.TextStyle{ size: 12, color: 0x525a66 }
 	return [
-		browser_settings_card('settings-advanced-card', 132, [
+		browser_settings_card('settings-advanced-card', 197, [
 			ui2.checkbox('settings-gpu-canvas', 'GPU-accelerated scrolling', !draft.disable_gpu_canvas, ui2.rect(14, 10, 472, 24), style),
 			ui2.label('settings-gpu-canvas-help', 'Turn off if scrolled pages show drawing errors.', ui2.rect(34, 36, 452, 20), help),
 			ui2.view('settings-advanced-divider', ui2.rect(14, 65, 472, 1), ui2.BoxStyle{ bg: 0xe1e3e7 }, []),
 			ui2.checkbox('settings-libjs', 'Use LibJS after background compilation (experimental)', draft.javascript_engine == 'libjs', ui2.rect(14, 75, 472, 24), style),
 			ui2.label('settings-libjs-help', 'Restart Vox to apply. JavaScriptCore is the default.', ui2.rect(34, 101, 452, 20), help),
+			ui2.view('settings-appearance-divider', ui2.rect(14, 130, 472, 1), ui2.BoxStyle{ bg: 0xe1e3e7 }, []),
+			ui2.checkbox('settings-force-dark', 'Force dark mode', draft.force_dark_enabled, ui2.rect(14, 140, 472, 24), style),
+			ui2.label('settings-force-dark-help', 'For pages without a dark theme.', ui2.rect(34, 166, 452, 20), help),
 		]),
 	]
 }
@@ -338,7 +341,7 @@ fn browser_settings_event(event string) {
 		return
 	}
 	if (state.section == .tabs && event in ['settings-tab-coloring', 'settings-custom-tab-titles'])
-		|| (state.section == .advanced && event in ['settings-gpu-canvas', 'settings-libjs']) {
+		|| (state.section == .advanced && event in ['settings-gpu-canvas', 'settings-libjs', 'settings-force-dark']) {
 		state.save_checkbox(event)
 		refresh_browser_settings()
 	}
@@ -351,6 +354,7 @@ fn (mut state BrowserSettingsUI) save_checkbox(event string) {
 		'settings-tab-coloring' { browsersettings.Proxy{ ...previous, enable_tab_coloring: checked } }
 		'settings-custom-tab-titles' { browsersettings.Proxy{ ...previous, enable_custom_tab_titles: checked } }
 		'settings-gpu-canvas' { browsersettings.Proxy{ ...previous, disable_gpu_canvas: !checked } }
+		'settings-force-dark' { browsersettings.Proxy{ ...previous, force_dark_enabled: checked } }
 		'settings-libjs' { browsersettings.Proxy{ ...previous, javascript_engine: if checked { 'libjs' } else { 'javascriptcore' } } }
 		else { return }
 	}
@@ -360,6 +364,9 @@ fn (mut state BrowserSettingsUI) save_checkbox(event string) {
 		state.error = err.msg()
 		ui2.set_control_checked(event, !checked)
 		return
+	}
+	if previous.force_dark_enabled != next.force_dark_enabled {
+		apply_browser_appearance_to_open_tabs(next.force_dark_enabled)
 	}
 	if state.section == .tabs && address_bar_owner.app != unsafe { nil } {
 		mut app := address_bar_owner.app.active_browser_tab()

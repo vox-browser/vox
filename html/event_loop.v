@@ -123,6 +123,7 @@ pub:
 	source TaskSource
 mut:
 	steps     fn() @[required]
+	owned_completion_ voidptr
 	document_ ?&dom.Document
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
@@ -184,6 +185,9 @@ fn (task &Task) cancel() {
 		steps := mutable_task.steps
 		mutable_task.steps = fn () {}
 		platform.release_closure(voidptr(steps))
+		completion := mutable_task.owned_completion_
+		mutable_task.owned_completion_ = unsafe { nil }
+		if completion != unsafe { nil } { platform.release_closure(completion) }
 	}
 	mut owner := mutable_task.allocation_owner
 	mutable_task.allocation_owner = unsafe { nil }
