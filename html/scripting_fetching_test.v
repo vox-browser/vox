@@ -594,6 +594,15 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert fetch_destination_from_module_type(.worker, 'javascript-or-wasm') == .worker
 }
 
+fn modulepreload_scripting_fetching_fixture() !ScriptingFetchingFixture {
+	fixture := scripting_fetching_fixture()!
+	mut document := unsafe { &dom.Document(fixture.settings.responsible_document() or { panic('missing document') }) }
+	mut host := &dom.Navigable{active_document_: document, is_top_level_traversable_: true}
+	host.traversable_navigable_ = host
+	document.set_cached_navigable(host)
+	return fixture
+}
+
 fn run_modulepreload_networking_task(settings &EnvironmentSettingsObject) {
 	mut queue := settings.responsible_event_loop().task_queue()
 	task := queue.take_first_runnable_matching(fn (task &Task) bool {
@@ -603,7 +612,7 @@ fn run_modulepreload_networking_task(settings &EnvironmentSettingsObject) {
 }
 
 fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
-	fixture := scripting_fetching_fixture()!
+	fixture := modulepreload_scripting_fetching_fixture()!
 	scripting_fetching_request_urls = []
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_completion_request_count = 0
@@ -666,7 +675,7 @@ fn test_module_fetch_hook_abort_removes_in_progress_entry_for_retry() {
 }
 
 fn test_modulepreload_populates_typed_module_map_entries() {
-	fixture := scripting_fetching_fixture()!
+	fixture := modulepreload_scripting_fetching_fixture()!
 	scripting_fetching_request_urls = []
 	text_url := dom.URL{ value: 'https://example.test/app/module.txt' }
 	assert fetch_modulepreload_module_script_graph(fixture.realm, text_url, .text,
@@ -699,7 +708,7 @@ fn test_modulepreload_populates_typed_module_map_entries() {
 }
 
 fn test_link_modulepreload_dispatches_events_and_preserves_fetch_options() {
-	fixture := scripting_fetching_fixture()!
+	fixture := modulepreload_scripting_fetching_fixture()!
 	document := fixture.settings.responsible_document() or { panic('missing document') }
 	scripting_fetching_request_urls = []
 	mut element := document.create_element_ns(dom.namespace_html_uri, 'link')!
