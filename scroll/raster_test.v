@@ -438,10 +438,15 @@ fn test_scroll_raster_frame_keys_ignore_viewport_translation_and_track_content()
 	assert keys[0].has_ink && keys[0].ink == layout.LayoutRect{30, 60, 90, 60}
 	assert keys[4].group_end == 6
 	assert keys[4].has_ink && keys[4].ink == layout.LayoutRect{119, 119, 82, 82}
-	// Group ends write nothing; they stay bounded (empty ink) so an entering
-	// group reconciles through its begin's extent.
-	assert keys[3].has_ink && keys[3].ink.width == 0 && keys[3].ink.height == 0
-	assert keys[6].has_ink && keys[6].ink.width == 0 && keys[6].ink.height == 0
+	// Group ends carry their group's extent (raster_group_end_ink.v), or the
+	// former empty ink under its same-binary control.
+	if retain_empty_group_end_ink {
+		assert keys[3].has_ink && keys[3].ink.width == 0 && keys[3].ink.height == 0
+		assert keys[6].has_ink && keys[6].ink.width == 0 && keys[6].ink.height == 0
+	} else {
+		assert keys[3].has_ink && keys[3].ink == keys[0].ink
+		assert keys[6].has_ink && keys[6].ink == keys[4].ink
+	}
 	assert keys[7].skip_diff
 }
 
@@ -498,8 +503,10 @@ fn test_scroll_raster_content_damage_covers_only_changed_commands() {
 	// frames all need complete replay.
 	reordered := scroll_raster_frame_keys([layout.PaintCommand{ ...other, transform: scrolled },
 		layout.PaintCommand{ ...base, transform: scrolled }], 10, 1, 1024, 768)
-	assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
-	assert stats.fallback == 'paint-order-changed'
+	if !paint_order_damage_enabled {
+		assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
+		assert stats.fallback == 'paint-order-changed'
+	}
 	unbounded := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled },
 		layout.PaintCommand{ ...other, transform: scrolled },
 		layout.PaintCommand{ kind: 'draw_text', text: 'late' }], 10, 1, 1024, 768)

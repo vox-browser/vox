@@ -18,7 +18,7 @@ fn chromium_paint_pixel_scale(handle voidptr) f64 {
 	node := unsafe { &Node(handle) }
 	document := node.document()
 	if document.font_rendering_policy() != .chromium { return 1 }
-	scale := document.display_device_pixel_ratio() / document.layout_coordinate_scale()
+	scale := document.rendering_device_pixel_ratio() / document.layout_coordinate_scale()
 	return if scale > 0 && !math.is_inf(scale, 0) && !math.is_nan(scale) { scale } else { 1.0 }
 }
 

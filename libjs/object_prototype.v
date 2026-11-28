@@ -52,10 +52,12 @@ pub fn object_prototype_to_string(mut vm VM, primitives PrimitiveObjectPrototype
 	if value.is_null() { return Value.from_string(vm.create_string_from_str('[object Null]')) }
 	object := value.to_object_with_prototypes(mut vm, primitives)!
 	builtin_tag := if Value.from_object(object).is_array(mut vm)! { 'Array' }
+		else if object.is_arguments_object { 'Arguments' }
 		else if object.callable != none { 'Function' }
-		else if object.error_data != none { 'Error' }
-		else if object.boolean_object != none { 'Boolean' }
-		else if object.number_object != none { 'Number' }
+		else if object.slots.error_data != none { 'Error' }
+		else if object.slots.date_object != none { 'Date' }
+		else if object.slots.boolean_object != none { 'Boolean' }
+		else if object.slots.number_object != none { 'Number' }
 		else if object.string_object != none { 'String' }
 		else { 'Object' }
 	tag := object.get(mut vm, PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()))!

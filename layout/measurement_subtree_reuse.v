@@ -41,6 +41,7 @@ pub fn measurement_subtree_reuse_statistics() (u64, u64, u64) {
 fn report_measurement_subtree_reuse() {
 	if !incremental_layout_diagnostics { return }
 	eprintln('VOX_MEASUREMENT_SUBTREE_REUSE last=${measurement_subtree_reuse_counts[0]} first=${measurement_subtree_reuse_counts[1]} first_records=${measurement_subtree_reuse_counts[2]}')
+	eprintln('VOX_FIRST_CALL_ANSWERS answered=${first_call_answer_count}')
 }
 
 // Called before a committed-pass inner layout of `box`. When this pass already
@@ -57,8 +58,8 @@ fn note_repeated_relayout_root(mut state LayoutState, box &Node, box_state &Used
 	}
 	if existing.space == space && subtree_layout_inputs_match(&existing.before, box_state) { return }
 	baselines := layout_box_baselines(state, box)
-	mut retained := retain_geometry_allocations()
-	defer { retained.finish() }
+	mut allocations := state.enter_relayout_record_allocations()
+	defer { allocations.finish() }
 	state.first_relayout_records_[index] = RelayoutRecord{
 		...existing
 		baselines:     baselines

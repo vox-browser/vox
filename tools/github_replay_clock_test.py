@@ -42,6 +42,32 @@ assert.equal(Date.now(),EPOCH+1234);
 '''.replace('EPOCH', str(epoch))
         subprocess.run(['node', '--input-type=module', '-e', script], check=True)
 
+    def test_document_start_clock_defers_marker_until_the_root_exists(self):
+        epoch = 1794669719568
+        script = '''
+import assert from 'node:assert/strict';
+let tick=10, listener=null, registrations=0;
+globalThis.performance={now:()=>tick};
+const attributes={};
+globalThis.document={documentElement:null,addEventListener:(name,callback,options)=>{
+ assert.equal(name,'DOMContentLoaded');
+ assert.equal(options.once,true);
+ listener=callback;
+ registrations++;
+}};
+'''+date_prefix(epoch)+date_prefix(epoch)+'''
+assert.equal(Date.now(),EPOCH);
+assert.equal(new Date().getTime(),EPOCH);
+assert.equal(registrations,1);
+assert.deepEqual(attributes,{});
+document.documentElement={setAttribute:(key,value)=>attributes[key]=value};
+listener();
+assert.equal(attributes['data-vox-benchmark-clock'],String(EPOCH));
+tick+=25;
+assert.equal(Date.now(),EPOCH+25);
+'''.replace('EPOCH', str(epoch))
+        subprocess.run(['node', '--input-type=module', '-e', script], check=True)
+
     def test_invalid_epoch_is_rejected_before_generating_script(self):
         for epoch in [0, -1, 1.5, '123', 8_640_000_000_000_001]:
             with self.assertRaises(ValueError):

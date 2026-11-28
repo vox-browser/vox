@@ -1,6 +1,7 @@
 module css
 
 import dom
+import os
 import strings
 import platform
 
@@ -784,8 +785,12 @@ pub fn (mut rule CSSRule) set_css_text(text string) {
 	// On setting the cssText attribute must do nothing.
 }
 
+// Re-parenting reaches every descendant through set_parent_style_sheet(),
+// which clears each rule's own caches before and after the change, so neither
+// call clears the whole subtree again at every level: building nested groups
+// bottom-up re-parented each subtree once per enclosing level.
 pub fn (mut rule CSSRule) set_parent_rule(parent_rule ?&CSSRule) {
-	rule.clear_caches()
+	rule.clear_own_caches()
 	rule.parent_rule = parent_rule
 
 	if parent := parent_rule {
@@ -793,7 +798,7 @@ pub fn (mut rule CSSRule) set_parent_rule(parent_rule ?&CSSRule) {
 	} else {
 		rule.set_parent_style_sheet(none)
 	}
-	rule.clear_caches()
+	rule.clear_own_caches()
 }
 
 pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
@@ -803,7 +808,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 		}
 	}
 
-	rule.clear_caches()
+	rule.clear_own_caches()
 	rule.parent_style_sheet = parent_style_sheet
 	if mut font_face_rule := rule.kind_data().font_face_rule {
 		font_face_rule.set_parent_style_sheet(parent_style_sheet)
@@ -823,7 +828,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 		}
 		declaration_with_base.set_rule_base_url(base_url)
 	}
-	rule.clear_caches()
+	rule.clear_own_caches()
 
 	if rule.type_ == .import_rule {
 		if mut parent := rule.parent_style_sheet {
@@ -902,6 +907,17 @@ pub fn (rule &CSSRule) dump(indent_levels int) string {
 }
 
 pub fn (mut rule CSSRule) clear_caches() {
+	rule.clear_own_caches()
+	if child_rules := rule.rules {
+		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
+		for mut child_rule in mutable_child_rules.rules {
+			child_rule.clear_caches()
+		}
+	}
+}
+
+// The caches of this rule alone, not of its descendants.
+fn (mut rule CSSRule) clear_own_caches() {
 	rule.cached_layer_name = none
 	rule.cached_parent_container_rule = none
 	rule.parent_container_rule_cache_valid = false
@@ -915,12 +931,6 @@ pub fn (mut rule CSSRule) clear_caches() {
 			cached_scope_start_selectors: none
 			cached_scope_end_selectors: none
 		})
-	}
-	if child_rules := rule.rules {
-		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
-		for mut child_rule in mutable_child_rules.rules {
-			child_rule.clear_caches()
-		}
 	}
 }
 
@@ -1843,10 +1853,26 @@ pub mut:
 	source_text_            ?string
 mut:
 	shared_style_cache_revision_ u64
+	// Whether the rules (at that revision) contain an @property rule.
+	property_rules_scanned_       bool
+	property_rules_scan_revision_ u64
+	has_property_rules_           bool
+	// The effective registrations at a revision signature.
+	property_registrations_valid_     bool
+	property_registrations_signature_ u64
+	property_registrations_           map[string]CustomPropertyRegistration
 	font_synchronization_had_rules_ bool
 	media_memo_document_ voidptr
 	media_memo_generation_ u64
 	media_memo_environment_ MediaEvaluationEnvironment
+	// duplicate_style_sheets.v: the cached rule syntax this sheet was converted
+	// from (0 when uncached), whether CSSOM has changed its contents since, and
+	// whether its contents permit sharing one indexed copy (0 unknown).
+	source_syntax_id_       u64
+	content_mutated_        bool
+	duplicate_contents_     u8
+	// The process-lifetime default sheet holds its startup worker's selector graphs.
+	user_agent_selector_storage_ &platform.RetainedArena = unsafe { nil }
 }
 
 fn (rule &CSSRule) has_process_lifetime_sheet() bool {
@@ -1964,6 +1990,16 @@ pub fn (sheet &CSSStyleSheet) css_rules() &CSSRuleList {
 	return sheet.rules
 }
 
+// Script-facing CSSOM reads must check the response's origin-clean flag. Internal
+// style processing still reads css_rules(), including cross-origin sheets.
+// https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules
+pub fn (sheet &CSSStyleSheet) checked_css_rules() !&CSSRuleList {
+	if !sheet.base.origin_clean {
+		return error("SecurityError: Can't access the rules of cross-origin stylesheets")
+	}
+	return sheet.rules
+}
+
 pub fn (sheet &CSSStyleSheet) href() ?string {
 	return sheet.base.href()
 }
@@ -1999,7 +2035,10 @@ pub fn (sheet &CSSStyleSheet) make_parsing_params() ParsingParams {
 
 // https://www.w3.org/TR/cssom/#dom-cssstylesheet-insertrule
 pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
-	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	// 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	if !sheet.base.origin_clean {
+		return error("SecurityError: Can't call insert_rule() on cross-origin stylesheets")
+	}
 
 	// If the disallow modification flag is set, throw a NotAllowedError DOMException.
 	if sheet.disallow_modification {
@@ -2043,7 +2082,10 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 
 // https://www.w3.org/TR/cssom/#dom-cssstylesheet-deleterule
 pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
-	// FIXME: 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	// 1. If the origin-clean flag is unset, throw a SecurityError exception.
+	if !sheet.base.origin_clean {
+		return error("SecurityError: Can't call delete_rule() on cross-origin stylesheets")
+	}
 
 	// 2. If the disallow modification flag is set, throw a NotAllowedError DOMException.
 	if sheet.disallow_modification {
@@ -2235,6 +2277,45 @@ pub fn (sheet &CSSStyleSheet) for_each_effective_property_at_rule(callback fn (&
 
 pub fn (sheet &CSSStyleSheet) registered_properties_from_css_property_rules() map[string]CustomPropertyRegistration {
 	mut registered_properties := map[string]CustomPropertyRegistration{}
+	// Every style pass collects the registrations; most sheets have none,
+	// and the others change only with their rules or media matches, which
+	// bump the revisions.
+	if !retain_property_rule_walks {
+		if !sheet.may_have_property_rules() {
+			return registered_properties
+		}
+		signature := sheet.property_rule_revision_signature(0)
+		if sheet.property_registrations_valid_ && sheet.property_registrations_signature_ == signature {
+			return sheet.property_registrations_
+		}
+		document := sheet.owning_document() or { return sheet.walk_registered_properties() }
+		mut storage := document.enter_native_storage()
+		defer { storage.finish() }
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		mutable_sheet.property_registrations_ = sheet.walk_registered_properties()
+		mutable_sheet.property_registrations_signature_ = signature
+		mutable_sheet.property_registrations_valid_ = true
+		return sheet.property_registrations_
+	}
+	return sheet.walk_registered_properties()
+}
+
+// The revisions of the sheet and its loaded imports, combined.
+fn (sheet &CSSStyleSheet) property_rule_revision_signature(depth int) u64 {
+	mut signature := (sheet.shared_style_cache_revision_ ^ u64(voidptr(sheet))) * 0x100000001b3
+	if depth > 16 { return signature }
+	for import_rule in sheet.import_rules {
+		if imported := import_rule.kind_data().loaded_style_sheet {
+			signature = (signature ^ imported.property_rule_revision_signature(depth + 1)) * 0x100000001b3
+		} else {
+			signature = (signature ^ 0x9e3779b97f4a7c15) * 0x100000001b3
+		}
+	}
+	return signature
+}
+
+fn (sheet &CSSStyleSheet) walk_registered_properties() map[string]CustomPropertyRegistration {
+	mut registered_properties := map[string]CustomPropertyRegistration{}
 	registered_properties_ptr := &registered_properties
 	sheet.for_each_effective_property_at_rule(fn [registered_properties_ptr] (rule &CSSRule) {
 		unsafe {
@@ -2321,6 +2402,7 @@ fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.Sha
 }
 
 fn (mut sheet CSSStyleSheet) invalidate_owners_with_previous_effects(reason dom.StyleInvalidationReason, previous_sheet_effects ?ShadowRootStylesheetEffects) {
+	note_style_sheet_content_mutation(sheet, reason)
 	sheet.did_match = none
 	sheet.invalidate_shared_style_cache()
 	// MediaList mutation changes which rules are effective. Refresh that state before
@@ -2350,7 +2432,7 @@ fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.Styl
 	if rule_list_contains_position_try(sheet.rules) {
 		if document := sheet.owning_document() {
 			mut owner := unsafe { &dom.Document(document) }
-			owner.set_needs_full_layout_tree_update(true)
+			owner.request_full_layout_tree_update('position-try-sheet-invalidated')
 		}
 	}
 	for owner in sheet.owning_documents_or_shadow_roots {
@@ -2372,6 +2454,44 @@ fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.Styl
 			}
 		}
 	}
+}
+
+// Same-binary control: walk every sheet's effective rules for @property
+// registrations in every style pass.
+const retain_property_rule_walks = os.getenv('VOX_RETAIN_PROPERTY_RULE_WALKS') != ''
+
+// Whether the sheet or a loaded import of it has an @property rule at all,
+// whatever its conditions. Rule changes bump the revision.
+fn (sheet &CSSStyleSheet) may_have_property_rules() bool {
+	return sheet.may_have_property_rules_at(0)
+}
+
+fn (sheet &CSSStyleSheet) may_have_property_rules_at(depth int) bool {
+	// An import cycle or a very deep chain keeps the walk.
+	if depth > 16 { return true }
+	if !sheet.property_rules_scanned_ || sheet.property_rules_scan_revision_ != sheet.shared_style_cache_revision_ {
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		mutable_sheet.has_property_rules_ = rule_list_contains_property(sheet.rules)
+		mutable_sheet.property_rules_scan_revision_ = sheet.shared_style_cache_revision_
+		mutable_sheet.property_rules_scanned_ = true
+	}
+	if sheet.has_property_rules_ { return true }
+	for import_rule in sheet.import_rules {
+		if imported := import_rule.kind_data().loaded_style_sheet {
+			if imported.may_have_property_rules_at(depth + 1) { return true }
+		}
+	}
+	return false
+}
+
+fn rule_list_contains_property(list &CSSRuleList) bool {
+	for rule in list.rules {
+		if rule.type_ == .property { return true }
+		if children := rule.css_rules() {
+			if rule_list_contains_property(children) { return true }
+		}
+	}
+	return false
 }
 
 fn rule_list_contains_position_try(list &CSSRuleList) bool {
@@ -2842,7 +2962,7 @@ fn stylesheet_requires_broad_add_or_remove_invalidation(sheet &CSSStyleSheet) bo
 fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	if rule_list_contains_position_try(sheet.rules) {
 		mut document := unsafe { &dom.Document(list.document()) }
-		document.set_needs_full_layout_tree_update(true)
+		document.request_full_layout_tree_update('position-try-sheet-added')
 	}
 	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 	mutable_sheet.add_owning_document_or_shadow_root(list.document_or_shadow_root)
@@ -2861,7 +2981,7 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		return
 	}
 
-	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
+	invalidate_css_style_scope_for_appended_sheet(list.document_or_shadow_root)
 	marked_before := style_sheet_change_marked_elements
 	if !list.document_or_shadow_root.is_shadow_root()
 		&& (list.document_or_shadow_root.entire_subtree_needs_style_update()

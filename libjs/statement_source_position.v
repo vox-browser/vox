@@ -93,7 +93,7 @@ fn find_statement_source_position(statement &Statement, point Position, mut matc
 
 fn assignment_target_range_at(expression &Expression, point Position) ?SourceRange {
 	if expression.kind.tag != .assignment { return none }
-	lhs := expression.kind.assignment_lhs or { return none }
+	lhs := expression.kind.assignment_lhs() or { return none }
 	if lhs !is AssignmentLhsExpression { return none }
 	target := lhs.expression
 	if source_position_precedes(point, target.range.start)

@@ -52,38 +52,20 @@ fn (p &Parser) match_unary_prefixed_expression() bool {
 	}
 }
 
-fn (p &Parser) match_secondary_expression(forbidden &ForbiddenTokens) bool {
-	tt := p.current_token_type()
-	if !forbidden.allows(tt) {
-		return false
-	}
-	return match tt {
-		.period, .bracket_open, .paren_open, .question_mark_period {
-			true
-		}
-		.plus_plus, .minus_minus {
-			!p.current_token.trivia_has_line_terminator
-		}
-		.double_asterisk, .asterisk, .slash, .percent, .plus, .minus, .shift_left, .shift_right,
-		.unsigned_shift_right, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
-		.in_kw, .instanceof_kw, .equals_equals, .exclamation_mark_equals, .equals_equals_equals,
-		.exclamation_mark_equals_equals, .ampersand, .caret, .pipe, .double_question_mark,
-		.double_ampersand, .double_pipe {
-			true
-		}
-		.question_mark {
-			true
-		}
-		.equals, .plus_equals, .minus_equals, .double_asterisk_equals, .asterisk_equals,
-		.slash_equals, .percent_equals, .shift_left_equals, .shift_right_equals,
-		.unsigned_shift_right_equals, .ampersand_equals, .caret_equals, .pipe_equals,
-		.double_ampersand_equals, .double_pipe_equals, .double_question_mark_equals {
-			true
-		}
-		else {
-			false
+const secondary_operator_precedences = build_secondary_operator_precedences()
+
+fn build_secondary_operator_precedences() []u8 {
+	mut table := []u8{len: int(TokenType.yield_kw) + 1}
+	for index in 0 .. table.len {
+		token := unsafe { TokenType(index) }
+		precedence := operator_precedence(token)
+		// The parser handles comma, yield, prefix operators and new separately.
+		if precedence > precedence_assignment && precedence != precedence_unary
+			&& token != .new_kw {
+			table[index] = u8(precedence)
 		}
 	}
+	return table
 }
 
 fn (mut p Parser) parse_expression_any() Expression {
@@ -122,7 +104,7 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 	// Check for freestanding `arguments` references after parse_primary_expression.
 	if expression.kind.tag == .identifier_expr {
 		if id := expression.kind.identifier {
-			if utf16_equals(id.name.data, utf16('arguments')) && !p.flags.strict_mode
+			if utf16_equals_ascii(id.name.data, 'arguments') && !p.flags.strict_mode
 				&& !p.scope_collector.has_declaration_in_current_function(id.name.data) {
 				p.scope_collector.set_contains_access_to_arguments_object_in_non_strict_mode()
 			}
@@ -132,7 +114,7 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 	if !should_continue {
 		// Yield/Await expressions don't participate in secondary expression
 		// parsing but do participate in comma expressions.
-		return p.parse_comma_expression(lhs_start, expression, min_precedence, forbidden)
+		return p.parse_comma_expression(lhs_start, expression, min_precedence)
 	}
 
 	expression2 := if p.match_token(.template_literal_start) {
@@ -144,17 +126,37 @@ fn (mut p Parser) parse_expression(min_precedence int, associativity Associativi
 }
 
 fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expression, min_precedence int, associativity Associativity, forbidden_ ForbiddenTokens) Expression {
+	first_precedence := p.next_secondary_precedence(min_precedence, associativity)
+	if first_precedence == 0 {
+		p.last_primary_was_parenthesized = false
+		return p.parse_comma_expression(lhs_start, expression_, min_precedence)
+	}
+	return p.parse_secondary_operators(lhs_start, expression_, min_precedence, associativity,
+		forbidden_, first_precedence)
+}
+
+fn (p &Parser) next_secondary_precedence(min_precedence int, associativity Associativity) int {
+	precedence := int(unsafe { secondary_operator_precedences[int(p.current_token_type())] })
+	if precedence < min_precedence || (precedence == min_precedence && associativity == .left) {
+		return 0
+	}
+	return precedence
+}
+
+// Keep the larger operator parser's stack frame off the path for primaries
+// followed by delimiters or by operators belonging to an outer expression.
+@[noinline]
+fn (mut p Parser) parse_secondary_operators(lhs_start Position, expression_ Expression, min_precedence int, associativity Associativity, forbidden_ ForbiddenTokens, first_precedence int) Expression {
 	original_forbidden := forbidden_
 	mut forbidden := forbidden_
 	mut expression := expression_
 	mut lhs_is_parenthesized := p.last_primary_was_parenthesized
 	p.last_primary_was_parenthesized = false
-	for p.match_secondary_expression(&forbidden) {
-		new_precedence := operator_precedence(p.current_token_type())
-		if new_precedence < min_precedence {
-			break
-		}
-		if new_precedence == min_precedence && associativity == .left {
+	mut new_precedence := first_precedence
+	for new_precedence != 0 && !p.recursion_limit_reached {
+		token := p.current_token_type()
+		if !forbidden.allows(token)
+			|| (p.current_token.trivia_has_line_terminator && token in [.plus_plus, .minus_minus]) {
 			break
 		}
 
@@ -168,21 +170,26 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 		if p.match_token(.template_literal_start) && !is_update_expression(expression) {
 			expression = p.parse_tagged_template_literals(lhs_start, expression)
 		}
+		new_precedence = p.next_secondary_precedence(min_precedence, associativity)
 	}
 
-	return p.parse_comma_expression(lhs_start, expression, min_precedence, forbidden)
+	return p.parse_comma_expression(lhs_start, expression, min_precedence)
 }
 
-fn (mut p Parser) parse_comma_expression(start Position, expression Expression, min_precedence int, forbidden ForbiddenTokens) Expression {
-	if min_precedence <= 1 && p.match_token(.comma) && forbidden.allows(.comma) {
-		mut expressions := [expression]
+fn (mut p Parser) parse_comma_expression(start Position, expression Expression, min_precedence int) Expression {
+	if min_precedence <= 1 && p.match_token(.comma) {
+		mark := p.expression_scratch.len
+		p.expression_scratch << expression
 		for p.match_token(.comma) {
 			p.consume()
-			expressions << p.parse_assignment_expression()
+			p.expression_scratch << p.parse_assignment_expression()
 		}
+		expressions := take_scratch_list(mut p.expression_scratch, mark)
 		return p.expression(start, ExpressionKind{
-			tag:         .sequence
-			expressions: expressions
+			tag:   .sequence
+			lists: &ExpressionLists{
+				expressions: expressions
+			}
 		})
 	}
 	return expression
@@ -238,9 +245,11 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				call_arguments := p.parse_arguments()
 				return p.expression(after_super, ExpressionKind{
 					tag:             .super_call
-					super_call_data: &SuperCallData{
-						arguments:    call_arguments
-						is_synthetic: false
+					lists: &ExpressionLists{
+						super_call_data: &SuperCallData{
+							arguments:    call_arguments
+							is_synthetic: false
+						}
 					}
 				}), true
 			} else if p.match_token(.period) || p.match_token(.bracket_open) {
@@ -276,13 +285,15 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			}
 			return p.expression(start, ExpressionKind{
 				tag:           .big_int_literal
-				big_int_value: value_utf8.bytestr()
+				lists: &ExpressionLists{
+					big_int_value: value_utf8.bytestr()
+				}
 			}), true
 		}
 		.bool_literal {
 			bl_token := p.consume()
 			value := p.token_value(bl_token)
-			is_true := utf16_equals(value, utf16('true'))
+			is_true := utf16_equals_ascii(value, 'true')
 			return p.expression(start, ExpressionKind{
 				tag:        .boolean_literal
 				bool_value: is_true
@@ -301,7 +312,7 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			}
 			return p.expression(after_string, ExpressionKind{
 				tag:          .string_literal
-				string_value: str_value
+				string_value: ast_text(str_value)
 			}), true
 		}
 		.null_literal {
@@ -334,9 +345,8 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				return arrow, false
 			}
 			async_token := p.consume_and_check_identifier()
-			value := p.token_value(async_token).clone()
-			id := p.make_identifier(start, Utf16String.from_slice(value))
-			p.scope_collector.register_identifier(id, value, none)
+			id := p.make_identifier(start, Utf16String.from_slice(p.token_value(async_token)))
+			p.scope_collector.register_identifier(id, id.name.data, none)
 			return p.expression(start, ExpressionKind.identifier_kind(id)), true
 		}
 		.template_literal_start {
@@ -384,8 +394,14 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 				p.consume_token(.paren_close)
 				return p.expression(start, ExpressionKind{
 					tag:       .import_call
-					specifier: &specifier
-					options:   if has_options { &options_expr } else { none }
+					lists: &ExpressionLists{
+						specifier: &Expression{
+							...specifier
+						}
+						options: if has_options { &Expression{
+							...options_expr
+						} } else { none }
+					}
 				}), true
 			} else {
 				p.expected("'.' or '('")
@@ -408,7 +424,9 @@ fn (mut p Parser) parse_primary_expression(min_precedence int, forbidden Forbidd
 			id := p.parse_private_identifier(start)
 			return p.expression(start, ExpressionKind{
 				tag:                .private_identifier_expr
-				private_identifier: id
+				lists: &ExpressionLists{
+					private_identifier: id
+				}
 			}), true
 		}
 		.regex_literal {
@@ -442,23 +460,19 @@ fn (mut p Parser) parse_primary_expression_identifier(start Position, forbidden 
 			&& (p.flags.strict_mode || p.flags.in_generator_function_context) {
 			p.syntax_error("'yield' is not allowed as an identifier in this context")
 		}
-		id_token := p.consume_and_check_identifier()
-		value := p.token_value(id_token).clone()
-		id := p.make_identifier(start, Utf16String.from_slice(value.clone()))
-		p.scope_collector.register_identifier(id, value, none)
-		return p.expression(start, ExpressionKind.identifier_kind(id)), true
 	} else if p.match_token(.escaped_keyword) {
 		p.syntax_error('Keyword must not contain escaped characters')
-		id_token := p.consume_and_check_identifier()
-		value := p.token_value(id_token).clone()
-		id := p.make_identifier(start, Utf16String.from_slice(value.clone()))
-		p.scope_collector.register_identifier(id, value, none)
-		return p.expression(start, ExpressionKind.identifier_kind(id)), true
 	} else {
 		p.expected('primary expression')
 		p.consume()
 		return p.expression(start, ExpressionKind.error()), true
 	}
+	id_token := p.consume_and_check_identifier()
+	// One shared copy and key per distinct name (parser_names.v).
+	name := p.names.intern(p.token_value(id_token))
+	id := p.make_identifier(start, name.text)
+	p.scope_collector.register_identifier_key(id, name.key, none)
+	return p.expression(start, ExpressionKind.identifier_kind(id)), true
 }
 
 fn (mut p Parser) parse_regex_literal(start Position, token Token) Expression {
@@ -478,9 +492,11 @@ fn (mut p Parser) parse_regex_literal(start Position, token Token) Expression {
 	_ = p.compile_regex_pattern(pattern, flags)
 	return p.expression(start, ExpressionKind{
 		tag:         .regexp_literal
-		regexp_data: RegExpLiteralData{
-			pattern: Utf16String.from_slice(pattern)
-			flags:   Utf16String.from_slice(flags)
+		lists: &ExpressionLists{
+			regexp_data: &RegExpLiteralData{
+				pattern: Utf16String.from_slice(pattern)
+				flags:   Utf16String.from_slice(flags)
+			}
 		}
 	})
 }
@@ -508,7 +524,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		// === Logical operators ===
 		.double_ampersand {
 			p.consume()
-			new_forbidden := forbidden.forbid([TokenType.double_question_mark])
+			new_forbidden := forbidden.merge(forbidden_coalesce)
 			rhs := p.parse_expression(min_precedence, .left, new_forbidden)
 			return p.expression(start, ExpressionKind{
 				tag:        .logical
@@ -519,7 +535,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		}
 		.double_pipe {
 			p.consume()
-			new_forbidden := forbidden.forbid([TokenType.double_question_mark])
+			new_forbidden := forbidden.merge(forbidden_coalesce)
 			rhs := p.parse_expression(min_precedence, .left, new_forbidden)
 			return p.expression(start, ExpressionKind{
 				tag:        .logical
@@ -530,7 +546,7 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 		}
 		.double_question_mark {
 			p.consume()
-			new_forbidden := forbidden.forbid([TokenType.double_ampersand, .double_pipe])
+			new_forbidden := forbidden.merge(forbidden_logical)
 			rhs := p.parse_expression(min_precedence, .left, new_forbidden)
 			return p.expression(start, ExpressionKind{
 				tag:        .logical
@@ -561,8 +577,10 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 						tag:                  .assignment
 						assignment_op:        op
 						lhs_is_parenthesized: lhs_is_parenthesized
-						assignment_lhs:       AssignmentLhsPattern{
-							pattern: pattern
+						lists:                &ExpressionLists{
+							assignment_lhs: AssignmentLhsPattern{
+								pattern: pattern
+							}
 						}
 						rhs:                  &rhs
 					}), ForbiddenTokens{}
@@ -586,8 +604,10 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 				tag:                  .assignment
 				assignment_op:        op
 				lhs_is_parenthesized: lhs_is_parenthesized
-				assignment_lhs:       AssignmentLhsExpression{
-					expression: &lhs
+				lists:                &ExpressionLists{
+					assignment_lhs: AssignmentLhsExpression{
+						expression: &lhs
+					}
 				}
 				rhs:                  &rhs
 			}), ForbiddenTokens{}
@@ -604,7 +624,9 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 				id := p.parse_private_identifier(property_start)
 				property := p.expression(property_start, ExpressionKind{
 					tag:                .private_identifier_expr
-					private_identifier: id
+					lists: &ExpressionLists{
+						private_identifier: id
+					}
 				})
 				return p.expression(start, ExpressionKind{
 					tag:      .member
@@ -614,9 +636,8 @@ fn (mut p Parser) parse_secondary_expression(lhs Expression, min_precedence int,
 				}), ForbiddenTokens{}
 			} else if p.match_identifier_name() {
 				mem_token := p.consume()
-				value := p.token_value(mem_token).clone()
 				property := p.expression(property_start, ExpressionKind.identifier_kind(p.make_identifier(property_start,
-					Utf16String.from_slice(value))))
+					p.names.intern(p.token_value(mem_token)).text)))
 				return p.expression(start, ExpressionKind{
 					tag:      .member
 					object:   &lhs
@@ -792,7 +813,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 		p.consume()
 		target_token := p.current_token
 		p.consume_token(.identifier)
-		if !utf16_equals(p.token_original_value(target_token), utf16('target')) {
+		if !utf16_equals_ascii(p.token_original_value(target_token), 'target') {
 			p.syntax_error("Expected 'target' after 'new.'")
 		}
 		if !p.flags.new_target_is_valid && !p.in_eval_function_context {
@@ -811,7 +832,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 	callee := if p.match_token(.new_kw) {
 		p.parse_new_expression()
 	} else {
-		forbidden := ForbiddenTokens{}.forbid([TokenType.paren_open, .question_mark_period])
+		forbidden := forbidden_call.merge(forbidden_optional_chain)
 		p.parse_expression(precedence_member, .right, forbidden)
 	}
 
@@ -823,7 +844,7 @@ fn (mut p Parser) parse_new_expression() Expression {
 			if base.kind.tag == .member {
 				if object := base.kind.object { base = *object } else { break }
 			} else if base.kind.tag == .tagged_template_literal {
-				if tag := base.kind.tag_expr { base = *tag } else { break }
+				if tag := base.kind.tag_expr() { base = *tag } else { break }
 			} else { break }
 		}
 		if base.kind.tag == .import_call {
@@ -857,7 +878,7 @@ fn (mut p Parser) parse_call_expression(callee Expression) Expression {
 	// Check for direct call to eval.
 	if callee.kind.tag == .identifier_expr {
 		if id := callee.kind.identifier {
-			if utf16_equals(id.name.data, utf16('eval')) {
+			if utf16_equals_ascii(id.name.data, 'eval') {
 				p.scope_collector.set_contains_direct_call_to_eval()
 				p.scope_collector.set_uses_this()
 			}
@@ -874,12 +895,12 @@ fn (mut p Parser) parse_call_expression(callee Expression) Expression {
 
 fn (mut p Parser) parse_arguments() []CallArgument {
 	p.consume_token(.paren_open)
-	mut call_arguments := []CallArgument{}
+	mark := p.argument_scratch.len
 
 	for !p.match_token(.paren_close) && !p.done() {
 		is_spread := p.eat(.triple_dot)
 		value := p.parse_assignment_expression()
-		call_arguments << CallArgument{
+		p.argument_scratch << CallArgument{
 			value:     value
 			is_spread: is_spread
 		}
@@ -890,7 +911,7 @@ fn (mut p Parser) parse_arguments() []CallArgument {
 	}
 
 	p.consume_token(.paren_close)
-	return call_arguments
+	return take_scratch_list(mut p.argument_scratch, mark)
 }
 
 // Parse an optional chaining expression (`a?.b`, `a?.[x]`, `a?.()`).
@@ -933,10 +954,9 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 					if p.match_identifier_name() {
 						property_start := p.position()
 						mem_token := p.consume()
-						value := p.token_value(mem_token).clone()
 						references << OptionalChainMemberRef{
 							identifier: p.make_identifier(property_start,
-								Utf16String.from_slice(value))
+								p.names.intern(p.token_value(mem_token)).text)
 							mode:       .optional
 						}
 					} else {
@@ -963,9 +983,8 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 			} else if p.match_identifier_name() {
 				property_start := p.position()
 				mem_token := p.consume()
-				value := p.token_value(mem_token).clone()
 				references << OptionalChainMemberRef{
-					identifier: p.make_identifier(property_start, Utf16String.from_slice(value))
+					identifier: p.make_identifier(property_start, p.names.intern(p.token_value(mem_token)).text)
 					mode:       .not_optional
 				}
 			} else {
@@ -993,9 +1012,13 @@ fn (mut p Parser) parse_optional_chain(start Position, base Expression) Expressi
 	}
 
 	return p.expression(start, ExpressionKind{
-		tag:        .optional_chain
-		base:       &base
-		references: references
+		tag: .optional_chain
+		lists: &ExpressionLists{
+			optional_chain_data: &OptionalChainData{
+				base:       base
+				references: references
+			}
+		}
 	})
 }
 
@@ -1058,13 +1081,13 @@ fn (mut p Parser) parse_object_expression() Expression {
 	start := p.position()
 	p.consume_token(.curly_open)
 
-	mut properties := []ObjectProperty{}
+	mark := p.property_scratch.len
 	mut has_proto_setter := false
 	for !p.match_token(.curly_close) && !p.done() {
 		if p.match_token(.triple_dot) {
 			p.consume()
 			expression := p.parse_assignment_expression()
-			properties << ObjectProperty{
+			p.property_scratch << ObjectProperty{
 				range:         p.range_from(start)
 				property_type: .spread
 				key:           expression
@@ -1078,7 +1101,7 @@ fn (mut p Parser) parse_object_expression() Expression {
 				}
 				has_proto_setter = true
 			}
-			properties << property
+			p.property_scratch << property
 		}
 
 		if !p.match_token(.comma) {
@@ -1088,9 +1111,12 @@ fn (mut p Parser) parse_object_expression() Expression {
 	}
 
 	p.consume_token(.curly_close)
+	properties := take_scratch_list(mut p.property_scratch, mark)
 	return p.expression(start, ExpressionKind{
-		tag:               .object_expr
-		object_properties: properties
+		tag:   .object_expr
+		lists: &ExpressionLists{
+			object_properties: properties
+		}
 	})
 }
 
@@ -1102,14 +1128,15 @@ fn (mut p Parser) parse_object_property(obj_start Position) ObjectProperty {
 	mut is_generator := false
 
 	if p.match_identifier_name() {
-		value := p.token_original_value(p.current_token).clone()
-		if utf16_equals(value, utf16('get')) && p.match_property_key_ahead() {
+		// A view of the source, which parsing never modifies.
+		value := p.token_original_value(p.current_token)
+		if utf16_equals_ascii(value, 'get') && p.match_property_key_ahead() {
 			is_getter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('set')) && p.match_property_key_ahead() {
+		} else if utf16_equals_ascii(value, 'set') && p.match_property_key_ahead() {
 			is_setter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('async')) {
+		} else if utf16_equals_ascii(value, 'async') {
 			next := p.next_token()
 			if !next.trivia_has_line_terminator && next.token_type != .paren_open
 				&& next.token_type != .colon && next.token_type != .comma
@@ -1300,7 +1327,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			is_proto := utf16_equals(str_value.data, proto_name)
 			expression := p.expression(after_string, ExpressionKind{
 				tag:          .string_literal
-				string_value: str_value.clone()
+				string_value: ast_text(str_value.clone())
 			})
 			return PropertyKey{
 				expression: expression
@@ -1330,7 +1357,9 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			}
 			expression := p.expression(start, ExpressionKind{
 				tag:           .big_int_literal
-				big_int_value: value_utf8.bytestr()
+				lists: &ExpressionLists{
+					big_int_value: value_utf8.bytestr()
+				}
 			})
 			return PropertyKey{
 				expression: expression
@@ -1339,15 +1368,17 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 		.private_identifier {
 			pi_token := p.consume()
 			value := Utf16String.from_slice(p.token_value(pi_token))
-			if utf16_equals(value.data, utf16('#constructor')) {
+			if utf16_equals_ascii(value.data, '#constructor') {
 				p.syntax_error("Private property with name '#constructor' is not allowed")
 			}
 			key_start := start
 			expression := p.expression(key_start, ExpressionKind{
 				tag:                .private_identifier_expr
-				private_identifier: PrivateIdentifier{
-					range: p.range_from(key_start)
-					name:  value.clone()
+				lists: &ExpressionLists{
+					private_identifier: &PrivateIdentifier{
+						range: p.range_from(key_start)
+						name:  value.clone()
+					}
 				}
 			})
 			return PropertyKey{
@@ -1359,12 +1390,13 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 			if p.match_identifier_name() {
 				is_ident := p.match_identifier()
 				id_token := p.consume_property_key_token()
-				value := Utf16String.from_slice(p.token_value(id_token))
+				// Object keys repeat as often as identifiers; share one copy per name.
+				value := p.names.intern(p.token_value(id_token)).text
 				is_proto := utf16_equals(value.data, proto_name)
 				key_start := start
 				expression := p.expression(key_start, ExpressionKind{
 					tag:          .string_literal
-					string_value: value.clone()
+					string_value: ast_text(value)
 				})
 				return PropertyKey{
 					expression:    expression
@@ -1377,7 +1409,7 @@ fn (mut p Parser) parse_property_key() PropertyKey {
 				p.consume_property_key_token()
 				expression := p.expression(start, ExpressionKind{
 					tag:          .string_literal
-					string_value: Utf16String.new()
+					string_value: unsafe { nil }
 				})
 				return PropertyKey{
 					expression: expression
@@ -1391,10 +1423,10 @@ fn (mut p Parser) parse_array_expression() Expression {
 	start := p.position()
 	p.consume_token(.bracket_open)
 
-	mut elements := []?Expression{}
+	mark := p.element_scratch.len
 	for !p.match_token(.bracket_close) && !p.done() {
 		if p.match_token(.comma) {
-			elements << ?Expression(none)
+			p.element_scratch << ?Expression(none)
 			p.consume()
 			continue
 		}
@@ -1402,12 +1434,12 @@ fn (mut p Parser) parse_array_expression() Expression {
 			p.consume()
 			expression := p.parse_assignment_expression()
 			// C++ uses the array's rule_start ([ position) for SpreadExpression.
-			elements << ?Expression(p.expression(start, ExpressionKind{
+			p.element_scratch << ?Expression(p.expression(start, ExpressionKind{
 				tag:     .spread
 				operand: &expression
 			}))
 		} else {
-			elements << ?Expression(p.parse_assignment_expression())
+			p.element_scratch << ?Expression(p.parse_assignment_expression())
 		}
 		if !p.match_token(.comma) {
 			break
@@ -1416,9 +1448,12 @@ fn (mut p Parser) parse_array_expression() Expression {
 	}
 
 	p.consume_token(.bracket_close)
+	elements := take_scratch_list(mut p.element_scratch, mark)
 	return p.expression(start, ExpressionKind{
-		tag:            .array_expr
-		array_elements: elements
+		tag:   .array_expr
+		lists: &ExpressionLists{
+			array_elements: elements
+		}
 	})
 }
 
@@ -1429,10 +1464,14 @@ fn (mut p Parser) parse_tagged_template_literals(tag_start Position, expression_
 		template := p.parse_template_literal(true)
 		expression = p.expression(tag_start, ExpressionKind{
 			tag:                   .tagged_template_literal
-			tag_expr:              &Expression{
-				...expression
+			lists: &ExpressionLists{
+				tag_expr: &Expression{
+					...expression
+				}
+				template_literal_expr: &Expression{
+					...template
+				}
 			}
-			template_literal_expr: &template
 		})
 	}
 	return expression
@@ -1452,7 +1491,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 		}
 		expressions << p.expression(start, ExpressionKind{
 			tag:          .string_literal
-			string_value: Utf16String.new()
+			string_value: unsafe { nil }
 		})
 	}
 
@@ -1464,7 +1503,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 		if p.match_token(.template_literal_string) {
 			tpl_token := p.consume()
 			string_pos := p.position()
-			raw := p.token_value(tpl_token).clone()
+			raw := p.token_value(tpl_token)
 			if is_tagged {
 				raw_value := raw_template_value(raw)
 				raw_strings << raw_value
@@ -1472,7 +1511,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 				if cooked_val := cooked {
 					expressions << p.expression(string_pos, ExpressionKind{
 						tag:          .string_literal
-						string_value: cooked_val
+						string_value: ast_text(cooked_val)
 					})
 				} else {
 					// C++ uses rule_start (template literal start) for NullLiteral.
@@ -1487,7 +1526,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 				}
 				expressions << p.expression(string_pos, ExpressionKind{
 					tag:          .string_literal
-					string_value: value
+					string_value: ast_text(value)
 				})
 			}
 		} else if p.match_token(.template_literal_expr_start) {
@@ -1499,7 +1538,7 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 			if !p.match_token(.template_literal_string) {
 				expressions << p.expression(start, ExpressionKind{
 					tag:          .string_literal
-					string_value: Utf16String.new()
+					string_value: unsafe { nil }
 				})
 				if is_tagged {
 					raw_strings << Utf16String.new()
@@ -1515,9 +1554,11 @@ fn (mut p Parser) parse_template_literal(is_tagged bool) Expression {
 
 	return p.expression(start, ExpressionKind{
 		tag:           .template_literal
-		template_data: TemplateLiteralData{
-			expressions: expressions
-			raw_strings: raw_strings
+		lists: &ExpressionLists{
+			template_data: &TemplateLiteralData{
+				expressions: expressions
+				raw_strings: raw_strings
+			}
 		}
 	})
 }
@@ -1533,7 +1574,7 @@ fn (p &Parser) process_template_escape_sequences(raw []u16) ?Utf16String {
 // Parse a string literal token's value, processing escape sequences.
 // Returns `(value, has_legacy_octal)`.
 fn (mut p Parser) parse_string_value(token Token) (Utf16String, bool) {
-	raw := p.token_value(token).clone()
+	raw := p.token_value(token)
 	if raw.len < 2 {
 		return Utf16String.new(), false
 	}
@@ -1562,13 +1603,27 @@ mut:
 
 // Unified escape sequence processor for both string and template literals.
 fn process_escape_sequences_impl(input []u16, mode EscapeMode) EscapeResult {
+	mut first_special := input.len
+	for index, code_unit in input {
+		if code_unit == ch(`\\`) || code_unit == ch(`\r`) {
+			first_special = index
+			break
+		}
+	}
+	if first_special == input.len {
+		return EscapeResult{
+			value: Utf16String.from_slice(input)
+		}
+	}
+
 	mut result := Utf16String{
 		data: []u16{cap: input.len}
 	}
+	result.data << input[..first_special]
 	mut has_legacy_octal := false
 	mut malformed_hex := false
 	mut malformed_unicode := false
-	mut i := 0
+	mut i := first_special
 
 	n_ch := ch(`n`)
 	r_ch := ch(`r`)
@@ -1701,6 +1756,23 @@ fn process_escape_sequences_impl(input []u16, mode EscapeMode) EscapeResult {
 	}
 }
 
+// The opening parenthesis has been consumed. Reject prefixes that cannot
+// enter the formal parameter grammar before opening a speculative scope.
+fn (mut p Parser) can_start_parenthesized_arrow_parameters() bool {
+	kind := p.current_token_type()
+	if kind == .paren_close {
+		next := p.next_token()
+		return next.token_type == .arrow && !next.trivia_has_line_terminator
+	}
+	if kind in [.curly_open, .bracket_open, .triple_dot] {
+		return true
+	}
+	if p.match_identifier() || kind in [.await_kw, .yield_kw] {
+		return p.next_token().token_type in [.equals, .comma, .paren_close]
+	}
+	return false
+}
+
 // Try to parse an arrow function expression. Returns none on failure.
 fn (mut p Parser) try_parse_arrow_function_expression(expect_parens bool, is_async bool, forbidden ForbiddenTokens) ?Expression {
 	return p.try_parse_arrow_function_expression_impl(expect_parens, is_async, p.position(),
@@ -1709,6 +1781,10 @@ fn (mut p Parser) try_parse_arrow_function_expression(expect_parens bool, is_asy
 
 fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, is_async bool, source_start_override Position, forbidden ForbiddenTokens) ?Expression {
 	start := source_start_override
+
+	if expect_parens && !is_async && !p.can_start_parenthesized_arrow_parameters() {
+		return none
+	}
 
 	if !expect_parens && !is_async {
 		if !p.match_identifier() && !p.match_token(.await_kw) && !p.match_token(.yield_kw) {
@@ -1737,6 +1813,11 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 		}
 		if expect_parens {
 			p.consume_token(.paren_open)
+			if !p.can_start_parenthesized_arrow_parameters() {
+				p.pattern_bound_names = saved_pattern_bound_names
+				p.load_state()
+				return none
+			}
 		}
 	}
 
@@ -1768,12 +1849,12 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 		p.consume() // consume ')'
 	} else if p.match_identifier() || p.match_token(.await_kw) {
 		param_token := p.consume()
-		value := p.token_value(param_token).clone()
-		if utf16_equals(value, utf16('await'))
+		name := p.names.intern(p.token_value(param_token))
+		if name.key == 'await'
 			&& (is_async || p.program_type == .module || p.flags.in_class_static_init_block) {
 			p.syntax_error("'await' is a reserved identifier in async functions")
 		}
-		binding := Identifier.new(p.range_from(start), Utf16String.from_slice(value.clone()))
+		binding := Identifier.new(p.range_from(start), name.text)
 		parsed = ParsedParameters{
 			parameters:      [
 				FunctionParameter{
@@ -1785,7 +1866,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 			function_length: 1
 			parameter_info:  [
 				ParamInfo{
-					name:       Utf16String.from_slice(value)
+					name:       name
 					identifier: binding
 				},
 			]
@@ -1819,7 +1900,7 @@ fn (mut p Parser) try_parse_arrow_function_expression_impl(expect_parens bool, i
 	// Arrow functions always reject duplicate parameter names.
 	p.check_arrow_duplicate_parameters(parameter_info)
 
-	p.register_function_parameters_with_scope(parameters, parameter_info)
+	p.scope_collector.set_function_parameters(parameters, parameter_info)
 
 	fn_kind := if is_async { FunctionKind.async_kind } else { FunctionKind.normal }
 	src_start := source_start_override.offset
@@ -1933,7 +2014,7 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	parsed := p.parse_formal_parameters()
 	p.check_unique_formal_parameters(parsed.parameter_info)
 
-	p.register_function_parameters_with_scope(parsed.parameters, parsed.parameter_info)
+	p.scope_collector.set_function_parameters(parsed.parameters, parsed.parameter_info)
 
 	if method_kind == .getter && parsed.parameters.len > 0 {
 		p.syntax_error('Getter function must have no arguments')
@@ -1966,10 +2047,11 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
 	p.flags.function_might_need_arguments_object = saved_might_need_arguments
 
-	// Class constructors always need a function environment for `this` binding.
+	// Only derived constructors always need a function environment for `this`:
+	// super() binds it there. Base constructors retain the body's own insights.
 	if method_kind == .constructor {
 		insights.uses_this = true
-		insights.uses_this_from_environment = true
+		if p.class_has_super_class { insights.uses_this_from_environment = true }
 	}
 
 	function_id := p.function_table.insert(JsFunctionData{
@@ -2146,6 +2228,18 @@ fn token_to_assignment_op(tt TokenType) AssignmentOp {
 }
 
 fn parse_numeric_value(value []u16) f64 {
+	// Up to 15 decimal digits fit exactly in a Number. Handle them directly
+	// while leaving leading-zero spellings to the radix and legacy-octal logic.
+	if value.len > 0 && value.len <= 15 && (value.len == 1 || value[0] != u16(`0`)) {
+		mut integer := u64(0)
+		mut digits := 0
+		for unit in value {
+			if unit < u16(`0`) || unit > u16(`9`) { break }
+			integer = integer * 10 + u64(unit - u16(`0`))
+			digits++
+		}
+		if digits == value.len { return f64(integer) }
+	}
 	// Filter underscores and convert to ASCII string.
 	mut buf := []u8{cap: value.len}
 	for c in value {

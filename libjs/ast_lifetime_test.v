@@ -33,3 +33,25 @@ fn test_tagged_template_wrapping_retains_the_previous_expression_without_a_cycle
 		assert ast_text.contains('Identifier'), ast_text
 	}
 }
+
+fn test_literal_payloads_keep_their_own_data_after_parser_frames_are_reused() {
+	parsed := parse_source('const re=/persistent/g;const t=tag`first\${42}last`;class C{#key;read(){return this.#key}}', .script)
+	assert !parsed.has_errors()
+	before := parsed.dump_ast()!
+	for _ in 0 .. 30 {
+		assert !parse_source('const re=/noise/i;const t=tag`other\${1}tail`;class D{#noise;read(){return this.#noise}}', .script).has_errors()
+	}
+	after := parsed.dump_ast()!
+	assert after == before
+	assert after.contains('persistent') && after.contains('first') && after.contains('#key')
+	assert !after.contains('noise')
+}
+
+fn test_retained_regexp_literal_can_compile_after_its_defining_call_returns() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse('function make(){return ()=>/persistent/g.test("persistent")};make()', vm.realm(), 'retained-literal.js', unsafe { nil })!
+	function := vm.run(mut script)!
+	for _ in 0 .. 30 { assert !parse_source('(()=>/noise/i.test(`other`))()', .script).has_errors() }
+	assert call(mut vm, function, js_undefined(), [])!.as_bool()
+}

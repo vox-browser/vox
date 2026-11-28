@@ -62,6 +62,7 @@ fn test_compiled_blocks_loops_hoisting_and_completion_values() {
 		'var x=0; while(x<3) {x++; {let y=1; if(x<3)continue;}} x;':                     '3'
 		'var x=0; do {x++; if(x<3)continue;} while(x<3); x;':                            '3'
 		'var x=0; for(var i=0;i<3;i++) {for(var j=0;j<3;j++){if(j===1)break; x++;}} x;': '3'
+		'var changed=1; function tag(strings) { return changed + strings[0].length; } tag`text`;': '5'
 		'42; var x;':                                                                    '42'
 		'42; {}':                                                                        '42'
 		'42; if(false) 1;':                                                              'undefined'
@@ -110,7 +111,7 @@ fn test_runtime_errors_preserve_tdz_const_strictness_tracebacks_and_stack_cleanu
 		} else {
 			object := thrown_value(err).as_object()
 			assert object.error_kind()? == kind, source
-			assert object.error_data?.stack_string(false).contains('execution.js')
+			assert object.slots.error_data?.stack_string(false).contains('execution.js')
 		}
 		assert vm.running_execution_context() == base
 		assert vm.execution_context_stack().len == 1
@@ -129,9 +130,7 @@ fn test_runtime_errors_preserve_tdz_const_strictness_tracebacks_and_stack_cleanu
 }
 
 fn test_unsupported_programs_are_rejected_before_any_execution_or_declarations() {
-	for source in ['var changed=1; class C {}', 'var changed=1; false && class {};',
-		'var changed=1; document?.body;', 'var changed=1; try {} catch(e) {} finally {}',
-		'var changed=1; [...a];', 'var changed=1; var [x]=y;'] {
+	for source in ['var changed=1; with({}){}'] {
 		mut vm := VM.create()
 		create_simple_execution_context(mut vm)
 		if _ := run_test_source(mut vm, source) {
@@ -145,6 +144,15 @@ fn test_unsupported_programs_are_rejected_before_any_execution_or_declarations()
 	}
 }
 
+fn test_array_spread_errors_happen_at_runtime_after_prior_declarations() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	if _ := run_test_source(mut vm, 'var changed=1; [...missing];') { assert false }
+	else { assert is_throw_completion(err) && thrown_value(err).as_object().error_kind()? == .reference_error }
+	assert vm.get_global_object().get(mut vm, PropertyName.from_str('changed'))!.number == 1
+	assert vm.execution_generation() > 0 && vm.interpreter_stack().depth() == 0
+}
+
 fn test_compilation_caches_executable_and_preserves_utf16_and_source_locations() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
@@ -154,8 +162,36 @@ fn test_compilation_caches_executable_and_preserves_utf16_and_source_locations()
 	second := script.compile(mut vm)!
 	assert first == second
 	assert first.source_code?.code == utf16_string(script.parsed.source_text)
-	assert first.source_map[first.source_map.len - 2].source_range.start.line == 2
+	assert first.source_range_at(first.bytecode_length - 2)?.start.line == 2
 	assert vm.run(mut script)!.number == 42
 	mut joined := Script.parse('"\\ud800" + "\\udc00";', vm.realm(), 'utf16.js', unsafe { nil })!
 	assert vm.run(mut joined)!.as_string().utf16.data == [u16(0xd800), 0xdc00]
+}
+
+fn test_bytecode_source_map_preserves_positions_across_repeated_emits() {
+	source := SourceCode.create(utf16_string('source-map.js'), utf16_string(''))
+	start := Position{line: 2, column: 3, offset: 4}
+	mut generator := BytecodeGenerator{
+		executable: &Executable{source_code: source}
+		starting_line: 7
+		range: SourceRange{start: start}
+	}
+	generator.emit(Instruction{op: .nop})
+	generator.emit(Instruction{op: .nop})
+	generator.range.start.column++
+	generator.emit(Instruction{op: .nop})
+	generator.range.start.offset++
+	generator.emit(Instruction{op: .nop})
+	generator.range.start = start
+	generator.emit(Instruction{op: .nop})
+	mut executable := generator.executable
+	executable.bytecode_length = 5
+	assert executable.source_map.map(it.bytecode_offset) == [u32(0), 2, 3, 4]
+	for offset, expected in [Position{8, 3, 4}, Position{8, 3, 4}, Position{8, 4, 4},
+		Position{8, 4, 5}, Position{8, 3, 4}] {
+		range := executable.source_range_at(u32(offset))?
+		assert range.start == expected
+		assert voidptr(range.code?) == voidptr(source)
+	}
+	assert executable.source_range_at(5) == none
 }

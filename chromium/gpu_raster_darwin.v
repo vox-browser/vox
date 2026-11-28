@@ -1,8 +1,10 @@
 module main
 
+import cpuraster
 import ggshape
 import math
 import os
+import platform
 
 struct DocumentGeometryGrid {
 	width                 int
@@ -87,6 +89,92 @@ fn geometry_grid_covers_filter_output(grid DocumentGeometryGrid, x int, y int, c
 	return clip[0] + f32(x) >= 0 && clip[1] + f32(y) >= 0
 }
 
+// VOX_GG_FULL_TILE_TRANSFERS=1 restores whole-tile uploads and readbacks for
+// every leaf, for matched comparisons.
+const full_tile_leaf_transfers = os.getenv('VOX_GG_FULL_TILE_TRANSFERS') != ''
+
+// A leaf is drawn on a surface of its compositor tile's size, which keeps the
+// tile's sample positions, but it can change only its own rows. LeafTileRows
+// holds the leaf's part of one tile: the backdrop to upload and, after the
+// draw, the pixels to publish. A tile is megabytes; a typical leaf is a few
+// kilobytes.
+struct LeafTileRows {
+	region ggshape.SurfaceRegion
+	pitch  int
+	pixels []u8
+}
+
+// The rows of `pixels` (a leaf at x0, y0) inside the tile at ox, oy. Returns
+// none when the leaf's whole-tile path has to handle this tile.
+fn leaf_tile_rows(grid DocumentGeometryGrid, pixels &u8, pitch int, backdrop i32, x0 int, y0 int,
+	ox int, oy int, left int, top int, right int, bottom int) ?LeafTileRows {
+	if full_tile_leaf_transfers || right <= left || bottom <= top { return none }
+	row_bytes := (right - left) * 4
+	mut storage := []u8{len: row_bytes * (bottom - top)}
+	if backdrop != 0 {
+		for y in top .. bottom {
+			unsafe {
+				vmemcpy(&storage[(y - top) * row_bytes],
+					pixels + (y - y0) * pitch + (left - x0) * 4, row_bytes)
+			}
+		}
+	}
+	return LeafTileRows{
+		region: ggshape.SurfaceRegion{
+			surface_width:  grid.width
+			surface_height: grid.height
+			x:              left - ox
+			y:              top - oy
+			width:          right - left
+			height:         bottom - top
+		}
+		pitch:  row_bytes
+		pixels: storage
+	}
+}
+
+// Copy the published part of a drawn leaf region into the leaf's result.
+fn (rows &LeafTileRows) publish(mut result []u8, pitch int, x0 int, y0 int, left int, top int,
+	publish_left int, publish_top int, publish_right int, publish_bottom int) {
+	if publish_right <= publish_left { return }
+	source := unsafe { &u8(rows.pixels.data) }
+	for y in publish_top .. publish_bottom {
+		unsafe {
+			vmemcpy(&result[(y - y0) * pitch + (publish_left - x0) * 4],
+				source + (y - top) * rows.pitch + (publish_left - left) * 4,
+				(publish_right - publish_left) * 4)
+		}
+	}
+}
+
+fn document_shape_uses_tiles(grid DocumentGeometryGrid, x int, y int, width int, height int,
+	shape &C.VoxGraphiteShape) bool {
+	return geometry_grid_covers_leaf(grid, x, y, width, height)
+		|| (shape.has_filter_clip != 0 && ggshape.rotated_filter_supported(shape)
+			&& geometry_grid_covers_filter_output(grid, x, y, shape.filter_clip)
+			&& geometry_grid_intersects_leaf(grid, x, y, width, height))
+}
+
+fn document_shape_in_tile(shape &C.VoxGraphiteShape, grid DocumentGeometryGrid, x0 int, y0 int,
+	col int, row int) C.VoxGraphiteShape {
+	ox, oy := col * (grid.width - 2), row * (grid.height - 2)
+	mut draw := *shape
+	draw.matrix[2] += f32(x0 - ox)
+	draw.matrix[5] += f32(y0 - oy)
+	if draw.has_filter_clip != 0 {
+		draw.filter_clip[0] += f32(x0 - ox)
+		draw.filter_clip[2] += f32(x0 - ox)
+		draw.filter_clip[1] += f32(y0 - oy)
+		draw.filter_clip[3] += f32(y0 - oy)
+	}
+	if grid.origin_x != 0 || grid.origin_y != 0 {
+		draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0],
+			-(draw.matrix[5] + f32(oy)) / draw.matrix[4])
+	}
+	draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
+	return draw
+}
+
 fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x int, first_y int, shape &C.VoxGraphiteShape) i32 {
 	grid := document_geometry_grid
@@ -95,44 +183,20 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 	}
 	x0 := first_x - int(math.round(grid.origin_x))
 	y0 := first_y - int(math.round(grid.origin_y))
-	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height))
-		&& !(shape.has_filter_clip != 0 && ggshape.rotated_filter_supported(shape)
-			&& geometry_grid_covers_filter_output(grid, x0, y0, shape.filter_clip)
-			&& geometry_grid_intersects_leaf(grid, x0, y0, int(width), int(height))) {
+	if !document_shape_uses_tiles(grid, x0, y0, int(width), int(height), shape) {
 		return ggshape.draw(pixels, width, height, pitch, backdrop, shape)
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
-	mut tile := []u8{len: grid.width * grid.height * 4}
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
 	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
 		oy := row * (grid.height - 2)
 		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
 			ox := col * (grid.width - 2)
-			for i in 0 .. tile.len { tile[i] = 0 }
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
-			for y in top .. bottom {
-				unsafe {
-					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
-						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
-				}
-			}
-			mut draw := *shape
-			draw.matrix[2] += f32(x0 - ox)
-			draw.matrix[5] += f32(y0 - oy)
-			if draw.has_filter_clip != 0 {
-				draw.filter_clip[0] += f32(x0 - ox)
-				draw.filter_clip[2] += f32(x0 - ox)
-				draw.filter_clip[1] += f32(y0 - oy)
-				draw.filter_clip[3] += f32(y0 - oy)
-			}
-			if grid.origin_x != 0 || grid.origin_y != 0 {
-				draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0], -(draw.matrix[5] + f32(oy)) / draw.matrix[4])
-			}
-			draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
-			if ggshape.draw(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw) == 0 {
-				return 0
-			}
+			draw := document_shape_in_tile(shape, grid, x0, y0, col, row)
 			publish_left := math.max(x0, ox + if col > 0 { 1 } else { 0 })
 			publish_top := math.max(y0, oy + if row > 0 { 1 } else { 0 })
 			publish_right := math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns {
@@ -145,6 +209,169 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 			} else {
 				0
 			})
+			// A filter layer reads the pixels around its output; keep its
+			// whole-tile backdrop.
+			if draw.has_filter_clip == 0 {
+				if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+					left, top, right, bottom) {
+					if ggshape.draw_region(rows.pixels.data, i32(rows.pitch), rows.region, backdrop, &draw) != 0 {
+						rows.publish(mut result, int(pitch), x0, y0, left, top, publish_left,
+							publish_top, publish_right, publish_bottom)
+						continue
+					}
+				}
+			}
+			if !retain_whole_tile_shape_draws {
+				// The tile holds only the leaf's rows; draw it through the leaf
+				// raster cache, which keeps that rectangle of the result.
+				leaf_width := right - left
+				mut leaf_rows := []u8{len: leaf_width * (bottom - top) * 4}
+				for y in top .. bottom {
+					unsafe {
+						vmemcpy(&leaf_rows[(y - top) * leaf_width * 4],
+							pixels + (y - y0) * int(pitch) + (left - x0) * 4, leaf_width * 4)
+					}
+				}
+				if ggshape.draw_tile_leaf(mut leaf_rows, left - ox, top - oy, leaf_width, bottom - top,
+					grid.width, grid.height, backdrop, &draw) == 0 {
+					return 0
+				}
+				for y in publish_top .. publish_bottom {
+					unsafe {
+						vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
+							&leaf_rows[((y - top) * leaf_width + publish_left - left) * 4],
+							(publish_right - publish_left) * 4)
+					}
+				}
+				continue
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
+			}
+			if ggshape.draw(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw) == 0 {
+				return 0
+			}
+			for y in publish_top .. publish_bottom {
+				unsafe {
+					vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
+						&tile[((y - oy) * grid.width + publish_left - ox) * 4], (publish_right - publish_left) * 4)
+				}
+			}
+		}
+	}
+	unsafe { vmemcpy(pixels, result.data, result.len) }
+	return 1
+}
+
+// The cropped buffer holds only pixels covered by the Quartz repaint clip.
+// Pick the same surface and tile grid as the full leaf, then transfer only the
+// output pixels owned by each intersecting tile.
+fn draw_document_shape_region(pixels &u8, pitch i32, backdrop i32, first_x int, first_y int,
+	region ggshape.SurfaceRegion, shape &C.VoxGraphiteShape) i32 {
+	grid := document_geometry_grid
+	x0 := first_x - int(math.round(grid.origin_x))
+	y0 := first_y - int(math.round(grid.origin_y))
+	if !document_shape_uses_tiles(grid, x0, y0, region.surface_width, region.surface_height, shape) {
+		return ggshape.draw_region(pixels, pitch, region, backdrop, shape)
+	}
+	left, top := x0 + region.x, y0 + region.y
+	right, bottom := left + region.width, top + region.height
+	for row in geometry_tile_owner(top, grid.height, grid.rows) .. geometry_tile_owner(bottom - 1, grid.height, grid.rows) + 1 {
+		oy := row * (grid.height - 2)
+		y := math.max(top, oy + int(row > 0))
+		y_end := math.min(bottom, oy + grid.height - int(row + 1 < grid.rows))
+		for col in geometry_tile_owner(left, grid.width, grid.columns) .. geometry_tile_owner(right - 1, grid.width, grid.columns) + 1 {
+			ox := col * (grid.width - 2)
+			x := math.max(left, ox + int(col > 0))
+			x_end := math.min(right, ox + grid.width - int(col + 1 < grid.columns))
+			if x_end <= x || y_end <= y { continue }
+			draw := document_shape_in_tile(shape, grid, x0, y0, col, row)
+			rows := unsafe { pixels + (y - top) * int(pitch) + (x - left) * 4 }
+			if ggshape.draw_region(rows, pitch, ggshape.SurfaceRegion{
+				surface_width: grid.width
+				surface_height: grid.height
+				x: x - ox
+				y: y - oy
+				width: x_end - x
+				height: y_end - y
+			}, backdrop, &draw) == 0 {
+				return 0
+			}
+		}
+	}
+	return 1
+}
+
+// Same-binary control: draw a whole-tile shape leaf (a filtered shape, or one
+// whose region rows are unavailable) on a full tile copy every time.
+const retain_whole_tile_shape_draws = os.getenv('VOX_RETAIN_WHOLE_TILE_SHAPE_DRAWS') != ''
+
+// Replay SVG leaves in the owning picture tile, including its sample count.
+fn draw_document_path_tiles(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	first_x int, first_y int, path &C.VoxGraphitePath) i32 {
+	if pixels == unsafe { nil } || path == unsafe { nil }
+		|| width <= 0 || height <= 0 || pitch < width * 4 {
+		return 0
+	}
+	grid := document_geometry_grid
+	x0 := first_x - int(math.round(grid.origin_x))
+	y0 := first_y - int(math.round(grid.origin_y))
+	if !geometry_grid_covers_leaf(grid, x0, y0, int(width), int(height)) {
+		return ggshape.draw_path(pixels, width, height, pitch, backdrop, path)
+	}
+	mut result := []u8{len: int(height) * int(pitch)}
+	unsafe { vmemcpy(result.data, pixels, result.len) }
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
+	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
+		oy := row * (grid.height - 2)
+		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
+			ox := col * (grid.width - 2)
+			left, top := math.max(x0, ox), math.max(y0, oy)
+			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
+			mut draw := *path
+			draw.matrix[2] += f32(x0 - ox)
+			draw.matrix[5] += f32(y0 - oy)
+			multisampled := i32(row * grid.columns + col) in grid.cells
+			publish_left := math.max(x0, ox + if col > 0 { 1 } else { 0 })
+			publish_top := math.max(y0, oy + if row > 0 { 1 } else { 0 })
+			publish_right := math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns {
+				1
+			} else {
+				0
+			})
+			publish_bottom := math.min(y0 + height, oy + grid.height - if row + 1 < grid.rows {
+				1
+			} else {
+				0
+			})
+			if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+				left, top, right, bottom) {
+				if ggshape.draw_path_region(rows.pixels.data, i32(rows.pitch), rows.region, backdrop, &draw, multisampled) != 0 {
+					rows.publish(mut result, int(pitch), x0, y0, left, top, publish_left,
+						publish_top, publish_right, publish_bottom)
+					continue
+				}
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
+			}
+			result_code := if multisampled {
+				ggshape.draw_multisampled_path(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw)
+			} else {
+				ggshape.draw_path(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw)
+			}
+			if result_code == 0 { return 0 }
 			for y in publish_top .. publish_bottom {
 				unsafe {
 					vmemcpy(&result[(y - y0) * int(pitch) + (publish_left - x0) * 4],
@@ -180,26 +407,22 @@ fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32,
 	}
 	mut result := []u8{len: int(height) * int(pitch)}
 	unsafe { vmemcpy(result.data, pixels, result.len) }
-	mut tile := []u8{len: grid.width * grid.height * 4}
+	// Allocated by the first tile that needs whole-tile transfers.
+	mut tile := []u8{}
 	for row in geometry_tile_owner(y0, grid.height, grid.rows) .. geometry_tile_owner(y0 + height - 1, grid.height, grid.rows) + 1 {
 		oy := row * (grid.height - 2)
 		for col in geometry_tile_owner(x0, grid.width, grid.columns) .. geometry_tile_owner(x0 + width - 1, grid.width, grid.columns) + 1 {
 			ox := col * (grid.width - 2)
-			for i in 0 .. tile.len { tile[i] = 0 }
 			left, top := math.max(x0, ox), math.max(y0, oy)
 			right, bottom := math.min(x0 + width, ox + grid.width), math.min(y0 + height, oy + grid.height)
-			for y in top .. bottom {
-				unsafe {
-					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
-						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
-				}
-			}
 			mut draws := []C.VoxGraphiteShape{cap: int(count)}
+			mut filtered := false
 			for i in 0 .. int(count) {
 				mut draw := unsafe { shapes[i] }
 				draw.matrix[2] += f32(x0 - ox)
 				draw.matrix[5] += f32(y0 - oy)
 				if draw.has_filter_clip != 0 {
+					filtered = true
 					draw.filter_clip[0] += f32(x0 - ox)
 					draw.filter_clip[2] += f32(x0 - ox)
 					draw.filter_clip[1] += f32(y0 - oy)
@@ -207,6 +430,30 @@ fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32,
 				}
 				draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
 				draws << draw
+			}
+			// Glyph coverage is a whole-tile mask, and a filter layer reads the
+			// pixels around its output; both keep whole-tile transfers.
+			if glyphs.len == 0 && !filtered {
+				if rows := leaf_tile_rows(grid, pixels, int(pitch), backdrop, x0, y0, ox, oy,
+					left, top, right, bottom) {
+					if ggshape.draw_shapes_region(rows.pixels.data, i32(rows.pitch), rows.region, backdrop,
+						draws.data, count) != 0 {
+						rows.publish(mut result, int(pitch), x0, y0, left, top,
+							math.max(x0, ox + if col > 0 { 1 } else { 0 }),
+							math.max(y0, oy + if row > 0 { 1 } else { 0 }),
+							math.min(x0 + width, ox + grid.width - if col + 1 < grid.columns { 1 } else { 0 }),
+							math.min(y0 + height, oy + grid.height - if row + 1 < grid.rows { 1 } else { 0 }))
+						continue
+					}
+				}
+			}
+			if tile.len == 0 { tile = []u8{len: grid.width * grid.height * 4} }
+			for i in 0 .. tile.len { tile[i] = 0 }
+			for y in top .. bottom {
+				unsafe {
+					vmemcpy(&tile[((y - oy) * grid.width + left - ox) * 4],
+						pixels + (y - y0) * int(pitch) + (left - x0) * 4, (right - left) * 4)
+				}
 			}
 			mut masks := []ggshape.GlyphCoverage{}
 			for glyph in glyphs {
@@ -248,23 +495,67 @@ fn draw_document_shape_glyph_tiles(pixels &u8, width i32, height i32, pitch i32,
 
 // Quartz uses RGBA, while gg.canvas's GPU surface transports BGRA.
 fn swap_document_raster_channels(pixels &u8, width i32, height i32, pitch i32) {
-	unsafe {
-		for y in 0 .. int(height) {
-			for x in 0 .. int(width) {
-				i := y * int(pitch) + x * 4
-				red := pixels[i]
-				pixels[i] = pixels[i + 2]
-				pixels[i + 2] = red
-			}
-		}
-	}
+	unsafe { cpuraster.swap_rgba_red_blue(pixels, width, height, pitch) }
 }
 
 @[export: 'vox_draw_document_shape_pixels']
 fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x i32, first_y i32, shape &C.VoxGraphiteShape) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shape)
+	draw := document_p3_shape(*shape)
+	if draw_bounded_compositor_phase_shape(pixels, width, height, pitch, first_x, first_y, &draw) {
+		swap_document_raster_channels(pixels, width, height, pitch)
+		return 1
+	}
+	result := draw_document_shape_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, &draw)
+	swap_document_raster_channels(pixels, width, height, pitch)
+	return result
+}
+
+@[export: 'vox_draw_document_shape_region_pixels']
+fn draw_document_shape_region_pixels(pixels &u8, width i32, height i32, backdrop i32,
+	first_x i32, first_y i32, surface_width i32, surface_height i32, x i32, y i32,
+	shape &C.VoxGraphiteShape) i32 {
+	if full_tile_leaf_transfers || retain_whole_tile_shape_draws
+		|| compositor_raster_phase != [f64(0), 0]! {
+		return 0
+	}
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
+	pitch := width * 4
+	swap_document_raster_channels(pixels, width, height, pitch)
+	draw := document_p3_shape(*shape)
+	result := draw_document_shape_region(pixels, pitch, backdrop, int(first_x), int(first_y),
+		ggshape.SurfaceRegion{
+			surface_width: int(surface_width)
+			surface_height: int(surface_height)
+			x: int(x)
+			y: int(y)
+			width: int(width)
+			height: int(height)
+		}, &draw)
+	swap_document_raster_channels(pixels, width, height, pitch)
+	return result
+}
+
+@[export: 'vox_draw_document_tiled_path_pixels']
+fn draw_document_tiled_path_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	first_x i32, first_y i32, path &C.VoxGraphitePath) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
+	swap_document_raster_channels(pixels, width, height, pitch)
+	draw := if document_paths_use_p3(path, 1) != 0 { document_p3_path(*path) } else { *path }
+	if draw_compositor_phase_path(pixels, width, height, pitch, &draw) {
+		swap_document_raster_channels(pixels, width, height, pitch)
+		return 1
+	}
+	result := draw_document_path_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -272,8 +563,16 @@ fn draw_document_shape_pixels(pixels &u8, width i32, height i32, pitch i32, back
 @[export: 'vox_draw_document_path_pixels']
 fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	path &C.VoxGraphitePath) i32 {
-	swap_document_raster_channels(pixels, width, height, pitch)
-	result := ggshape.draw_path(pixels, width, height, pitch, backdrop, path)
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
+	// GG reads the incoming pixels only when it draws over a backdrop.
+	if backdrop != 0 {
+		swap_document_raster_channels(pixels, width, height, pitch)
+	}
+	draw := if document_paths_use_p3(path, 1) != 0 { document_p3_path(*path) } else { *path }
+	result := ggshape.draw_path(pixels, width, height, pitch, backdrop, &draw)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -283,20 +582,42 @@ fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backd
 @[export: 'vox_draw_document_svg_pixels']
 fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	paths &C.VoxGraphitePath, count i32, parent &f32, viewport &f32, rounded_clip &f32) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
+	mut converted := []C.VoxGraphitePath{}
+	if document_paths_use_p3(paths, count) != 0 {
+		for i in 0 .. int(count) { converted << document_p3_path(unsafe { paths[i] }) }
+	}
+	draws := if converted.len > 0 { converted.data } else { paths }
+	if draw_compositor_phase_svg(pixels, width, height, pitch, draws, count, parent, viewport, rounded_clip) {
+		swap_document_raster_channels(pixels, width, height, pitch)
+		return 1
+	}
 	result := ggshape.draw_svg_image(pixels, width, height, pitch, (if backdrop != 0 {
 		i32(1)
 	} else {
 		i32(0)
-	}) | 2 | 4, paths, count, parent, viewport, rounded_clip)
+	}) | 2 | 4, draws, count, parent, viewport, rounded_clip)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
 
 @[export: 'vox_draw_document_shape_group_pixels']
 fn draw_document_shape_group_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32, first_x i32, first_y i32, shapes &C.VoxGraphiteShape, count i32) i32 {
+	// Deferred pictures and chrome can call outside the frame replay arena.
+	// All raster work is synchronous; only the caller-owned pixels survive.
+	work := platform.begin_thread_scratch('native raster callback')
+	defer { work.finish() }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := draw_document_shape_group_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, shapes, count)
+	mut converted := []C.VoxGraphiteShape{}
+	if C.native_document_raster_uses_p3() != 0 {
+		for i in 0 .. int(count) { converted << document_p3_shape(unsafe { shapes[i] }) }
+	}
+	draws := if converted.len > 0 { converted.data } else { shapes }
+	result := draw_document_shape_group_tiles(pixels, width, height, pitch, backdrop, first_x, first_y, draws, count)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }

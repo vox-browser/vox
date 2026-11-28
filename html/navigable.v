@@ -673,6 +673,74 @@ pub fn (model &NavigableModel) get_the_target_history_entry(target_step int) ?&S
 	return result
 }
 
+fn (model &NavigableModel) same_document_history_index(document &dom.Document, delta int) ?int {
+	if delta == 0 { return none }
+	active_document := model.active_document() or { return none }
+	if voidptr(active_document) != voidptr(document) { return none }
+	active := model.active_session_history_entry_ or { return none }
+	current := model.current_session_history_entry_ or { return none }
+	if voidptr(active) != voidptr(current) || active.url.serialize() != document.url.serialize() {
+		return none
+	}
+	for index, entry in model.session_history_entries_ {
+		if voidptr(entry) != voidptr(active) { continue }
+		if delta < -index || delta >= model.session_history_entries_.len - index { return none }
+		target := model.session_history_entries_[index + delta]
+		if target.step is SessionHistoryEntryPending { return none }
+		target_document := target.document() or { return none }
+		return if voidptr(target_document) == voidptr(document) { ?int(index + delta) } else { none }
+	}
+	return none
+}
+
+// Browser chrome keeps its own cross-document response history. The active
+// document's navigable owns the entries created by the History API.
+pub fn (model &NavigableModel) can_traverse_same_document_history(document &dom.Document, delta int) bool {
+	return model.same_document_history_index(document, delta) != none
+}
+
+pub fn (mut model NavigableModel) traverse_same_document_history(mut document dom.Document, delta int) bool {
+	index := model.same_document_history_index(document, delta) or { return false }
+	target := model.session_history_entries_[index]
+	model.save_persisted_state_to_active_session_history_entry()
+	model.current_session_history_entry_ = target
+	model.active_session_history_entry_ = target
+	old_url := document.url
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	entry := &dom.SessionHistoryEntry{
+		url: target.url
+		classic_history_api_state: dom.DOMSerializationRecord{
+			data: target.classic_history_api_state.data.clone()
+		}
+	}
+	document.apply_history_step(entry, false, model.session_history_entries_.len, index, .traverse, fn [model, target] () {
+		if window := model.active_window() {
+			mut navigation := unsafe { &Navigation(window.navigation()) }
+			navigation.update_the_navigation_api_entries_for_a_same_document_navigation(target, .traverse)
+		}
+	})
+	// A popstate listener can push a new entry before returning.
+	if active := model.active_session_history_entry_ {
+		if voidptr(active) == voidptr(target) {
+			model.restore_persisted_state_from_session_history_entry(target)
+		}
+	}
+	if old_url.fragment() != target.url.fragment() {
+		if window := document.get_window() {
+			mut event := dom.HashChangeEvent.create('hashchange', dom.HashChangeEventInit{
+				old_url: old_url.serialize()
+				new_url: target.url.serialize()
+			})
+			event.set_is_trusted(true)
+			queue_global_task(.dom_manipulation, window, fn [window, event] () {
+				dom.event_target_dispatch_event(&window.EventTarget, unsafe { &dom.Event(event) })
+			})
+		}
+	}
+	return true
+}
+
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#activate-history-entry
 pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryEntry, new_document &dom.Document) {
 	value := entry or { return }
@@ -1111,6 +1179,7 @@ fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &Naviga
 	}
 	if navigable.is_top_level_traversable() {
 		request.top_level_navigation_initiator_origin = state.initiator_origin
+		request.user_agent_initiated = state.user_agent_initiated
 	}
 	if request.client == none {
 		request.origin = fetch.RequestOrigin{
@@ -1118,6 +1187,14 @@ fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &Naviga
 			origin: dom.origin_create_opaque()
 		}
 		request.referrer = fetch.Referrer{ sentinel: .no_referrer }
+	}
+	// Re-fetch an entry with the origin that created it, rather than the page
+	// asking to traverse or reload it. This also preserves a resubmitted POST's
+	// Origin header. Opaque initiators retain the ordinary fetch behavior.
+	if initiator_origin := state.initiator_origin {
+		if !initiator_origin.is_opaque() {
+			request.origin = fetch.RequestOrigin{ is_client: false, origin: initiator_origin }
+		}
 	}
 	match state.resource {
 		POSTResource {
@@ -1302,6 +1379,9 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				}
 			}
 		}
+		// Response-backed documents are loading before the host or parser can
+		// observe them, including when script readiness defers parser start.
+		if state.resource is string { document.update_readiness(.loading) }
 		if hook := model.document_created_hook_ { hook(document) }
 		mut payload := document.enter_native_storage()
 		match state.resource {
@@ -1492,6 +1572,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	mut state := &DocumentState{
 		origin: params.url.origin()
 		initiator_origin: initiator_origin
+		user_agent_initiated: params.source_document == unsafe { nil }
 		request_referrer_policy: params.referrer_policy
 		resource: params.document_resource
 		ever_populated: false
@@ -1603,6 +1684,14 @@ fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry
 	// The session history list is owned by the navigable, not the document.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	if history_handling == .push {
+		if active := model.active_session_history_entry_ {
+			if active.step is int {
+				active_step := active.step as int
+				model.session_history_entries_ = model.session_history_entries_.filter(it.step is SessionHistoryEntryPending || (it.step as int) <= active_step)
+			}
+		}
+	}
 	mut next_step := 0
 	for existing in model.session_history_entries_ {
 		if existing.step is int {
@@ -1668,32 +1757,16 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 			}
 		}
 	}
-	if history_handling == .push {
-		if active := model.active_session_history_entry_ {
-			if active.step is int {
-				active_step := active.step as int
-				mut retained := []&SessionHistoryEntry{}
-				for candidate in model.session_history_entries_ {
-					match candidate.step {
-						int {
-							if candidate.step as int <= active_step {
-								retained << candidate
+	if history_handling == .replace {
+		if current := model.active_session_history_entry_ {
+			if new_state := history_entry.document_state {
+				if old_state := current.document_state {
+					if new_origin := new_state.origin {
+						if old_origin := old_state.origin {
+							if new_origin.is_same_origin(old_origin) {
+								mut mutable_entry := unsafe { &SessionHistoryEntry(history_entry) }
+								mutable_entry.navigation_api_key = current.navigation_api_key
 							}
-						}
-						SessionHistoryEntryPending { retained << candidate }
-					}
-				}
-				model.session_history_entries_ = retained
-			}
-		}
-	} else if current := model.active_session_history_entry_ {
-		if new_state := history_entry.document_state {
-			if old_state := current.document_state {
-				if new_origin := new_state.origin {
-					if old_origin := old_state.origin {
-						if new_origin.is_same_origin(old_origin) {
-							mut mutable_entry := unsafe { &SessionHistoryEntry(history_entry) }
-							mutable_entry.navigation_api_key = current.navigation_api_key
 						}
 					}
 				}
@@ -1841,9 +1914,16 @@ fn (mut model NavigableModel) navigate_to_a_javascript_url(url dom.URL, history_
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	mut user_agent_initiated := false
+	if old_entry := model.active_session_history_entry_ {
+		if old_state := old_entry.document_state {
+			user_agent_initiated = old_state.user_agent_initiated
+		}
+	}
 	state := &DocumentState{
 		document: document
 		document_id_: document.unique_id()
+		user_agent_initiated: user_agent_initiated
 		origin: initiator_origin
 		ever_populated: true
 		navigable_target_name: model.target_name()
@@ -2359,6 +2439,7 @@ pub fn (mut model NavigableModel) set_has_been_destroyed() {
 	if model.delaying_load_events_ { model.set_delaying_load_events(false) }
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.set_has_been_destroyed()
+	model.clear_navigation_load_event_guard()
 	model.resolve_all_pending_main_thread_scrolls()
 	model.inform_the_navigation_api_about_child_navigable_destruction()
 }

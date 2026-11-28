@@ -154,6 +154,23 @@ fn test_consume_body_collects_multiple_network_deliveries_and_eof() {
 	assert params.request.done
 }
 
+fn test_stream_delivery_keeps_the_owned_chunk_while_the_receiver_accepts_more_bytes() {
+	body := Body.streaming()
+	mut stream := body.stream()
+	mut receiver := FetchedDataReceiver.create_for_stream(stream)
+	chunk := 'owned chunk'.bytes()
+	receiver.enqueue_owned_bytes_into_stream(chunk)
+	receiver.handle_network_data(NetworkResponseData.from_bytes('next'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+
+	mut reader := stream.get_default_reader()!
+	first := reader.read().result().value.bytes_
+	assert first == chunk
+	assert voidptr(first.data) == voidptr(chunk.data)
+	assert reader.read().result().value.bytes_ == 'next'.bytes()
+	assert reader.read().result().done
+}
+
 fn test_consume_body_collects_network_bytes_and_eof_buffered_before_handover() {
 	state := &ResponseHandoverObservation{}
 	mut params := handover_test_params(state)
@@ -175,4 +192,31 @@ fn test_consume_body_collects_network_bytes_and_eof_buffered_before_handover() {
 	assert state.results.len == 1
 	assert state.results[0].bytes == 'firstsecond'.bytes()
 	assert params.request.done
+}
+
+fn test_consumed_response_survives_reuse_of_the_network_callback_buffer() {
+	state := &ResponseHandoverObservation{}
+	mut params := handover_test_params(state)
+	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{
+		process_response_consume_body: fn [state] (_ &Response, result BodyBytes) {
+			mut observation := unsafe { &ResponseHandoverObservation(state) }
+			observation.results << result
+		}
+	})
+	mut response := Response.create()
+	body := Body.streaming()
+	mut receiver := FetchedDataReceiver.create_for_stream(body.stream())
+	receiver.set_body(body)
+	response.body = body
+	fetch_response_handover(params, response)
+	mut buffer := [u8(`a`), `b`, `c`]
+	receiver.handle_network_data(NetworkResponseData{bytes: buffer}, .ongoing)
+	buffer[0] = `d`
+	receiver.handle_network_data(NetworkResponseData{bytes: buffer}, .ongoing)
+	buffer[1] = `z`
+	assert state.results.len == 0
+	receiver.handle_network_data(NetworkResponseData{}, .complete)
+	assert state.results.len == 1
+	assert state.results[0].kind == .bytes
+	assert state.results[0].bytes == 'abcdbc'.bytes()
 }

@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import math
 import platform
@@ -35,9 +36,7 @@ pub fn rounded_image_clip_mask(width int, height int, radius f32) ?[]u8 {
 	target.draw_rect(rect, canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: false }) or { return none }
 	mut rgba := []u8{len: width * height * 4}
 	target.read_pixels(rgba.data, width * 4) or { return none }
-	mut mask := []u8{len: width * height}
-	for i in 0 .. mask.len { mask[i] = rgba[i * 4 + 3] }
-	return mask
+	return cpuraster.copy_rgba_alpha(rgba)
 }
 
 @[export: 'vox_document_rounded_image_clip_mask']

@@ -13,6 +13,8 @@ import dom
 import css
 import encoding
 import platform
+import processmetrics
+import time
 
 __global html_parser_non_append_insertions u64
 
@@ -145,6 +147,7 @@ pub mut:
 	ready_for_more_input_callback      ?HTMLParserCallback
 	parsing_complete_callback          ?HTMLParserCallback
 	parsing_complete_callbacks         []HTMLParserCallback
+	navigation_readiness_callback      ?fn (dom.DocumentReadyState)
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -325,6 +328,10 @@ pub fn (mut p HTMLParser) set_parsing_complete_callback(callback HTMLParserCallb
 // buffer cleanup, which installs its own callback after creating the parser.
 pub fn (mut p HTMLParser) add_parsing_complete_callback(callback HTMLParserCallback) {
 	p.parsing_complete_callbacks << callback
+}
+
+pub fn (mut p HTMLParser) set_navigation_readiness_callback(callback fn (dom.DocumentReadyState)) {
+	p.navigation_readiness_callback = callback
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
@@ -604,12 +611,12 @@ pub fn (mut p HTMLParser) schedule_resume_check() {
 	parser_pointer := voidptr(p)
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [parser_pointer] () {
+	queue_parser_progress_task(p.document_, fn [parser_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_parser := unsafe { &HTMLParser(parser_pointer) }
 		mutable_parser.resume_check_pending = false
 		mutable_parser.resume_after_parser_blocking_script()
-	}, p.document_.native_storage())
+	})
 }
 
 fn (mut p HTMLParser) resume_after_parser_blocking_script() {
@@ -688,11 +695,22 @@ pub fn (mut p HTMLParser) abort() {
 	}
 }
 
+// Same-binary control for the scan without an embedder's fetch hook.
+const scan_speculative_html_without_fetch_hook = os.getenv('VOX_SCAN_SPECULATIVE_HTML_WITHOUT_FETCH_HOOK') == '1'
+
 // https://html.spec.whatwg.org/multipage/parsing.html#start-the-speculative-html-parser
 fn (mut p HTMLParser) start_the_speculative_html_parser() {
 	if p.active_speculative_html_parser != none {
 		p.stop_the_speculative_html_parser()
 	}
+	if p.speculative_fetch_hook == none && !scan_speculative_html_without_fetch_hook {
+		// Preserve the suspended parser's encoding guard through script execution
+		// and document.write(). With no fetch hook there is no work for a scanner.
+		p.active_speculative_html_parser = &SpeculativeHTMLParser{}
+		return
+	}
+	scan := processmetrics.begin_thread_instruction_substage('html_speculative_parse')
+	defer { scan.finish() }
 	mut parser := SpeculativeHTMLParser.create(p.document_, p.tokenizer.unparsed_input(), p.document_.base_url(), p.speculative_fetch_hook)
 	parser.scripting_mode = p.scripting_mode
 	p.active_speculative_html_parser = parser
@@ -728,6 +746,8 @@ mut:
 	document      &dom.Document = unsafe { nil }
 	parser        ?&HTMLParser
 	document_stream_generation u64
+	// When the end of parsing began (deferred_script_rendering.v).
+	started_ns u64
 }
 
 pub fn HTMLParserEndState.create(document &dom.Document, parser ?&HTMLParser) &HTMLParserEndState {
@@ -735,6 +755,7 @@ pub fn HTMLParserEndState.create(document &dom.Document, parser ?&HTMLParser) &H
 		document: document
 		parser: parser
 		document_stream_generation: document.html_parser_stream_generation()
+		started_ns: time.sys_mono_now()
 	}
 }
 
@@ -760,13 +781,13 @@ pub fn (mut state HTMLParserEndState) schedule_progress_check() {
 	state_pointer := voidptr(state)
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
+	queue_parser_progress_task(state.document, fn [state_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_state := unsafe { &HTMLParserEndState(state_pointer) }
 		// Cleared first: a check can schedule its own continuation.
 		mutable_state.check_pending = false
 		mutable_state.check_progress()
-	}, state.document.native_storage())
+	})
 }
 
 fn (mut state HTMLParserEndState) check_progress() {
@@ -946,16 +967,36 @@ fn (mut state HTMLParserEndState) complete() {
 		if mutable_document.claim_readiness_event('load') {
 			// Fire load at the Document's relevant global object, where the
 			// scripting runtime's readiness dispatch also delivers it.
+			mutable_document.mark_load_event_start()
 			if window := mutable_document.get_window() {
 				target := unsafe { &dom.EventTarget(window) }
 				target.dispatch_event(dom.Event.create('load', dom.EventInit{}))
 			} else {
 				mutable_document.dispatch_event_simple('load', false)
 			}
+			if document.has_been_destroyed()
+				|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
+			mutable_document.mark_load_event_end()
 		}
-		if end_state.document_stream_generation != document.html_parser_stream_generation() { return }
-		mutable_document.set_page_showing(true)
+		if document.has_been_destroyed()
+			|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
+		if !mutable_document.document_page_showing() {
+			mutable_document.set_page_showing(true)
+			if document.has_been_destroyed()
+				|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
+			if window := mutable_document.get_window() {
+				window.fire_a_page_transition_event('pageshow', false)
+			}
+		}
+		// A pageshow handler can replace this input stream with document.open().
+		if document.has_been_destroyed()
+			|| end_state.document_stream_generation != document.html_parser_stream_generation() { return }
 		mutable_document.completely_finish_loading()
+		if concrete_parser := parser {
+			if callback := concrete_parser.navigation_readiness_callback {
+				callback(.complete)
+			}
+		}
 	})
 }
 
@@ -977,6 +1018,10 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 	mutable_document.update_readiness(.interactive)
 	if generation != document.html_parser_stream_generation() { return }
 	if concrete_parser := parser {
+		if callback := concrete_parser.navigation_readiness_callback {
+			callback(.interactive)
+			if generation != document.html_parser_stream_generation() { return }
+		}
 		mut mutable_parser := unsafe { &HTMLParser(concrete_parser) }
 		for !mutable_parser.stack_of_open_elements.is_empty() {
 			mutable_parser.stack_of_open_elements.pop()

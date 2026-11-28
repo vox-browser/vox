@@ -32,6 +32,7 @@ pub:
 	// Web IDL dictionaries distinguish an omitted nullable member from a
 	// present member whose value is null.
 	body_present    bool
+	signal_present  bool
 	window_present  bool
 	window_non_null bool
 }
@@ -42,7 +43,7 @@ fn (init RequestInit) is_empty() bool {
 		&& init.cache == none && init.redirect == none && init.integrity == none
 		&& init.keepalive == none && init.signal == none && init.duplex == none
 		&& init.priority == none && !init.body_present && !init.window_present
-		&& !init.window_non_null
+		&& !init.window_non_null && !init.signal_present
 }
 
 pub struct RequestInput {
@@ -287,8 +288,8 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 	mut signals := []&dom.AbortSignal{}
 	if source_signal := init.signal {
 		signals << source_signal
-	} else if source := input.request {
-		signals << source.signal_
+	} else if !init.signal_present {
+		if source := input.request { signals << source.signal_ }
 	}
 	signal := dom.AbortSignal.create_dependent_abort_signal(signals)!
 	return &RequestObject{

@@ -40,7 +40,7 @@ pub fn parse_source(source string, source_type SourceType) &ParsedSource {
 
 pub fn parse_source_with_options(source string, source_type SourceType, options ParseOptions) &ParsedSource {
 	program_type := if source_type == .module { ProgramType.module } else { ProgramType.script }
-	mut parser := Parser.new(utf16(source), program_type)
+	mut parser := Parser.new(source_utf16(source), program_type)
 	parser.recursion_limit = if options.max_recursion_depth == 0 {
 		max_parser_recursion_depth
 	} else if options.max_recursion_depth > 1024 {

@@ -2,6 +2,7 @@ module libjs
 
 import math
 import math.big
+import platform
 
 // Runtime/BigInt.{h,cpp}. V's arbitrary-precision integer is the storage and
 // arithmetic substrate in place of LibCrypto's LibTomMath-backed integer.
@@ -12,8 +13,15 @@ pub:
 }
 
 pub fn BigInt.create(integer big.Integer) &BigInt {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	// The arithmetic substrate's immutable value still contains an array.
+	// Copy its magnitude while persistent: retaining only the struct would
+	// leave a live JS primitive pointing into a resettable temporary arena.
+	bytes, _ := integer.bytes()
+	owned := big.integer_from_bytes(bytes, big.IntegerConfig{signum: integer.signum})
 	return &BigInt{
-		big_integer: integer
+		big_integer: owned
 	}
 }
 

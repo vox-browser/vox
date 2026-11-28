@@ -126,6 +126,7 @@ def run(command, limit_bytes, timeout, interval, adopt_path=None):
     reason = 'completed'
     adopted_seen = {}
     adoption_error = None
+    memory_limit_processes = None
     try:
         while True:
             snapshot = process_snapshot()
@@ -140,6 +141,15 @@ def run(command, limit_bytes, timeout, interval, adopt_path=None):
             peak = max(peak, sum(snapshot[pid][2] for pid in owned))
             if peak > limit_bytes:
                 reason = 'memory_limit'
+                memory_limit_processes = []
+                for pid in sorted(owned, key=lambda pid: snapshot[pid][2], reverse=True):
+                    parent, _, rss, _ = snapshot[pid]
+                    try:
+                        executable = Path(f'/proc/{pid}/comm').read_text().strip()
+                    except OSError:
+                        executable = None
+                    memory_limit_processes.append(dict(pid=pid, parent=parent, rss_bytes=rss,
+                                                       executable=executable))
                 break
             if time.monotonic() - start > timeout:
                 reason = 'timeout'
@@ -155,11 +165,14 @@ def run(command, limit_bytes, timeout, interval, adopt_path=None):
             time.sleep(interval)
     finally:
         stop_job(process, owned)
-    return dict(command=command, reason=reason, child_exit_code=process.returncode,
-                adopted_processes=adopted_seen, adoption_error=adoption_error,
-                limit_bytes=limit_bytes, observed_peak_rss_bytes=peak,
-                elapsed_seconds=time.monotonic() - start,
-                metric='sampled sum of process-tree RSS; shared pages may be counted twice')
+    result = dict(command=command, reason=reason, child_exit_code=process.returncode,
+                  adopted_processes=adopted_seen, adoption_error=adoption_error,
+                  limit_bytes=limit_bytes, observed_peak_rss_bytes=peak,
+                  elapsed_seconds=time.monotonic() - start,
+                  metric='sampled sum of process-tree RSS; shared pages may be counted twice')
+    if memory_limit_processes is not None:
+        result['memory_limit_processes'] = memory_limit_processes
+    return result
 
 
 def positive(value):

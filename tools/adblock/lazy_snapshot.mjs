@@ -43,6 +43,25 @@ export function packedArray(bytes, read, eager = false) {
     return proxy;
 }
 
+// uBO's filter reference table, restored as a plain array whose entries are
+// read from the packed table on first use through its $voxLoad function (the
+// patched engine's filterRefAt()). A request check reads about 80 entries of
+// a few hundred a page ever uses; a proxy over the table ran a trap for each
+// read, which cost more than the matching itself.
+export function lazyReferenceArray(bytes, read, eager = false) {
+    const count = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true);
+    const references = new Array(count);
+    const load = index => {
+        if (!(index >= 0 && index < count)) return undefined;
+        const value = read(bytes, index);
+        references[index] = value;
+        return value;
+    };
+    Object.defineProperty(references, '$voxLoad', { value: load });
+    if (eager) for (let index = 0; index < count; ++index) load(index);
+    return references;
+}
+
 export function packedMap(bytes, read, eager = false, decode = value => value) {
     const count = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true);
     let pending = true;

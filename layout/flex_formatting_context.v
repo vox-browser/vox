@@ -30,12 +30,13 @@ fn new_flex_line(capacity int) FlexLine {
 }
 
 enum FlexCrossAlignment {
-	// `normal` is kept apart from an explicit `stretch` even though both stretch an
-	// auto-sized item: only `normal` follows a wrap-reverse container's swapped cross-start
-	// and cross-end directions. See cross_alignment_offset().
 	normal
+	// Flex edges follow wrap-reverse, container edges do not, and self edges
+	// follow the item's own writing mode and direction.
 	start
 	end
+	container_start
+	container_end
 	self_start
 	self_end
 	center
@@ -1106,7 +1107,10 @@ fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignmen
 	}
 	self := item.computed_values().align_self()
 	match self {
-		.end_, .self_end {
+		.end_ {
+			return .container_end
+		}
+		.self_end {
 			return .self_end
 		}
 		.flex_end {
@@ -1124,7 +1128,10 @@ fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignmen
 		.baseline {
 			return .baseline
 		}
-		.start, .self_start {
+		.start {
+			return .container_start
+		}
+		.self_start {
 			return .self_start
 		}
 		.flex_start {
@@ -1136,42 +1143,73 @@ fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignmen
 		if value.css_text == 'last baseline' { return .baseline }
 	}
 	return match container.computed_values().align_items() {
-		.end_, .self_end { .self_end }
+		.end_ { .container_end }
+		.self_end { .self_end }
 		.flex_end { .end }
 		.center { .center }
 		.baseline { .baseline }
-		.start, .self_start { .self_start }
+		.start { .container_start }
+		.self_start { .self_start }
 		.flex_start { .start }
 		.stretch { .stretch }
 		else { .normal }
 	}
 }
 
-// align_all_flex_items_along_the_cross_axis(). Only `normal` consults flex-wrap:
-// https://drafts.csswg.org/css-flexbox/#flex-wrap-property says wrap-reverse swaps the
-// cross-start and cross-end directions, and C++ applies that swap to the `normal` case
-// alone. Every explicit keyword names a fixed edge of the line, so `flex-start` stays at the
-// line's cross-start edge and `flex-end` at its cross-end edge whichever way the container
-// wraps, and the inline `direction` does not enter into it either.
-fn cross_alignment_offset(alignment FlexCrossAlignment, cross_size CSSPixels, item_size CSSPixels, wrap_reverse bool) CSSPixels {
+// Physical offsets are measured from the top or left of a line. A reversed
+// flex cross axis puts flex-start, normal and stretch at the opposite edge.
+fn cross_alignment_offset(alignment FlexCrossAlignment, cross_size CSSPixels, item_size CSSPixels, reverse_cross_axis bool) CSSPixels {
 	return match alignment {
-		.normal {
-			if wrap_reverse {
+		.normal, .start, .stretch {
+			if reverse_cross_axis {
 				cross_size.minus(item_size)
 			} else {
 				CSSPixels.new(0)
 			}
 		}
-		.start, .self_start, .stretch, .baseline {
+		.self_start, .container_start, .baseline {
 			CSSPixels.new(0)
 		}
-		.end, .self_end {
+		.self_end, .container_end {
 			cross_size.minus(item_size)
+		}
+		.end {
+			if reverse_cross_axis { CSSPixels.new(0) } else { cross_size.minus(item_size) }
 		}
 		.center {
 			flex_divide_by_integer(cross_size.minus(item_size), 2)
 		}
 	}
+}
+
+fn flex_cross_alignment_is_at_physical_end(container &Node, item &Node, alignment FlexCrossAlignment) ?bool {
+	flex_reversed := flex_formatting_cross_axis_is_reversed(container)
+	container_reversed := flex_reversed != (container.computed_values().flex_wrap() == .wrap_reverse)
+	item_computed := item.computed_values()
+	cross_is_horizontal := flex_physical_direction(container) in [.column, .column_reverse]
+	item_reversed := if layout_inline_axis_is_horizontal(item_computed.writing_mode()) == cross_is_horizontal {
+		layout_inline_axis_is_reverse(item_computed.writing_mode(), item_computed.direction())
+	} else {
+		layout_block_axis_is_reverse(item_computed.writing_mode())
+	}
+	return match alignment {
+		.normal, .start, .stretch { flex_reversed }
+		.end { !flex_reversed }
+		.container_start { container_reversed }
+		.container_end { !container_reversed }
+		.self_start { item_reversed }
+		.self_end { !item_reversed }
+		else { none }
+	}
+}
+
+fn flex_item_cross_alignment_offset(container &Node, item &Node, alignment FlexCrossAlignment, cross_size CSSPixels, item_size CSSPixels) CSSPixels {
+	if at_physical_end := flex_cross_alignment_is_at_physical_end(container, item, alignment) {
+		return if at_physical_end { cross_size.minus(item_size) } else { CSSPixels.new(0) }
+	}
+	// Baseline alignment starts at the physical top; its baseline adjustment
+	// is applied after the initial placement.
+	return cross_alignment_offset(alignment, cross_size, item_size, false)
 }
 
 fn flex_line_max_baseline(state &LayoutState, container &Node, line FlexLine) CSSPixels {
@@ -1239,30 +1277,18 @@ fn flex_static_main_axis_alignment(container &Node, direction css.FlexDirection)
 fn set_flex_abspos_static_positions(mut state LayoutState, container &Node, container_state &UsedValues, direction css.FlexDirection) {
 	row_axis := direction in [.row, .row_reverse]
 	main_alignment := flex_static_main_axis_alignment(container, direction)
-	cross_reversed := flex_formatting_cross_axis_is_reversed(container)
 	for child in container.children() {
 		if !child.is_absolutely_positioned() {
 			continue
 		}
 		styled := child.as_node_with_style() or { continue }
-		cross_alignment := match effective_flex_cross_alignment(container, child) {
-			.end, .self_end {
-				if cross_reversed {
-					StaticPositionAlignment.start
-				} else {
-					StaticPositionAlignment.end
-				}
-			}
-			.center {
-				StaticPositionAlignment.center
-			}
-			else {
-				if cross_reversed {
-					StaticPositionAlignment.end
-				} else {
-					StaticPositionAlignment.start
-				}
-			}
+		alignment := effective_flex_cross_alignment(container, child)
+		cross_alignment := if alignment == .center {
+			StaticPositionAlignment.center
+		} else if flex_cross_alignment_is_at_physical_end(container, child, alignment) or { false } {
+			StaticPositionAlignment.end
+		} else {
+			StaticPositionAlignment.start
 		}
 		mut child_state := state.mutable_internal_box_values(styled)
 		child_state.set_static_position_rect(StaticPositionRect{
@@ -1494,6 +1520,11 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 
 	mut automatic_width := CSSPixels.new(0)
 	mut line_cross_sizes := []CSSPixels{cap: lines.len}
+	// first_call_answer.v: the automatic-height call of an item that the loop
+	// after line sizing lays out again. Baseline-aligned items are excluded:
+	// line sizing reads their descendants' baselines between the two calls.
+	offers_first_call_answers := !container_state.has_definite_height() && layout_mode != .intrinsic_sizing
+	mut answered_items := []voidptr{}
 	for line_index in 0 .. lines.len {
 		mut current_line := lines[line_index]
 		mut line_edges := []CSSPixels{cap: current_line.items.len}
@@ -1517,11 +1548,22 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 					natural_cross = calculate_max_content_height(mut state, box, current_line.targets[index])
 				}
 			}
-			item_state := layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
-				container_state.content_height()
+			item_container_height := if container_state.has_definite_height() {
+				?CSSPixels(container_state.content_height())
 			} else {
-				none
-			}, current_line.targets[index], natural_cross)
+				?CSSPixels(none)
+			}
+			item_state := if offers_first_call_answers
+				&& !flex_item_participates_in_baseline_alignment(container, item) {
+				laid_out, answered := layout_first_call_of_flex_item_with_height(mut state, item,
+					mut container_state, container_width, item_container_height,
+					current_line.targets[index], natural_cross)
+				if answered { answered_items << voidptr(item) }
+				laid_out
+			} else {
+				layout_independent_child(mut state, item, mut container_state, container_width,
+					item_container_height, current_line.targets[index], natural_cross)
+			}
 			cross_size = css_pixels_max(cross_size, item_state.margin_box_height())
 			used_main = used_main.plus(item_state.margin_box_width())
 		}
@@ -1567,15 +1609,19 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 	// This second inside-layout pass is observable when an item's authored
 	// percentage height was initially unresolved: its own used height remains
 	// content-derived, but nested percentage heights now resolve against it.
-	if !container_state.has_definite_height() && layout_mode != .intrinsic_sizing {
+	second_item_layouts := !container_state.has_definite_height() && layout_mode != .intrinsic_sizing
+	if second_item_layouts || answered_items.len > 0 {
 		for current_line in lines {
 			for item_index, item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
 				mut item_state := state.mutable_internal_box_values(styled)
-				if item_state.has_definite_height() {
+				// An answered first call left the item's descendants unplaced:
+				// this call restores or lays them out.
+				answered := answered_items.len > 0 && voidptr(item) in answered_items
+				if !answered && (!second_item_layouts || item_state.has_definite_height()) {
 					continue
 				}
-				if !flex_subtree_depends_on_definite_height(mut state, item) {
+				if !answered && !flex_subtree_depends_on_definite_height(mut state, item) {
 					item_state.set_has_definite_height(true)
 					continue
 				}
@@ -1702,7 +1748,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 			} else if cross_free_space.raw_value() > 0 && bottom_margin_auto {
 				item_state.margin_bottom = cross_free_space
 			} else {
-				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_height(), reverse_cross_axis)
+				cross_delta = flex_item_cross_alignment_offset(container, item, alignment, cross_size, item_state.margin_box_height())
 				if flex_item_participates_in_baseline_alignment(container, item) {
 					// Baseline-aligned items start at the line's cross-start edge, so the
 					// baseline shift always runs towards cross-end.
@@ -1799,7 +1845,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	mut bases := []CSSPixels{cap: items.len}
 	mut edges := []CSSPixels{cap: items.len}
 	mut contributions := []CSSPixels{cap: items.len}
-	for item in items {
+	// first_call_answer.v: items laid out below without their subtrees.
+	mut answered := []bool{len: items.len}
+	for item_index, item in items {
 		styled := item.as_node_with_style() or { continue }
 		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
@@ -1830,7 +1878,8 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, item_state, true)
 		}
-		laid_out := layout_independent_child(mut state, item, mut container_state, container_width, container_height, forced_width, none)
+		laid_out, first_call_answered := layout_first_call_of_flex_item(mut state, item, mut container_state, container_width, container_height, forced_width)
+		answered[item_index] = first_call_answered
 		base := flex_base_height(mut state, item, container_height, laid_out.content_height(), laid_out)
 		bases << base
 		edges << flex_or_grid_item_outer_block_edges(laid_out)
@@ -1904,7 +1953,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		// Repeating unchanged inside-layout at every nested column multiplies
 		// the work. Promote the used height to a definite basis in place when
 		// no descendant consumes that transition; changed sizes still rerun.
-		reuse_geometry := current.content_height() == line.targets[index]
+		reuse_geometry := !answered[index] && current.content_height() == line.targets[index]
 			&& (if width := forced_width { width == current.content_width() } else { true })
 			&& (current.has_definite_height()
 				|| !flex_subtree_depends_on_definite_height(mut state, item))
@@ -1976,7 +2025,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 			item_state.margin_right = cross_free_space
 		} else {
-			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), flex_formatting_cross_axis_is_reversed(container))
+			cross_delta = flex_item_cross_alignment_offset(container, item, alignment, container_width, item_state.margin_box_width())
 			if flex_item_participates_in_baseline_alignment(container, item) {
 				cross_delta = cross_delta.plus(max_baseline.minus(grid_baseline_from_low(state,container,item,true,.first,0)))
 			}
@@ -2214,7 +2263,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 				item_state.margin_right = cross_free_space
 			} else {
-				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_width(), flex_formatting_cross_axis_is_reversed(container))
+				cross_delta = flex_item_cross_alignment_offset(container, item, alignment, cross_size, item_state.margin_box_width())
 				if flex_item_participates_in_baseline_alignment(container, item) {
 					cross_delta = cross_delta.plus(max_baseline.minus(grid_baseline_from_low(state,container,item,true,.first,0)))
 				}

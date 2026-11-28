@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // Embedding backends parse and validate their own programs. They still need
 // the Script Record's strictness without building an unused translated AST.
 // A directive is an unparenthesized string-literal expression statement, so
@@ -14,6 +16,10 @@ pub fn script_source_is_strict(source string) bool {
 	if start == source.len { return false }
 	first := source[start]
 	if first < 128 && first !in [u8(`"`), `'`, `/`, `<`, `-`, `#`] { return false }
+	// UTF-16 prefixes and lexer tokens live only until the decision. The
+	// external Script Record retains the original source and the boolean.
+	scratch := platform.begin_thread_scratch('script strictness lexer')
+	defer { scratch.finish() }
 	// The prologue is at the start of the script. Lex a prefix, widened only
 	// when the decision reaches its end: bundles often open with a license
 	// comment, and copying all of them to UTF-16 here is the bulk of the cost.

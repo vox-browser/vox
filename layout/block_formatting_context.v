@@ -295,6 +295,13 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 	if box_state.border_box_height().to_double() != 0 {
 		return false
 	}
+	// An in-flow line separates adjoining margins even when its text or
+	// atomic inline content has zero height (for example a clearfix).
+	for line in box_state.line_boxes {
+		if !line.is_empty() {
+			return false
+		}
+	}
 	box_node := unsafe { &Node(box) }
 	for child in box_node.children() {
 		if !child.is_box() || child.is_out_of_flow() {
@@ -764,8 +771,17 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		// measured first. If the result is smaller than the minimum, its real
 		// layout receives that minimum as a definite available height.
 		if definite_content_height == none && !property_is_auto(computed, .min_height) {
+			// min_height_probe_marks.v: a probe with the real layout's own
+			// available space can release the marks it makes.
+			probe_space_matches := !available_height.is_definite() && bfc.layout_mode == .normal
+				&& state.subtree_root == none
 			mut measuring_state := state.new_measurement_for_subtree(box)
 			defer { measuring_state.release_measurement() }
+			probe_marks := if probe_space_matches {
+				?MinHeightProbeMarks(begin_min_height_probe_marks(measuring_state))
+			} else {
+				none
+			}
 			measuring_state.populate_node_from(mut state, box)
 			mut ancestor := box_as_node.containing_block()
 			for ancestor != none {
@@ -779,6 +795,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			minimum := clamp_content_height_for_node(mut measuring_state, box, measuring_values, CSSPixels.new(0), containing_block_height)
 			if measured.automatic_content_height.raw_value() < minimum.raw_value() {
 				available_height = AvailableSize.make_definite(minimum)
+			}
+			if marks := probe_marks {
+				finish_min_height_probe_marks(marks, !available_height.is_definite())
 			}
 		}
 		inside_result := layout_inside_independent_formatting_context_with_mode(mut state, box_as_node, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))

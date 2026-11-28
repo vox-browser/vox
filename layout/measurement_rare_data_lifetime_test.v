@@ -56,9 +56,8 @@ fn test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity(
 	box := rare_measurement_test_box()
 	mut source := LayoutState.new()
 	mut original := source.get_mutable(box)
-	original.rare_ = &UsedValuesRareData{
-		used_grid_template_columns: []CSSPixels{cap: 4}
-	}
+	mut grid := original.ensure_grid_geometry()
+	grid.columns = []CSSPixels{cap: 4}
 	mut borrowed := original.grid_template_columns()
 	assert borrowed.len == 0 && borrowed.cap >= 4
 	mut probe := LayoutState.new_for_subtree(box)

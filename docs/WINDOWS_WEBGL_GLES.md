@@ -311,3 +311,26 @@ VM is stopped. The interrupted earlier VM run is not credited by this receipt.
 Cold-boot commands, input pins, failed attempts and guard receipts are local in
 `docs/performance/windows-reboot-20261114/`. These checks do not establish
 all-site pixel equivalence, full WebGL conformance or hardware acceleration.
+
+## Startup investigation follow-up (2026-11-15)
+
+The next attempt prepared a local startup/input probe using the same pinned
+`bf2c70…` browser, unchanged two-minute startup deadline, startup timing logs
+and active-child failure dumps. The guest reached its desktop, but SSH did not
+become usable after its restart. The browser probe was not launched, so this
+attempt supplies no new browser pass, failure or stack trace.
+
+Host free storage subsequently fell below the launcher's 5 GiB minimum, to
+about 2 GiB. The VM was paused to protect its image. The canonical cleanup dry
+run found only 0.56 GiB eligible; no files were deleted. The guest was briefly
+resumed only to clear temporary automatic sign-in (console status 0) and shut
+Windows down. QEMU and its host guard exited 0. A final offline, non-repairing
+image check exited 0 with no errors; the backing chain remains one standalone
+image. The installation, UEFI and SSH state are preserved, and the VM is stopped.
+
+The startup timeout remains unresolved. Further runtime investigation needs
+adequate host storage and restored guest SSH access before executing the
+prepared probe. Renderer initialization performs replacement shader/pipeline
+creation after GG's defaults, but no captured stack yet connects that work to
+the timeout; no renderer change or timeout relaxation was made. Local receipts
+are in `docs/performance/windows-startup-20261114/`.

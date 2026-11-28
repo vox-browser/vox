@@ -744,6 +744,14 @@ pub fn (mut navigation Navigation) update_the_navigation_api_entries_for_a_same_
 	if navigation.has_entries_and_events_disabled() {
 		return
 	}
+	// Compact navigation can reach document.open() before the exposed
+	// Navigation API list has an initial entry to replace.
+	if navigation_type == .replace && navigation.current_entry_index_ < 0 {
+		navigation.initialize_the_navigation_api_entries_for_a_new_document([
+			destination_session_entry,
+		], destination_session_entry)
+		return
+	}
 	old_current := navigation.current_entry()
 	mut disposed := []&NavigationHistoryEntry{}
 	match navigation_type {

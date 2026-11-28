@@ -3,6 +3,11 @@ module platform
 #include "@DIR/arena_page_retirement_test.h"
 
 fn C.vox_arena_test_resident_bytes(start voidptr, bytes uint) uint
+fn C.vox_arena_test_unused_resident_bytes(start voidptr, bytes uint) uint
+
+$if linux {
+	fn C.vox_arena_test_read_is_blocked(start voidptr) int
+}
 
 fn test_reset_retirement_requires_large_capacity_and_a_cycle_beyond_one_scope_block() {
 	mib := i64(1024 * 1024)
@@ -55,6 +60,11 @@ fn test_large_reset_arenas_keep_capacity_and_reuse_addresses_without_retaining_p
 			assert arena.usage().capacity == capacity
 			// Ask the kernel about the dead mapping without dereferencing it.
 			assert C.vox_arena_test_resident_bytes(data, 4 * 1024 * 1024) < 512 * 1024
+		} else {
+			$if linux {
+				assert C.vox_arena_test_unused_resident_bytes(data, uint(bytes.len)) == 0
+				assert C.vox_arena_test_read_is_blocked(data) == 1
+			}
 		}
 		again := arena.enter()
 		mut replacement := []u8{len: 4 * 1024 * 1024, init: 37}

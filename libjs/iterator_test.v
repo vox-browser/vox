@@ -105,11 +105,12 @@ fn test_iterator_step_defers_value_errors_and_marks_abrupt_exhaustion() {
 			step := iterator_step(mut vm, mut record)!
 			assert !record.done && !step.done
 			assert step.result.done.number == 0
-			assert step.result.value.is_error() && step.result.value.value.number == 42
-			assert log.events == ['next', 'done', 'value']
+			assert !step.result.value.is_error() && step.result.value.value.is_undefined()
+			assert log.events == ['next', 'done']
 			if _ := iterator_step_value(mut vm, mut record) { assert false } else {
 				assert thrown_value(err).number == 42
 			}
+			assert log.events == ['next', 'done', 'next', 'done', 'value']
 		} else if mode == 'exhausted' {
 			step := iterator_step_value(mut vm, mut record)!
 			assert step.done && step.value.is_undefined()
@@ -131,7 +132,7 @@ fn test_iterator_collection_distinguishes_yielded_undefined_from_done_and_result
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	prototype := Object.create(vm.realm(), none)
-	result := create_iterator_result_object(vm.realm(), js_undefined(), false, prototype)
+	mut result := create_iterator_result_object(vm.realm(), js_undefined(), false, prototype)
 	assert voidptr(result.prototype?) == voidptr(prototype)
 	assert result.own_property_keys().map(it.str()) == ['value', 'done']
 	for key in result.own_property_keys() {
@@ -140,6 +141,11 @@ fn test_iterator_collection_distinguishes_yielded_undefined_from_done_and_result
 	}
 	assert !iterator_complete(mut vm, result)!
 	assert iterator_value(mut vm, result)!.is_undefined()
+	other := create_iterator_result_object(vm.realm(), Value.from_i32(42), false, prototype)
+	result.set(mut vm, PropertyName.from_str('value'), Value.from_i32(9), .yes)!
+	result.set(mut vm, PropertyName.from_str('done'), Value.from_bool(true), .yes)!
+	assert iterator_value(mut vm, result)!.number == 9 && iterator_complete(mut vm, result)!
+	assert iterator_value(mut vm, other)!.number == 42 && !iterator_complete(mut vm, other)!
 	mut log := &IteratorTestState{}
 	mut record := iterator_test_record(mut vm, fn [mut log, prototype] (mut vm VM) !Value {
 		index := log.index

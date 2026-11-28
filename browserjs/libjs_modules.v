@@ -36,7 +36,7 @@ fn (runtime &Runtime) execute_libjs_module(prepared &PreparedScript, stringify_r
 	runtime.prepare_html_script()
 	defer { runtime.clean_up_html_script() }
 	module_record.link(mut vm) or { return error(libjs_exception_message(err)) }
-	result := module_record.evaluate(mut vm) or { return error(libjs_exception_message(err)) }
+	result := module_record.evaluate_with_limits(mut vm, runtime.libjs_execution_limits()) or { return error(libjs_exception_message(err)) }
 	if result.promise.state == .rejected {
 		return error(libjs_exception_message(libjs.throw_completion(result.promise.result)))
 	}

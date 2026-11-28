@@ -2,6 +2,7 @@ module browserjs
 
 import dom
 import html
+import libjs
 import libjsdom
 
 // The opt-in backend binds translated values directly to native DOM owners.
@@ -12,8 +13,10 @@ pub fn (mut runtime Runtime) install_libjs_document(document &dom.Document) ! {
 		return error('Native LibJS DOM bindings require the LibJS backend')
 	}
 	if runtime.libjs_document_host_ != none { return }
+	runtime.initialize_document_native_cache()
 	owner := voidptr(&runtime)
 	host := libjsdom.Host.create(runtime.agent_vm, runtime.realm, document, libjsdom.Hooks{
+		execution_limits: libjs.ExecutionLimits{max_instructions:libjs_document_instruction_limit}
 		can_run_callback: fn [owner] () bool {
 			runtime := unsafe { &Runtime(owner) }
 			if runtime.closed { return false }
@@ -56,9 +59,26 @@ pub fn (mut runtime Runtime) install_libjs_document(document &dom.Document) ! {
 }
 
 pub fn (mut runtime Runtime) take_libjs_messages() []string {
+	if runtime.engine == .libjs {
+		mut vm := runtime.agent_vm
+		for err in vm.take_promise_job_errors() {
+			runtime.libjs_messages_ << 'JavaScript (LibJS): Promise job: ' + libjs_exception_message(err)
+		}
+	}
 	messages := runtime.libjs_messages_
 	runtime.libjs_messages_ = []
 	return messages
+}
+
+pub fn (runtime &Runtime) has_pending_libjs_fetches() bool {
+	if host := runtime.libjs_document_host_ { return host.has_pending_fetches() }
+	return false
+}
+
+pub fn (mut runtime Runtime) set_libjs_form_submission_host(service libjsdom.FormSubmissionHost) ! {
+	if runtime.closed { return error('LibJS document runtime is closed') }
+	mut host := runtime.libjs_document_host_ or { return error('LibJS document runtime is unavailable') }
+	host.set_form_submission_host(service)
 }
 
 pub fn (runtime &Runtime) dispatch_libjs_event(name string, element &dom.Element) !bool {

@@ -141,3 +141,31 @@ fn test_frames_without_a_document_or_commands_are_blank() {
 	assert !app.frame_canvas_is_blank(true)
 	assert app.frame_canvas_is_blank(false)
 }
+
+fn test_stationary_viewport_eligibility_without_video_matches_the_command_scan() {
+	offscreen_effect := layout.PaintCommand{
+		kind: 'begin_css_effect_layer'
+		has_clip: true
+		clip_x: 0
+		clip_y: 5000
+		clip_width: 10
+		clip_height: 10
+	}
+	nested_canvas := layout.PaintCommand{
+		kind: 'paint_nested_display_list'
+		nested_viewport_commands: [layout.PaintCommand{kind: 'draw_canvas'}]
+	}
+	lists := [
+		[layout.PaintCommand{kind: 'fill_rect'}, layout.PaintCommand{kind: 'draw_text'}],
+		[offscreen_effect, layout.PaintCommand{kind: 'draw_canvas'},
+			layout.PaintCommand{kind: 'end_css_effect_layer'}],
+		[layout.PaintCommand{kind: 'fill_rect'}, nested_canvas],
+		[layout.PaintCommand{kind: 'draw_nested_document', x: 0, y: 9000, width: 5, height: 5}],
+		[]layout.PaintCommand{},
+	]
+	for commands in lists {
+		assert stationary_document_raster_viewport_eligible(commands, 0, 800, 600) == stationary_document_raster_eligible(commands)
+	}
+	assert stationary_document_raster_viewport_eligible(lists[0], 0, 800, 600)
+	assert !stationary_document_raster_viewport_eligible(lists[1], 0, 800, 600)
+}

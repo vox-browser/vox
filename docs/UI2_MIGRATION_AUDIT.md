@@ -10,8 +10,8 @@ The [repository UI rule](../AGENTS.md#ui-implementation) applies to future work.
 | Tabs, close/new buttons, window buttons, drag/reorder/detach preview | [browserui/tabs.v](../browserui/tabs.v), [browserapp/browser_tabs_ui.v](../browserapp/browser_tabs_ui.v), existing V tab controller | `native_browser_tabs_darwin.{m,h}`, separate GG tab painter |
 | Toolbar skin, navigation controls, address field, status labels | [browserapp/browser_chrome.v](../browserapp/browser_chrome.v) | Cocoa toolbar background/icon painting and native styling overrides, separate GG toolbar |
 | Link context menu | [browserapp/link_context_menu.v](../browserapp/link_context_menu.v), [browserui/popup.v](../browserui/popup.v) | `native_link_context_menu_darwin.{m,h}` |
-| HTML select popup | [browserapp/select_picker.v](../browserapp/select_picker.v), shared UI2 popup | `native_select_picker_darwin.{m,h}` and its JSON-to-NSMenu layer |
-| Settings, validation, enabled states, Apply/Cancel | [browserapp/browser_settings.v](../browserapp/browser_settings.v) | `native_browser_settings_darwin.{m,h}` and platform-only V form owner |
+| HTML select popup | [browserapp/select_picker.v](../browserapp/select_picker.v), shared UI2 rows with a [macOS embedding adapter](../browserui/popup_backend_darwin.v) | `native_select_picker_darwin.{m,h}` and its JSON-to-NSMenu layer |
+| Settings, validation, enabled states, automatic saving | [browserapp/browser_settings.v](../browserapp/browser_settings.v) | `native_browser_settings_darwin.{m,h}` and platform-only V form owner |
 | Browser shortcut policy | [browserui/shortcuts.v](../browserui/shortcuts.v), [browserapp/browser_ui.v](../browserapp/browser_ui.v) | `native_address_bar_darwin.{m,h}` shortcut table |
 | RAM formatting, sampling schedule, worker accounting and label updates | [memorymgmt/memory_status.v](../memorymgmt/memory_status.v), [processmetrics](../processmetrics) | `native_browser_chrome_darwin.{m,h}`, `native_memory_status_darwin.m` and its separate painted layer |
 | History gesture classification, capture generations, cancellation and commit thresholds | [browserui/swipe.v](../browserui/swipe.v), [browserapp/history_swipe.v](../browserapp/history_swipe.v) | Native gesture policy fields and decisions |
@@ -19,8 +19,10 @@ The [repository UI rule](../AGENTS.md#ui-implementation) applies to future work.
 | Detached-window placement | [browserui/window.v](../browserui/window.v), [browserapp/browser_tab_detach_darwin.v](../browserapp/browser_tab_detach_darwin.v) | Native application placement calculations |
 | Compatibility chrome/bookmarks | Shared UI2 tree with [custom embedding](https://github.com/vlang/ui2/blob/master/ui/embedded_elements_custom.c.v) | Handwritten GG controls and hit testing |
 
-Popups are asynchronous UI2 lists. They retain groups, disabled options,
-separators, indentation, selection marks, keyboard navigation and scrolling.
+Popups use shared UI2 rows. The macOS embedding adapter presents HTML select
+rows in an AppKit menu. The custom backend presents them in a UI2 list.
+Both retain groups, disabled options, separators, indentation, selection marks,
+keyboard navigation and scrolling.
 Each presentation has a distinct action token; stale actions cannot choose a
 later popup. Select completion revalidates document identity, connection and
 mutability. Navigation, tab switching, cancellation and outside clicks dismiss

@@ -8,7 +8,7 @@ module libjs
 pub fn object_prototype_has_own_property(mut vm VM, prototypes PrimitiveObjectPrototypes) !Value {
 	key := vm.argument(0).to_property_key(mut vm)!
 	object := vm.this_value().to_object_with_prototypes(mut vm, prototypes)!
-	return Value.from_bool(object.has_own_property(key))
+	return Value.from_bool(object.has_own_property_checked(mut vm, key)!)
 }
 
 // 20.1.3.3 Object.prototype.isPrototypeOf ( V ).
@@ -18,7 +18,7 @@ pub fn object_prototype_is_prototype_of(mut vm VM, prototypes PrimitiveObjectPro
 	mut object := argument.as_object()
 	this_object := vm.this_value().to_object_with_prototypes(mut vm, prototypes)!
 	for {
-		object = object.internal_get_prototype_of() or { return Value.from_bool(false) }
+		object = object.get_prototype_of_checked(mut vm)!.prototype or { return Value.from_bool(false) }
 		if same_value(Value.from_object(this_object), Value.from_object(object)) {
 			return Value.from_bool(true)
 		}
@@ -30,7 +30,7 @@ pub fn object_prototype_is_prototype_of(mut vm VM, prototypes PrimitiveObjectPro
 pub fn object_prototype_property_is_enumerable(mut vm VM, prototypes PrimitiveObjectPrototypes) !Value {
 	key := vm.argument(0).to_property_key(mut vm)!
 	object := vm.this_value().to_object_with_prototypes(mut vm, prototypes)!
-	descriptor := object.internal_get_own_property(key) or { return Value.from_bool(false) }
+	descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { return Value.from_bool(false) }
 	return Value.from_bool(descriptor.enumerable or { false })
 }
 

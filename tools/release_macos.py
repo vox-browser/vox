@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Publish a packaged Vox DMG as the next release.
+"""Publish a packaged Vox DMG, DEB or Arch archive as the next release.
 
-packaging/Info.plist holds the version. A release commits the version bump
-alone on master, builds that commit in a dedicated release checkout, creates
-the GitHub release tagged with the bare version (for example 0.1.1), then
-points vox-browser.org/version, which the browser's update check reads, at it.
+packaging/Info.plist and packaging/version.txt hold the package and runtime
+versions. A release commits their version bump alone on master, builds that
+commit in a dedicated release checkout, creates
+the GitHub release tagged with the bare version (for example 0.1.1). macOS releases
+also point vox-browser.org/version, which the browser's update check reads, at it.
 
 The release checkout is a clone next to the canonical one with its own Build/
 caches and build queue. Building there compiles only committed sources, while
@@ -37,6 +38,7 @@ VERSION_URL = 'https://vox-browser.org/version'
 # The site's download button; it redirects to the DMG of the version /version serves.
 DOWNLOAD_URL = 'https://vox-browser.org/download/macos'
 INFO_PLIST = 'packaging/Info.plist'
+VERSION_FILE = 'packaging/version.txt'
 VERSION = re.compile(r'\d{1,9}(\.\d{1,9}){0,2}')
 SSH_OPTIONS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15']
 VERSION_KEYS = ('CFBundleShortVersionString', 'CFBundleVersion')
@@ -69,6 +71,15 @@ def next_version(current, released, requested=None):
 
 def bundle_version(path):
     return plistlib.loads(path.read_bytes())['CFBundleShortVersionString']
+
+
+def packaging_version(root):
+    version = bundle_version(root / INFO_PLIST)
+    parse_version(version)
+    if (root / VERSION_FILE).read_text().strip() != version:
+        raise RuntimeError('packaging/version.txt must match packaging/Info.plist; '
+                           'the browser would report the wrong installed version')
+    return version
 
 
 def with_bundle_version(text, version):
@@ -152,38 +163,51 @@ def release_assets(repository, version):
     return {asset['name']: asset.get('digest') for asset in json.loads(output)['assets']}
 
 
-def publish_release(repository, version, dmg, minimum):
-    digest = sha256(dmg)
+def publish_release(repository, version, artifact, minimum):
+    digest = sha256(artifact)
     machine = 'Apple silicon' if platform.machine() == 'arm64' else platform.machine()
-    notes = ('Vox %s for macOS %s or later on %s.\n\nSHA-256 of %s: `%s`\n'
-             % (version, minimum, machine, dmg.name, digest))
-    print('Creating the %s release on %s with %s' % (version, repository, dmg.name), flush=True)
-    command(['gh', 'release', 'create', version, str(dmg), '-R', repository,
+    system = ('Linux (Arch Linux package)' if artifact.name.endswith('.pkg.tar.zst')
+              else 'Linux (Debian package)' if artifact.suffix == '.deb'
+              else 'macOS %s or later on %s' % (minimum, machine))
+    notes = ('Vox %s for %s.\n\nSHA-256 of %s: `%s`\n'
+             % (version, system, artifact.name, digest))
+    print('Creating the %s release on %s with %s' % (version, repository, artifact.name), flush=True)
+    command(['gh', 'release', 'create', version, str(artifact), '-R', repository,
              '--title', version, '--notes', notes])
-    if release_assets(repository, version).get(dmg.name) != 'sha256:' + digest:
+    if release_assets(repository, version).get(artifact.name) != 'sha256:' + digest:
         raise RuntimeError('The GitHub release %s does not carry %s with SHA-256 %s'
-                           % (version, dmg.name, digest))
+                           % (version, artifact.name, digest))
 
 
 def commit_version(root, version):
     """Commit the version bump alone on master and return the commit to release.
 
     Other sessions' uncommitted and staged work stays where it is. An earlier
-    attempt's uncommitted bump is reused; other uncommitted Info.plist edits stop
-    the release instead of being committed with it.
+    attempt's uncommitted bump is reused; other uncommitted packaging edits stop
+    the release instead of being committed with it. Both version sources are
+    committed together, including when repairing an already-bumped plist.
     """
     git = ['git', '-C', str(root)]
     committed = command([*git, 'show', 'HEAD:' + INFO_PLIST])
-    if plistlib.loads(committed.encode())['CFBundleShortVersionString'] != version:
+    committed_runtime = command([*git, 'show', 'HEAD:' + VERSION_FILE]).strip()
+    if (plistlib.loads(committed.encode())['CFBundleShortVersionString'] != version
+            or committed_runtime != version):
         path = root / INFO_PLIST
         if without_version(path.read_text()) != without_version(committed):
             raise RuntimeError('%s has uncommitted changes besides the version; commit or '
                                'revert them first' % INFO_PLIST)
+        runtime_path = root / VERSION_FILE
+        try:
+            parse_version(runtime_path.read_text().strip())
+        except ValueError as error:
+            raise RuntimeError('%s has uncommitted changes besides the version; commit or '
+                               'revert them first' % VERSION_FILE) from error
         path.write_text(with_bundle_version(committed, version))
+        runtime_path.write_text(version + '\n')
         for attempt in range(30):
             # Pathspec commits leave other staged files out of the release commit.
             result = subprocess.run([*git, 'commit', '--quiet', '-m', 'Release Vox ' + version,
-                                     '--', INFO_PLIST], capture_output=True, text=True)
+                                     '--', INFO_PLIST, VERSION_FILE], capture_output=True, text=True)
             if result.returncode == 0:
                 break
             if 'index.lock' not in result.stderr or attempt == 29:
@@ -194,7 +218,8 @@ def commit_version(root, version):
 
 def release_checkout(root):
     # A sibling keeps the checkout-relative ../3rd dependency paths valid.
-    return root.parent / (root.name + '-release')
+    # Keep the established release checkout after the canonical vox2 -> vox rename.
+    return root.parent / 'vox2-release'
 
 
 def prepare_checkout(root, checkout, commit):
@@ -277,6 +302,34 @@ def publish_website_version(version, host=WEBSITE_HOST, path=WEBSITE_VERSION_FIL
                            'support, then run: v run deploy.vsh --website-only' % (url, served, version))
 
 
+def matches_release_checkout(checkout, frozen, inputs, current):
+    if matches_compiled_checkout(checkout, frozen):
+        return True
+    # The V and Python inventory builders also filter test fixtures differently.
+    # An identical complete checkout proves membership without translating that
+    # filter; retain both early-input and every consumed-file digest check.
+    inventory = frozen.get('source_inventory', {})
+    if (not inputs.get('repository_sha256')
+            or current.get('repository_sha256') != inputs['repository_sha256']
+            or current.get('head') != inputs.get('head') or current.get('dirty') is not False
+            or inventory.get('protocol') != 'production-source-inventory-v1'
+            or not inventory.get('names') or not inventory.get('early_inputs')
+            or not frozen.get('exact_source_manifest')):
+        return False
+    check_fingerprints(inventory['early_inputs'])
+    # The complete sealed C/linker inputs are verified by the caller. Shared
+    # compiler vlib sources may advance after that successful compilation;
+    # only the release checkout's V buffers must still match its commit.
+    # Keep every native/non-V input check, including external dependencies.
+    retained = {name: digest for name, digest in frozen['exact_source_manifest'].items()
+                if Path(name).is_relative_to(checkout)
+                or Path(name).suffix not in {'.v', '.vv', '.vsh'}}
+    if not any(Path(name).is_relative_to(checkout) for name in retained):
+        return False
+    check_fingerprints(retained)
+    return True
+
+
 def verify_release_inputs(checkout, build, commit, expected):
     """Bind the consumed compiler inputs to the clean release checkout."""
     failure = 'The build did not compile the release commit %s; run deploy.vsh again' % commit
@@ -286,8 +339,19 @@ def verify_release_inputs(checkout, build, commit, expected):
     # stream. Validate that proof and compare its consumed files with checkout;
     # comparing the two different digest formats rejects every parsed build.
     inputs = build.get('inputs', {}) if frozen_path else compiled
-    if inputs.get('head') != commit or inputs.get('build_inputs_sha256') != expected:
+    if inputs.get('head') != commit:
         raise RuntimeError(failure)
+    if inputs.get('build_inputs_sha256') != expected:
+        # V's supervisor excludes Python tools from its build-input digest.
+        # The legacy Python supervisor includes them. Their full repository
+        # digest uses the same byte protocol, so require that stronger proof
+        # against the clean checkout when the filtered digests differ.
+        current = repository_state(checkout)
+        if (not inputs.get('repository_sha256')
+                or current.get('repository_sha256') != inputs['repository_sha256']
+                or current.get('head') != commit or current.get('dirty') is not False
+                or current.get('build_inputs_sha256') != expected):
+            raise RuntimeError(failure)
     if frozen_path:
         frozen = json.loads(Path(frozen_path).read_text())
         if (frozen.get('protocol') != FROZEN_COMPILE_PROTOCOL
@@ -303,20 +367,24 @@ def verify_release_inputs(checkout, build, commit, expected):
                 or frozen.get('source_inputs_at_sealing', inputs) != compiled
                 or current.get('head') != commit or current.get('dirty') is not False
                 or current.get('build_inputs_sha256') != expected
-                or not matches_compiled_checkout(checkout, frozen)):
+                or not matches_release_checkout(checkout, frozen, inputs, current)):
             raise RuntimeError(failure)
 
 
 def release(root, deploy, output=None, package_only=False, requested=None,
-            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None):
-    """Bump, build the committed sources, package and publish; return the DMG path."""
+            repository=REPOSITORY, host=WEBSITE_HOST, checkout=None, target='macos', publish=True):
+    """Bump, build the committed sources, package and publish; return the package path."""
+    if target not in ('macos', 'linux', 'linux-arch'):
+        raise ValueError('Unsupported release target: ' + target)
+    extension = {'linux': '.deb', 'linux-arch': '.pkg.tar.zst', 'macos': '.dmg'}[target]
     checkout = checkout or release_checkout(root)
     with release_lock(root):
         released = released_version(repository)
         version = next_version(bundle_version(root / INFO_PLIST), released, requested)
         # Fail before committing or building when the release cannot be published.
         check_unreleased(repository, version)
-        check_website(host)
+        if target == 'macos' and publish:
+            check_website(host)
         if package_only:
             # Repackage the release checkout's commit; its receipt is checked below.
             if not (checkout / '.git').is_dir() or bundle_version(checkout / INFO_PLIST) != version:
@@ -331,17 +399,26 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         print('Releasing Vox %s from %s (previous release: %s)' % (version, commit[:12], released),
               flush=True)
         if output is None:
-            output = root / 'Build/deploy' / ('Vox-%s-%s.dmg' % (version, platform.machine()))
-        dmg = deploy(checkout, output, package_only)
-        manifest = json.loads(dmg.with_suffix('.dmg.json').read_text())
+            architecture = (command(['dpkg', '--print-architecture']).strip()
+                            if target == 'linux' else platform.machine())
+            filename = ('vox-%s-1-%s.pkg.tar.zst' % (version, architecture)
+                        if target == 'linux-arch' else 'Vox-%s-%s%s' % (version, architecture, extension))
+            output = root / 'Build/deploy' / filename
+        artifact = deploy(checkout, output, package_only)
+        manifest = json.loads(artifact.with_name(artifact.name + '.json').read_text())
         if manifest['version'] != version:
-            raise RuntimeError('The DMG contains Vox %s, not %s' % (manifest['version'], version))
+            raise RuntimeError('The package contains Vox %s, not %s' % (manifest['version'], version))
         verify_release_inputs(checkout, manifest.get('source_build', {}), commit, expected)
-        minimum = plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
-        publish_release(repository, version, dmg, minimum)
-        publish_website_version(version, host)
-        check_download(repository, version, dmg.name)
-    return dmg
+        if not publish:
+            print('Validated release package without publishing: %s' % artifact, flush=True)
+            return artifact
+        minimum = (plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
+                   if target == 'macos' else None)
+        publish_release(repository, version, artifact, minimum)
+        if target == 'macos':
+            publish_website_version(version, host)
+            check_download(repository, version, artifact.name)
+    return artifact
 
 
 def publish_website_only(root, repository=REPOSITORY, host=WEBSITE_HOST):

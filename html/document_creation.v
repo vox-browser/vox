@@ -129,7 +129,9 @@ fn create_navigation_document_with_optional_page(creation_url dom.URL, origin do
 	if active := context.active_document() {
 		if active.get_is_initial_about_blank() && active.origin().is_same_origin_domain(origin) {
 			if window := context.active_window() {
-				return construct_document_in_global(window, context, creation_url, origin)
+				mut document := construct_document_in_global(window, context, creation_url, origin)!
+				document.update_readiness(.loading)
+				return document
 			}
 		}
 	}
@@ -149,7 +151,9 @@ fn create_navigation_document_with_optional_page(creation_url dom.URL, origin do
 	}
 	window := create_window_global_before_document(context, creation_url, origin,
 		top_level_creation_url, top_level_origin)
-	return construct_document_in_global(window, context, creation_url, origin)
+	mut document := construct_document_in_global(window, context, creation_url, origin)!
+	document.update_readiness(.loading)
+	return document
 }
 
 fn create_initial_document(context &BrowsingContextModel, origin dom.Origin, embedder ?&dom.Element) !&dom.Document {

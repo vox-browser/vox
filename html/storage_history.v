@@ -121,7 +121,7 @@ pub fn (storage &Storage) key(index uint) ?string {
 }
 
 pub fn (storage &Storage) get_item(key string) ?string {
-	return storage.storage_bottle.entries[key]
+	return storage.storage_bottle.entries[key] or { none }
 }
 
 pub fn (mut storage Storage) set_item(key string, value string) ! {

@@ -47,6 +47,7 @@ pub:
 	premultiplied bool
 	// Display P3 instead of sRGB.
 	display_p3 bool
+	nearest    bool
 	// CanvasPattern's repetition: 0 repeat, 1 repeat-x, 2 repeat-y and
 	// 3 no-repeat.
 	repetition int
@@ -144,7 +145,7 @@ fn canvas_pattern_shader(pattern CanvasPattern, m Matrix) CanvasShader {
 		ty: t[5]
 	}
 	return new_image_shader(pattern.bitmap(), if repeat_x { TileMode.repeat } else { .decal },
-		if repeat_y { TileMode.repeat } else { .decal }, true, sk_concat(matrix_affine(m), local))
+		if repeat_y { TileMode.repeat } else { .decal }, !pattern.nearest, sk_concat(matrix_affine(m), local))
 }
 
 // new_image_shader is SkImageShader::Make() for bitmap with its tile modes
@@ -362,14 +363,15 @@ fn (s &ImageShader) shade_highp(px int, py int) [4]f32 {
 
 fn (s &ImageShader) sample_highp(x f32, y f32) [4]f32 {
 	mut c := [f32(0), 0, 0, 0]!
+	taps := [f32(-0.5), 0.5]!
 	if s.nearest {
 		c = s.highp_sample(x, y)
 	} else if s.fast_bilerp() {
 		// bilerp_clamp_large(): four clamped samples weighted by area.
 		fx := fract_f32(x + f32(0.5))
 		fy := fract_f32(y + f32(0.5))
-		for oy in [f32(-0.5), 0.5] {
-			for ox in [f32(-0.5), 0.5] {
+		for oy in taps {
+			for ox in taps {
 				sample := s.highp_pixel(s.highp_index(x + ox, y + oy))
 				wx := if ox > 0 { fx } else { f32(1) - fx }
 				wy := if oy > 0 { fy } else { f32(1) - fy }
@@ -384,8 +386,8 @@ fn (s &ImageShader) sample_highp(x f32, y f32) [4]f32 {
 		// bilinear_setup, then the four samples' accumulate.
 		fx := fract_f32(x + f32(0.5))
 		fy := fract_f32(y + f32(0.5))
-		for oy in [f32(-0.5), 0.5] {
-			for ox in [f32(-0.5), 0.5] {
+		for oy in taps {
+			for ox in taps {
 				wx := if ox > 0 { fx } else { f32(1) - fx }
 				wy := if oy > 0 { fy } else { f32(1) - fy }
 				sample := s.highp_sample(x + ox, y + oy)

@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // TypedArrayPrototype.cpp::subarray. An out-of-bounds source contributes zero
 // length; default view initialization still checks the original buffer.
 pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectPrototypes, constructor_getter TypedArrayIntrinsicConstructorGetter, prototype_getter TypedArrayIntrinsicPrototypeGetter) !Value {
@@ -35,6 +37,7 @@ pub fn typed_array_prototype_subarray(mut vm VM, prototypes PrimitiveObjectProto
 			Value.from_f64(f64(byte_offset)), length_value)!
 		return view
 	}
+	defer { platform.release_closure(voidptr(factory)) }
 	array := typed_array_species_create(mut vm, source, factory, call_arguments, constructor_getter)!
 	return Value.from_object(array.object)
 }

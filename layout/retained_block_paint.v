@@ -12,6 +12,10 @@ struct RetainedBlockPaintLines {
 struct RetainedBlockPaintBox {
 	box    BlockBox
 	origin css.CSSPixelPoint
+	// The box's own size and edges when it was projected. Its owner's layout
+	// can stay current while a percentage height inside it resolves against a
+	// new definite height (a stretched flex item whose line grew).
+	geometry OrdinaryPaintBoxGeometry
 }
 
 // The independent-context snapshot proves local geometry for every descendant,
@@ -132,8 +136,10 @@ fn fill_block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 				return
 			}
 			position := paint_cumulative_offset(node, state, used)
+			geometry := ordinary_paint_geometry(used)
 			if snapshot := owner.paint_boxes_[key] {
-				if rebase_retained_paint_box_into(snapshot, node, used, state, position, mut output) {
+				if snapshot.geometry == geometry
+					&& rebase_retained_paint_box_into(snapshot, node, used, state, position, mut output) {
 					return
 				}
 			}
@@ -145,7 +151,7 @@ fn fill_block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 			if retained_paint_box_can_share(&output) {
 				mut template := output
 				template.lines = []TextLine{}
-				owner.paint_boxes_[key] = &RetainedBlockPaintBox{ box: template, origin: position }
+				owner.paint_boxes_[key] = &RetainedBlockPaintBox{ box: template, origin: position, geometry: geometry }
 			}
 			return
 		}

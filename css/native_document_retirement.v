@@ -42,6 +42,9 @@ fn discard_native_style_scope_caches(dom_scope &dom.StyleScope) {
 	// Never mutate a cache object: constructed sheets may share it with another
 	// scope, and the UA sheets themselves are process-wide resources.
 	scope.rule_cache = none
+	scope.extendable_rule_cache_ = unsafe { nil }
+	scope.rule_cache_author_sheets_ = []&CSSStyleSheet{}
+	scope.rule_cache_duplicate_groups_ = map[string]&DuplicateSheetGroup{}
 	scope.author_rule_cache = none
 	scope.user_rule_cache = none
 	scope.user_agent_rule_cache = none

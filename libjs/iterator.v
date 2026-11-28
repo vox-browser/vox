@@ -2,6 +2,13 @@ module libjs
 
 // Runtime/Iterator.{h,cpp}: synchronous iterator records, stepping, closing,
 // and collection. Async iterators and Iterator helpers are separate slices.
+
+// Share immutable protocol keys across iterator steps and result objects.
+const iterator_next_key = PropertyName.from_str('next')
+const iterator_done_key = PropertyName.from_str('done')
+const iterator_value_key = PropertyName.from_str('value')
+const iterator_return_key = PropertyName.from_str('return')
+
 @[heap]
 pub struct IteratorRecord {
 pub:
@@ -33,8 +40,10 @@ pub:
 	value Value
 }
 
+type NativeIteratorStep = fn (mut vm VM) !IteratorStepValue
+
 pub fn get_iterator_direct(mut vm VM, object &Object) !&IteratorRecord {
-	next_method := object.get(mut vm, PropertyName.from_str('next'))!
+	next_method := object.get(mut vm, iterator_next_key)!
 	return &IteratorRecord{iterator: object, next_method: next_method}
 }
 
@@ -68,11 +77,11 @@ pub fn iterator_next(mut vm VM, mut record IteratorRecord, value ?Value) !&Objec
 }
 
 pub fn iterator_complete(mut vm VM, result &Object) !bool {
-	return result.get(mut vm, PropertyName.from_str('done'))!.to_boolean()
+	return result.get(mut vm, iterator_done_key)!.to_boolean()
 }
 
 pub fn iterator_value(mut vm VM, result &Object) !Value {
-	return result.get(mut vm, PropertyName.from_str('value'))
+	return result.get(mut vm, iterator_value_key)
 }
 
 pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
@@ -80,9 +89,25 @@ pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
 }
 
 fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !IteratorStep {
-	// Builtin marker fast paths are pending; this is the source's ordinary path.
+	if use_native_iterator_steps() && record.next_method.is_function() {
+		mut function := record.next_method.as_function()
+		if mut function is NativeFunction {
+			if function.iterator_step != unsafe { nil } {
+				step := function.step_iterator(mut vm, Value.from_object(record.iterator)) or {
+					record.done = true
+					return err
+				}
+				if step.done {
+					record.done = true
+					return IteratorStep{done: true}
+				}
+				return IteratorStep{result: IterationResult{done: Value.from_bool(false),
+					value: normal_completion(if with_value { step.value } else { js_undefined() })}}
+			}
+		}
+	}
 	result := iterator_next(mut vm, mut record, none)!
-	done := result.get(mut vm, PropertyName.from_str('done')) or {
+	done := result.get(mut vm, iterator_done_key) or {
 		record.done = true
 		return err
 	}
@@ -100,6 +125,37 @@ fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !It
 	return IteratorStep{result: IterationResult{done: done, value: value}}
 }
 
+fn use_native_iterator_steps() bool {
+	$if test {
+		if builtin_profile_enabled { return false }
+	}
+	return true
+}
+
+// Internal consumers keep the original native frame for getters and errors.
+fn (mut function NativeFunction) step_iterator(mut vm VM, receiver Value) !IteratorStepValue {
+	if use_native_frame_slots() { return function.step_iterator_in_native_frame(mut vm, receiver) }
+	mut stack := vm.interpreter_stack()
+	mark := stack.top()
+	defer { stack.deallocate(mark) }
+	function.push_call_frame(mut vm, mut stack, receiver, []Value{})!
+	defer { vm.pop_current_context() }
+	return function.iterator_step(mut vm)
+}
+
+// step_iterator() in the depth's native frame (native_call_frames.v).
+fn (mut function NativeFunction) step_iterator_in_native_frame(mut vm VM, receiver Value) !IteratorStepValue {
+	mut stack := vm.interpreter_stack()
+	mark := stack.top()
+	mut callee := stack.allocate_native_frame(0) or {
+		return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
+	}
+	defer { stack.release_native_frame(mut callee, mark) }
+	function.enter_call_frame(mut vm, mut callee, receiver, []Value{})!
+	defer { vm.pop_current_context() }
+	return function.iterator_step(mut vm)
+}
+
 pub fn iterator_step_value(mut vm VM, mut record IteratorRecord) !IteratorStepValue {
 	step := iterator_step_impl(mut vm, mut record, true)!
 	if step.done { return IteratorStepValue{done: true, value: js_undefined()} }
@@ -111,7 +167,7 @@ pub fn iterator_step_value(mut vm VM, mut record IteratorRecord) !IteratorStepVa
 }
 
 pub fn iterator_close(mut vm VM, record &IteratorRecord, completion Completion) Completion {
-	method := record.iterator.get_method(mut vm, PropertyName.from_str('return')) or {
+	method := record.iterator.get_method(mut vm, iterator_return_key) or {
 		if completion.is_error() { return completion }
 		return completion_from_error(err)
 	}
@@ -142,8 +198,8 @@ pub fn iterator_close_all(mut vm VM, records []&IteratorRecord, completion Compl
 pub fn create_iterator_result_object(realm &Realm, value Value, done bool, prototype ?&Object) &Object {
 	mut object := Object.create(realm, prototype)
 	attributes := attribute_writable | attribute_enumerable | attribute_configurable
-	object.define_direct_property(PropertyName.from_str('value'), value, attributes)
-	object.define_direct_property(PropertyName.from_str('done'), Value.from_bool(done), attributes)
+	object.define_direct_property(iterator_value_key, value, attributes)
+	object.define_direct_property(iterator_done_key, Value.from_bool(done), attributes)
 	return object
 }
 

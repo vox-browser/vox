@@ -56,10 +56,14 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		runtime.install_input_files_binding(fn [mut binding] (key string, state string, write bool, value voidptr) !voidptr {
 			return binding.input_files(key, state, write, value)
 		})!
-		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-			flush_compact_dom_mutations(document, callback_runtime)!
-		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !string {
-			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state)
+		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime, full bool) ! {
+			if full {
+				flush_compact_dom_mutations(document, callback_runtime)!
+			} else {
+				settle_compact_dom_mutation_reactions(document, callback_runtime)!
+			}
+		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !browserjs.HostFunctionReply {
+			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state, true)
 		})!
 	}
 	install_compact_mutation_observer_binding(mut binding, mut runtime)!
@@ -122,6 +126,8 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 	})!
 	if runtime.engine == .javascriptcore { install_compact_matches_query(binding, mut runtime)! }
 	if runtime.engine == .javascriptcore { install_compact_first_query(binding, mut runtime)! }
+	if runtime.engine == .javascriptcore { install_compact_attribute_value_query(binding, mut runtime)! }
+	if runtime.engine == .javascriptcore { install_compact_tree_version_query(binding, mut runtime)! }
 	runtime.install_html_element_constructor_binding(fn [mut binding] (element &dom.Element) !voidptr {
 		// Register the native owner before the existing wrapper provider resolves
 		// it, preserving the same identity used by selectors and DOM mutations.
@@ -239,6 +245,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if snapshot := request.snapshot {
 		mut messages := []string{}
 		result := replay_compact_dom_snapshot(binding.document, snapshot, binding.runtime, mut messages)
+		defer { result.workspace.finish() }
 		// Console output stays in the script snapshot for its normal consumer;
 		// only DOM replay failures can reject this selector operation.
 		mut log_count := request.log_count
@@ -249,7 +256,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		for key, element in result.elements {
 			binding.elements[key] = element
-			binding.keys[voidptr(element)] = key
+			if (binding.keys[voidptr(element)] or { '' }) != key {
+				binding.keys[voidptr(element)] = key.clone()
+			}
 		}
 	}
 	if compact_query_diagnostics { diag_replay_ns = time.sys_mono_now() - diag_replay_started }
@@ -377,7 +386,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	if action == 'childNodeMutation' { return binding.child_node_query(root, selector) }
 	if action == 'parentNodeMutation' { return binding.parent_node_query(root, selector) }
-	if action == 'dataset' { return compact_dataset_query(root, selector) }
+	if action == 'dataset' { return binding.dataset_query(root, selector) }
 	if action in ['shadowRoot', 'shadowHost', 'shadowValue', 'shadowElementById', 'getRootNode'] {
 		return binding.shadow_query(root, action, selector)
 	}
@@ -388,10 +397,15 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		return binding.node_tree_query(root, action, selector)
 	}
 	if action == 'getElementsByTagName' { return binding.tag_collection_query(root, selector) }
-	if action == 'lastChild' { return binding.node_relation_query(root, 'last') }
-	if action == 'firstChild' { return binding.node_relation_query(root, 'first') }
-	if action == 'nextSibling' { return binding.node_relation_query(root, 'next') }
-	if action == 'previousSibling' { return binding.node_relation_query(root, 'previous') }
+	if action in ['lastChild', 'firstChild', 'nextSibling', 'previousSibling'] {
+		compact_navigation_query_counts[0]++
+		return binding.node_relation_query(root, match action {
+			'lastChild' { 'last' }
+			'firstChild' { 'first' }
+			'nextSibling' { 'next' }
+			else { 'previous' }
+		})
+	}
 	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
 	if action == 'cachedParent' { return binding.cached_parent_query(root) }
 	if action == 'geometry' { return compact_element_geometry_query(root, selector) }

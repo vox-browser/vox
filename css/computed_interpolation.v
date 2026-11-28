@@ -1711,6 +1711,8 @@ mut:
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
 	shared_geometry_provenance_ &ComputedGeometryProvenance = unsafe { nil }
 	shared_geometry_cache_ &ComputedLayoutCache = unsafe { nil }
+	// Density conversion precedes resolved geometry. Zero is the default scale of 1.
+	layout_coordinate_scale_ f64
 	// Density conversion is memoized independently of resolved layout values.
 	device_layout_projection_ &DeviceLayoutStyleProjection = unsafe { nil }
 	// Serial number pairing this style with the snapshots it may rewrite in
@@ -5931,7 +5933,7 @@ __global pending_intrinsic_font_reuse_reported bool
 // cannot establish what fonts the older geometry used, even if it is current.
 pub fn (c &ComputedProperties) cached_font_inputs_are_unchanged_since(computer &FontComputer, generation u64) bool {
 	list := c.cached_computed_font_list_ or { return false }
-	if list.computed_cache_created_generation_ > generation
+	if list.cache_stamp_owner().computed_cache_created_generation_ > generation
 		|| !computer.cached_cascade_is_current(list) { return false }
 	if list.pending_faces.len != 0 {
 		if disable_pending_intrinsic_font_reuse { return false }
@@ -6116,7 +6118,7 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 		font := computed_font.font_for_metrics()
 		mut scale := 1.0
 		if subject := c.subject_element_ {
-			scale = subject.document().display_device_pixel_ratio() / c.layout_coordinate_scale()
+			scale = subject.document().rendering_device_pixel_ratio() / c.layout_coordinate_scale()
 		}
 		metrics := font.inline_metrics_at_scale(scale)
 		if metrics.floor_inline_leading && metrics.inline_leading_scale != 1 {
@@ -9752,7 +9754,14 @@ pub fn property_affects_hit_testing(property_id PropertyID) bool {
 	]
 }
 
+@[inline]
 pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) RequiredInvalidationAfterStyleChange {
+	invalidation := compute_property_invalidation_of_change(property_id, old_value, new_value)
+	if style_pass_diagnostics { note_style_pass_property(property_id, invalidation, old_value, new_value) }
+	return invalidation
+}
+
+fn compute_property_invalidation_of_change(property_id PropertyID, old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 
 	property_value_changed := style_value_option_changed(old_value, new_value)
@@ -10358,6 +10367,10 @@ pub fn (p &InvalidationPlan) is_empty() bool {
 }
 
 pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
+	p.merge_invalidation_plan(other)
+}
+
+fn (mut p InvalidationPlan) merge_invalidation_plan(other &InvalidationPlan, options InvalidationMergeOptions) {
 	if voidptr(&p) == voidptr(other) { return }
 	p.invalidate_self = p.invalidate_self || other.invalidate_self
 
@@ -10373,10 +10386,10 @@ pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
 	}
 
 	for rule in other.descendant_rules {
-		append_or_merge_descendant_invalidation_rule(mut p.descendant_rules, rule)
+		append_or_merge_descendant_invalidation_rule(mut p.descendant_rules, rule, options)
 	}
 	for rule in other.sibling_rules {
-		append_or_merge_sibling_invalidation_rule(mut p.sibling_rules, rule)
+		append_or_merge_sibling_invalidation_rule(mut p.sibling_rules, rule, options)
 	}
 }
 
@@ -10397,19 +10410,20 @@ pub fn (s &StyleInvalidationData) plan_for_property(property InvalidationPropert
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_selector(selector Selector) {
-	$if prealloc {
-		build_owned_selector_invalidation(mut s, selector, false)
-		return
-	}
-	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_self_invalidation())
+	s.build_selector_dependencies(selector, false, false)
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_scope_boundary_selector(selector Selector) {
+	s.build_selector_dependencies(selector, true, false)
+}
+
+fn (mut s StyleInvalidationData) build_selector_dependencies(selector Selector, boundary bool, unpublished bool) {
 	$if prealloc {
-		build_owned_selector_invalidation(mut s, selector, true)
+		build_owned_selector_invalidation(mut s, selector, boundary, unpublished: unpublished)
 		return
 	}
-	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_whole_subtree_invalidation())
+	root := if boundary { make_invalidate_whole_subtree_invalidation() } else { make_invalidate_self_invalidation() }
+	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, root)
 }
 
 fn should_register_invalidation_property(property InvalidationProperty) bool {
@@ -10496,6 +10510,10 @@ pub struct InvalidationSimpleSelectorGroup {
 pub mut:
 	simple_selectors []InvalidationSimpleSelector
 	combinator       SelectorCombinator
+}
+
+struct SelectorInvalidationProjection {
+	groups []InvalidationSimpleSelectorGroup
 }
 
 struct SelectorRighthand {
@@ -10631,6 +10649,33 @@ fn simple_selector_for_invalidation(simple_selector &SimpleSelector) Invalidatio
 }
 
 fn selector_groups_for_invalidation(selector Selector) []InvalidationSimpleSelectorGroup {
+	if selector.has_invalidation_projection() {
+		return selector.data_.invalidation_projection_.groups
+	}
+	return project_selector_invalidation_groups(selector)
+}
+
+fn (selector Selector) has_invalidation_projection() bool {
+	return selector.data_ != unsafe { nil } && selector.data_.invalidation_projection_ != unsafe { nil }
+}
+
+// Called before a worker publishes an immutable selector graph. The names and
+// child handles may borrow the graph, and both live in the same retained arena.
+fn prepare_selector_invalidation_projection(selector Selector) {
+	if selector.data_ == unsafe { nil } || selector.has_invalidation_projection() { return }
+	groups := project_selector_invalidation_groups(selector)
+	mut data := unsafe { &SelectorData(selector.data_) }
+	data.invalidation_projection_ = &SelectorInvalidationProjection{groups: groups}
+	for group in groups {
+		for simple in group.simple_selectors {
+			for child in simple.nested_selectors {
+				prepare_selector_invalidation_projection(child)
+			}
+		}
+	}
+}
+
+fn project_selector_invalidation_groups(selector Selector) []InvalidationSimpleSelectorGroup {
 	compound_selectors := selector.compound_selectors()
 	if compound_selectors.len == 0 {
 		return []InvalidationSimpleSelectorGroup{}
@@ -11067,6 +11112,10 @@ pub mut:
 	contains_part_pseudo_element bool
 	scope_rule                   ?&CSSRule
 	container_rule               ?&CSSRule
+	// The RuleCaches entry holding the rule: a named layer's cache
+	// (`in_layer_cache`, keyed by `cache_layer_name`) or the unlayered one.
+	in_layer_cache               bool
+	cache_layer_name             string
 }
 
 // The rule cache owns MatchingRule entries independently of the style scope
@@ -11151,6 +11200,13 @@ mut:
 	user_agent_only_shadow_cache_ &UserAgentOnlyShadowStyleCache = unsafe { nil }
 	adopted_user_agent_only_shadow_cache_ &UserAgentOnlyShadowStyleCache = unsafe { nil }
 	rule_cache_font_policy_ dom.FontRenderingPolicy
+	// rule_cache_extension.v: the author sheets the rule cache holds, and the
+	// cache that only appended sheets have invalidated since.
+	rule_cache_author_sheets_ []&CSSStyleSheet
+	rule_cache_author_sheet_indexes_ []uint
+	extendable_rule_cache_ &ExtendableRuleCache = unsafe { nil }
+	// duplicate_style_sheets.v: the indexed rules of identical sheet copies.
+	rule_cache_duplicate_groups_ map[string]&DuplicateSheetGroup
 }
 
 // A complete set of selector and cascade caches that can be shared by style
@@ -11242,6 +11298,10 @@ pub mut:
 	animation_layout_compositor_only_ bool
 	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
 	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
+	substituted_values_ &SubstitutedValueCache = unsafe { nil }
+	svg_presentation_hints_ &SvgPresentationHintCache = unsafe { nil }
+	environment_substitutions_ &EnvironmentSubstitutionCache = unsafe { nil }
+	cascade_reuse_ &CascadeReuseCache = unsafe { nil }
 	quirks_body_identity_ u64
 	quirks_body_used_color_ ?Color
 }
@@ -12149,6 +12209,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	if key := reuse_key {
 		reused_longhands = s.restore_computed_longhands(key, cascaded_properties, mut properties)
 		record_diagnostic_longhand_lookup(reused_longhands)
+	} else {
+		$if vox_css_diagnostics ? {
+			s.note_longhand_reuse_rejection(abstract_element, cascaded_properties,
+				inherited_computed, recascaded_font_size != none)
+		}
 	}
 	record_diagnostic_instruction_scope(14, key_scope_start)
 	if !reused_longhands {
@@ -14475,7 +14540,12 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 	// overlays still use the ordinary path to retain their separate sampled layer.
 	previous_data := abstract_element.custom_property_data()
 	has_overlay := if data := previous_data { data.is_animation_overlay() } else { false }
-	if !has_overlay && !has_cascaded_custom_property_declarations(abstract_element, matching_rule_set) {
+	has_declarations := has_cascaded_custom_property_declarations(abstract_element, matching_rule_set)
+	if has_declarations {
+		mut element := unsafe { &dom.Element(abstract_element.element()) }
+		element.set_style_declares_custom_properties()
+	}
+	if !has_overlay && !has_declarations {
 		mut inherited := ?&dom.CSSCustomPropertyData_(none)
 		if parent := abstract_element.element_to_inherit_style_from() {
 			inherited = inheritable_custom_property_data(parent)
@@ -14661,7 +14731,7 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	mut cascade := s.acquire_cascade_scratch()
 	defer { cascade.finish() }
 	mut cascaded_properties := cascade.properties
-	s.compute_cascaded_values_into(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
+	s.compute_cascaded_values_reusing(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context)
 	next_cascade_checkpoint, cascade_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_cascade_checkpoint
 	css_style_profile_cascade_ns += cascade_elapsed
@@ -14768,6 +14838,24 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 }
 
 fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	s.compute_cascaded_values_with_hints(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, properties_to_cascade, none)
+}
+
+// Element::apply_presentational_hints(): the hints for a non-pseudo element.
+fn (s &StyleComputer) cascade_presentational_hints(abstract_element dom.AbstractElement, properties_to_cascade ComputedInterpolationPropertyIDs) []StyleProperty {
+	mut hints := []StyleProperty{}
+	collect_element_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+	if abstract_element.element().is_html_element() {
+		collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+	} else if abstract_element.element().is_svg_element() {
+		collect_svg_presentational_hints_with(mut hints, abstract_element.element(), properties_to_cascade, s)
+	}
+	return hints
+}
+
+// compute_cascaded_values_into() with the presentational hints already
+// collected by the caller (cascade_reuse.v keys the cascade by them).
+fn (s &StyleComputer) compute_cascaded_values_with_hints(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs, precollected_hints ?[]StyleProperty) {
 	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_cascade')
 	defer { load_instruction_stage.finish() }
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
@@ -14790,12 +14878,10 @@ fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties Casca
 	// cascade so substitution and invalid-at-computed-value-time handling are
 	// shared with declarations.
 	if abstract_element.pseudo_element() == none {
-		mut hints := []StyleProperty{}
-		collect_element_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
-		if abstract_element.element().is_html_element() {
-			collect_html_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
-		} else if abstract_element.element().is_svg_element() {
-			collect_svg_presentational_hints(mut hints, abstract_element.element(), properties_to_cascade)
+		hints := if collected := precollected_hints {
+			collected
+		} else {
+			s.cascade_presentational_hints(abstract_element, properties_to_cascade)
 		}
 		apply_property_list_to_cascade(mut cascaded_properties, abstract_element, hints, .author_presentational_hint, .no, none, unsafe { nil }, none, logical_alias_mapping_context, properties_to_cascade)
 	}
@@ -15803,6 +15889,12 @@ pub fn html_table_element_apply_presentational_hints(element &dom.HTMLTableEleme
 }
 
 fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	collect_svg_presentational_hints_with(mut properties, element, properties_to_cascade, unsafe { nil })
+}
+
+// With a style computer inside a style batch, equal attributes share parsed
+// values (svg_presentation_hint_reuse.v).
+fn collect_svg_presentational_hints_with(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs, computer &StyleComputer) {
 	tag_name := element.local_name()
 	sizing_only := ['foreignObject', 'image', 'rect', 'svg', 'symbol', 'use']!
 	attributes := element.attribute_list() or { return }
@@ -15858,12 +15950,12 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			continue
 		}
 		attribute_value := attribute.value()
-		value := parse_svg_presentation_attribute_value(element.document(), property_id, attribute_value) or {
+		value := svg_presentation_hint_value(computer, element, property_id, attribute_value) or {
 			continue
 		}
 		properties << StyleProperty{
 			property_id: property_id
-			value: dom_style_value_from_value_logic(value)
+			value: value
 		}
 	}
 }

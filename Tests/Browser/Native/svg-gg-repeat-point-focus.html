@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GG SVG repeating point focus</title>
+<style>
+  body { margin: 0; background: white; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<header></header>
+<svg width="224" height="104">
+  <defs>
+    <radialGradient id="repeat-point" gradientUnits="userSpaceOnUse" cx="100.5" cy="40.5"
+                    fx="76.5" fy="40.5" r="24" spreadMethod="repeat">
+      <stop offset="0" stop-color="red"/>
+      <stop offset=".25" stop-color="red"/>
+      <stop id="average-stop" offset=".25" stop-color="green" stop-opacity=".5"/>
+      <stop offset="1" stop-color="blue" stop-opacity=".5"/>
+    </radialGradient>
+  </defs>
+  <path d="M8 8H204V96H8Z" fill="url(#repeat-point)" fill-opacity=".5"/>
+</svg>

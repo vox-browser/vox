@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG foreground patterns</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+image { image-rendering: pixelated; }
+</style>
+<header></header>
+<svg width="700" height="140" viewBox="0 0 700 140">
+  <defs>
+    <pattern id="vector" patternUnits="userSpaceOnUse" x="8" y="8" width="24" height="20"
+             patternTransform="translate(5 3)">
+      <g id="tile-opacity" opacity=".75">
+        <rect width="8" height="20" fill="red"/>
+        <rect x="8" width="8" height="20" fill="lime"/>
+      </g>
+    </pattern>
+    <pattern id="bitmap" patternUnits="userSpaceOnUse" x="170" y="10" width="32" height="16">
+      <image width="32" height="16" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAG0lEQVR4nGP4z8DwHwgbGIDgPxCAaRATKtAAAN7QDfSnnA7mAAAAAElFTkSuQmCC"/>
+    </pattern>
+    <clipPath id="clip">
+      <circle cx="234" cy="42" r="35"/>
+    </clipPath>
+  </defs>
+  <path d="M18 36H155" fill="none" stroke="url(#vector)" stroke-width="10"
+        stroke-opacity=".5" stroke-linecap="square"/>
+  <path d="M14 68H145V94H14Z" fill="url(#bitmap)" fill-opacity=".5"/>
+  <path d="M178 22H290V58H178Z" fill="url(#bitmap)" fill-opacity=".5" clip-path="url(#clip)"/>
+  <g opacity=".5">
+    <path d="M318 28H430V74H318Z" fill="url(#vector)" stroke="url(#bitmap)" stroke-width="8"
+          paint-order="stroke fill"/>
+  </g>
+  <path d="M14 54H110" transform="translate(450 0) scale(2)" fill="none" stroke="url(#vector)"
+        stroke-width="6" stroke-opacity=".5" vector-effect="non-scaling-stroke" stroke-dasharray="27 18"/>
+</svg>
+<script>
+let frame = 0;
+function editPattern() {
+    if (++frame === 12)
+        document.getElementById('tile-opacity').setAttribute('opacity', '.5');
+    if (frame === 24)
+        document.body.setAttribute('data-svg-patterns-ready', '');
+    else
+        requestAnimationFrame(editPattern);
+}
+requestAnimationFrame(editPattern);
+</script>

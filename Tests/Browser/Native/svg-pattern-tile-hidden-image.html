@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Transparent SVG layers do not block tile reuse</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="136" height="64">
+  <defs>
+    <pattern id="hidden" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M0 0H32V32H0Z" fill="lime"/>
+      <g opacity=".003">
+        <g opacity=".5">
+          <g opacity=".5">
+            <g opacity=".5">
+              <g opacity=".5">
+                <g style="filter: blur(1px)">
+                  <image href="missing-tile.png" width="16" height="16"/>
+                  <path d="M0 0H16V16H0Z" fill="red"/>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+        <image href="missing-tile.png" x="16" width="16" height="16"/>
+      </g>
+    </pattern>
+    <pattern id="visible" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M0 0H24V24H0Z" fill="blue"/>
+      <image href="tile.png" width="8" height="8" opacity=".004"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H56V56H0Z" fill="url(#hidden)" stroke="url(#hidden)" stroke-width="2"/>
+  <path d="M72 0H128V56H72Z" fill="url(#visible)" stroke="url(#visible)" stroke-width="2"/>
+</svg>

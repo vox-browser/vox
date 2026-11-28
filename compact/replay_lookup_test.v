@@ -3,6 +3,8 @@ module main
 import browserjs
 import dom
 import html
+import platform
+import x.json2
 
 @[heap]
 struct CompactReplayLookupFixture {
@@ -23,13 +25,59 @@ fn install_counted_compact_replay_provider(mut runtime browserjs.Runtime,
 	})
 }
 
+fn test_compact_replay_element_tables_retire_after_the_batch() {
+	$if prealloc {
+		mut document := html.parse_document('<!doctype html><div id="target"></div>')
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+			owner.finish()
+			document.finalize()
+			document.release_native_storage()
+		}
+		target := document.get_element_by_id('target') or { panic('missing target') }
+		mut fixture := &CompactReplayLookupFixture{}
+		mut operations := []json2.Any{}
+		for index in 0 .. 512 {
+			key := 'target-${index}'
+			fixture.elements[key] = target
+			operations << json2.Any({'target': json2.Any(key)})
+		}
+		install_counted_compact_replay_provider(mut runtime, mut fixture)
+		state := {'operations': json2.Any(operations)}
+		storage := document.native_storage()
+		before := storage.arena.usage().used
+		elements, mut replay_elements, workspace := compact_replay_element_tables(document, state, runtime)
+		growth := storage.arena.usage().used - before
+		assert growth == 0, 'Replay lookup retained ${growth} document bytes'
+		assert elements.len == 512 && replay_elements.len == 512
+		assert voidptr(elements['target-511'] or { panic('missing resolved element') }) == voidptr(target)
+		replay_elements['created'] = target
+		assert 'created' !in elements
+		workspace.finish()
+
+		churn := platform.begin_thread_scratch('compact replay lookup test overwrite')
+		_ = []u8{len: 128 * 1024, init: u8(0xa5)}
+		churn.finish()
+		assert fixture.lookup_calls == 512
+		assert voidptr(fixture.elements['target-511'] or { panic('missing provider element') }) == voidptr(target)
+	}
+}
+
 fn test_compact_query_flush_and_finalization_use_keyed_provider_lookups() {
 	$if !darwin {
 		return
 	}
-	document := html.parse_document('<!doctype html><div id="target">before</div>')
+	mut document := html.parse_document('<!doctype html><div id="target">before</div>')
+	document.enable_native_storage()
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close() }
+	defer {
+		runtime.close()
+		document.finalize()
+		document.release_native_storage()
+	}
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [], runtime, mut messages)
 	mut fixture := &CompactReplayLookupFixture{}
@@ -42,7 +90,7 @@ fn test_compact_query_flush_and_finalization_use_keyed_provider_lookups() {
 	assert fixture.snapshot_calls == 0
 	target := document.get_element_by_id('target') or { panic('missing target') }
 	assert target.get_attribute_value('class') == 'changed'
-	assert target.get_attribute_value('style') == 'color: red'
+	assert target.get_attribute_value('style').trim_right(';') == 'color: red'
 	assert target.as_node().text_content() or { '' } == 'after'
 }
 

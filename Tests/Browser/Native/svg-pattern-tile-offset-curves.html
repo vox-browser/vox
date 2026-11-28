@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG pattern offset with curve geometry bounds</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="400" height="100" viewBox="0 0 400 100">
+  <defs>
+    <filter id="region" primitiveUnits="objectBoundingBox">
+      <feOffset dx=".25" dy=".1" x=".6" y=".6" width=".4" height=".2"/>
+    </filter>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <path id="source" d="M4 18 Q14 -2 24 18 V28 H4Z" fill="red" filter="url(#region)"/>
+      <path d="M0 0h40v4H0Z" fill="lime"/>
+    </pattern>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="100">
+      <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+    </mask>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+  <path d="M0 50H120" fill="none" stroke="url(#tile)" stroke-width="100"
+        transform="translate(128)"/>
+  <g transform="translate(256)">
+    <path d="M0 0h120v100H0Z" fill="black" mask="url(#alpha)"/>
+  </g>
+</svg>
+<script>
+let frame = 0;
+function editCurve() {
+    if (++frame === 12)
+        document.getElementById('source').setAttribute('d', 'M0 28 C10 4 30 4 40 28 V50 H0Z');
+    if (frame === 24)
+        document.body.setAttribute('data-offset-ready', '');
+    else
+        requestAnimationFrame(editCurve);
+}
+requestAnimationFrame(editCurve);
+</script>

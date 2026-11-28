@@ -151,6 +151,325 @@ pub:
 	// The transparent display-list trigger carries the same rectangle, matching
 	// StackingContext::paint() and SVGSVGPaintable::paint_svg_box().
 	bounds ?Rect
+	pattern_offset ?&SVGPatternOffset
+}
+
+pub struct SVGPatternOffset {
+pub:
+	delta        Point
+	region       Rect
+	source_alpha bool
+}
+
+pub fn (offset SVGPatternOffset) transformed(transform Affine) ?SVGPatternOffset {
+	if offset.region.is_empty() { return SVGPatternOffset{} }
+	if !((transform.b == 0 && transform.c == 0) || (transform.a == 0 && transform.d == 0)) {
+		return none
+	}
+	region := transform.map_rect(offset.region)
+	delta := Point{
+		x: transform.a * offset.delta.x + transform.c * offset.delta.y
+		y: transform.b * offset.delta.x + transform.d * offset.delta.y
+	}
+	if region.is_empty() || ![region.x, region.y, region.right(), region.bottom(), delta.x, delta.y]!.all(math.is_finite(it)) {
+		return none
+	}
+	return SVGPatternOffset{delta, region, offset.source_alpha}
+}
+
+pub fn (offset SVGPatternOffset) mix_cache_key(seed u64) u64 {
+	mut hash := seed
+	for value in [offset.delta.x, offset.delta.y, offset.region.x, offset.region.y,
+		offset.region.width, offset.region.height] {
+		mut bits := math.f64_bits(value)
+		// Hash each byte so the sign can affect lower bits. The retained SVG
+		// graph also hashes its unprojected offset.
+		for _ in 0 .. 8 {
+			hash = (hash ^ (bits & 0xff)) * u64(1099511628211)
+			bits >>= 8
+		}
+	}
+	return if offset.source_alpha { (hash ^ u64(1)) * u64(1099511628211) } else { hash }
+}
+
+pub fn (filter GfxFilter) source_pattern_offset() ?&SVGPatternOffset {
+	if filter.operations.len != 0 { return none }
+	return filter.pattern_offset
+}
+
+// An opacity-only CSS filter can restore its isolated source as an opacity
+// layer. SVG graphs can change coverage even when they contain opacity nodes.
+pub fn (filter GfxFilter) opacity_filter_amount() ?f64 {
+	if filter.operations.len == 0 || filter.nodes.len != 0
+		|| filter.root_id != none || filter.bounds != none {
+		return none
+	}
+	mut opacity := 1.0
+	for operation in filter.operations {
+		if operation.kind != 'color' || operation.color_operation != .opacity
+			|| !(operation.first >= 0 && operation.first <= 1) {
+			return none
+		}
+		opacity *= operation.first
+	}
+	return opacity
+}
+
+pub struct SVGSourceColorMatrix {
+pub:
+	stages          [][20]f32
+	linear_rgb      bool
+	preserves_alpha bool
+}
+
+pub struct SVGSourceColorTable {
+pub:
+	stages     [][4][]u8
+	linear_rgb bool
+}
+
+pub struct SVGSourceColorStage {
+pub:
+	matrix     [20]f32
+	channels   [4][]u8
+	is_table   bool
+	linear_rgb bool
+}
+
+pub struct SVGSourceColorChain {
+pub:
+	stages          []SVGSourceColorStage
+	preserves_alpha bool
+	fills_clear     bool
+}
+
+pub type SVGSourceColorFilter = SVGSourceColorMatrix | SVGSourceColorTable | SVGSourceColorChain
+
+pub fn (filter SVGSourceColorFilter) fills_clear_pixels() bool {
+	return match filter {
+		// A positive bias can introduce coverage that a later stage reads.
+		// Reserve the crop rows whenever any stage can start that chain.
+		SVGSourceColorMatrix { filter.stages.any(it[19] > 0) }
+		SVGSourceColorTable { filter.map_alpha(0) > 0 }
+		SVGSourceColorChain { filter.fills_clear }
+	}
+}
+
+pub fn (filter SVGSourceColorFilter) preserves_alpha() bool {
+	return match filter {
+		SVGSourceColorMatrix { filter.preserves_alpha }
+		SVGSourceColorChain { filter.preserves_alpha }
+		SVGSourceColorTable {
+			if filter.stages.len == 1 {
+				return source_color_channel_is_identity(filter.stages[0][3])
+			}
+			for index in 0 .. 256 {
+				if filter.map_alpha(u8(index)) != u8(index) { return false }
+			}
+			true
+		}
+	}
+}
+
+fn source_color_channel_is_identity(values []u8) bool {
+	for index, value in values {
+		if index != int(value) { return false }
+	}
+	return true
+}
+
+fn (table &SVGSourceColorTable) map_alpha(input u8) u8 {
+	mut value := input
+	for channels in table.stages {
+		if channels[3].len > 0 {
+			value = channels[3][value]
+		}
+	}
+	return value
+}
+
+const svg_source_color_max_stages = 4
+
+struct SVGSourceColorSpan {
+mut:
+	indices    [svg_source_color_max_stages]int
+	linear_rgb [svg_source_color_max_stages]bool
+	count      int
+	mixed      bool
+}
+
+// The hot path only walks the descriptors of a short, unbranched chain.
+pub fn (filter GfxFilter) supports_source_color_filter() bool {
+	return filter.source_color_span() != none
+}
+
+fn (filter GfxFilter) source_color_span() ?SVGSourceColorSpan {
+	if filter.operations.len != 0 || filter.nodes.len == 0
+		|| filter.nodes.len > svg_source_color_max_stages * 2 { return none }
+	root := filter.root_id?
+	if root != filter.nodes[filter.nodes.len - 1].id { return none }
+	mut span := SVGSourceColorSpan{}
+	mut expected_input := -1
+	mut linear_rgb := false
+	mut previous_conversion := false
+	for index in 0 .. filter.nodes.len {
+		node := &filter.nodes[index]
+		if node.input_ids.len != 1 || node.input_ids[0] != expected_input
+			|| (filter.nodes.len > 1 && node.id != index) {
+			return none
+		}
+		expected_input = node.id
+		if node.kind == 'color-space-conversion' {
+			source := if linear_rgb { 'linear-rgb' } else { 'srgb' }
+			destination := if linear_rgb { 'srgb' } else { 'linear-rgb' }
+			if previous_conversion || node.string_parameters['source'] != source
+				|| node.string_parameters['destination'] != destination { return none }
+			linear_rgb = !linear_rgb
+			previous_conversion = true
+			continue
+		}
+		if span.count == svg_source_color_max_stages { return none }
+		match node.kind {
+			'color-matrix' {
+				if node.matrix.len != 20
+					|| !node.matrix.all(math.is_finite(f64(f32(it)))) { return none }
+			}
+			'saturate', 'hue-rotate' {
+				if !math.is_finite(f64(node.source_color_adjustment())) { return none }
+			}
+			'color-table' {
+				if node.color_tables.len > 4
+					|| !node.color_tables.all(it.values.len == 256 && it.channel in ['red', 'green', 'blue', 'alpha']) {
+					return none
+				}
+			}
+			else { return none }
+		}
+		if span.count > 0 {
+			first := &filter.nodes[span.indices[0]]
+			span.mixed = span.mixed || linear_rgb != span.linear_rgb[0]
+				|| ((node.kind == 'color-table') != (first.kind == 'color-table'))
+		}
+		span.indices[span.count] = index
+		span.linear_rgb[span.count] = linear_rgb
+		span.count++
+		previous_conversion = false
+	}
+	// The graph builder seals the output in the canvas color space.
+	if span.count == 0 || linear_rgb { return none }
+	return span
+}
+
+pub fn (filter GfxFilter) source_color_filter() ?SVGSourceColorFilter {
+	span := filter.source_color_span()?
+	if span.mixed {
+		return filter.mixed_source_color_filter(span)
+	}
+	if filter.nodes[span.indices[0]].kind == 'color-table' {
+		mut stages := [][4][]u8{cap: span.count}
+		for stage in 0 .. span.count {
+			stages << filter.nodes[span.indices[stage]].source_color_channels()
+		}
+		return SVGSourceColorTable{stages, span.linear_rgb[0]}
+	}
+	mut stages := [][20]f32{cap: span.count}
+	mut preserves_alpha := true
+	for stage in 0 .. span.count {
+		node := &filter.nodes[span.indices[stage]]
+		stages << node.source_color_matrix_values()
+		preserves_alpha = preserves_alpha && node.source_color_matrix_preserves_alpha()
+	}
+	return SVGSourceColorMatrix{
+		stages: stages
+		linear_rgb: span.linear_rgb[0]
+		preserves_alpha: preserves_alpha
+	}
+}
+
+fn (node &GfxFilterNode) source_color_channels() [4][]u8 {
+	mut channels := [4][]u8{}
+	for table in node.color_tables {
+		channel := match table.channel {
+			'red' { 0 }
+			'green' { 1 }
+			'blue' { 2 }
+			else { 3 }
+		}
+		channels[channel] = table.values
+	}
+	return channels
+}
+
+fn (node &GfxFilterNode) source_color_matrix_values() [20]f32 {
+	if node.kind == 'saturate' {
+		return svg_source_adjustment_matrix(f64(node.source_color_adjustment()), 0)
+	}
+	if node.kind == 'hue-rotate' {
+		radians := math.fmod(f64(node.source_color_adjustment()), 360) * (math.pi / 180)
+		return svg_source_adjustment_matrix(math.cos(radians), math.sin(radians))
+	}
+	mut matrix := [20]f32{}
+	for i, value in node.matrix {
+		matrix[i] = f32(value)
+	}
+	return matrix
+}
+
+fn (node &GfxFilterNode) source_color_adjustment() f32 {
+	return if node.kind == 'saturate' {
+		f32(node.parameters['amount'] or { 1.0 })
+	} else {
+		f32(node.parameters['angle_degrees'] or { 0.0 })
+	}
+}
+
+// Saturation and hue rotation share the cosine term of the SVG color matrix.
+fn svg_source_adjustment_matrix(c f64, s f64) [20]f32 {
+	return [
+		f32(0.213 + 0.787 * c - 0.213 * s), f32(0.715 - 0.715 * c - 0.715 * s),
+		f32(0.072 - 0.072 * c + 0.928 * s), 0, 0,
+		f32(0.213 - 0.213 * c + 0.143 * s), f32(0.715 + 0.285 * c + 0.140 * s),
+		f32(0.072 - 0.072 * c - 0.283 * s), 0, 0,
+		f32(0.213 - 0.213 * c - 0.787 * s), f32(0.715 - 0.715 * c + 0.715 * s),
+		f32(0.072 + 0.928 * c + 0.072 * s), 0, 0, 0, 0, 0, 1, 0,
+	]!
+}
+
+fn (node &GfxFilterNode) source_color_matrix_preserves_alpha() bool {
+	if node.kind != 'color-matrix' { return true }
+	values := node.matrix
+	return values[15] == 0 && values[16] == 0 && values[17] == 0 && values[18] == 1
+		&& values[19] == 0
+}
+
+fn (filter GfxFilter) mixed_source_color_filter(span SVGSourceColorSpan) SVGSourceColorChain {
+	mut stages := []SVGSourceColorStage{cap: span.count}
+	mut preserves_alpha := true
+	mut fills_clear := false
+	for stage in 0 .. span.count {
+		node := &filter.nodes[span.indices[stage]]
+		linear_rgb := span.linear_rgb[stage]
+		if node.kind == 'color-table' {
+			mut channels := node.source_color_channels()
+			// An identity transfer leaves the preceding matrix's precision intact.
+			for k, values in channels {
+				if source_color_channel_is_identity(values) {
+					channels[k] = []u8{}
+				}
+			}
+			if channels[3].len != 0 {
+				fills_clear = fills_clear || channels[3][0] != 0
+				preserves_alpha = false
+			}
+			stages << SVGSourceColorStage{channels: channels, is_table: true, linear_rgb: linear_rgb}
+		} else {
+			matrix := node.source_color_matrix_values()
+			fills_clear = fills_clear || matrix[19] > 0
+			preserves_alpha = preserves_alpha && node.source_color_matrix_preserves_alpha()
+			stages << SVGSourceColorStage{matrix: matrix, linear_rgb: linear_rgb}
+		}
+	}
+	return SVGSourceColorChain{stages, preserves_alpha, fills_clear}
 }
 
 // A same-document SVG graph and its target bounds have one retained lifetime.
@@ -275,6 +594,7 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 	mut nodes := []GfxFilterNode{}
 	mut root_id := ?int(none)
 	mut bounds := ?Rect(none)
+	mut pattern_offset := ?&SVGPatternOffset(none)
 	for operation in filter.operations {
 		match operation {
 			BlurFilter {
@@ -317,6 +637,7 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 			nodes = svg.nodes.clone()
 			root_id = svg.root_id
 			bounds = snapshot.bounds
+			pattern_offset = svg.pattern_offset
 		}
 	}
 	if operations.len == 0 && root_id == none {
@@ -327,6 +648,7 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 		nodes: nodes
 		root_id: root_id
 		bounds: bounds
+		pattern_offset: pattern_offset
 	}
 }
 

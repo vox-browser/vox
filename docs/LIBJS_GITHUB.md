@@ -129,6 +129,183 @@ That attempt supplies no whole-corpus pass. The isolated `dp` resource parses
 successfully in optimized GC-disabled mode. GC-disabled unit tests are listed
 separately below; neither result establishes a whole-page memory bound.
 
+## Subsequent runtime work
+
+Ten runtime slices follow that checkpoint (including the Performance binding
+above). The source-pinned checkpoint passes 271/271 package files with default
+GC and 271/271 with GC disabled, plus 100/100 exact upstream AST comparisons.
+All 693 recorded source inputs and the compiler hash remain stable across these
+checks. The compatibility compiler attempt rejects `-memory-limit` before
+execution and receives no test credit. Production visual acceptance remains open.
+
+| Commit | Implemented behavior |
+| --- | --- |
+| `d3a56b696` | Object declaration bindings: aliases, nested patterns, defaults and enumerable rest copies, including symbol keys, getter ordering, TDZ and module exports. Array, parameter, assignment and catch patterns remain separate work. |
+| `dda9c7ea3` | `Object` construction and 21 static methods for definitions/descriptors, own-key enumeration, assignment, prototypes and integrity levels. `fromEntries` and `groupBy` remain absent. |
+| `5ed3e8155`, `32f590d3d` | Object-literal prototype setters, computed-key conversion before value evaluation, and inferred string/symbol function names. Accessors and spread remain absent. The first commit also captured concurrent native-tier work in the shared index; that experiment supplies no GitHub compatibility credit here. |
+| `8b9f5ffaa` | Functions reuse their executable's decoded source buffer and copy only the function's source span. |
+| `e50f606bb` | Strict UTF-16 `JSON.parse`, including lone surrogates, duplicate keys, ordinary `__proto__` data properties, revivers and exact primitive source context. Parsing/revivers share the caller's instruction budget and retain finite native-stack/depth guards. `stringify`, raw JSON objects and JSON modules remain absent. |
+| `0d6c5a339` | Native Error constructors/prototypes, VM error ancestry, message/cause conversion, branded `Error.isError`, string conversion and cached stack accessors. AggregateError remains absent. |
+| `2c4c8ba5e` | Ordinary expressions skip the tagged-template helper's unnecessary heap copy; five focused upstream AST cases remain exact. |
+| `c4584a35b` | Expression values no longer force every parser temporary onto the heap; retained AST edges still allocate. Delayed closures and expression owners pass GC-disabled and AddressSanitizer stack-use-after-return checks. |
+| `ab28d5a7d` | Strict reserved-word checks compare ASCII grammar terminals directly, avoiding repeated UTF-16 conversions for ordinary identifiers. Strict/sloppy and escaped-name checks pass in both GC modes. |
+
+For the function-source fixture (1,000 closures from a script with a 512 KiB
+comment), the two GC-disabled executions both exit zero and preserve exact
+UTF-16 function text. Sampled peak process-tree RSS is 3,216,818,176 bytes before
+source reuse and 24,117,248 afterward. These are single functional diagnostic
+runs, not a site performance or whole-page memory result. The later complete
+preallocated module probe still exceeds the 3 GiB guard.
+
+The local module probe now gets beyond React's `{__proto__: null}` initialization
+and, after the later loop slice, reaches missing Performance/Date globals. It
+loads 50 records and links all six original entries; all six still fail execution.
+The standalone VM intentionally has no browser Performance/DOM host.
+No source bytes or original imports were rewritten.
+
+## Date runtime follow-up — 2026-11-15
+
+`ad6b2991e` installs Date's wall clock, numeric/copy/component constructors,
+TimeClip, Gregorian calendar arithmetic, UTC and local getters/setters, ISO
+parsing, native string round trips, generic primitive conversion and `toJSON`.
+Local conversions select the earlier instant during an overlap and the prior
+offset during a skipped hour. Locale/Intl formatting, Temporal conversion and
+other implementation-defined legacy parsing remain absent.
+
+The seven Date cases and realm/Object-prototype neighbors pass in both GC
+modes with `TZ=America/New_York`; a separate UTC run passes all seven Date cases.
+A deterministic 500-case diagnostic compares UTC construction and UTC/local
+setters against a pinned Node executable with the same New York timezone; all
+cases pass. It is functional differential evidence, not site performance credit.
+Initial fixture/compile failures and the discovered historical-offset bug are
+retained. The unchanged 50-record GitHub module probe now passes the Date access
+and stops at missing `Set`; other entries still require browser Performance.
+No GitHub hydration or pixel equality follows from these runtime checks.
+
+## Iterator and loop follow-up — 2026-11-15
+
+`334af98d4` installs the existing Array/String iterator implementations in each
+realm, including Array keys/values/entries, the values/@@iterator alias, shared
+iterator ancestry, Unicode string iteration and primitive receiver preservation.
+Four selected files pass with default GC and GC disabled. Iterator helpers,
+the Iterator constructor and async iteration remain separate work.
+
+`b61911374` executes synchronous for-of with lexical iteration environments,
+iterator stepping, and protected cleanup paths. Break/return close once; continue
+and normal exhaustion do not. Throws retain their original reason, next/done/
+value failures respect the iterator's done state, and close errors bypass catches
+inside the loop body. Eight new cases pass in both GC modes; for-in, catch and
+script-evaluation neighbors pass too. Assignment/parameter/catch destructuring,
+async iteration and finally remain incomplete. The new loop code is not present
+in the native observation below.
+
+The shared Object file changed during that commit and included two unfinished
+collection fields. A subsequent commit removes only those incidental fields
+from the committed snapshot while preserving the concurrent worktree edits.
+No shared history was rewritten. The initial array-binding selection failed to
+compile against those in-progress collection types/realm initialization; it
+receives no execution credit. After concurrent `d925de78e` completes Set, the
+array-binding selections pass.
+
+`5bf37acb9` executes array binding declarations through the same iterator records:
+elisions skip value getters; exhaustion supplies undefined without repeating
+next; defaults, named functions, nested patterns and rest preserve source order.
+Normal and exceptional completion close only unfinished iterators. Five new
+cases and object-binding/for-of/script neighbors pass with default GC; the same
+selection plus Set checks passes with GC disabled. The browser diagnostic below
+predates these changes; new native verification is pending.
+
+A new canonical C-O0/Boehm diagnostic includes Date and for-in, but predates
+that iterator registration. Its executable SHA-256 is
+`c8257c6b735946c143ec9a1fccb92d6d760665dcf7f349a1391742b2c6985783`.
+Both fresh headless backends pass. The full 60-second LibJS observation exceeds
+the 3 GiB guard after 43.98 seconds (sampled aggregate peak 3,227,926,528 bytes;
+controller 137, guard 125, browser terminal status unknown; no audit/PNG).
+A separate early 20-second observation with a 10-second stack sample exits zero
+(browser/controller/guard) after 39.86 seconds, captures 33 rows, zero commit links
+and zero latest sections, and remains interactive. Its input pins are unchanged;
+sampled aggregate peak is 3,175,366,656 bytes. This shorter diagnosis does not
+replace the failed full observation or establish hydration/memory acceptance.
+The sole recorded error is the high-contrast module's unsupported for-of loop.
+The stack sample observes module parsing and scope allocation/GC; it supplies
+no allocation-size or performance credit.
+
+## Native diagnostics after graph integration
+
+`tools/libjs_browser_diagnostic.py` observes a fresh, active native window against
+the unchanged original-origin replay. It pins the executable, runtime assets,
+shared native libraries and archive manifest, registers the browser with the
+memory guard, records readiness/content/errors and schedules normal capture and
+exit. Its PNG includes the whole window: this is not a document pixel gate.
+
+An unoptimized C diagnostic with sparse fonts and Boehm completed a matched
+40-second observation for both backends. JSC PID 38615 reached `complete`, with
+33 rows, 56 commit links and one latest-commit section. Every retained row,
+commit, latest section and README text exactly matches the immutable Brave audit.
+LibJS PID 41640 captured 33 rows but no commit links/latest section, remained
+`interactive`, and reported `Cannot convert object to string` while logging an
+initialization error. At that build, JSON parsing and Error prototypes were still
+missing; later focused fixes above cannot be validated by this older executable.
+Both observations used a visible, fully active 1024×768 document at 1×; browser,
+controller and guard exits are zero and input pins remain unchanged. Sampled
+aggregate peaks are 1,588,903,936 bytes (JSC) and 3,202,170,880 (LibJS).
+
+Earlier unoptimized no-GC attempts exceeded the 3 GiB guard with both backends.
+Sparse fonts alone did not resolve that. With the production preallocator, a
+15-second JSC capture completed before hydration; the longer JSC observation and
+LibJS observations exceeded the guard. Source reuse alone also failed the native
+LibJS guard (sampled peak 3,484,467,200 bytes). Failed attempts retain their receipts;
+when the guard killed the controller before finalization, the browser's terminal
+exit remains unknown. No capture, pixel pass or memory bound is inferred.
+
+Allocation diagnosis confirms substantial parser allocation, including repeated
+expression copies and strict-identifier conversions. The staged compiler lacks
+the optional preallocation sampler hook, so its first two probe attempts provide
+no allocation-site evidence. A separate C diagnostic explicitly instruments the
+generated allocator entry outside `Build/`, then terminates after 0.2 seconds:
+its sampler is active and records 123.2 MB, including tagged-template copies.
+That partial, instrumented run exits 143 deliberately and is not load acceptance.
+
+Managed production requests remain coalesced. Earlier HTTP/Brotli and inline
+iterator compile failures are retained; concurrent build fixes allowed receipt
+`20261115-004720-a7e0da7f` to complete, executable SHA-256
+`05e6ace1a48deb21b40a1b731885229088f8b5abf6940df2ebbd205dcc044e33`.
+Its source manifest contains optional chaining but predates for-in. A fresh
+LibJS launch against the same archive exceeds the 3 GiB guard before auditing
+(sampled aggregate peak 4,295,917,568 bytes; controller 137, guard 125; browser
+terminal status unknown). Post-stop input pins are unchanged. No capture or
+rendering result is inferred. No engine fallback, memory bound, pixel reference
+or tolerance was weakened.
+
+A later unoptimized Boehm diagnostic, SHA-256
+`8786d018a39e40ff6f8b8bf8b75c6c4ddb0f42d6732906a939aaf226cb6d5854`,
+includes all ten runtime slices but predates optional chaining/for-in. Fresh
+headless checks pass for both backends. Matched 60-second native observations
+exit zero (browser/controller/guard), retain all pins and capture PNGs. JSC
+PID 63871 reaches complete with 33 rows, 56 commit links and one latest section;
+all row/commit/latest/README content equals the original Brave audit. LibJS
+PID 46054 remains interactive with 33 rows and zero commit links/latest sections.
+Its six diagnostics identify optional chaining, React for-in, and a native-stack
+parser limit in the unoptimized code-view graph. Sampled aggregate peaks are
+1,809,039,360 bytes (JSC) and 3,161,784,320 (LibJS). This is functional diagnosis,
+not document pixel conformance or performance acceptance.
+
+The retained eleven-case screenshot smoke uses that diagnostic's JSC backend.
+Initial comparison commands all fail to compile the pixel tool under FastC;
+`3c04b9ceb` selects its C backend. Recomparison of unchanged captures/reference
+bytes passes eight cases under their existing limits. `inline-node`,
+`ordered-list` and `text-decorations` still fail. Original failed commands remain
+in evidence; neither references nor tolerances changed. This is not a complete
+visual pass or a broad-check cadence reset.
+
+Later focused language slices: `0c5091df4` executes optional chains (including
+receiver and delete behavior); `0e836d1f0` executes for-in with ordered
+prototype-aware enumeration and lexical iteration environments. Both pass their
+focused checks in both GC modes. `15cac679b` refreshes the stale unsupported
+optional-chain expectation to still-unsupported for-of. These postdate the
+271-file checkpoint. The unchanged module probe now reaches missing Date in
+the code-view graph; it supplies no browser hydration evidence.
+
 ## Focused verification
 
 - Conditional/runtime/frontend regression selection: four files pass with
@@ -203,14 +380,14 @@ The later completed bundle `20261114-191855-433aa86a`, executable SHA-256
 the core graph linker but predates the native browser module host, `import.meta`
 and catch continuation. Its parsed-source manifest cannot validate those later
 changes. Commit rebuild requests remain coalesced under the managed worker;
-no duplicate production build was queued. A separate unoptimized diagnostic
-executable is being prepared from canonical sources for page diagnosis.
+no duplicate production build was queued. The later native diagnostics above use canonical source-built executables for
+page diagnosis.
 
 The unchanged archive has 87 JavaScript URL records and 86 distinct script body
 hashes. `tools/libjs_module_probe.v`, using explicit local aliases from the flat
 archived import map, loads 50 module records and links all six original entries.
-Execution still fails: some functions need destructuring, and the standalone VM
-has no browser Performance/DOM host. This is a language diagnostic, not a browser
+Execution still fails: the standalone VM has no browser Performance/DOM host
+and Date remains absent. This is a language diagnostic, not a browser
 hydration or pixel result. Local-alias loading never rewrites the script bytes.
 
 For the eventual full-content comparison, use the original scripted archive and
@@ -230,3 +407,12 @@ its adjacent manifest records source and excluded test-binary identities.
 Browser bundles, compiled tests, source snapshots, private profiles and response
 bodies are excluded. Original response bodies remain in the separately retained
 November 8 archive. Per-job Build outputs are removed after recording this report.
+
+Continuation evidence is stored locally at
+`~/Library/Caches/Vox/benchmarks/libjs-github-continuation-20261115/evidence.tar.gz`
+(SHA-256 `105afdf2a38eed76ee29af3c799cd4a483e65e06c28d046a5224db5d0fa0e464`).
+All 774 selected members were read back and checked against the embedded
+manifest before removing completed job scratch. Generated C, executables and
+disposable profiles are excluded; commands, identities, guards, failed attempts,
+audits, screenshots and source fixtures remain. The newer production memory
+failure remains in the active November 15 job and is not in this archive.

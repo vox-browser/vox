@@ -73,3 +73,52 @@ fn test_environment_reference_names_remain_strings_when_they_resemble_indices() 
 	reference.put_value(mut vm, Value.from_i32(43))!
 	assert reference.get_value(mut vm)!.number == 43
 }
+
+fn test_compact_property_keys_retain_owned_or_immutable_string_headers_and_empty_identity() {
+	assert sizeof(PropertyName) == 16
+	assert PropertyName{}.is_string()
+	assert PropertyName{}.as_string().is_empty()
+	assert PropertyName{}.str() == ''
+	assert PropertyName{}.equals(PropertyName.from_str(''))
+	assert property_lookup_hash(PropertyName{}) == property_lookup_hash(PropertyName.from_str(''))
+	assert !PropertyName{}.is_length_property()
+	assert !PropertyName{}.equals(PropertyName.from_number(0))
+	mut source := utf16_string('owned')
+	key := PropertyName.from_utf16(source)
+	source = utf16_string('replacement')
+	assert key.str() == 'owned'
+	assert key == PropertyName.from_str('owned')
+	assert [key, PropertyName.from_number(7)] == [PropertyName.from_str('owned'), PropertyName.from_number(7)]
+	assert PropertyName{} == PropertyName.from_str('')
+	assert PropertyName.from_number(0) != PropertyName.from_str('')
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	text := vm.create_string_from_str('immutable')
+	borrowed := PropertyName.from_primitive_string(text)
+	assert voidptr(borrowed.string_value) == voidptr(&text.utf16)
+	assert borrowed.str() == 'immutable'
+	mut object := Object.create(vm.realm(), none)
+	object.define_direct_property(borrowed, Value.from_i32(42), 7)
+	for index in 0 .. 2000 { vm.create_fly_string(utf16_string('evict${index}')) }
+	assert object.get(mut vm, PropertyName.from_str('immutable'))!.number == 42
+	first := vm.binding_property_key(utf16_string('binding'))
+	second := vm.binding_property_key(utf16_string('binding'))
+	assert voidptr(first.string_value) == voidptr(second.string_value)
+	assert first.equals(PropertyName.from_str('binding'))
+}
+
+fn compact_key_gc_object(mut vm VM) &Object {
+	mut object := Object.create(vm.realm(), none)
+	text := &PrimitiveString{utf16: utf16_string('key retained only by its object')}
+	object.define_direct_property(PropertyName.from_primitive_string(text), Value.from_i32(42), 7)
+	return object
+}
+
+fn test_compact_property_key_keeps_string_storage_alive_across_collection() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	object := compact_key_gc_object(mut vm)
+	for _ in 0 .. 5 { gc_collect() }
+	assert object.get(mut vm, PropertyName.from_str('key retained only by its object'))!.number == 42
+	assert object.own_property_keys()[0].str() == 'key retained only by its object'
+}

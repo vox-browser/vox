@@ -17,7 +17,7 @@ fn test_execution_contexts_lay_out_registers_locals_constants_and_arguments() {
 	assert context.arguments().len == 2
 	assert context.yield_continuation == no_yield_continuation
 	assert context.caller_frame == none
-	assert context.values.cap == 16
+	assert context.values.cap == context.values.len
 	mut executable := &Executable{
 		registers_and_locals_count: 6
 		local_variable_names:       [utf16_string('a')]
@@ -156,6 +156,29 @@ fn test_interpreter_stack_allocates_frames_until_its_budget_is_exhausted() {
 	assert stack.depth() == 0
 	assert stack.top() == 0
 	assert !stack.is_exhausted()
+}
+
+fn test_interpreter_stack_releases_nested_frames_and_clears_tail_slots() {
+	mut stack := InterpreterStack.new()
+	first := stack.allocate(5, [], 0) or { panic('first frame') }
+	mark := stack.top()
+	second := stack.allocate_reusable(7, [], 0) or { panic('second frame') }
+	third := stack.allocate_reusable(9, [], 0) or { panic('third frame') }
+	top := stack.top()
+	stack.deallocate(top)
+	assert stack.depth() == 3 && stack.top() == top
+	stack.deallocate(mark)
+	assert stack.depth() == 1 && stack.top() == mark
+	assert first.stack_allocated && !second.stack_allocated && !third.stack_allocated
+	assert stack.recycled.len == 2
+	assert voidptr(stack.recycled[0]) == voidptr(third)
+	assert voidptr(stack.recycled[1]) == voidptr(second)
+	unsafe {
+		slots := &voidptr(stack.contexts.data)
+		assert slots[0] == voidptr(first)
+		assert slots[1] == nil && slots[2] == nil
+	}
+	stack.deallocate(0)
 }
 
 @[noinline]

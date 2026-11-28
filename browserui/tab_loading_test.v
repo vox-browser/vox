@@ -1,6 +1,7 @@
 module browserui
 
 import math
+import platform
 import ui2
 
 $if vox_ui2 ? {
@@ -73,8 +74,18 @@ fn test_mounted_loading_arc_changes_pixels_and_restores_the_fallback_on_completi
 		icon := ui2.embedded_browser_control('tab-icon-0')
 		// Frame zero has a gap in the upper-left quadrant; a quarter turn fills it.
 		before := C.ui2_test_tabs_pixel(icon, 4, 4)
-		ui2.refresh_element('tab-icon-0', tab_loading_icon(0, 15))
+		refresh_tab_loading_icon(0, 15)
+		assert ui2.embedded_browser_control('tab-icon-0') == icon
 		assert C.ui2_test_tabs_pixel(icon, 4, 4) != before
+		$if prealloc {
+			used := platform.thread_arena_usage().used
+			for frame in 0 .. 600 {
+				refresh_tab_loading_icon(0, frame)
+			}
+			retained := platform.thread_arena_usage().used - used
+			println('loading icon: ${retained} bytes retained by 600 frames')
+			assert retained < 4096
+		}
 		ui2.update_embedded_browser([tab_strip(800, [Tab{ x: 62, width: 184, selected: true }], 258)])
 		assert C.ui2_test_tabs_pixel(ui2.embedded_browser_control('tab-icon-0'), 4, 4) != u32(0x1a73e8)
 	}

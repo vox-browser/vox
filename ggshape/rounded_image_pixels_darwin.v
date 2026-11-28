@@ -12,8 +12,8 @@ pub fn draw_rounded_image_pixels(pixels &u8, width int, height int, pitch int,
 	}
 	if samples in [1, 4] {
 		mut ctx := context() or { return false }
-		mut target := ctx.new_surface(width: width, height: height, sample_count: samples) or { return false }
-		defer { target.free() }
+		mut target := ctx.new_document_leaf_surface(width, height, samples) or { return false }
+		defer { target.release_document_leaf_surface() }
 		target.write_pixels(pixels, pitch) or { return false }
 		if samples == 4 { target.draw_msaa_trigger() }
 		rect := canvas.Rect.xywh(x, y, f32(image_width), f32(image_height))
@@ -32,8 +32,8 @@ pub fn draw_rounded_image_color_components(pixels &u8, width int, height int, pi
 		return false
 	}
 	mut ctx := context() or { return false }
-	mut target := ctx.new_surface(width: width, height: height, sample_count: samples) or { return false }
-	defer { target.free() }
+	mut target := ctx.new_document_leaf_surface(width, height, samples) or { return false }
+	defer { target.release_document_leaf_surface() }
 	target.write_pixels(pixels, pitch) or { return false }
 	if samples == 4 { target.draw_msaa_trigger() }
 	rect := canvas.Rect.xywh(x, y, f32(image_width), f32(image_height))

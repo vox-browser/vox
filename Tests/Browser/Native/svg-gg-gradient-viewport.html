@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GG SVG gradient viewport reuse</title>
+<style>
+  body { margin: 0; min-height: 4096px; background: white; }
+  svg { display: block; }
+  header { position: fixed; top: 0; right: 0; width: 12px; height: 4px; background: #098746; }
+</style>
+<header></header>
+<svg id="art" width="720" height="160">
+  <defs>
+    <linearGradient id="linear" gradientUnits="userSpaceOnUse" x1="16" y1="34" x2="186" y2="126">
+      <stop offset="0" stop-color="#ec7642"/>
+      <stop offset=".48" stop-color="#fc9f49" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#68159d"/>
+    </linearGradient>
+    <radialGradient id="radial" gradientUnits="userSpaceOnUse" cx="116" cy="78" fr="16" r="126">
+      <stop offset="0" stop-color="#2dbe93"/>
+      <stop offset="1" stop-color="#263e82"/>
+    </radialGradient>
+  </defs>
+  <path d="M16 34H216V154H16Z M78 62H153V90H78Z" fill="url(#linear)" fill-rule="evenodd"/>
+  <path d="M16 34H216V154H16Z M78 62H153V90H78Z" fill="url(#radial)" fill-rule="evenodd"
+        transform="translate(230)"/>
+  <path d="M16 34H216V154H16Z M78 62H153V90H78Z" fill="url(#linear)" fill-rule="evenodd"
+        transform="translate(460 -1)"/>
+</svg>

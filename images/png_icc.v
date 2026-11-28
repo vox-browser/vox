@@ -4,6 +4,7 @@ import compress.deflate
 import gg
 import os
 import dom
+import platform
 
 fn C.native_png_has_icc_profile(bytes &u8, length uint) int
 fn C.native_png_icc_channel_marker() int
@@ -41,6 +42,8 @@ fn png_icc_inflate_profile(input &u8, length uint, limit uint, output_length &ui
 	if isnil(input) || u64(length) > u64(max_int) || u64(limit) > u64(max_int) {
 		return unsafe { nil }
 	}
+	scratch := platform.begin_thread_scratch('PNG ICC inflation')
+	defer { scratch.finish() }
 	data := unsafe { input.vbytes(int(length)) }
 	deflate.validate_zlib_header(data) or { return unsafe { nil } }
 	mut inflation := &PngIccInflation{

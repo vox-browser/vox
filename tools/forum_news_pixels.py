@@ -11,6 +11,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -95,6 +96,8 @@ def seal_capture(capture, archive, report_file):
     frozen = (capture / 'frozen.html').read_bytes()
     if digest(frozen) != metadata['frozen_html_sha256']:
         raise RuntimeError('Frozen document changed')
+    decode_preparation = archive_decode_preparation(dict(image_decode_preparation=
+        metadata.get('source_pixels', {}).get('image_decode_preparation', 'load-and-paint')), report)
     archive.mkdir(parents=True, exist_ok=False)
     (archive / 'bodies').mkdir()
     entries = {}
@@ -133,6 +136,7 @@ def seal_capture(capture, archive, report_file):
     shutil.copyfile(capture / 'live.png', archive / 'live.png')
     focus = captured_focus_state(metadata)
     write_json(archive / 'manifest.json', dict(version=1, url=metadata['url'],
+        image_decode_preparation=decode_preparation,
         **(dict(focus_state=focus) if focus else {}),
         **(dict(image_animation_policy=animation_policy) if animation_policy != 'allowed' else {}),
         source_document_request_method=metadata.get('document_request_method', 'GET'),
@@ -219,6 +223,36 @@ def archive_animation_policy(manifest, report, requested=None):
     return policy
 
 
+def archive_decode_preparation(manifest, report, requested=None):
+    # Archives predating explicit image.decode() readiness used load and paint.
+    # Replaying those through decode() changes the shared image upload cache.
+    recorded = [value for value in [
+        report.get('oracle', {}).get('image_decode_preparation'),
+        report.get('pixel_reference', {}).get('image_decode_preparation'),
+        report.get('archive', {}).get('source_pixels', {}).get('image_decode_preparation'),
+    ] if value is not None]
+    source = recorded[0] if recorded else 'load-and-paint'
+    policy = manifest.get('image_decode_preparation', source)
+    if any(value not in ('load-and-paint', 'visible-image-decode')
+           for value in [policy, source, *recorded]):
+        raise RuntimeError('Unsupported archive image decode preparation')
+    if any(value != source for value in recorded) or policy != source:
+        raise RuntimeError('Source and archive image decode preparations differ')
+    if requested is not None and requested != policy:
+        raise RuntimeError('Requested image decode preparation differs from the archive; capture a new candidate')
+    return policy
+
+
+def check_oracle_decode_preparation(report, command):
+    if '--image-decode-preparation' not in command:
+        return
+    requested = command[command.index('--image-decode-preparation') + 1]
+    if (requested not in ('load-and-paint', 'visible-image-decode')
+            or report.get('oracle', {}).get('image_decode_preparation') != requested
+            or report.get('pixel_reference', {}).get('image_decode_preparation') != requested):
+        raise RuntimeError('Oracle did not preserve the requested image decode preparation')
+
+
 def check_native(audit, reference):
     focus = reference.get('active_element') or {}
     if focus.get('id') and focus.get('tag') not in ('BODY', 'HTML'):
@@ -271,6 +305,8 @@ def oracle_command(site, args):
         command.extend(['--profile-template', str(args.profile_template)])
     if getattr(args, 'image_animation_policy', None):
         command.extend(['--image-animation-policy', args.image_animation_policy])
+    if getattr(args, 'image_decode_preparation', None):
+        command.extend(['--image-decode-preparation', args.image_decode_preparation])
     return command
 
 
@@ -284,6 +320,7 @@ def warm_oracle_cache(common, route, output, timeout, *, capture_archive=False):
     observation = read_json(report)
     check_filters(observation)
     check_oracle_page_cache(observation, common)
+    check_oracle_decode_preparation(observation, common)
     if not profile.is_dir():
         raise RuntimeError('Brave cache warmup did not save a closed profile')
     prepared = list(common)
@@ -349,17 +386,39 @@ def capture_replay_references(common, route, output, timeout, diff_tool):
         observation = read_json(report)
         check_filters(observation)
         check_oracle_page_cache(observation, common)
+        check_oracle_decode_preparation(observation, common)
     verdict = compare(output / 'brave.png', output / 'brave-repeat.png',
                       output / 'reference-replay.diff.png', diff_tool)
     write_json(output / 'reference-replay.json', verdict)
     return verdict
 
 
-def pixel_status(native, source, reference_repeat):
+def source_replay_browser_versions(source_report, replay_reports):
+    """Version equality is necessary; executable hashes are pinned separately."""
+    def version(report):
+        label = report.get('oracle', {}).get('browser')
+        if not isinstance(label, str) or not re.fullmatch(r'Brave Browser [0-9]+(?:\.[0-9]+){3}', label):
+            return None
+        return label
+
+    source = version(source_report)
+    replays = [version(report) for report in replay_reports]
+    recorded = (source is not None and len(replays) == 2
+                and all(label is not None for label in replays))
+    return dict(source_browser=source, replay_browsers=replays,
+                versions_recorded=bool(recorded),
+                versions_match=bool(recorded and all(label == source for label in replays)))
+
+
+def pixel_status(native, source, reference_repeat, browser_versions):
     # Reference variation invalidates acceptance even if the first reference
     # happens to match both the source and native captures exactly.
     if not reference_repeat['exact']:
         return 'reference-replay-mismatch'
+    if not browser_versions['versions_recorded']:
+        return 'source-browser-unverified'
+    if not browser_versions['versions_match']:
+        return 'source-browser-mismatch'
     if not source['exact']:
         return 'live-to-frozen-mismatch'
     return 'pass' if native['exact'] else 'pixel-mismatch'
@@ -400,8 +459,12 @@ def capture_case(site, args, output):
     check_filters(source_report)
     animation_policy = archive_animation_policy(manifest, source_report,
                                                 getattr(args, 'image_animation_policy', None))
+    decode_preparation = archive_decode_preparation(manifest, source_report,
+        getattr(args, 'image_decode_preparation', None))
     if '--image-animation-policy' not in common:
         common.extend(['--image-animation-policy', animation_policy])
+    if '--image-decode-preparation' not in common:
+        common.extend(['--image-decode-preparation', decode_preparation])
     current = read_json(REPO / 'adblock/lists/manifest.json')
     if (source_report['engine'] != current['engine']
             or source_report['lists'] != [{k: entry[k] for k in ['name', 'sha256']} for entry in current['lists']]):
@@ -422,6 +485,9 @@ def capture_case(site, args, output):
         reference_command = warm_oracle_cache(common, route, output, args.timeout) if cache_policy == 'complete' else common
         repeat_verdict = capture_replay_references(reference_command, route, output,
                                                     args.timeout, args.diff_tool)
+        browser_versions = source_replay_browser_versions(source_report,
+            [read_json(output / name) for name in ['brave.json', 'brave-repeat.json']])
+        write_json(output / 'source-replay-browser-versions.json', browser_versions)
         state = read_json(Path(str(reference) + '.json'))
         if digest((archive / 'live.png').read_bytes()) != manifest['live_png_sha256']:
             raise RuntimeError('Live capture changed')
@@ -461,8 +527,9 @@ def capture_case(site, args, output):
         check_filters(read_json(output / 'vox.ubo.json'), document=False)
         verdict = compare(reference, actual, output / 'diff.png', args.diff_tool)
         write_json(output / 'pixels.json', verdict)
-        status = pixel_status(verdict, replay_verdict, repeat_verdict)
+        status = pixel_status(verdict, replay_verdict, repeat_verdict, browser_versions)
         return dict(status=status,
+                    source_replay_browser_versions=browser_versions,
                     image_animation_policy=animation_policy,
                     cache_policy=cache_policy,
                     different_pixels=verdict['different_pixels'], artifacts=str(output),
@@ -492,6 +559,8 @@ def main():
                         help='Use an empty native cache, or warm live capture and both replay browsers in discarded processes first')
     parser.add_argument('--image-animation-policy', choices=['allowed', 'none'],
                         help='Record a matched image animation preference when acquiring a new archive; replay defaults to its recorded policy')
+    parser.add_argument('--image-decode-preparation', choices=['load-and-paint', 'visible-image-decode'],
+                        help='Record source image readiness when capturing; replay preserves its recorded preparation')
     parser.add_argument('--diff-tool', type=Path)
     parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
     parser.add_argument('--settle', type=float, default=5)

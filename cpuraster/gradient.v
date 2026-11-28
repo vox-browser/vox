@@ -24,6 +24,15 @@ pub:
 	r1    f32
 	angle f32
 	stops []f32
+	spread CanvasGradientSpread
+	// Map gradient coordinates into the path's local coordinate space.
+	local_transform ?[6]f32
+}
+
+pub enum CanvasGradientSpread {
+	pad
+	repeat
+	reflect
 }
 
 // What the shader factory returned: nothing (the paint keeps its black
@@ -87,6 +96,7 @@ struct GradientShader {
 	// The matrix appended after the geometry stage (concentric and sweep).
 	post_matrix SkAffine
 	clamp       bool
+	spread      CanvasGradientSpread
 	fill        GradientFill
 	premul      bool
 	opaque      bool
@@ -98,14 +108,16 @@ struct GradientShader {
 	negate           bool
 	compensate_focal bool
 	unswap           bool
+	// Premultiplied color outside the tangent of a repeating SVG point focus.
+	outside_color [4]f32
 	// SkGradientBaseShader::onAsLuminanceColor(): the average of the stored
 	// stop colors' RGB.
 	luminance [3]f32
 }
 
-// Only the strip and focal stages lack lowp versions.
+// Strip, focal and tiled gradients use the highp shader.
 fn (g &GradientShader) needs_highp() bool {
-	return g.geometry == .strip || g.geometry == .focal
+	return g.geometry == .strip || g.geometry == .focal || g.spread != .pad
 }
 
 // SkScalarNearlyZero() and SkScalarNearlyEqual(); Skia's default tolerance
@@ -222,14 +234,20 @@ fn canvas_gradient_shader(gradient CanvasGradient, m Matrix) CanvasShader {
 	if colors.len == 0 {
 		return CanvasShader{}
 	}
+	gradient_matrix := if local := gradient.local_transform {
+		combined := sk_concat(canvas_affine([m.a, m.b, m.c, m.d, m.e, m.f]!), canvas_affine(local))
+		Matrix{combined.sx, combined.ky, combined.kx, combined.sy, combined.tx, combined.ty}
+	} else {
+		m
+	}
 	return match gradient.kind {
 		1 {
-			make_linear(Point{gradient.x0, gradient.y0}, Point{gradient.x1, gradient.y1}, colors, positions, m)
+			make_linear(Point{gradient.x0, gradient.y0}, Point{gradient.x1, gradient.y1}, colors, positions, gradient_matrix, gradient.spread)
 		}
 		2 {
-			make_two_point_conical(Point{gradient.x0, gradient.y0}, gradient.r0, Point{gradient.x1, gradient.y1}, gradient.r1, colors, positions, m)
+			make_two_point_conical(Point{gradient.x0, gradient.y0}, gradient.r0, Point{gradient.x1, gradient.y1}, gradient.r1, colors, positions, gradient_matrix, gradient.spread)
 		}
-		3 { make_canvas_sweep(gradient, colors, positions, m) }
+		3 { make_canvas_sweep(gradient, colors, positions, gradient_matrix) }
 		else { CanvasShader{} }
 	}
 }
@@ -254,7 +272,8 @@ fn degenerate_gradient(colors [][4]f32) CanvasShader {
 	return color_shader(colors.last())
 }
 
-fn make_linear(p0 Point, p1 Point, colors [][4]f32, positions []f32, m Matrix) CanvasShader {
+fn make_linear(p0 Point, p1 Point, colors [][4]f32, positions []f32, m Matrix,
+	spread CanvasGradientSpread) CanvasShader {
 	dx := p1.x - p0.x
 	dy := p1.y - p0.y
 	length := point_length(dx, dy)
@@ -274,10 +293,11 @@ fn make_linear(p0 Point, p1 Point, colors [][4]f32, positions []f32, m Matrix) C
 	mut unit := set_sin_cos(-vy, vx, p0.x, p0.y)
 	unit = post_translate(unit, -p0.x, -p0.y)
 	unit = post_scale(unit, inv, inv)
-	return new_gradient(.linear, unit, SkAffine{}, colors, positions, m, true)
+	return new_gradient(.linear, unit, SkAffine{}, colors, positions, m, true, spread, false)
 }
 
-fn make_radial(center Point, radius f32, colors [][4]f32, positions []f32, m Matrix) CanvasShader {
+fn make_radial(center Point, radius f32, colors [][4]f32, positions []f32, m Matrix,
+	spread CanvasGradientSpread) CanvasShader {
 	if radius < 0 {
 		return CanvasShader{}
 	}
@@ -290,10 +310,11 @@ fn make_radial(center Point, radius f32, colors [][4]f32, positions []f32, m Mat
 	// rad_to_unit_matrix()
 	inv := f32(1) / radius
 	unit := post_scale(affine_translate(-center.x, -center.y), inv, inv)
-	return new_gradient(.radial, unit, SkAffine{}, colors, positions, m, true)
+	return new_gradient(.radial, unit, SkAffine{}, colors, positions, m, true, spread, false)
 }
 
-fn make_two_point_conical(start Point, start_radius f32, end Point, end_radius f32, colors_in [][4]f32, positions_in []f32, m Matrix) CanvasShader {
+fn make_two_point_conical(start Point, start_radius f32, end Point, end_radius f32,
+	colors_in [][4]f32, positions_in []f32, m Matrix, spread CanvasGradientSpread) CanvasShader {
 	if start_radius < 0 || end_radius < 0 {
 		return CanvasShader{}
 	}
@@ -305,11 +326,11 @@ fn make_two_point_conical(start Point, start_radius f32, end Point, end_radius f
 				// A thin ring at the radius: the first color up to it, then a
 				// hard stop to the last color.
 				return make_radial(start, end_radius, [colors[0], colors[0], colors.last()],
-					[f32(0), 1, 1], m)
+					[f32(0), 1, 1], m, spread)
 			}
 			return degenerate_gradient(colors)
 		} else if nearly_zero(start_radius, degenerate_threshold) {
-			return make_radial(start, end_radius, colors, positions, m)
+			return make_radial(start, end_radius, colors, positions, m, spread)
 		}
 	}
 	// EXPAND_1_COLOR()
@@ -317,11 +338,12 @@ fn make_two_point_conical(start Point, start_radius f32, end Point, end_radius f
 		colors = [colors[0], colors[0]]
 		positions = []
 	}
-	return create_conical(start, start_radius, end, end_radius, colors, positions, m)
+	return create_conical(start, start_radius, end, end_radius, colors, positions, m, spread)
 }
 
 // SkConicalGradient::Create() and FocalData::set().
-fn create_conical(c0 Point, r0_in f32, c1 Point, r1_in f32, colors [][4]f32, positions []f32, m Matrix) CanvasShader {
+fn create_conical(c0 Point, r0_in f32, c1 Point, r1_in f32, colors [][4]f32,
+	positions []f32, m Matrix, spread CanvasGradientSpread) CanvasShader {
 	mut geometry := GradientGeometry.concentric
 	mut unit := SkAffine{}
 	mut post := SkAffine{}
@@ -344,10 +366,10 @@ fn create_conical(c0 Point, r0_in f32, c1 Point, r1_in f32, colors [][4]f32, pos
 		scale := larger / d_radius
 		bias := -r0_in / d_radius
 		post = sk_concat(affine_translate(bias, 0), affine_scale(scale, 1))
-		return new_gradient(.concentric, unit, post, colors, positions, m, false)
+		return new_gradient(.concentric, unit, post, colors, positions, m, false, spread, false)
 	}
 	if geometry == .strip {
-		shader := new_gradient(.strip, unit, post, colors, positions, m, false)
+		shader := new_gradient(.strip, unit, post, colors, positions, m, false, spread, false)
 		// getCenterX1() is the distance between the centers.
 		scaled_r0 := r0_in / center_distance
 		return CanvasShader{
@@ -388,7 +410,15 @@ fn create_conical(c0 Point, r0_in f32, c1 Point, r1_in f32, colors [][4]f32, pos
 	one_minus_focal := f32(math.abs(1 - focal_x))
 	unit = post_scale(unit, one_minus_focal, one_minus_focal)
 	well_behaved := !on_circle && focal_r1 > 1
-	shader := new_gradient(.focal, unit, post, colors, positions, m, false)
+	mut average_outside := false
+	if spread == .repeat && on_circle && r0_in == 0 {
+		// Exact tangency is the SVG edge case. The conical solver's tolerance
+		// can also select the on-circle stage for a slightly nested focus.
+		dx := f64(c1.x) - f64(c0.x)
+		dy := f64(c1.y) - f64(c0.y)
+		average_outside = math.sqrt(dx * dx + dy * dy) == f64(r1_in)
+	}
+	shader := new_gradient(.focal, unit, post, colors, positions, m, false, spread, average_outside)
 	if shader.kind != .gradient {
 		return shader
 	}
@@ -446,13 +476,15 @@ fn sweep_shader(cx f32, cy f32, colors [][4]f32, positions []f32, start f32, end
 	bias := -t0
 	scale := f32(1) / (t1 - t0)
 	post := sk_concat(affine_scale(scale, 1), affine_translate(bias, 0))
-	return new_gradient(.sweep, affine_translate(-cx, -cy), post, colors, positions, m, true)
+	return new_gradient(.sweep, affine_translate(-cx, -cy), post, colors, positions, m, true, .pad, false)
 }
 
 // The SkGradientBaseShader constructor and appendStages() for colors and
 // positions under the canvas matrix m. opaque_capable is false for conical
 // gradients, which never report opacity.
-fn new_gradient(geometry GradientGeometry, unit SkAffine, post SkAffine, colors_in [][4]f32, positions_in []f32, m Matrix, opaque_capable bool) CanvasShader {
+fn new_gradient(geometry GradientGeometry, unit SkAffine, post SkAffine, colors_in [][4]f32,
+	positions_in []f32, m Matrix, opaque_capable bool, spread CanvasGradientSpread,
+	average_outside bool) CanvasShader {
 	// MatrixRec::apply(): the inverse CTM, then the gradient's unit matrix.
 	ctm := SkAffine{
 		sx: m.a
@@ -472,18 +504,20 @@ fn new_gradient(geometry GradientGeometry, unit SkAffine, post SkAffine, colors_
 	for c in colors_in {
 		colors_are_opaque = colors_are_opaque && c[3] == 1
 	}
-	colors, positions := gradient_stops(colors_in, positions_in)
+	colors, positions := gradient_stops(colors_in, positions_in, spread)
 	return CanvasShader{
 		kind:     .gradient
 		gradient: GradientShader{
 			geometry:    geometry
 			matrix:      total
 			post_matrix: post
-			clamp:       positions.len == 0
+			clamp:       spread == .pad && positions.len == 0
+			spread:      spread
 			fill:        gradient_fill(colors, positions)
 			premul:      !colors_are_opaque
 			opaque:      opaque_capable && colors_are_opaque
 			luminance:   average_color(colors)
+			outside_color: if average_outside { gradient_weighted_color(colors, positions) } else { [4]f32{} }
 		}
 	}
 }
@@ -504,10 +538,29 @@ fn average_color(colors [][4]f32) [3]f32 {
 	return sum
 }
 
+// Average a normalized stop ramp in premultiplied color space.
+fn gradient_weighted_color(colors [][4]f32, positions []f32) [4]f32 {
+	mut sum := [4]f64{}
+	for i in 1 .. colors.len {
+		left := colors[i - 1]
+		right := colors[i]
+		weight := if positions.len == 0 {
+			0.5 / f64(colors.len - 1)
+		} else {
+			(f64(positions[i]) - f64(positions[i - 1])) * 0.5
+		}
+		for c in 0 .. 3 {
+			sum[c] += (f64(left[c] * left[3]) + f64(right[c] * right[3])) * weight
+		}
+		sum[3] += (f64(left[3]) + f64(right[3])) * weight
+	}
+	return [f32(sum[0]), f32(sum[1]), f32(sum[2]), f32(sum[3])]!
+}
+
 // The constructor's stops: implicit first and last stops, positions pinned
 // monotonic, uniform positions dropped and runs of duplicate positions
 // reduced to their outer stops. Empty positions mean evenly spaced stops.
-fn gradient_stops(colors_in [][4]f32, desc_positions []f32) ([][4]f32, []f32) {
+fn gradient_stops(colors_in [][4]f32, desc_positions []f32, spread CanvasGradientSpread) ([][4]f32, []f32) {
 	n := colors_in.len
 	if desc_positions.len == 0 {
 		return colors_in, []f32{}
@@ -549,15 +602,18 @@ fn gradient_stops(colors_in [][4]f32, desc_positions []f32) ([][4]f32, []f32) {
 	if uniform {
 		return colors, []f32{}
 	}
-	// Clamped: keep the leftmost and rightmost stop of each duplicate run.
+	// Tiled ramps keep the interior color at each end of the interval.
 	mut out_colors := [][4]f32{}
 	mut out_positions := []f32{}
 	mut i := 0
 	for j in 1 .. count + 1 {
 		if j == count || positions[i] != positions[j] {
-			out_positions << positions[i]
-			out_colors << colors[i]
-			if j - i > 1 {
+			duplicate := j - i > 1
+			if !duplicate || spread == .pad || positions[i] != 0 {
+				out_positions << positions[i]
+				out_colors << colors[i]
+			}
+			if duplicate && (spread == .pad || positions[j - 1] != 1) {
 				out_positions << positions[j - 1]
 				out_colors << colors[j - 1]
 			}
@@ -866,11 +922,24 @@ fn (g &GradientShader) gradient_t(px int, py int, highp bool) (f32, bool) {
 	return t, keep
 }
 
-// shade_highp: the premultiplied float color at pixel (px, py), with the
-// conical mask applied after premul.
+// shade_highp returns the premultiplied float color at pixel (px, py).
 @[direct_array_access]
 fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
-	t, keep := g.gradient_t(px, py, true)
+	mut t, keep := g.gradient_t(px, py, true)
+	if !keep {
+		return g.outside_color
+	}
+	if g.spread != .pad {
+		// A sample on the common tangent can divide by zero. It has no
+		// finite position in the tile.
+		if !is_finite_f32(t) { return g.outside_color }
+		if g.spread == .repeat {
+			t -= C.floorf(t)
+		} else {
+			period := t - 2 * C.floorf(t * 0.5)
+			t = if period <= 1 { period } else { 2 - period }
+		}
+	}
 	idx := g.fill.index(t)
 	mut c := [4]f32{}
 	for i in 0 .. 4 {
@@ -880,9 +949,6 @@ fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
 		for i in 0 .. 3 {
 			c[i] = c[i] * c[3]
 		}
-	}
-	if !keep {
-		return [f32(0), 0, 0, 0]!
 	}
 	return c
 }

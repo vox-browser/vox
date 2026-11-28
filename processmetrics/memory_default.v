@@ -1,6 +1,6 @@
 module processmetrics
 
-$if !darwin {
+$if !darwin && !linux {
 	pub fn memory_snapshot() MemorySnapshot {
 		return MemorySnapshot{}
 	}

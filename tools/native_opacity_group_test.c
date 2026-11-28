@@ -1,4 +1,4 @@
-#include "../native/include/native_opacity_group_darwin.h"
+#include "../native/include/native_opacity_composite_rows.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -242,6 +242,42 @@ static void *test_concurrent_spans(void *argument)
     return NULL;
 }
 
+static void test_opacity_row_batches(void)
+{
+    enum { width = 773, height = 359, layer_pitch = width * 4 + 16,
+        backdrop_pitch = width * 4 + 24, result_pitch = width * 4 + 32 };
+    uint8_t *source = malloc(layer_pitch * height);
+    uint8_t *backdrop = malloc(backdrop_pitch * height);
+    uint8_t *expected = malloc(result_pitch * height);
+    uint8_t *actual = malloc(result_pitch * height);
+    assert(source && backdrop && expected && actual);
+    for (size_t i = 0; i < layer_pitch * height; ++i) source[i] = random_value();
+    for (size_t i = 0; i < backdrop_pitch * height; ++i) backdrop[i] = random_value();
+
+    const int modes[] = {FE_TONEAREST, FE_DOWNWARD};
+    for (size_t mode = 0; mode < sizeof modes / sizeof modes[0]; ++mode) {
+        assert(fesetround(modes[mode]) == 0);
+        for (int screen = 0; screen <= 1; ++screen) {
+            memset(expected, 0xEF, result_pitch * height);
+            memset(actual, 0xEF, result_pitch * height);
+            for (int y = 0; y < height; ++y) {
+                const uint8_t *s = source + y * layer_pitch;
+                const uint8_t *d = backdrop + y * backdrop_pitch;
+                uint8_t *out = expected + y * result_pitch;
+                if (screen) native_composite_screen_pixels(s, d, out, width, 0.37f);
+                else reference_composite(s, d, out, width, 0.37f);
+            }
+            native_composite_opacity_rows(source, layer_pitch, backdrop, backdrop_pitch,
+                actual, result_pitch, width, height, 0.37f, screen);
+            assert(!memcmp(expected, actual, result_pitch * height));
+            assert(fegetround() == modes[mode]);
+        }
+    }
+    assert(fesetround(FE_TONEAREST) == 0);
+    free(source); free(backdrop); free(expected); free(actual);
+    puts("Opacity row batches: exact normal and screen pixels, padding and rounding");
+}
+
 int main(void)
 {
     // Race first-use policy initialization with independent buffers. Retain
@@ -254,5 +290,6 @@ int main(void)
     test_composite();
     test_bounds();
     test_byte_opacity_large_spans();
+    test_opacity_row_batches();
     return 0;
 }

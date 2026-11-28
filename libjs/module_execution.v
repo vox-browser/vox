@@ -23,6 +23,21 @@ pub fn (environment &ModuleEnvironment) get_this_binding(mut vm VM) !Value { ret
 
 enum ModuleExecutionStatus { unlinked linking linked evaluating evaluated }
 
+// Diagnostics inspect lifecycle state without evaluating code or converting
+// an author-controlled exception value.
+pub struct ModuleExecutionSnapshot {
+pub:
+	status string
+	promise_state string
+}
+
+pub fn (module_record &SourceTextModule) execution_snapshot() ModuleExecutionSnapshot {
+	return ModuleExecutionSnapshot{
+		status: module_record.module_status.str()
+		promise_state: if evaluation := module_record.module_evaluation { evaluation.promise.state.str() } else { '' }
+	}
+}
+
 fn (mut module_record SourceTextModule) compile_module(mut vm VM) !&Executable {
 	if executable := module_record.module_executable { return executable }
 	if module_record.module_starting_line == 0 { return error('Module starting line must be positive') }
@@ -51,6 +66,7 @@ fn (mut module_record SourceTextModule) compile_module(mut vm VM) !&Executable {
 			source_code: SourceCode.create(utf16_string(module_record.module_filename), utf16_string(module_record.parsed.source_text))
 			parsed_source: module_record.parsed
 			starting_line: module_record.module_starting_line
+			native_cache_scope: 'module'
 		}
 		strict: true
 		starting_line: module_record.module_starting_line
@@ -83,6 +99,7 @@ fn (mut module_record SourceTextModule) compile_module(mut vm VM) !&Executable {
 	generator.emit(Instruction{op:.end,lhs:generator.constant(js_undefined())})
 	generator.executable.bytecode_length = u32(generator.executable.instructions.len)
 	generator.executable.validate(0)!
+	vm.remember_compiler_validation(generator.executable)
 	module_record.module_executable = generator.executable
 	return generator.executable
 }
@@ -101,7 +118,7 @@ fn (mut module_record SourceTextModule) run_module_frame(mut vm VM, executable &
 	context.lexical_environment = Environment(environment)
 	context.variable_environment = context.lexical_environment
 	vm.push_execution_context_checked(mut context)!
-	defer { vm.pop_execution_context(); vm.finish_execution_generation() }
+	defer { vm.pop_current_context(); vm.finish_execution_generation() }
 	vm.run_executable(mut context, executable, start, limits)!
 }
 

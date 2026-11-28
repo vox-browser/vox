@@ -50,20 +50,99 @@ pub fn read_pixels(source []u8, width int, height int, pitch int, alpha_type int
 	if source_end > i64(source.len) || destination_end > i64(destination.len) {
 		return false
 	}
-	for row in 0 .. rows {
-		source_offset := (top + row) * pitch + left * 4
-		destination_offset := (destination_y + row) * destination_pitch + destination_x * 4
-		if alpha_type != 2 {
+	source_start := top * pitch + left * 4
+	destination_start := destination_y * destination_pitch + destination_x * 4
+	if alpha_type != 2 {
+		for row in 0 .. rows {
+			source_offset := source_start + row * pitch
+			destination_offset := destination_start + row * destination_pitch
 			unsafe { vmemcpy(&destination[destination_offset], &source[source_offset], columns * 4) }
-			continue
 		}
-		for column in 0 .. columns {
-			offset := column * 4
-			unpremultiply_pixel(source, source_offset + offset, mut destination, destination_offset +
-				offset)
-		}
+		return true
+	}
+
+	scan := PixelReadScan{
+		source:            source
+		destination:       destination
+		source_start:      source_start
+		destination_start: destination_start
+		source_pitch:      pitch
+		destination_pitch: destination_pitch
+		columns:           columns
+	}
+	// Compare the touched addresses, including any padding between rows.
+	// Views of one backing buffer may start at different addresses.
+	source_address := u64(uint(source.data)) + u64(source_start)
+	destination_address := u64(uint(destination.data)) + u64(destination_start)
+	overlaps := if source_address <= destination_address {
+		destination_address - source_address < u64(source_end - i64(source_start))
+	} else {
+		source_address - destination_address < u64(destination_end - i64(destination_start))
+	}
+	if overlaps {
+		scan_unpremultiply_rows(&scan, 0, i32(rows))
+	} else {
+		run_raster_scans(&scan, rows, columns, scan_unpremultiply_rows)
 	}
 	return true
+}
+
+// unpremultiply_rgba_in_place converts packed premultiplied RGBA to straight
+// alpha with read_pixels' rounding and leaves an incomplete final pixel alone.
+pub fn unpremultiply_rgba_in_place(mut pixels []u8) {
+	pixel_bytes := pixels.len / 4 * 4
+	tail := run_packed_rgba_scans(pixels.data, pixel_bytes, scan_unpremultiply_packed)
+	unpremultiply_packed_span(unsafe { &u8(pixels.data) }, tail, pixel_bytes)
+}
+
+fn scan_unpremultiply_packed(context voidptr, first i32, end i32) {
+	unpremultiply_packed_span(unsafe { &u8(context) }, int(first) * packed_rgba_scan_bytes,
+		int(end) * packed_rgba_scan_bytes)
+}
+
+fn unpremultiply_packed_span(pixels &u8, start int, end int) {
+	unsafe {
+		for offset := start; offset < end; offset += 4 {
+			alpha := pixels[offset + 3]
+			if alpha == 255 {
+				continue
+			}
+			if alpha == 0 {
+				pixels[offset] = 0
+				pixels[offset + 1] = 0
+				pixels[offset + 2] = 0
+				continue
+			}
+			reciprocal := f32(1) / (f32(alpha) * inv_255)
+			for channel in 0 .. 3 {
+				at := offset + channel
+				pixels[at] = unpremultiply_channel(pixels[at], reciprocal)
+			}
+		}
+	}
+}
+
+struct PixelReadScan {
+	source            []u8
+	destination       []u8
+	source_start      int
+	destination_start int
+	source_pitch      int
+	destination_pitch int
+	columns           int
+}
+
+fn scan_unpremultiply_rows(context voidptr, first i32, end i32) {
+	scan := unsafe { &PixelReadScan(context) }
+	mut destination := unsafe { scan.destination }
+	for row in int(first) .. int(end) {
+		source_offset := scan.source_start + row * scan.source_pitch
+		destination_offset := scan.destination_start + row * scan.destination_pitch
+		for offset := 0; offset < scan.columns * 4; offset += 4 {
+			unpremultiply_pixel(scan.source, source_offset + offset, mut destination,
+				destination_offset + offset)
+		}
+	}
 }
 
 fn saturating_add(a int, b int) int {
@@ -79,14 +158,28 @@ fn saturating_add(a int, b int) int {
 
 // SkSwizzler_opts' rgbA_to_CCCA() with !kFastUnpremul. Its NEON block of eight
 // pixels performs the same float operations, saturating instead of clamping.
-@[inline]
+// read_pixels has checked the full source and destination spans.
+@[direct_array_access; inline]
 fn unpremultiply_pixel(source []u8, source_offset int, mut destination []u8, destination_offset int) {
 	alpha := source[source_offset + 3]
-	normalized_alpha := f32(alpha) * inv_255
-	reciprocal := if alpha == 0 { f32(0) } else { f32(1) / normalized_alpha }
-	for channel in 0 .. 3 {
-		destination[destination_offset + channel] = unpremultiply_channel(source[source_offset +
-			channel], reciprocal)
+	match alpha {
+		0 {
+			for channel in 0 .. 3 {
+				destination[destination_offset + channel] = 0
+			}
+		}
+		255 {
+			for channel in 0 .. 3 {
+				destination[destination_offset + channel] = source[source_offset + channel]
+			}
+		}
+		else {
+			reciprocal := f32(1) / (f32(alpha) * inv_255)
+			for channel in 0 .. 3 {
+				destination[destination_offset + channel] = unpremultiply_channel(source[source_offset +
+					channel], reciprocal)
+			}
+		}
 	}
 	destination[destination_offset + 3] = alpha
 }
@@ -95,12 +188,13 @@ fn unpremultiply_pixel(source []u8, source_offset int, mut destination []u8, des
 fn unpremultiply_channel(value u8, reciprocal_alpha f32) u8 {
 	normalized := f32(value) * inv_255
 	divided := normalized * reciprocal_alpha
-	answer := math.min(f32(255), divided * f32(255))
-	return u8(round_half_even(answer))
-}
-
-// vrndns_f32() and vcvtnq_u32_f32(): round to nearest, ties to even.
-@[inline]
-fn round_half_even(value f32) f32 {
-	return f32(math.round_to_even(f64(value)))
+	scaled := divided * f32(255)
+	if scaled >= 255 {
+		return 255
+	}
+	// The remaining value is finite and in [0, 255). Round ties to even
+	// directly in that range, as in Skia's vrndns_f32()/vcvtnq_u32_f32().
+	whole := u32(scaled)
+	fraction := scaled - f32(whole)
+	return u8(whole + u32(fraction > 0.5 || (fraction == 0.5 && whole & 1 == 1)))
 }

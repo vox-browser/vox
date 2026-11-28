@@ -1,6 +1,11 @@
 module cpuraster
 
 import math
+import os
+
+const glyph_position_validation_diagnostics = os.getenv('VOX_GLYPH_POSITION_VALIDATION_DIAGNOSTICS') == '1'
+const glyph_position_bounds_diagnostics = os.getenv('VOX_GLYPH_POSITION_BOUNDS_DIAGNOSTICS') == '1'
+const reuse_retained_glyph_bounds = os.getenv('VOX_REUSE_RETAINED_GLYPH_BOUNDS') == '1'
 
 // Canvas2D fillText() glyph runs, as skia/canvas_raster.cpp's
 // vox_skia_canvas_glyphs() draws them with LibWeb Skia: an SkFont at the
@@ -23,6 +28,8 @@ pub:
 	font_size     f32
 	glyphs        []u16
 	positions     []f32
+	// Optional check for the same immutable position buffer and coordinate count.
+	position_validation GlyphPositionValidation
 	translation   [2]f32
 	baseline_snap bool
 	// Retained text's native smoothing modes: default, alias, AA, subpixel.
@@ -35,8 +42,45 @@ pub:
 	// Chromium's text surface properties: no contrast boost, and a linear
 	// mask gamma (no preblend) for unhinted antialiased text.
 	chromium_coverage bool
+	// Mask filters use linear coverage without the destination gamma preblend.
+	linear_coverage bool
 	// Computed document color before byte serialization, including author alpha.
 	paint_color ?[4]f32
+}
+
+// Binds a successful check and its coordinate bounds to one exact view.
+// Keep the positions alive and immutable through replay.
+pub struct GlyphPositionValidation {
+	data  voidptr
+	count int
+	bounds Rect
+}
+
+pub fn (validation GlyphPositionValidation) covers(positions []f32, count int) bool {
+	return count > 0 && positions.len == count && validation.count == count
+		&& validation.data == positions.data
+}
+
+pub fn validate_prepared_glyph_positions(positions []f32) GlyphPositionValidation {
+	if positions.len < 2 { return GlyphPositionValidation{} }
+	return check_glyph_position_bounds(positions, glyph_positions_bounds(positions))
+}
+
+fn check_glyph_position_bounds(positions []f32, bounds Rect) GlyphPositionValidation {
+	if glyph_positions_are_finite(positions, positions.len) {
+		return GlyphPositionValidation{positions.data, positions.len, bounds}
+	}
+	return GlyphPositionValidation{}
+}
+
+fn glyph_positions_are_finite(positions []f32, count int) bool {
+	// Both callers have already established that count fits within positions.
+	// Reading without a slice keeps V's backing-buffer metadata untouched.
+	data := unsafe { &f32(positions.data) }
+	for index in 0 .. count {
+		if !is_finite_f32(unsafe { data[index] }) { return false }
+	}
+	return true
 }
 
 // fill_canvas_glyphs fills run with color (an SkColor), or the gradient or
@@ -49,17 +93,37 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, unsafe { nil })
 }
 
+// A destination loader runs on the caller before the first pixel write. An
+// early return for a culled run can leave the destination unread.
+@[params]
+pub struct CanvasGlyphBackdrop {
+pub:
+	context        voidptr
+	read           fn (voidptr) bool = unsafe { nil }
+	pipeline_masks bool
+	copy_pending   bool
+}
+
+const late_glyph_backdrop_join = os.getenv('VOX_LATE_GLYPH_BACKDROP_JOIN') == '1'
+const glyph_backdrop_copy_diagnostics = os.getenv('VOX_GLYPH_BACKDROP_COPY_DIAGNOSTICS') != ''
+
 // fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
 // typeface facts and glyph masks for later draws.
-pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
-	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, &cache)
+pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, backdrop CanvasGlyphBackdrop) bool {
+	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy() && !run.retained, &cache, backdrop)
+}
+
+@[params]
+pub struct CanvasGlyphBoundsOptions {
+pub:
+	position_bounds ?Rect
 }
 
 // canvas_glyph_run_bounds returns the run's conservative SkTextBlob bounds
 // (the glyph positions expanded by the typeface's bounds at the font size)
 // offset by its translation, as left, top, right, bottom. None when the face
 // cannot be opened or has no bounds.
-pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun) ?[4]f32 {
+pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun, options CanvasGlyphBoundsOptions) ?[4]f32 {
 	if run.glyphs.len == 0 || run.positions.len < run.glyphs.len * 2 {
 		return none
 	}
@@ -73,14 +137,59 @@ pub fn canvas_glyph_run_bounds(mut cache GlyphCache, run CanvasGlyphRun) ?[4]f32
 	}
 	mut info := glyph_face_info(&cache, face_key, mut lazy)?
 	font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size)?
-	b := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+	b := options.position_bounds or { glyph_positions_bounds(run.positions[..run.glyphs.len * 2]) }
 	return [b.left + font_bounds.left + run.translation[0],
 		b.top + font_bounds.top + run.translation[1], b.right + font_bounds.right + run.translation[0],
 		b.bottom + font_bounds.bottom +
 			run.translation[1]]!
 }
 
-fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache) bool {
+// Convert the packed native positions with the same float32 rounding as
+// retained SkTextBlob replay. The destination is preallocated by the caller.
+pub fn prepare_retained_glyph_positions(source []f64, mut positions []f32,
+	baseline_x f32, baseline_y f32, fold_origin bool) Rect {
+	for i in 0 .. positions.len {
+		positions[i] = retained_glyph_coordinate(source[i],
+			if i % 2 == 0 { baseline_x } else { baseline_y }, fold_origin)
+	}
+	return glyph_positions_bounds(positions)
+}
+
+// The converted position bounds are also used by the CPU raster quick reject.
+// Attach them to the same checked view without scanning for bounds again.
+pub fn prepare_checked_retained_glyph_positions(source []f64, mut positions []f32,
+	baseline_x f32, baseline_y f32, fold_origin bool) (Rect, GlyphPositionValidation) {
+	bounds := prepare_retained_glyph_positions(source, mut positions, baseline_x, baseline_y,
+		fold_origin)
+	return bounds, check_glyph_position_bounds(positions, bounds)
+}
+
+fn canvas_glyph_position_bounds(positions []f32, coordinates int, validation GlyphPositionValidation,
+	checked bool) Rect {
+	if checked && reuse_retained_glyph_bounds {
+		if glyph_position_bounds_diagnostics {
+			eprintln('VOX_GLYPH_POSITION_BOUNDS_REUSED coordinates=${coordinates}')
+		}
+		return validation.bounds
+	}
+	return glyph_positions_bounds(positions[..coordinates])
+}
+
+@[inline]
+fn retained_glyph_coordinate(value f64, origin f32, fold_origin bool) f32 {
+	return if fold_origin { f32(value) + origin } else { f32(value) }
+}
+
+fn cached_canvas_run_strike(cache &GlyphCache, face_key string, run &CanvasGlyphRun,
+	position_matrix SkAffine, strike &GlyphStrike, smooth_luminance int, luminance int) &CachedGlyphStrike {
+	strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
+	return glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
+		strike, smooth_luminance, luminance))
+}
+
+fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache, backdrop CanvasGlyphBackdrop) bool {
+	has_backdrop := backdrop.read != unsafe { nil }
+	if has_backdrop && (alpha_type != 2 || style != none || filter_in != none) { return false }
 	if run.paint_color != none && (style != none || filter_in != none) { return false }
 	if run.glyphs.len == 0 {
 		return true
@@ -94,12 +203,16 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		return false
 	}
 	filter := plan.color
-	for v in run.positions[..run.glyphs.len * 2] {
-		if !is_finite_f32(v) {
-			return false
+	coordinates := run.glyphs.len * 2
+	checked := run.position_validation.covers(run.positions, coordinates)
+	if checked {
+		if glyph_position_validation_diagnostics {
+			eprintln('VOX_GLYPH_POSITION_VALIDATION_REUSED coordinates=${coordinates}')
 		}
+	} else if !glyph_positions_are_finite(run.positions, coordinates) {
+		return false
 	}
-	$if !linux && !cpuraster_freetype ? {
+	$if !linux && !windows && !cpuraster_freetype ? {
 		// SkTypeface_Mac::MakeFromStream() only opens the first face.
 		if run.face_index != 0 && !run.retained { return false }
 	}
@@ -122,7 +235,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		if !is_finite_f32(run.translation[0]) || !is_finite_f32(run.translation[1]) {
 			return false
 		}
-		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+		mut bounds := canvas_glyph_position_bounds(run.positions, coordinates, run.position_validation,
+			checked)
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
 		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom {
@@ -141,7 +255,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}
 	position_matrix := pre_translate(ctm, origin.x, origin.y)
-	routes := if glyphs_draw_as_paths(run.font_size, position_matrix) {
+	draw_as_paths := glyphs_draw_as_paths(run.font_size, position_matrix)
+	routes := if draw_as_paths {
 		path_face := lazy.get() or { return false }
 		glyph_routes(path_face, run.glyphs, true) or { return false }
 	} else {
@@ -162,7 +277,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	// typeface, whose glyphs CoreText draws in the paint's opaque color.
 	luminance := paint_luminance(paint_color, alpha, shader, filter)
 	// CoreText's strike font is made with the first glyph the cache lacks.
-	mut strike := $if linux || cpuraster_freetype ? {
+	mut strike := $if linux || windows || cpuraster_freetype ? {
 		strike_face := lazy.get() or { return false }
 		new_glyph_strike(strike_face, run.font_size, position_matrix, luminance) or { GlyphStrike{} }
 	} $else {
@@ -171,22 +286,8 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	strike.snap_y = run.baseline_snap && sk_relax(position_matrix.ky) == 0
 	strike.snap_x = run.baseline_snap && !strike.snap_y && sk_relax(position_matrix.sx) == 0
 	strike.smoothing = run.smoothing
-	mut smooth_luminance := -1
-	$if macos && !cpuraster_freetype ? {
-		behavior := int(C.cpuraster_ct_smoothing_behavior())
-		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
-			smooth_luminance = paint_mask_luminance(paint_color, alpha, shader, filter, behavior)
-			strike.table = smooth_mask_gamma_tables[smooth_luminance]
-		} else if run.chromium_coverage {
-			// Zero contrast with the sRGB transfer, or no preblend at all for
-			// the unhinted antialiased mode's linear gamma.
-			strike.table = if run.smoothing == 2 {
-				identity_mask_gamma_table
-			} else {
-				smooth_mask_gamma_tables[luminance]
-			}
-		}
-	}
+	smooth_luminance := select_glyph_mask_gamma(mut strike, run, paint_color, alpha, shader, filter,
+		luminance)
 	defer {
 		strike.release()
 	}
@@ -197,7 +298,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		// Color strikes check and draw their glyphs with the font itself.
 		strike.ensure_font(mut lazy)
 	}
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		strike.foreground = (u32(paint_alpha_byte(alpha)) << 24) | (paint_color & 0xffffff)
 	}
 	// prepare_for_direct_mask_drawing(): device positions plus half the
@@ -224,7 +325,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			}
 		}
 	}
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		if !freetype_run_supported(&strike, run.glyphs) { return false }
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -237,13 +338,33 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if paint_draws_nothing(mode, paint_alpha_byte(alpha), filter) {
 		return true
 	}
+	mut prepared_entry := unsafe { &CachedGlyphStrike(nil) }
+	mut next_mask_batch := 0
+	mut pending_masks := voidptr(0)
+	mut streamed_masks := voidptr(0)
+	$if macos && !cpuraster_freetype ? {
+		if has_backdrop && backdrop.pipeline_masks && run.retained && !strike.color && !draw_as_paths
+			&& (strike.font != unsafe { nil } || strike.deferred) {
+			prepared_entry = cached_canvas_run_strike(cache, face_key, run, position_matrix,
+				&strike, smooth_luminance, luminance)
+			pending_masks = prepared_entry.start_glyph_backdrop_batch(mut strike, mut lazy, run,
+				routes, rounding, true)
+		}
+	}
+	defer {
+		$if macos && !cpuraster_freetype ? {
+			if stream_glyph_masks { finish_streamed_glyph_masks(streamed_masks) }
+			finish_glyph_backdrop_batch(pending_masks, false)
+		}
+	}
 	rc := canvas_raster_clip(width, height, clips)
 	// SkCanvas::onDrawGlyphRunList()'s quick reject with the blob's
 	// conservative bounds: the glyph positions expanded by the typeface's
 	// bounds at the font size. Empty typeface bounds take the glyphs' own
 	// bounds instead, which cannot reject a glyph that would touch the clip.
 	if font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size) {
-		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+		mut bounds := canvas_glyph_position_bounds(run.positions, coordinates, run.position_validation,
+			checked)
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
 		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom {
@@ -260,9 +381,38 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	if rc.is_empty {
 		return true
 	}
-	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
-		filter, legacy)
-	$if linux || cpuraster_freetype ? {
+	// Mask-only routes can prepare the blitter and collect a whole batch
+	// without touching its destination. The batch joins before it paints.
+	join_at_blend := $if macos && !cpuraster_freetype ? {
+		has_backdrop && late_glyph_backdrop_join && backdrop.copy_pending && !backdrop.pipeline_masks
+			&& !strike.color && !draw_as_paths
+	} $else {
+		false
+	}
+	if has_backdrop && !join_at_blend {
+		mut loaded := false
+		$if macos && !cpuraster_freetype ? {
+			if backdrop.pipeline_masks {
+				loaded = read_pending_glyph_backdrop(pending_masks, backdrop)
+			} else if !backdrop.copy_pending && run.retained && !strike.color && !draw_as_paths
+				&& (strike.font != unsafe { nil } || strike.deferred) {
+				prepared_entry = cached_canvas_run_strike(cache, face_key, run, position_matrix,
+					&strike, smooth_luminance, luminance)
+				next_mask_batch, loaded = prepared_entry.prepare_glyph_masks_over_backdrop(mut strike,
+					mut lazy, run, routes, rounding, backdrop)
+			} else {
+				loaded = backdrop.read(backdrop.context)
+			}
+		} $else {
+			loaded = backdrop.read(backdrop.context)
+		}
+		if !loaded { return false }
+	}
+	if !join_at_blend {
+		fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
+			filter, legacy)
+	}
+	$if linux || windows || cpuraster_freetype ? {
 		if routes.any(it.kind == .drawable) {
 			drawable_face := lazy.get() or { return true }
 			fill_freetype_drawables(mut pixels, pitch, run, routes, drawable_face, ctm, &rc,
@@ -281,9 +431,12 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			alpha, mode, filter, legacy)
 		return true
 	}
-	strike_face := if run.chromium_coverage { face_key + '\x00chromium' } else { face_key }
-	mut entry := glyph_cache_strike(cache, glyph_strike_key(strike_face, run.font_size, position_matrix,
-		&strike, smooth_luminance, luminance))
+	mut entry := if prepared_entry != unsafe { nil } {
+		prepared_entry
+	} else {
+		cached_canvas_run_strike(cache, face_key, run, position_matrix, &strike, smooth_luminance,
+			luminance)
+	}
 	if entry.empty {
 		return true
 	}
@@ -297,20 +450,69 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			filter, legacy) or { Blitter(NullBlitter{}) }
 	}
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
+	batch_blend := $if macos && !cpuraster_freetype ? {
+		// Short runs can cover a substantial region at large scales. The
+		// batch uses the sum of its clipped mask pixels to choose lanes.
+		blend_candidate := run.glyphs.len >= previous_glyph_blend_run_min
+			|| (!previous_glyph_blend_budget
+			&& i64(clip_bounds.width()) * clip_bounds.height() >= 2 * glyph_blend_pixels_per_lane)
+		run.retained && blend_candidate && rc.is_bw && mode == .src_over && style == none
+			&& filter_in == none && blitter is PipelineBlitter && !serial_glyph_blend
+			&& !C.vox_scan_workers_disabled()
+	} $else {
+		false
+	}
+	if join_at_blend && !batch_blend && !backdrop.read(backdrop.context) { return false }
+	if join_at_blend && batch_blend && glyph_backdrop_copy_diagnostics {
+		eprintln('VOX_GLYPH_BACKDROP_JOIN_AT_BLEND glyphs=${run.glyphs.len}')
+	}
+	mut mask_batch := if batch_blend {
+		&GlyphMaskBatch{
+			blits: []GlyphMaskBlit{cap: math.min(run.glyphs.len, glyph_blend_batch_size)}
+			backdrop: if join_at_blend { backdrop } else { CanvasGlyphBackdrop{} }
+		}
+	} else {
+		unsafe { &GlyphMaskBatch(nil) }
+	}
+	$if macos && !cpuraster_freetype ? {
+		if pending_masks != unsafe { nil } {
+			next_mask_batch = finish_glyph_backdrop_batch(pending_masks, true)
+			pending_masks = unsafe { nil }
+		}
+	}
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x {
+		sub_x := if strike.snap_x {
 			0
 		} else {
 			packed_subpixel(mapped.x)
-		}, if strike.snap_y {
+		}
+		sub_y := if strike.snap_y {
 			0
 		} else {
 			packed_subpixel(mapped.y)
-		}) or { return true }
+		}
+		key := packed_glyph_key(id, sub_x, sub_y)
+		mut glyph := StrikeGlyph{}
+		if known := entry.glyphs[key] {
+			glyph = known
+		} else {
+			$if macos && !cpuraster_freetype ? {
+				if run.retained && i >= next_mask_batch {
+					// Resume at the first miss beyond the last bounded scan.
+					if stream_glyph_masks { finish_streamed_glyph_masks(streamed_masks) }
+					next_mask_batch, streamed_masks = entry.prepare_glyph_masks(mut strike, mut lazy,
+						run, routes, i, rounding, next_mask_batch > 0, stream_glyph_masks)
+				}
+				if stream_glyph_masks {
+					entry.consume_streamed_glyph_mask(streamed_masks, key)
+				}
+			}
+			glyph = entry.glyph(mut strike, mut lazy, id, sub_x, sub_y) or { break }
+		}
 		if glyph.width == 0 || glyph.height == 0 || glyph.width >= glyph_max_width {
 			// Empty glyphs are dropped; A8 images too wide for SkGlyph are
 			// rejected to a fallback that only draws color glyphs.
@@ -323,6 +525,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		x := float_saturate2int(pos.x)
 		y := float_saturate2int(pos.y)
 		if glyph.image.len == glyph.width * glyph.height * 4 {
+			if batch_blend && (!mask_batch.load_backdrop() || !mask_batch.flush(mut wrapped)) { return false }
 			draw_glyph_sprite(mut pixels, pitch, glyph, glyph.left + x, glyph.top + y, &rc, paint_color, alpha, mode, filter, legacy)
 			continue
 		}
@@ -337,9 +540,38 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			&& clip_bounds.right >= bounds.right && clip_bounds.bottom >= bounds.bottom) {
 			bounds = bounds.intersect(clip_bounds) or { continue }
 		}
-		wrapped.blit_mask(&mask, bounds)
+		if batch_blend {
+			mask_batch.add(mask, bounds)
+			if mask_batch.blits.len == glyph_blend_batch_size && !mask_batch.flush(mut wrapped) { return false }
+		} else {
+			wrapped.blit_mask(&mask, bounds)
+		}
 	}
-	return true
+	return !batch_blend || mask_batch.flush(mut wrapped)
+}
+
+fn select_glyph_mask_gamma(mut strike GlyphStrike, run &CanvasGlyphRun, color u32, alpha f32,
+	shader ?CanvasShader, filter ?ColorFilter, luminance int) int {
+	mut smooth_luminance := -1
+	$if macos && !cpuraster_freetype ? {
+		behavior := int(C.cpuraster_ct_smoothing_behavior())
+		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
+			smooth_luminance = paint_mask_luminance(color, alpha, shader, filter, behavior)
+			strike.table = smooth_mask_gamma_tables[smooth_luminance]
+		} else if run.chromium_coverage {
+			strike.table = if run.smoothing == 2 {
+				identity_mask_gamma_table
+			} else {
+				smooth_mask_gamma_tables[luminance]
+			}
+		}
+	}
+	if run.linear_coverage {
+		strike.table = identity_mask_gamma_table
+		// Keep filtered masks separate from both ordinary and smooth strikes.
+		return -2
+	}
+	return smooth_luminance
 }
 
 // Draw::paintMasks() for an ARGB32 strike: each glyph that survives the
@@ -442,7 +674,7 @@ fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
 			continue
 		}
 		bounds := strike.glyph_bounds(id, 0, 0)
-		drawable := $if linux || cpuraster_freetype ? { C.cpuraster_ft_glyph_type(strike.font, id, 2) == 4 } $else { false }
+		drawable := $if linux || windows || cpuraster_freetype ? { C.cpuraster_ft_glyph_type(strike.font, id, 2) == 4 } $else { false }
 		route := if bounds.width == 0 || bounds.height == 0 {
 			GlyphRoute{
 				kind: .drop
@@ -968,11 +1200,11 @@ struct StrikeGlyph {
 // CoreText's font at the text size, fTransform (MatrixToCGAffineTransform()
 // of the remaining matrix) and the rec's pre-blend table.
 struct GlyphStrike {
+mut:
 	transform  [6]f64
 	invertible bool
 	// The CoreText font's size when it is made on first need.
 	text_size f64
-mut:
 	font      voidptr
 	deferred  bool
 	table     []u8
@@ -986,7 +1218,7 @@ mut:
 }
 
 fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?GlyphStrike {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		return new_freetype_strike(face, size, device, luminance)
 	}
 	mut strike := glyph_strike_template(size, device, luminance)?
@@ -997,19 +1229,27 @@ fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?G
 
 // A CoreText strike whose font is made by ensure_font().
 fn glyph_strike_template(size f32, device SkAffine, luminance int) ?GlyphStrike {
+	mut strike := GlyphStrike{}
+	if !strike.set_template(size, device, luminance) {
+		return none
+	}
+	return strike
+}
+
+// Fill the scaler fields of a fresh strike without allocating its glyph map.
+fn (mut strike GlyphStrike) set_template(size f32, device SkAffine, luminance int) bool {
 	m := glyph_strike_matrices(size, device)
 	if !m.invertible {
 		// A singular matrix zeroes fTransform: every glyph is empty.
-		return none
+		return false
 	}
 	r := m.remaining
-	return GlyphStrike{
-		transform:  [f64(r.sx), -f64(r.ky), -f64(r.kx), f64(r.sy), f64(r.tx), f64(r.ty)]!
-		invertible: m.invertible
-		text_size:  f64(m.text_size)
-		table:      mask_gamma_tables[luminance]
-		deferred:   true
-	}
+	strike.transform = [f64(r.sx), -f64(r.ky), -f64(r.kx), f64(r.sy), f64(r.tx), f64(r.ty)]!
+	strike.invertible = m.invertible
+	strike.text_size = f64(m.text_size)
+	strike.table = mask_gamma_tables[luminance]
+	strike.deferred = true
+	return true
 }
 
 // Makes a deferred strike's font from the face; false when there is none.
@@ -1033,7 +1273,7 @@ fn (mut s GlyphStrike) release() {
 }
 
 fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
-	key := u32(id) << 4 | u32(sub_x) << 2 | u32(sub_y)
+	key := packed_glyph_key(id, sub_x, sub_y)
 	if g := s.glyphs[key] {
 		return g
 	}
@@ -1042,10 +1282,14 @@ fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
 	return g
 }
 
+fn packed_glyph_key(id u16, sub_x int, sub_y int) u32 {
+	return u32(id) << 4 | u32(sub_x) << 2 | u32(sub_y)
+}
+
 // SkScalerContext::internalMakeGlyph() with SkScalerContext_Mac's
 // generateMetrics() and generateImage().
 fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		return freetype_make_glyph(s, id, sub_x_field, sub_y_field)
 	}
 	g := s.glyph_bounds(id, sub_x_field, sub_y_field)
@@ -1068,6 +1312,11 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 		draw_glyph(s.font, id, s.transform, s.invertible, f64(x), f64(y), context_width,
 			context_height, g_width, g_height, s.color, s.foreground) or { return StrikeGlyph{} }
 	}
+	return s.glyph_image(g, cg, context_width, context_height)
+}
+
+fn (s &GlyphStrike) glyph_image(g StrikeGlyph, cg []u32, context_width int, context_height int) StrikeGlyph {
+	g_left, g_top, g_width, g_height := g.left, g.top, g.width, g.height
 	first := (context_height - g_height) * context_width
 	if s.color {
 		// cgpixels_to_pmcolor(): SkPackARGB32() of the premultiplied pixel,
@@ -1085,31 +1334,55 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 		}
 		return StrikeGlyph{g_left, g_top, g_width, g_height, image}
 	}
-	// RGBToA8<true>(): luminance of the inverted pixel through the table.
 	mut image := []u8{len: g_width * g_height}
-	for row in 0 .. g_height {
-		for column in 0 .. g_width {
-			p := cg[first + row * context_width + column]
-			red := 255 - (p >> 16 & 0xff)
-			green := 255 - (p >> 8 & 0xff)
-			blue := 255 - (p & 0xff)
-			image[row * g_width + column] = if s.smoothing == 1 {
-				if p & 255 < 128 { u8(255) } else { u8(0) }
-			} else {
-				s.table[compute_luminance(red, green, blue)]
+	s.write_glyph_mask(cg.data, image.data, g_width, g_height, context_width, context_height)
+	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+}
+
+// RGBToA8<true>(): luminance of the inverted pixel through the table. Rows
+// are processed forward, so the mask can occupy the front of the input
+// bitmap. Each output byte lands at or before the input pixel just read.
+fn (s &GlyphStrike) write_glyph_mask(cg &u32, image &u8, width int, height int,
+	context_width int, context_height int) {
+	first := (context_height - height) * context_width
+	unsafe {
+		for row in 0 .. height {
+			for column in 0 .. width {
+				p := cg[first + row * context_width + column]
+				red := 255 - (p >> 16 & 0xff)
+				green := 255 - (p >> 8 & 0xff)
+				blue := 255 - (p & 0xff)
+				image[row * width + column] = if s.smoothing == 1 {
+					if p & 255 < 128 { u8(255) } else { u8(0) }
+				} else {
+					s.table[compute_luminance(red, green, blue)]
+				}
 			}
 		}
 	}
-	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
+}
+
+struct GlyphMaskBounds {
+	left   int
+	top    int
+	width  int
+	height int
 }
 
 // generateMetrics()'s bounds, rounded out, outset and saturated; zero for
 // an empty glyph.
 fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
-	$if linux || cpuraster_freetype ? {
+	$if linux || windows || cpuraster_freetype ? {
 		return freetype_glyph_bounds(s, id, sub_x_field, sub_y_field)
 	}
-	metrics := glyph_metrics(s.font, id, s.transform) or { return StrikeGlyph{} }
+	bounds := s.glyph_mask_bounds(id, sub_x_field, sub_y_field)
+	return StrikeGlyph{bounds.left, bounds.top, bounds.width, bounds.height, []u8{}}
+}
+
+// Keep the worker's geometry free of V allocations. The caller can attach
+// a mask in the strike cache once the worker has joined.
+fn (s &GlyphStrike) glyph_mask_bounds(id u16, sub_x_field int, sub_y_field int) GlyphMaskBounds {
+	metrics := glyph_metrics(s.font, id, s.transform) or { return GlyphMaskBounds{} }
 	// SkFixedToFloat() of the subpixel field.
 	sub_x := f32(sub_x_field) / f32(4)
 	sub_y := f32(sub_y_field) / f32(4)
@@ -1131,9 +1404,9 @@ fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) Strik
 	g_width := saturate_u16(r - left)
 	g_height := saturate_u16(b - top)
 	if g_width == 0 || g_height == 0 {
-		return StrikeGlyph{}
+		return GlyphMaskBounds{}
 	}
-	return StrikeGlyph{g_left, g_top, g_width, g_height, []u8{}}
+	return GlyphMaskBounds{g_left, g_top, g_width, g_height}
 }
 
 fn saturate_i16(v i64) int {

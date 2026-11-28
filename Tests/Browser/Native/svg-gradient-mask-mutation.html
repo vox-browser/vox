@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG gradient mask mutation</title>
+<style>
+html, body { margin: 0; background: white; }
+svg { display: block; }
+</style>
+<svg width="320" height="120">
+  <defs>
+    <linearGradient id="alpha-ramp">
+      <stop id="alpha-start" stop-opacity="0"/>
+      <stop id="alpha-end" offset="1" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="luminance-ramp">
+      <stop id="luminance-start" stop-color="black"/>
+      <stop id="luminance-end" offset="1" stop-color="black"/>
+    </radialGradient>
+    <mask id="alpha-mask" mask-type="alpha" maskUnits="userSpaceOnUse"
+          x="8" y="8" width="120" height="88">
+      <path d="M8 8h120v88H8Z" fill="url(#alpha-ramp)"/>
+    </mask>
+    <mask id="luminance-mask" maskUnits="userSpaceOnUse"
+          x="152" y="8" width="120" height="88">
+      <path d="M152 8h120v88H152Z" fill="url(#luminance-ramp)"/>
+    </mask>
+  </defs>
+  <path d="M8 8h120v88H8Z" fill="blue" mask="url(#alpha-mask)"/>
+  <path d="M152 8h120v88H152Z" fill="red" mask="url(#luminance-mask)"/>
+</svg>
+<script>
+requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById("alpha-start").setAttribute("stop-opacity", "1");
+    document.getElementById("alpha-end").setAttribute("stop-opacity", "1");
+    document.getElementById("luminance-start").setAttribute("stop-color", "white");
+    document.getElementById("luminance-end").setAttribute("stop-color", "white");
+    document.documentElement.setAttribute("data-masks-updated", "true");
+}));
+</script>

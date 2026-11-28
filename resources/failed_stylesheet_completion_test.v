@@ -13,10 +13,17 @@ fn failed_stylesheet_document(two_links bool) &dom.Document {
 	mut navigable := &dom.Navigable{ active_document_: document, is_top_level_traversable_: true }
 	navigable.traversable_navigable_ = navigable
 	document.set_cached_navigable(navigable)
+	document.set_browsing_context(&dom.BrowsingContext{active_document_: document})
 	assert document.is_fully_active()
 	document.set_scripting_enabled_by_embedder(false)
 	document.set_viewport_rect(dom.Rect{ width: 320, height: 200 })
 	return document
+}
+
+fn assert_empty_failed_stylesheet(document &dom.Document, link &dom.Element, origin_clean bool) {
+	sheet := css.style_sheet_for_owner_node(document, link) or { panic('missing link sheet') }
+	assert sheet.css_rules().length() == 0
+	assert sheet.base.origin_clean == origin_clean
 }
 
 fn test_failed_new_stylesheet_completion_preserves_layout_and_delivers_error() {
@@ -47,7 +54,7 @@ fn test_failed_new_stylesheet_completion_preserves_layout_and_delivers_error() {
 	app.poll_background_resources()
 	scratch.finish()
 	assert voidptr(document.layout_root) == voidptr(before)
-	assert css.style_sheet_for_owner_node(document, link) == none
+	assert_empty_failed_stylesheet(document, link, false)
 	assert model.event_count('error') == errors + 1
 	assert model.event_count('load') == loads
 	assert app.script_stylesheet_responses[address].error == 'HTTP 404'
@@ -55,7 +62,7 @@ fn test_failed_new_stylesheet_completion_preserves_layout_and_delivers_error() {
 	assert !app.request_script_inserted_stylesheets()
 }
 
-fn test_failed_stylesheet_replacement_removes_each_owned_sheet_and_restyles() {
+fn test_failed_stylesheet_replacement_clears_each_owned_sheet_and_restyles() {
 	mut document := failed_stylesheet_document(true)
 	defer { document.finalize() }
 	address := 'https://failed-stylesheet.test/late.css'
@@ -91,13 +98,13 @@ fn test_failed_stylesheet_replacement_removes_each_owned_sheet_and_restyles() {
 	assert !css.up_to_date_computed_properties_for_element(text).display().is_none()
 	for id in ['first', 'second'] {
 		link := document.get_element_by_id(id) or { panic('missing link') }
-		assert css.style_sheet_for_owner_node(document, link) == none
+		assert_empty_failed_stylesheet(document, link, false)
 		model := html.html_link_element_model_for_dom_element(unsafe { &dom.HTMLLinkElement(link) })
 		assert model.event_count('error') >= 1
 	}
 }
 
-fn test_retained_and_navigation_failed_stylesheets_complete_without_reporting_a_sheet_change() {
+fn test_retained_and_navigation_failed_stylesheets_complete_without_relayout() {
 	for from_navigation in [false, true] {
 		mut document := failed_stylesheet_document(true)
 		address := 'https://failed-stylesheet.test/late.css'
@@ -117,7 +124,7 @@ fn test_retained_and_navigation_failed_stylesheets_complete_without_reporting_a_
 		assert !app.request_script_inserted_stylesheets()
 		for id in ['first', 'second'] {
 			link := document.get_element_by_id(id) or { panic('missing link') }
-			assert css.style_sheet_for_owner_node(document, link) == none
+			assert_empty_failed_stylesheet(document, link, false)
 			model := html.html_link_element_model_for_dom_element(unsafe { &dom.HTMLLinkElement(link) })
 			assert model.event_count('error') == initial_errors[id] + 1
 			assert app.script_stylesheet_links[link.as_node().unique_id()] == address
@@ -127,7 +134,7 @@ fn test_retained_and_navigation_failed_stylesheets_complete_without_reporting_a_
 	}
 }
 
-fn test_mime_rejected_new_stylesheet_does_not_report_a_sheet_change() {
+fn test_mime_rejected_new_stylesheet_installs_empty_sheet_without_relayout() {
 	mut document := failed_stylesheet_document(false)
 	defer { document.finalize() }
 	mut link := document.get_element_by_id('first') or { panic('missing link') }
@@ -143,7 +150,7 @@ fn test_mime_rejected_new_stylesheet_does_not_report_a_sheet_change() {
 		request_type: 'stylesheet'
 		response_headers: [adblock.ResponseHeader{ name: 'Content-Type', value: 'text/html; charset=utf-8' }]
 	})
-	assert native_link.linked_style_sheet_ == unsafe { nil }
-	assert model.sheet() == none
+	assert_empty_failed_stylesheet(document, link, true)
+	assert model.sheet()? == ''
 	assert model.event_count('error') == initial_errors + 1
 }

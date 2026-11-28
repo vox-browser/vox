@@ -39,6 +39,9 @@ fn test_host_accessor_descriptors_call_live_getters_without_an_owned_accessor_ce
 				return Value.from_f64(f64(counter.calls))
 			},0,key,none)
 		object.host_properties=&HostAccessorProperties{getter:getter.object}
+		assert object.has_own_property(key)
+		assert !object.has_own_property(PropertyName.from_str('missing'))
+		assert state.calls == 0
 		assert object.get(mut vm,key)!.number==1
 		assert object.get(mut vm,key)!.number==2
 		assert state.calls==2

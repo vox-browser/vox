@@ -16,17 +16,20 @@ fn html_text_area_element_did_edit_callback(target voidptr, input_type string, d
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_raw_value(value string) {
-	old_raw_value := model.text.relevant_value()
-	model.text.relevant_value_ = value
+	old_raw_value := model.raw_value_
+	model.raw_value_ = value
+	// Selection offsets refer to the API value, while the concrete owner keeps
+	// the original raw text for cloning and its editing node.
+	model.text.relevant_value_ = normalize_textarea_api_newlines(value)
 	mut control := model.control
-	control.value_ = value
+	control.value_ = model.text.relevant_value_
 	if value != old_raw_value {
 		model.text.relevant_value_was_changed()
 	}
 }
 
 pub fn (model &HTMLTextAreaElementModel) api_value() string {
-	return normalize_textarea_api_newlines(model.text.relevant_value())
+	return normalize_textarea_api_newlines(model.raw_value_)
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_dirty_value_flag(value bool) {
@@ -66,7 +69,7 @@ pub fn (mut model HTMLTextAreaElementModel) set_relevant_value(value string) ! {
 fn (mut model HTMLTextAreaElementModel) sync_text_node_to_raw_value() {
 	if text_node := model.text_node_ {
 		mut mutable_text_node := unsafe { text_node }
-		mutable_text_node.set_data(model.text.relevant_value())
+		mutable_text_node.set_data(model.raw_value_)
 	}
 }
 
@@ -153,7 +156,7 @@ pub fn (mut model HTMLTextAreaElementModel) clear_algorithm() {
 }
 
 pub fn (model &HTMLTextAreaElementModel) cloned(mut copy HTMLTextAreaElementModel, _ bool) {
-	copy.set_raw_value(model.text.relevant_value())
+	copy.set_raw_value(model.raw_value_)
 	copy.dirty_value = model.dirty_value
 	copy.text.dirty_value_flag = model.text.dirty_value_flag
 }

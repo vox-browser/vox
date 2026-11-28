@@ -163,6 +163,7 @@ pub fn (controller &WritableStreamDefaultController) strategy_size_algorithm() S
 pub fn (mut controller WritableStreamDefaultController) set_strategy_size_algorithm(value SizeAlgorithm) {
 	controller.stream_.size_algorithm_ = value
 	controller.stream_.size_value_algorithm_ = none
+	controller.stream_.size_algorithm_object_ = none
 }
 
 pub fn (controller &WritableStreamDefaultController) stream() &WritableStream {
@@ -492,6 +493,7 @@ pub fn writable_stream_default_controller_clear_algorithms(mut controller Writab
 	controller.stream_.promise_abort_algorithm_ = none
 	controller.stream_.size_algorithm_ = default_size_algorithm
 	controller.stream_.size_value_algorithm_ = none
+	controller.stream_.size_algorithm_object_ = none
 }
 
 pub fn writable_stream_default_controller_close(mut controller WritableStreamDefaultController) {
@@ -523,7 +525,7 @@ pub fn writable_stream_default_controller_get_chunk_size(mut controller Writable
 }
 
 pub fn writable_stream_default_controller_get_chunk_size_value(mut controller WritableStreamDefaultController, chunk Value) !webidl.Value {
-	return invoke_size_value_algorithm(controller.stream_.size_algorithm_, controller.stream_.size_value_algorithm_, chunk) or {
+	return invoke_size_value_algorithm(controller.stream_.size_algorithm_, controller.stream_.size_value_algorithm_, controller.stream_.size_algorithm_object_, chunk) or {
 		writable_stream_default_controller_error_if_needed(mut controller, stream_value_from_webidl(webidl.exception_value(err)))
 		return webidl.number_value(1)
 	}

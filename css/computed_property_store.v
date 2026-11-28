@@ -1,11 +1,13 @@
 module css
 
 import dom
+import os
 import platform
 
 const computed_property_page_size = 16
 const computed_property_page_count = (number_of_longhand_properties + computed_property_page_size - 1) / computed_property_page_size
 const computed_property_page_pool_limit = 4096
+const disable_written_page_publication = os.getenv('VOX_DISABLE_WRITTEN_PAGE_PUBLICATION') != ''
 
 @[heap]
 struct ComputedPropertyPage {
@@ -217,6 +219,9 @@ fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProp
 	writable := store.writable
 	store.writable = 0
 	for index in 0 .. computed_property_page_count {
+		// A page this computation did not write is shared with an earlier
+		// published style or the initial store, and was interned there.
+		if writable & (u32(1) << index) == 0 && !disable_written_page_publication { continue }
 		mut page := store.pages[index]
 		canonical := pool.intern(page, computed_property_page_hash(page))
 		store.pages[index] = canonical
@@ -280,6 +285,9 @@ fn (computer &StyleComputer) begin_computed_property_page_batch() {
 	if owner.computed_property_page_batch_depth_ == 0 {
 		owner.longhand_reuse_cache_ = unsafe { nil }
 		owner.simple_var_properties_ = unsafe { nil }
+		owner.substituted_values_ = unsafe { nil }
+		owner.environment_substitutions_ = unsafe { nil }
+		owner.cascade_reuse_ = unsafe { nil }
 		owner.computed_property_page_interner_ = unsafe { nil }
 	}
 	owner.computed_property_page_batch_depth_++
@@ -292,6 +300,10 @@ fn (computer &StyleComputer) end_computed_property_page_batch() {
 	if owner.computed_property_page_batch_depth_ == 0 {
 		owner.longhand_reuse_cache_ = unsafe { nil }
 		owner.simple_var_properties_ = unsafe { nil }
+		report_substituted_value_reuse(owner.substituted_values_)
+		owner.substituted_values_ = unsafe { nil }
+		owner.environment_substitutions_ = unsafe { nil }
+		owner.cascade_reuse_ = unsafe { nil }
 		// Drop the entire pool: map.clear retains stale values in the fallback.
 		// Published readonly pages remain owned by the installed styles.
 		owner.computed_property_page_interner_ = unsafe { nil }

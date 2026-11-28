@@ -1,3 +1,4 @@
+import util from 'node:util';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -159,7 +160,7 @@ test('whole network category maps keep fresh ownership, eager parity and empty b
     }
 });
 
-test('network reference arrays decode objects and regular expressions on demand with one-time ownership', () => {
+test('network reference arrays are plain arrays that decode entries on first load with one-time ownership', () => {
     const references = [null, {$re:null, value:'original'}, /tracker\d+/gi, ['one', 2]];
     const encoded = encodeSnapshot({network:{filterRefs:references}}, {lazyNetworkReferences:true});
     assert.equal(JSON.parse(encoded.metadata).network.filterRefs, null);
@@ -174,19 +175,25 @@ test('network reference arrays decode objects and regular expressions on demand 
         vm.runInContext(encoded.source.replace('export default ','globalThis.snapshot='),context);
         const first=context.snapshot.restore().network.filterRefs;
         const second=context.snapshot.restore().network.filterRefs;
+        // Matching reads entries without a proxy trap.
+        assert.equal(util.types.isProxy(first),false);
+        assert.ok(Array.isArray(first)); assert.equal(first.length,references.length);
         assert.equal(reads,eager ? references.length*2 : 0);
         assert.equal(context.voxAdblockTakeFilterReferences(first),first);
         assert.equal(context.voxAdblockTakeFilterReferences(first),undefined);
         assert.equal(context.voxAdblockTakeFilterReferences([]),undefined);
-        const cached=first[1];cached.value='changed';
+        if (!eager) assert.equal(first[1],undefined);
+        const cached=first[1] ?? first.$voxLoad(1);cached.value='changed';
         assert.equal(first[1],cached);
-        assert.equal(second[1].value,'original');
-        assert.equal(first[2].source,references[2].source);
-        assert.equal(first[2].flags,references[2].flags);
-        first[2].lastIndex=7;assert.equal(second[2].lastIndex,0);
-        first.push('appended');assert.equal(first[1],cached);
-        assert.equal(second.length,references.length);
-        assert.deepEqual(JSON.parse(JSON.stringify(first.slice(3))),[['one',2],'appended']);
+        assert.equal(first.$voxLoad(-1),undefined); assert.equal(first.$voxLoad(references.length),undefined);
+        assert.equal((second[1] ?? second.$voxLoad(1)).value,'original');
+        const pattern=first[2] ?? first.$voxLoad(2);
+        assert.equal(pattern.source,references[2].source);
+        assert.equal(pattern.flags,references[2].flags);
+        pattern.lastIndex=7;assert.equal((second[2] ?? second.$voxLoad(2)).lastIndex,0);
+        assert.deepEqual(JSON.parse(JSON.stringify(first[3] ?? first.$voxLoad(3))),['one',2]);
+        assert.equal(Object.keys(first).includes('$voxLoad'),false);
+        first.push('appended');assert.equal(first[1],cached);assert.equal(first[4],'appended');
         first.fill(null);assert.deepEqual([...first],Array(5).fill(null));
         assert.equal(second[1].value,'original');
     }

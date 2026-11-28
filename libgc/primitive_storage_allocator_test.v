@@ -128,3 +128,36 @@ fn test_primitive_storage_reallocation_copies_old_bytes_and_zeroes_only_new_tail
 	allocator.deallocate(mut initial)
 	allocator.deallocate(mut replacement)
 }
+
+fn test_primitive_storage_full_slabs_become_available_again_without_duplicates() {
+	mut allocator := PrimitiveStorageAllocator{}
+	defer { release_test_storage_cage(&allocator) }
+	size := primitive_small_slab_size / 2
+	size_class := primitive_small_size_class_index(size) or { panic('missing size class') }
+	mut first := allocator.allocate(size, size, .yes, 0, false)!
+	mut second := allocator.allocate(size, size, .yes, 0, false)!
+	mut third := allocator.allocate(size, size, .yes, 0, false)!
+	mut fourth := allocator.allocate(size, size, .yes, 0, false)!
+	assert allocator.small_slabs[size_class].len == 2
+	assert allocator.small_slabs_with_free_slots[size_class].len == 0
+
+	first_offset, second_offset, third_offset := first.offset, second.offset, third.offset
+	unsafe { allocator.data(third, 0)[0] = 91 }
+	allocator.deallocate(mut first)
+	allocator.deallocate(mut second)
+	allocator.deallocate(mut third)
+	assert allocator.small_slabs_with_free_slots[size_class].len == 2
+
+	mut reused := allocator.allocate(size, size, .yes, 0, false)!
+	assert reused.offset == third_offset && unsafe { allocator.data(reused, 0)[0] } == 0
+	mut another := allocator.allocate(size, size, .yes, 0, false)!
+	mut remaining := allocator.allocate(size, size, .yes, 0, false)!
+	assert another.offset in [first_offset, second_offset]
+	assert remaining.offset in [first_offset, second_offset] && remaining.offset != another.offset
+	assert allocator.small_slabs[size_class].len == 2
+	assert allocator.small_slabs_with_free_slots[size_class].len == 0
+	allocator.deallocate(mut reused)
+	allocator.deallocate(mut another)
+	allocator.deallocate(mut remaining)
+	allocator.deallocate(mut fourth)
+}

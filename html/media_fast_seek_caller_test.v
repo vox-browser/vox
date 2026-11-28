@@ -45,7 +45,7 @@ fn test_fast_seek_caller_clears_poster_before_have_nothing_without_changing_defa
 	assert media.queued_media_task_ids_.len == 0
 }
 
-fn test_fast_seek_caller_selects_direction_from_live_clock_and_commits_adjusted_position() {
+fn test_fast_seek_caller_selects_direction_from_live_clock_and_commits_requested_position() {
 	mut media := fast_seek_caller_owner()!
 	fast_seek_caller_load(mut media)!
 	clock := &FastSeekCallerClock{
@@ -73,11 +73,14 @@ fn test_fast_seek_caller_selects_direction_from_live_clock_and_commits_adjusted_
 	assert media.current_playback_position_ == 0
 	media.fast_seek(7)
 	assert clock.positions == [7.0] && clock.modes == [.fast_before]
-	assert clock.reads == 2 && media.current_time() == 4
+	assert media.current_time() == 7 && clock.reads == 1
 	media.fast_seek(8)
-	assert clock.modes == [.fast_before, .fast_after] && clock.reads == 5
+	assert clock.modes == [.fast_before, .fast_after]
+	assert media.current_time() == 8 && clock.reads == 3
 	media.fast_seek(8)
-	assert clock.modes == [.fast_before, .fast_after, .accurate] && clock.reads == 8
+	assert clock.positions == [7.0, 8.0, 8.0]
+	assert clock.modes == [.fast_before, .fast_after, .accurate]
+	assert media.current_time() == 8 && clock.reads == 5
 	media.set_source('')
 	media.load()!
 }
@@ -108,7 +111,13 @@ fn test_fast_seek_caller_uses_each_source_clock_comparison_instead_of_one_cached
 	})
 	media.fast_seek(5)
 	assert clock.positions == [5.0] && clock.modes == [.accurate]
-	assert clock.reads == 3 && media.current_time() == 4
+	assert media.current_time() == 5 && clock.reads == 2
+	mut loop := main_thread_event_loop()
+	generation := loop.task_generation()
+	loop.process()
+	assert loop.task_generation() == generation + 1
+	assert media.current_time() == 4 && clock.reads == 3
+	assert media.current_time() == 4 && clock.reads == 3
 	media.set_source('')
 	media.load()!
 }

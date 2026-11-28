@@ -10,6 +10,7 @@ static int native_font_compositing_transparency_depth;
 static CGFloat test_scale = 1;
 static CGFloat native_svg_mask_backing_scale(void) { return test_scale; }
 #define VOX_TEST_EMPTY_POINTWISE_FILTERS
+#define VOX_TEST_EMPTY_SPATIAL_FILTERS
 #include "native_document_canvas_entry_points.inc"
 
 static unsigned submissions;
@@ -37,8 +38,13 @@ static void paint(id view, SEL selector, NSRect rect) {
         CGContextSetRGBFillColor(input, .9, .2, .4, 1);
         CGContextFillRect(input, CGRectMake(31.25 - 1.0 / test_scale, 43, 1.0 / test_scale, 1));
     }
-    native_add_css_filter_operation(operation == 7 ? 3 : operation == 8 ? 0 : 2,
-        operation == 7 ? 73 : .65, operation, 0, (gg__Color){0});
+    if (operation == 9) {
+        // The input outside the clip can cast a shadow inside it.
+        native_add_css_filter_operation(1, 31.5, -21.25, 4, (gg__Color){25, 30, 0, 255});
+    } else {
+        native_add_css_filter_operation(operation == 7 ? 3 : operation == 8 ? 0 : 2,
+            operation == 7 ? 73 : .65, operation, 0, (gg__Color){0});
+    }
     native_end_css_filter_layer();
     assert(NSGraphicsContext.currentContext.CGContext == frame);
     assert(native_css_filter_stack_depth == 0);
@@ -75,7 +81,9 @@ static void test_guards(void) {
         pixels[(60 * (79 * 4 + 20)) + 78 * 4 + 3] = 1;
         assert(!native_css_filter_visible_input_is_empty(&layer));
         pixels[(60 * (79 * 4 + 20)) + 78 * 4 + 3] = 0;
-        op.kind = 0; assert(!native_css_filter_visible_input_is_empty(&layer)); op.kind = 2;
+        op.kind = 0; assert(native_css_filter_visible_input_is_empty(&layer));
+        op.kind = 1; assert(native_css_filter_visible_input_is_empty(&layer));
+        pixels[3] = 1; assert(!native_css_filter_visible_input_is_empty(&layer)); pixels[3] = 0;
         op.first = NAN; assert(!native_css_filter_visible_input_is_empty(&layer)); op.first = .5;
         layer.graph_node_count = 1; assert(!native_css_filter_visible_input_is_empty(&layer));
         layer.graph_node_count = 0; layer.borrows_fresh_frame = 1;
@@ -84,6 +92,7 @@ static void test_guards(void) {
         assert(!native_css_filter_visible_input_is_empty(&layer)); layer.copies_to_fresh_frame = 0;
         layer.svg_filter_recording = 1;
         assert(!native_css_filter_visible_input_is_empty(&layer)); layer.svg_filter_recording = 0;
+        op.kind = 2;
         CGContextTranslateCTM(context, .25, 0);
         assert(!native_css_filter_visible_input_is_empty(&layer));
         CGContextRelease(context);
@@ -114,21 +123,24 @@ int main(void) { @autoreleasepool {
     for (int scale = 1; scale <= 2; ++scale)
     for (clipped = 0; clipped <= 1; ++clipped)
     for (content = 0; content < 4; ++content)
-    for (operation = 0; operation < 9; ++operation) {
+    for (operation = 0; operation < 10; ++operation) {
         @autoreleasepool {
             test_scale = scale;
             unsetenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS");
+            setenv("VOX_DISABLE_EMPTY_SPATIAL_FILTERS", "1", 1);
             CGImageRef reference = native_layer_raster_frame(view, scale, (IMP)paint);
             assert(reference);
-            unsigned before = native_test_empty_pointwise_filters, calls = submissions;
+            unsigned pointwise_before = native_test_empty_pointwise_filters;
+            unsigned spatial_before = native_test_empty_spatial_filters, calls = submissions;
             setenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS", "1", 1);
+            unsetenv("VOX_DISABLE_EMPTY_SPATIAL_FILTERS");
             CGImageRef actual = native_layer_raster_frame(view, scale, (IMP)paint);
             assert(actual && [packed(reference) isEqualToData:packed(actual)]);
-            int expect_skip = operation != 8 && (!content || (content == 2 && clipped));
-            if ((native_test_empty_pointwise_filters > before) != expect_skip)
-                fprintf(stderr, "Empty filter admission scale=%d clipped=%d content=%d operation=%d actual=%d expected=%d\n",
-                    scale, clipped, content, operation, native_test_empty_pointwise_filters > before, expect_skip);
-            assert((native_test_empty_pointwise_filters > before) == expect_skip);
+            BOOL expect_pointwise_skip = operation < 8 && (!content || (content == 2 && clipped));
+            BOOL expect_spatial_skip = operation >= 8 && !content;
+            assert((native_test_empty_pointwise_filters > pointwise_before) == expect_pointwise_skip);
+            assert((native_test_empty_spatial_filters > spatial_before) == expect_spatial_skip);
+            BOOL expect_skip = expect_pointwise_skip || expect_spatial_skip;
             assert(submissions - calls == (unsigned)!expect_skip);
             avoided += expect_skip;
             CGImageRelease(actual); CGImageRelease(reference);
@@ -137,5 +149,5 @@ int main(void) { @autoreleasepool {
         }
     }
     method_setImplementation(method, original_create_image);
-    printf("Empty pointwise filters: %u exact frames, %u avoided CI submissions; alpha-one edges, padding, BGRA, fractional clips, 1x/2x and non-pointwise fallback\n", cases, avoided);
+    printf("Empty CSS filters: %u exact frames, %u avoided CI submissions; alpha-one edges, padding, BGRA, fractional clips and 1x/2x\n", cases, avoided);
 } }

@@ -42,3 +42,16 @@ def canonical_bundle_lease(bundle):
         return
     with publication_lease(ROOT, shared=True):
         yield
+
+
+@contextmanager
+def browser_executable_lease(executable):
+    executable = Path(executable).resolve()
+    if (executable.parent.name == 'MacOS' and executable.parent.parent.name == 'Contents'
+            and executable.parent.parent.parent.suffix == '.app'):
+        bundle = executable.parent.parent.parent
+    else:
+        # Standalone diagnostics still use the canonical native helper libraries.
+        bundle = ROOT / 'Build/v/Vox.app'
+    with canonical_bundle_lease(bundle):
+        yield

@@ -6,8 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// A presented-frame capture verified its region as opaque, byte-ordered sRGB
-// RGBA. The bitmap rep it returns only wraps those bytes; the PNG encoder reads
+// A presented-frame capture verified its region as opaque, byte-ordered RGBA
+// in its image color space. The bitmap rep it returns only wraps those bytes; the PNG encoder reads
 // them through this record instead of materializing the rep's own copy. The
 // rep's CGImage keeps the bytes alive.
 typedef struct {

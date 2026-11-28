@@ -75,8 +75,11 @@ pub mut:
 mut:
 	raw_rules_transient bool
 	component_input_transient bool
-	parsed_rule_selectors map[string]Selector
+	parsed_rule_selectors map[string]RuleSelectorMemoEntry
 	parsed_rule_selector_bytes int
+	prepared_rule_selectors &PreparedStyleRuleSelectors = unsafe { nil }
+	prepared_rule_selector_hits int
+	shared_deferred_style_params &ParsingParams = unsafe { nil }
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
@@ -317,6 +320,19 @@ fn (mut stream RawTokenStream) consume_a_token() Token {
 		stream.index++
 	}
 	return token
+}
+
+// A leaf component owns a copy of its token. Copy the tokenizer's current
+// token into it directly rather than returning it through the stream first.
+fn (mut stream RawTokenStream) consume_a_component_token() ComponentValue {
+	if stream.source != unsafe { nil } {
+		component := ComponentValue{
+			value: &Token{...stream.source.current}
+		}
+		stream.source.advance()
+		return component
+	}
+	return ComponentValue.from_token(stream.consume_a_token())
 }
 
 fn (mut stream RawTokenStream) discard_a_token() {
@@ -1117,7 +1133,7 @@ fn parser_consume_a_component_value_from_tokens(mut input RawTokenStream) Compon
 		if type_ == .function {
 			return ComponentValue.from_function(parser_consume_a_function(mut input))
 		}
-		return ComponentValue.from_token(input.consume_a_token())
+		return input.consume_a_component_token()
 	}
 	return ComponentValue.from_token(Tokenizer.create_eof_token())
 }
@@ -1287,9 +1303,19 @@ fn (parser RuleSelectorParser) parent_for_style_nesting(nested ParserNested) Sty
 	return if nested == .scope { .scope } else { .style }
 }
 
-fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule QualifiedRule, nested ParserNested) ?&CSSRule {
-	mut prelude_stream := ParserTokenStream.from_values(qualified_rule.prelude)
-	maybe_selectors := parser.parse_a_selector_list(mut prelude_stream, if nested != .no {
+fn (mut parser RuleSelectorParser) style_rule_selectors(prelude []ComponentValue, nested ParserNested) ?SelectorList {
+	if parser.prepared_rule_selectors != unsafe { nil } && nested == .no
+		&& parser.prepared_rule_selectors.matches_namespaces(parser.declared_namespaces) {
+		if selectors := parser.prepared_rule_selectors.lists[prelude.data] {
+			parser.prepared_rule_selector_hits++
+			if parser.is_ua_style_sheet == .no {
+				return own_prepared_selector_list(selectors)
+			}
+			return selectors
+		}
+	}
+	mut prelude_stream := ParserTokenStream.from_values(prelude)
+	selectors := parser.parse_a_selector_list(mut prelude_stream, if nested != .no {
 		ParserSelectorType.relative
 	} else {
 		ParserSelectorType.standalone
@@ -1302,7 +1328,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		return none
 	}
 
-	if maybe_selectors.is_empty() {
+	if selectors.is_empty() {
 		parser_report_error(ParsingError(InvalidRuleError{
 			rule_name: 'style'
 			prelude: prelude_stream.dump_string()
@@ -1311,7 +1337,11 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		return none
 	}
 
-	mut selectors := maybe_selectors
+	return selectors
+}
+
+fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule QualifiedRule, nested ParserNested) ?&CSSRule {
+	mut selectors := parser.style_rule_selectors(qualified_rule.prelude, nested) or { return none }
 	if nested != .no {
 		selectors = adapt_nested_relative_selector_list(selectors, parser.parent_for_style_nesting(nested))
 	}
@@ -1581,7 +1611,7 @@ fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested Par
 		nested, declaration_rule_kind)))
 }
 
-fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSRule {
+fn stylesheet_namespace_declaration(rule AtRule) ?(?string, string) {
 	mut tokens := ParserTokenStream.from_values(rule.prelude)
 	if rule.is_block_rule || rule.prelude.len == 0 {
 		return none
@@ -1597,6 +1627,11 @@ fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSR
 	if tokens.has_next_token() {
 		return none
 	}
+	return prefix, namespace_uri
+}
+
+fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSRule {
+	prefix, namespace_uri := stylesheet_namespace_declaration(rule) or { return none }
 	return CSSRule.create_namespace(prefix, namespace_uri)
 }
 
@@ -2056,6 +2091,29 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 }
 
 fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSRule {
+	mut input := rule
+	if parser.component_input_transient {
+		$if prealloc {
+			scratch := platform.begin_thread_scratch('font face descriptor conversion')
+			defer { scratch.finish() }
+			descriptors := parse_font_face_rule_descriptors(rule)?
+			if font_face_descriptors_can_export(descriptors) {
+				scratch.leave()
+				owned := descriptors.map(own_parsed_font_face_descriptor(it))
+				return CSSRule.create_font_face_rule(CSSFontFaceRule.create(&CSSFontFaceDescriptors{
+					descriptors: owned
+				}))
+			}
+		}
+		input = own_transient_rule_tree(Rule(rule)) as AtRule
+	}
+	descriptors := parse_font_face_rule_descriptors(input)?
+	return CSSRule.create_font_face_rule(CSSFontFaceRule.create(&CSSFontFaceDescriptors{
+		descriptors: descriptors
+	}))
+}
+
+fn parse_font_face_rule_descriptors(rule AtRule) ?[]FontFaceDescriptor {
 	// https://drafts.csswg.org/css-fonts/#font-face-rule
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
@@ -2086,7 +2144,7 @@ fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSR
 		append_font_face_descriptor(mut descriptors, descriptor)
 	}
 
-	return CSSRule.create_font_face_rule(CSSFontFaceRule.create(CSSFontFaceDescriptors.create(descriptors)))
+	return descriptors
 }
 
 fn (mut parser RuleSelectorParser) parse_comma_separated_family_name_list(mut tokens ParserTokenStream) ?[]string {
@@ -3396,6 +3454,7 @@ fn parser_balanced_selector_text(text string) bool {
 	mut parens := 0
 	mut squares := 0
 	mut quote := u8(0)
+	plain_runs := !disable_selector_plain_byte_runs
 	mut i := 0
 	for i < text.len {
 		ch := text[i]
@@ -3408,6 +3467,12 @@ fn parser_balanced_selector_text(text string) bool {
 				quote = 0
 			}
 			i++
+			continue
+		}
+		if plain_runs && selector_plain_bytes[ch] {
+			// No quote, bracket or escape starts in a run of plain bytes.
+			i++
+			for i < text.len && selector_plain_bytes[text[i]] { i++ }
 			continue
 		}
 		if ch == `\\` && i + 1 < text.len {

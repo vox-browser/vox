@@ -66,3 +66,18 @@ fn test_disjunctive_subject_masks_preserve_manually_mutated_other_rules() {
 	style_scope_add_masked_other_rules(computer, dom.AbstractElement.new(element, none), cache, none, none, none, mut actual)
 	assert actual.len == 1 && voidptr(actual[0].rule) == voidptr(rule)
 }
+
+// An attribute alternative has no mask name: the rule stays a candidate for
+// every element, while :is() with a common attribute uses that bucket.
+fn test_disjunctive_subject_masks_keep_attribute_alternatives_unmasked() {
+	mut cache := RuleCache.new()
+	cache.disjunctive_subject_masks_trusted_ = true
+	selector := parse_selector_with_parser(':is([title],.one)', map[string]bool{}) or { panic('selector') }.selectors[0]
+	cache.add_rule(&MatchingRule{selector:selector}, none, false)
+	assert cache.other_rules.len == 1
+	assert disjunctive_subject_names(selector).len == 0
+	common := parse_selector_with_parser(':is([title="a"],[title="b"])', map[string]bool{}) or { panic('common') }.selectors[0]
+	cache.add_rule(&MatchingRule{selector:common}, none, false)
+	assert cache.other_rules.len == 1
+	assert (cache.rules_by_attribute_name['title'] or { panic('attribute bucket') }).len == 1
+}

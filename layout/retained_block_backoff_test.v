@@ -103,7 +103,7 @@ fn backoff_record(document &dom.Document, id string, inline bool) RetainedBlockB
 }
 
 fn test_rejected_inputs_stop_being_collected_until_the_backoff_expires() {
-	mut document := html.parse_document('<!doctype html><style>#para::before{content:"x"}</style><div id="changed"></div><section id="outer" style="overflow:hidden;width:300px"><ul><li>Item</li></ul></section><p id="para">Generated content before plain words.</p>')
+	mut document := html.parse_document('<!doctype html><style>#para::before{content:counter(list-item)}</style><div id="changed"></div><section id="outer" style="overflow:hidden;width:300px"><ul><li>Item</li></ul></section><p id="para">Generated content before plain words.</p>')
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	mut changed := document.get_element_by_id('changed')?
@@ -111,8 +111,8 @@ fn test_rejected_inputs_stop_being_collected_until_the_backoff_expires() {
 		changed.set_attribute_value('style', 'height:${height}px')
 		document.update_layout(.debugging)
 	}
-	// Both contexts are rejected on every attempt (a list item, a pseudo-element),
-	// so later passes skip collecting their inputs.
+	// Both contexts are rejected on every attempt (a list item, a pseudo-element
+	// showing a counter), so later passes skip collecting their inputs.
 	block := backoff_record(document, 'outer', false)
 	assert block.misses >= 2
 	inline := backoff_record(document, 'para', true)

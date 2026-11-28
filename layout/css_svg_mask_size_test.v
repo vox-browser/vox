@@ -104,6 +104,17 @@ fn test_css_svg_mask_tile_mapping_keeps_viewport_clipping_and_filter_fallbacks()
 		has_stroke:   true
 		stroke_width: 1
 	}], 12, 10)
+	shrunk_stroke := painting.SVGMaskPaintOperation{
+		...operation
+		has_stroke:   true
+		stroke_width: 2
+		transform:    painting.Affine{a: .5, d: .5, e: 2.5, f: 2.5}
+	}
+	assert css_svg_mask_operations_fit_image([shrunk_stroke], 12, 10)
+	assert !css_svg_mask_operations_fit_image([painting.SVGMaskPaintOperation{
+		...shrunk_stroke
+		non_scaling_stroke: true
+	}], 12, 10)
 	assert !css_svg_mask_operations_fit_image([painting.SVGMaskPaintOperation{ kind: .begin_filter }], 12, 10)
 	assert !css_svg_mask_operations_fit_image([painting.SVGMaskPaintOperation{ kind: .image }], 12, 10)
 }

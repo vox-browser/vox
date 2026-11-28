@@ -76,6 +76,7 @@ pub fn MediaElementHost.create_with_created_element_hook(document &dom.Document,
 	}
 	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
 		host.elements['__element_${index}'] = element
+		invalidate_element_key_index(voidptr(host))
 	}
 	return host
 }
@@ -96,6 +97,7 @@ fn (mut host MediaElementHost) element_for_binding(key string, tag string) !&dom
 		configure := key !in host.elements && element.is_html_element()
 			&& element.local_name() in ['audio', 'video'] && element.local_name() == tag
 		host.elements[key] = element
+		note_element_key_write(voidptr(host), key, element, host.elements.len)
 		// Document.createElement() now builds the owner in the native document
 		// factory, so it reaches this host already registered by another provider.
 		// Configure it like an owner created here; otherwise its src never gets
@@ -117,6 +119,7 @@ fn (mut host MediaElementHost) element_for_binding(key string, tag string) !&dom
 	element := dom.create_element(host.document, tag, 'http://www.w3.org/1999/xhtml', none, none,
 		false)!
 	host.elements[key] = element
+	note_element_key_write(voidptr(host), key, element, host.elements.len)
 	if hook := host.created_element_hook { hook(element) }
 	return element
 }

@@ -110,7 +110,11 @@ fn imported_cookie_header(contents string, resource_url string, source_url strin
 
 fn imported_request_header(resource_url string, source_url string, now i64) string {
 	path := imported_cookie_file()
-	if path == '' || os.file_size(path) > 1024 * 1024 { return '' }
+	if path == '' { return '' }
+	// The imported jar is optional. file_size() logs a diagnostic on a missing
+	// file, which would repeat for every navigation and subresource request.
+	info := os.stat(path) or { return '' }
+	if info.get_filetype() != .regular || info.size > 1024 * 1024 { return '' }
 	contents := os.read_file(path) or { return '' }
 	return imported_cookie_header(contents, resource_url, source_url, now)
 }

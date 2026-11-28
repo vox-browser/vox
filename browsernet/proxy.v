@@ -63,10 +63,29 @@ fn request_proxy(resource_url string) !string {
 	if proxy := browsersettings.proxy_override(resource_url) {
 		return configured_proxy(resource_url, { 'VOX_PROXY': proxy })
 	}
+	return configured_proxy(resource_url, proxy_environment())
+}
+
+fn proxy_environment() map[string]string {
 	mut environment := map[string]string{}
 	for key in ['VOX_PROXY', 'http_proxy', 'HTTP_PROXY', 'https_proxy', 'HTTPS_PROXY',
 		'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY'] {
 		if value := os.getenv_opt(key) { environment[key] = value }
 	}
-	return configured_proxy(resource_url, environment)
+	return environment
+}
+
+// Native URL players cannot re-evaluate browser proxy routing on redirects.
+// Even an initially bypassed URL can redirect into a configured proxy scope.
+pub fn has_proxy_policy() bool {
+	if enabled := browsersettings.proxy_policy_override() { return enabled }
+	environment := proxy_environment()
+	if 'VOX_PROXY' in environment && environment['VOX_PROXY'] == '' { return false }
+	if proxy_environment_value(environment, 'no_proxy', 'NO_PROXY').split(',').any(it.trim_space() == '*') {
+		return false
+	}
+	if 'VOX_PROXY' in environment { return true }
+	return proxy_environment_value(environment, 'http_proxy', 'HTTP_PROXY') != ''
+		|| proxy_environment_value(environment, 'https_proxy', 'HTTPS_PROXY') != ''
+		|| proxy_environment_value(environment, 'all_proxy', 'ALL_PROXY') != ''
 }

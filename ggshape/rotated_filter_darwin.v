@@ -54,11 +54,17 @@ fn rotated_shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int)
 	}
 	local := C.VoxGraphiteShape{ ...*shape, matrix: [scale, f32(0), -left, 0, scale, -top, 0, 0,
 		1]! }
-	mask := shadow_filter_mask(&local, w, h, none, canvas.Point{})!
+	layer := shadow_filter_layer(&local, w, h, none, canvas.Point{}, ShadowBounds{
+		f32(math.floor(f64(desired.left() + f32(.001)))) - left,
+		f32(math.floor(f64(desired.top() + f32(.001)))) - top,
+		f32(math.ceil(f64(desired.right() - f32(.001)))) - left,
+		f32(math.ceil(f64(desired.bottom() - f32(.001)))) - top
+	})!
+	resolved_left, resolved_top := left + layer.origin.x, top + layer.origin.y
 	r := rotation.matrix.m
 	return RotatedShadowLayer{
-		mask:   ShadowMask{mask, w, h}
-		matrix: [r[0], r[1], r[0] * left + (r[1] * top + r[2]), r[3], r[4],
-			r[3] * left + (r[4] * top + r[5]), 0, 0, 1]!
+		mask:   layer.mask
+		matrix: [r[0], r[1], r[0] * resolved_left + (r[1] * resolved_top + r[2]), r[3], r[4],
+			r[3] * resolved_left + (r[4] * resolved_top + r[5]), 0, 0, 1]!
 	}
 }

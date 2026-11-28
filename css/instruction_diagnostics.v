@@ -14,6 +14,9 @@ __global (
 	diagnostic_font_guard_rejections [16]u64
 	diagnostic_style_update_causes [16]u64
 	diagnostic_longhand_lookups [2]u64
+	// Collections with candidates, candidates after the ancestor filter, matches.
+	diagnostic_matching_candidates [3]u64
+	diagnostic_failed_candidates map[u64]u64
 	diagnostic_longhand_rejections map[string]u64
 )
 
@@ -75,6 +78,8 @@ fn record_diagnostic_longhand_rejection(id PropertyID, value &dom.StyleValue) {
 		diagnostic_longhand_rejections[key]++
 	}
 	$if vox_css_diagnostics ? {
+		// The rejection report evaluates keys again; count each rejection once.
+		if diagnostic_longhand_reuse_reevaluating { return }
 		kind := if typed := typed_style_value_logic_from_dom(value) { typed.type_name() } else { 'untyped' }
 		key := '${string_from_property_id(id)} ${kind}'
 		diagnostic_longhand_rejections[key]++
@@ -99,6 +104,9 @@ pub fn report_diagnostic_instruction_scopes() {
 			if count > 0 { eprintln('Vox diagnostic style cause: ${index} ${count}') }
 		}
 		eprintln('Vox diagnostic longhand lookups: misses=${diagnostic_longhand_lookups[0]} hits=${diagnostic_longhand_lookups[1]}')
+		eprintln('Vox diagnostic matching: collections=${diagnostic_matching_candidates[0]} candidates=${diagnostic_matching_candidates[1]} matched=${diagnostic_matching_candidates[2]}')
+		report_diagnostic_failed_candidates()
+		report_longhand_reuse_rejections()
 		for key, count in diagnostic_longhand_rejections {
 			eprintln('Vox diagnostic longhand rejection: ${key} ${count}')
 		}
@@ -115,5 +123,24 @@ pub fn report_diagnostic_instruction_scopes() {
 				eprintln('Vox diagnostic scope calls: ${label} ${diagnostic_instruction_calls[index]}')
 			}
 		}
+	}
+}
+
+// With -d vox_css_diagnostics: the candidate rules that failed to match
+// most often, by selector, after the ancestor filter.
+fn note_diagnostic_failed_candidate(rule &MatchingRule) {
+	diagnostic_failed_candidates[u64(voidptr(rule))]++
+}
+
+fn report_diagnostic_failed_candidates() {
+	mut rules := diagnostic_failed_candidates.keys()
+	rules.sort_with_compare(fn (a &u64, b &u64) int {
+		x := diagnostic_failed_candidates[*a]
+		y := diagnostic_failed_candidates[*b]
+		return if x > y { -1 } else if x < y { 1 } else { 0 }
+	})
+	for key in rules#[..40] {
+		rule := unsafe { &MatchingRule(voidptr(key)) }
+		eprintln('Vox diagnostic failed candidate: ${diagnostic_failed_candidates[key]} ${rule.selector.serialize()}')
 	}
 }

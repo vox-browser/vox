@@ -510,7 +510,9 @@ pub fn (settings &EnvironmentSettingsObject) has_cross_site_ancestor() bool {
 	if window := settings.window_ {
 		// WindowEnvironmentSettingsObject.cpp asks the logical parent Navigable
 		// for its active settings/origin, including non-local parent ownership.
-		navigable := window.Window.navigable() or { panic('Source cross-site ancestor requires a Window navigable') }
+		// A redirect can outlive the iframe that started it. Losing the ancestor
+		// chain must not grant the detached window first-party cookie access.
+		navigable := window.Window.navigable() or { return true }
 		parent := navigable.parent() or { return false }
 		if parent.active_document_has_cross_site_ancestor() { return true }
 		origin := parent.active_document_origin() or { panic('Source parent navigable requires an active origin') }

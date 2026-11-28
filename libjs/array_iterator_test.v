@@ -8,6 +8,35 @@ mut:
 	nested bool
 }
 
+fn test_internal_array_step_keeps_the_captured_native_frame() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	parent := vm.realm().object_prototype_record()
+	mut prototype := ArrayIteratorPrototype.create(mut vm, vm.realm(), parent, parent, parent).object
+	key := PropertyName.from_str('next')
+	next := prototype.get(mut vm, key)!
+	identity := function_object_identity(next.as_function())
+	mut target := Object.create(vm.realm(), parent)
+	target.define_direct_property(PropertyName.from_str('length'), Value.from_i32(1), 7)
+	mut state := &ArrayIteratorTestState{}
+	target.define_native_accessor(mut vm, vm.realm(), PropertyName.from_number(0),
+		fn [mut state, identity] (mut vm VM) !Value {
+			frames := vm.execution_contexts_top_to_bottom()
+			function := frames[1].function or { panic('Missing iterator call frame') }
+			assert function_object_identity(function) == identity
+			state.events << 'element'
+			return Value.from_i32(42)
+		}, unsafe { nil }, attribute_configurable, vm.realm().function_prototype)
+	iterator := ArrayIterator.create(vm.realm(), Value.from_object(target), .value, prototype)
+	mut record := get_iterator_direct(mut vm, iterator.object)!
+	prototype.define_direct_property(key, js_undefined(), 7)
+	step := iterator_step(mut vm, mut record)!
+	assert !step.done && step.result.value.value.is_undefined()
+	assert state.events == ['element'] && iterator.index == 1
+	assert iterator_step_value(mut vm, mut record)!.done && record.done
+	assert vm.interpreter_stack().depth() == 0
+}
+
 fn test_array_iterators_yield_sparse_inherited_values_and_real_entry_arrays() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

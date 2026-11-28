@@ -161,11 +161,25 @@ pub fn paint_leaf_native_ink_bounds(command &PaintCommand) ?LayoutRect {
 // pixels inside a resource/filter group can still contribute visible output.
 pub fn paint_leaf_is_outside_canvas(command &PaintCommand, page_x f64, page_y f64,
     width f64, height f64) bool {
-    if command.outer_shadow || command.blur != 0 || width <= 0 || height <= 0 { return false }
+    if !paint_canvas_is_testable(page_x, page_y, width, height) { return false }
+    bounds := paint_canvas_leaf_ink_bounds(command) or { return false }
+    return paint_ink_is_outside_canvas(bounds, page_x, page_y, width, height)
+}
+
+fn paint_canvas_is_testable(page_x f64, page_y f64, width f64, height f64) bool {
+    if width <= 0 || height <= 0 { return false }
     for value in [page_x, page_y, width, height]! {
         if math.is_nan(value) || math.is_inf(value, 0) || math.abs(value) > 1_000_000 { return false }
     }
-    bounds := effect_leaf_ink_bounds_with_precision_guard(command, true) or { return false }
+    return true
+}
+
+fn paint_canvas_leaf_ink_bounds(command &PaintCommand) ?LayoutRect {
+    if command.outer_shadow || command.blur != 0 { return none }
+    return effect_leaf_ink_bounds_with_precision_guard(command, true)
+}
+
+fn paint_ink_is_outside_canvas(bounds LayoutRect, page_x f64, page_y f64, width f64, height f64) bool {
     if bounds.width <= 0 || bounds.height <= 0 { return false }
     // Keep an extra CSS-pixel fringe beyond the native raster guards, including
     // fractional transforms and antialiased clips at either backing density.

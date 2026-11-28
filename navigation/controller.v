@@ -3,6 +3,7 @@ module main
 import browsernet
 import adblock
 import dom
+import html
 import platform
 import time
 
@@ -58,6 +59,7 @@ struct NavigationResult {
 	add_history bool
 	resolved    string
 	loaded      ?LoadedPage
+	stylesheets ?NavigationStylesheetPreloads
 	error       string
 }
 
@@ -110,6 +112,37 @@ fn (mut navigation NavigationController) cancel_pending_navigation() {
 	navigation.navigation_preloaded_resources = map[string]PreloadedResource{}
 }
 
+fn (app &BrowserApp) can_traverse_history(delta int) bool {
+	target := app.history_index + delta
+	if target >= 0 && target < app.history.len { return true }
+	if app.document == unsafe { nil } { return false }
+	model := html.NavigableModel.navigable_with_active_document(app.document) or { return false }
+	return model.can_traverse_same_document_history(app.document, delta)
+}
+
+fn (mut app BrowserApp) traverse_same_document_history(delta int) bool {
+	if app.document == unsafe { nil } { return false }
+	mut document := app.document
+	mut model := html.NavigableModel.navigable_with_active_document(document) or { return false }
+	if !model.can_traverse_same_document_history(document, delta) { return false }
+	mut work := app.begin_navigation_work()
+	defer { work.finish() }
+	app.NavigationController.cancel_pending_navigation()
+	if !model.traverse_same_document_history(mut document, delta) { return false }
+	app.address = document.url.serialize()
+	app.address_cursor = app.address.runes().len
+	app.address_select = false
+	app.sync_address_bar()
+	app.adopt_document_viewport_scroll()
+	if app.js_runtime != unsafe { nil } {
+		app.js_runtime.mark_document_state_dirty()
+		app.poll_javascript_tasks()
+	}
+	document.set_needs_repaint()
+	request_browser_frame()
+	return true
+}
+
 fn (mut app BrowserApp) history_go(delta int) {
 	if app.navigation_work_depth > 0 {
 		previous := app.deferred_navigation_input or { DeferredNavigationInput{} }
@@ -119,6 +152,7 @@ fn (mut app BrowserApp) history_go(delta int) {
 		}
 		return
 	}
+	if app.traverse_same_document_history(delta) { return }
 	traversal := app.NavigationController.history_traversal(delta) or { return }
 	app.save_history_scroll_position()
 	app.history_index = traversal.target_index

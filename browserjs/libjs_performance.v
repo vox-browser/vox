@@ -17,11 +17,13 @@ struct LibJSPerformanceHost {
 mut:
 	entries  map[voidptr]&performancetimeline.PerformanceEntry
 	wrappers map[voidptr]&libjs.Object
+	details  map[voidptr]libjs.Value
 	closed   bool
 }
 
 // Script-visible entries use the actual Window/Worker Performance timeline.
-// Structured-cloned detail, measures and observers remain separate bindings.
+// Detail uses the native structured-clone adapter's ordinary-value subset.
+// PerformanceObserver and the other clone families remain separate bindings.
 fn (mut runtime Runtime) install_libjs_performance() ! {
 	if runtime.closed { return error('JavaScript runtime is closed') }
 	if runtime.libjs_performance_host_ != none { return }
@@ -51,7 +53,7 @@ fn (mut runtime Runtime) install_libjs_performance() ! {
 					}
 					'startTime' { libjs.Value.from_f64(entry.start_time) }
 					'duration' { libjs.Value.from_f64(entry.duration) }
-					else { libjs.js_null() }
+					else { host.entry_detail(mut vm, entry)! }
 				}
 			}, 0, libjs.PropertyName.from_str(name), 'get')
 		entry_prototype.define_direct_accessor(libjs.PropertyName.from_str(name), getter.object, none,
@@ -65,7 +67,7 @@ fn (mut runtime Runtime) install_libjs_performance() ! {
 			values := [libjs.Value.from_string(vm.create_string_from_str(entry.name)),
 				libjs.Value.from_string(vm.create_string_from_str(entry.entry_type)),
 				libjs.Value.from_f64(entry.start_time), libjs.Value.from_f64(entry.duration),
-				libjs.js_null()]
+				host.entry_detail(mut vm, entry)!]
 			for index, key in keys {
 				result.create_data_property_or_throw(mut vm, libjs.PropertyName.from_str(key), values[index])!
 			}
@@ -80,9 +82,9 @@ fn (mut runtime Runtime) install_libjs_performance() ! {
 		}, 0, libjs.PropertyName.from_str('timeOrigin'), 'get')
 	prototype.define_direct_accessor(libjs.PropertyName.from_str('timeOrigin'), time_origin.object, none,
 		libjs.attribute_enumerable | libjs.attribute_configurable)
-	for name in ['now', 'mark', 'getEntries', 'getEntriesByType', 'getEntriesByName', 'clearMarks',
-		'clearMeasures'] {
-		length := if name in ['mark', 'getEntriesByType', 'getEntriesByName'] { 1 } else { 0 }
+	for name in ['now', 'mark', 'measure', 'getEntries', 'getEntriesByType', 'getEntriesByName', 'clearMarks',
+		'clearMeasures', 'clearResourceTimings'] {
+		length := if name in ['mark', 'measure', 'getEntriesByType', 'getEntriesByName'] { 1 } else { 0 }
 		method := libjs.NativeFunction.create(mut vm, runtime.realm, runtime.realm.function_prototype,
 			fn [host, name] (mut vm libjs.VM) !libjs.Value {
 				mut owner := unsafe { &LibJSPerformanceHost(host) }
@@ -100,6 +102,7 @@ fn (mut runtime Runtime) install_libjs_performance() ! {
 		owner.closed = true
 		owner.entries = {}
 		owner.wrappers = {}
+		owner.details = {}
 	})
 }
 
@@ -131,6 +134,8 @@ fn (mut host LibJSPerformanceHost) wrap_entry(entry &performancetimeline.Perform
 	mut object := libjs.Object.create(host.runtime.realm, host.entry_prototype)
 	object.class_name = if entry.entry_type == 'mark' {
 		'PerformanceMark'
+	} else if entry.entry_type == 'measure' {
+		'PerformanceMeasure'
 	} else {
 		'PerformanceEntry'
 	}
@@ -173,12 +178,13 @@ fn (mut host LibJSPerformanceHost) operation(mut vm libjs.VM, name string) !libj
 			}
 			mark_name := vm.argument(0).to_primitive_string(mut vm)!.str()
 			options := vm.argument(1)
+			mut detail := libjs.js_null()
 			mut start := ?f64(none)
 			if !options.is_nullish() {
 				if !options.is_object() {
 					return vm.throw_error(.type_error, 'PerformanceMarkOptions must be an object')
 				}
-				detail := options.as_object().get(mut vm, libjs.PropertyName.from_str('detail'))!
+				detail = options.as_object().get(mut vm, libjs.PropertyName.from_str('detail'))!
 				value := options.as_object().get(mut vm, libjs.PropertyName.from_str('startTime'))!
 				if !value.is_undefined() {
 					number := value.to_number(mut vm)!.number
@@ -187,19 +193,16 @@ fn (mut host LibJSPerformanceHost) operation(mut vm libjs.VM, name string) !libj
 					}
 					start = number
 				}
-				if !detail.is_nullish() {
-					return vm.throw_error(.internal_error, 'LibJS PerformanceMark detail structured cloning is not translated yet')
-				}
 			}
-			mark := host.native_mark(mark_name, usertiming.PerformanceMarkOptions{ start_time: start }) or {
-				return vm.throw_error(if err.msg().starts_with('SyntaxError:') {
-					.syntax_error
-				} else {
-					.type_error
-				}, err.msg())
-			}
+			now := native.now()
+			mark_options := usertiming.PerformanceMarkOptions{start_time: start or { now }}
+			usertiming.validate_mark_options(mark_name, mark_options, now, native.host.window_context) or { return host.native_error(mut vm, err) }
+			cloned := host.clone_detail(mut vm, detail)!
+			mark := host.native_mark(mark_name, mark_options) or { return host.native_error(mut vm, err) }
+			host.details[voidptr(mark.entry)] = cloned
 			return host.wrap_entry(mark.entry)
 		}
+		'measure' { return host.measure(mut vm) }
 		'getEntries' { return host.entry_array(mut vm, native.get_entries()) }
 		'getEntriesByType' {
 			if vm.argument_count() < 1 {
@@ -218,6 +221,10 @@ fn (mut host LibJSPerformanceHost) operation(mut vm libjs.VM, name string) !libj
 				?string(vm.argument(1).to_primitive_string(mut vm)!.str())
 			}
 			return host.entry_array(mut vm, native.get_entries_by_name(entry_name, kind))
+		}
+		'clearResourceTimings' {
+			native.clear_resource_timings()
+			return libjs.js_undefined()
 		}
 		else {
 			entry_name := if vm.argument(0).is_undefined() {

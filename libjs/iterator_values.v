@@ -25,7 +25,7 @@ pub fn setter_that_ignores_prototype_properties(mut vm VM, receiver Value, home 
 	if voidptr(object) == voidptr(home) {
 		return vm.throw_error_type(.type_error, .desc_write_non_writable, receiver.str())
 	}
-	if object.internal_get_own_property(key) == none {
+	if object.get_own_property_checked(mut vm, key)!.descriptor == none {
 		object.create_data_property_or_throw(mut vm, key, value)!
 	} else {
 		object.set(mut vm, key, value, .yes)!

@@ -2,6 +2,7 @@
 #define VOX_METAL_TRANSLATED_PROGRAM_H
 #include "shader_program_darwin.h"
 #include <mach-o/dyld.h>
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static int vox_metal_direct_compiler_unloaded(void) {
     for(uint32_t i=0;i<_dyld_image_count();++i) { char const* name=_dyld_get_image_name(i);if(strstr(name,"glslang") || strstr(name,"spirv-cross")) return 0; }
     return 1;
@@ -53,4 +54,5 @@ static int vox_metal_validate_msl(void* target,char const* source,char* log,uint
         vox_metal_drop_owned(library);return 1;
     }
 }
+#endif
 #endif

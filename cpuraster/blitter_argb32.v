@@ -144,7 +144,8 @@ pub struct SolidBlitter {
 	src_a     u32
 	row_bytes int
 mut:
-	pixels []u8
+	first_row int
+	pixels    []u8
 }
 
 // new_solid_blitter selects the blitter SkBlitter::Choose() does for an
@@ -169,7 +170,7 @@ pub fn new_solid_blitter(mut pixels []u8, row_bytes int, color u32) SolidBlitter
 
 @[inline]
 fn (b &SolidBlitter) offset(x int, y int) int {
-	return y * b.row_bytes + x * 4
+	return (y - b.first_row) * b.row_bytes + x * 4
 }
 
 fn (mut b SolidBlitter) blit_h(x int, y int, width int) {
@@ -285,28 +286,79 @@ fn (mut b SolidBlitter) blit_mask(mask &Mask, clip IRect) {
 	if b.kind == .general && b.src_a == 0 {
 		return
 	}
-	pmc := b.pm_color
-	color_alpha := pmc >> 24
-	for row in 0 .. clip.height() {
+	width, height := clip.width(), clip.height()
+	if width > 0 && height > 1 && height <= max_i32 && b.blit_disjoint_mask(mask, clip) {
+		return
+	}
+	for row in 0 .. height {
 		mut dst := b.offset(clip.left, clip.top + row)
 		mut src := mask.index(clip.left, clip.top + row)
-		for _ in 0 .. clip.width() {
+		for _ in 0 .. width {
 			m := u32(mask.image[src])
 			d := load32(b.pixels, dst)
-			value := if b.color == 0xff000000 {
-				alpha_mul_q(d, 256 - m) + (m << 24)
-			} else {
-				m256 := m + 1
-				scale := if b.color >> 24 == 255 {
-					256 - m
-				} else {
-					256 - ((color_alpha * m256) >> 8)
-				}
-				alpha_mul_q(pmc, m256) + alpha_mul_q(d, scale)
-			}
-			store32(mut b.pixels, dst, value)
+			store32(mut b.pixels, dst, blend_solid_mask_pixel(b.color, b.pm_color, d, m))
 			dst += 4
 			src++
+		}
+	}
+}
+
+@[inline]
+fn blend_solid_mask_pixel(color u32, pm_color u32, dst u32, coverage u32) u32 {
+	if color == 0xff000000 {
+		return alpha_mul_q(dst, 256 - coverage) + (coverage << 24)
+	}
+	mask_scale := coverage + 1
+	dst_scale := if color >> 24 == 255 {
+		256 - coverage
+	} else {
+		256 - (((pm_color >> 24) * mask_scale) >> 8)
+	}
+	return alpha_mul_q(pm_color, mask_scale) + alpha_mul_q(dst, dst_scale)
+}
+
+fn (mut b SolidBlitter) blit_disjoint_mask(mask &Mask, clip IRect) bool {
+	width, height := clip.width(), clip.height()
+	offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes,
+		b.offset(clip.left, clip.top)) or { return false }
+	scan := SolidMaskScan{
+		coverage:    unsafe { mask.image[offsets.source..] }
+		pixels:      unsafe { b.pixels[offsets.target..] }
+		source_pitch: mask.row_bytes
+		target_pitch: b.row_bytes
+		width:       width
+		color:       b.color
+		pm_color:    b.pm_color
+	}
+	run_raster_scans(&scan, height, width, scan_solid_mask)
+	return true
+}
+
+struct SolidMaskScan {
+	coverage     []u8
+	pixels       []u8
+	source_pitch int
+	target_pitch int
+	width        int
+	color        u32
+	pm_color     u32
+}
+
+@[direct_array_access]
+fn scan_solid_mask(context voidptr, first i32, end i32) {
+	scan := unsafe { &SolidMaskScan(context) }
+	mut pixels := unsafe { scan.pixels }
+	for y in int(first) .. int(end) {
+		source := y * scan.source_pitch
+		target := y * scan.target_pitch
+		for x in 0 .. scan.width {
+			o := target + x * 4
+			value := blend_solid_mask_pixel(scan.color, scan.pm_color, load32_unchecked(pixels, o),
+				u32(scan.coverage[source + x]))
+			pixels[o] = u8(value)
+			pixels[o + 1] = u8(value >> 8)
+			pixels[o + 2] = u8(value >> 16)
+			pixels[o + 3] = u8(value >> 24)
 		}
 	}
 }

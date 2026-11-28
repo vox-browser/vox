@@ -30,7 +30,7 @@ pub fn (primitive &PrimitiveString) str() string {
 // only PropertyKey's canonical index representation for virtual characters.
 pub fn (primitive &PrimitiveString) get_own_property(mut vm VM, key PropertyName) ?Value {
 	if key.is_symbol() { return none }
-	if key.is_string() && key.as_string() == utf16_string('length') {
+	if key.is_length_property() {
 		return Value.from_f64(f64(primitive.utf16.len()))
 	}
 	if !key.is_number() || u64(key.number) >= u64(primitive.utf16.len()) { return none }
@@ -45,7 +45,10 @@ pub const large_numeric_string_cache_size = 1024
 pub const string_to_atom_cache_size = 2
 
 pub fn utf16_string(text string) Utf16String {
-	return Utf16String.from_slice(utf16(text))
+	// utf16() returns new storage; it needs no further copy.
+	return Utf16String{
+		data: utf16(text)
+	}
 }
 
 fn has_short_ascii_storage(text Utf16String) bool {
@@ -84,8 +87,32 @@ pub fn (mut vm VM) create_string(text Utf16String) &PrimitiveString {
 	}
 }
 
+// The string-concatenation step of ApplyStringOrNumericBinaryOperator. An
+// empty side leaves the other string's value; otherwise the code units are
+// copied once into exactly sized storage that the new string owns.
+fn (mut vm VM) concatenate_strings(left &PrimitiveString, right &PrimitiveString) &PrimitiveString {
+	a := left.utf16.data
+	b := right.utf16.data
+	if b.len == 0 && left.utf16.storage_ == unsafe { nil } { return left }
+	if a.len == 0 && right.utf16.storage_ == unsafe { nil } { return right }
+	count := a.len + b.len
+	mut units := []u16{cap: count}
+	unsafe {
+		vmemcpy(units.data, a.data, a.len * int(sizeof(u16)))
+		vmemcpy(&u16(units.data) + a.len, b.data, b.len * int(sizeof(u16)))
+		units.len = count
+	}
+	text := Utf16String{
+		data: units
+	}
+	if count <= 1 || has_short_ascii_storage(text) { return vm.create_string(text) }
+	return &PrimitiveString{
+		utf16: text
+	}
+}
+
 pub fn (mut vm VM) create_string_from_str(text string) &PrimitiveString {
-	return vm.create_string(utf16_string(text))
+	return vm.create_cached_utf8_string(text)
 }
 
 // PrimitiveString::create(VM&, Utf16FlyString const&)

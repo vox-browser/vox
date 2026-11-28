@@ -9,8 +9,10 @@ fn C.vox_adblock_install_snapshot(voidptr, &u8, uint) int
 fn C.vox_adblock_install_snapshot_file(voidptr, &char) int
 fn C.vox_adblock_install_snapshot_metadata(voidptr, &u8, uint) int
 
-const native_snapshot_bytes = $embed_file('engine.snapshot.bin')
-const compressed_snapshot_metadata = $embed_file('engine.snapshot.json.gz')
+$if !vox_packaged_adblock_assets ? {
+	const native_snapshot_bytes = $embed_file('engine.snapshot.bin')
+	const compressed_snapshot_metadata = $embed_file('engine.snapshot.json.gz')
+}
 
 // Explicit diagnostic input selection permits matched codec comparisons with
 // one installed browser/helper identity. It never falls back after a bad input.
@@ -33,12 +35,16 @@ fn snapshot_resource_path(executable string, name string) string {
 fn snapshot_asset_path_for_executable(executable string, directory ?string, name string) ?string {
 	if selected := directory { return os.join_path(selected, name) }
 	if executable == '' { return none }
-	for member in ['engine.snapshot.bin', 'engine.snapshot.json.gz', 'engine.js.gz'] {
-		if os.is_file(snapshot_resource_path(executable, member)) {
-			return snapshot_resource_path(executable, name)
+	$if vox_packaged_adblock_assets ? {
+		return snapshot_resource_path(executable, name)
+	} $else {
+		for member in ['engine.snapshot.bin', 'engine.snapshot.json.gz', 'engine.js.gz'] {
+			if os.is_file(snapshot_resource_path(executable, member)) {
+				return snapshot_resource_path(executable, name)
+			}
 		}
+		return none
 	}
-	return none
 }
 
 fn snapshot_asset_path(name string) ?string {
@@ -46,9 +52,13 @@ fn snapshot_asset_path(name string) ?string {
 	return snapshot_asset_path_for_executable(executable, snapshot_asset_directory(), name)
 }
 
-fn warm_snapshot_sources() {
-	if snapshot_asset_path('engine.snapshot.json.gz') == none { _ = compressed_snapshot_metadata.data() }
-	if snapshot_asset_path('engine.snapshot.bin') == none { _ = native_snapshot_bytes.data() }
+$if !vox_packaged_adblock_assets ? {
+	fn warm_snapshot_sources() {
+		if snapshot_asset_path('engine.snapshot.json.gz') == none {
+			_ = compressed_snapshot_metadata.data()
+		}
+		if snapshot_asset_path('engine.snapshot.bin') == none { _ = native_snapshot_bytes.data() }
+	}
 }
 
 fn install_snapshot(context voidptr) ! {
@@ -58,15 +68,26 @@ fn install_snapshot(context voidptr) ! {
 	if path := snapshot_asset_path('engine.snapshot.bin') {
 		status = C.vox_adblock_install_snapshot_file(context, path.str)
 	} else {
-		mut snapshot := native_snapshot_bytes
-		status = C.vox_adblock_install_snapshot(context, snapshot.data(), uint(snapshot.len))
+		$if vox_packaged_adblock_assets ? {
+			return error('Cannot locate bundled adblock snapshot')
+		} $else {
+			mut snapshot := native_snapshot_bytes
+			status = C.vox_adblock_install_snapshot(context, snapshot.data(), uint(snapshot.len))
+		}
 	}
 	if status != 0 {
 		return error('Cannot restore bundled adblock snapshot: ${status}')
 	}
-	metadata := if path := snapshot_asset_path('engine.snapshot.json.gz') {
-		os.read_bytes(path)!
-	} else { compressed_snapshot_metadata.to_bytes() }
+	mut metadata := []u8{}
+	if path := snapshot_asset_path('engine.snapshot.json.gz') {
+		metadata = os.read_bytes(path)!
+	} else {
+		$if vox_packaged_adblock_assets ? {
+			return error('Cannot locate bundled adblock metadata')
+		} $else {
+			metadata = compressed_snapshot_metadata.to_bytes()
+		}
+	}
 	// Status 4 keeps the native installer's former inflate-failure code.
 	json := gunzip_single_member(metadata) or {
 		return error('Cannot restore bundled adblock metadata: 4')

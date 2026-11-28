@@ -173,11 +173,10 @@ fn rasterize_general_shadow(width int, height int, command ShadowCommand, clips 
 	if !draw_general_filter_layer_with_coverage(mut pixels, width, height, width * 4, 2, t, all_clips, specs,
 		space, command.color, command.coverage_alpha, .src_over, fn [kind, outer, inner, run] (mut layer []u8, w int, h int, lt [6]f32, layer_clips []Path) bool {
 		if kind == 2 {
-			fill_canvas_glyphs_surface(mut layer, w, h, w * 4, 2, CanvasGlyphRun{
+			return fill_canvas_glyphs_surface(mut layer, w, h, w * 4, 2, CanvasGlyphRun{
 				...run
 				baseline_snap: true
 			}, lt, 0xff000000, none, 1, .src_over, layer_clips, none, true, unsafe { nil })
-			return true
 		}
 		if !fill_canvas_path(mut layer, w, h, w * 4, 2, outer.path(), lt, 0xff000000, none,
 			1, .src_over, 0, layer_clips, none) {

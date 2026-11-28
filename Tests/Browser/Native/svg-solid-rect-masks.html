@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Solid rectangle SVG masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="12" y="10" width="188" height="130">
+      <path fill="black" fill-opacity=".5" d="M20 18h154v108H20Z"/>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="220" y="12" width="176" height="130">
+      <path fill="#c04020" fill-opacity=".5" transform="translate(620 0) scale(-1 1)"
+            d="M245 22h137v102H245Z"/>
+    </mask>
+    <mask id="fractional" mask-type="alpha" maskUnits="userSpaceOnUse" x="414" y="12" width="104" height="120">
+      <path fill="black" d="M420.5 20.25h90v102H420.5Z"/>
+    </mask>
+    <mask id="opaque" mask-type="alpha" maskUnits="userSpaceOnUse" x="530" y="18" width="56" height="96">
+      <path fill="black" d="M530 18h56v96H530Z"/>
+    </mask>
+  </defs>
+  <g id="sample">
+    <path mask="url(#alpha)" fill="blue" d="M0 0H200V160H0Z"/>
+    <path mask="url(#luminance)" fill="blue" d="M210 0H400V160H210Z"/>
+    <path mask="url(#fractional)" fill="blue" d="M410 0H520V160H410Z"/>
+    <path mask="url(#opaque)" fill="blue" d="M520 0H590V160H520Z"/>
+    <path fill="#f80" d="M594 27h30v40h-30Z"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/><use href="#sample" y="540"/>
+  <use href="#sample" y="720"/><use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/><use href="#sample" y="1620"/>
+</svg>

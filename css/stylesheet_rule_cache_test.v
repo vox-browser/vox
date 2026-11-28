@@ -44,6 +44,7 @@ fn test_rule_cache_matches_complete_source_bytes_and_evicts_with_bounded_storage
 	assert cache.entries.len <= cache.max_entries
 	assert cache.source_bytes <= cache.max_source_bytes
 	assert cache.nodes <= cache.max_nodes
+	assert cache.retained_bytes <= cache.max_retained_bytes
 	rule_cache_test_store(mut cache, '/*' + 'oversized'.repeat(5000) + '*/z{}')
 	assert cache.source_bytes <= cache.max_source_bytes
 	assert !cache.eligible('a{color:red}')
@@ -51,10 +52,29 @@ fn test_rule_cache_matches_complete_source_bytes_and_evicts_with_bounded_storage
 	// Dropping the cache's root must not retire a tree still borrowed by a parser.
 	cache.release_unused()
 	assert cache.entries.len == 0 && cache.source_bytes == 0 && cache.nodes == 0
+	assert cache.retained_bytes == 0
 	gc_collect()
 	mut retained_parser := RuleSelectorParser{ raw_rules_transient: true, component_input_transient: true }
 	retained := retained_parser.convert_rules(first.rules)
 	assert retained[0].style()?.get_property_value('color') == 'red'
+}
+
+fn test_rule_cache_rejects_syntax_that_exceeds_its_arena_budget() {
+	$if prealloc {
+		// The source and node counts fit, while its arena needs at least one
+		// allocator block. The ordinary conversion must still see the rules.
+		mut cache := &StylesheetRuleCache{max_retained_bytes: 64 * 1024}
+		source := rule_cache_test_source('.probe{color:red;--name:"patch"}')
+		mut parser := RuleSelectorParser.create(ParsingParams{}, source, 'utf-8')
+		raw := parser.parse_a_stylesheet(none)
+		assert cache.eligible(source)
+		assert cache.store(source, raw.rules) == 0
+		assert cache.entries.len == 0 && cache.retained_bytes == 0
+		assert cache.lookup(source) == none
+		converted := parser.convert_rules(raw.rules)
+		assert converted[0].style()?.get_property_value('color') == 'red'
+		assert converted[0].style()?.get_property_value('--name') == '"patch"'
+	}
 }
 
 fn rule_cache_test_worker(mut cache StylesheetRuleCache, source string) bool {

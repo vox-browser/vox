@@ -1,12 +1,16 @@
 module libjs
 
-// Runtime/AbstractOperations.cpp::GetFunctionRealm. Proxy validation is part of
-// the pending proxy exotic record; native, bound, and realm-less callables follow
-// the translated paths below.
+// Runtime/AbstractOperations.cpp::GetFunctionRealm. Transparent Proxy forwarding
+// validates revocation without invoking any handler trap.
 pub fn get_function_realm(mut vm VM, function &Object) !&Realm {
 	assert function.callable != none
 	if realm := Value.from_object(function).as_function().realm() { return realm }
-	if bound := function.bound_function { return get_function_realm(mut vm, bound.bound_target_function) }
+	if proxy := function.proxy_object {
+		vm.enter_proxy_operation()!
+		defer { vm.proxy_operation_depth-- }
+		return get_function_realm(mut vm, proxy.operands(mut vm)!.target)
+	}
+	if bound := function.slots.bound_function { return get_function_realm(mut vm, bound.bound_target_function) }
 	return vm.realm()
 }
 
@@ -17,7 +21,7 @@ pub type IntrinsicPrototypeGetter = fn (realm &Realm) &Object
 // Runtime/AbstractOperations.cpp::GetPrototypeFromConstructor.
 pub fn get_prototype_from_constructor(mut vm VM, constructor &Object, intrinsic_default_prototype IntrinsicPrototypeGetter) !&Object {
 	assert constructor.callable != none && intrinsic_default_prototype != unsafe { nil }
-	prototype := constructor.get(mut vm, PropertyName.from_str('prototype'))!
+	prototype := constructor.get(mut vm, function_prototype_key)!
 	if prototype.is_object() { return prototype.as_object() }
 	realm := get_function_realm(mut vm, constructor)!
 	return intrinsic_default_prototype(realm)

@@ -42,3 +42,16 @@ fn (bounds SVGPathBounds) rect() ?svg.Rect {
 		height: bounds.max_y - bounds.min_y
 	}
 }
+
+fn (bounds SVGPathBounds) including_quadratic(start svg.Point, control svg.Point, end svg.Point) SVGPathBounds {
+	left, right := svg.quadratic_bezier_bounds(start.x, control.x, end.x)
+	top, bottom := svg.quadratic_bezier_bounds(start.y, control.y, end.y)
+	return bounds.including(svg.Point{left, top}).including(svg.Point{right, bottom})
+}
+
+fn (bounds SVGPathBounds) including_cubic(start svg.Point, first svg.Point, second svg.Point,
+	end svg.Point) SVGPathBounds {
+	left, right := svg.cubic_bezier_bounds(start.x, first.x, second.x, end.x)
+	top, bottom := svg.cubic_bezier_bounds(start.y, first.y, second.y, end.y)
+	return bounds.including(svg.Point{left, top}).including(svg.Point{right, bottom})
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>WebGL texture reuse</title>
+<style>
+body { margin: 0; background: #101820 }
+#marker { width: 8px; height: 8px; background: #ea70b5 }
+canvas { position: absolute; top: 16px; left: 16px }
+#updated { left: 96px }
+</style>
+<div id="marker"></div>
+<canvas id="static" width="64" height="40"></canvas>
+<canvas id="updated" width="48" height="32"></canvas>
+<script>
+const stationary = document.getElementById('static').getContext('webgl');
+const updated = document.getElementById('updated').getContext('webgl2', {preserveDrawingBuffer: true});
+function clear(context, red, green, blue) {
+    if (!context) throw new Error('Missing native WebGL context');
+    context.clearColor(red, green, blue, 1);
+    context.clear(context.COLOR_BUFFER_BIT);
+    if (context.getError() !== context.NO_ERROR) throw new Error('WebGL clear failed');
+}
+clear(stationary, 0, 1, 0);
+clear(updated, 0, 0, 1);
+let frame = 0;
+function update() {
+    if (++frame === 12) {
+        clear(updated, 1, 1, 0);
+        console.log('WEBGL_TEXTURE_UPDATE_COMPLETE');
+    } else {
+        requestAnimationFrame(update);
+    }
+}
+requestAnimationFrame(update);
+</script>

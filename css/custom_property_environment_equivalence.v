@@ -1,6 +1,9 @@
 module css
 
 import dom
+import os
+
+const disable_guaranteed_invalid_environment_equivalence = os.getenv('VOX_DISABLE_GUARANTEED_INVALID_ENVIRONMENT_EQUIVALENCE') != ''
 
 fn custom_property_environment_optional_text_equal(left ?string, right ?string) bool {
 	if left_text := left {
@@ -43,6 +46,11 @@ fn custom_property_environment_values_equivalent(left &dom.CSSStyleValue_,
 				&& left_typed.value.substitution_functions_presence == right_typed.value.substitution_functions_presence
 				&& left_typed.value.tokens == right_typed.value.tokens
 		}
+	}
+	// `initial` and invalid substitutions resolve to a fresh guaranteed-invalid
+	// value on each pass; it has no payload or retained state to differ.
+	if left_typed.value is GuaranteedInvalidStyleValue && !disable_guaranteed_invalid_environment_equivalence {
+		return right_typed.value is GuaranteedInvalidStyleValue
 	}
 	return false
 }

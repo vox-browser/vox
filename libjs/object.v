@@ -1,49 +1,58 @@
 module libjs
 
+import platform
+
 // Translated from the parts of LibJS/Runtime/Object.{h,cpp} and PropertyKey.h that
 // the VM, environments, and error records depend on. Ordinary and array exotic
 // properties plus String/Boolean/Symbol internal slots are translated; shapes, proxies,
 // and other exotic hooks remain pending.
 // The parser owns the name PropertyKey, so the runtime key is PropertyName.
 
-pub enum PropertyNameKind {
+pub enum PropertyNameKind as u8 {
 	string_key
 	symbol_key
 	number_key
 }
 
-pub struct PropertyName {
+// Only the selected payload is live. Keep keys small enough for the register
+// ABI; ordinary construction owns a string header, primitive-string conversion
+// retains the immutable string cell's header (its first field).
+pub union PropertyNamePayload {
 pub:
-	kind         PropertyNameKind = .string_key
-	string_value Utf16String
-	symbol       ?&Symbol
-	number       u32
+	string_value &Utf16String = unsafe { nil }
+	symbol &Symbol = unsafe { nil }
+	number u32
+}
+
+pub struct PropertyName {
+	PropertyNamePayload
+pub:
+	kind PropertyNameKind = .string_key
+}
+
+@[inline]
+fn property_name_array_index(name &Utf16String) u32 {
+	if name.data.len == 0 || name.data[0] < u16(`0`) || name.data[0] > u16(`9`)
+		|| (name.data[0] == u16(`0`) && name.data.len > 1) { return 0xffffffff }
+	mut number := u64(0)
+	for unit in name.data {
+		if unit < u16(`0`) || unit > u16(`9`) { return 0xffffffff }
+		number = number * 10 + u64(unit - u16(`0`))
+		if number >= 0xffffffff { return 0xffffffff }
+	}
+	return u32(number)
 }
 
 pub fn PropertyName.from_utf16(name Utf16String) PropertyName {
-	// Runtime/PropertyKey.h: canonical decimal indices share numeric storage
-	// with integer keys. Leading zeros and 2^32-1 remain string keys.
-	if name.data.len > 0 && name.data[0] >= u16(`0`) && name.data[0] <= u16(`9`)
-		&& !(name.data[0] == u16(`0`) && name.data.len > 1) {
-		mut number := u64(0)
-		mut valid := true
-		for unit in name.data {
-			if unit < u16(`0`) || unit > u16(`9`) {
-				valid = false
-				break
-			}
-			number = number * 10 + u64(unit - u16(`0`))
-			if number >= 0xffffffff {
-				valid = false
-				break
-			}
-		}
-		if valid { return PropertyName.from_number(u32(number)) }
-	}
-	return PropertyName{
-		kind:         .string_key
-		string_value: name
-	}
+	index := property_name_array_index(&name)
+	if index != 0xffffffff { return PropertyName.from_number(index) }
+	return PropertyName{string_value: &Utf16String{...name}}
+}
+
+fn PropertyName.from_primitive_string(text &PrimitiveString) PropertyName {
+	index := property_name_array_index(&text.utf16)
+	if index != 0xffffffff { return PropertyName.from_number(index) }
+	return PropertyName{string_value: &text.utf16}
 }
 
 pub fn PropertyName.from_str(name string) PropertyName {
@@ -81,11 +90,16 @@ pub fn (name PropertyName) as_string() Utf16String {
 	if name.kind != .string_key {
 		panic('PropertyName.as_string() called on a ${name.kind} key')
 	}
-	return name.string_value
+	return if name.string_value == unsafe { nil } { Utf16String.new() } else { *name.string_value }
 }
 
 pub fn (name PropertyName) as_symbol() &Symbol {
-	return name.symbol or { panic('PropertyName.as_symbol() called on a ${name.kind} key') }
+	if name.kind != .symbol_key || name.symbol == unsafe { nil } { panic('PropertyName.as_symbol() called on a ${name.kind} key') }
+	return name.symbol
+}
+
+pub fn (a PropertyName) == (b PropertyName) bool {
+	return a.equals(b)
 }
 
 pub fn (a PropertyName) equals(b PropertyName) bool {
@@ -93,15 +107,43 @@ pub fn (a PropertyName) equals(b PropertyName) bool {
 		return false
 	}
 	return match a.kind {
-		.string_key { a.string_value == b.string_value }
+		.string_key {
+			if voidptr(a.string_value) == voidptr(b.string_value) { true }
+			else if a.string_value == unsafe { nil } { b.string_value.data.len == 0 }
+			else if b.string_value == unsafe { nil } { a.string_value.data.len == 0 }
+			else { utf16_key_units_equal(a.string_value.data, b.string_value.data) }
+		}
 		.number_key { a.number == b.number }
 		.symbol_key { voidptr(a.as_symbol()) == voidptr(b.as_symbol()) }
 	}
 }
 
+// Property keys are short. Compare their code units eight bytes at a time
+// (unaligned loads), without utf16_equals()' and memcmp's call overhead.
+@[direct_array_access; inline]
+fn utf16_key_units_equal(a []u16, b []u16) bool {
+	if a.len != b.len { return false }
+	if a.data == b.data { return true }
+	bytes := a.len * 2
+	unsafe {
+		left := &u8(a.data)
+		right := &u8(b.data)
+		mut offset := 0
+		for offset + 8 <= bytes {
+			if *(&u64(left + offset)) != *(&u64(right + offset)) { return false }
+			offset += 8
+		}
+		for offset < bytes {
+			if *(&u16(left + offset)) != *(&u16(right + offset)) { return false }
+			offset += 2
+		}
+	}
+	return true
+}
+
 pub fn (name PropertyName) str() string {
 	return match name.kind {
-		.string_key { name.string_value.str() }
+		.string_key { if name.string_value == unsafe { nil } { '' } else { (*name.string_value).str() } }
 		.number_key { name.number.str() }
 		.symbol_key { name.as_symbol().descriptive_string().str() }
 	}
@@ -137,50 +179,148 @@ pub interface HostProperties {
 	own_property_keys() []PropertyName
 }
 
+// Internal slots that most objects never have. Each `?&T` is 16 bytes, so
+// keeping them inline more than doubled every object record.
+pub struct ObjectSlots {
+pub mut:
+	private_elements []PrivateElement // [[PrivateElements]], separate from own properties
+	super_property_base ?&SuperPropertyBase // Internal bytecode record, never author-visible.
+	binding_reference ?&Reference // Retained ResolveBinding result for assignment evaluation.
+	error_data ?&ErrorData
+	intl_list_format ?&IntlListFormat
+	intl_number_format ?&IntlNumberFormat
+	intl_relative_time_format ?&IntlRelativeTimeFormat
+	intl_collator ?&IntlCollator
+	intl_date_time_format ?&IntlDateTimeFormat
+	intl_locale          ?&IntlLocaleObject
+	bound_function       ?&BoundFunction
+	regexp_object ?&RegExpObject
+	regexp_string_iterator ?&RegExpStringIterator
+	keyed_collection     ?&KeyedCollection
+	keyed_iterator       ?&KeyedCollectionIterator
+	weak_map             ?&WeakMapObject
+	weak_set             ?&WeakSetObject
+	weak_ref             ?&WeakRefObject
+	boolean_object       ?&BooleanObject // [[BooleanData]]
+	date_object          ?&DateObject // [[DateValue]]
+	number_object        ?&NumberObject  // [[NumberData]]
+	bigint_object        ?&BigIntObject  // [[BigIntData]]
+	symbol_object        ?&SymbolObject // [[SymbolData]]
+	string_iterator      ?&StringIterator
+	property_name_iterator ?&PropertyNameIterator
+	data_view            ?&DataView
+}
+
+const empty_object_slots = &ObjectSlots{}
+
+// The object's own slots record, allocated on first write. A record created
+// while a transient arena is entered must outlive it, like the object.
+// A callable's [[SourceText]], when it has one.
+fn (object &Object) source_text() ?Utf16String {
+	if source := object.function_source_text { return *source }
+	if callable := object.callable {
+		if callable is ECMAScriptFunction { return callable.source_text() }
+	}
+	return none
+}
+
+pub fn (mut object Object) mut_slots() &ObjectSlots {
+	if voidptr(object.slots) == voidptr(empty_object_slots) {
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		object.slots = &ObjectSlots{}
+		platform.leave_persistent(persistent)
+	}
+	return object.slots
+}
+
 @[heap]
 pub struct Object {
 pub mut:
+	// Rare internal slots, shared read-only while empty; write them through mut_slots().
+	slots &ObjectSlots = empty_object_slots
 	prototype  ?&Object
 	properties []OwnProperty
-	private_elements []PrivateElement // [[PrivateElements]], separate from own properties
 	extensible bool   = true
 	class_name string = 'Object'
+	home_object ?&Object // Function [[HomeObject]], retained independently of .prototype.
 	// ObjectPrototype's immutable-prototype exotic [[SetPrototypeOf]] override.
 	// The intrinsic record that selects this override remains a separate slice.
 	immutable_prototype bool
 	// [[ErrorData]] for Error instances created through create_error().
-	error_data ?&ErrorData
 	// FunctionObject inheritance is represented by a callable implementation.
 	callable             ?FunctionObject
 	constructor          ?ConstructorFunction
 	native_callable      bool
-	native_initial_name  ?Utf16String
-	bound_function       ?&BoundFunction
-	function_source_text ?Utf16String // [[SourceText]] on ECMAScript callables
-	regexp_object ?&RegExpObject
+	native_initial_name  ?&Utf16String
+	proxy_object         ?&ProxyObject
+	// [[SourceText]] recorded for class constructors; other ECMAScript
+	// callables form theirs from the defining source (source_text()).
+	function_source_text ?&Utf16String
 	host_properties ?HostProperties
+	// Pointer options: a by-value LegacyPlatformObject or Utf16String option
+	// would add 120 or 48 bytes to every object record.
+	legacy_platform_object ?&LegacyPlatformObject
 	array_object         ?&ArrayObject
-	boolean_object       ?&BooleanObject // [[BooleanData]]
-	number_object        ?&NumberObject  // [[NumberData]]
-	bigint_object        ?&BigIntObject  // [[BigIntData]]
-	symbol_object        ?&SymbolObject // [[SymbolData]]
+	arguments_object     ?&ArgumentsObject
+	is_arguments_object  bool // Also brands ordinary strict/unmapped arguments.
+	generator_execution  ?&GeneratorExecution
 	string_object        ?&StringObject // [[StringData]] and virtual indexed properties
-	string_iterator      ?&StringIterator
 	array_iterator       ?&ArrayIterator
+	iterator_record      ?&IteratorRecord // Inaccessible bytecode record wrapper
+	promise_record ?&Promise
 	array_buffer         ?&ArrayBufferObject
-	data_view            ?&DataView
 	typed_array          ?&TypedArray
+mut:
+	property_lookup_hints ?&PropertyLookupHints
+	indexed_properties ?&IndexedProperties
 }
 
 // 10.1.12 OrdinaryObjectCreate ( proto [ , additionalInternalSlotsList ] ), https://tc39.es/ecma262/#sec-ordinaryobjectcreate
 // The realm is reserved for intrinsic-backed shapes, which are not translated yet.
+// The checked C backend represents empty option fields with zeroed memory.
+// FastC needs a typed initializer to set its option tags.
 pub fn Object.create(realm &Realm, prototype ?&Object) &Object {
-	return &Object{
-		prototype: prototype
+	$if fastc_backend ? {
+		return &Object{prototype: prototype}
+	} $else {
+		mut object := unsafe { &Object(vcalloc(int(sizeof(Object)))) }
+		object.prototype = prototype
+		object.extensible = true
+		object.class_name = 'Object'
+		object.slots = empty_object_slots
+		object.properties = []OwnProperty{}
+		return object
 	}
 }
 
+// An object or array literal knows how many properties it defines. Growing
+// the property list one definition at a time reallocates it repeatedly, and
+// the arena keeps every outgrown buffer.
+const literal_property_reservation_limit = u32(1024)
+
+fn (mut object Object) reserve_properties(count u32) {
+	if count == 0 || count > literal_property_reservation_limit || object.properties.len != 0
+		|| object.properties.cap >= int(count) {
+		return
+	}
+	object.properties = []OwnProperty{cap: int(count)}
+}
+
 fn (object &Object) find_own_property(key PropertyName) int {
+	if use_indexed_properties() && object.indexed_properties != none { return object.find_indexed_property(key) }
+	$if test {
+		if property_lookup_hints_disabled_for_test { return object.find_own_property_linear(key) }
+	}
+	if object.properties.len >= property_lookup_minimum() {
+		return object.find_own_property_with_hints(key)
+	}
+	return object.find_own_property_linear(key)
+}
+
+fn (object &Object) find_own_property_linear(key PropertyName) int {
+	if key.kind == .string_key && use_string_key_scans() {
+		return object.find_own_string_property(key.string_value)
+	}
 	for index, property in object.properties {
 		if property.key.equals(key) {
 			return index
@@ -189,8 +329,8 @@ fn (object &Object) find_own_property(key PropertyName) int {
 	return -1
 }
 
-// Object.cpp::OrdinaryGetPrototypeOf / OrdinarySetPrototypeOf, with the
-// ObjectPrototype immutable-prototype override. ProxyObject is pending.
+// Concrete ordinary-object operations. Script-visible exotic dispatch lives in
+// object_checked.v; these nonthrowing helpers are for known engine records.
 pub fn (object &Object) internal_get_prototype_of() ?&Object {
 	return object.prototype
 }
@@ -209,6 +349,8 @@ pub fn (mut object Object) internal_set_prototype_of(new_prototype ?&Object) boo
 	for {
 		current := prototype or { break }
 		if voidptr(current) == voidptr(&object) { return false }
+		// OrdinarySetPrototypeOf stops at an exotic [[GetPrototypeOf]].
+		if current.proxy_object != none { break }
 		prototype = current.prototype
 	}
 	object.prototype = new_prototype
@@ -221,6 +363,7 @@ pub fn (object &Object) internal_is_extensible() bool {
 }
 
 pub fn (mut object Object) internal_prevent_extensions() bool {
+	if object.legacy_platform_object != none { return false }
 	if array := object.typed_array { if !is_typed_array_fixed_length(array) { return false } }
 	object.extensible = false
 	return true
@@ -228,15 +371,15 @@ pub fn (mut object Object) internal_prevent_extensions() bool {
 
 // 7.3.16 SetIntegrityLevel ( O, level ).
 pub fn (mut object Object) set_integrity_level(mut vm VM, level IntegrityLevel) !bool {
-	if !object.internal_prevent_extensions() { return false }
-	keys := object.own_property_keys()
+	if !object.prevent_extensions_checked(mut vm)! { return false }
+	keys := object.own_property_keys_checked(mut vm)!
 	if level == .sealed {
 		for key in keys {
 			object.define_property_or_throw(mut vm, key, PropertyDescriptor{ configurable: false })!
 		}
 	} else {
 		for key in keys {
-			if current := object.internal_get_own_property(key) {
+			if current := object.get_own_property_checked(mut vm, key)!.descriptor {
 				if current.is_accessor_descriptor() {
 					object.define_property_or_throw(mut vm, key, PropertyDescriptor{
 						configurable: false
@@ -270,7 +413,7 @@ pub fn (object &Object) test_integrity_level(level IntegrityLevel) bool {
 }
 
 pub fn (object &Object) is_error_object() bool {
-	return object.error_data != none
+	return object.slots.error_data != none
 }
 
 pub fn (object &Object) own_property_keys() []PropertyName {
@@ -317,7 +460,7 @@ pub fn (object &Object) own_property_keys() []PropertyName {
 
 // 10.1.5 [[GetOwnProperty]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-getownproperty-p
 pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDescriptor {
-	if host := object.host_properties { if descriptor := host.get_own_property(key) { return descriptor } }
+	if host := object.host_properties { if descriptor := host.get_own_property(key) { return object.legacy_indexed_descriptor(key, descriptor) } }
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) {
 			value := typed_array_get_element(array, index)
@@ -326,7 +469,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 		}
 	}
 	if array := object.array_object {
-		if key.equals(PropertyName.from_str('length')) { return array.length_descriptor() }
+		if key.is_length_property() { return array.length_descriptor() }
 	}
 	index := object.find_own_property(key)
 	if index < 0 {
@@ -344,7 +487,7 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 		}
 	}
 	return PropertyDescriptor{
-		value:        property.value
+		value:        if arguments := object.arguments_object { arguments.mapped_value(key) or { property.value } } else { property.value }
 		writable:     property.writable
 		enumerable:   property.enumerable
 		configurable: property.configurable
@@ -353,6 +496,15 @@ pub fn (object &Object) internal_get_own_property(key PropertyName) ?PropertyDes
 
 // 10.1.6 [[DefineOwnProperty]] ( P, Desc ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-defineownproperty-p-desc
 pub fn (mut object Object) internal_define_own_property(mut vm VM, key PropertyName, descriptor PropertyDescriptor) !bool {
+	if proxy := object.proxy_object { return proxy.define_own_property(mut vm, key, descriptor) }
+	if key.is_number() {
+		if legacy := object.legacy_platform_object {
+			if legacy.indexed_properties != none { return object.legacy_define_indexed_property(mut vm, key, descriptor) }
+		}
+	}
+	named := object.legacy_define_named_property(mut vm, key, descriptor)!
+	if named.handled { return named.success }
+	if mut arguments := object.arguments_object { return arguments.define_own_property(mut object, key, descriptor) }
 	if mut array := object.typed_array { return array.internal_define_own_property(mut vm, key, descriptor) }
 	if mut array := object.array_object {
 		return array.internal_define_own_property(mut vm, key, descriptor)
@@ -384,13 +536,70 @@ pub fn (object &Object) internal_has_property(key PropertyName) bool {
 	return false
 }
 
+@[inline]
+fn (object &Object) reads_directly() bool {
+	return use_direct_property_reads() && object.host_properties == none
+		&& object.typed_array == none && object.string_object == none
+		&& object.arguments_object == none && object.legacy_platform_object == none
+}
+
+// reads_directly() for one key. A String object's virtual characters have
+// array-index (number) keys; its length and every other key are ordinary own
+// properties, so String.prototype's methods read directly.
+@[inline]
+fn (object &Object) reads_key_directly(key PropertyName) bool {
+	if !use_wide_property_hints() { return object.reads_directly() }
+	return use_direct_property_reads() && object.host_properties == none
+		&& object.typed_array == none && object.arguments_object == none
+		&& object.legacy_platform_object == none
+		&& (object.string_object == none || key.kind != .number_key)
+}
+
+// [[Get]]'s direct path after the own lookup found no property.
+fn (object &Object) get_inherited(mut vm VM, key PropertyName, receiver Value) !Value {
+	if parent := object.prototype {
+		if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
+		if found := vm.indexed_prototype_property(parent, key) {
+			if found.position == -1 { return found.holder.internal_get(mut vm, key, receiver) }
+			if found.position == -2 { return js_undefined() }
+			inherited := found.holder.properties[found.position].value
+			if !inherited.is_accessor() { record_direct_property_read(); return inherited }
+			if use_direct_accessor_dispatch() {
+				vm.record_direct_accessor_dispatch(false)
+				return found.holder.get_accessor_value(mut vm, key, receiver, inherited.as_accessor())
+			}
+		}
+		return parent.internal_get(mut vm, key, receiver)
+	}
+	return js_undefined()
+}
+
 // 10.1.8 [[Get]] ( P, Receiver ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-get-p-receiver
 pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value) !Value {
 	assert !receiver.is_special_empty_value()
+	if proxy := object.proxy_object { return proxy.get(mut vm, key, receiver) }
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) { return typed_array_get_element(array, index) }
 	}
-	descriptor := object.internal_get_own_property(key) or {
+	// Ordinary reads need only a value. Avoid constructing a complete optional
+	// descriptor on this path; exotic providers and accessor caching stay below.
+	if object.reads_key_directly(key) {
+		if array := object.array_object {
+			if key.is_length_property() { return Value.from_f64(f64(array.length)) }
+		}
+		index := object.find_own_property(key)
+		if index < 0 { return object.get_inherited(mut vm, key, receiver) }
+		value := object.properties[index].value
+		if !value.is_accessor() {
+			record_direct_property_read()
+			return value
+		}
+		if use_direct_accessor_dispatch() {
+			vm.record_direct_accessor_dispatch(false)
+			return object.get_accessor_value(mut vm, key, receiver, value.as_accessor())
+		}
+	}
+	descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or {
 		if parent := object.prototype {
 			if vm.did_reach_stack_space_limit() {
 				return vm.throw_error_type(.internal_error, .call_stack_size_exceeded)
@@ -416,6 +625,14 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	if !same_value(getter,accessor_function_value(accessor.getter)) {
 		return call(mut vm,getter,receiver,[]Value{})
 	}
+	return object.get_accessor_value(mut vm, key, receiver, accessor)
+}
+
+// The owned accessor has already been selected and checked. Keep cache
+// eligibility and post-callback identity validation common to both paths.
+fn (object &Object) get_accessor_value(mut vm VM, key PropertyName, receiver Value, accessor &Accessor) !Value {
+	getter := accessor_function_value(accessor.getter)
+	if getter.is_undefined() { return js_undefined() }
 	mut receiver_uses_holder_cache := false
 	if receiver.is_object() {
 		receiver_object := receiver.as_object()
@@ -429,7 +646,9 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 			if cached := object.get_engine_private_property(cached_key) { return cached.value }
 		}
 	}
-	result := call(mut vm, getter, receiver, []Value{})!
+	result := vm.intrinsic_regexp_flag_value(getter, receiver) or {
+		call(mut vm, getter, receiver, []Value{})!
+	}
 	if receiver_uses_holder_cache {
 		if cached_key := accessor.cached_value_key {
 			current_index := object.find_own_property(key)
@@ -451,6 +670,24 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 // 10.1.9.2 OrdinarySetWithOwnDescriptor.
 pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value, receiver Value) !bool {
 	assert !value.is_special_empty_value() && !receiver.is_special_empty_value()
+	if proxy := object.proxy_object { return proxy.set(mut vm, key, value, receiver) }
+	if vm.did_reach_stack_space_limit() { return vm.throw_error_type(.internal_error, .call_stack_size_exceeded) }
+	if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+		if legacy := object.legacy_platform_object {
+			if key.is_number() {
+				if setter := legacy.indexed_setter {
+					setter.set_indexed_property(mut vm, key.number, value)!
+					return true
+				}
+			}
+			if !key.is_symbol() {
+				if setter := legacy.named_setter {
+					setter.set_named_property(mut vm, legacy_property_name(key), value)!
+					return true
+				}
+			}
+		}
+	}
 	if mut array := object.typed_array {
 		if index := typed_array_property_index(key) {
 			if same_value(Value.from_object(&object), receiver) {
@@ -458,6 +695,37 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 				return true
 			}
 			if !is_valid_integer_index(array, index) { return true }
+		}
+	}
+	// Ordinary holders cannot run author code while selecting an own cell.
+	// Read the live cell on every write and keep foreign/exotic receivers on
+	// OrdinarySetWithOwnDescriptor's checked define-property path.
+	if use_direct_accessor_dispatch() && object.host_properties == none
+		&& object.legacy_platform_object == none && object.typed_array == none
+		&& object.array_object == none && object.string_object == none
+		&& object.arguments_object == none {
+		index := object.find_own_property(key)
+		if index >= 0 {
+			property := object.properties[index]
+			if property.value.is_accessor() {
+				setter := accessor_function_value(property.value.as_accessor().setter)
+				if setter.is_undefined() { return false }
+				vm.record_direct_accessor_dispatch(true)
+				call(mut vm, setter, receiver, [value])!
+				return true
+			}
+			if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+				if !property.writable { return false }
+				object.properties[index].value = value
+				return true
+			}
+		} else if parent := object.prototype {
+			if receiver.is_object() && voidptr(receiver.as_object()) == voidptr(&object) {
+				added := object.set_absent_own_data_property(key, value)
+				if added != absent_own_set_unhandled { return added == absent_own_set_added }
+			}
+			mut parent_object := unsafe { &Object(parent) }
+			return parent_object.internal_set(mut vm, key, value, receiver)
 		}
 	}
 	descriptor := object.internal_get_own_property(key) or {
@@ -483,7 +751,7 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 		return false
 	}
 	mut receiver_object := receiver.as_object()
-	if existing := receiver_object.internal_get_own_property(key) {
+	if existing := receiver_object.get_own_property_checked(mut vm, key)!.descriptor {
 		if existing.is_accessor_descriptor() || !(existing.writable or { false }) {
 			return false
 		}
@@ -496,6 +764,11 @@ pub fn (mut object Object) internal_set(mut vm VM, key PropertyName, value Value
 
 // 10.1.10 [[Delete]] ( P ), https://tc39.es/ecma262/#sec-ordinary-object-internal-methods-and-internal-slots-delete-p
 pub fn (mut object Object) internal_delete(key PropertyName) bool {
+	if key.is_number() {
+		if legacy := object.legacy_platform_object {
+			if indexed := legacy.indexed_properties { return !indexed.is_supported_property_index(key.number) }
+		}
+	}
 	if array := object.typed_array {
 		if index := typed_array_property_index(key) { return !is_valid_integer_index(array, index) }
 	}
@@ -510,6 +783,10 @@ pub fn (mut object Object) internal_delete(key PropertyName) bool {
 		return false
 	}
 	object.properties.delete(index)
+	object.reindex_deleted_property()
+	if mut arguments := object.arguments_object {
+		if key.is_number() { arguments.parameter_map.delete(key.number) }
+	}
 	return true
 }
 
@@ -520,6 +797,11 @@ pub fn (object &Object) has_property(key PropertyName) bool {
 
 // 7.3.13 HasOwnProperty ( O, P ), https://tc39.es/ecma262/#sec-hasownproperty
 pub fn (object &Object) has_own_property(key PropertyName) bool {
+	// Host descriptors and virtual length/indexed properties require the full lookup.
+	if object.host_properties == none && object.typed_array == none
+		&& object.array_object == none && object.string_object == none {
+		return object.find_own_property(key) >= 0
+	}
 	return object.internal_get_own_property(key) != none
 }
 
@@ -530,7 +812,7 @@ pub fn (object &Object) get_without_side_effects(key PropertyName) Value {
 	for {
 		holder := current or { return js_special_empty_value() }
 		if array := holder.array_object {
-			if key.equals(PropertyName.from_str('length')) {
+			if key.is_length_property() {
 				return Value.from_f64(f64(array.length))
 			}
 		}
@@ -583,18 +865,41 @@ pub fn (mut object Object) define_property_or_throw(mut vm VM, key PropertyName,
 
 // 7.3.10 DeletePropertyOrThrow ( O, P ), https://tc39.es/ecma262/#sec-deletepropertyorthrow
 pub fn (mut object Object) delete_property_or_throw(mut vm VM, key PropertyName) ! {
-	success := object.internal_delete(key)
+	success := object.delete_checked(mut vm, key)!
 	if !success {
 		return vm.throw_error_type(.type_error, .object_delete_returned_false)
 	}
 }
 
 // Object::define_direct_property: installs a data property without validation.
+// define_direct_property() for a key the caller has just created the object
+// without, such as a new function's length, name and prototype: skip the
+// lookup that would only confirm it is absent.
+fn (mut object Object) define_absent_property(key PropertyName, value Value, attributes u8) {
+	$if test {
+		assert object.find_own_property(key) < 0
+	}
+	if object.array_object != none || object.indexed_properties != none {
+		object.define_direct_property(key, value, attributes)
+		return
+	}
+	push_within_capacity(mut object.properties, OwnProperty{
+		key:          key
+		value:        value
+		writable:     attributes & attribute_writable != 0
+		enumerable:   attributes & attribute_enumerable != 0
+		configurable: attributes & attribute_configurable != 0
+	})
+}
+
 pub fn (mut object Object) define_direct_property(key PropertyName, value Value, attributes u8) {
+	// Look the key up before growing an array's length: an index at or above
+	// the length is known to be absent without scanning the property vector.
+	index := object.find_own_property(key)
 	if mut array := object.array_object {
 		// Object.cpp::storage_set/indexed_put grows the magical array length
 		// even when an engine-private caller bypasses descriptor validation.
-		assert !key.equals(PropertyName.from_str('length'))
+		assert !key.is_length_property()
 		if key.is_number() && key.number >= array.length { array.length = key.number + 1 }
 	}
 	property := OwnProperty{
@@ -604,10 +909,11 @@ pub fn (mut object Object) define_direct_property(key PropertyName, value Value,
 		enumerable:   attributes & attribute_enumerable != 0
 		configurable: attributes & attribute_configurable != 0
 	}
-	index := object.find_own_property(key)
 	if index >= 0 {
 		object.properties[index] = property
 		return
 	}
 	object.properties << property
+	object.index_appended_property()
+	object.count_appended_array_property(key)
 }

@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG gradient masks</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+.nested { position: absolute; left: 435px; top: 8px; transform: translateX(.5px); }
+</style>
+<header></header>
+<img class="nested" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3ClinearGradient id='r' gradientTransform='translate(.25) scale(.5 1)'%3E%3Cstop stop-opacity='0'/%3E%3Cstop offset='1'/%3E%3C/linearGradient%3E%3Cmask id='m' mask-type='alpha' maskUnits='userSpaceOnUse' x='0' y='0' width='80' height='80'%3E%3Cpath fill='url(%23r)' d='M0 0h80v80H0Z'/%3E%3C/mask%3E%3Cpath fill='blue' mask='url(%23m)' d='M0 0h80v80H0Z'/%3E%3C/svg%3E">
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <linearGradient id="ramp" gradientUnits="userSpaceOnUse" x2="100" gradientTransform="translate(40) scale(.6 1)">
+      <stop stop-color="red" stop-opacity="0"/>
+      <stop offset="1" stop-color="black"/>
+    </linearGradient>
+    <radialGradient id="ellipse" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1"
+        gradientTransform="translate(275 55) scale(70 30)">
+      <stop stop-color="white"/>
+      <stop offset="1" stop-color="black"/>
+    </radialGradient>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="12" y="12" width="128" height="110">
+      <path fill="url(#ramp)" fill-opacity=".8" d="M12 20h128v75H12Z"/>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="195" y="12" width="160" height="110">
+      <path fill="url(#ellipse)" d="M195 12h160v110H195Z"/>
+    </mask>
+  </defs>
+  <g id="sample">
+    <g mask="url(#alpha)">
+      <path fill="#f00" d="M0 0H610V180H0Z"/>
+      <path fill="#00f" d="M14 0H620V180H14Z"/>
+    </g>
+    <path mask="url(#luminance)" fill="#00f" d="M180 0H620V180H180Z"/>
+    <path fill="#f80" d="M370 27h40v40h-40Z"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/>
+  <use href="#sample" y="540"/><use href="#sample" y="720"/>
+  <use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/>
+  <use href="#sample" y="1620"/>
+</svg>

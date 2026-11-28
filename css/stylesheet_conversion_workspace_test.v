@@ -51,6 +51,60 @@ fn test_stylesheet_conversion_workspace_preserves_retained_rule_payloads() {
 	}
 }
 
+fn test_font_face_descriptors_outlive_conversion_input_and_workspace() {
+	source := r'@font-face {
+		font-family: Old;
+		font-family: Retained Probe;
+		src: local("Fallback Name"),
+			url("../probe.woff2" cross-origin(anonymous) referrer-policy(no-referrer) integrity("sha384-example"))
+			format(woff2) tech(features-opentype);
+		font-style: oblique 18deg;
+		font-weight: 300 650;
+		font-width: 80%;
+		font-display: swap;
+		unicode-range: U+0020-007E, U+1F600;
+		font-feature-settings: "kern" 0, "liga" 1;
+		font-variation-settings: "wght" 412;
+		font-language-override: "ENG";
+		font-named-instance: "Display";
+		ascent-override: 91%;
+		descent-override: 21%;
+		line-gap-override: 0%;
+	}'
+	location := 'https://workspace.test/fonts/main.css'
+	mut legacy := RuleSelectorParser.create(ParsingParams{}, source, 'utf-8')
+	expected := legacy.parse_as_css_stylesheet(location, none)
+	input := platform.begin_thread_scratch('stylesheet face test source')
+	defer { input.finish() }
+	temporary := source.clone()
+	input.leave()
+	actual := parse_css_stylesheet_in_workspace(ParsingParams{}, temporary, location, none, true)
+	input.finish()
+
+	face_rule := actual.css_rules().rules[0].kind_data().font_face_rule?
+	expected_rule := expected.css_rules().rules[0].kind_data().font_face_rule?
+	assert face_rule.serialized() == expected_rule.serialized()
+	face := face_rule.font_face()
+	assert face.font_family_ == 'Retained Probe'
+	assert face.weight_? == FontWeightRange{min: 300, max: 650}
+	assert face.width_? == 80
+	assert face.sources_.len == 2
+	assert face.sources_[0].value == 'Fallback Name'
+	remote := face.sources_[1]
+	source_url := remote.url?
+	assert source_url.url() == '../probe.woff2'
+	assert remote.format? == 'woff2'
+	assert remote.tech == [FontTech.features_opentype]
+	assert source_url.request_url_modifiers().map(it.to_string())
+		== ['cross-origin(anonymous)', 'integrity("sha384-example")', 'referrer-policy(no-referrer)']
+	assert face.unicode_ranges_ == [UnicodeRange{0x20, 0x7e}, UnicodeRange{0x1f600, 0x1f600}]
+	assert face.font_display_ == .swap
+	assert face.font_feature_settings_? == {'kern': i64(0), 'liga': i64(1)}
+	assert face.font_variation_settings_? == {'wght': f64(412)}
+	assert face.font_language_override_? == 'ENG'
+	assert face.font_named_instance_? == 'Display'
+}
+
 fn test_deferred_workspace_declarations_keep_source_without_token_trees() {
 	source := '.probe { width: 1/**/px; height: 2px !important; --word: "hello\\20 world"; --empty: ; background: url("../image.png"); padding: var(--size, calc(2px + 3%)); }'
 	sheet := parse_css_stylesheet_in_workspace(ParsingParams{}, source, 'https://workspace.test/css/theme.css', none, true)
@@ -74,6 +128,31 @@ fn test_deferred_workspace_declarations_keep_source_without_token_trees() {
 	property := style.get_property(.background_image) or { panic('missing image') }
 	assert property.value.base_url or { '' } == 'https://workspace.test/css/theme.css'
 	assert style.deferred_declarations_ == none
+}
+
+fn test_deferred_styles_reuse_only_the_empty_grammar_context() {
+	sheet := parse_css_stylesheet_in_workspace(ParsingParams{},
+		'a { width: 1px; } b { width: 2px; }', none, none, true)
+	first := sheet.css_rules().rules[0].declaration?
+	second := sheet.css_rules().rules[1].declaration?
+	first_params := first.deferred_declarations_?.params?
+	second_params := second.deferred_declarations_?.params?
+	assert voidptr(first_params) == voidptr(second_params)
+	assert first.get_property_value('width') == '1px'
+	assert second.get_property_value('width') == '2px'
+
+	namespaced := parse_css_stylesheet_in_workspace(ParsingParams{},
+		'@namespace s "http://www.w3.org/2000/svg"; s|a { width: 3px; } s|b { width: 4px; }',
+		none, none, true)
+	namespaced_first := namespaced.css_rules().rules[1].declaration?
+	namespaced_second := namespaced.css_rules().rules[2].declaration?
+	namespaced_first_params := namespaced_first.deferred_declarations_?.params?
+	namespaced_second_params := namespaced_second.deferred_declarations_?.params?
+	assert voidptr(namespaced_first_params) != voidptr(namespaced_second_params)
+	assert namespaced_first_params.declared_namespaces['s']
+	assert namespaced_second_params.declared_namespaces['s']
+	assert namespaced_first.get_property_value('width') == '3px'
+	assert namespaced_second.get_property_value('width') == '4px'
 }
 
 fn test_stylesheet_conversion_retires_discarded_large_token_input() {

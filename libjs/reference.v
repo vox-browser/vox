@@ -50,7 +50,7 @@ pub fn Reference.for_environment(environment Environment, name Utf16String, stri
 		// Environment bindings retain a string [[ReferencedName]], including
 		// strings supplied through the runtime API that resemble an index.
 		name:                   PropertyName{
-			string_value: name
+			string_value: &Utf16String{...name}
 		}
 		strict:                 strict
 		base_environment:       environment
@@ -79,7 +79,7 @@ pub fn Reference.for_private(base Value, name PrivateName) Reference {
 
 // Reference.cpp::MakePrivateReference.
 pub fn make_private_reference(vm &VM, base Value, identifier Utf16String) Reference {
-	environment := vm.running_execution_context().private_environment or {
+	environment := vm.current_context().private_environment or {
 		panic('MakePrivateReference requires a private environment')
 	}
 	return Reference.for_private(base, environment.resolve_private_identifier(identifier))
@@ -196,6 +196,14 @@ pub fn (reference Reference) get_value(mut vm VM) !Value {
 				return value
 			}
 		}
+		// Primitive wrappers have no other own properties. Keep the primitive
+		// receiver while querying its current-realm prototype, as GetV does.
+		// Explicit receiver overrides retain the general Reference path.
+		if reference.base_value.tag in [.boolean, .int32, .double, .string, .symbol, .bigint]
+			&& reference.this_value == none
+			&& direct_primitive_read() {
+			return reference.base_value.get_with_prototypes(mut vm, reference.name, realm_primitive_prototypes())
+		}
 		base_obj := reference.base_object(mut vm)!
 		// c. Return ? baseObj.[[Get]](V.[[ReferencedName]], GetThisValue(V)).
 		return base_obj.internal_get(mut vm, reference.name, reference.get_this_value())!
@@ -228,6 +236,23 @@ pub fn (reference Reference) put_value(mut vm VM, value Value) ! {
 		mut base_obj := reference.base_object(mut vm)!
 		if private_name := reference.private_name {
 			return base_obj.private_set(mut vm, private_name, value)
+		}
+		if mut array := base_obj.array_object {
+			// A direct write to a writable Array length can grow its existing
+			// slot without constructing descriptors or deleting elements.
+			// Coercion, shrinking and alternate receivers use the checked Set.
+			if reference.this_value == none && value.is_number() && array.length_writable
+				&& value.number >= f64(array.length) && value.number <= f64(0xffffffff)
+				&& reference.name.is_length_property() && base_obj.proxy_object == none
+				&& base_obj.host_properties == none && base_obj.legacy_platform_object == none
+				&& base_obj.arguments_object == none && base_obj.typed_array == none
+				&& !vm.did_reach_stack_space_limit() {
+				length := u32(value.number)
+				if f64(length) == value.number {
+					array.length = length
+					return
+				}
+			}
 		}
 		// c. Let succeeded be ? baseObj.[[Set]](V.[[ReferencedName]], W, GetThisValue(V)).
 		succeeded := base_obj.internal_set(mut vm, reference.name, value, reference.get_this_value())!
@@ -271,7 +296,7 @@ pub fn (reference Reference) delete_(mut vm VM) !bool {
 		}
 		mut base_obj := reference.base_object(mut vm)!
 		// d. Let deleteStatus be ? baseObj.[[Delete]](ref.[[ReferencedName]]).
-		delete_status := base_obj.internal_delete(reference.name)
+		delete_status := base_obj.delete_checked(mut vm, reference.name)!
 		// e. If deleteStatus is false and ref.[[Strict]] is true, throw a TypeError exception.
 		if !delete_status && reference.strict {
 			return vm.throw_error_type(.type_error, .reference_nullish_delete_property,

@@ -150,19 +150,28 @@ fn test_a_cached_page_runs_no_tasks_until_it_is_shown_again() {
 	assert probe.ran
 }
 
-fn test_a_page_left_before_its_load_event_gets_load_instead_of_pageshow() {
+fn test_unloaded_cached_page_fires_initial_pageshow_after_load() {
 	mut app := back_forward_cache_test_app()
 	defer { app.dispose_browser_tab() }
 	app.install_loaded_page(back_forward_cache_test_page('first'), true)
 	first := app.document
 	assert !first.document_page_showing()
 	events := back_forward_cache_test_window_events(first)
+	window := first.get_window() or { panic('missing Window') }
+	unsafe { &dom.EventTarget(window) }.add_event_listener_without_options('load',
+		dom.IDLEventListener.create(&dom.CallbackType{
+			handle_event: fn [events] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+				mut log := unsafe { events }
+				log.entries << 'load'
+				return dom.js_undefined()
+			}
+		}))
 	app.install_loaded_page(back_forward_cache_test_page('second'), true)
 	app.history_go(-1)
 	assert voidptr(app.document) == voidptr(first)
 	assert events.entries == []
 	back_forward_cache_test_finish_loading(first)
-	assert events.entries == []
+	assert events.entries == ['load', 'pageshow:false']
 }
 
 fn test_a_new_navigation_discards_forward_pages() {

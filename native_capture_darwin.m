@@ -10,6 +10,7 @@
 #include "native/include/native_ui_intelligence_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
+#include <limits.h>
 #include <malloc/malloc.h>
 #include <math.h>
 #include <stdint.h>
@@ -29,6 +30,8 @@ static void native_capture_instruction_checkpoint(const char *label) {
             (unsigned long long)instructions);
 }
 
+#define VOX_DOCUMENT_COLOR_BRIDGE 1
+#include "native/include/native_document_color_darwin.h"
 #include "native/include/native_layer_presentation_darwin.h"
 #include "native/include/native_presented_capture_darwin.h"
 #include "native/include/native_image_capture_policy_darwin.h"
@@ -42,7 +45,9 @@ int native_gpu_tile_compositor_enabled(void) {
 #include "native/include/native_stationary_raster_darwin.h"
 #include "native/include/native_deferred_font_darwin.h"
 #include "native/include/native_svg_mask_layer_darwin.h"
-#include "native/include/native_svg_mask_pixels.h"
+#include "native/include/native_svg_mask_cache_key.h"
+#include "native/include/native_svg_mask_image_darwin.h"
+#include "native/include/native_svg_mask_raster_cache_darwin.h"
 
 #include "native/include/native_ffmpeg_darwin.h"
 #include "native/include/native_media_darwin.h"
@@ -53,6 +58,8 @@ int native_gpu_tile_compositor_enabled(void) {
 #include "native/include/native_opacity_canvas_pool_darwin.h"
 #include "native/include/native_bitmap_snapshot_darwin.h"
 #include "native/include/native_svg_mask_opacity_darwin.h"
+#include "native/include/native_svg_mask_path_darwin.h"
+#include "native/include/native_svg_pattern_path_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -522,10 +529,6 @@ static CGFloat native_screenshot_scale(void) {
 	return isfinite(scale) && scale > 1.0 ? (CGFloat)scale : 1.0;
 }
 
-static BOOL native_screenshot_uses_logical_pixels(void) {
-	return getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL && native_screenshot_scale() <= 1.0;
-}
-
 void native_cache_browser_snapshot(string path_value) {
 	NSString *path = native_capture_string(path_value);
 	BOOL debug_snapshot = getenv("LADYBIRD_DEBUG_SNAPSHOT") != NULL;
@@ -623,6 +626,10 @@ void native_cache_browser_snapshot(string path_value) {
 	native_request_browser_redraw();
 }
 
+extern void vox_condition_native_rect_coverage(float*, float*, float*);
+extern int vox_document_analytic_rect_enabled(void);
+extern int vox_draw_document_analytic_rect(float*, float*, float*, uint32_t, int, int);
+
 static void native_draw_solid_rect_srgb(float x, float y, float width, float height,
 	gg__Color color, int caret) {
 	if (width <= 0 || height <= 0) {
@@ -632,22 +639,36 @@ static void native_draw_solid_rect_srgb(float x, float y, float width, float hei
 	if (context == NULL) {
 		return;
 	}
-	static CGColorSpaceRef colorSpace;
-	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^{
-		colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-	});
 	CGFloat components[] = {
 		(CGFloat)color.r / 255.0,
 		(CGFloat)color.g / 255.0,
 		(CGFloat)color.b / 255.0,
 		(CGFloat)color.a / 255.0,
 	};
-	CGColorRef cgColor = CGColorCreate(colorSpace, components);
+	CGColorRef cgColor = native_document_srgb_components(components);
 	CGContextSetFillColorWithColor(context, cgColor);
 	CGRect rect = CGRectMake(x, y, width, height);
+	float original[4] = {x, y, width, height};
+	CGAffineTransform transform = CGContextGetCTM(context);
+	float matrix[6] = {transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty};
+	if (!caret) {
+		CGRect clip = CGContextGetClipBoundingBox(context);
+		float bounds[4] = {x, y, width, height};
+		float clipping[4] = {clip.origin.x, clip.origin.y, clip.size.width, clip.size.height};
+		vox_condition_native_rect_coverage(bounds, clipping, matrix);
+		rect = CGRectMake(bounds[0], bounds[1], bounds[2], bounds[3]);
+	}
 	if (!vox_initial_document_clear(&native_layer_initial_document_clear, context, rect,
-		color.r, color.g, color.b, color.a)) CGContextFillRect(context, rect);
+		color.r, color.g, color.b, color.a)) {
+		float bounds[4] = {rect.origin.x, rect.origin.y, rect.size.width, rect.size.height};
+		uint32_t packed = ((uint32_t)color.a << 24) | ((uint32_t)color.r << 16)
+			| ((uint32_t)color.g << 8) | color.b;
+		if (caret || !vox_document_analytic_rect_enabled()
+			|| !native_document_raster_uses_p3()
+			|| !vox_draw_document_analytic_rect(bounds, original, matrix, packed,
+			(int)CGBitmapContextGetWidth(context), (int)CGBitmapContextGetHeight(context)))
+			CGContextFillRect(context, rect);
+	}
 	CGColorRelease(cgColor);
 }
 
@@ -750,7 +771,7 @@ void native_end_background_blend_mode(void) {
 	}
 }
 
-#include "native/include/native_chromium_screen_blend.h"
+#include "native/include/native_opacity_composite_rows.h"
 
 static CGBlendMode native_compositing_operator(int mode) {
 	switch (mode) {
@@ -796,6 +817,7 @@ typedef struct {
 static NativeOpacityGroup native_opacity_groups[NATIVE_OPACITY_GROUP_MAX_DEPTH];
 static int native_opacity_group_depth;
 static int native_opacity_group_overflow_depth;
+VOX_NATIVE_STATE int native_opaque_layer_continuation;
 
 static int native_compositing_canvas_is_readable(CGContextRef context) {
 	if (context == NULL) return 0;
@@ -888,16 +910,11 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 			8, ink_width * 4, color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 		uint8_t *result = result_context == NULL ? NULL : (uint8_t *)CGBitmapContextGetData(result_context);
 		if (result != NULL) {
-			for (size_t row = 0; row < ink_height; ++row) {
-				if (group->blend_mode == 3) native_composite_screen_pixels(
-					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
-					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
-					result + row * ink_width * 4, ink_width, group->opacity);
-				else native_composite_opacity_pixels(
-					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
-					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
-					result + row * ink_width * 4, ink_width, group->opacity);
-			}
+			native_composite_opacity_rows(
+				group->pixels + (size_t)top * layer_pitch + (size_t)left * 4, layer_pitch,
+				backdrop + (size_t)top * parent_pitch + (size_t)left * 4, parent_pitch,
+				result, ink_width * 4, ink_width, (int32_t)ink_height, group->opacity,
+				group->blend_mode == 3);
 			CGImageRef image = native_take_bitmap_image_for_destination(result_context, group->parent);
 			if (image != NULL) {
 				// Copy the composite into place under the backdrop's clip.
@@ -919,6 +936,8 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 }
 
 void native_begin_css_effect_layer(float opacity, int blend_mode) {
+    int continue_opaque = native_opaque_layer_continuation;
+    native_opaque_layer_continuation = 0;
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
 		return;
@@ -927,6 +946,17 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	if (native_opacity_group_depth < NATIVE_OPACITY_GROUP_MAX_DEPTH) {
 		NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth++];
 		*group = (NativeOpacityGroup){ .parent = context };
+        // V has proved that the resumed picture is covered by an opaque
+        // prefix and does not overlap the intervening child's ink. Keep that
+        // prefix available to leaf rasterization instead of quantizing a
+        // second transparent surface over it.
+        if (continue_opaque && opacity == 1.0f && blend_mode == 0
+            && native_compositing_canvas_is_readable(context)) {
+            group->passthrough = 1;
+            CGContextSetAlpha(context, 1.0f);
+            CGContextSetBlendMode(context, kCGBlendModeNormal);
+            return;
+        }
 		if ((blend_mode == 0 || blend_mode == 3)
 			&& native_begin_offscreen_opacity_group(group, context, opacity, blend_mode)) {
 			return;
@@ -941,6 +971,7 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 }
 
 void native_set_chromium_opaque_layer_continuation(int enabled) {
+    native_opaque_layer_continuation = enabled != 0;
 }
 
 void native_end_css_effect_layer(void) {
@@ -967,18 +998,13 @@ void native_end_css_effect_layer(void) {
 }
 
 static CGColorRef native_srgb_color(gg__Color color) {
-	static CGColorSpaceRef color_space;
-	static dispatch_once_t once_token;
-	dispatch_once(&once_token, ^{
-		color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-	});
 	CGFloat components[] = {
 		(CGFloat)color.r / 255.0,
 		(CGFloat)color.g / 255.0,
 		(CGFloat)color.b / 255.0,
 		(CGFloat)color.a / 255.0,
 	};
-	return CGColorCreate(color_space, components);
+	return native_document_srgb_components(components);
 }
 
 // The display density documents see as their device pixel ratio: the screenshot
@@ -990,6 +1016,13 @@ double native_display_device_pixel_ratio(void) {
 	}
 	CGFloat scale = [[NSScreen mainScreen] backingScaleFactor];
 	return isfinite(scale) && scale > 0 ? scale : 1.0;
+}
+
+// A live screenshot can redraw at a different scale from the window. Paint
+// uses the capture target while DOM media queries keep the window density.
+double native_raster_device_pixel_ratio(void) {
+	if (native_layer_capture_scale > 0) return native_layer_capture_scale;
+	return native_display_device_pixel_ratio();
 }
 
 // Retained glyph runs name the exact face V shaped them with: either a font
@@ -1081,8 +1114,14 @@ int native_text_raster_begin(float left, float top, float right, float bottom,
 	return 1;
 }
 
+int native_document_text_raster_begin(float left, float top, float right, float bottom,
+    float canvas_width, float canvas_height, int flags, int32_t *geometry, float *scale) {
+    return native_text_raster_begin(left, top, right, bottom, canvas_width,
+        canvas_height, flags, geometry, scale);
+}
+
 // Copy the page pixels a backdrop raster covers (premultiplied RGBA rows).
-int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
+int native_document_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL || pixels == NULL) return 0;
 	CGContextFlush(context);
@@ -1095,18 +1134,40 @@ int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int wid
 	return 1;
 }
 
+extern int vox_document_png_space_is_p3(void);
+
+int native_text_raster_read_backdrop(uint8_t *pixels, int left, int top, int width, int height, float scale) {
+    int result = native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale);
+    if (result && native_document_raster_uses_p3() && !vox_document_png_space_is_p3())
+        vox_document_p3_to_srgb_pixels(pixels, width, height, width * 4);
+    return result;
+}
+
 // Composite a finished raster: a backdrop raster replaces its pixels under
 // the current clip, a transparent one blends over them.
-int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
-	int logical_width, int logical_height, float canvas_height, int backdrop) {
+static int native_text_raster_finish_in_space(const uint8_t *pixels, int left, int top, int width, int height,
+	int logical_width, int logical_height, float canvas_height, int backdrop, int p3, BOOL take_pixels) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
-	if (context == NULL || pixels == NULL) return 0;
-	CFDataRef data = CFDataCreate(kCFAllocatorDefault, pixels, (CFIndex)width * height * 4);
-	if (data == NULL) return 0;
+	if (context == NULL || pixels == NULL) {
+		if (take_pixels) free((void *)pixels);
+		return 0;
+	}
+	CFIndex length = (CFIndex)width * height * 4;
+	CFDataRef data = take_pixels
+		? CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, pixels, length, kCFAllocatorMalloc)
+		: CFDataCreate(kCFAllocatorDefault, pixels, length);
+	if (data == NULL) {
+		if (take_pixels) free((void *)pixels);
+		return 0;
+	}
+	if (take_pixels && getenv("VOX_DOCUMENT_SHAPE_RASTER_DIAGNOSTICS"))
+		fprintf(stderr, "VOX_DOCUMENT_SHAPE_RASTER width=%d height=%d borrowed=%d bytes=%ld\n",
+			width, height, CFDataGetBytePtr(data) == pixels, (long)length);
 	CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
 	CFRelease(data);
 	if (provider == NULL) return 0;
-	CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+	CGColorSpaceRef space = p3 ? native_copy_document_render_space()
+        : CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	CGImageRef image = CGImageCreate((size_t)width, (size_t)height, 8, 32, (size_t)width * 4, space,
 		(CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL, false,
 		kCGRenderingIntentDefault);
@@ -1124,11 +1185,42 @@ int native_text_raster_finish(const uint8_t *pixels, int left, int top, int widt
 	return 1;
 }
 
+int native_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
+    int logical_width, int logical_height, float canvas_height, int backdrop) {
+    return native_text_raster_finish_in_space(pixels, left, top, width, height,
+        logical_width, logical_height, canvas_height, backdrop, vox_document_png_space_is_p3(), NO);
+}
+
+int native_document_text_raster_finish(const uint8_t *pixels, int left, int top, int width, int height,
+    int logical_width, int logical_height, float canvas_height, int backdrop) {
+    return native_text_raster_finish_in_space(pixels, left, top, width, height,
+        logical_width, logical_height, canvas_height, backdrop, native_document_raster_uses_p3(), NO);
+}
+
+// The shape callbacks allocate these rows with malloc. CFData can keep them
+// alive through deferred Quartz drawing and release them with the provider.
+static int native_finish_owned_document_shape_raster(uint8_t *pixels, int left, int top,
+    int width, int height, int logical_width, int logical_height, float canvas_height, int backdrop) {
+    BOOL transfer = getenv("VOX_COPY_DOCUMENT_SHAPE_RASTERS") == NULL;
+    int drawn = native_text_raster_finish_in_space(pixels, left, top, width, height,
+        logical_width, logical_height, canvas_height, backdrop,
+        native_document_raster_uses_p3(), transfer);
+    if (!transfer) free(pixels);
+    return drawn;
+}
+
 // The native boundary supplies the destination pixels; geometry and GPU
 // rasterization belong to V's gg.canvas adapter.
 #include "native/include/native_graphite_bridge.h"
 extern int vox_draw_document_shape_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphiteShape*);
+extern int vox_draw_document_shape_region_pixels(uint8_t*, int, int, int, int, int,
+    int, int, int, int, VoxGraphiteShape*);
 VOX_NATIVE_STATE VoxGraphiteShape native_v_shape_state;
+
+void native_set_shape_intersect_clip(const float *rect) {
+    native_v_shape_state.has_intersect_clip = rect != NULL;
+    if (rect) memcpy(native_v_shape_state.intersect_clip, rect, 4 * sizeof(float));
+}
 
 static void native_v_shape_filter_clip(VoxGraphiteShape* shape, int32_t* geometry,
     float canvas_height, float sx, float sy, float page_x, float page_y, float scroll_y) {
@@ -1153,9 +1245,58 @@ static void native_v_shape_filter_clip(VoxGraphiteShape* shape, int32_t* geometr
     shape->filter_clip[2]=(right-geometry[0])*sx;shape->filter_clip[3]=(bottom-geometry[1])*sy;
 }
 
+// The original surface fixes the shape's samples and filter coordinates.
+// Quartz consumes only the portion under the current repaint clip, so read
+// and publish that part of the bitmap while drawing on the same GPU grid.
+static int native_try_scroll_shape_region(CGContextRef context, VoxGraphiteShape *shape,
+    const int32_t *geometry, float scale, float canvas_height, int first_x, int first_y) {
+    if (!native_scroll_raster.active || !native_scroll_raster.reused
+        || context != native_scroll_raster.context || !geometry[4]
+        || shape->matrix[1] != 0 || shape->matrix[3] != 0
+        || shape->matrix[0] <= 0 || shape->matrix[0] != shape->matrix[4]
+        || geometry[2] != geometry[5] * scale || geometry[3] != geometry[6] * scale
+        || getenv("VOX_DISABLE_SCROLL_SHAPE_REGIONS")) return 0;
+    if (shape->fill != 1 && shape->fill != 10
+        && ((shape->fill != 0 && shape->fill != 9) || getenv("VOX_DISABLE_SCROLL_OUTLINE_REGIONS")))
+        return 0;
+    CGRect clip = CGContextGetClipBoundingBox(context);
+    if (CGRectIsEmpty(clip) || CGRectIsNull(clip) || CGRectIsInfinite(clip)) return 0;
+    CGRect leaf = CGRectMake(geometry[0], geometry[1], geometry[5], geometry[6]);
+    CGRect cropped = CGRectIntersection(leaf, CGRectIntegral(CGRectMake(CGRectGetMinX(clip),
+        canvas_height - CGRectGetMaxY(clip), CGRectGetWidth(clip), CGRectGetHeight(clip))));
+    if (CGRectIsEmpty(cropped) || CGRectIsNull(cropped)) return 0;
+    int width = (int)lround(CGRectGetWidth(cropped) * scale);
+    int height = (int)lround(CGRectGetHeight(cropped) * scale);
+    int x = (int)lround((CGRectGetMinX(cropped) - CGRectGetMinX(leaf)) * scale);
+    int y = (int)lround((CGRectGetMinY(cropped) - CGRectGetMinY(leaf)) * scale);
+    if ((int64_t)width * height * 2 > (int64_t)geometry[2] * geometry[3]
+        || width <= 0 || height <= 0 || x < 0 || y < 0
+        || x + width > geometry[2] || y + height > geometry[3]) return 0;
+    int left = (int)CGRectGetMinX(cropped), top = (int)CGRectGetMinY(cropped);
+    // The readback and display rectangles must land on the same device pixels.
+    if (left * scale != round(left * scale) || top * scale != round(top * scale)
+        || CGRectGetWidth(cropped) * scale != width || CGRectGetHeight(cropped) * scale != height)
+        return 0;
+    uint8_t *pixels = malloc((size_t)width * height * 4);
+    if (!pixels) return 0;
+    if (!native_document_text_raster_read_backdrop(pixels, left, top, width, height, scale)
+        || !vox_draw_document_shape_region_pixels(pixels, width, height, geometry[4], first_x,
+            first_y, geometry[2], geometry[3], x, y, shape)) {
+        free(pixels);
+        return 0;
+    }
+    int drawn = native_finish_owned_document_shape_raster(pixels, left, top, width, height,
+        (int)CGRectGetWidth(cropped), (int)CGRectGetHeight(cropped), canvas_height, geometry[4]);
+    if (drawn && getenv("VOX_SCROLL_SHAPE_REGION_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_SCROLL_SHAPE_REGION fill=%d full=%dx%d region=%dx%d\n",
+            shape->fill, geometry[2], geometry[3], width, height);
+    return drawn;
+}
+
 static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matrix,
     float canvas_width, float canvas_height, float page_x, float page_y, float scroll_y) {
-    if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (!context || context != native_font_compositing_context) return 0;
     float x=shape.rect[0], y=shape.rect[1], width=shape.rect[2], height=shape.rect[3];
     int fill=shape.fill; float thickness=shape.thickness;
     float left = INFINITY, top = INFINITY, right = -INFINITY, bottom = -INFINITY;
@@ -1168,29 +1309,31 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
         left=fminf(left,dx); top=fminf(top,dy); right=fmaxf(right,dx); bottom=fmaxf(bottom,dy);
     }
     int32_t geometry[7]; float scale;
-    int prepared = native_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
+    int prepared = native_document_text_raster_begin(left, top, right, bottom, canvas_width, canvas_height,
         16, geometry, &scale);
     if (prepared == 2) return 1;
     if (prepared != 1) return 0;
     int w=geometry[2], h=geometry[3], backdrop=geometry[4];
-    size_t size=(size_t)w*h*4;
-    uint8_t* pixels=calloc(size,1);
-    if (!pixels) return 0;
-    if (backdrop && !native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
-        free(pixels); return 0;
-    }
     float sx=(float)w/geometry[5], sy=(float)h/geometry[6];
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
         matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
     memcpy(shape.matrix,cropped,sizeof(cropped));
     native_v_shape_filter_clip(&shape,geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
-    int drawn=vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,
-        (int)lround((geometry[0]-page_x)*scale),
-        (int)lround((geometry[1]-page_y+scroll_y)*scale),&shape);
-    if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+    int first_x = (int)lround((geometry[0]-page_x)*scale);
+    int first_y = (int)lround((geometry[1]-page_y+scroll_y)*scale);
+    if (native_try_scroll_shape_region(context, &shape, geometry, scale, canvas_height,
+            first_x, first_y)) return 1;
+    size_t size=(size_t)w*h*4;
+    uint8_t* pixels=calloc(size,1);
+    if (!pixels) return 0;
+    if (backdrop && !native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
+        free(pixels); return 0;
+    }
+    if (vox_draw_document_shape_pixels(pixels,w,h,w*4,backdrop,first_x,first_y,&shape))
+        return native_finish_owned_document_shape_raster(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);
-    return drawn;
+    return 0;
 }
 
 // Shared paint descriptors; native code only transfers pixels and coordinates.
@@ -1210,13 +1353,13 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
         }
     }
     int32_t geometry[7];float scale;
-    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    int prepared=native_document_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
     if(prepared==2)return 1;
     if(prepared!=1)return 0;
     int w=geometry[2],h=geometry[3],backdrop=geometry[4];
     uint8_t* pixels=calloc((size_t)w*h*4,1);
     if(!pixels)return 0;
-    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {free(pixels);return 0;}
+    if(backdrop&&!native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {free(pixels);return 0;}
     VoxGraphiteShape copy[32];memcpy(copy,shapes,count*sizeof(*shapes));
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
     float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
@@ -1226,11 +1369,15 @@ int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float*
         native_v_shape_filter_clip(&copy[j],geometry,canvas_height,sx,sy,page_x,page_y,scroll_y);
     }
     extern int vox_draw_document_shape_group_pixels(uint8_t*,int,int,int,int,int,int,VoxGraphiteShape*,int);
-    int drawn=vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
-        (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count);
-    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,geometry[5],geometry[6],canvas_height,backdrop);
-    free(pixels);return drawn;
+    if (vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
+        (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count))
+        return native_finish_owned_document_shape_raster(pixels,geometry[0],geometry[1],w,h,
+            geometry[5],geometry[6],canvas_height,backdrop);
+    free(pixels);
+    return 0;
 }
+
+#include "native/include/native_svg_drop_shadow_darwin.h"
 
 static int native_try_v_rounded_rect(float x, float y, float width, float height,
     const float* radii, const float* matrix, float canvas_width, float canvas_height,
@@ -1253,10 +1400,11 @@ int native_draw_document_shape(const VoxGraphiteShape* shape, const float* matri
 }
 
 extern int vox_draw_document_path_pixels(uint8_t*, int, int, int, int, VoxGraphitePath*);
+extern int vox_draw_document_tiled_path_pixels(uint8_t*, int, int, int, int, int, int, VoxGraphitePath*);
 static int native_try_v_svg_path(CGPathRef path, const float* segments, int count, int even_odd,
     const float* matrix, float canvas_width, float canvas_height, gg__Color color,
     const float* components, int stroke, float stroke_width, int cap, int join,
-    float miter, int non_scaling) {
+    float miter, int non_scaling, float page_x, float page_y, float scroll_y) {
     if ([[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
     CGRect bounds=CGPathGetPathBoundingBox(path);
     float pad=stroke ? fmaxf(stroke_width,0)*fmaxf(miter,1) : 0;
@@ -1268,13 +1416,13 @@ static int native_try_v_svg_path(CGPathRef path, const float* segments, int coun
         left=fminf(left,dx);top=fminf(top,dy);right=fmaxf(right,dx);bottom=fmaxf(bottom,dy);
     }
     int32_t geometry[7];float scale;
-    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    int prepared=native_document_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
     if(prepared==2)return 1;
     if(prepared!=1)return 0;
     int w=geometry[2],h=geometry[3],backdrop=geometry[4];
     uint8_t* pixels=calloc((size_t)w*h*4,1);
     if(!pixels)return 0;
-    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)){
+    if(backdrop&&!native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)){
         free(pixels);return 0;
     }
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
@@ -1289,8 +1437,10 @@ static int native_try_v_svg_path(CGPathRef path, const float* segments, int coun
     draw.opacity=1;
     draw.has_float_color=components!=NULL;
     if(components)memcpy(draw.float_color,components,4*sizeof(float));
-    int drawn=vox_draw_document_path_pixels(pixels,w,h,w*4,backdrop,&draw);
-    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+    int drawn=vox_draw_document_tiled_path_pixels(pixels,w,h,w*4,backdrop,
+        (int)lround((geometry[0]-page_x)*scale),
+        (int)lround((geometry[1]-page_y+scroll_y)*scale), &draw);
+    if(drawn)drawn=native_document_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,backdrop);
     free(pixels);return drawn;
 }
@@ -1353,6 +1503,9 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	native_configure_glyph_rasterization(context, font_smoothing);
 	CGContextSetFillColorWithColor(context, color);
 	if (shadow_only && blur > 0.0f) {
+		// The glyphs supply coverage; the shadow color supplies alpha once.
+		// A translucent source would multiply the shadow opacity a second time.
+		CGContextSetRGBFillColor(context, 0.0, 0.0, 0.0, 1.0);
 		CGRect clip_bounds = CGContextGetClipBoundingBox(context);
 		CGFloat displacement = clip_bounds.size.width + 8192.0;
 		glyph_to_canvas.tx += displacement;
@@ -1766,6 +1919,8 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     const float *rounded_clip) {
     if (!paths || count <= 0 || count > 65536 || !outer || width <= 0 || height <= 0 ||
         [[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    extern int vox_document_paths_use_p3(VoxGraphitePath*, int);
+    int p3 = vox_document_paths_use_p3((VoxGraphitePath*)paths, count);
     float matrix[6] = {outer[0],outer[1],outer[2],outer[3],
         page_x+outer[4],page_y-scroll_y+outer[5]};
     float left=INFINITY,top=INFINITY,right=-INFINITY,bottom=-INFINITY;
@@ -1781,7 +1936,9 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     int w=geometry[2],h=geometry[3],backdrop=geometry[4];
     uint8_t* pixels=calloc((size_t)w*h*4,1);
     if(!pixels)return 0;
-    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
+    if(backdrop && !(p3
+        ? native_document_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)
+        : native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale))) {
         free(pixels);return 0;
     }
     float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
@@ -1790,8 +1947,8 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     const float viewport[4]={x,y,width,height};
     extern int vox_draw_document_svg_pixels(uint8_t*,int,int,int,int,VoxGraphitePath*,int,float*,float*,float*);
     int drawn=vox_draw_document_svg_pixels(pixels,w,h,w*4,backdrop,(VoxGraphitePath*)paths,count,(float*)parent,(float*)viewport,(float*)rounded_clip);
-    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
-        geometry[5],geometry[6],canvas_height,backdrop);
+    if(drawn)drawn=native_text_raster_finish_in_space(pixels,geometry[0],geometry[1],w,h,
+        geometry[5],geometry[6],canvas_height,backdrop,p3,NO);
     free(pixels);return drawn;
 }
 
@@ -1812,11 +1969,16 @@ int native_draw_svg_path_batch_with_rounded_ancestor(const VoxGraphitePath *path
 
 static CGColorRef native_svg_srgb_color(gg__Color color, const float *precise) {
     if (!precise) return native_srgb_color(color);
-    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGFloat components[] = {precise[0], precise[1], precise[2], precise[3]};
-    CGColorRef result = CGColorCreate(space, components);
-    CGColorSpaceRelease(space);
-    return result;
+    return native_document_srgb_components(components);
+}
+
+static float native_non_scaling_svg_stroke_width(float width) {
+	if (native_font_compositing_context != NULL) return width;
+	CGFloat host_scale = [[native_browser_view() window] backingScaleFactor];
+	if (!isfinite(host_scale) || host_scale <= 0.0) host_scale = 1.0;
+	// Bias the device-space coverage tie to match the recorder's inclusive edge.
+	return width / host_scale + 2.0f / 512.0f;
 }
 
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
@@ -1834,21 +1996,13 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	if (context == NULL) {
 		return;
 	}
-	CGFloat host_scale = [[native_browser_view() window] backingScaleFactor];
-	if (!isfinite(host_scale) || host_scale <= 0.0)
-		host_scale = 1.0;
-	// Skia and CoreGraphics place a half-device-pixel host-space stroke on
-	// opposite sides of the coverage tie. A tiny device-space bias matches the
-	// recorder's inclusive edge without changing a visible stroke dimension.
-	float resolved_stroke_width = non_scaling_stroke && native_font_compositing_context == NULL
-		? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
 	CGMutablePathRef path = native_create_path_from_data(data, segment_count);
     if (dash_count == 0 && !(has_fill && has_stroke)) {
         const float matrix[6]={transform_a,transform_b,transform_c,transform_d,
             page_x+transform_e,page_y-scroll_y+transform_f};
         if(native_try_v_svg_path(path,data,segment_count,even_odd,matrix,canvas_width,canvas_height,
             has_stroke?stroke_color:fill_color,has_stroke?stroke_components:fill_components,
-            has_stroke,stroke_width,line_cap,line_join,miter_limit,non_scaling_stroke)) {
+            has_stroke,stroke_width,line_cap,line_join,miter_limit,non_scaling_stroke,page_x,page_y,scroll_y)) {
             CGPathRelease(path);return;
         }
     }
@@ -1872,7 +2026,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		CGContextSaveGState(context);
 		CGContextAddPath(context, transformed_path);
 		CGContextSetStrokeColorWithColor(context, stroke);
-		CGContextSetLineWidth(context, MAX(resolved_stroke_width, 0.0));
+		CGContextSetLineWidth(context, MAX(native_non_scaling_svg_stroke_width(stroke_width), 0.0));
 		CGContextSetLineCap(context, line_cap == 1 ? kCGLineCapRound
 			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
@@ -1927,6 +2081,40 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	CGPathRelease(path);
 }
 
+// Form the stroke clip in backing pixels while keeping paint in local space.
+static bool native_clip_svg_gradient_path(CGContextRef context, CGPathRef path,
+	CGAffineTransform to_canvas, int even_odd, int stroke, int non_scaling,
+	float stroke_width, int line_cap, int line_join, float miter_limit,
+	const float *dash_data, int dash_count, float dash_offset, CGRect *path_bounds) {
+	bool device_stroke = stroke && non_scaling;
+	CGFloat scale = 1;
+	if (device_stroke) {
+		scale = native_svg_mask_device_scale(context);
+		if (!native_add_svg_host_stroke_path(context, path, to_canvas, scale)) return false;
+	} else {
+		CGContextConcatCTM(context, to_canvas);
+		CGContextAddPath(context, path);
+	}
+	if (stroke) {
+		native_set_svg_resource_stroke(context, stroke_width, line_cap, line_join,
+			miter_limit, dash_data, dash_count, dash_offset);
+		CGContextReplacePathWithStrokedPath(context);
+		CGContextClip(context);
+	} else if (even_odd) {
+		CGContextEOClip(context);
+	} else {
+		CGContextClip(context);
+	}
+	if (device_stroke) {
+		if (scale != 1) CGContextScaleCTM(context, scale, scale);
+		CGContextConcatCTM(context, to_canvas);
+		// Repeat and reflect must shade the expanded stroke, including caps.
+		*path_bounds = CGContextGetClipBoundingBox(context);
+		return !CGRectIsEmpty(*path_bounds);
+	}
+	return true;
+}
+
 static void native_draw_svg_linear_gradient_path_in_context(CGContextRef context,
 	const float *data, int segment_count, int even_odd, float transform_a,
 	float transform_b, float transform_c, float transform_d, float transform_e,
@@ -1935,7 +2123,8 @@ static void native_draw_svg_linear_gradient_path_in_context(CGContextRef context
 	int line_join, float miter_limit, float start_x, float start_y, float end_x,
 	float end_y, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset, int non_scaling) {
 	if (context == NULL || data == NULL || segment_count <= 0 || stop_data == NULL
 		|| stop_count <= 0) {
 		return;
@@ -1949,21 +2138,12 @@ static void native_draw_svg_linear_gradient_path_in_context(CGContextRef context
 	CGAffineTransform gradient_transform = CGAffineTransformMake(gradient_a,
 		gradient_b, gradient_c, gradient_d, gradient_e, gradient_f);
 	CGContextSaveGState(context);
-	CGContextConcatCTM(context, to_canvas);
-	CGContextAddPath(context, path);
-	if (stroke) {
-		CGContextSetLineWidth(context, MAX(stroke_width, 0.0));
-		CGContextSetLineCap(context, line_cap == 1 ? kCGLineCapRound
-			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
-		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
-			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
-		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
-		CGContextReplacePathWithStrokedPath(context);
-		CGContextClip(context);
-	} else if (even_odd) {
-		CGContextEOClip(context);
-	} else {
-		CGContextClip(context);
+	if (!native_clip_svg_gradient_path(context, path, to_canvas, even_odd, stroke,
+		non_scaling, stroke_width, line_cap, line_join, miter_limit,
+		dash_data, dash_count, dash_offset, &path_bounds)) {
+		CGContextRestoreGState(context);
+		CGPathRelease(path);
+		return;
 	}
 
 	int gradient_stop_count = stop_count == 1 ? 2 : stop_count;
@@ -2068,7 +2248,7 @@ void native_draw_svg_linear_gradient_path(const float *data, int segment_count,
 		transform_f, page_x, page_y, scroll_y, canvas_height, stroke, stroke_width,
 		line_cap, line_join, miter_limit, start_x, start_y, end_x, end_y,
 		gradient_a, gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
-		spread_method, linear_color_space, stop_data, stop_count, opacity);
+		spread_method, linear_color_space, stop_data, stop_count, opacity, NULL, 0, 0, 0);
 }
 
 #include "native/include/native_css_gradient_gpu_darwin.h"
@@ -2135,7 +2315,8 @@ static void native_draw_svg_radial_gradient_path_in_context(CGContextRef context
 	float start_radius, float end_x, float end_y, float end_radius,
 	float gradient_a, float gradient_b, float gradient_c, float gradient_d,
 	float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset, int non_scaling) {
 	if (context == NULL || data == NULL || segment_count <= 0 || stop_data == NULL
 		|| stop_count <= 0) {
 		return;
@@ -2153,21 +2334,12 @@ static void native_draw_svg_radial_gradient_path_in_context(CGContextRef context
 	CGAffineTransform gradient_transform = CGAffineTransformMake(gradient_a,
 		gradient_b, gradient_c, gradient_d, gradient_e, gradient_f);
 	CGContextSaveGState(context);
-	CGContextConcatCTM(context, to_canvas);
-	CGContextAddPath(context, path);
-	if (stroke) {
-		CGContextSetLineWidth(context, MAX(stroke_width, 0.0));
-		CGContextSetLineCap(context, line_cap == 1 ? kCGLineCapRound
-			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
-		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
-			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
-		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
-		CGContextReplacePathWithStrokedPath(context);
-		CGContextClip(context);
-	} else if (even_odd) {
-		CGContextEOClip(context);
-	} else {
-		CGContextClip(context);
+	if (!native_clip_svg_gradient_path(context, path, to_canvas, even_odd, stroke,
+		non_scaling, stroke_width, line_cap, line_join, miter_limit,
+		dash_data, dash_count, dash_offset, &path_bounds)) {
+		CGContextRestoreGState(context);
+		CGPathRelease(path);
+		return;
 	}
 
 	int gradient_stop_count = stop_count == 1 ? 2 : stop_count;
@@ -2290,7 +2462,7 @@ void native_draw_svg_radial_gradient_path(const float *data, int segment_count,
 		line_cap, line_join, miter_limit, start_x, start_y, start_radius, end_x,
 		end_y, end_radius, gradient_a, gradient_b, gradient_c, gradient_d,
 		gradient_e, gradient_f, spread_method, linear_color_space, stop_data,
-		stop_count, opacity);
+		stop_count, opacity, NULL, 0, 0, 0);
 }
 
 // CSS gradients are submitted as one native shading operation, matching the shape of
@@ -2417,6 +2589,8 @@ typedef struct {
 } NativeSVGClipCacheEntry;
 
 static NativeSVGClipCacheEntry native_svg_clip_cache[NATIVE_SVG_CLIP_CACHE_SIZE];
+static NativeSVGMaskRasterCache native_svg_mask_raster_cache;
+static uint64_t native_svg_mask_frame;
 static uint64_t native_svg_clip_cache_clock;
 static CGContextRef native_svg_clip_build_context;
 static CGImageRef native_svg_clip_image;
@@ -2429,36 +2603,15 @@ static int native_svg_clip_build_opacity_depth;
 static int native_svg_clip_build_quartz_opacity_depth;
 static VoxSVGMaskOpacityBitmap native_svg_clip_opacity_bitmaps[VOX_SVG_MASK_OPACITY_BITMAP_DEPTH];
 
-static uint64_t native_svg_clip_hash_float(uint64_t hash, float value) {
-	uint32_t bits;
-	memcpy(&bits, &value, sizeof(bits));
-	hash ^= bits;
-	return hash * UINT64_C(1099511628211);
-}
-
-static uint64_t native_svg_mask_cache_key(unsigned long long input_key,
-	int content_mask, float canvas_width, float canvas_height, float page_x,
-	float page_y, float scroll_y) {
-	uint64_t key = (uint64_t)input_key;
-	key ^= content_mask ? UINT64_C(0x6d61736b636f6e74)
-	                    : UINT64_C(0x636c6970616c7068);
-	key *= UINT64_C(1099511628211);
-	key = native_svg_clip_hash_float(key, canvas_width);
-	key = native_svg_clip_hash_float(key, canvas_height);
-	key = native_svg_clip_hash_float(key, page_x);
-	key = native_svg_clip_hash_float(key, page_y);
-	return native_svg_clip_hash_float(key, scroll_y);
-}
-
 static int native_prepare_svg_mask(unsigned long long input_key, int content_mask,
 	float canvas_width, float canvas_height, float page_x, float page_y,
-	float scroll_y) {
+	float scroll_y, CGFloat scale) {
 	native_svg_clip_canvas_width = canvas_width;
 	native_svg_clip_build_opacity_depth = 0;
 	native_svg_clip_build_quartz_opacity_depth = 0;
 	native_svg_clip_cache_clock++;
 	uint64_t key = native_svg_mask_cache_key(input_key, content_mask, canvas_width,
-		canvas_height, page_x, page_y, scroll_y);
+		canvas_height, page_x, page_y, scroll_y, scale);
 	native_svg_clip_build_key = key;
 	native_svg_clip_image = NULL;
 	native_svg_clip_build_context = NULL;
@@ -2483,14 +2636,9 @@ static CGFloat native_window_backing_scale(void) {
 }
 
 static CGFloat native_svg_mask_backing_scale(void) {
-	// Screenshot references are logical-pixel Skia surfaces. Building nested
-	// masks, patterns, and filter layers at the Retina window scale and then
-	// shrinking the captured view applies a second sampling kernel and changes
-	// edge coverage. Keep those intermediate surfaces at the reference scale;
-	// interactive windows still use their native backing density.
-	if (native_screenshot_uses_logical_pixels()) {
-		return 1.0;
-	}
+	// Intermediate masks, patterns and filters use the same raster density
+	// as the frame that composites them.
+	if (native_layer_capture_scale > 0) return native_layer_capture_scale;
 	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
 		return native_screenshot_scale();
 	}
@@ -2538,11 +2686,27 @@ typedef struct {
 static CGImageRef native_copy_cg_image(gg__Image *image);
 
 typedef struct {
+	CFDataRef bytes;
+	CGColorSpaceRef color_space;
+	size_t width, height, pitch;
+	CIFormat format;
+} NativeCSSBackdropBitmap;
+
+typedef struct {
+	IOSurfaceRef surface;
+	BOOL locked;
+	int references;
+	int callback_fired;
+} NativeCSSFilterSurface;
+
+typedef struct {
 	CGContextRef context;
 	CGContextRef destination;
+	NativeCSSFilterSurface *source_surface;
 	// Non-null only for this layer's dedicated anonymous zero-fill mapping.
 	uint8_t *sparse_input_pixels;
 	CGImageRef backdrop_source;
+	NativeCSSBackdropBitmap backdrop_bitmap;
 	CGPathRef backdrop_clip;
 	CGRect backdrop_bounds;
 	float canvas_width;
@@ -2577,6 +2741,40 @@ static int native_css_filter_overflow_depth;
 static CIContext *native_css_filter_ci_context;
 VOX_NATIVE_STATE CIContext *native_css_filter_software_context;
 static CGColorSpaceRef native_css_filter_color_space;
+
+static CIFormat native_css_filter_bitmap_format(size_t bits_per_component,
+	size_t bits_per_pixel, CGBitmapInfo info) {
+	if (bits_per_component != 8 || bits_per_pixel != 32) return 0;
+	CGBitmapInfo order = info & kCGBitmapByteOrderMask;
+	CGImageAlphaInfo alpha = info & kCGBitmapAlphaInfoMask;
+	if (alpha == kCGImageAlphaPremultipliedLast && order == kCGBitmapByteOrder32Big)
+		return kCIFormatRGBA8;
+	if (alpha == kCGImageAlphaPremultipliedFirst && order == kCGBitmapByteOrder32Little)
+		return kCIFormatBGRA8;
+	return 0;
+}
+
+static NativeCSSBackdropBitmap native_copy_css_backdrop_bitmap(CGContextRef context) {
+	NativeCSSBackdropBitmap bitmap = {
+		.width = CGBitmapContextGetWidth(context),
+		.height = CGBitmapContextGetHeight(context),
+		.pitch = CGBitmapContextGetBytesPerRow(context),
+		.format = native_css_filter_bitmap_format(CGBitmapContextGetBitsPerComponent(context),
+			CGBitmapContextGetBitsPerPixel(context), CGBitmapContextGetBitmapInfo(context)),
+	};
+	CGColorSpaceRef color_space = CGBitmapContextGetColorSpace(context);
+	if (!bitmap.format || !bitmap.width || !bitmap.height || !bitmap.pitch
+		|| bitmap.width > bitmap.pitch / 4 || bitmap.height > LONG_MAX / bitmap.pitch
+		|| !color_space || CGColorSpaceGetModel(color_space) != kCGColorSpaceModelRGB) return bitmap;
+	CGContextFlush(context);
+	const UInt8 *pixels = CGBitmapContextGetData(context);
+	if (!pixels) return bitmap;
+	// Core Image owns the immutable bytes directly. Snapshot once before
+	// drawing changes the backdrop instead of importing a Quartz snapshot.
+	bitmap.bytes = CFDataCreate(NULL, pixels, (CFIndex)(bitmap.pitch * bitmap.height));
+	if (bitmap.bytes) bitmap.color_space = CGColorSpaceRetain(color_space);
+	return bitmap;
+}
 
 // Run after the native draw has unwound. Managed references held by a paint
 // callback's C stack must not keep its temporary construction data alive during
@@ -2660,7 +2858,52 @@ void native_prepare_css_filter_renderer(void) {
 		native_css_filter_ci_context != nil, (CACurrentMediaTime() - started) * 1e6);
 }
 
-void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
+static void native_release_css_filter_surface(NativeCSSFilterSurface *source) {
+	if (__atomic_sub_fetch(&source->references, 1, __ATOMIC_ACQ_REL) != 0) return;
+	if (source->locked) IOSurfaceUnlock(source->surface, 0, NULL);
+	CFRelease(source->surface);
+	free(source);
+}
+
+static void native_css_filter_context_released(void *info, void *pixels) {
+	(void)pixels;
+	NativeCSSFilterSurface *source = (NativeCSSFilterSurface *)info;
+	__atomic_store_n(&source->callback_fired, 1, __ATOMIC_RELEASE);
+	native_release_css_filter_surface(source);
+}
+
+static CGContextRef native_create_css_filter_surface_context(size_t width, size_t height,
+	CGColorSpaceRef color_space, NativeCSSFilterSurface **source_surface) {
+	if (!width || !height || width > SIZE_MAX / 4 / height || !color_space) return NULL;
+	IOSurfaceRef surface = IOSurfaceCreate((__bridge CFDictionaryRef)@{
+		(__bridge id)kIOSurfaceWidth: @(width), (__bridge id)kIOSurfaceHeight: @(height),
+		(__bridge id)kIOSurfaceBytesPerElement: @4,
+		(__bridge id)kIOSurfacePixelFormat: @((uint32_t)'RGBA'),
+	});
+	if (!surface) return NULL;
+	NativeCSSFilterSurface *source = (NativeCSSFilterSurface *)malloc(sizeof(*source));
+	if (!source) {
+		CFRelease(surface);
+		return NULL;
+	}
+	*source = (NativeCSSFilterSurface){.surface = surface,
+		.locked = IOSurfaceLock(surface, 0, NULL) == kIOReturnSuccess, .references = 2};
+	void *pixels = source->locked ? IOSurfaceGetBaseAddress(surface) : NULL;
+	size_t pitch = IOSurfaceGetBytesPerRow(surface);
+	CGContextRef context = pixels && pitch >= width * 4 && pitch <= SIZE_MAX / height
+		? CGBitmapContextCreateWithData(pixels, width, height, 8, pitch, color_space,
+			kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
+			native_css_filter_context_released, source) : NULL;
+	// A failed context creation can invoke the data-release callback itself.
+	if (!context && !__atomic_load_n(&source->callback_fired, __ATOMIC_ACQUIRE))
+		native_release_css_filter_surface(source);
+	if (context) *source_surface = source;
+	native_release_css_filter_surface(source);
+	return context;
+}
+
+static void native_begin_css_filter_layer_in_space(float canvas_width, float canvas_height, int p3,
+	BOOL shared_spatial_input) {
 	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
 		native_css_filter_overflow_depth++;
 		return;
@@ -2674,11 +2917,15 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 	if (layer.destination != NULL && canvas_width > 0.0f && canvas_height > 0.0f) {
 		size_t width = (size_t)MAX(1.0, ceil(canvas_width * layer.scale));
 		size_t height = (size_t)MAX(1.0, ceil(canvas_height * layer.scale));
-		CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+		CGColorSpaceRef color_space = p3 ? native_copy_document_render_space()
+            : CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 		if (getenv("VOX_SPARSE_CSS_FILTER_INPUTS")) {
             layer.context = native_create_sparse_bitmap_context(width, height, color_space);
             if (layer.context) layer.sparse_input_pixels = (uint8_t *)CGBitmapContextGetData(layer.context);
-        }
+        } else if (shared_spatial_input) {
+			layer.context = native_create_css_filter_surface_context(width, height, color_space,
+				&layer.source_surface);
+		}
         if (!layer.context)
             layer.context = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
                 color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
@@ -2694,6 +2941,15 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 		}
 	}
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
+}
+
+void native_begin_css_filter_layer(float width, float height) {
+    native_begin_css_filter_layer_in_space(width, height, 0, NO);
+}
+
+void native_begin_spatial_css_filter_layer(float width, float height) {
+	native_begin_css_filter_layer_in_space(width, height, 0,
+		!getenv("VOX_DISABLE_SHARED_SPATIAL_FILTER_INPUT") && !getenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP"));
 }
 
 void native_end_css_filter_layer(void);
@@ -2858,11 +3114,21 @@ void native_set_rounded_rect_underlay_color(const float *color) {
     if (color) memcpy(native_v_shape_state.underlay_float_color,color,4*sizeof(float));
 }
 
+VOX_NATIVE_STATE uint8_t native_pattern_background[4];
+VOX_NATIVE_STATE VoxGraphiteShape native_pattern_border;
+
 void native_set_image_background(gg__Color color) {
-	(void)color;
+ native_pattern_background[0]=color.r; native_pattern_background[1]=color.g;
+ native_pattern_background[2]=color.b; native_pattern_background[3]=color.a;
 }
 
 void native_set_image_border(float const* rect, float width, gg__Color color) {
+ memset(&native_pattern_border,0,sizeof(native_pattern_border));
+ if (!rect) return;
+ memcpy(native_pattern_border.rect,rect,12*sizeof(float));
+ native_pattern_border.thickness=width; native_pattern_border.anti_alias=1;
+ native_pattern_border.red=color.r; native_pattern_border.green=color.g;
+ native_pattern_border.blue=color.b; native_pattern_border.alpha=color.a;
 }
 
 // Insets retained by a single visible rounded border, including transparent sides.
@@ -2914,7 +3180,7 @@ void native_begin_font_compositing_layer(float width, float height) {
 			[NSGraphicsContext graphicsContextWithCGContext:destination flipped:NO]];
 		native_css_filter_stack[native_css_filter_stack_depth++] = layer;
 	} else {
-		native_begin_css_filter_layer(width, height);
+		native_begin_css_filter_layer_in_space(width, height, vox_document_display_p3_enabled(), NO);
 	}
 	if (fresh_destination && native_css_filter_stack_depth == previous_depth + 1) {
 		NativeCSSFilterLayer *layer = &native_css_filter_stack[previous_depth];
@@ -2938,6 +3204,15 @@ void native_end_font_compositing_layer(void) {
 	native_font_compositing_context = NULL;
 	native_font_compositing_transparency_depth = 0;
 	native_end_css_filter_layer();
+}
+
+void *native_start_initial_document_clear(float width, float height) {
+	return vox_start_initial_document_clear(&native_layer_initial_document_clear,
+		NSGraphicsContext.currentContext.CGContext, CGRectMake(0, 0, width, height));
+}
+
+void native_finish_initial_document_clear(void *work) {
+	vox_finish_initial_document_clear(&native_layer_initial_document_clear, work);
 }
 
 void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
@@ -2976,7 +3251,6 @@ void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 	};
 	if (source != NULL && destination != NULL && region_width > 0.0f
 		&& region_height > 0.0f && canvas_width > 0.0f && canvas_height > 0.0f) {
-		layer.backdrop_source = CGBitmapContextCreateImage(source);
 		CGPathRef local_path = native_create_corner_rounded_rect_path(region_x,
 			region_y, region_width, region_height, top_left_x, top_left_y,
 			top_right_x, top_right_y, bottom_right_x, bottom_right_y,
@@ -2992,9 +3266,12 @@ void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
 				CGRectStandardize(CGPathGetPathBoundingBox(layer.backdrop_clip)),
 				CGRectMake(0, 0, canvas_width, canvas_height));
 		}
-		layer.active = layer.backdrop_source != NULL && layer.backdrop_clip != NULL
-			&& !CGRectIsNull(layer.backdrop_bounds)
-			&& !CGRectIsEmpty(layer.backdrop_bounds);
+		if (layer.backdrop_clip != NULL && !CGRectIsNull(layer.backdrop_bounds)
+			&& !CGRectIsEmpty(layer.backdrop_bounds)) {
+			layer.backdrop_bitmap = native_copy_css_backdrop_bitmap(source);
+			if (!layer.backdrop_bitmap.bytes) layer.backdrop_source = CGBitmapContextCreateImage(source);
+			layer.active = layer.backdrop_bitmap.bytes != NULL || layer.backdrop_source != NULL;
+		}
 	}
 	if (transparent_source) CGContextRelease(transparent_source);
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
@@ -3300,6 +3577,9 @@ static CIImage *native_apply_css_blur(CIImage *input, CGFloat radius) {
 	return [filter valueForKey:kCIOutputImageKey];
 }
 
+// Colorize blurred alpha in the unpremultiplied Core Image color domain.
+#include "native/include/native_css_drop_shadow_darwin.h"
+
 static CIImage *native_apply_css_drop_shadow(CIImage *input,
 	NativeCSSFilterOperation operation, CGFloat scale) {
 	CGFloat alpha_matrix[20] = {
@@ -3310,12 +3590,9 @@ static CIImage *native_apply_css_drop_shadow(CIImage *input,
 	};
 	CIImage *shadow = native_css_filter_color_matrix(input, alpha_matrix);
 	shadow = native_apply_css_blur(shadow, operation.third * scale);
-	CGFloat color_matrix[20] = {
-		0, 0, 0, operation.red, 0,
-		0, 0, 0, operation.green, 0,
-		0, 0, 0, operation.blue, 0,
-		0, 0, 0, operation.alpha, 0,
-	};
+	CGFloat color_matrix[20];
+	native_css_drop_shadow_color_matrix(color_matrix, operation.red,
+		operation.green, operation.blue, operation.alpha);
 	shadow = native_css_filter_color_matrix(shadow, color_matrix);
 	CIFilter *offset = [CIFilter filterWithName:@"CIAffineTransform"];
 	[offset setValue:shadow forKey:kCIInputImageKey];
@@ -3601,147 +3878,20 @@ static CIImage *native_apply_svg_displacement(CIImage *color,
 			native_svg_channel_selector(node->y_channel) ]] ?: color;
 }
 
-typedef struct {
-	uint8_t permutation[256];
-	double gradient[4][256][2];
-} NativeSVGTurbulenceData;
-
-static int native_svg_turbulence_random(int *seed) {
-	static int const amplitude = 16807;
-	static int const quotient = 127773;
-	static int const remainder = 2836;
-	int64_t result = (int64_t)amplitude * (*seed % quotient)
-		- (int64_t)remainder * (*seed / quotient);
-	if (result <= 0) {
-		result += 2147483647;
-	}
-	*seed = (int)result;
-	return *seed;
-}
-
-static void native_svg_initialize_turbulence(NativeSVGTurbulenceData *data,
-	double seed_value) {
-	static int const random_maximum = 2147483647;
-	int seed;
-	if (!isfinite(seed_value) || seed_value >= random_maximum - 1) {
-		seed = random_maximum - 1;
-	} else if (seed_value <= INT32_MIN) {
-		seed = INT32_MIN;
-	} else {
-		seed = (int)trunc(seed_value);
-	}
-	if (seed <= 0) {
-		seed = -(seed % (random_maximum - 1)) + 1;
-	}
-	uint16_t noise[4][256][2];
-	for (int channel = 0; channel < 4; ++channel) {
-		for (int index = 0; index < 256; ++index) {
-			data->permutation[index] = (uint8_t)index;
-			noise[channel][index][0] = (uint16_t)(native_svg_turbulence_random(&seed) % 512);
-			noise[channel][index][1] = (uint16_t)(native_svg_turbulence_random(&seed) % 512);
-		}
-	}
-	for (int index = 255; index > 0; --index) {
-		uint8_t value = data->permutation[index];
-		int replacement = native_svg_turbulence_random(&seed) % 256;
-		data->permutation[index] = data->permutation[replacement];
-		data->permutation[replacement] = value;
-	}
-	for (int channel = 0; channel < 4; ++channel) {
-		for (int index = 0; index < 256; ++index) {
-			int selected = data->permutation[index];
-			float x = ((float)noise[channel][selected][0] - 256.0f) / 256.0f;
-			float y = ((float)noise[channel][selected][1] - 256.0f) / 256.0f;
-			float length = hypotf(x, y);
-			if (length == 0.0) {
-				x = 1.0f;
-				y = 0.0f;
-				length = 1.0f;
-			}
-			uint16_t encoded_x = (uint16_t)lrintf((x / length + 1.0f) * 32767.5f);
-			uint16_t encoded_y = (uint16_t)lrintf((y / length + 1.0f) * 32767.5f);
-			data->gradient[channel][index][0] = (double)encoded_x / 32767.5 - 1.0;
-			data->gradient[channel][index][1] = (double)encoded_y / 32767.5 - 1.0;
-		}
-	}
-}
-
-static double native_svg_turbulence_lerp(double first, double second,
-	double progress) {
-	return first + progress * (second - first);
-}
-
-static double native_svg_turbulence_noise(NativeSVGTurbulenceData const *data,
-	int channel, double x, double y) {
-	double floor_x = floor(x);
-	double floor_y = floor(y);
-	double fraction_x = x - floor_x;
-	double fraction_y = y - floor_y;
-	int x0 = ((int)floor_x) & 255;
-	int x1 = (x0 + 1) & 255;
-	int y0 = ((int)floor_y) & 255;
-	int y1 = (y0 + 1) & 255;
-	int b00 = (data->permutation[x0] + y0) & 255;
-	int b10 = (data->permutation[x1] + y0) & 255;
-	int b01 = (data->permutation[x0] + y1) & 255;
-	int b11 = (data->permutation[x1] + y1) & 255;
-	double smooth_x = fraction_x * fraction_x * (3.0 - 2.0 * fraction_x);
-	double smooth_y = fraction_y * fraction_y * (3.0 - 2.0 * fraction_y);
-	double a = native_svg_turbulence_lerp(
-		data->gradient[channel][b00][0] * fraction_x
-			+ data->gradient[channel][b00][1] * fraction_y,
-		data->gradient[channel][b10][0] * (fraction_x - 1.0)
-			+ data->gradient[channel][b10][1] * fraction_y, smooth_x);
-	double b = native_svg_turbulence_lerp(
-		data->gradient[channel][b01][0] * fraction_x
-			+ data->gradient[channel][b01][1] * (fraction_y - 1.0),
-		data->gradient[channel][b11][0] * (fraction_x - 1.0)
-			+ data->gradient[channel][b11][1] * (fraction_y - 1.0), smooth_x);
-	return native_svg_turbulence_lerp(a, b, smooth_y);
-}
+#include "native/include/native_svg_turbulence_darwin.h"
 
 static CIImage *native_apply_svg_turbulence(CGRect extent,
 	NativeSVGFilterNode const *node, CGFloat scale) {
-	size_t width = (size_t)MAX(1.0, ceil(extent.size.width));
-	size_t height = (size_t)MAX(1.0, ceil(extent.size.height));
+	double pixel_width = MAX(1.0, ceil(extent.size.width));
+	double pixel_height = MAX(1.0, ceil(extent.size.height));
+	if (!(pixel_width <= INT32_MAX && pixel_height <= INT32_MAX)) return nil;
+	size_t width = (size_t)pixel_width, height = (size_t)pixel_height;
+	if (width > SIZE_MAX / 4 / height) return nil;
 	NSMutableData *bitmap = [NSMutableData dataWithLength:width * height * 4];
 	uint8_t *pixels = bitmap.mutableBytes;
-	double coordinate_scale = scale > 0.0 ? scale : 1.0;
-	int octave_count = MAX(0, MIN(255, (int)node->third));
-	NativeSVGTurbulenceData data;
-	native_svg_initialize_turbulence(&data, node->fourth);
-	for (size_t pixel_y = 0; pixel_y < height; ++pixel_y) {
-		for (size_t pixel_x = 0; pixel_x < width; ++pixel_x) {
-			double coordinate_x = ((double)pixel_x + 0.5)
-				/ coordinate_scale * node->first;
-			double coordinate_y = ((double)pixel_y + 0.5)
-				/ coordinate_scale * node->second;
-			double color[4] = { 0, 0, 0, 0 };
-			double ratio = 1.0;
-			for (int octave = 0; octave < octave_count; ++octave) {
-				for (int channel = 0; channel < 4; ++channel) {
-					double noise = native_svg_turbulence_noise(&data, channel,
-						coordinate_x, coordinate_y);
-					color[channel] += (node->mode == 1 ? noise : fabs(noise)) * ratio;
-				}
-				coordinate_x *= 2.0;
-				coordinate_y *= 2.0;
-				ratio *= 0.5;
-			}
-			if (node->mode == 1) {
-				for (int channel = 0; channel < 4; ++channel) {
-					color[channel] = color[channel] * 0.5 + 0.5;
-				}
-			}
-			double alpha = MIN(1.0, MAX(0.0, color[3]));
-			size_t offset = (pixel_y * width + pixel_x) * 4;
-			for (int channel = 0; channel < 3; ++channel) {
-				double component = MIN(1.0, MAX(0.0, color[channel])) * alpha;
-				pixels[offset + channel] = (uint8_t)lrint(component * 255.0);
-			}
-			pixels[offset + 3] = (uint8_t)lrint(alpha * 255.0);
-		}
-	}
+	if (!pixels) return nil;
+	native_svg_render_turbulence_pixels(pixels, width, (int32_t)height,
+		node->first, node->second, node->third, node->fourth, node->mode, scale);
 	CIImage *image = [CIImage imageWithBitmapData:bitmap bytesPerRow:width * 4
 		size:CGSizeMake(width, height) format:kCIFormatRGBA8 colorSpace:nil];
 	return [image imageByApplyingTransform:CGAffineTransformMakeTranslation(
@@ -4011,15 +4161,8 @@ static void native_free_svg_filter_graph(NativeCSSFilterLayer *layer) {
 // the native premultiplied format and color space. Other formats keep their
 // ordinary Core Image decoder.
 static CIImage *native_css_filter_source_image(CGImageRef image) {
-	CIFormat format = 0;
-	CGBitmapInfo order = CGImageGetBitmapInfo(image) & kCGBitmapByteOrderMask;
-	CGImageAlphaInfo alpha = CGImageGetAlphaInfo(image);
-	if (CGImageGetBitsPerComponent(image) == 8 && CGImageGetBitsPerPixel(image) == 32) {
-		if (alpha == kCGImageAlphaPremultipliedLast && order == kCGBitmapByteOrder32Big)
-			format = kCIFormatRGBA8;
-		else if (alpha == kCGImageAlphaPremultipliedFirst && order == kCGBitmapByteOrder32Little)
-			format = kCIFormatBGRA8;
-	}
+	CIFormat format = native_css_filter_bitmap_format(CGImageGetBitsPerComponent(image),
+		CGImageGetBitsPerPixel(image), CGImageGetBitmapInfo(image));
 	size_t width = CGImageGetWidth(image), height = CGImageGetHeight(image);
 	size_t pitch = CGImageGetBytesPerRow(image);
 	if (format && !CGImageGetDecode(image) && height && pitch && height <= SIZE_MAX / pitch) {
@@ -4042,9 +4185,38 @@ static CIImage *native_css_filter_source_image(CGImageRef image) {
 	return [CIImage imageWithCGImage:image];
 }
 
-static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
-	CGImageRef source_image) {
-	CIImage *output = native_css_filter_source_image(source_image);
+// The caller has finished painting this private bitmap. Keep its allocation
+// alive for Core Image's deferred reads, without importing a CGImage or copying
+// the rows through a data provider.
+static CIImage *native_css_filter_completed_bitmap(CGContextRef context) {
+	CIFormat format = native_css_filter_bitmap_format(CGBitmapContextGetBitsPerComponent(context),
+		CGBitmapContextGetBitsPerPixel(context), CGBitmapContextGetBitmapInfo(context));
+	CGColorSpaceRef color = CGBitmapContextGetColorSpace(context);
+	size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
+	size_t pitch = CGBitmapContextGetBytesPerRow(context);
+	if (!format || !color || CGColorSpaceGetModel(color) != kCGColorSpaceModelRGB
+		|| !width || !height || width > SIZE_MAX / 4 || pitch < width * 4
+		|| height > SIZE_MAX / pitch) return nil;
+	CGContextFlush(context);
+	void *pixels = CGBitmapContextGetData(context);
+	if (!pixels) return nil;
+	CGContextRetain(context);
+	NSData *bytes = [[NSData alloc] initWithBytesNoCopy:pixels length:pitch * height
+		deallocator:^(void *data, NSUInteger size) {
+			(void)data;
+			(void)size;
+			CGContextRelease(context);
+		}];
+	CIImage *source = [CIImage imageWithBitmapData:bytes bytesPerRow:pitch
+		size:CGSizeMake(width, height) format:format colorSpace:color];
+#if !__has_feature(objc_arc)
+	[bytes release];
+#endif
+	return source;
+}
+
+static CIImage *native_apply_css_filter_operations(NativeCSSFilterLayer const *layer,
+	CIImage *output) {
 	for (NSInteger index = (NSInteger)layer->operation_count - 1;
 		index >= 0; --index) {
 		NativeCSSFilterOperation operation = layer->operations[index];
@@ -4067,6 +4239,11 @@ static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
 		}
 	}
 	return native_apply_svg_filter_graph(layer, output);
+}
+
+static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
+	CGImageRef source_image) {
+	return native_apply_css_filter_operations(layer, native_css_filter_source_image(source_image));
 }
 
 #ifdef VOX_TEST_CROPPED_CSS_FILTERS
@@ -4209,48 +4386,58 @@ static BOOL native_css_filter_bounded_output_is_empty(NativeCSSFilterLayer const
 #ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
 static unsigned native_test_empty_pointwise_filters;
 #endif
+#ifdef VOX_TEST_EMPTY_SPATIAL_FILTERS
+static unsigned native_test_empty_spatial_filters;
+#endif
 
 // Pointwise filters preserve zero alpha. If every source pixel that can reach
 // the destination clip is transparent, filtering and source-over publication
-// cannot change that destination. Include the ordinary crop's guard pixels;
-// blur, shadows, SVG graphs and non-integral mappings retain ordinary replay.
+// cannot change that destination. Blur and drop shadows can spread ink, so
+// prove their complete source is empty before skipping them.
 static BOOL native_css_filter_visible_input_is_empty(NativeCSSFilterLayer const *layer) {
-    if (!getenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS") || !layer->active || !layer->context
-        || layer->svg_filter_recording || layer->gradient_blur_recording) return NO;
+    if (!layer->active || !layer->context || !layer->operations || !layer->operation_count
+        || layer->svg_filter_recording || layer->gradient_blur_recording
+        || layer->graph_node_count || layer->borrows_fresh_frame || layer->copies_to_fresh_frame) return NO;
+    NativeCSSFilterOperation first = layer->operations[0];
+    BOOL spatial = layer->operation_count == 1 && (first.kind == 0 || first.kind == 1)
+        && isfinite(first.third) && isfinite(first.red) && isfinite(first.green)
+        && isfinite(first.blue) && isfinite(first.alpha)
+        && !getenv("VOX_DISABLE_EMPTY_SPATIAL_FILTERS");
+    if (!spatial && !getenv("VOX_SKIP_EMPTY_POINTWISE_FILTERS")) return NO;
     CGContextRef context = layer->context;
     size_t width = CGBitmapContextGetWidth(context), height = CGBitmapContextGetHeight(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
     CGBitmapInfo info = CGBitmapContextGetBitmapInfo(context);
     if (!width || !height || width > INT_MAX || height > INT_MAX
         || width > SIZE_MAX / 4 || pitch < width * 4 || pitch > 64 * 1024 * 1024 / height
+        || pitch % sizeof(uint32_t) != 0
         || CGBitmapContextGetBitsPerComponent(context) != 8
         || CGBitmapContextGetBitsPerPixel(context) != 32
         || (info != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
             && info != (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little))) return NO;
     CGRect whole = CGRectMake(0, 0, width, height);
-    if (!native_css_filter_has_pointwise_device_mapping(layer, whole)) return NO;
+    if (!spatial && !native_css_filter_has_pointwise_device_mapping(layer, whole)) return NO;
     for (size_t index = 0; index < layer->operation_count; ++index) {
         NativeCSSFilterOperation operation = layer->operations[index];
         if (!isfinite(operation.first) || !isfinite(operation.second)) return NO;
     }
     CGContextFlush(context);
     const uint8_t *pixels = CGBitmapContextGetData(context);
-    if (!pixels) return NO;
-    CGRect rect = native_css_filter_output_rect(layer, whole);
+    if (!pixels || (uintptr_t)pixels % sizeof(uint32_t) != 0) return NO;
+    CGRect rect = spatial ? whole : native_css_filter_output_rect(layer, whole);
     size_t left = rect.origin.x, right = CGRectGetMaxX(rect);
     size_t top = height - CGRectGetMaxY(rect), bottom = height - rect.origin.y;
     for (size_t y = top; y < bottom; ++y) {
         const uint32_t *row = (const uint32_t *)(pixels + y * pitch);
-        size_t x = left;
-#if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
-        for (; right - x >= 16; x += 16) {
-            uint32x4x4_t block = vld1q_u32_x4(row + x);
-            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
-                vorrq_u32(block.val[2], block.val[3]));
-            if (vmaxvq_u32(ink)) return NO;
-        }
+        if (native_opacity_row_has_ink(row, (int)left, (int)right)) return NO;
+    }
+    if (spatial) {
+#ifdef VOX_TEST_EMPTY_SPATIAL_FILTERS
+        ++native_test_empty_spatial_filters;
 #endif
-        for (; x < right; ++x) if (row[x]) return NO;
+        if (getenv("VOX_EMPTY_SPATIAL_FILTER_DIAGNOSTICS"))
+            fprintf(stderr, "VOX_EMPTY_SPATIAL_FILTER kind=%d size=%zux%zu\n", first.kind, width, height);
+        return YES;
     }
 #ifdef VOX_TEST_EMPTY_POINTWISE_FILTERS
     ++native_test_empty_pointwise_filters;
@@ -4303,14 +4490,15 @@ static CIContext *native_css_filter_render_context(NativeCSSFilterLayer const *l
 }
 
 static CGImageRef native_render_css_filter_image(NativeCSSFilterLayer const *layer,
-    CGImageRef input, CGRect bounds, BOOL allow_software) {
+    CGImageRef input, CIImage *bitmap_source, CGRect bounds, BOOL allow_software) {
     BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
     double started = timing ? CACurrentMediaTime() : 0;
     native_initialize_css_filter_renderer();
     CIContext *renderer = allow_software
         ? native_css_filter_render_context(layer, input) : native_css_filter_ci_context;
     double selected = timing ? CACurrentMediaTime() : 0;
-    CIImage *filtered = native_apply_css_filter_layer(layer, input);
+    CIImage *source = bitmap_source ?: native_css_filter_source_image(input);
+    CIImage *filtered = native_apply_css_filter_operations(layer, source);
     double applied = timing ? CACurrentMediaTime() : 0;
     CGImageRef image = [renderer createCGImage:filtered fromRect:bounds
         format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
@@ -4576,6 +4764,29 @@ static int native_try_gpu_css_filter_image(CGContextRef destination, CGImageRef 
     return 0;
 }
 
+static CIImage *native_css_filter_spatial_bitmap(NativeCSSFilterLayer const *layer) {
+	if (!layer->destination || layer->operation_count != 1 || layer->graph_node_count
+		|| layer->borrows_fresh_frame || layer->copies_to_fresh_frame
+		|| layer->gradient_blur_recording || layer->svg_filter_recording
+		|| layer->sparse_input_pixels || getenv("VOX_DISABLE_DIRECT_CSS_FILTER_BITMAP")) return nil;
+	int kind = layer->operations[0].kind;
+	if (kind != 0 && kind != 1) return nil;
+	NativeCSSFilterSurface *source = layer->source_surface;
+	if (source) {
+		// Quartz has finished writing. Core Image retains the immutable surface
+		// independently of the bitmap context and can read it without an upload.
+		CGContextFlush(layer->context);
+		CGColorSpaceRef color = CGBitmapContextGetColorSpace(layer->context);
+		CIImage *image = [CIImage imageWithIOSurface:source->surface
+			options:@{kCIImageColorSpace: (__bridge id)color}];
+		if (image && IOSurfaceUnlock(source->surface, 0, NULL) == kIOReturnSuccess) {
+			source->locked = NO;
+			return image;
+		}
+	}
+	return native_css_filter_completed_bitmap(layer->context);
+}
+
 void native_end_css_filter_layer(void) {
 	BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
 	double timing_start = timing ? CACurrentMediaTime() : 0;
@@ -4637,38 +4848,45 @@ void native_end_css_filter_layer(void) {
     BOOL grayscale_identity = !grayscale_image
         && native_css_grayscale_is_identity(&layer, layer.context, &identity_rect);
 	double timing_input = timing ? CACurrentMediaTime() : 0;
-	CGImageRef source_image;
-	if (layer.borrows_fresh_frame) {
-		// A filter attached to the enclosing layer still needs an isolated source.
-		// Quartz snapshots retain their pixels when the fresh target is cleared.
-		source_image = CGBitmapContextCreateImage(layer.context);
-		CGContextRestoreGState(layer.context);
-		CGContextRelease(layer.context);
-	} else {
-		source_image = layer.operation_count == 0 && layer.graph_node_count == 0
-			? native_take_bitmap_image_for_destination(layer.context, layer.destination)
-			: native_take_bitmap_image(layer.context);
-	}
-	[NSGraphicsContext restoreGraphicsState];
-	double timing_source = timing ? CACurrentMediaTime() : 0;
-	if (layer.borrows_fresh_frame)
-		CGContextClearRect(layer.destination,
-			CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
-
-	if (source_image == NULL) {
-		if (compact_input) CGImageRelease(compact_input);
-		if (grayscale_image) CGImageRelease(grayscale_image);
-		free(layer.operations);
-		native_free_svg_filter_graph(&layer);
-		return;
-	}
-	double timing_filter = timing_source, timing_draw = timing_source;
+	double timing_source = 0, timing_filter = 0, timing_draw = 0;
 	@autoreleasepool {
-		CGRect source_rect = CGRectMake(0, 0,
+		CIImage *bitmap_source = native_css_filter_spatial_bitmap(&layer);
+		CGImageRef source_image = NULL;
+		if (bitmap_source) {
+			BOOL shared = layer.source_surface && !layer.source_surface->locked;
+			CGContextRelease(layer.context);
+			if (timing) fprintf(stderr,
+				"VOX_CSS_FILTER_DIRECT_SOURCE kind=%d width=%.0f height=%.0f shared=%d\n",
+				layer.operations[0].kind, bitmap_source.extent.size.width, bitmap_source.extent.size.height, shared);
+		} else if (layer.borrows_fresh_frame) {
+			// Quartz snapshots retain their pixels when the fresh target is cleared.
+			source_image = CGBitmapContextCreateImage(layer.context);
+			CGContextRestoreGState(layer.context);
+			CGContextRelease(layer.context);
+		} else {
+			source_image = layer.operation_count == 0 && layer.graph_node_count == 0
+				? native_take_bitmap_image_for_destination(layer.context, layer.destination)
+				: native_take_bitmap_image(layer.context);
+		}
+		[NSGraphicsContext restoreGraphicsState];
+		timing_source = timing ? CACurrentMediaTime() : 0;
+		if (layer.borrows_fresh_frame)
+			CGContextClearRect(layer.destination,
+				CGRectMake(0, 0, layer.canvas_width, layer.canvas_height));
+		if (!source_image && !bitmap_source) {
+			if (compact_input) CGImageRelease(compact_input);
+			if (grayscale_image) CGImageRelease(grayscale_image);
+			free(layer.operations);
+			native_free_svg_filter_graph(&layer);
+			return;
+		}
+		CGRect source_rect = bitmap_source ? bitmap_source.extent : CGRectMake(0, 0,
 			CGImageGetWidth(source_image), CGImageGetHeight(source_image));
 		CGImageRef filtered_image = NULL;
 		CGRect filtered_rect = source_rect;
-		if (grayscale_image) {
+		if (bitmap_source) {
+			filtered_image = native_render_css_filter_image(&layer, NULL, bitmap_source, source_rect, NO);
+		} else if (grayscale_image) {
 			filtered_image = grayscale_image;
 			filtered_rect = identity_rect;
 		} else if (layer.operation_count == 0 && layer.graph_node_count == 0) {
@@ -4690,7 +4908,7 @@ void native_end_css_filter_layer(void) {
 			} else if (compact_input && (filtered_image = native_cached_css_color_filter_image(&layer, input))) {
 				// The immutable cached result uses the same Core Image arithmetic.
 			} else {
-				filtered_image = native_render_css_filter_image(&layer, input,
+				filtered_image = native_render_css_filter_image(&layer, input, nil,
                     cropped_source ? CGRectMake(0, 0, filtered_rect.size.width,
                         filtered_rect.size.height) : source_rect, compact_input != NULL);
 			}
@@ -4713,8 +4931,8 @@ void native_end_css_filter_layer(void) {
 			CGImageRelease(filtered_image);
 		}
 		timing_draw = timing ? CACurrentMediaTime() : 0;
+		if (source_image) CGImageRelease(source_image);
 	}
-	CGImageRelease(source_image);
 	if (compact_input) CGImageRelease(compact_input);
 	free(layer.operations);
 	native_free_svg_filter_graph(&layer);
@@ -4740,8 +4958,18 @@ void native_end_backdrop_filter_layer(float opacity) {
 	if (layer.active) {
 		@autoreleasepool {
 			native_initialize_css_filter_renderer();
-			CIImage *output = native_apply_css_filter_layer(&layer,
-				layer.backdrop_source);
+			NativeCSSBackdropBitmap bitmap = layer.backdrop_bitmap;
+			CIImage *input;
+			if (bitmap.bytes) {
+				input = [CIImage imageWithBitmapData:(__bridge NSData *)bitmap.bytes
+					bytesPerRow:bitmap.pitch size:CGSizeMake(bitmap.width, bitmap.height)
+					format:bitmap.format colorSpace:bitmap.color_space];
+			} else {
+				bitmap.width = CGImageGetWidth(layer.backdrop_source);
+				bitmap.height = CGImageGetHeight(layer.backdrop_source);
+				input = native_css_filter_source_image(layer.backdrop_source);
+			}
+			CIImage *output = native_apply_css_filter_operations(&layer, input);
 			// Core Image is demand-driven. Render only the transformed backdrop
 			// bounds; blur and drop-shadow filters request their required source
 			// pixels outside this rectangle through their region-of-interest logic.
@@ -4751,11 +4979,13 @@ void native_end_backdrop_filter_layer(float opacity) {
 				layer.backdrop_bounds.size.width * layer.scale,
 				layer.backdrop_bounds.size.height * layer.scale);
 			source_rect = CGRectIntersection(source_rect, CGRectMake(0, 0,
-				CGImageGetWidth(layer.backdrop_source),
-				CGImageGetHeight(layer.backdrop_source)));
+				bitmap.width, bitmap.height));
 			CGImageRef filtered_image = [native_css_filter_ci_context
 				createCGImage:output fromRect:source_rect format:kCIFormatRGBA8
 				colorSpace:native_css_filter_color_space];
+			// Core Image keeps any input it still needs. Drop the layer's reference
+			// before writing to the context that supplied the backdrop.
+			if (layer.backdrop_source) CGImageRelease(layer.backdrop_source);
 			if (filtered_image != NULL) {
 				CGContextSaveGState(layer.destination);
 				CGContextAddPath(layer.destination, layer.backdrop_clip);
@@ -4769,8 +4999,9 @@ void native_end_backdrop_filter_layer(float opacity) {
 			}
 		}
 	}
-	if (layer.backdrop_source != NULL) {
-		CGImageRelease(layer.backdrop_source);
+	if (layer.backdrop_bitmap.bytes) {
+		CFRelease(layer.backdrop_bitmap.bytes);
+		CGColorSpaceRelease(layer.backdrop_bitmap.color_space);
 	}
 	if (layer.backdrop_clip != NULL) {
 		CGPathRelease(layer.backdrop_clip);
@@ -5019,15 +5250,15 @@ void native_begin_svg_clip_mask(unsigned long long input_key, float canvas_width
 	float page_y, float scroll_y) {
 	native_svg_clip_build_is_color = 0;
 	native_svg_clip_build_is_luminance = 0;
+	CGFloat scale = native_svg_mask_backing_scale();
 	if (!native_prepare_svg_mask(input_key, 0, canvas_width, canvas_height, page_x,
-		page_y, scroll_y)) {
+		page_y, scroll_y, scale)) {
 		return;
 	}
 	native_svg_clip_rect = native_svg_mask_canvas_rect(area_x, area_y, area_width,
 		area_height, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
 		canvas_height);
-	CGFloat scale = native_svg_mask_backing_scale();
 	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
 	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
 	native_svg_clip_build_context = CGBitmapContextCreate(NULL, width, height, 8,
@@ -5041,49 +5272,63 @@ void native_begin_svg_clip_mask(unsigned long long input_key, float canvas_width
 	}
 }
 
-void native_begin_svg_content_mask(unsigned long long input_key, int luminance,
-	float canvas_width, float canvas_height, float area_x, float area_y,
-	float area_width, float area_height, float transform_a, float transform_b,
-	float transform_c, float transform_d, float transform_e, float transform_f,
+double native_prepare_svg_content_mask(unsigned long long input_key, int luminance,
+	float canvas_width, float canvas_height, const float *area, const float *matrix,
 	float page_x, float page_y, float scroll_y) {
 	native_svg_clip_build_is_color = 1;
 	native_svg_clip_build_is_luminance = luminance;
-	if (!native_prepare_svg_mask(input_key, 1, canvas_width, canvas_height, page_x,
-		page_y, scroll_y)) {
-		return;
-	}
-	native_svg_clip_rect = native_svg_mask_canvas_rect(area_x, area_y, area_width,
-		area_height, transform_a, transform_b, transform_c, transform_d,
-		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-		canvas_height);
 	CGFloat scale = native_svg_mask_backing_scale();
-	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
-	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
+	if (!native_prepare_svg_mask(input_key, 1, canvas_width, canvas_height, page_x,
+		page_y, scroll_y, scale)) {
+		return 0;
+	}
+	native_svg_clip_rect = native_svg_mask_canvas_rect(area[0], area[1], area[2],
+		area[3], matrix[0], matrix[1], matrix[2], matrix[3],
+		matrix[4], matrix[5], page_x, page_y, scroll_y, canvas_width,
+		canvas_height);
+	return scale;
+}
+
+static CGContextRef native_allocate_svg_content_mask_bitmap(CGFloat scale,
+	size_t width, size_t height) {
+	if (native_svg_clip_build_context != NULL) {
+		return native_svg_clip_build_context;
+	}
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	native_svg_clip_build_context = CGBitmapContextCreate(NULL, width, height, 8,
 		width * 4, color_space,
 		kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 	CGColorSpaceRelease(color_space);
-	if (native_svg_clip_build_context == NULL) {
+	if (native_svg_clip_build_context != NULL) {
+		CGContextScaleCTM(native_svg_clip_build_context, scale, scale);
+		CGContextTranslateCTM(native_svg_clip_build_context,
+			-native_svg_clip_rect.origin.x, -native_svg_clip_rect.origin.y);
+		CGContextSetShouldAntialias(native_svg_clip_build_context, true);
+	}
+	return native_svg_clip_build_context;
+}
+
+void native_begin_svg_content_mask_bitmap(double scale, float canvas_height,
+	const float *area, const float *matrix, float page_x, float page_y, float scroll_y) {
+	size_t width = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.width * scale));
+	size_t height = (size_t)MAX(1.0, ceil(native_svg_clip_rect.size.height * scale));
+	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale, width, height);
+	if (context == NULL) {
 		return;
 	}
-	CGContextScaleCTM(native_svg_clip_build_context, scale, scale);
-	CGContextTranslateCTM(native_svg_clip_build_context,
-		-native_svg_clip_rect.origin.x, -native_svg_clip_rect.origin.y);
-	CGContextSetShouldAntialias(native_svg_clip_build_context, true);
-	if (area_width <= 0.0 || area_height <= 0.0) {
-		CGContextClipToRect(native_svg_clip_build_context, CGRectZero);
+	if (area[2] <= 0.0 || area[3] <= 0.0) {
+		CGContextClipToRect(context, CGRectZero);
 		return;
 	}
 	CGMutablePathRef local_area = CGPathCreateMutable();
 	CGPathAddRect(local_area, NULL,
-		CGRectMake(area_x, area_y, area_width, area_height));
-	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
-		transform_c, -transform_d, page_x + transform_e,
-		canvas_height - page_y + scroll_y - transform_f);
+		CGRectMake(area[0], area[1], area[2], area[3]));
+	CGAffineTransform to_canvas = CGAffineTransformMake(matrix[0], -matrix[1],
+		matrix[2], -matrix[3], page_x + matrix[4],
+		canvas_height - page_y + scroll_y - matrix[5]);
 	CGPathRef canvas_area = CGPathCreateCopyByTransformingPath(local_area, &to_canvas);
-	CGContextAddPath(native_svg_clip_build_context, canvas_area);
-	CGContextClip(native_svg_clip_build_context);
+	CGContextAddPath(context, canvas_area);
+	CGContextClip(context);
 	CGPathRelease(canvas_area);
 	CGPathRelease(local_area);
 }
@@ -5109,6 +5354,36 @@ void native_add_svg_clip_mask_path(const float *data, int segment_count, int eve
 	}
 	CGPathRelease(canvas_path);
 	CGPathRelease(local_path);
+}
+
+// Compute the bitmap's device bounds before asking Quartz for storage.
+int32_t native_svg_content_mask_geometry(float canvas_height, double scale, int32_t *area) {
+	CGFloat left = CGRectGetMinX(native_svg_clip_rect) * scale;
+	CGFloat top = (canvas_height - CGRectGetMaxY(native_svg_clip_rect)) * scale;
+	CGFloat width = CGRectGetWidth(native_svg_clip_rect) * scale;
+	CGFloat height = CGRectGetHeight(native_svg_clip_rect) * scale;
+	if (!(width >= 1 && width <= 16384 && width == floor(width))
+		|| !(height >= 1 && height <= 16384 && height == floor(height))
+		|| width * height > 4u * 1024u * 1024u
+		|| !(left >= 0 && left < INT32_MAX && left == floor(left))
+		|| !(top >= 0 && top < INT32_MAX && top == floor(top))) {
+		return 0;
+	}
+	area[0] = (int32_t)left;
+	area[1] = (int32_t)top;
+	area[2] = (int32_t)width;
+	area[3] = (int32_t)height;
+	return 1;
+}
+
+uint8_t *native_svg_content_mask_pixels(double scale, int32_t width, int32_t height) {
+	CGContextRef context = native_allocate_svg_content_mask_bitmap(scale, (size_t)width, (size_t)height);
+	if (context == NULL || CGBitmapContextGetWidth(context) != (size_t)width
+		|| CGBitmapContextGetHeight(context) != (size_t)height
+		|| CGBitmapContextGetBytesPerRow(context) != (size_t)width * 4) {
+		return NULL;
+	}
+	return CGBitmapContextGetData(context);
 }
 
 void native_begin_svg_mask_opacity(float opacity) {
@@ -5152,13 +5427,19 @@ void native_end_svg_mask_opacity(void) {
 }
 
 static void native_draw_svg_mask_path_part(CGContextRef context, CGPathRef path,
-	int fill, int even_odd) {
-	CGContextAddPath(context, path);
-	if (fill) {
-		CGContextDrawPath(context, even_odd ? kCGPathEOFill : kCGPathFill);
+	int fill, int even_odd, const CGAffineTransform *to_canvas) {
+	bool ready = true;
+	if (to_canvas) CGContextSaveGState(context);
+	if (!fill && to_canvas) {
+		ready = native_add_svg_host_stroke_path(context, path, *to_canvas,
+			native_svg_mask_device_scale(context));
 	} else {
-		CGContextDrawPath(context, kCGPathStroke);
+		if (to_canvas) CGContextConcatCTM(context, *to_canvas);
+		CGContextAddPath(context, path);
 	}
+	if (ready) CGContextDrawPath(context,
+		fill ? (even_odd ? kCGPathEOFill : kCGPathFill) : kCGPathStroke);
+	if (to_canvas) CGContextRestoreGState(context);
 }
 
 void native_add_svg_content_mask_path(const float *data, int segment_count,
@@ -5167,7 +5448,8 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	gg__Color fill_color,
 	int has_fill, gg__Color stroke_color, int has_stroke, float stroke_width,
-	int line_cap, int line_join, float miter_limit, int stroke_first) {
+	int line_cap, int line_join, float miter_limit, int stroke_first,
+	const float *dash_data, int dash_count, float dash_offset, int non_scaling) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL
 		|| data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
 		return;
@@ -5176,34 +5458,54 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
 		canvas_height - page_y + scroll_y - transform_f);
-	CGContextSaveGState(native_svg_clip_build_context);
-	CGContextConcatCTM(native_svg_clip_build_context, to_canvas);
+	CGContextRef context = native_svg_clip_build_context;
+	bool device_stroke = has_stroke && non_scaling;
+	CGContextSaveGState(context);
+	CGContextConcatCTM(context, to_canvas);
+	if (has_fill != has_stroke && (!has_stroke || dash_count <= 0)) {
+		VoxGraphitePath draw = {0};
+		gg__Color color = has_fill ? fill_color : stroke_color;
+		draw.segments = data;
+		draw.segment_count = segment_count;
+		draw.even_odd = even_odd;
+		draw.red = color.r; draw.green = color.g; draw.blue = color.b; draw.alpha = color.a;
+		draw.opacity = 1;
+		draw.stroke = has_stroke;
+		draw.non_scaling_stroke = device_stroke;
+		draw.stroke_width = stroke_width;
+		draw.line_cap = line_cap; draw.line_join = line_join; draw.miter_limit = miter_limit;
+		if (native_raster_svg_mask_path(context, &draw, path,
+			vox_draw_document_path_pixels)) {
+			CGContextRestoreGState(context);
+			CGPathRelease(path);
+			return;
+		}
+	}
+	if (device_stroke) {
+		CGContextRestoreGState(context);
+		CGContextSaveGState(context);
+	}
+	const CGAffineTransform *part_transform = device_stroke ? &to_canvas : NULL;
 	CGColorRef fill = NULL;
 	CGColorRef stroke = NULL;
 	if (has_fill) {
 		fill = native_srgb_color(fill_color);
-		CGContextSetFillColorWithColor(native_svg_clip_build_context, fill);
+		CGContextSetFillColorWithColor(context, fill);
 	}
 	if (has_stroke) {
 		stroke = native_srgb_color(stroke_color);
-		CGContextSetStrokeColorWithColor(native_svg_clip_build_context, stroke);
-		CGContextSetLineWidth(native_svg_clip_build_context, MAX(stroke_width, 0.0));
-		CGContextSetLineCap(native_svg_clip_build_context,
-			line_cap == 1 ? kCGLineCapRound
-			              : line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
-		CGContextSetLineJoin(native_svg_clip_build_context,
-			line_join == 1 ? kCGLineJoinRound
-			               : line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
-		CGContextSetMiterLimit(native_svg_clip_build_context, MAX(miter_limit, 1.0));
+		CGContextSetStrokeColorWithColor(context, stroke);
+		native_set_svg_resource_stroke(context, stroke_width, line_cap, line_join,
+			miter_limit, dash_data, dash_count, dash_offset);
 	}
 	if (stroke_first && has_stroke) {
-		native_draw_svg_mask_path_part(native_svg_clip_build_context, path, 0, even_odd);
+		native_draw_svg_mask_path_part(context, path, 0, even_odd, part_transform);
 	}
 	if (has_fill) {
-		native_draw_svg_mask_path_part(native_svg_clip_build_context, path, 1, even_odd);
+		native_draw_svg_mask_path_part(context, path, 1, even_odd, part_transform);
 	}
 	if (!stroke_first && has_stroke) {
-		native_draw_svg_mask_path_part(native_svg_clip_build_context, path, 0, even_odd);
+		native_draw_svg_mask_path_part(context, path, 0, even_odd, part_transform);
 	}
 	if (fill != NULL) {
 		CGColorRelease(fill);
@@ -5211,7 +5513,7 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 	if (stroke != NULL) {
 		CGColorRelease(stroke);
 	}
-	CGContextRestoreGState(native_svg_clip_build_context);
+	CGContextRestoreGState(context);
 	CGPathRelease(path);
 }
 
@@ -5223,7 +5525,8 @@ void native_add_svg_content_mask_linear_gradient_path(const float *data,
 	float start_x, float start_y, float end_x, float end_y, float gradient_a,
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
-	const float *stop_data, int stop_count, float opacity) {
+	const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset, int non_scaling) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
@@ -5233,7 +5536,7 @@ void native_add_svg_content_mask_linear_gradient_path(const float *data,
 		canvas_height, stroke, stroke_width, line_cap, line_join, miter_limit,
 		start_x, start_y, end_x, end_y, gradient_a, gradient_b, gradient_c,
 		gradient_d, gradient_e, gradient_f, spread_method, linear_color_space,
-		stop_data, stop_count, opacity);
+		stop_data, stop_count, opacity, dash_data, dash_count, dash_offset, non_scaling);
 }
 
 void native_add_svg_content_mask_radial_gradient_path(const float *data,
@@ -5244,7 +5547,8 @@ void native_add_svg_content_mask_radial_gradient_path(const float *data,
 	float start_x, float start_y, float start_radius, float end_x, float end_y,
 	float end_radius, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset, int non_scaling) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
@@ -5254,52 +5558,123 @@ void native_add_svg_content_mask_radial_gradient_path(const float *data,
 		canvas_height, stroke, stroke_width, line_cap, line_join, miter_limit,
 		start_x, start_y, start_radius, end_x, end_y, end_radius, gradient_a,
 		gradient_b, gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
-		linear_color_space, stop_data, stop_count, opacity);
+		linear_color_space, stop_data, stop_count, opacity, dash_data, dash_count, dash_offset, non_scaling);
 }
 
-static CGImageRef native_finalize_svg_mask_cache(void) {
-	if (native_svg_clip_image == NULL && native_svg_clip_build_context != NULL) {
-		size_t width = CGBitmapContextGetWidth(native_svg_clip_build_context);
-		size_t height = CGBitmapContextGetHeight(native_svg_clip_build_context);
-		size_t source_stride = CGBitmapContextGetBytesPerRow(native_svg_clip_build_context);
-		uint8_t *source = CGBitmapContextGetData(native_svg_clip_build_context);
-		CGColorSpaceRef color_space = CGColorSpaceCreateDeviceRGB();
-		CGContextRef mask_context = CGBitmapContextCreate(NULL, width, height, 8,
-			width * 4, color_space,
-			kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-		CGColorSpaceRelease(color_space);
-		if (source != NULL && mask_context != NULL) {
-			uint8_t *mask = CGBitmapContextGetData(mask_context);
-			size_t mask_stride = CGBitmapContextGetBytesPerRow(mask_context);
-			native_convert_svg_mask_pixels(source, source_stride, mask, mask_stride,
-				width, height, native_svg_clip_build_is_color,
-				native_svg_clip_build_is_luminance);
-			native_svg_clip_image = CGBitmapContextCreateImage(mask_context);
-		}
-		if (mask_context != NULL) {
-			CGContextRelease(mask_context);
-		}
-		CGContextRelease(native_svg_clip_build_context);
-		native_svg_clip_build_context = NULL;
-		if (native_svg_clip_image != NULL) {
-			int replacement = 0;
-			for (int index = 1; index < NATIVE_SVG_CLIP_CACHE_SIZE; ++index) {
-				if (native_svg_clip_cache[index].image == NULL
-					|| native_svg_clip_cache[index].last_use
-						< native_svg_clip_cache[replacement].last_use) {
-					replacement = index;
-				}
-			}
-			if (native_svg_clip_cache[replacement].image != NULL) {
-				CGImageRelease(native_svg_clip_cache[replacement].image);
-			}
-			native_svg_clip_cache[replacement].key = native_svg_clip_build_key;
-			native_svg_clip_cache[replacement].image = native_svg_clip_image;
-			native_svg_clip_cache[replacement].rect = native_svg_clip_rect;
-			native_svg_clip_cache[replacement].last_use = native_svg_clip_cache_clock;
+// Transfer an owned image into the cache for the active canvas placement.
+static void native_cache_svg_mask_image(CGImageRef image) {
+	int replacement = 0;
+	for (int index = 1; index < NATIVE_SVG_CLIP_CACHE_SIZE; ++index) {
+		if (native_svg_clip_cache[index].image == NULL
+			|| native_svg_clip_cache[index].last_use
+				< native_svg_clip_cache[replacement].last_use) {
+			replacement = index;
 		}
 	}
-	return native_svg_clip_image;
+	if (native_svg_clip_cache[replacement].image != NULL) {
+		CGImageRelease(native_svg_clip_cache[replacement].image);
+	}
+	native_svg_clip_cache[replacement] = (NativeSVGClipCacheEntry){
+		native_svg_clip_build_key, image, native_svg_clip_rect, native_svg_clip_cache_clock
+	};
+}
+
+void native_discard_svg_mask_bitmap(void) {
+	if (native_svg_clip_build_context != NULL) {
+		CGContextRelease(native_svg_clip_build_context);
+		native_svg_clip_build_context = NULL;
+	}
+}
+
+static void native_finalize_svg_mask_cache(void) {
+	if (native_svg_clip_image == NULL && native_svg_clip_build_context != NULL) {
+		CGContextRef context = native_svg_clip_build_context;
+		if (native_svg_clip_build_is_color) {
+			native_svg_clip_image = native_snapshot_svg_rgba_mask_bitmap(context,
+				native_svg_clip_build_is_luminance);
+		}
+		if (native_svg_clip_image == NULL) {
+			native_svg_clip_image = native_copy_svg_mask_bitmap(context,
+				native_svg_clip_build_is_color, native_svg_clip_build_is_luminance);
+		}
+		native_discard_svg_mask_bitmap();
+		if (native_svg_clip_image != NULL) {
+			native_cache_svg_mask_image(native_svg_clip_image);
+		}
+	}
+}
+
+static CGImageRef native_svg_mask_image_for_placement(CGImageRef image, const int32_t *crop) {
+	if (crop[2] == 0) {
+		return CGImageRetain(image);
+	}
+	return CGImageCreateWithImageInRect(image, CGRectMake(crop[0], crop[1], crop[2], crop[3]));
+}
+
+void native_begin_svg_mask_frame(void) {
+	++native_svg_mask_frame;
+}
+
+int32_t native_can_admit_svg_mask_raster(void) {
+	return native_svg_mask_raster_can_admit(&native_svg_mask_raster_cache, native_svg_mask_frame);
+}
+
+int32_t native_reuse_svg_mask_raster(uint64_t key, const int32_t *crop) {
+	for (int index = 0; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
+		NativeSVGMaskRasterCacheEntry *entry = &native_svg_mask_raster_cache.entries[index];
+		if (entry->key == key && entry->image != NULL) {
+			CGImageRef image = native_svg_mask_image_for_placement(entry->image, crop);
+			if (image == NULL) {
+				return 0;
+			}
+			native_svg_mask_raster_touch(&native_svg_mask_raster_cache, entry,
+				native_svg_clip_cache_clock, native_svg_mask_frame);
+			int32_t hit = native_svg_clip_build_context != NULL ? 2 : 1;
+			native_discard_svg_mask_bitmap();
+			native_svg_clip_image = image;
+			native_cache_svg_mask_image(native_svg_clip_image);
+			return hit;
+		}
+	}
+	return 0;
+}
+
+int32_t native_publish_svg_mask_raster(uint64_t key, int32_t reuse_bitmap, const int32_t *crop) {
+	int32_t published = 1;
+	CGContextRef context = native_svg_clip_build_context;
+	CGImageRef image = NULL;
+	if (reuse_bitmap && context != NULL) {
+		image = native_snapshot_svg_rgba_mask_bitmap(context, native_svg_clip_build_is_luminance);
+		if (image != NULL) {
+			published = 2;
+		}
+	}
+	// Premultiplied white also has equal luminance and alpha, so the copy
+	// remains valid if creating the in-place image failed.
+	if (image == NULL && context != NULL) {
+		image = native_copy_svg_mask_bitmap(context, native_svg_clip_build_is_color,
+			native_svg_clip_build_is_luminance);
+	}
+	native_discard_svg_mask_bitmap();
+	if (image == NULL) {
+		return 0;
+	}
+	native_svg_clip_image = native_svg_mask_image_for_placement(image, crop);
+	if (native_svg_clip_image == NULL) {
+		CGImageRelease(image);
+		return 0;
+	}
+	native_cache_svg_mask_image(native_svg_clip_image);
+	if (key == 0) {
+		CGImageRelease(image);
+		return published;
+	}
+	CGImageRef previous = native_svg_mask_raster_store(&native_svg_mask_raster_cache,
+		(NativeSVGMaskRasterCacheEntry){key, image, native_svg_clip_cache_clock, native_svg_mask_frame});
+	if (previous != NULL) {
+		CGImageRelease(previous);
+	}
+	return published;
 }
 
 void native_finish_svg_mask_cache(void) {
@@ -5338,7 +5713,7 @@ void native_end_svg_mask_layer(unsigned long long input_key, int content_mask,
 		return;
 	}
 	uint64_t key = native_svg_mask_cache_key(input_key, content_mask, canvas_width,
-		canvas_height, page_x, page_y, scroll_y);
+		canvas_height, page_x, page_y, scroll_y, native_svg_mask_backing_scale());
 	CGImageRef image = NULL;
 	CGRect mask_rect = CGRectZero;
 	for (int index = 0; index < NATIVE_SVG_CLIP_CACHE_SIZE; ++index) {
@@ -5500,6 +5875,17 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGPathRef canvas_path = CGPathCreateCopyByTransformingPath(local_path, &to_canvas);
 	CGColorRef cg_color = native_srgb_color(color);
+	// GPU replay owns this intersection. Preserve the same authored clip if
+	// that replay declines and this leaf falls back to Quartz.
+	int intersect_fallback = native_v_shape_state.has_intersect_clip;
+	if (intersect_fallback) {
+		const float *c = native_v_shape_state.intersect_clip;
+		CGContextSaveGState(context);
+		CGPathRef clipped = CGPathCreateWithRect(CGRectMake(c[0], c[1], c[2]-c[0], c[3]-c[1]), &to_canvas);
+		CGContextAddPath(context, clipped);
+		CGContextClip(context);
+		CGPathRelease(clipped);
+	}
 	// The Skia leaf honors the caller's coverage choice; keep it here too.
 	if (native_quartz_scrollbar_leaves) {
 		CGContextSaveGState(context);
@@ -5515,6 +5901,7 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		CGContextStrokePath(context);
 	}
 	if (native_quartz_scrollbar_leaves) CGContextRestoreGState(context);
+	if (intersect_fallback) CGContextRestoreGState(context);
 	CGColorRelease(cg_color);
 	CGPathRelease(canvas_path);
 	CGPathRelease(local_path);
@@ -6035,6 +6422,8 @@ int native_draw_rounded_masked_image(gg__Image *image, const float *rects,
 
 // A gapless background crossing a tile boundary is one image shader. Cropping
 // and clamping separate tiles loses the bilinear samples from the next repeat.
+#include "native/include/native_repeated_background.h"
+
 int native_draw_image_pattern_transformed(gg__Image *image,
 	float tile_x, float tile_y, float tile_width, float tile_height,
 	float bounds_x, float bounds_y, float bounds_width, float bounds_height,
@@ -6043,7 +6432,10 @@ int native_draw_image_pattern_transformed(gg__Image *image,
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, float opacity,
 	int nearest_neighbor, float const *clip_radii, int pattern_flags) {
-	return 0;
+	return native_try_v_repeated_background(image,tile_x,tile_y,tile_width,tile_height,
+        bounds_x,bounds_y,bounds_width,bounds_height,clip_x,clip_y,clip_width,clip_height,
+        transform_a,transform_b,transform_c,transform_d,transform_e,transform_f,
+        page_x,page_y,scroll_y,canvas_width,canvas_height,opacity,nearest_neighbor,clip_radii,pattern_flags);
 }
 
 // A background's tiles, eight floats each: the destination and source
@@ -6147,14 +6539,45 @@ typedef struct {
 	uint64_t key;
 	CGContextRef context;
 	CGImageRef image;
-	float width;
-	float height;
 } NativeSVGPatternBuild;
 
 static NativeSVGPatternCacheEntry native_svg_pattern_cache[NATIVE_SVG_PATTERN_CACHE_SIZE];
 static NativeSVGPatternBuild native_svg_pattern_stack[NATIVE_SVG_PATTERN_STACK_SIZE];
 static int native_svg_pattern_stack_depth;
 static uint64_t native_svg_pattern_cache_clock;
+
+static CGImageRef native_retain_cached_svg_pattern_tile(uint64_t key) {
+	native_svg_pattern_cache_clock++;
+	for (int index = 0; index < NATIVE_SVG_PATTERN_CACHE_SIZE; ++index) {
+		NativeSVGPatternCacheEntry *entry = &native_svg_pattern_cache[index];
+		if (entry->image != NULL && entry->key == key) {
+			entry->last_use = native_svg_pattern_cache_clock;
+			return CGImageRetain(entry->image);
+		}
+	}
+	return NULL;
+}
+
+double native_shared_svg_pattern_scale(int32_t content_mask) {
+	// Nested pattern destinations already rasterize into a tile. Their final
+	// device metric also depends on the surrounding pattern.
+	if (native_svg_pattern_stack_depth != 0) return 0;
+	if (content_mask) {
+		if (native_svg_clip_build_context == NULL || native_svg_clip_image != NULL) return 0;
+		return native_svg_mask_device_scale(native_svg_clip_build_context);
+	}
+	return native_svg_mask_backing_scale();
+}
+
+int32_t native_reuse_shared_svg_pattern_tile(uint64_t key) {
+	if (key == 0 || native_svg_pattern_stack_depth != 0) return 0;
+	CGImageRef image = native_retain_cached_svg_pattern_tile(key);
+	if (image == NULL) return 0;
+	native_svg_pattern_stack[native_svg_pattern_stack_depth++] = (NativeSVGPatternBuild){
+		.key = key, .image = image,
+	};
+	return 1;
+}
 
 static CGContextRef native_svg_pattern_context(void) {
 	if (native_css_filter_stack_depth > 0) {
@@ -6257,8 +6680,6 @@ void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_widt
 		return;
 	}
 	NativeSVGPatternBuild build = { 0 };
-	build.width = tile_width;
-	build.height = tile_height;
 	CGFloat backing_scale = native_svg_mask_backing_scale();
 	content_scale_x = isfinite(content_scale_x) && content_scale_x > 0.0f
 		? content_scale_x : 1.0f;
@@ -6272,15 +6693,10 @@ void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_widt
 	key = native_svg_clip_hash_float(key, tile_width);
 	key = native_svg_clip_hash_float(key, tile_height);
 	build.key = key;
-	native_svg_pattern_cache_clock++;
-	for (int index = 0; index < NATIVE_SVG_PATTERN_CACHE_SIZE; ++index) {
-		if (native_svg_pattern_cache[index].image != NULL
-			&& native_svg_pattern_cache[index].key == key) {
-			native_svg_pattern_cache[index].last_use = native_svg_pattern_cache_clock;
-			build.image = CGImageRetain(native_svg_pattern_cache[index].image);
-			native_svg_pattern_stack[native_svg_pattern_stack_depth++] = build;
-			return;
-		}
+	build.image = native_retain_cached_svg_pattern_tile(key);
+	if (build.image != NULL) {
+		native_svg_pattern_stack[native_svg_pattern_stack_depth++] = build;
+		return;
 	}
 	if (!isfinite(tile_width) || !isfinite(tile_height) || tile_width <= 0.0f
 		|| tile_height <= 0.0f) {
@@ -6325,7 +6741,8 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 	float transform_d, float transform_e, float transform_f, float canvas_height,
 	gg__Color fill_color, int has_fill, gg__Color stroke_color, int has_stroke,
 	float stroke_width, int line_cap, int line_join, float miter_limit,
-	int stroke_first) {
+	int stroke_first,
+	const float *dash_data, int dash_count, float dash_offset) {
 	CGContextRef context = native_svg_pattern_context();
 	if (context == NULL || data == NULL || segment_count <= 0
 		|| (!has_fill && !has_stroke)) {
@@ -6351,15 +6768,16 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
 			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		native_set_svg_resource_dashes(context, dash_data, dash_count, dash_offset);
 	}
 	if (stroke_first && has_stroke) {
-		native_draw_svg_mask_path_part(context, path, 0, even_odd);
+		native_draw_svg_mask_path_part(context, path, 0, even_odd, NULL);
 	}
 	if (has_fill) {
-		native_draw_svg_mask_path_part(context, path, 1, even_odd);
+		native_draw_svg_mask_path_part(context, path, 1, even_odd, NULL);
 	}
 	if (!stroke_first && has_stroke) {
-		native_draw_svg_mask_path_part(context, path, 0, even_odd);
+		native_draw_svg_mask_path_part(context, path, 0, even_odd, NULL);
 	}
 	if (fill != NULL) CGColorRelease(fill);
 	if (stroke != NULL) CGColorRelease(stroke);
@@ -6374,14 +6792,15 @@ void native_add_svg_pattern_linear_gradient_path(const float *data,
 	int line_join, float miter_limit, float start_x, float start_y, float end_x,
 	float end_y, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	native_draw_svg_linear_gradient_path_in_context(native_svg_pattern_context(),
 		data, segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, 0, 0, 0, canvas_height, stroke,
 		stroke_width, line_cap, line_join, miter_limit, start_x, start_y, end_x,
 		end_y, gradient_a, gradient_b, gradient_c, gradient_d, gradient_e,
 		gradient_f, spread_method, linear_color_space, stop_data, stop_count,
-		opacity);
+		opacity, dash_data, dash_count, dash_offset, 0);
 }
 
 void native_add_svg_pattern_radial_gradient_path(const float *data,
@@ -6392,14 +6811,15 @@ void native_add_svg_pattern_radial_gradient_path(const float *data,
 	float start_radius, float end_x, float end_y, float end_radius,
 	float gradient_a, float gradient_b, float gradient_c, float gradient_d,
 	float gradient_e, float gradient_f, int spread_method, int linear_color_space,
-	const float *stop_data, int stop_count, float opacity) {
+	const float *stop_data, int stop_count, float opacity,
+	const float *dash_data, int dash_count, float dash_offset) {
 	native_draw_svg_radial_gradient_path_in_context(native_svg_pattern_context(),
 		data, segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, 0, 0, 0, canvas_height, stroke,
 		stroke_width, line_cap, line_join, miter_limit, start_x, start_y,
 		start_radius, end_x, end_y, end_radius, gradient_a, gradient_b, gradient_c,
 		gradient_d, gradient_e, gradient_f, spread_method, linear_color_space,
-		stop_data, stop_count, opacity);
+		stop_data, stop_count, opacity, dash_data, dash_count, dash_offset, 0);
 }
 
 void native_add_svg_pattern_image(gg__Image *image, float destination_x,
@@ -6440,6 +6860,18 @@ static void native_cache_svg_pattern_image(uint64_t key, CGImageRef image) {
 	native_svg_pattern_cache[slot].last_use = native_svg_pattern_cache_clock;
 }
 
+int32_t native_install_shared_svg_pattern_tile(uint64_t key, const uint8_t *pixels,
+	uint64_t length, int32_t width, int32_t height) {
+	if (native_svg_pattern_stack_depth != 0) return 0;
+	CGImageRef image = native_copy_svg_pattern_rgba(pixels, length, width, height);
+	if (image == NULL) return 0;
+	if (key != 0) native_cache_svg_pattern_image(key, image);
+	native_svg_pattern_stack[native_svg_pattern_stack_depth++] = (NativeSVGPatternBuild){
+		.key = key, .image = image,
+	};
+	return 1;
+}
+
 void native_finish_svg_pattern_path(const float *data, int segment_count,
 	int even_odd, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
@@ -6447,7 +6879,8 @@ void native_finish_svg_pattern_path(const float *data, int segment_count,
 	float stroke_width, int line_cap, int line_join, float miter_limit,
 	float tile_x, float tile_y, float tile_width, float tile_height,
 	float pattern_a, float pattern_b, float pattern_c, float pattern_d,
-	float pattern_e, float pattern_f, float opacity, int content_mask) {
+	float pattern_e, float pattern_f, float opacity, int content_mask,
+	int non_scaling_stroke, const double *dash_data, int dash_count, double dash_offset) {
 	if (native_svg_pattern_stack_depth <= 0) return;
 	NativeSVGPatternBuild build =
 		native_svg_pattern_stack[--native_svg_pattern_stack_depth];
@@ -6479,36 +6912,28 @@ void native_finish_svg_pattern_path(const float *data, int segment_count,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGAffineTransform pattern_transform = CGAffineTransformMake(pattern_a,
 		pattern_b, pattern_c, pattern_d, pattern_e, pattern_f);
-	CGContextSaveGState(destination);
-	CGContextConcatCTM(destination, to_canvas);
-	CGContextAddPath(destination, path);
+	NativeSVGPatternStroke geometry;
 	if (stroke) {
-		CGContextSetLineWidth(destination, MAX(stroke_width, 0.0));
-		CGContextSetLineCap(destination, line_cap == 1 ? kCGLineCapRound
-			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
-		CGContextSetLineJoin(destination, line_join == 1 ? kCGLineJoinRound
-			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
-		CGContextSetMiterLimit(destination, MAX(miter_limit, 1.0));
-		CGContextReplacePathWithStrokedPath(destination);
-		CGContextClip(destination);
-	} else if (even_odd) {
-		CGContextEOClip(destination);
-	} else {
-		CGContextClip(destination);
+		float width = non_scaling_stroke && !content_mask
+			? native_non_scaling_svg_stroke_width(stroke_width) : stroke_width;
+		geometry = (NativeSVGPatternStroke){
+			.width = MAX(width, 0.0),
+			.cap = line_cap == 1 ? kCGLineCapRound
+				: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt,
+			.join = line_join == 1 ? kCGLineJoinRound
+				: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter,
+			.miter_limit = MAX(miter_limit, 1.0),
+			.non_scaling = non_scaling_stroke != 0,
+			.dashes = dash_data,
+			.dash_count = dash_data && dash_count > 0 ? (size_t)dash_count : 0,
+			.dash_offset = dash_offset,
+			.backing_scale = content_mask && non_scaling_stroke
+				? native_svg_mask_device_scale(destination) : 0,
+		};
 	}
-	CGContextSetAlpha(destination, fminf(fmaxf(opacity, 0.0f), 1.0f));
-	// The tile surface already includes both the backing scale and the target's
-	// accumulated content scale. Replay it without a second interpolation pass.
-	CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
-	CGContextConcatCTM(destination, pattern_transform);
-	// CGImage rows have the opposite vertical convention from the Skia tile
-	// surface. Reflect each repeating cell around its own center so asymmetric
-	// edge coverage and non-symmetric pattern content retain SVG y-down order.
-	CGContextTranslateCTM(destination, 0, 2.0f * tile_y + tile_height);
-	CGContextScaleCTM(destination, 1, -1);
-	CGContextDrawTiledImage(destination,
-		CGRectMake(tile_x, tile_y, tile_width, tile_height), image);
-	CGContextRestoreGState(destination);
+	native_draw_svg_pattern_tile(destination, path, even_odd != 0, to_canvas,
+		image, CGRectMake(tile_x, tile_y, tile_width, tile_height), pattern_transform,
+		fminf(fmaxf(opacity, 0.0f), 1.0f), stroke ? &geometry : NULL);
 	CGPathRelease(path);
 	CGImageRelease(image);
 }
@@ -6584,18 +7009,26 @@ static void native_schedule_screenshot(string output_path, BOOL document_only,
 			return;
 		}
 		NSBitmapImageRep *presented = native_presented_capture_bitmap(view, bounds, pixels_wide, pixels_high);
-		if (presented) bitmap = presented;
-		else native_cache_display_in_bitmap(view, bounds, bitmap);
+		NSBitmapImageRep *wide_document = nil;
+		if (presented) {
+			bitmap = presented;
+		} else {
+			if (document_only) wide_document = native_wide_document_capture_target(bitmap);
+			bitmap = wide_document ?: bitmap;
+			native_cache_display_in_bitmap(view, bounds, bitmap);
+		}
 		native_capture_instruction_checkpoint("capture_cached");
-		// The backing store follows the display profile (usually Display P3 on modern Macs).
-		// Normalize captures to sRGB so pixel comparisons do not report a page-sized color-space
-		// delta against Ladybird's untagged screenshot output.
-		NSBitmapImageRep *encodedBitmap = presented ?:
+		// Direct frames and wide-gamut document captures already use their export
+		// color space. Normalize the other AppKit captures for the sRGB PNG contract.
+		NSBitmapImageRep *encodedBitmap = (presented || wide_document) ? bitmap :
 		    [bitmap bitmapImageRepByConvertingToColorSpace:[NSColorSpace sRGBColorSpace]
 		                                  renderingIntent:NSColorRenderingIntentRelativeColorimetric];
 		if (encodedBitmap == nil) {
 			encodedBitmap = bitmap;
 		}
+		// AppKit needs the logical size during drawing. Export wide-gamut
+		// fallbacks with the same pixel-sized metadata as direct capture.
+		if (wide_document) encodedBitmap.size = NSMakeSize(pixels_wide, pixels_high);
 		native_capture_instruction_checkpoint("capture_converted");
 		NSData *png = native_encode_snapshot_png(encodedBitmap);
 		if (!document_only) native_capture_instruction_checkpoint("capture_encoded");

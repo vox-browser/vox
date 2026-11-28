@@ -24,3 +24,24 @@ fn test_gg_staging_keeps_portable_headers_in_c() ! {
 	assert read(join(canvas, 'context.v'))!.contains('#include "@DIR/vox_gpu_metal_darwin.m"')
 	assert read(join(canvas, 'vox_gpu_metal_darwin.m'))! == '#include ' + json.encode(real(join(source, 'gpu_metal_darwin.h'))) + '\n'
 }
+
+fn test_gg_staging_removes_the_retired_msaa_adapter_without_removing_source_modules() ! {
+	root := temporary(os.temp_dir(), 'vox-gg-obsolete-msaa-')!
+	defer { remove(root) or {} }
+	vlib := join(root, 'vlib')
+	source := join(vlib, 'gg/canvas')
+	modules := join(root, 'modules')
+	canvas := join(modules, 'gg/canvas')
+	mkdir(source)!
+	mkdir(canvas)!
+	os.write_file(join(source, 'gpu_gradient.v'), 'module canvas\n')!
+	adapter := join(canvas, 'vox_document_msaa.v')
+	os.write_file(adapter, 'module canvas\nfn obsolete() {}\n')!
+	prepare_gg_gradient(modules, vlib)!
+	assert !exists(adapter)
+	// If GG itself later supplies this module, normal source staging owns it.
+	owned := join(source, 'vox_document_msaa.v')
+	os.write_file(owned, 'module canvas\nfn current() {}\n')!
+	prepare_gg_gradient(modules, vlib)!
+	assert read(adapter)! == read(owned)!
+}

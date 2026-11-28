@@ -4,15 +4,15 @@ module libjs
 // concrete record; intrinsic installation is a separate dependency.
 pub fn initialize_typed_array_from_array_buffer(mut vm VM, mut array TypedArray, buffer &ArrayBufferObject, byte_offset Value, length Value) ! {
 	element_size := uint(array.element_size())
-	offset := uint(byte_offset.to_index(mut vm)!)
-	if offset % element_size != 0 {
+	offset := byte_offset.to_index(mut vm)!
+	if offset % u64(element_size) != 0 {
 		return vm.throw_error_type(.range_error, .typed_array_invalid_byte_offset,
 			array.object.class_name, element_size.str(), offset.str())
 	}
 	buffer_is_fixed_length := buffer.is_fixed_length()
-	new_length := if length.is_undefined() { uint(0) } else { uint(length.to_index(mut vm)!) }
+	new_length := if length.is_undefined() { u64(0) } else { length.to_index(mut vm)! }
 	if buffer.is_detached() { return vm.throw_error_type(.type_error, .detached_array_buffer) }
-	buffer_length := array_buffer_byte_length(buffer, .seq_cst)
+	buffer_length := u64(array_buffer_byte_length(buffer, .seq_cst))
 	if length.is_undefined() && !buffer_is_fixed_length {
 		if offset > buffer_length {
 			return vm.throw_error_type(.range_error, .typed_array_out_of_range_byte_offset,
@@ -21,7 +21,7 @@ pub fn initialize_typed_array_from_array_buffer(mut vm VM, mut array TypedArray,
 		array.byte_length = ByteLength.auto_length()
 		array.array_length = ByteLength.auto_length()
 	} else {
-		mut new_byte_length := uint(0)
+		mut new_byte_length := u64(0)
 		if length.is_undefined() {
 			if buffer_length % element_size != 0 {
 				return vm.throw_error_type(.range_error, .typed_array_invalid_buffer_length,
@@ -33,11 +33,11 @@ pub fn initialize_typed_array_from_array_buffer(mut vm VM, mut array TypedArray,
 			}
 			new_byte_length = buffer_length - offset
 		} else {
-			maximum := ~uint(0)
-			if new_length > maximum / element_size {
+			maximum := ~u64(0)
+			if new_length > maximum / u64(element_size) {
 				return vm.throw_error_type(.range_error, .invalid_length, 'typed array')
 			}
-			new_byte_length = new_length * element_size
+			new_byte_length = new_length * u64(element_size)
 			if offset > maximum - new_byte_length {
 				return vm.throw_error_type(.range_error, .invalid_length, 'typed array')
 			}
@@ -48,7 +48,7 @@ pub fn initialize_typed_array_from_array_buffer(mut vm VM, mut array TypedArray,
 					buffer_length.str())
 			}
 		}
-		new_array_length := new_byte_length / element_size
+		new_array_length := new_byte_length / u64(element_size)
 		validate_typed_array_length(mut vm, new_array_length, element_size)!
 		array.byte_length = ByteLength.from_u32(u32(new_byte_length))
 		array.array_length = ByteLength.from_u32(u32(new_array_length))
@@ -60,8 +60,8 @@ pub fn initialize_typed_array_from_array_buffer(mut vm VM, mut array TypedArray,
 	array.byte_offset = u32(offset)
 }
 
-fn validate_typed_array_length(mut vm VM, length uint, element_size uint) ! {
-	if length > uint(0x7fffffff) / element_size || length > (~uint(0)) / element_size {
+fn validate_typed_array_length(mut vm VM, length u64, element_size uint) ! {
+	if length > u64(0x7fffffff) / u64(element_size) || length > u64(~uint(0)) / u64(element_size) {
 		return vm.throw_error_type(.range_error, .invalid_length, 'typed array')
 	}
 }
@@ -70,7 +70,7 @@ fn validate_typed_array_length(mut vm VM, length uint, element_size uint) ! {
 // replaces the constructor's throwaway buffer without asserting its absence.
 pub fn allocate_typed_array_buffer(mut vm VM, mut array TypedArray, length uint) ! {
 	element_size := uint(array.element_size())
-	validate_typed_array_length(mut vm, length, element_size)!
+	validate_typed_array_length(mut vm, u64(length), element_size)!
 	byte_length := element_size * length
 	buffer := allocate_array_buffer(mut vm, vm.realm().array_buffer_constructor_record(), byte_length, none)!
 	array.viewed_buffer = buffer
@@ -85,6 +85,7 @@ pub fn initialize_typed_array_from_list(mut vm VM, mut array TypedArray, values 
 	allocate_typed_array_buffer(mut vm, mut array, uint(values.len))!
 	mut object := array.object
 	for index, value in values {
+		vm.consume_execution_budget()!
 		object.set(mut vm, PropertyName.from_number(u32(index)), value, .yes)!
 	}
 }
@@ -93,9 +94,11 @@ pub fn initialize_typed_array_from_list(mut vm VM, mut array TypedArray, values 
 // length once; getters, inherited elements and value conversions remain live.
 pub fn initialize_typed_array_from_array_like(mut vm VM, mut array TypedArray, source &Object) ! {
 	length := length_of_array_like(mut vm, source)!
+	validate_typed_array_length(mut vm, length, array.kind.size())!
 	allocate_typed_array_buffer(mut vm, mut array, uint(length))!
 	mut object := array.object
 	for index := u64(0); index < length; index++ {
+		vm.consume_execution_budget()!
 		key := PropertyName.from_number(u32(index))
 		value := source.get(mut vm, key)!
 		object.set(mut vm, key, value, .yes)!
@@ -114,9 +117,10 @@ pub fn initialize_typed_array_from_typed_array(mut vm VM, mut array TypedArray, 
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
 	}
 	length := typed_array_length(record)
-	validate_typed_array_length(mut vm, uint(length), element_size)!
+	validate_typed_array_length(mut vm, u64(length), element_size)!
 	byte_length := element_size * uint(length)
 	buffer := if array.kind == source.kind {
+		typed_array_charge_byte_work(mut vm, byte_length)!
 		clone_array_buffer(mut vm, source_buffer, source_offset, byte_length)!
 	} else {
 		mut data := allocate_array_buffer(mut vm, vm.realm().array_buffer_constructor_record(), byte_length, none)!
@@ -128,6 +132,7 @@ pub fn initialize_typed_array_from_typed_array(mut vm VM, mut array TypedArray, 
 		mut source_index := source_offset
 		mut target_index := uint(0)
 		for _ in 0 .. length {
+			vm.consume_execution_budget()!
 			value := source.get_value_from_buffer(mut vm, source_index, .unordered, true)
 			data.set_value(mut vm, target_index, array.kind, value, true, .unordered, true)
 			source_index += source_element_size

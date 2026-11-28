@@ -81,6 +81,7 @@ fn report_host_callback_diagnostic(runtime &Runtime, boundary string, kind strin
 // Some native application exits bypass realm cleanup. An explicit observer
 // boundary can publish counters without closing the realm or resetting them.
 pub fn (runtime &Runtime) report_host_callback_diagnostics(boundary string) {
+	if boundary == 'capture_audit' { runtime.write_jsc_sampling_profile(boundary) }
 	if !host_callback_diagnostics_enabled { return }
 	for index, record in runtime.host_functions_ {
 		report_host_callback_diagnostic(runtime, boundary, 'text', index, record.diagnostic)

@@ -9,9 +9,9 @@ $if gcboehm ? {
 
 fn test_component_text_ownership_survives_the_original_token_payloads() {
 	scratch := platform.begin_thread_scratch('test decoded component text')
-	mut components := parse_component_values_for_value_logic(r'n\61 me fn(f\61 mily)')
+	original_components := parse_component_values_for_value_logic(r'n\61 me fn(f\61 mily)')
 	scratch.leave()
-	own_value_component_text(mut components)
+	components := own_value_components(original_components)
 	// Headers, vectors and decoded strings belong to the retained owner.
 	identifier := components[0].token().value
 	function := components[2].function()
@@ -118,8 +118,7 @@ fn test_component_export_preserves_shared_syntax_headers_and_vectors() {
 	original := ParserTokenStream.from_source(r'n\61 me fn(f\61 mily ["word"])', 'utf-8').values
 	name_pointer := original[0].token().value.str
 	argument_pointer := original[2].function().value[0].token().value.str
-	mut owned := unsafe { original }
-	own_value_component_text(mut owned)
+	owned := own_value_components(original)
 	assert voidptr(original.data) != voidptr(owned.data)
 	assert voidptr(original[0].token().value.str) == voidptr(name_pointer)
 	assert voidptr(original[2].function().value[0].token().value.str) == voidptr(argument_pointer)

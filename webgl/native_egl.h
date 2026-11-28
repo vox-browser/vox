@@ -20,7 +20,9 @@
 #include <string.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES 1
+#endif
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #ifdef _WIN32

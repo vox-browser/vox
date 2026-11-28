@@ -182,6 +182,9 @@ pub:
 	fill_opacity           f64 = 1.0
 	stroke_opacity         f64 = 1.0
 	stroke_width           f64
+	stroke_dasharray       []f32
+	stroke_dashoffset      f32
+	non_scaling_stroke     bool
 	stroke_linecap         LineCap
 	stroke_linejoin        LineJoin
 	stroke_miter_limit     f64 = 4.0
@@ -191,6 +194,8 @@ pub:
 // the same reference graph as C++ PaintStyle without forming a recursive V
 // value type.
 pub struct SVGPatternDisplayList {
+	tile_info       ?SVGPatternTileInfo
+	tile_info_ready bool
 pub:
 	operations []SVGMaskPaintOperation
 }

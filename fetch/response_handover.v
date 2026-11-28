@@ -102,7 +102,7 @@ pub fn fetch_response_handover(params &FetchParams, response &Response) {
 		// these callbacks until the producer supplies bytes, closes, or errors.
 		accumulator := &FetchBodyAccumulator{}
 		has_in_memory_body := body.source_kind == .bytes
-		body.incrementally_read(fn [accumulator, has_in_memory_body] (chunk []u8) {
+		body.read_chunks(fn [accumulator, has_in_memory_body] (chunk []u8) {
 			// Drain the stream for its completion/error semantics, but do not
 			// reconstruct bytes that the internal response already retains.
 			if has_in_memory_body { return }
@@ -120,7 +120,7 @@ pub fn fetch_response_handover(params &FetchParams, response &Response) {
 		}, fn [params, response] (_ string) {
 			setup_response_report_timing(params, response)
 			queue_response_body_consumed(params, response, BodyBytes{ kind: .failure })
-		})
+		}, true)
 	} else {
 		queue_response_body_consumed(params, response, BodyBytes{ kind: .empty })
 	}

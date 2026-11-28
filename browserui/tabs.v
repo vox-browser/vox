@@ -3,6 +3,7 @@ module browserui
 import ui2
 import browsertabs
 import math
+import platform
 
 pub struct Tab {
 pub:
@@ -20,24 +21,47 @@ pub:
 	rename_action string
 }
 
-// The same rotating arc occupies the favicon slot on every UI2 backend.
-pub fn tab_loading_icon(index int, frame int) ui2.Element {
+fn tab_loading_icon_id(index int) string {
+	return 'tab-icon-${index}'
+}
+
+fn tab_loading_vector(frame int) ui2.VectorPath {
 	mut points := []ui2.VectorPoint{cap: 33}
 	start := f64(frame % 60) * 2 * math.pi / 60 - math.pi / 2
 	for step in 0 .. 33 {
 		angle := start + f64(step) * 1.5 * math.pi / 32
 		points << ui2.VectorPoint{ x: 8 + 6 * math.cos(angle), y: 8 + 6 * math.sin(angle) }
 	}
+	return ui2.VectorPath{
+		points: points
+		closed: false
+		fill_enabled: false
+		stroke: 0x1a73e8
+		stroke_width: 2
+	}
+}
+
+// The same rotating arc occupies the favicon slot on every UI2 backend.
+pub fn tab_loading_icon(index int, frame int) ui2.Element {
 	return ui2.Element{
-		...ui2.view('tab-icon-${index}', ui2.rect(12, 4, 16, 16), ui2.BoxStyle{ transparent: true }, [])
-		vector: ui2.VectorPath{
-			points: points
-			closed: false
-			fill_enabled: false
-			stroke: 0x1a73e8
-			stroke_width: 2
-		}
+		...ui2.view(tab_loading_icon_id(index), ui2.rect(12, 4, 16, 16), ui2.BoxStyle{ transparent: true }, [])
+		vector: tab_loading_vector(frame)
 		accessibility_label: 'Loading'
+	}
+}
+
+$if vox_ui2 ? {
+	pub fn refresh_tab_loading_icon(index int, frame int) {
+		$if macos && !ui2_custom_rendering ? {
+			scratch := platform.begin_thread_scratch('tab loading vector')
+			defer { scratch.finish() }
+			update_embedded_vector_path(tab_loading_icon_id(index), tab_loading_vector(frame))
+		} $else {
+			persistent := platform.enter_persistent()
+			defer { platform.leave_persistent(persistent) }
+			icon := tab_loading_icon(index, frame)
+			ui2.refresh_element(icon.id, icon)
+		}
 	}
 }
 

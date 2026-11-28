@@ -32,7 +32,8 @@ fn rejected_callback_exception(realm StreamRealm, exception IError) &webidl.Prom
 	return webidl.create_rejected_promise_for(realm.promise_context(), webidl.exception_value(exception))
 }
 
-fn callback_reason(reason webidl.Value) string {
+// The typed diagnostic used by native consumers of stream rejections.
+pub fn callback_reason(reason webidl.Value) string {
 	if reason.kind == .runtime_value { return '[native JavaScript rejection value]' }
 	if exception := reason.simple_exception_ { return exception.name() + ': ' + exception.message }
 	return webidl.to_string(reason) or { 'TypeError: Cannot convert callback rejection reason' }
@@ -51,6 +52,9 @@ fn void_promise_from_webidl(realm StreamRealm, mut native webidl.Promise) &VoidP
 }
 
 fn (mut stream ReadableStream) invoke_pull_algorithm() &webidl.Promise {
+	if mut callbacks := stream.native_source_callbacks_ {
+		return callbacks.pull_readable_source(stream.controller_handle()) or { rejected_callback_exception(stream.realm_, err) }
+	}
 	if stream.owner_kind_ == .transform {
 		mut transform := unsafe { &TransformStream(stream.owner_) }
 		return transform_stream_default_source_pull_algorithm(mut transform).as_webidl_promise()
@@ -65,6 +69,9 @@ fn (mut stream ReadableStream) invoke_pull_algorithm() &webidl.Promise {
 }
 
 fn (mut stream ReadableStream) invoke_cancel_algorithm(reason Value) &webidl.Promise {
+	if mut callbacks := stream.native_source_callbacks_ {
+		return callbacks.cancel_readable_source(reason) or { rejected_callback_exception(stream.realm_, err) }
+	}
 	if algorithm := stream.promise_cancel_algorithm_ {
 		return algorithm(reason) or { rejected_callback_exception(stream.realm_, err) }
 	}
@@ -88,6 +95,12 @@ fn (mut stream ReadableStream) react_to_start(mut start_promise webidl.Promise) 
 }
 
 fn (mut stream ReadableStream) start_underlying_source(source UnderlyingSource) ! {
+	stream.native_source_callbacks_ = source.native_callbacks
+	if mut callbacks := stream.native_source_callbacks_ {
+		mut started := callbacks.start_readable_source(stream.controller_handle())!
+		stream.react_to_start(mut started)
+		return
+	}
 	stream.promise_pull_algorithm_ = source.pull_promise
 	stream.promise_cancel_algorithm_ = source.cancel_promise
 	controller_value := if stream.byte_stream_ {

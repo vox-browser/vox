@@ -142,7 +142,7 @@ fn test_native_call_errors_restore_frames_and_reject_non_callable_values() {
 	} else {
 		object := thrown_value(err).as_object()
 		assert object.error_message()? == 'Native failure'
-		assert object.error_data?.stack_string(false).contains('hostThrow')
+		assert object.slots.error_data?.stack_string(false).contains('hostThrow')
 	}
 	assert vm.running_execution_context() == base
 	assert vm.execution_context_stack().len == 1

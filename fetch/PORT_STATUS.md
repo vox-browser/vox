@@ -78,3 +78,20 @@ records the executed original UTF8-byte mismatch and retained metadata/range
 proof.
 Native bindings, remote transport, physical allocation and full GC ownership
 remain separate. This does not establish complete Fetch parity.
+
+The 2026-11-16 native LibJS continuation retains actual FormData objects through
+argument conversion and serializes their current native entries after later
+dictionary/new-target getters. It preserves explicit Content-Type headers,
+uses the native multipart boundary/escaping/CRLF serializer, and enforces the
+native byte-vector bound with a conservative pre-allocation estimate.
+Request/Response.formData return real FormData/File wrappers and reuse native
+body disturbance, locks and asynchronous consumption. URL-encoded bodies use
+the byte parser directly, preserving a leading '?' in a field name. Multipart
+text fields are decoded separately from file bytes.
+
+Six new body cases are prepared but uncompiled/unexecuted under the user's
+hold. Final normal and production/preallocation compiler-only checks pass;
+these are not runtime, cache-speed or browser evidence. Existing native
+multipart lexer restrictions, full form-control/foreign-realm bindings and
+native ownership remain open. See the
+[File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).

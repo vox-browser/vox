@@ -508,6 +508,7 @@ mut:
 	fully_active_override_     bool = true
 	top_level_traversable_     ?&TraversableNavigable
 	container_                 ?&dom.Element
+	session_storage_bottles_   map[string]&StorageBottle
 }
 
 pub struct BrowsingContextAndDocument {
@@ -999,6 +1000,7 @@ pub fn (mut context BrowsingContextModel) remove() {
 	context.group_ = none
 	context.parent_ = none
 	context.window_proxy_ = none
+	context.session_storage_bottles_.clear()
 	context.discarded_ = true
 }
 
@@ -1341,9 +1343,7 @@ mut:
 	speech_synthesis_                         ?&speech.SpeechSynthesis
 	external_                                 ?&External
 	local_storage_                            ?&Storage
-	session_storage_                          ?&Storage
 	local_storage_bottle_                     ?&StorageBottle
-	session_storage_bottle_                   ?&StorageBottle
 	storage_hub_                              ?&StorageHub
 	cookie_store_                             voidptr = unsafe { nil }
 	cookie_store_created_                     bool

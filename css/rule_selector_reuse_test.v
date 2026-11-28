@@ -65,3 +65,17 @@ fn test_rule_selector_memo_stays_bounded_and_keeps_existing_borrowers_live() {
 	assert first.serialize() == '.first'
 	assert voidptr(first.data_) == voidptr((parser.parse_memoized_rule_selector('.first', .standalone) or { panic('missing retained selector') }).data_)
 }
+
+fn test_rule_selector_memo_keeps_one_text_entry_for_every_mode() {
+	mut parser := RuleSelectorParser{}
+	standalone := parser.parse_memoized_rule_selector('.card .child', .standalone) or { panic('standalone') }
+	relative := parser.parse_memoized_rule_selector('.card .child', .relative) or { panic('relative') }
+	assert voidptr(standalone.data_) != voidptr(relative.data_)
+	assert relative.compound_selectors()[0].combinator == .descendant
+	assert parser.parsed_rule_selectors.len == 1
+	assert parser.parsed_rule_selector_bytes == '.card .child'.len
+	again := parser.parse_memoized_rule_selector('.card .child', .relative) or { panic('again') }
+	assert voidptr(again.data_) == voidptr(relative.data_)
+	first := parser.parse_memoized_rule_selector('.card .child', .standalone) or { panic('first') }
+	assert voidptr(first.data_) == voidptr(standalone.data_)
+}

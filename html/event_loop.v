@@ -126,6 +126,8 @@ mut:
 	document_ ?&dom.Document
 	timer_nesting_level_ u32
 	allocation_owner &platform.RetainedArena = unsafe { nil }
+	owns_steps bool
+	runs_while_inactive bool
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
@@ -136,6 +138,15 @@ pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task
 	}
 	if source == .rendering { owner = unsafe { nil } }
 	return Task.create_with_storage(source, document, steps, owner)
+}
+
+// Transfer a captured callback to a one-shot task. Existing create() callers
+// retain their callback ownership; this path releases it after execution or
+// discard, never while its trampoline is on the native stack.
+pub fn Task.create_owned(source TaskSource, document ?&dom.Document, steps fn()) &Task {
+	mut task := Task.create(source, document, steps)
+	task.owns_steps = true
+	return task
 }
 
 fn Task.create_with_storage(source TaskSource, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) &Task {
@@ -168,6 +179,12 @@ pub fn (task &Task) execute() {
 
 fn (task &Task) cancel() {
 	mut mutable_task := unsafe { &Task(task) }
+	if mutable_task.owns_steps {
+		mutable_task.owns_steps = false
+		steps := mutable_task.steps
+		mutable_task.steps = fn () {}
+		platform.release_closure(voidptr(steps))
+	}
 	mut owner := mutable_task.allocation_owner
 	mutable_task.allocation_owner = unsafe { nil }
 	if owner != unsafe { nil } { owner.release() }
@@ -191,6 +208,7 @@ pub fn (task &Task) document() ?&dom.Document {
 // https://html.spec.whatwg.org/multipage/webappapis.html#concept-task-runnable
 pub fn (task &Task) is_runnable() bool {
 	if document := task.document_ {
+		if task.runs_while_inactive { return !document.has_been_destroyed() }
 		return document.is_fully_active()
 	}
 	return true
@@ -350,6 +368,7 @@ pub fn (mut queue TaskQueue) take_first_runnable_matching(predicate fn(&Task) bo
 		}
 		if task.is_permanently_unrunnable() {
 			queue.tasks.delete(index)
+			task.cancel()
 			continue
 		}
 		index++
@@ -513,6 +532,18 @@ pub fn (mut event_loop EventLoop) enqueue_microtask(task &Task) {
 	event_loop.microtask_queue << task
 }
 
+// Only pending tasks can be discarded. A callback currently executing owns
+// its steps until Task.execute() returns, including shutdown inside a callback.
+pub fn (mut event_loop EventLoop) discard_microtask(task &Task) bool {
+	for index, pending in event_loop.microtask_queue {
+		if voidptr(pending) != voidptr(task) { continue }
+		event_loop.microtask_queue.delete(index)
+		task.cancel()
+		return true
+	}
+	return false
+}
+
 pub fn (event_loop &EventLoop) microtask_queue_empty() bool {
 	return event_loop.microtask_queue.len == 0
 }
@@ -556,6 +587,26 @@ pub fn (event_loop &EventLoop) running_rendering_task() bool {
 // satisfied by queued work. The browser host can continue waiting when there
 // is no runnable work; the standalone runtime yields back to its caller.
 pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
+	// Spinning runs other tasks and microtasks while the caller is suspended.
+	// Checkpoints require all execution context stacks to be empty.
+	mut suspended_vms := event_loop.embedding_vms_.clone()
+	if primary := event_loop.primary_vm_not_embedded() { suspended_vms << primary }
+	for vm in suspended_vms {
+		mut mutable_vm := unsafe { &libjs.VM(vm) }
+		mutable_vm.save_execution_context_stack()
+	}
+	saved_html_contexts := html_scripting_execution_context_stack
+	html_scripting_execution_context_stack = []&ScriptingRealm{}
+	saved_task := event_loop.currently_running_task_
+	event_loop.currently_running_task_ = none
+	defer {
+		for index := suspended_vms.len - 1; index >= 0; index-- {
+			mut vm := unsafe { &libjs.VM(suspended_vms[index]) }
+			vm.restore_execution_context_stack()
+		}
+		html_scripting_execution_context_stack = unsafe { saved_html_contexts }
+		event_loop.currently_running_task_ = saved_task
+	}
 	event_loop.perform_a_microtask_checkpoint()
 	for !goal_condition() {
 		mut queue := event_loop.task_queue_
@@ -582,10 +633,17 @@ pub fn (mut event_loop EventLoop) process() {
 	if mut timer := event_loop.system_event_loop_timer_ { timer.stop() }
 	event_loop.task_generation_++
 	event_loop.scheduled = false
-	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
-	event_loop.reached_step_1_tasks.clear()
-	for steps in reached_step_1_tasks {
-		steps.execute()
+	if event_loop.reached_step_1_tasks.len > 0 {
+		// Callbacks can register work for the next turn, so detach the pending
+		// pointers before calling out. Their execution uses the caller's arena.
+		snapshot := platform.begin_thread_scratch('event loop step-one snapshot')
+		reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
+		snapshot.leave()
+		event_loop.reached_step_1_tasks.clear()
+		for steps in reached_step_1_tasks {
+			steps.execute()
+		}
+		snapshot.finish()
 	}
 
 	if event_loop.task_queue_.has_runnable_tasks() {
@@ -698,7 +756,7 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 		return false
 	}
 	event_loop.rendering_task_queued_ = true
-	task := Task.create(.rendering, none, fn [mut event_loop] () {
+	task := Task.create_owned(.rendering, none, fn [mut event_loop] () {
 		event_loop.update_the_rendering()
 	})
 	mut queue := event_loop.task_queue_
@@ -906,7 +964,8 @@ fn (mut event_loop EventLoop) rendering_document_snapshot() RenderingDocumentSna
 		if document.is_decoded_svg() || !document.is_fully_active()
 			|| document.is_render_blocked() || document.hidden()
 			|| document.rendering_suppression_for_view_transitions
-			|| !document_has_a_rendering_opportunity(document) { continue }
+			|| !document_has_a_rendering_opportunity(document)
+			|| document_runs_deferred_scripts(document) { continue }
 		documents[count] = document
 		count++
 	}
@@ -1020,12 +1079,15 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 		}
 	}
 	indexeddb.cleanup_indexed_database_transactions(voidptr(&event_loop))
-	// ClearKeptObjects is represented by the real VM's execution generation.
+	// ClearKeptObjects follows all reactions in this checkpoint. A WeakRef
+	// target stays stable across separate jobs in the same microtask drain.
 	for vm_pointer in event_loop.embedding_vms_ {
 		mut vm := unsafe { &libjs.VM(vm_pointer) }
+		vm.clear_kept_objects()
 		vm.finish_execution_generation()
 	}
 	if mut primary := event_loop.primary_vm_not_embedded() {
+		primary.clear_kept_objects()
 		primary.finish_execution_generation()
 	}
 	// clear() alone leaves scanned pointers in the retained backing allocation.
@@ -1215,9 +1277,18 @@ pub fn queue_a_task(source TaskSource, event_loop ?&EventLoop, document ?&dom.Do
 }
 
 // A task's runnability association and the receiver's storage lifetime are
-// separate. Parser and font progress checks intentionally have no association.
+// separate. Some font work has no document association.
 fn queue_a_task_with_storage(source TaskSource, event_loop ?&EventLoop, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) u64 {
 	return enqueue_owned_task(event_loop, Task.create_with_storage(source, document, steps, storage))
+}
+
+// Parser progress can unblock navigation before activation. Keep the document
+// association so destruction still cancels its callback and storage lease.
+fn queue_parser_progress_task(document &dom.Document, steps fn()) {
+	mut task := Task.create_with_storage(.unspecified, document, steps, document.native_storage())
+	task.runs_while_inactive = true
+	task.owns_steps = true
+	enqueue_owned_task(main_thread_event_loop(), task)
 }
 
 fn enqueue_owned_task(event_loop ?&EventLoop, task &Task) u64 {

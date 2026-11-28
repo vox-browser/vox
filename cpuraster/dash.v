@@ -244,6 +244,7 @@ struct DashStroke {
 	join        StrokeJoin
 	miter_limit f32
 	res_scale   f32
+	dash_limit  f32 = max_dash_count
 }
 
 // SkContourMeasure segment types.
@@ -1022,6 +1023,24 @@ struct DashResult {
 	fill bool
 }
 
+// dash_centerline preserves curves and splits only the geometry. The caller
+// applies caps and joins. Build the entire path so adjacent viewport crops can
+// sample the same stroke without cutting a dash at the surface boundary.
+pub fn dash_centerline(path Path, intervals []f32, offset f32, matrix Matrix, limit int) !Path {
+	if path.bounds() == none {
+		return error('non-finite dashed path')
+	}
+	effect := new_dash_effect(intervals, offset) or { return path }
+	result := dash_path(path, effect, DashStroke{
+		res_scale:  res_scale_for_stroking(matrix)
+		dash_limit: f32(limit)
+	}, none)
+	if !result.applied {
+		return error('dash geometry exceeds the draw budget')
+	}
+	return result.path
+}
+
 // SkDashPath::InternalFilter() with StrokeRecApplication::kAllow.
 fn dash_path(src Path, dash DashEffect, stroke DashStroke, cull_rect ?Rect) DashResult {
 	mut dst := PathBuilder{}
@@ -1086,7 +1105,7 @@ fn dash_path(src Path, dash DashEffect, stroke DashStroke, cull_rect ?Rect) Dash
 		half := f32(count >> 1)
 		scaled := length * half
 		dash_count += scaled / dash.interval_length
-		if dash_count > max_dash_count {
+		if dash_count > stroke.dash_limit {
 			return DashResult{
 				applied: false
 				fill:    line != none

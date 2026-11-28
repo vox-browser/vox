@@ -36,18 +36,20 @@ fn (app &BrowserApp) document_paints_natively() bool {
 fn (mut app BrowserApp) prime_document_paint_resources() {
 	if disable_paint_resource_prefetch || !app.document_paints_natively() { return }
 	before := app.background_resource_pending.len
+	mut jobs := []ResourceFetchJob{}
 	for index in 0 .. app.paint_commands.len {
 		if address := pending_paint_background_url(&app.paint_commands[index]) {
-			app.request_background_resource(address)
+			app.enqueue_background_resource(address, mut jobs)
 		}
 	}
 	// Viewport recording leaves offscreen backgrounds out; request them as if
 	// recorded, so they arrive before scrolling reaches them.
 	if app.document != unsafe { nil } {
 		for address in layout.document_background_image_urls(app.document) {
-			app.request_background_resource(address)
+			app.enqueue_background_resource(address, mut jobs)
 		}
 	}
+	app.start_background_resource_batch(jobs)
 	if paint_resource_prefetch_diagnostics && app.background_resource_pending.len > before {
 		eprintln('VOX_PAINT_RESOURCE_PREFETCH requests=${app.background_resource_pending.len - before}')
 	}
@@ -55,16 +57,20 @@ fn (mut app BrowserApp) prime_document_paint_resources() {
 
 const disable_initial_background_preload = os.getenv('VOX_DISABLE_INITIAL_BACKGROUND_PRELOAD') != ''
 const initial_background_preload_diagnostics = os.getenv('VOX_INITIAL_BACKGROUND_PRELOAD_DIAGNOSTICS') != ''
-const initial_background_preload_limit = 4
+const disable_extended_initial_image_preloads = os.getenv('VOX_DISABLE_EXTENDED_INITIAL_IMAGE_PRELOADS') != ''
+// Leave at least half the transport slots available for scripts, fonts, and
+// images requested by the document while layout runs.
+const initial_image_preload_limit = max_concurrent_resource_fetches / 2
 
 struct InitialBackgroundPreloads {
+	limit int
 mut:
 	urls []string
 	seen map[string]bool
 }
 
 fn collect_initial_background_preloads(node &dom.Node, mut found InitialBackgroundPreloads) {
-	if found.urls.len >= initial_background_preload_limit { return }
+	if found.urls.len >= found.limit { return }
 	if element := node.as_element() {
 		style := css.computed_properties_for_element(element) or { return }
 		if style.display().is_none() { return }
@@ -73,21 +79,29 @@ fn collect_initial_background_preloads(node &dom.Node, mut found InitialBackgrou
 				if address in found.seen { continue }
 				found.seen[address] = true
 				found.urls << address
-				if found.urls.len == initial_background_preload_limit { return }
+				if found.urls.len == found.limit { return }
 			}
 		}
 	}
 	for child in node.children { collect_initial_background_preloads(child, mut found) }
 }
 
-fn (mut app BrowserApp) prime_initial_computed_background_resources(width f64, height f64) {
-	if disable_initial_background_preload || !app.document_paints_natively()
-		|| app.document == unsafe { nil } || app.document.layout_root != unsafe { nil } { return }
-	layout.prepare_initial_resource_styles(app.document, width, height)
-	mut found := InitialBackgroundPreloads{}
-	collect_initial_background_preloads(app.document.as_node(), mut found)
+fn (mut app BrowserApp) prime_initial_paint_resources(width f64, height f64) {
+	if !app.document_paints_natively() || app.document == unsafe { nil }
+		|| app.document.layout_root != unsafe { nil } { return }
 	before := app.background_resource_pending.len
-	for address in found.urls { app.request_background_resource(address) }
+	mut jobs := []ResourceFetchJob{}
+	if !disable_extended_initial_image_preloads && app.ctx != unsafe { nil } {
+		app.enqueue_initial_tab_favicon(mut jobs)
+	}
+	if !disable_initial_background_preload {
+		layout.prepare_initial_resource_styles(app.document, width, height)
+		limit := if disable_extended_initial_image_preloads { 4 } else { initial_image_preload_limit - jobs.len }
+		mut found := InitialBackgroundPreloads{limit: limit}
+		collect_initial_background_preloads(app.document.as_node(), mut found)
+		for address in found.urls { app.enqueue_background_resource(address, mut jobs) }
+	}
+	app.start_background_resource_batch(jobs)
 	if initial_background_preload_diagnostics {
 		eprintln('VOX_INITIAL_BACKGROUND_PRELOAD requests=${app.background_resource_pending.len - before}')
 	}

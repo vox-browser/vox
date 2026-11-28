@@ -133,7 +133,32 @@ pub fn Attr.create_with_local_name(document &Document, local_name string, value 
 }
 
 pub fn (a &Attr) clone(document &Document) &Attr {
-	return Attr.create(document, QualifiedName.new(a.local_name_, a.prefix__, a.namespace_uri_), a.value_, none)
+	return Attr.create(document, QualifiedName.new(a.local_name(), a.prefix(), a.namespace_uri()), a.value(), none)
+}
+
+// Element attributes use compact records. A JS Attr node keeps the same live
+// record when an attribute is replaced, removed, or reattached.
+pub fn Attr.from_attribute_record(attribute &Attr_) &Attr {
+	mut node := Attr.create(attribute.document(), QualifiedName.new(attribute.local_name(),
+		attribute.prefix(), attribute.namespace_uri()), '', none)
+	node.attribute_record_ = attribute
+	return node
+}
+
+pub fn (mut a Attr) ensure_attribute_record() &Attr_ {
+	if record := a.attribute_record_ { return record }
+	document := a.Node.document()
+	record := &Attr_{
+		name_: a.name_
+		value_: a.value_
+		local_name_: a.local_name_
+		prefix__: a.prefix__
+		namespace_uri_: a.namespace_uri_
+		document_: document
+		storage_owner_: document.native_storage()
+	}
+	a.attribute_record_ = record
+	return record
 }
 
 pub fn (mut a Attr) initialize() {
@@ -157,6 +182,10 @@ pub fn (a &Attr) specified() bool {
 
 // https://dom.spec.whatwg.org/#set-an-existing-attribute-value
 pub fn (mut a Attr) set_value_with_attribute_steps(value string) ! {
+	if mut record := a.attribute_record_ {
+		record.set_value(value)!
+		return
+	}
 	// 1. If attribute's element is null, then set attribute's value to value and return.
 	if a.owner_element() == none {
 		a.value_ = value
@@ -361,7 +390,10 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 		whitespace_changed := character_data_is_ascii_whitespace(old_data) != character_data_is_ascii_whitespace(c.data_)
 		if layout_node := node.unsafe_layout_node() {
 			if layout_node.is_text_node() && layout_node.text_has_source_range_ {
-				if parent := node.parent() {
+				if owner := layout_node.first_letter_owner() {
+					mut owner_node := unsafe { &Node(owner.as_node()) }
+					owner_node.set_needs_layout_tree_update(true, .character_data_replace_data)
+				} else if parent := node.parent() {
 					mut parent_node := unsafe { &Node(parent) }
 					parent_node.set_needs_layout_tree_update(true, .character_data_replace_data)
 				}

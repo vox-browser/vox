@@ -127,7 +127,7 @@ fn (mut scope StyleScope) shared_user_agent_only_shadow_style_cache() ?&StyleCac
 	// sheet; without it here every UA shadow root built its own UA rule cache.
 	chromium := document.font_rendering_policy() == .chromium
 	if sheets.len != if chromium { 4 } else { 3 } { return none }
-	expected := [user_agent_default_stylesheet, user_agent_mathml_stylesheet,
+	expected := [default_user_agent_stylesheet(), user_agent_mathml_stylesheet,
 		user_agent_svg_stylesheet]!
 	for index in 0 .. 3 { if voidptr(sheets[index]) != voidptr(expected[index]) { return none } }
 	if chromium && voidptr(sheets[3]) != voidptr(chromium_control_font_style_sheet()) {

@@ -1,8 +1,8 @@
 module libjs
 
-// Translated from LibJS/Runtime/FunctionEnvironment.{h,cpp}. GetSuperBase and
-// HasSuperBinding need the ECMAScript function object's [[HomeObject]], which is
-// part of the pending function-object translation.
+// Translated from LibJS/Runtime/FunctionEnvironment.{h,cpp}. GetSuperBase reads
+// the current prototype of the retained function [[HomeObject]]. Arrow frames
+// keep lexical this/super resolution through their outer environment.
 
 @[heap]
 pub struct FunctionEnvironment {
@@ -11,6 +11,10 @@ pub mut:
 	this_value      Value           // [[ThisValue]]
 	function_object ?FunctionObject // [[FunctionObject]]
 	new_target      Value = js_undefined() // [[NewTarget]]
+	class_constructor ?&BaseClassFunction // Active class wrapper for super().
+	home_object ?&Object
+mut:
+	call_reuse_exposed bool
 }
 
 pub fn FunctionEnvironment.create(outer ?Environment) &FunctionEnvironment {
@@ -66,6 +70,15 @@ pub fn (environment &FunctionEnvironment) has_this_binding() bool {
 	return true
 }
 
+pub fn (environment &FunctionEnvironment) has_super_binding() bool {
+	return environment.this_binding_status != .lexical && environment.home_object != none
+}
+
+pub fn (environment &FunctionEnvironment) get_super_base() Value {
+	home := environment.home_object or { return js_undefined() }
+	return if prototype := home.internal_get_prototype_of() { Value.from_object(prototype) } else { js_null() }
+}
+
 // 9.1.1.3.4 GetThisBinding ( ), https://tc39.es/ecma262/#sec-function-environment-records-getthisbinding
 pub fn (environment &FunctionEnvironment) get_this_binding(mut vm VM) !Value {
 	// 1. Assert: envRec.[[ThisBindingStatus]] is not lexical.
@@ -78,4 +91,12 @@ pub fn (environment &FunctionEnvironment) get_this_binding(mut vm VM) !Value {
 	}
 	// 3. Return envRec.[[ThisValue]].
 	return environment.this_value
+}
+
+// Script-visible GetSuperBase may throw when the home object's prototype
+// operation is exotic. The ordinary helper remains for concrete VM records.
+pub fn (environment &FunctionEnvironment) get_super_base_checked(mut vm VM) !Value {
+	home := environment.home_object or { return js_undefined() }
+	if prototype := home.get_prototype_of_checked(mut vm)!.prototype { return Value.from_object(prototype) }
+	return js_null()
 }

@@ -10,6 +10,7 @@ import math
 import os
 import painting
 import platform
+import processmetrics
 import cpuraster
 import svg
 import time
@@ -502,6 +503,29 @@ fn compatibility_scroll_snap_edges(computed &css.ComputedProperties, used &UsedV
 	}
 }
 
+// Same-binary control: resolve scroll-margin and scroll-padding for every box.
+const retain_all_scroll_snap_edges = os.getenv('VOX_RETAIN_ALL_SCROLL_SNAP_EDGES') != ''
+
+// Scroll snapping reads a box's scroll-margin only when it is a snap area and
+// its scroll-padding only when it is a snap container (the DOM's scrollIntoView
+// margins resolve from style). Resolving both for every box of every paint
+// projection cost more than the rest of its snap data.
+fn retained_box_scroll_snap(computed &css.ComputedProperties, used &UsedValues) &BlockBoxScrollSnapData {
+	align := computed.scroll_snap_align()
+	snap_type := computed.scroll_snap_type()
+	return retained_block_box_scroll_snap(BlockBoxScrollSnapData{
+		scroll_snap_align: align
+		scroll_snap_stop: computed.scroll_snap_stop()
+		scroll_snap_type: snap_type
+		scroll_margin: if retain_all_scroll_snap_edges || has_snap_alignment(align) {
+			compatibility_scroll_snap_edges(computed, used, false)
+		} else { BoxEdges{} }
+		scroll_padding: if retain_all_scroll_snap_edges || snap_type.strictness != .none_ {
+			compatibility_scroll_snap_edges(computed, used, true)
+		} else { BoxEdges{} }
+	})
+}
+
 fn scroll_snap_edge_needs_resolution_context(value css.LengthPercentageOrAuto) bool {
 	return value.is_calculated() || (value.is_length() && !value.length().is_absolute())
 }
@@ -979,6 +1003,25 @@ fn computed_text_shadows(computed &css.ComputedValues) []BoxShadow {
 	return computed_shadow_transport(shadows, context)
 }
 
+fn computed_chromium_text_shadows(node &Node, computed &css.ComputedValues) []BoxShadow {
+	mut resolved := computed_text_shadows(computed)
+	if resolved.len == 0 || node.document().font_rendering_policy() != .chromium {
+		return resolved
+	}
+	value := computed.typed_property_value(.text_shadow) or { return resolved }
+	if value !is css.StyleValueList { return resolved }
+	for index, layer in value.values() {
+		if index >= resolved.len { break }
+		if layer !is css.ShadowStyleValue { continue }
+		components := (layer as css.ShadowStyleValue).color().srgb_paint_components() or { continue }
+		resolved[index] = BoxShadow{
+			...resolved[index]
+			srgb_color_data: &PaintSRGBColor{resolved[index].color.serialize(), components}
+		}
+	}
+	return resolved
+}
+
 fn compatibility_color_filter_type(operation css.ColorFilterType) painting.ColorFilterType {
 	return match operation {
 		.brightness { .brightness }
@@ -1028,7 +1071,13 @@ fn painting_filter_from_svg_graph(graph svg.FilterGraph) ?painting.GfxFilter {
 	}
 }
 
-fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilter {
+struct SVGPatternFilterTarget {
+	state &LayoutState
+	used  &UsedValues
+}
+
+fn resolved_svg_filter(element &dom.Element, reference string,
+	pattern_target ?SVGPatternFilterTarget) ?painting.GfxFilter {
 	// PaintableBox.cpp accepts same-document fragments only; external URL
 	// filter resources are intentionally ignored by the upstream algorithm.
 	if reference.len < 2 || reference[0] != `#` {
@@ -1042,12 +1091,91 @@ fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilt
 	}
 	mut mutable_filter := unsafe { &dom.Element(filter_element) }
 	mutable_filter.register_svg_paint_resource_referencing_element(element)
-	return painting_filter_from_svg_graph(svg_element_model(filter_element).gfx_filter())
+	model := svg_element_model(filter_element)
+	filter := painting_filter_from_svg_graph(model.gfx_filter())?
+	offset := svg_pattern_offset_from_filter(&model, element, filter, pattern_target) or { return filter }
+	return painting.GfxFilter{...filter, pattern_offset: &painting.SVGPatternOffset{...offset}}
+}
+
+// A single offset with a resolved region can translate the source paint
+// before rasterization, then clip the isolated result.
+fn svg_pattern_offset_from_filter(element &svg.Element, source &dom.Element, filter painting.GfxFilter,
+	pattern_target ?SVGPatternFilterTarget) ?painting.SVGPatternOffset {
+	if element.children.len != 1 || element.children[0].tag != 'feOffset' {
+		return none
+	}
+	child := &element.children[0]
+	source_alpha := child.attributes['in'] == 'SourceAlpha'
+	if filter.nodes.len != (if source_alpha { 2 } else { 1 }) { return none }
+	node := &filter.nodes[filter.nodes.len - 1]
+	if node.kind != 'offset' || node.input_ids != [if source_alpha { 0 } else { -1 }] { return none }
+	object_bounds := if element.filter_units() == .object_bounding_box
+		|| element.primitive_units() == .object_bounding_box {
+		target := pattern_target?
+		path := target.used.computed_svg_path()?
+		?svg.Rect(svg_path_bounds(path, object_geometry: true)?)
+	} else {
+		?svg.Rect(none)
+	}
+	// Explicit user-space coordinates and object bounds need no viewport walk.
+	mut viewport := ?svg.Point(none)
+	region := element.numeric_filter_region(object_bounds, none) or {
+		target := pattern_target?
+		viewport = svg_pattern_filter_viewport_size(source, target.state)?
+		element.numeric_filter_region(object_bounds, viewport)?
+	}
+	delta := element.numeric_filter_offset(child, object_bounds)?
+	filter_region := painting.Rect{region.x, region.y, region.width, region.height}
+	mut crop := filter_region
+	if ['x', 'y', 'width', 'height'].any(it in child.attributes) {
+		subregion := element.numeric_source_filter_subregion(child, region, object_bounds, viewport) or {
+			if viewport != none { return none }
+			target := pattern_target?
+			size := svg_pattern_filter_viewport_size(source, target.state)?
+			element.numeric_source_filter_subregion(child, region, object_bounds, size)?
+		}
+		crop = filter_region.intersection(painting.Rect{subregion.x, subregion.y,
+			subregion.width, subregion.height})
+	}
+	return painting.SVGPatternOffset{painting.Point{delta.x, delta.y}, crop, source_alpha}
+}
+
+fn svg_pattern_filter_viewport_size(source &dom.Element, state &LayoutState) ?svg.Point {
+	// A referenced pattern's layout subtree is attached to its paint target.
+	// Resolve percentages against the viewport of the original source element.
+	mut ancestor := ?&dom.Node(source.as_node())
+	for {
+		node := ancestor?
+		if element := node.as_element() {
+			if element.is_svg_element() && element.local_name() in ['svg', 'symbol'] {
+				if view_box := svg.parse_viewbox(element.get_attribute_value('viewBox')) {
+					if view_box.width >= 0 && view_box.height >= 0 {
+						return svg.Point{view_box.width, view_box.height}
+					}
+				}
+				layout_node := node.unsafe_layout_node()?
+				handle := layout_node.real_layout_handle()
+				if handle == unsafe { nil } { return none }
+				styled := unsafe { &Node(handle) }.as_node_with_style()?
+				used := state.try_get(styled)?
+				return svg.Point{used.content_width().to_double(), used.content_height().to_double()}
+			}
+		}
+		ancestor = node.flat_tree_parent()
+	}
+	return none
+}
+
+fn transform_svg_pattern_offset(offset ?&painting.SVGPatternOffset,
+	transform painting.Affine) ?&painting.SVGPatternOffset {
+	value := offset?
+	projected := value.transformed(transform)?
+	return &painting.SVGPatternOffset{...projected}
 }
 
 fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 	color_context css.ColorResolutionContext,
-	element ?&dom.Element, bounds ?painting.Rect) painting.ResolvedCSSFilter {
+	element ?&dom.Element, bounds ?painting.Rect, pattern_target ?SVGPatternFilterTarget) painting.ResolvedCSSFilter {
 	if !computed_filter.has_filters() {
 		return painting.ResolvedCSSFilter{}
 	}
@@ -1092,7 +1220,7 @@ fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 			}
 			css.URL {
 				if painted_element := element {
-					if resolved := resolved_svg_filter(painted_element, filter_operation.url()) {
+					if resolved := resolved_svg_filter(painted_element, filter_operation.url(), pattern_target) {
 						svg_filter = resolved
 						svg_filter_bounds = bounds
 					}
@@ -1103,10 +1231,16 @@ fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 	return painting.ResolvedCSSFilter.with_svg_filter(operations, svg_filter, svg_filter_bounds)
 }
 
+@[params]
+struct CSSFilterResolutionOptions {
+	pattern_target ?SVGPatternFilterTarget
+}
+
 fn resolved_css_filter_for_element(computed &css.ComputedValues,
 	color_context css.ColorResolutionContext, element ?&dom.Element,
-	bounds ?painting.Rect) painting.ResolvedCSSFilter {
-	return resolve_css_filter(computed.filter(), computed, color_context, element, bounds)
+	bounds ?painting.Rect, options CSSFilterResolutionOptions) painting.ResolvedCSSFilter {
+	return resolve_css_filter(computed.filter(), computed, color_context, element, bounds,
+		options.pattern_target)
 }
 
 $if test {
@@ -1835,11 +1969,11 @@ fn svg_paint_fragment(reference string) ?string {
 
 fn resolve_svg_fragment_identifier_to_element(node &dom.Node, fragment string) ?&dom.Element {
 	decoded_fragment := svg.decode_fragment_identifier(fragment)
-	if element := node.document().get_element_by_id(decoded_fragment) {
+	if element := node.document().rendering_element_by_id(decoded_fragment) {
 		return element
 	}
 	if shadow_root := node.containing_shadow_root() {
-		return unsafe { &dom.ParentNode(shadow_root) }.get_element_by_id(decoded_fragment)
+		return unsafe { &dom.ParentNode(shadow_root) }.rendering_element_by_id(decoded_fragment)
 	}
 	return none
 }
@@ -1871,7 +2005,7 @@ fn linked_svg_gradient(element &dom.Element, mut seen map[i64]bool) ?&dom.Elemen
 	fragment := svg_gradient_link_fragment(element.document(), svg_gradient_href(element)) or {
 		return none
 	}
-	linked := element.document().get_element_by_id(fragment) or { return none }
+	linked := element.document().rendering_element_by_id(fragment) or { return none }
 	if !linked.is_svg_element() || linked.local_name() !in ['linearGradient', 'radialGradient'] {
 		return none
 	}
@@ -2111,6 +2245,20 @@ fn resolved_svg_stroke_dasharray(computed &css.ComputedProperties, percentage_ba
 		dasharray << dasharray.clone()
 	}
 	return dasharray
+}
+
+fn resolved_svg_stroke_dashoffset(computed &css.ComputedValues, percentage_basis f64) f64 {
+	return computed.stroke_dashoffset().to_px(computed.length_resolution_context(),
+		css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
+}
+
+fn calibrated_svg_stroke_dashes(node &Node, path svg.Path, dashes []f64, offset f64) ([]f64, f64) {
+	if dashes.len > 0 && node.is_svg_geometry_box() {
+		if element := svg_element_for_layout_node(node) {
+			return svg_element_model(element).calibrated_stroke_dashes(path, dashes, offset)
+		}
+	}
+	return dashes, offset
 }
 
 // The native twelve-float SVG protocol reserves kind 6 for an explicit
@@ -2438,6 +2586,7 @@ fn transform_svg_mask_paint_operations(operations []painting.SVGMaskPaintOperati
 				filter: painting.GfxFilter{
 					...filter
 					bounds: bounds
+					pattern_offset: transform_svg_pattern_offset(filter.pattern_offset, transform)
 				}
 			}
 		} else if operation.kind == .path {
@@ -2470,8 +2619,31 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 	return transform_svg_mask_paint_operations(operations, normalization)
 }
 
+fn resolve_svg_pattern_paint_styles(node &Node, state &LayoutState, fill ?css.SVGPaint,
+	stroke ?css.SVGPaint, bounds ?painting.Rect, target svg.AffineTransform,
+	resource svg.AffineTransform) (?&painting.SVGPatternPaintStyle, ?&painting.SVGPatternPaintStyle) {
+	mut fill_pattern := ?&painting.SVGPatternPaintStyle(none)
+	if paint := fill {
+		if paint.is_url() {
+			fill_pattern = resolve_svg_pattern_paint_style(node, state, paint, bounds, target,
+				resource)
+			if stroke_paint := stroke {
+				if stroke_paint.is_url() && paint.as_url().url() == stroke_paint.as_url().url() {
+					return fill_pattern, fill_pattern
+				}
+			}
+		}
+	}
+	if paint := stroke {
+		return fill_pattern, resolve_svg_pattern_paint_style(node, state, paint, bounds, target,
+			resource)
+	}
+	return fill_pattern, none
+}
+
 fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVGPaint,
-	path_bounds ?painting.Rect, target_transform svg.AffineTransform) ?&painting.SVGPatternPaintStyle {
+	path_bounds ?painting.Rect, target_transform svg.AffineTransform,
+	ancestor_resource_transform svg.AffineTransform) ?&painting.SVGPatternPaintStyle {
 	if !paint.is_url() {
 		return none
 	}
@@ -2550,23 +2722,32 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	inverse_target := target_affine.inverse() or { return none }
 	target_styled := node.as_node_with_style() or { return none }
 	target_used := state.try_get(target_styled) or { return none }
-	resource_transform := target_used.svg_transform().multiply(svg_element_attribute_transform(content_element))
+	// The inverse target below includes the enclosing resource transform.
+	// Apply it to the nested pattern content before normalizing the tile.
+	resource_transform := ancestor_resource_transform.multiply(target_used.svg_transform()).multiply(svg_element_attribute_transform(content_element))
 	mut collection := SVGMaskPaintCollection{}
 	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, true,
 		mut collection)
-	mut content_origin := painting.Point{}
-	if svg.parse_viewbox(content_element.get_attribute_value('viewBox')) == none {
-		seen.clear()
-		content_units := svg_pattern_units(content_element, 'patternContentUnits', .user_space_on_use, mut seen)
-		if content_units == .object_bounding_box {
-			content_origin = painting.Point{bounds.x, bounds.y}
-		}
+	has_view_box := svg.parse_viewbox(content_element.get_attribute_value('viewBox')) != none
+	seen.clear()
+	resource_units := if has_view_box {
+		svg_pattern_units(content_element, 'patternUnits', .object_bounding_box, mut seen)
+	} else {
+		svg_pattern_units(content_element, 'patternContentUnits', .user_space_on_use, mut seen)
 	}
-	// Resource collection uses CSS layout coordinates. The target CTM also
-	// includes its outer SVG viewport, so enter that space before removing it.
-	// Otherwise a downscaled viewBox enlarges the contents inside the tile.
-	page_operations := transform_svg_mask_paint_operations(collection.operations,
-		painting_affine_from_svg(outer_svg_viewport_transform_in_page_space(node, state)))
+	content_origin := if !has_view_box && resource_units == .object_bounding_box {
+		painting.Point{bounds.x, bounds.y}
+	} else {
+		painting.Point{}
+	}
+	// User-space resources inherit their viewport transform during SVG layout.
+	// Bounding-box resources start in the target's local coordinate space.
+	page_operations := if resource_units == .object_bounding_box {
+		transform_svg_mask_paint_operations(collection.operations,
+			painting_affine_from_svg(outer_svg_viewport_transform_in_page_space(node, state)))
+	} else {
+		collection.operations
+	}
 	operations := normalize_svg_pattern_operations(page_operations, inverse_target, content_origin)
 	seen.clear()
 	mut pattern_transform := painting_affine_from_svg(svg_pattern_transform(element, mut seen))
@@ -2588,7 +2769,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	if pattern_transform.inverse() == none {
 		return none
 	}
-	mut cache_key := svg_mask_visual_cache_key(painting.IntRect{
+	mut cache_key, native_bounds_key := svg_mask_visual_cache_keys(painting.IntRect{
 		width: int(math.ceil(tile_rect.width))
 		height: int(math.ceil(tile_rect.height))
 	}, .alpha, operations)
@@ -2597,14 +2778,24 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 		pattern_transform.f] {
 		cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
 	}
+	mut has_non_scaling_stroke := false
+	for index in 0 .. operations.len {
+		operation := &operations[index]
+		fill_has_stroke := if fill := operation.fill_pattern { fill.has_non_scaling_stroke } else { false }
+		stroke_has_stroke := if stroke := operation.stroke_pattern { stroke.has_non_scaling_stroke } else { false }
+		if (operation.has_stroke && operation.non_scaling_stroke) || fill_has_stroke || stroke_has_stroke {
+			has_non_scaling_stroke = true
+			break
+		}
+	}
 	return &painting.SVGPatternPaintStyle{
 		tile_display_list_id: '${content_identity}'
 		tile_rect: tile_rect
 		pattern_transform: pattern_transform
-		tile_display_list: &painting.SVGPatternDisplayList{
-			operations: operations
-		}
+		tile_display_list: painting.SVGPatternDisplayList.from_operations(operations)
 		cache_key: cache_key
+		native_bounds_key: native_bounds_key
+		has_non_scaling_stroke: has_non_scaling_stroke
 	}
 }
 
@@ -2746,6 +2937,8 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 // is shared by the native shell and DOM's callback-backed viewport paintable;
 // both must record and hit-test the exact same paint-order tree.
 fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewport_width f64, viewport_height f64) BlockBox {
+	stage := processmetrics.begin_thread_instruction_substage('paint_projection')
+	defer { stage.finish() }
 	mut projection_owner := unsafe { &DocumentLayoutResult(result) }
 	projection_owner.paint_tree_storage = unsafe { nil }
 	layout_completed := time.sys_mono_now()
@@ -2955,16 +3148,31 @@ fn svg_radial_gradient_visual_cache_key(seed u64,
 
 fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMaskType,
 	operations []painting.SVGMaskPaintOperation) u64 {
+	key, native_bounds_key := svg_mask_visual_cache_keys(bounds, mask_type, operations)
+	return if native_bounds_key == 0 { key } else { svg_clip_hash_mix(key, native_bounds_key) }
+}
+
+fn svg_mask_visual_cache_keys(bounds painting.IntRect, mask_type painting.SVGMaskType,
+	operations []painting.SVGMaskPaintOperation) (u64, u64) {
 	mut hash := svg_clip_hash_mix(u64(14695981039346656037), u64(mask_type))
+	mut native_bounds_key := u64(0)
 	for value in [bounds.x, bounds.y, bounds.width, bounds.height] {
 		hash = svg_clip_hash_mix(hash, u64(value))
 	}
-	for operation in operations {
+	for index, operation in operations {
 		hash = svg_clip_hash_mix(hash, u64(operation.kind))
 		hash = svg_clip_hash_mix(hash, math.f64_bits(operation.opacity))
 		if operation.kind == .begin_filter {
 			if filter := operation.filter {
 				hash = svg_filter_visual_cache_key(hash, filter)
+				if filter.source_pattern_offset() != none {
+					if source := filter.bounds {
+						native_bounds_key = svg_clip_hash_mix(native_bounds_key, u64(index + 1))
+						for value in [source.x, source.y, source.width, source.height] {
+							native_bounds_key = svg_clip_hash_mix(native_bounds_key, math.f64_bits(value))
+						}
+					}
+				}
 			}
 			continue
 		}
@@ -3015,15 +3223,31 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 		}
 		if pattern := operation.fill_pattern {
 			hash = svg_clip_hash_mix(svg_clip_hash_mix(hash, 3), pattern.cache_key)
+			if pattern.native_bounds_key != 0 {
+				native_bounds_key = svg_clip_hash_mix(svg_clip_hash_mix(native_bounds_key,
+					u64(index) * 2 + 1), pattern.native_bounds_key)
+			}
 		}
 		if pattern := operation.stroke_pattern {
 			hash = svg_clip_hash_mix(svg_clip_hash_mix(hash, 4), pattern.cache_key)
+			if pattern.native_bounds_key != 0 {
+				native_bounds_key = svg_clip_hash_mix(svg_clip_hash_mix(native_bounds_key,
+					u64(index) * 2 + 2), pattern.native_bounds_key)
+			}
 		}
 		hash = svg_clip_hash_mix(hash, if operation.has_fill { u64(1) } else { u64(0) })
 		hash = svg_clip_hash_mix(hash, if operation.has_stroke { u64(1) } else { u64(0) })
 		hash = svg_clip_hash_mix(hash, if operation.stroke_first { u64(1) } else { u64(0) })
 		hash = svg_clip_hash_mix(hash, u64(operation.stroke_linecap))
 		hash = svg_clip_hash_mix(hash, u64(operation.stroke_linejoin))
+		hash = svg_clip_hash_mix(hash, u64(operation.non_scaling_stroke))
+		if operation.stroke_dasharray.len > 0 {
+			hash = svg_clip_hash_mix(hash, u64(operation.stroke_dasharray.len))
+			hash = svg_clip_hash_mix(hash, u64(math.f32_bits(operation.stroke_dashoffset)))
+			for interval in operation.stroke_dasharray {
+				hash = svg_clip_hash_mix(hash, u64(math.f32_bits(interval)))
+			}
+		}
 		for segment in operation.path.segments {
 			hash = svg_clip_hash_mix(hash, u64(segment.kind))
 			for value in [segment.point.x, segment.point.y, segment.control_point_0.x,
@@ -3035,7 +3259,7 @@ fn svg_mask_visual_cache_key(bounds painting.IntRect, mask_type painting.SVGMask
 			hash = svg_clip_hash_mix(hash, if segment.sweep { u64(1) } else { u64(0) })
 		}
 	}
-	return hash
+	return hash, native_bounds_key
 }
 
 fn svg_filter_visual_cache_key(seed u64, filter painting.GfxFilter) u64 {
@@ -3043,7 +3267,11 @@ fn svg_filter_visual_cache_key(seed u64, filter painting.GfxFilter) u64 {
 	if root_id := filter.root_id {
 		hash = svg_clip_hash_mix(hash, u64(root_id + 1))
 	}
-	if bounds := filter.bounds {
+	if offset := filter.source_pattern_offset() {
+		// Offset replay uses the projected filter region. Generic source
+		// bounds can vary when the same tile is placed at different positions.
+		hash = offset.mix_cache_key(svg_clip_hash_mix(hash, 0x6f6666736574))
+	} else if bounds := filter.bounds {
 		for value in [bounds.x, bounds.y, bounds.width, bounds.height] {
 			hash = svg_clip_hash_mix(hash, math.f64_bits(value))
 		}
@@ -3344,6 +3572,19 @@ fn collect_svg_vector_image_paint_operations(node &Node, image_url string,
 	return true
 }
 
+fn svg_resource_paint_transform(node &Node, state &LayoutState, used &UsedValues,
+	resource_transform svg.AffineTransform, object_bounding_box_units bool) svg.AffineTransform {
+	position := paint_cumulative_offset(node, state, used)
+	page_delta_x := position.x().to_double() - used.offset.x().to_double()
+	page_delta_y := position.y().to_double() - used.offset.y().to_double()
+	to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+	return if object_bounding_box_units {
+		outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
+	} else {
+		to_page
+	}
+}
+
 fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	resource_transform svg.AffineTransform, is_resource_root bool, object_bounding_box_units bool,
 	retain_filters bool, mut collection SVGMaskPaintCollection) {
@@ -3371,8 +3612,34 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				}
 				color_context := color_resolution_context_for_typed_node(node, computed.color())
 				resolved := resolved_css_filter_for_element(computed, color_context, paint_element,
-					bounds)
+					bounds, pattern_target: SVGPatternFilterTarget{state, used})
 				retained_filter = resolved.to_gfx_filter(1)
+				if filter := retained_filter {
+					if filter.pattern_offset != none {
+						to_page := svg_resource_paint_transform(node, state, used,
+							resource_transform, object_bounding_box_units)
+						retained_filter = painting.GfxFilter{
+							...filter
+							pattern_offset: transform_svg_pattern_offset(filter.pattern_offset,
+								painting_affine_from_svg(to_page))
+						}
+					} else if filter.supports_source_color_filter() {
+						// Project the filter's source bounds like the child
+						// paint. Tile normalization then removes the
+						// destination's transform from both.
+						local := painting.Rect{
+							...bounds
+							x: used.offset.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
+							y: used.offset.y().to_double() - used.padding_top.to_double() - used.border_top.to_double()
+						}
+						to_page := svg_resource_paint_transform(node, state, used,
+							resource_transform, object_bounding_box_units)
+						retained_filter = painting.GfxFilter{
+							...filter
+							bounds: painting_affine_from_svg(to_page).map_rect(local)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -3395,13 +3662,8 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				image_url := resolved_svg_image_url(element)
 				if image_url != '' && used.content_width().to_double() > 0
 					&& used.content_height().to_double() > 0 {
-					position := paint_cumulative_offset(node, state, used)
-					page_delta_x := position.x().to_double() - used.offset.x().to_double()
-					page_delta_y := position.y().to_double() - used.offset.y().to_double()
-					mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
-					if object_bounding_box_units {
-						to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
-					}
+					to_page := svg_resource_paint_transform(node, state, used,
+						resource_transform, object_bounding_box_units)
 					image_fit, object_position := svg_image_fit(element)
 					image_rect := painting.Rect{
 						x: used.offset.x().to_double()
@@ -3437,14 +3699,10 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				}
 			}
 		} else if svg_path := used.computed_svg_path() {
-			stroke_width := computed.length_percentage_to_px(.stroke_width, viewport_percentage_basis(node, state)) or { 1.0 }
-			position := paint_cumulative_offset(node, state, used)
-			page_delta_x := position.x().to_double() - used.offset.x().to_double()
-			page_delta_y := position.y().to_double() - used.offset.y().to_double()
-			mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
-			if object_bounding_box_units {
-				to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
-			}
+			percentage_basis := viewport_percentage_basis(node, state)
+			stroke_width := computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
+			to_page := svg_resource_paint_transform(node, state, used,
+				resource_transform, object_bounding_box_units)
 			path := painting_clip_path_from_canvas_path(html.canvas_gfx_path_from_svg_path_with_precision(svg_path, node.document().font_rendering_policy() == .chromium), if computed.fill_rule() == .evenodd {
 				painting.WindingRule.even_odd
 			} else {
@@ -3456,18 +3714,17 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				mut stroke_linear_gradient := ?painting.SVGLinearGradientPaintStyle(none)
 				mut fill_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
 				mut stroke_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
-				mut fill_pattern := ?&painting.SVGPatternPaintStyle(none)
-				mut stroke_pattern := ?&painting.SVGPatternPaintStyle(none)
-				if fill_paint := computed.fill() {
+				fill_paint_value, stroke_paint_value := computed.fill(), computed.stroke()
+				if fill_paint := fill_paint_value {
 					fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, path_bounds)
 					fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, path_bounds)
-					fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, path_bounds, to_page)
 				}
-				if stroke_paint := computed.stroke() {
+				if stroke_paint := stroke_paint_value {
 					stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, path_bounds)
 					stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, path_bounds)
-					stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, path_bounds, to_page)
 				}
+				fill_pattern, stroke_pattern := resolve_svg_pattern_paint_styles(node, state,
+					fill_paint_value, stroke_paint_value, path_bounds, to_page, resource_transform)
 				fill := if fill_linear_gradient == none && fill_radial_gradient == none
 					&& fill_pattern == none {
 					computed_svg_paint_color(computed, .fill)
@@ -3496,6 +3753,17 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					} else {
 						painting.Color{ a: 0 }
 					}
+					mut dasharray := []f32{}
+					mut dashoffset := f32(0)
+					if has_stroke {
+						dashes := resolved_svg_stroke_dasharray(computed, percentage_basis)
+						if dashes.len > 0 {
+							calibrated, offset := calibrated_svg_stroke_dashes(node, svg_path,
+								dashes, resolved_svg_stroke_dashoffset(computed, percentage_basis))
+							dasharray = calibrated.map(f32(it))
+							dashoffset = f32(offset)
+						}
+					}
 					collection.operations << painting.SVGMaskPaintOperation{
 						kind: .path
 						path: path
@@ -3514,6 +3782,9 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 						fill_opacity: f64(computed.fill_opacity())
 						stroke_opacity: f64(computed.stroke_opacity())
 						stroke_width: stroke_width
+						stroke_dasharray: dasharray
+						stroke_dashoffset: dashoffset
+						non_scaling_stroke: has_stroke && computed.vector_effect() == .non_scaling_stroke
 						stroke_linecap: match computed.stroke_linecap() {
 							.butt { painting.LineCap.butt }
 							.round { painting.LineCap.round }
@@ -3682,7 +3953,6 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut replaced_image_position_y := '50%'
 	mut replaced_image_paintable := ?&painting.ImagePaintable(none)
 	mut replaced_image_bitmap := ?&dom.Bitmap_(none)
-	mut canvas_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_paintable := ?&painting.CanvasPaintable(none)
 	mut video_bitmap := ?&dom.Bitmap_(none)
 	mut video_frame_source := ?&painting.VideoFrameSource(none)
@@ -3760,7 +4030,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	// The backdrop belongs to the box's own painting, even when a visible
 	// descendant still records commands inside this box's effect node.
 	backdrop_filter := if computed.visibility() == .visible {
-		resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds)
+		resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds, none)
 	} else {
 		painting.ResolvedCSSFilter{}
 	}
@@ -3852,21 +4122,20 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		mut svg_fill_rgba := ?css.Color(none)
 		mut svg_stroke_rgba := ?css.Color(none)
 		has_svg_path = true
-		svg_path = path.serialize()
-		if path_bounds := svg_path_bounds(path) {
+		projection := svg_path_projection(path, computed.fill_rule() == .evenodd,
+			node.document().font_rendering_policy() == .chromium)
+		svg_path = projection.serialized
+		if path_bounds := projection.path_bounds {
 			svg_path_bounding_box = painting.Rect{path_bounds.x, path_bounds.y, path_bounds.width, path_bounds.height}
 		}
 		ellipse_data := retained_svg_ellipse_data(node, path)
-		projection := svg_paint_path_projection(path, if computed.fill_rule() == .evenodd {
-			painting.WindingRule.even_odd
-		} else { painting.WindingRule.nonzero }, true, node.document().font_rendering_policy() == .chromium)
-		svg_path_data = ellipse_data or { projection.packed_segments }
+		svg_path_data = ellipse_data or { projection.packed }
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
 		svg_hit_data = &SVGPathHitData{
 			pointer_events: computed.pointer_events()
 			has_fill: computed.fill() != none
 			has_stroke: computed.stroke() != none
-			path: cpuraster.PackedPath{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			path: cpuraster.PackedPath{segments: projection.packed, even_odd: svg_fill_even_odd}
 			bounding_box: if node.is_svg_text_box() {
 				svg_text_bounding_box_for_hit_testing(node, state)
 			} else { none }
@@ -3886,16 +4155,17 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			svg_points << mapped.x
 			svg_points << mapped.y
 		}
-		if fill_paint := computed.fill() {
+		fill_paint_value, stroke_paint_value := computed.fill(), computed.stroke()
+		if fill_paint := fill_paint_value {
 			svg_fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, projection.bounds)
 			svg_fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, projection.bounds)
-			svg_fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, projection.bounds, to_page)
 		}
-		if stroke_paint := computed.stroke() {
+		if stroke_paint := stroke_paint_value {
 			svg_stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, projection.bounds)
 			svg_stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, projection.bounds)
-			svg_stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, projection.bounds, to_page)
 		}
+		svg_fill_pattern, svg_stroke_pattern = resolve_svg_pattern_paint_styles(node, state,
+			fill_paint_value, stroke_paint_value, projection.bounds, to_page, svg.AffineTransform{})
 		if svg_fill_linear_gradient == none && svg_fill_radial_gradient == none
 			&& svg_fill_pattern == none {
 			if fill_color := computed_svg_paint_color(computed, .fill) {
@@ -3918,16 +4188,9 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		svg_stroke_width = svg_used_stroke_width(computed, percentage_basis,
 			node.document().font_rendering_policy() == .chromium)
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
-		svg_stroke_dashoffset = computed.stroke_dashoffset().to_px(computed.length_resolution_context(), css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
-		if node.is_svg_geometry_box() {
-			if source := node.dom_node() {
-				if geometry_element := source.as_element() {
-					model := svg_element_model(geometry_element)
-					svg_stroke_dasharray, svg_stroke_dashoffset = model.calibrated_stroke_dashes(path,
-						svg_stroke_dasharray, svg_stroke_dashoffset)
-				}
-			}
-		}
+		svg_stroke_dashoffset = resolved_svg_stroke_dashoffset(computed, percentage_basis)
+		svg_stroke_dasharray, svg_stroke_dashoffset = calibrated_svg_stroke_dashes(node, path,
+			svg_stroke_dasharray, svg_stroke_dashoffset)
 		svg_non_scaling_stroke = computed.vector_effect() == .non_scaling_stroke
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
 		svg_stroke_linecap = match computed.stroke_linecap() {
@@ -3943,7 +4206,10 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		svg_stroke_miterlimit = computed.stroke_miterlimit()
 		svg_fill_opacity = f64(computed.fill_opacity())
 		svg_stroke_opacity = f64(computed.stroke_opacity())
-		if svg_fill_color != '' && svg_stroke_color == '' {
+		// Glyph runs carry solid fill paint. Gradient strokes need the outline.
+		if svg_fill_color != '' && svg_stroke_color == ''
+			&& (svg_stroke_width <= 0
+				|| (svg_stroke_linear_gradient == none && svg_stroke_radial_gradient == none)) {
 			if origin := used.svg_text_paint_origin() {
 				svg_text = chromium_svg_text_glyph_runs(node, computed, origin, to_page)
 				svg_text_content = origin.text
@@ -4157,30 +4423,27 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	}
 	if tag_name == 'canvas' {
 		if canvas_element := element {
-			canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
-			if bitmap := html.html_canvas_element_present_existing_surface(canvas) {
-				canvas_bitmap = bitmap
-				canvas_paintable = &painting.CanvasPaintable{
-					canvas_rect: painting.Rect{
-						x: position.x().to_double()
-						y: position.y().to_double()
-						width: used.content_width().to_double()
-						height: used.content_height().to_double()
-					}
-					border_radii: painting.BorderRadiiData{
-						top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
-						top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
-						bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
-						bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
-					}
-					border_widths: painting.PixelBox{
-						top: used.border_top.to_double()
-						right: used.border_right.to_double()
-						bottom: used.border_bottom.to_double()
-						left: used.border_left.to_double()
-					}
-					image_rendering: computed.image_rendering()
+			canvas_paintable = &painting.CanvasPaintable{
+				canvas_rect: painting.Rect{
+					x: position.x().to_double()
+					y: position.y().to_double()
+					width: used.content_width().to_double()
+					height: used.content_height().to_double()
 				}
+				border_radii: painting.BorderRadiiData{
+					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+					top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+					bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+					bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+				}
+				border_widths: painting.PixelBox{
+					top: used.border_top.to_double()
+					right: used.border_right.to_double()
+					bottom: used.border_bottom.to_double()
+					left: used.border_left.to_double()
+				}
+				image_rendering: computed.image_rendering()
+				element: unsafe { &dom.HTMLCanvasElement(canvas_element) }
 			}
 		}
 	}
@@ -4498,7 +4761,6 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			replaced_image_position_y: replaced_image_position_y
 			replaced_image_paintable: replaced_image_paintable
 			replaced_image_bitmap: replaced_image_bitmap
-			canvas_bitmap: canvas_bitmap
 			canvas_paintable: canvas_paintable
 			video_bitmap: video_bitmap
 			video_frame_source: video_frame_source
@@ -4536,13 +4798,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			backdrop_filter: backdrop_filter
 		})
 
-		scroll_snap_data: retained_block_box_scroll_snap(BlockBoxScrollSnapData{
-			scroll_snap_align: computed.scroll_snap_align()
-			scroll_snap_stop: computed.scroll_snap_stop()
-			scroll_snap_type: computed.scroll_snap_type()
-			scroll_margin: compatibility_scroll_snap_edges(computed, used, false)
-			scroll_padding: compatibility_scroll_snap_edges(computed, used, true)
-		})
+		scroll_snap_data: retained_box_scroll_snap(computed, used)
 
 		clip_data: retained_block_box_clip(BlockBoxClipData{
 			clip_decided_by_parent: retained_box_paint_payload(clip_decided_by_parent)
@@ -4869,7 +5125,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 					orientation: orientation
 					has_trailing_whitespace: fragment.has_trailing_whitespace()
 				}
-				text_shadows: computed_text_shadows(computed)
+				text_shadows: computed_chromium_text_shadows(fragment.layout_node_, computed)
 				selection_style: selection_style(fragment.layout_node_)
 			}
 		}

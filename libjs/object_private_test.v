@@ -158,7 +158,7 @@ fn test_private_element_host_hook_precedes_duplicate_check_and_rejections_do_not
 	} else {
 		assert thrown_value(err).number == 17
 	}
-	assert object.private_elements.len == 1
+	assert object.slots.private_elements.len == 1
 	assert object.private_get(mut vm, name)!.number == 42
 }
 

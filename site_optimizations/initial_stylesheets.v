@@ -16,7 +16,7 @@ const github_initial_stylesheet_diagnostics = os.getenv('VOX_GITHUB_INITIAL_STYL
 // their first layer declarations, including important-layer precedence.
 fn prepare_site_document_stylesheets(document &dom.Document) int {
 	if disable_github_initial_stylesheet_dedup || !document.is_scripting_enabled_by_embedder()
-		|| !site_batches_image_completion_layout(document.url.serialize()) {
+		|| !site_is_github_http_url(document.url) {
 		return 0
 	}
 	mut allocations := document.enter_native_storage()

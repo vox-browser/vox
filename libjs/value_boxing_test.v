@@ -45,10 +45,10 @@ fn test_to_object_boxes_every_primitive_with_preserved_payload_and_fresh_identit
 		assert voidptr(a.prototype?) == voidptr(parents[index])
 		match index {
 			0 {
-				assert same_value(Value.from_f64(a.number_object?.value), value)
+				assert same_value(Value.from_f64(a.slots.number_object?.value), value)
 			}
 			1 {
-				assert voidptr(a.bigint_object?.bigint) == voidptr(bigint)
+				assert voidptr(a.slots.bigint_object?.bigint) == voidptr(bigint)
 			}
 			2 {
 				assert voidptr(a.string_object?.value) == voidptr(text)
@@ -56,10 +56,10 @@ fn test_to_object_boxes_every_primitive_with_preserved_payload_and_fresh_identit
 				assert a.get(mut vm, PropertyName.from_number(1))!.as_string().utf16.data == [u16(0xd800)]
 			}
 			3 {
-				assert !a.boolean_object?.value
+				assert !a.slots.boolean_object?.value
 			}
 			else {
-				assert voidptr(a.symbol_object?.symbol) == voidptr(symbol)
+				assert voidptr(a.slots.symbol_object?.symbol) == voidptr(symbol)
 			}
 		}
 	}

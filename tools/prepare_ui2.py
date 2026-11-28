@@ -4,6 +4,7 @@
 import argparse
 import os
 import re
+import json
 from pathlib import Path
 import shutil
 import sys
@@ -95,6 +96,33 @@ def prepare_gg_gradient(modules, vlib):
 
         document_image = Path(__file__).parent / 'ui2/gg_document_image.v'
         write_if_changed(canvas / 'vox_document_image.v', document_image.read_text())
+        document_clip = Path(__file__).parent / 'ui2/gg_document_clip.v'
+        write_if_changed(canvas / 'vox_document_clip.v', document_clip.read_text())
+        stage_document_surface(canvas)
+
+
+def stage_document_surface(canvas, windows=True):
+    tools = Path(__file__).parent
+    if not (canvas / 'gpu_context.v').is_file():
+        return
+    names = ['document_surface.v']
+    from prepare_gg_shadow import replace_once
+    patches = json.loads((tools / 'buildtools/gg_patches.json').read_text())
+    groups = ['prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient',
+              'prepare_gg_gl_msaa_resolve']
+    if windows:
+        groups.extend(('prepare_gg_gl_image', 'prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas'))
+        names.extend(('window_gpu_windows.c.v', 'd3d11_canvas_windows.v', 'd3d11_canvas_rrect_windows.v'))
+    for group in groups:
+        for operation in patches[group]:
+            path = canvas / operation['file']
+            source = path.read_text()
+            if operation['new'] not in source:
+                if path.is_symlink():
+                    path.unlink()
+                write_if_changed(path, replace_once(source, operation['old'], operation['new']))
+    for name in names:
+        write_if_changed(canvas / ('vox_' + name), (tools / 'ui2' / ('gg_' + name)).read_text())
 
 
 def prepare_ui2_source(source, target):
@@ -126,7 +154,7 @@ def main():
     prepare_gg_gradient(target, vlib)
     if sys.platform == 'darwin':
         from prepare_gg_metal import prepare_sokol_metal
-        prepare_sokol_metal(target, vlib)
+        prepare_sokol_metal(target, vlib, d3d11=True)
         macos_source = vlib / 'macos'
         if not (macos_source / 'objc_bridge.h').is_file():
             raise SystemExit('UI2 requires a current V checkout with vlib/macos.')

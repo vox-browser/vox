@@ -65,7 +65,7 @@ fn test_call_failures_preserve_argument_side_effects_and_callsite_traceback() {
 		assert false
 	} else {
 		object := thrown_value(err).as_object()
-		trace := object.error_data?.stack_string(false)
+		trace := object.slots.error_data?.stack_string(false)
 		assert trace.contains('hostThrow') && trace.contains('calls.js')
 	}
 	if _ := execute_call_source(mut vm, 'var x=0; 7(x=42);') {

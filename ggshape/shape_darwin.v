@@ -13,11 +13,16 @@ import platform
 // diagnostics (VOX_GG_DIAGNOSTICS=1) prints one line per descriptor offered
 // to gg.canvas with whether it was drawn, for coverage counts from captures.
 const diagnostics = os.getenv('VOX_GG_DIAGNOSTICS') == '1'
+const prepare_document_pipelines_early = os.getenv('VOX_EARLY_GG_METAL_PIPELINES') == '1'
+	&& os.getenv('VOX_PARALLEL_GG_METAL_PIPELINES') == '1'
 
 #include <pthread.h>
 #include "@DIR/../native/include/native_graphite_bridge.h"
 
 fn C.pthread_main_np() i32
+fn C.vox_gg_metal_begin_pipeline_batch() bool
+fn C.vox_gg_metal_close_pipeline_submissions()
+fn C.vox_gg_metal_end_pipeline_batch()
 
 @[typedef]
 pub struct C.VoxGraphiteShape {
@@ -47,30 +52,67 @@ pub mut:
 	has_contour_reference    i32
 	has_filter_clip          i32
 	filter_clip              [4]f32
+	has_intersect_clip       i32
+	intersect_clip           [4]f32
 }
 
 struct GpuState {
 mut:
 	ctx &canvas.GpuContext = unsafe { nil }
+	pipelines_pending bool
 }
 
 const gpu = &GpuState{}
 
-// context returns the shared gg.canvas context. The context, sokol.gfx's
-// pools (allocated through V's allocator) and every pipeline outlive the
-// paint scope of the first draw, so they are created in Vox's persistent
-// arena; draws themselves allocate in the caller's scope.
+// The shared context, Sokol pools and pipelines outlive the paint scope of
+// the first draw. Allocate them in the persistent arena.
+fn (mut state GpuState) initialize() ! {
+	persistent := platform.enter_persistent()
+	defer {
+		platform.leave_persistent(persistent)
+	}
+	canvas.prepare_document_shader_resources()
+	mut ctx := canvas.new_gpu_context()!
+	batched_shaders := canvas.submit_document_shader_libraries()
+	state.pipelines_pending = C.vox_gg_metal_begin_pipeline_batch()
+	ctx.precompile()
+	if batched_shaders {
+		canvas.finish_document_shader_libraries()
+	}
+	if state.pipelines_pending {
+		C.vox_gg_metal_close_pipeline_submissions()
+	}
+	state.ctx = ctx
+}
+
+// The browser calls these on the drawing thread while preparing a frame
+// with a visible GPU gradient. Jobs hold native pipeline descriptors only.
+pub fn document_pipelines_need_preparation() bool {
+	return prepare_document_pipelines_early && gpu.ctx == unsafe { nil }
+}
+
+pub fn submit_document_pipelines() bool {
+	if !document_pipelines_need_preparation() || C.pthread_main_np() == 0 { return false }
+	mut state := unsafe { gpu }
+	state.initialize() or { return false }
+	return state.pipelines_pending
+}
+
+@[inline]
+pub fn finish_document_pipelines() {
+	mut state := unsafe { gpu }
+	if state.pipelines_pending {
+		C.vox_gg_metal_end_pipeline_batch()
+		state.pipelines_pending = false
+	}
+}
+
 fn context() !&canvas.GpuContext {
 	mut state := unsafe { gpu }
 	if state.ctx == unsafe { nil } {
-		persistent := platform.enter_persistent()
-		defer {
-			platform.leave_persistent(persistent)
-		}
-		mut ctx := canvas.new_gpu_context()!
-		ctx.precompile()
-		state.ctx = ctx
+		state.initialize()!
 	}
+	finish_document_pipelines()
 	return state.ctx
 }
 
@@ -86,24 +128,6 @@ fn supported(shape &C.VoxGraphiteShape) bool {
 	}
 	return kind_ok && (shape.fill != 14 || (shape.thickness == 0 && shape.has_contour_reference != 0))
 		&& (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
-}
-
-// rounded_rect converts x, y, width, height and four radius pairs, like the
-// backend's SkRRect::setRectRadii(SkRect::MakeXYWH(...)).
-fn rounded_rect(v [12]f32) canvas.RRect {
-	return canvas.RRect.rect_radii(canvas.Rect.xywh(v[0], v[1], v[2], v[3]), [
-		canvas.Point{v[4], v[5]},
-		canvas.Point{v[6], v[7]},
-		canvas.Point{v[8], v[9]},
-		canvas.Point{v[10], v[11]},
-	]!)
-}
-
-fn shape_color(rgba [4]u8, has_float bool, float [4]f32) canvas.Color4f {
-	if has_float {
-		return canvas.Color4f{float[0], float[1], float[2], float[3]}
-	}
-	return canvas.Color4f.from_rgba8(rgba[0], rgba[1], rgba[2], rgba[3])
 }
 
 // draw implements vox_graphite_draw_shape_pixels() for supported descriptors:
@@ -128,15 +152,38 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		return 0
 	}
 	samples := if shape.force_msaa != 0 { 4 } else { 1 }
+	// Whole-leaf shapes repeat every frame of a page load over the same
+	// backdrop; like region draws, an identical earlier draw supplies the
+	// pixels it read back. Surfaces too large to store skip the key.
+	whole := SurfaceRegion{
+		surface_width:  int(width)
+		surface_height: int(height)
+		width:          int(width)
+		height:         int(height)
+	}
+	mut key := if int(width) * int(height) * 4 <= leaf_cache_max_entry_bytes {
+		new_leaf_cache_key(leaf_cache_whole_shape, i32(samples), pixels, pitch, whole,
+			has_background != 0)
+	} else {
+		LeafCacheKey{}
+	}
+	key.add_shape(shape)
+	if key.fetch(pixels, pitch, whole) { return 1 }
+	return draw_shape_on_surface(pixels, width, height, pitch, has_background, shape, samples,
+		key, whole)
+}
+
+fn draw_shape_on_surface(pixels &u8, width i32, height i32, pitch i32, has_background i32,
+	shape &C.VoxGraphiteShape, samples int, key LeafCacheKey, whole SurfaceRegion) i32 {
 	mut ctx := context() or { return 0 }
-	// A fresh surface per draw: it and its draw lists belong to the caller's
-	// scope. sokol.gfx releases its Metal objects after the commits that
-	// owned contexts make on every readback.
-	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or {
+	// Each draw has its own surface (with pooled render targets): it and its
+	// draw lists belong to the caller's scope. sokol.gfx releases its Metal
+	// objects after the commits that owned contexts make on every readback.
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), samples) or {
 		return 0
 	}
 	defer {
-		target.free()
+		target.release_document_leaf_surface()
 	}
 	if has_background != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }
@@ -148,11 +195,27 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 	}
 	draw_shape_descriptor(mut target, shape, int(width), int(height)) or { return 0 }
 	target.read_pixels(pixels, int(pitch)) or { return 0 }
+	key.store(pixels, pitch, whole)
 	return 1
 }
 
 fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape, width int, height int) ! {
+	draw_shape_descriptor_region(mut target, shape, SurfaceRegion{
+		surface_width: width
+		surface_height: height
+		width: width
+		height: height
+	})!
+}
+
+fn draw_shape_descriptor_region(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape,
+	region SurfaceRegion) ! {
+	width, height := region.surface_width, region.surface_height
 	target.set_matrix(canvas.Matrix.values(shape.matrix))
+	if shape.has_intersect_clip != 0 {
+		c := shape.intersect_clip
+		target.clip_rect(canvas.Rect.ltrb(c[0], c[1], c[2], c[3]), .intersect, true)!
+	}
 	// Rectangles clipped out without antialiasing, in local coordinates.
 	for i in 0 .. int(shape.clip_out_count) {
 		c := unsafe { &shape.clip_outs[4 * i] }
@@ -186,6 +249,10 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 		target.clip_rrect(rounded_rect(shape.contour_reference), .intersect, true)!
 		target.draw_drrect(rounded_rect(shape.rect), rounded_rect(shape.underlay_rect), paint)!
 	} else if shape.fill == 10 {
+		if rectangular_shadow_supported(shape) {
+			draw_rectangular_shadow(mut target, shape, region, paint)!
+			return
+		}
 		if rotated_filter_supported(shape) {
 			if shape.has_filter_clip != 0 && (shape.filter_clip[2] <= 0 || shape.filter_clip[3] <= 0
 				|| shape.filter_clip[0] >= width || shape.filter_clip[1] >= height) { return }
@@ -195,7 +262,17 @@ fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape
 			target.draw_linear_alpha_mask(layer.mask.pixels, layer.mask.width, layer.mask.height, paint)!
 			return
 		}
-		mask := rounded_shadow_mask(shape, width, height)!
+		// The nine-patch's samples are independent of the output bounds.
+		// General filters retain the full source and its downsampling grid.
+		if affine_shadow_supported(shape) {
+			if mask := rounded_shadow_nine_patch(shape, region) {
+				target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
+				target.set_matrix(canvas.Matrix.translate(f32(region.x), f32(region.y)))
+				target.draw_alpha_mask(mask, region.width, region.height, paint)!
+				return
+			}
+		}
+		mask := rounded_shadow_filter_mask(shape, width, height)!
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
 		target.set_matrix(canvas.Matrix.identity())
 		target.draw_alpha_mask(mask, width, height, paint)!
@@ -251,8 +328,8 @@ pub fn draw_shapes_with_glyphs(pixels &u8, width i32, height i32, pitch i32, bac
 		if shape.force_msaa != 0 { samples = 4 }
 	}
 	mut ctx := context() or { return 0 }
-	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or { return 0 }
-	defer { target.free() }
+	mut target := ctx.new_document_leaf_surface(int(width), int(height), samples) or { return 0 }
+	defer { target.release_document_leaf_surface() }
 	if backdrop != 0 {
 		target.write_pixels(pixels, int(pitch)) or { return 0 }
 	} else {
@@ -571,4 +648,50 @@ pub fn localize_rounded_shape(shape C.VoxGraphiteShape, origin_x f32, origin_y f
 	result.matrix[2] += m[0] * origin_x
 	result.matrix[5] += m[4] * origin_y
 	return result
+}
+
+// draw_tile_leaf is draw() on a transparent tile of `tile_width` x
+// `tile_height` holding only a leaf's backdrop: `rows` (`width` x `height`,
+// tightly packed) at (`x`, `y`) in the tile. It returns that rectangle of the
+// result in `rows`. Filtered shapes (box shadows) draw on their whole tile,
+// whose transfer is too large for the leaf raster cache; the leaf rectangle
+// is all the caller publishes, and with the descriptor, tile size, sample
+// count and backdrop rows it determines the result, so identical draws on
+// later frames copy it from the cache.
+pub fn draw_tile_leaf(mut rows []u8, x int, y int, width int, height int, tile_width int,
+	tile_height int, backdrop i32, shape &C.VoxGraphiteShape) i32 {
+	if shape == unsafe { nil } || width <= 0 || height <= 0 || x < 0 || y < 0
+		|| x + width > tile_width || y + height > tile_height || rows.len != width * height * 4 {
+		return 0
+	}
+	samples := if shape.force_msaa != 0 { 4 } else { 1 }
+	leaf := SurfaceRegion{
+		surface_width:  tile_width
+		surface_height: tile_height
+		x:              x
+		y:              y
+		width:          width
+		height:         height
+	}
+	mut key := new_leaf_cache_key(leaf_cache_tile_shape, i32(samples), rows.data, i32(width * 4),
+		leaf, backdrop != 0)
+	key.add_shape(shape)
+	if key.fetch(rows.data, i32(width * 4), leaf) { return 1 }
+	mut tile := []u8{len: tile_width * tile_height * 4}
+	for row in 0 .. height {
+		unsafe {
+			vmemcpy(&tile[((y + row) * tile_width + x) * 4], &rows[row * width * 4], width * 4)
+		}
+	}
+	if draw_shape_on_surface(tile.data, i32(tile_width), i32(tile_height), i32(tile_width * 4),
+		backdrop, shape, samples, LeafCacheKey{}, SurfaceRegion{}) == 0 {
+		return 0
+	}
+	for row in 0 .. height {
+		unsafe {
+			vmemcpy(&rows[row * width * 4], &tile[((y + row) * tile_width + x) * 4], width * 4)
+		}
+	}
+	key.store(rows.data, i32(width * 4), leaf)
+	return 1
 }

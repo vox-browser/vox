@@ -20,5 +20,9 @@ trap 'rm -rf "$tool_output_dir"' EXIT
 # A browser compiler's manifest destination must not receive the bootstrap
 # tool's own parsed sources. The manifest driver sets these explicitly for
 # the compiler it supervises; other tools must leave sealed receipts alone.
-env -u V_MACOS_V3_SOURCE_MANIFEST -u V_MACOS_V3_C_ERROR_DIR \
-    "$v_tool_compiler" -b c -memory-limit 10G -o "$tool_output_dir/$tool" run "$repo_dir/tools/$tool.vsh" "$@"
+unset V_MACOS_V3_SOURCE_MANIFEST V_MACOS_V3_C_ERROR_DIR
+tool_executable="$tool_output_dir/$tool"
+"$v_tool_compiler" -skip-running -b c -memory-limit 10G -o "$tool_executable" "$repo_dir/tools/$tool.vsh"
+# These tools can start another compiler. Release the bootstrap C before handing off.
+rm -f "${tool_executable}.c"
+"$tool_executable" "$@"

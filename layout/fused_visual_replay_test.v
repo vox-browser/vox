@@ -37,6 +37,59 @@ fn fused_replay_assert_matches_reference(actual []PaintCommand, expected []Paint
 	}
 }
 
+fn test_fused_visual_replay_projects_first_leaves_before_later_layer_slots() {
+	mut tree := painting.new_accumulated_visual_context_tree()
+	clip := tree.append(painting.ClipVisualData{rect: painting.IntRect{2, 3, 400, 500}}, 0)
+	effect := tree.append(painting.EffectsVisualData{opacity: 0.5}, 0)
+	first := BlockBox{accumulated_visual_context_index: clip}
+	layer := BlockBox{accumulated_visual_context_index: effect}
+	last := BlockBox{fixed_to_viewport: true}
+	steps := [
+		CompatibilityPaintStep{box: &first, phase: .foreground, entry_index: 0},
+		CompatibilityPaintStep{box: &layer, phase: .foreground, entry_index: 1},
+		CompatibilityPaintStep{box: &last, phase: .foreground, entry_index: 2},
+	]
+	leaves := display_list_replay_prefix_leaves + 32
+	mut buckets := [][]PaintCommand{len: steps.len * compatibility_paint_phase_count}
+	foreground := int(CompatibilityPaintPhase.foreground)
+	buckets[foreground] = []PaintCommand{len: leaves, init: PaintCommand{
+		kind: 'fill_rect'
+		x: f64(index)
+		y: 5
+		width: 10
+		height: 12
+		color: '#804020'
+	}}
+	buckets[compatibility_paint_phase_count + foreground] = [PaintCommand{
+		kind: 'fill_rect'
+		x: 5
+		y: 15
+		width: 18
+		height: 22
+		color: '#204080'
+	}]
+	buckets[2 * compatibility_paint_phase_count + foreground] = []PaintCommand{len: leaves, init: PaintCommand{
+		kind: 'fill_rect'
+		x: f64(index)
+		y: 32
+		width: 10
+		height: 12
+		color: '#408020'
+	}}
+	count := 2 * leaves + 1
+	snapshot := painting.ScrollStateSnapshot{}
+	replayed, layers := replay_cached_paint_commands_with_visual_context(steps, buckets, count,
+		tree, snapshot, false)
+	expected := lower_visual_replay_steps(replayed, layers)
+	actual := record_cached_paint_commands_with_visual_context(steps, buckets, count, tree,
+		snapshot, false)
+	fused_replay_assert_matches_reference(actual, expected)
+	assert actual[leaves].kind == 'begin_css_effect_layer'
+	assert actual[leaves + 2].kind == 'end_css_effect_layer'
+	assert actual.last().fixed_to_viewport
+	assert buckets[foreground].all(!it.has_clip)
+}
+
 fn test_fused_visual_replay_matches_two_stage_layers_clips_backfaces_and_live_offsets() {
 	assert sizeof(CompatibilityCachedVisualReplayStep) < sizeof(PaintCommand) / 8
 	mut tree := painting.new_accumulated_visual_context_tree()

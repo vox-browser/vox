@@ -234,7 +234,8 @@ pub struct PipelineBlitter {
 	tint      [4]f32
 	lowp_tint [4]u32
 mut:
-	pixels []u8
+	first_row int
+	pixels    []u8
 }
 
 // new_pipeline_blitter is SkRasterPipelineBlitter::Create() for an
@@ -364,7 +365,7 @@ fn new_image_blitter(mut pixels []u8, row_bytes int, shader ImageShader, alpha f
 
 @[inline]
 fn (b &PipelineBlitter) offset(x int, y int) int {
-	return y * b.row_bytes + x * 4
+	return (y - b.first_row) * b.row_bytes + x * 4
 }
 
 // Coverage stages: none for blitRect(), the float coverage of blitAntiH()
@@ -378,11 +379,11 @@ enum CoverageKind {
 
 // blit runs the pipeline over count pixels from (x, y).
 @[direct_array_access]
-fn (mut b PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
+fn (b &PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
 	offset := b.offset(x, y)
 	if kind == .none && b.lowp && b.shaded && !b.imaged && !b.scaled && !b.tinted
-		&& b.mode == .src_over {
-		b.blit_lowp_shaded_over(x, y, count, offset)
+		&& (b.mode == .src || b.mode == .src_over) {
+		b.blit_lowp_gradient_span(x, y, count, offset, b.mode == .src)
 		return
 	}
 	for i in 0 .. count {
@@ -399,18 +400,67 @@ fn (mut b PipelineBlitter) blit_h(x int, y int, width int) {
 	b.blit_rect(x, y, width, 1)
 }
 
-@[direct_array_access]
 fn (mut b PipelineBlitter) blit_rect(x int, y int, width int, height int) {
+	if !b.memset && width > 0 && height > 1 && height <= max_i32
+		&& i64(width) * height >= 2 * scan_pixels_per_worker
+		&& b.rect_rows_independent(x, y, width, height) {
+		scan := PipelineRectScan{
+			blitter: b
+			x:       x
+			y:       y
+			width:   width
+		}
+		run_raster_scans(&scan, height, width, scan_pipeline_rect)
+		return
+	}
+	b.blit_rect_rows(x, y, width, height)
+}
+
+fn (b &PipelineBlitter) rect_rows_independent(x int, y int, width int, height int) bool {
+	if width > b.row_bytes / 4 {
+		return false
+	}
+	offset := b.offset(x, y)
+	span := raster_row_span(b.pixels.len, offset, b.row_bytes, width * 4, height) or { return false }
+	if !b.imaged {
+		return true
+	}
+	// Sampling can reach any part of either mipmap level. Keep reads ordered
+	// when an image level shares storage with the destination rectangle.
+	target := u64(uint(b.pixels.data)) + u64(offset)
+	if raster_spans_overlap(u64(uint(b.image.pixels.data)), b.image.pixels.len, target, span) {
+		return false
+	}
+	lower := b.image.lower
+	return lower == unsafe { nil }
+		|| !raster_spans_overlap(u64(uint(lower.pixels.data)), lower.pixels.len, target, span)
+}
+
+struct PipelineRectScan {
+	blitter &PipelineBlitter
+	x       int
+	y       int
+	width   int
+}
+
+fn scan_pipeline_rect(context voidptr, first i32, end i32) {
+	scan := unsafe { &PipelineRectScan(context) }
+	scan.blitter.blit_rect_rows(scan.x, scan.y + int(first), scan.width, int(end - first))
+}
+
+@[direct_array_access]
+fn (b &PipelineBlitter) blit_rect_rows(x int, y int, width int, height int) {
+	mut pixels := unsafe { b.pixels }
 	for row in 0 .. height {
 		offset := b.offset(x, y + row)
 		if b.memset {
 			color := b.memset_color
 			for i in 0 .. width {
 				o := offset + i * 4
-				b.pixels[o] = u8(color)
-				b.pixels[o + 1] = u8(color >> 8)
-				b.pixels[o + 2] = u8(color >> 16)
-				b.pixels[o + 3] = u8(color >> 24)
+				pixels[o] = u8(color)
+				pixels[o + 1] = u8(color >> 8)
+				pixels[o + 2] = u8(color >> 16)
+				pixels[o + 3] = u8(color >> 24)
 			}
 		} else {
 			b.blit(x, y + row, width, .none, 0)
@@ -462,10 +512,56 @@ fn (mut b PipelineBlitter) blit_anti_rect(x int, y int, width int, height int, l
 }
 
 fn (mut b PipelineBlitter) blit_mask(mask &Mask, clip IRect) {
-	for row in 0 .. clip.height() {
+	width, height := clip.width(), clip.height()
+	// An image shader may sample storage shared with the destination.
+	if !b.imaged && width > 0 && height > 1 && height <= max_i32
+		&& i64(width) * height >= 2 * scan_pixels_per_worker {
+		if offsets := disjoint_mask_row_offsets(mask, clip, b.pixels, b.row_bytes,
+			b.offset(clip.left, clip.top)) {
+			// run_raster_scans joins before these borrows can go out of scope.
+			scan := PipelineMaskScan{
+				blitter:      b
+				coverage:     mask.image
+				source_pitch: mask.row_bytes
+				clip:         clip
+				offsets:      offsets
+			}
+			run_raster_scans(&scan, height, width, scan_pipeline_mask)
+			return
+		}
+	}
+	for row in 0 .. height {
 		src := mask.index(clip.left, clip.top + row)
-		for i in 0 .. clip.width() {
+		for i in 0 .. width {
 			b.blit(clip.left + i, clip.top + row, 1, .mask, mask.image[src + i])
+		}
+	}
+}
+
+struct PipelineMaskScan {
+	blitter      &PipelineBlitter
+	coverage     []u8
+	source_pitch int
+	clip         IRect
+	offsets      MaskRowOffsets
+}
+
+@[direct_array_access]
+fn scan_pipeline_mask(context voidptr, first i32, end i32) {
+	scan := unsafe { &PipelineMaskScan(context) }
+	blitter := scan.blitter
+	for row in int(first) .. int(end) {
+		src := scan.offsets.source + row * scan.source_pitch
+		dst := scan.offsets.target + row * blitter.row_bytes
+		y := scan.clip.top + row
+		for i in 0 .. scan.clip.width() {
+			x := scan.clip.left + i
+			coverage := scan.coverage[src + i]
+			if blitter.lowp {
+				blitter.blit_lowp(x, y, dst + i * 4, .mask, coverage)
+			} else {
+				blitter.blit_highp(x, y, dst + i * 4, .mask, coverage)
+			}
 		}
 	}
 }
@@ -598,23 +694,37 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 	return mode in [.darken, .lighten, .difference, .exclusion, .hard_light, .overlay]
 }
 
-// blit_lowp() for a full-coverage source-over gradient span, with the
-// stage selection made once for the span: shade, clamp_01, srcover and
-// store_8888.
+// Select the blend stage once for a full-coverage gradient span. Src writes
+// the clamped source lanes directly, which also covers opaque source-over
+// gradients that new_gradient_blitter() promotes to Src.
 @[direct_array_access]
-fn (mut b PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset int) {
-	shader := b.shader
-	if shader.geometry == .linear {
+fn (b &PipelineBlitter) blit_lowp_gradient_span(x int, y int, count int, offset int, replace bool) {
+	shader := &b.shader
+	if shader.geometry == .linear && (!replace || count >= 8) {
 		mut colors := [256]u32{}
 		mut done := 0
 		for done < count {
 			n := if count - done < 64 { count - done } else { 64 }
 			shader.shade_lowp_linear_span(x + done, y, n, mut colors)
-			for i in 0 .. n {
-				b.blend_lowp_over(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
-					colors[i * 4 + 2], colors[i * 4 + 3])
+			if replace {
+				for i in 0 .. n {
+					b.store_lowp_source(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
+						colors[i * 4 + 2], colors[i * 4 + 3])
+				}
+			} else {
+				for i in 0 .. n {
+					b.blend_lowp_over(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
+						colors[i * 4 + 2], colors[i * 4 + 3])
+				}
 			}
 			done += n
+		}
+		return
+	}
+	if replace {
+		for i in 0 .. count {
+			src := shader.shade_lowp(x + i, y)
+			b.store_lowp_source(offset + i * 4, src[0], src[1], src[2], src[3])
 		}
 		return
 	}
@@ -624,9 +734,18 @@ fn (mut b PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset
 	}
 }
 
+@[direct_array_access; inline]
+fn (b &PipelineBlitter) store_lowp_source(offset int, r u32, g u32, blue u32, a u32) {
+	mut pixels := unsafe { b.pixels }
+	pixels[offset] = u8(lowp_min(r, 255))
+	pixels[offset + 1] = u8(lowp_min(g, 255))
+	pixels[offset + 2] = u8(lowp_min(blue, 255))
+	pixels[offset + 3] = u8(lowp_min(a, 255))
+}
+
 // clamp_01, srcover and store_8888 of one lowp color at offset o.
 @[direct_array_access; inline]
-fn (mut b PipelineBlitter) blend_lowp_over(o int, sr u32, sg u32, sb u32, sa u32) {
+fn (b &PipelineBlitter) blend_lowp_over(o int, sr u32, sg u32, sb u32, sa u32) {
 	r := lowp_min(sr, 255)
 	g := lowp_min(sg, 255)
 	bl := lowp_min(sb, 255)
@@ -636,14 +755,15 @@ fn (mut b PipelineBlitter) blend_lowp_over(o int, sr u32, sg u32, sb u32, sa u32
 	ng := u16w(g + lowp_div255(u16w(u32(b.pixels[o + 1]) * inv_a)))
 	nb := u16w(bl + lowp_div255(u16w(u32(b.pixels[o + 2]) * inv_a)))
 	na := u16w(a + lowp_div255(u16w(u32(b.pixels[o + 3]) * inv_a)))
-	b.pixels[o] = u8(lowp_min(nr, 255))
-	b.pixels[o + 1] = u8(lowp_min(ng, 255))
-	b.pixels[o + 2] = u8(lowp_min(nb, 255))
-	b.pixels[o + 3] = u8(lowp_min(na, 255))
+	mut pixels := unsafe { b.pixels }
+	pixels[o] = u8(lowp_min(nr, 255))
+	pixels[o + 1] = u8(lowp_min(ng, 255))
+	pixels[o + 2] = u8(lowp_min(nb, 255))
+	pixels[o + 3] = u8(lowp_min(na, 255))
 }
 
 @[direct_array_access]
-fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, coverage u8) {
+fn (b &PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01: min(v, 255).
 	mut src := if b.imaged {
 		b.image.shade_lowp(px, py)
@@ -707,10 +827,11 @@ fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, c
 		bl = lowp_lerp(db, bl, c)
 		a = lowp_lerp(da, a, c)
 	}
-	b.pixels[o] = u8(lowp_min(r, 255))
-	b.pixels[o + 1] = u8(lowp_min(g, 255))
-	b.pixels[o + 2] = u8(lowp_min(bl, 255))
-	b.pixels[o + 3] = u8(lowp_min(a, 255))
+	mut pixels := unsafe { b.pixels }
+	pixels[o] = u8(lowp_min(r, 255))
+	pixels[o + 1] = u8(lowp_min(g, 255))
+	pixels[o + 2] = u8(lowp_min(bl, 255))
+	pixels[o + 3] = u8(lowp_min(a, 255))
 }
 
 // Highp: NEON float lanes.
@@ -1024,7 +1145,7 @@ fn sksl_saturate(x f32) f32 {
 	return neon_min(neon_max(x, 0), 1)
 }
 
-fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, coverage u8) {
+fn (b &PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01.
 	mut src := if b.imaged {
 		b.image.shade_highp(px, py)
@@ -1151,7 +1272,8 @@ fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, 
 			out[i] = mad(out[i] - dst[i], t, dst[i])
 		}
 	}
+	mut pixels := unsafe { b.pixels }
 	for i in 0 .. 4 {
-		b.pixels[o + i] = highp_to_byte(out[i])
+		pixels[o + i] = highp_to_byte(out[i])
 	}
 }

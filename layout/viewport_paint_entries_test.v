@@ -170,9 +170,17 @@ fn test_viewport_entry_blocks_select_exactly_the_per_entry_entries() {
 		assert result.record_scratch.viewport_ink_cache.blocks_valid
 		cullable := result.record_scratch.viewport_ink_cache.blocks.filter(it.cullable).len
 		assert cullable > 0
+		viewport := document.viewport_rect()
+		mut worker_mask := []bool{len: blocks.len, init: true}
+		mut memo := new_compatibility_visual_context_memo(&result.visual_context_tree,
+			result.scroll_state_snapshot)
+		if mark_viewport_invisible_blocks_parallel(result.paint_order,
+			&result.record_scratch.viewport_ink_cache, mut memo, mut worker_mask, viewport.width,
+			viewport.height) {
+			assert worker_mask == blocks, 'parallel block selection differs at y=${y}'
+		}
 		result.record_scratch.viewport_ink_cache.blocks_valid = false
 		mut per_entry := []bool{len: result.paint_order.len, init: true}
-		viewport := document.viewport_rect()
 		mark_viewport_invisible_entries(result, mut per_entry, viewport.width, viewport.height)
 		assert blocks == per_entry, 'y=${y}'
 		culled_by_blocks += blocks.filter(!it).len
@@ -206,9 +214,10 @@ fn test_masked_recording_matches_filtered_steps_across_scene_reuse() {
 			result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
 			result.scroll_state_snapshot, false)
 		mut scratch := CompatibilityRecordScratch{}
+		mut geometry := RecordedPaintGeometry{}
 		actual := record_cached_paint_commands_with_visual_context_into(result.paint_steps,
 			selected, result.paint_phase_commands, result.paint_phase_command_count,
-			&result.visual_context_tree, result.scroll_state_snapshot, false, mut scratch)
+			&result.visual_context_tree, result.scroll_state_snapshot, false, mut scratch, mut geometry)
 		assert actual.len == expected.len
 		for index in 0 .. actual.len {
 			a, b := &actual[index], &expected[index]
@@ -227,6 +236,35 @@ fn test_masked_recording_matches_filtered_steps_across_scene_reuse() {
 		}
 		assert initial_commands.map('${it.kind}:${it.color}:${it.text}:${it.transform}') == initial_dump
 	}
+}
+
+fn test_cached_replay_leaf_projection_preserves_layer_slots_and_source_commands() {
+	box := &BlockBox{fixed_to_viewport: true}
+	source := &PaintCommand{kind: 'draw_text', text: 'Retained text', opacity: 0.6}
+	clip := LayoutRect{12, 14, 100, 80}
+	clip_list := &PaintClipList{items: [PaintClip{rect: clip}]}
+	context := CompatibilityFlattenedVisualContext{
+		transform: [f64(1), 0, 0, 1, -5, 10]!
+		group_opacity: 0.75
+		has_clip: true
+		clip: clip
+		clip_list: clip_list
+	}
+	steps := [
+		CompatibilityCachedVisualReplayStep{command: source, box: box, opacity_scale: 0.5, output_index: 2},
+		CompatibilityCachedVisualReplayStep{command: source, box: box, output_index: 0},
+		CompatibilityCachedVisualReplayStep{command: source, box: box},
+	]
+	mut commands := [PaintCommand{}, PaintCommand{kind: 'begin_css_effect_layer'}, PaintCommand{}]
+	materialize_cached_visual_leaves(steps, [context], mut commands, 2)
+	assert commands[0].text == source.text && commands[0].opacity == 0.6
+	assert commands[1].kind == 'begin_css_effect_layer'
+	assert commands[2].text == source.text && commands[2].opacity == 0.3
+	assert commands[2].transform == context.transform && commands[2].fixed_to_viewport
+	assert commands[2].group_opacity == 0.75
+	assert commands[2].has_clip && voidptr(commands[2].clip_list) == voidptr(clip_list)
+	assert [commands[2].clip_x, commands[2].clip_y, commands[2].clip_width, commands[2].clip_height] == [clip.x, clip.y, clip.width, clip.height]
+	assert source.opacity == 0.6 && !source.has_clip
 }
 
 fn test_viewport_scene_storage_tracks_visible_output_instead_of_document_steps() {

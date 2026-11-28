@@ -6,6 +6,7 @@ module main
 import css
 import dom
 import html
+import platform
 
 fn stylesheet_type_completion_document() !(&dom.Document, &dom.Element) {
 	mut document := dom.Document.create(dom.URL{ value: 'https://stylesheet-type.test/' })
@@ -92,4 +93,65 @@ fn test_unsupported_stylesheet_type_releases_blockers_before_native_completion_f
 		assert !document.document_script_blocking_style_sheet_set().any(voidptr(it) == voidptr(link))
 		assert !document.is_render_blocking_element(link)
 	}
+}
+
+fn test_script_stylesheet_completion_shares_its_owned_response_with_the_link() {
+	for from_browser_cache in [false, true] {
+		mut document, link := stylesheet_type_completion_document()!
+		document.enable_native_storage()
+		defer {
+			document.finalize()
+			document.release_native_storage()
+		}
+		address := 'https://stylesheet-type.test/pending.css'
+		expected := 'p { color: rebeccapurple }'
+		mut app := BrowserApp{
+			document: document
+			script_stylesheet_requests: {address: true}
+		}
+		input := platform.begin_thread_scratch('stylesheet response input test')
+		defer { input.finish() }
+		body := expected.clone()
+		input.leave()
+		response := PreloadedResource{
+			url:          address
+			body:         body
+			source_url:   document.url.serialize()
+			final_url:    address
+			request_type: 'stylesheet'
+		}
+		supplied := if from_browser_cache { persistent_preloaded_resource(response) } else { response }
+		assert app.install_script_inserted_stylesheet(supplied)
+		input.finish()
+
+		retained := app.script_stylesheet_responses[address].body
+		model := html.html_link_element_model_for_dom_element(unsafe { &dom.HTMLLinkElement(link) })
+		loaded := model.sheet()?
+		assert loaded == expected
+		assert voidptr(loaded.str) == voidptr(retained.str)
+		assert voidptr(retained.str) != voidptr(body.str)
+		if from_browser_cache {
+			assert voidptr(loaded.str) == voidptr(supplied.body.str)
+		}
+		sheet := css.style_sheet_for_owner_node(document, link)?
+		assert sheet.href()? == address
+		assert sheet.base_url_for_bindings()? == address
+		assert sheet.css_rules().length() == 1
+		assert sheet.css_rules().rules[0].css_text().starts_with('p {')
+		assert model.event_count('load') == 1
+	}
+}
+
+fn test_stylesheet_completion_keeps_mutable_byte_input_independent() {
+	expected := 'p { color: blue }\x00/* trailing response bytes */'
+	mut body := expected.bytes()
+	mut model := html.HTMLLinkElementModel.create(dom.URL{value: 'https://stylesheet-type.test/'})
+	model.set_rel('stylesheet')
+	model.set_href('/pending.css')
+	model.process_stylesheet_resource(true, html.LinkResourceResponse{
+		content_type: 'text/css'
+		body: body
+	})
+	body[0] = `a`
+	assert model.sheet()? == expected
 }

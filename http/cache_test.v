@@ -79,3 +79,19 @@ fn test_vary_keys_reject_unsupported_and_excessive_selectors() {
 		assert !is_cacheable_response(200, response)
 	}
 }
+
+fn test_must_revalidate_takes_precedence_over_stale_while_revalidate() {
+	request := cache_headers([])
+	response := cache_headers([
+		Header{ name: 'Cache-Control', value: 'max-age=1, stale-while-revalidate=60, must-revalidate' },
+		Header{ name: 'ETag', value: '"revision"' },
+	])
+	assert cache_lifetime_status(request, response, 1_000, 500) == .fresh
+	assert cache_lifetime_status(request, response, 1_000, 2_000) == .must_revalidate
+
+	may_serve_stale := cache_headers([
+		Header{ name: 'Cache-Control', value: 'max-age=1, stale-while-revalidate=60' },
+		Header{ name: 'ETag', value: '"revision"' },
+	])
+	assert cache_lifetime_status(request, may_serve_stale, 1_000, 2_000) == .stale_while_revalidate
+}

@@ -56,5 +56,41 @@ fn test_mounted_status_bar_keeps_build_time_during_memory_refresh() {
 		if capture := os.getenv_opt('VOX_STATUS_BAR_CAPTURE') {
 			assert C.ui2_test_tabs_capture(ui2.embedded_browser_control('status-bar'), capture.str) == 1
 		}
+		active := status_bar(bar.frame, 'https://example.test/', 'RAM: 1.5 GB', javascript_compilation: 50)
+		ui2.update_embedded_browser([active])
+		assert ui2.embedded_browser_control('js-compilation-progress') != unsafe { nil }
+		ui2.update_embedded_browser([bar])
+		assert ui2.embedded_browser_control('js-compilation-progress') == unsafe { nil }
 	}
+}
+
+fn test_status_bar_shows_compiler_batches_and_restores_the_footer_afterward() {
+	frame := ui2.rect(0, 576, 800, 24)
+	footer := 'https://example.test/'
+	memory := 'RAM: 500 MB'
+	bar := status_bar(frame, footer, memory, javascript_compilation: 25)
+	assert bar.children.len == 5
+	assert bar.children[0].text == footer
+	assert bar.children[2].text == memory
+	progress := bar.children[3]
+	label := bar.children[4]
+	assert progress.id == 'js-compilation-progress'
+	assert progress.frame == ui2.rect(0, 0, 800, 3)
+	assert progress.children[0].children[0].frame.width == 200
+	assert progress.accessibility_role == 'progressbar'
+	assert progress.accessibility_label == 'Compiling JavaScript'
+	assert progress.accessibility_value == '25%'
+	assert label.text == 'Compiling JavaScript'
+	assert bar.children[0].frame.x + bar.children[0].frame.width == label.frame.x
+	assert label.frame.x + label.frame.width < bar.children[1].frame.x
+
+	narrow := status_bar(ui2.rect(0, 576, 320, 24), footer, memory, javascript_compilation: 0)
+	assert narrow.children.len == 4
+	assert narrow.children[3].accessibility_value == ''
+	assert narrow.children[3].children[0].children[0].frame.width == 320.0 * 0.35
+	assert narrow.children[0].frame.width == 16
+
+	finished := status_bar(frame, footer, memory)
+	assert finished.children.len == 3
+	assert finished.children[0].frame.width == 496
 }

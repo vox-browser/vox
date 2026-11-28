@@ -23,6 +23,13 @@ MACHO_MAGICS = {0xfeedface, 0xfeedfacf, 0xcefaedfe, 0xcffaedfe, 0xcafebabe, 0xbe
 LOAD_COMMAND = re.compile(r'^\s*cmd (LC_\w+)\n\s*cmdsize \d+\n\s*(?:name|path) (.*?) \(offset \d+\)$', re.M)
 # String literals passed to dlopen. Load commands also match; they are deduplicated.
 RUNTIME_NAME = re.compile(rb'@rpath/[A-Za-z0-9_.+-]+\.dylib')
+FORMATTED_RUNTIME_NAME = re.compile(rb'%s(lib(?:avformat|swscale)\.\d+\.dylib)\x00')
+
+
+def runtime_libraries(data):
+    names = {match.decode() for match in RUNTIME_NAME.findall(data)}
+    names.update('@rpath/' + match.decode() for match in FORMATTED_RUNTIME_NAME.findall(data))
+    return names
 
 
 def is_macho(path):
@@ -79,7 +86,7 @@ def executable_paths(images, executable_directory):
             for path in search_paths(image, location, executable_directory)]
 
 
-def bundle_libraries(app):
+def bundle_libraries(app, library_directory=None):
     """Copy external libraries into Contents/Frameworks; return the Mach-O files changed."""
     contents = app / 'Contents'
     executable_directory = contents / 'MacOS'
@@ -100,12 +107,18 @@ def bundle_libraries(app):
         references = list(image.dependencies)
         if location in originals:
             listed = {name for name, _ in references}
-            runtime = {match.decode() for match in RUNTIME_NAME.findall(location.read_bytes())}
-            references += [(name, None) for name in sorted(runtime - listed - {image.identity})]
+            runtime = runtime_libraries(location.read_bytes())
+            references += [(name, True if re.fullmatch(r'@rpath/lib(?:avformat|swscale)\.\d+\.dylib', name)
+                            else None) for name in sorted(runtime - listed - {image.identity})]
         for name, required in references:
             if is_system(name):
                 continue
             source = locate(name, paths, origin, executable_directory)
+            if library_directory is not None and (source is None or not source.resolve().is_relative_to(inside)):
+                candidate = Path(library_directory) / Path(name).name
+                if source is not None and not candidate.is_file():
+                    raise RuntimeError('The release dependency directory is missing ' + Path(name).name)
+                source = candidate if candidate.is_file() else None
             if source is None:
                 if required:
                     raise RuntimeError('%s links %s, which is not on this machine'

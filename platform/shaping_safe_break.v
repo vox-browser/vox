@@ -61,6 +61,17 @@ fn cached_shape_safe_latin_punctuation_width(shape CachedShape, start int, lengt
 	return none
 }
 
+fn (mut cache ShapingCache) lookup_safe_break_shape(font_key string, text string, font &Font,
+	params ShapeParams) ?CachedShape {
+	if shape := cache.lookup(font_key, text, params) { return shape }
+	job := take_ascii_shape_job(font_key, text, params)?
+	scratch := begin_thread_scratch('prepared safe-break text shaping')
+	defer { scratch.finish() }
+	cache.publish_ascii_shape_job(job, font_key, text, font, params)
+	// SafeBreakWidthCache retains a view from the cache's arena.
+	return cache.lookup(font_key, text, params)
+}
+
 pub fn shaped_text_safe_break_width(letter_spacing f32, word_spacing f32, text string,
 	start int, length int, font &Font) ?f32 {
 	if font.font_rendering_policy != .chromium || start < 0 || length <= 0 {
@@ -71,7 +82,7 @@ pub fn shaped_text_safe_break_width(letter_spacing f32, word_spacing f32, text s
 	font_key := shaping_cache_font_key(font)
 	params := ShapeParams.new(.ltr, letter_spacing, word_spacing)
 	mut cache := shared_shaping_cache()
-	shape := cache.lookup(font_key, text, params) or { return none }
+	shape := cache.lookup_safe_break_shape(font_key, text, font, params) or { return none }
 	if !is_ascii { return cached_shape_safe_latin_punctuation_width(shape, start, length) }
 	return cached_shape_safe_break_width(shape, start, length, text.len)
 }
@@ -126,7 +137,7 @@ pub fn shaped_text_safe_break_width_cached(mut local SafeBreakWidthCache,
 	mut cache := shared_shaping_cache()
 	if local.generation != platform_safe_break_cache_generation || local.font_key != font_key
 		|| !local.params.matches(params) || local.text != text {
-		shape := cache.lookup(font_key, text, params) or { return none }
+		shape := cache.lookup_safe_break_shape(font_key, text, font, params) or { return none }
 		// Text may originate in a scratch scope. Retain independent key bytes.
 		persistent := enter_persistent()
 		if local.text != text { local.text = text.clone() }

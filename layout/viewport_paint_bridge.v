@@ -8,6 +8,7 @@ import os
 import page
 import painting
 import platform
+import processmetrics
 import strings
 
 // Same-binary control for the former scene-local step selection allocation.
@@ -85,6 +86,13 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	previous_storage := result.paint_tree_storage
 	defer { release_paint_tree(voidptr(previous_storage)) }
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	finish_document_paint_tree_refresh(document, mut result, had_valid_hit_test_display_list)
+}
+
+// Everything that reads the renderer snapshot's box identities is rebuilt
+// after its boxes were replaced, completely or in changed subtrees.
+fn finish_document_paint_tree_refresh(document &dom.Document, mut result DocumentLayoutResult,
+	had_valid_hit_test_display_list bool) {
 	result.has_renderer_snapshot = true
 	result.invalidate_boxes_by_layout_cache()
 	result.drop_display_list_scene()
@@ -118,6 +126,10 @@ fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	viewport := result.document.viewport_rect()
 	if paint_refresh_diagnostics {
 		eprintln('VOX_PAINT_REFRESH full handles=${result.paint_style_update_handles.len()} compositor=${result.paint_style_update_compositor_handles.len()}')
+	}
+	if refresh_changed_paint_subtrees(mut result) {
+		viewport_refresh_scroll_state(voidptr(&result))
+		return true
 	}
 	refresh_document_paint_tree(result.document, mut result, viewport.width, viewport.height)
 	viewport_refresh_scroll_state(voidptr(&result))
@@ -365,23 +377,43 @@ fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &paintin
 }
 
 fn (mut result DocumentLayoutResult) ensure_boxes_by_layout_cache() {
-	if result.boxes_by_layout_cache_valid { return }
-	result.boxes_by_layout_cache = map[u64]&BlockBox{}
-	result.visual_boxes_by_layout_cache = map[u64]&BlockBox{}
-	collect_compatibility_box_indices(mut result.paint_tree, mut result.boxes_by_layout_cache,
-		mut result.visual_boxes_by_layout_cache)
+	if result.box_index != unsafe { nil } { return }
+	// The index refers to the current projection and has its own rebuild
+	// boundary. The document can replace it many times during its lifetime.
+	if result.box_index_arena == unsafe { nil } && result.paint_tree_storage != unsafe { nil } {
+		persistent := platform.enter_persistent()
+		result.box_index_arena = platform.new_arena('paint box indices')
+		platform.leave_persistent(persistent)
+	}
+	mut arena := result.box_index_arena
+	mut entry := platform.ArenaEntry{}
+	if arena != unsafe { nil } { entry = arena.enter() }
+	defer { if arena != unsafe { nil } { arena.leave(entry) } }
+	mut index := &PaintBoxIndex{}
+	collect_compatibility_box_indices(mut result.paint_tree, mut index.last, mut index.first)
 	// The renderer transport omits the typed Viewport itself and puts its
 	// mandatory scroll frame on the root box. Keep its real layout identity in
 	// the lookup too: absolute descendants can have that Viewport, rather than
 	// the document element, as their containing block.
-	result.boxes_by_layout_cache[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
-	result.boxes_by_layout_cache_valid = true
+	index.last[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
+	result.box_index = index
 }
 
 fn (mut result DocumentLayoutResult) invalidate_boxes_by_layout_cache() {
-	result.boxes_by_layout_cache_valid = false
-	result.boxes_by_layout_cache = map[u64]&BlockBox{}
-	result.visual_boxes_by_layout_cache = map[u64]&BlockBox{}
+	if result.box_index == unsafe { nil } { return }
+	result.box_index = unsafe { nil }
+	if result.box_index_arena != unsafe { nil } {
+		result.box_index_arena.reset()
+	}
+}
+
+fn (mut result DocumentLayoutResult) take_box_index_arena() &platform.Arena {
+	arena := result.box_index_arena
+	if arena != unsafe { nil } {
+		result.box_index_arena = unsafe { nil }
+		result.invalidate_boxes_by_layout_cache()
+	}
+	return arena
 }
 
 fn collect_compatibility_box_indices(mut box BlockBox, mut last map[u64]&BlockBox,
@@ -401,7 +433,7 @@ fn collect_compatibility_box_indices(mut box BlockBox, mut last map[u64]&BlockBo
 fn (mut result DocumentLayoutResult) retained_box_for_layout(layout_handle voidptr) ?&BlockBox {
 	if layout_handle == unsafe { nil } || layout_handle == voidptr(result.root) { return none }
 	result.ensure_boxes_by_layout_cache()
-	return result.boxes_by_layout_cache[u64(layout_handle)] or { return none }
+	return result.box_index.last[u64(layout_handle)] or { return none }
 }
 
 fn collect_compatibility_boxes(mut box BlockBox, mut boxes_by_layout map[u64]&BlockBox) {
@@ -534,12 +566,12 @@ fn compatibility_scrollport_rect(box &BlockBox) LayoutRect {
 	}
 }
 
-fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_index int, boxes_by_layout map[u64]&BlockBox, boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
+fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_index int, boxes_by_layout map[u64]&BlockBox, boxes_by_scroll_frame []&BlockBox, mut state painting.ScrollState) {
 	nearest_scrolling_ancestor := state.nearest_scrolling_ancestor(sticky_frame_index)
-	if nearest_scrolling_ancestor == 0 {
+	if nearest_scrolling_ancestor <= 0 || nearest_scrolling_ancestor >= boxes_by_scroll_frame.len {
 		return
 	}
-	scroll_ancestor := boxes_by_scroll_frame[nearest_scrolling_ancestor] or { return }
+	scroll_ancestor := boxes_by_scroll_frame[nearest_scrolling_ancestor]
 	scrollport_rect := compatibility_scrollport_rect(scroll_ancestor)
 	sticky_border_box := box.border_box()
 	scrollport_size := painting.Size{scrollport_rect.width, scrollport_rect.height}
@@ -633,7 +665,7 @@ fn compatibility_sticky_view_rectangle_insets(box &BlockBox,insets painting.Stic
  return painting.StickyInsets{top,right,bottom,left}
 }
 
-fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
+fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame []&BlockBox, mut state painting.ScrollState) {
 	box.own_scroll_frame_index = 0
 	box.sticky_scroll_frame_index = 0
 	// Only frame owners use the parent index. Ordinary boxes still recurse so
@@ -647,7 +679,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 		sticky_frame_index := state.create_sticky_frame_for(box.node_id.str(), parent_index)
 		box.sticky_scroll_frame_index = sticky_frame_index
 		box.own_scroll_frame_index = sticky_frame_index
-		boxes_by_scroll_frame[sticky_frame_index] = unsafe { &box }
+		boxes_by_scroll_frame << unsafe { &box }
 		precompute_compatibility_sticky_constraints(mut box, sticky_frame_index, boxes_by_layout, boxes_by_scroll_frame, mut state)
 	}
 	if compatibility_box_establishes_scroll_frame(box) {
@@ -658,7 +690,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 		}
 		paintable_id := if box.is_viewport_scroller { 'viewport' } else { box.node_id.str() }
 		box.own_scroll_frame_index = state.create_scroll_frame_for(paintable_id, scroll_parent_index)
-		boxes_by_scroll_frame[box.own_scroll_frame_index] = unsafe { &box }
+		boxes_by_scroll_frame << unsafe { &box }
 	}
 	for child_index := 0; child_index < box.children.len; child_index++ {
 		mut child := unsafe { &box.children[child_index] }
@@ -1165,17 +1197,41 @@ fn viewport_refresh_compositor_visual_contexts(target voidptr) {
 
 fn rebuild_compatibility_visual_contexts(mut result DocumentLayoutResult) {
 	result.ensure_boxes_by_layout_cache()
+	mut storage := result.paint_tree_storage
+	if storage != unsafe { nil } {
+		// Recordings can borrow filter and clip data from these contexts.
+		// The scene already retains this exact paint tree until its last reader.
+		entry := storage.arena.enter()
+		defer { storage.arena.leave(entry) }
+		if storage.arena.contains(result.visual_context_tree.nodes.data) {
+			result.scroll_state.clear()
+			result.visual_context_tree.nodes.trim(1)
+		} else {
+			result.scroll_state = painting.ScrollState{}
+			result.visual_context_tree = painting.new_accumulated_visual_context_tree()
+		}
+		build_compatibility_visual_contexts(mut result, mut storage.scroll_frame_boxes)
+		return
+	}
 	result.scroll_state = painting.ScrollState{}
-	mut boxes_by_scroll_frame := map[int]&BlockBox{}
-	assign_compatibility_scroll_frames(mut result.paint_tree, result.boxes_by_layout_cache, mut boxes_by_scroll_frame, mut result.scroll_state)
 	result.visual_context_tree = painting.new_accumulated_visual_context_tree()
+	mut boxes_by_scroll_frame := []&BlockBox{}
+	build_compatibility_visual_contexts(mut result, mut boxes_by_scroll_frame)
+}
+
+fn build_compatibility_visual_contexts(mut result DocumentLayoutResult,
+	mut boxes_by_scroll_frame []&BlockBox) {
+	// ScrollState appends indices in traversal order, starting after its sentinel.
+	boxes_by_scroll_frame.clear()
+	boxes_by_scroll_frame << unsafe { &BlockBox(nil) }
+	assign_compatibility_scroll_frames(mut result.paint_tree, result.box_index.last, mut boxes_by_scroll_frame, mut result.scroll_state)
 	mut coordinate_root := 0
 	if result.document.layout_coordinate_scale() != 1 {
 		coordinate_root = result.visual_context_tree.append(painting.TransformVisualData{
 			matrix: compatibility_painting_affine(layout_to_css_transform(result.document))
 		}, 0)
 	}
-	assign_compatibility_visual_contexts_with_coordinate_root(mut result.paint_tree, none, result.boxes_by_layout_cache, coordinate_root, mut result.visual_context_tree)
+	assign_compatibility_visual_contexts_with_coordinate_root(mut result.paint_tree, none, result.box_index.last, coordinate_root, mut result.visual_context_tree)
 	result.needs_accumulated_visual_contexts = false
 }
 
@@ -1325,7 +1381,7 @@ fn (mut result DocumentLayoutResult) indexed_visual_context_for_layout_handle(la
 		return visual_context_index_for_layout_handle(result.paint_tree, layout_handle)
 	}
 	result.ensure_boxes_by_layout_cache()
-	box := result.visual_boxes_by_layout_cache[u64(layout_handle)] or { return none }
+	box := result.box_index.first[u64(layout_handle)] or { return none }
 	if os.getenv('VOX_VISUAL_CONTEXT_INDEX_DIAGNOSTICS') != '' {
 		eprintln('Vox client geometry: indexed visual context')
 	}
@@ -1344,7 +1400,7 @@ fn (mut result DocumentLayoutResult) client_rect_visual_context(layout_handle vo
 	mut current := unsafe { &Node(layout_handle) }.parent()
 	for {
 		ancestor := current or { break }
-		if box := result.visual_boxes_by_layout_cache[u64(voidptr(ancestor))] {
+		if box := result.box_index.first[u64(voidptr(ancestor))] {
 			return box.accumulated_visual_context_for_descendants_idx
 		}
 		current = ancestor.parent()
@@ -2163,60 +2219,8 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				width: node.data.bounding_rect.width
 				height: node.data.bounding_rect.height
 			}
-			mut operations := []PaintMaskOperation{cap: node.data.operations.len}
-			for operation in node.data.operations {
-				operation_transform := multiply_affine(flattened.transform, [
-					operation.transform.a,
-					operation.transform.b,
-					operation.transform.c,
-					operation.transform.d,
-					operation.transform.e,
-					operation.transform.f,
-				]!)
-				mut operation_kind := PaintMaskOperationKind.path
-				match operation.kind {
-					.begin_filter, .end_filter { continue }
-					.begin_opacity { operation_kind = .begin_opacity }
-					.end_opacity { operation_kind = .end_opacity }
-					.image { operation_kind = .image }
-					.path { operation_kind = .path }
-				}
-				operations << PaintMaskOperation{
-					kind: operation_kind
-					opacity: operation.opacity
-					image_url: operation.image_url
-					image_rect: LayoutRect{
-						x: operation.image_rect.x
-						y: operation.image_rect.y
-						width: operation.image_rect.width
-						height: operation.image_rect.height
-					}
-					image_position_x: operation.image_position_x
-					image_position_y: operation.image_position_y
-					image_rendering: operation.image_rendering
-					image_paintable: operation.image_paintable
-					path_data: compatibility_pack_clip_path_segments(operation.path)
-					path_even_odd: operation.path.fill_rule == .even_odd
-					transform: operation_transform
-					fill_color: painting_color_string(operation.fill_color)
-					stroke_color: painting_color_string(operation.stroke_color)
-					fill_linear_gradient: operation.fill_linear_gradient
-					stroke_linear_gradient: operation.stroke_linear_gradient
-					fill_radial_gradient: operation.fill_radial_gradient
-					stroke_radial_gradient: operation.stroke_radial_gradient
-					fill_pattern: operation.fill_pattern
-					stroke_pattern: operation.stroke_pattern
-					has_fill: operation.has_fill
-					has_stroke: operation.has_stroke
-					fill_opacity: operation.fill_opacity
-					stroke_opacity: operation.stroke_opacity
-					stroke_width: operation.stroke_width
-					stroke_linecap: int(operation.stroke_linecap)
-					stroke_linejoin: int(operation.stroke_linejoin)
-					stroke_miterlimit: operation.stroke_miter_limit
-					stroke_first: operation.stroke_first
-				}
-			}
+			operations := compatibility_lower_svg_mask_operations(node.data.operations,
+				flattened.transform, none) or { []PaintMaskOperation{} }
 			mut cache_key := node.data.cache_key
 			for value in flattened.transform {
 				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
@@ -2232,6 +2236,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 				}
 				mask_operations: operations
 				cache_key: cache_key
+				mask_raster_key: node.data.cache_key
 				scope_id: node.data.scope_id
 				mask_luminance: node.data.mask_type == .luminance
 				transform: flattened.transform
@@ -2755,6 +2760,8 @@ struct CompatibilityCachedVisualReplayStep {
 	context_slot  int
 	layer_list    &PaintVisualLayerList = unsafe { nil }
 	opacity_scale f64 = 1.0
+mut:
+	output_index int = -1
 }
 
 fn cached_visual_replay_command_count(steps []CompatibilityCachedVisualReplayStep) int {
@@ -2815,14 +2822,16 @@ $if test {
 		phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
 		snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
 		mut scratch := CompatibilityRecordScratch{}
+		mut geometry := RecordedPaintGeometry{}
 		return record_cached_paint_commands_with_visual_context_into(steps, []bool{}, phase_commands,
-			command_count, &tree, snapshot, show_line_box_borders, mut scratch)
+			command_count, &tree, snapshot, show_line_box_borders, mut scratch, mut geometry)
 	}
 }
 
 fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPaintStep, selected []bool,
 	phase_commands [][]PaintCommand, command_count int, tree &painting.AccumulatedVisualContextTree,
-	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool, mut scratch CompatibilityRecordScratch) []PaintCommand {
+	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool, mut scratch CompatibilityRecordScratch,
+	mut geometry RecordedPaintGeometry) []PaintCommand {
 	mut contexts := new_compatibility_visual_context_memo_with_scratch(tree, snapshot, mut
 		scratch)
 	mut plan := unsafe { scratch.plan }
@@ -2887,8 +2896,25 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	} else {
 		result = []PaintCommand{cap: output_count}
 	}
+	parallel_leaves := cached_visual_replay_can_defer_leaves(output_count)
+	if parallel_leaves && output_count >= raster_chunk_bounds_min_commands
+		&& output_count <= raster_chunk_bounds_max_commands {
+		if geometry.raster_bounds.paint_order != unsafe { nil } {
+			geometry.raster_bounds.slots = []RecordedRasterBound{len: output_count}
+		}
+		if geometry.prepare_canvas_ink {
+			geometry.canvas_ink = []RecordedCanvasInk{len: output_count}
+		}
+		if geometry.prepare_glyphs {
+			geometry.glyphs = []RetainedGlyphReplayGeometry{len: output_count}
+			geometry.glyph_coordinates = []f32{len: output_count * recorded_glyph_coordinates_per_command}
+		}
+	}
+	mut deferred_leaves := 0
+	mut prefix := unsafe { &CachedVisualLeafPrefix(nil) }
 	mut active := []PaintVisualLayer{}
-	for step in plan {
+	for step_index in 0 .. plan.len {
+		mut step := unsafe { &plan[step_index] }
 		context := unsafe { &contexts.contexts[step.context_slot] }
 		desired := if step.layer_list != unsafe { nil } {
 			step.layer_list.items
@@ -2924,13 +2950,28 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			active << desired[index]
 		}
 		if step.command == unsafe { nil } { continue }
-		// Copy the cached command once, straight into its output slot, and
-		// resolve it there: a wide local copy plus the push copied it twice.
-		// Nothing else is appended before the next step, so the slot is stable.
+		if parallel_leaves && result.len < result.cap && step.can_project_on_worker() {
+			// The plan holds the output index. Keep the slot private until the
+			// workers have filled it and joined.
+			step.output_index = result.len
+			unsafe { result.len++ }
+			deferred_leaves++
+			if pipeline_display_list_replay && deferred_leaves == display_list_replay_prefix_leaves
+				&& step_index + 1 < plan.len && plan.len <= max_i32 {
+				prefix = submit_cached_visual_leaf_prefix(unsafe { plan[..step_index + 1] },
+					contexts.contexts, result, &geometry)
+			}
+			continue
+		}
 		result << *step.command
 		mut command := unsafe { &result[result.len - 1] }
-		command.transform = chromium_border_replay_transform(step.command, context.transform, tree)
-		command.fixed_to_viewport = step.box.fixed_to_viewport
+		if canvas := command.canvas_paintable {
+			if canvas.element != unsafe { nil } {
+				command.canvas_bitmap = html.html_canvas_element_present_existing_surface(canvas.element)
+			}
+		}
+		apply_cached_visual_leaf_state(mut command, step.box, step.opacity_scale, context,
+			chromium_border_replay_transform(step.command, context.transform, tree))
 		if recording_clip := command.recording_clip {
 			mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
 			mut clips := []PaintClip{}
@@ -2948,18 +2989,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			command.clip_width = combined_clip.width
 			command.clip_height = combined_clip.height
 		} else {
-			command.has_clip = context.has_clip
-			command.clip_list = context.clip_list
-			if context.has_clip {
-				command.clip_x = context.clip.x
-				command.clip_y = context.clip.y
-				command.clip_width = context.clip.width
-				command.clip_height = context.clip.height
-			}
-		}
-		command.group_opacity = context.group_opacity
-		if step.opacity_scale != 1.0 {
-			command.opacity *= step.opacity_scale
+			apply_cached_visual_context_clip(mut command, context)
 		}
 		apply_live_scrollbar_offset(mut command, step.box)
 		apply_live_background_offsets(mut command, step.box)
@@ -2974,13 +3004,16 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 				unsafe { &PaintClipList(nil) }
 			}
 		}
-		command.visual_layer_list = unsafe { nil }
 	}
 	for index := active.len - 1; index >= 0; index-- {
 		result << PaintCommand{
 			kind: compatibility_end_visual_layer_kind(active[index])
 			visual_layer_data: &PaintVisualLayer{ ...active[index] }
 		}
+	}
+	if deferred_leaves > 0 {
+		materialize_cached_visual_leaves(plan, contexts.contexts, mut result, deferred_leaves,
+			prefix: prefix, geometry: geometry)
 	}
 	scratch.memo_slots = contexts.slots
 	scratch.memo_contexts = contexts.contexts
@@ -3071,10 +3104,17 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		&& result.paint_phase_line_box_debug == show_line_box_borders {
 		return result.display_list
 	}
+	callback_stage := processmetrics.begin_thread_instruction_substage('paint_record_callback')
+	defer { callback_stage.finish() }
+	stacking_stage := processmetrics.begin_thread_instruction_substage('paint_record_stacking_context')
 	viewport_build_stacking_context_tree(target)
 	viewport_sync_cursor_paint_cache(mut result)
 	viewport_invalidate_fixed_background_paint_caches(mut result)
+	stacking_stage.finish()
+	visible_stage := processmetrics.begin_thread_instruction_substage('paint_record_visible_entries')
 	selected := if viewport_only { viewport_visible_paint_entries(mut result) } else { []bool{} }
+	visible_stage.finish()
+	phase_stage := processmetrics.begin_thread_instruction_substage('paint_record_phase_cache')
 	if result.paint_phase_line_box_debug != show_line_box_borders {
 		// Inspector guides are paint output. Rebuild them only when enabled,
 		// retaining ordinary bucket storage while dropping obsolete GC edges.
@@ -3087,12 +3127,18 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	note_recorded_entry_opacities(mut result)
 	if !result.paint_phase_cache_valid {
 		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_selected_paint_phase_command_cache_with_debug(result.paint_order, result.paint_phase_commands, selected, show_line_box_borders)
+		if paint_phase_refresh_diagnostics {
+			eprintln('VOX_PAINT_PHASE_REFRESH full-build entries=${result.paint_order.len} selected=${selected.count(it)} commands=${result.paint_phase_command_count}')
+		}
 		result.paint_phase_entry_valid = if selected.len > 0 { selected.clone() } else { []bool{len: result.paint_order.len, init: true} }
 		result.paint_phase_cache_valid = true
 	} else {
 		result.paint_phase_command_count += result.paint_tree.refresh_selected_paint_phase_command_cache_with_debug(result.paint_order, selected, mut result.paint_phase_commands, mut result.paint_phase_entry_valid, show_line_box_borders)
 	}
 	viewport_entry_opacity_scales(mut result)
+	phase_stage.finish()
+	commands_stage := processmetrics.begin_thread_instruction_substage('paint_record_commands')
+	defer { commands_stage.finish() }
 	snapshot := result.scroll_state_snapshot
 	mut force_dark := ?painting.ForceDarkSettings(none)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
@@ -3119,9 +3165,20 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	steps := if filter_viewport_paint_steps && selected.len > 0 {
 		result.paint_steps.filter(it.entry_index < 0 || selected[it.entry_index])
 	} else { unsafe { result.paint_steps } }
+	mut geometry := RecordedPaintGeometry{
+		prepare_canvas_ink: record_canvas_ink_bounds && viewport_only && force_dark == none
+		prepare_glyphs: record_glyph_replay_geometry && viewport_only && force_dark == none
+	}
+	if record_raster_chunk_bounds && force_dark == none
+		&& result.document.font_rendering_policy() == .chromium {
+		geometry.raster_bounds = RecordedRasterBounds{
+			paint_order: result.paint_order.data
+			revision: result.document.paint_content_revision()
+		}
+	}
 	mut commands := record_cached_paint_commands_with_visual_context_into(steps, selected,
 		result.paint_phase_commands, result.paint_phase_command_count, &result.visual_context_tree,
-		snapshot, show_line_box_borders, mut result.record_scratch)
+		snapshot, show_line_box_borders, mut result.record_scratch, mut geometry)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if settings := force_dark {
@@ -3133,6 +3190,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		generation: scene.generation
 		scene: scene
 		visual_context_tree: snapshot_display_list_visual_context_tree(&result.visual_context_tree)
+		geometry: geometry
 		document: result.document
 	}
 	display_list := &dom.DisplayList{
@@ -3545,6 +3603,10 @@ fn viewport_stacking_context(target voidptr) &dom.StackingContext {
 
 fn viewport_invalidate_stacking_context(target voidptr) {
 	mut result := viewport_layout_result(target)
+	if paint_phase_refresh_diagnostics && result.paint_phase_cache_valid {
+		eprintln('VOX_PAINT_PHASE_INVALIDATE stacking-context entries=${result.paint_order.len}')
+		print_backtrace()
+	}
 	result.stacking_context_tree_is_valid = false
 	result.stacking_context = unsafe { nil }
 	result.paint_order.clear()
@@ -3584,6 +3646,9 @@ fn viewport_reconcile_retained_paint_cache(mut result DocumentLayoutResult,
 		}
 	}
 	if !same_order {
+		if paint_phase_refresh_diagnostics {
+			report_paint_order_mismatch(result.paint_order, paint_order)
+		}
 		clear_phase_command_storage(mut result.paint_phase_commands)
 		result.paint_phase_command_count = 0
 		result.paint_phase_cache_valid = false
@@ -4458,6 +4523,168 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 	// PaintableBox::hit_test() applies the normalized border radii after mapping
 	// the viewport point into the box's local coordinate space.
 	return box.border_box_contains_hit_test_point(local_point)
+}
+
+// Lower retained mask and pattern tile operations into the renderer's paint transport.
+// The device-pixel tile bounds enable lowering of isolated pattern filters.
+struct SVGPatternFilterPlacement {
+	depth int
+	x     f64
+	y     f64
+}
+
+pub fn compatibility_lower_svg_mask_operations(source []painting.SVGMaskPaintOperation,
+	transform [6]f64, pattern_tile ?painting.Rect) ?[]PaintMaskOperation {
+	mut operations := []PaintMaskOperation{cap: source.len}
+	mut placement := transform
+	mut filter_depth := 0
+	mut offsets := []SVGPatternFilterPlacement{}
+	for index := 0; index < source.len; index++ {
+		operation := &source[index]
+		mut operation_kind := PaintMaskOperationKind.path
+		match operation.kind {
+			.begin_filter {
+				if tile := pattern_tile {
+					filter := operation.filter?
+					filter_depth++
+					if opacity := filter.opacity_filter_amount() {
+						if painting.svg_pattern_opacity_is_transparent(opacity) {
+							index = painting.svg_pattern_scope_end(source, index)?
+							filter_depth--
+							continue
+						}
+						operations << PaintMaskOperation{kind: .begin_opacity, opacity: opacity}
+					} else if offset := filter.source_pattern_offset() {
+						affine := painting.Affine{placement[0], placement[1], placement[2],
+							placement[3], placement[4], placement[5]}
+						projected := offset.transformed(affine)?
+						// Edges outside the tile cannot affect its raster.
+						crop := projected.region.intersection(tile)
+						if crop.is_empty() {
+							// This isolated result is transparent, including any nested filters.
+							depth := filter_depth
+							for index + 1 < source.len && filter_depth >= depth {
+								index++
+								match source[index].kind {
+									.begin_filter { filter_depth++ }
+									.end_filter { filter_depth-- }
+									else {}
+								}
+							}
+							if filter_depth >= depth { return none }
+							continue
+						}
+						delta := projected.delta
+						// Rasterize the translated source directly on the destination grid.
+						if math.floor(delta.x) != delta.x || math.floor(delta.y) != delta.y {
+							return none
+						}
+						// Keep every raster pixel covered by the output subregion.
+						left := math.floor(crop.x)
+						top := math.floor(crop.y)
+						pixel_crop := painting.Rect{left, top, math.ceil(crop.right()) - left,
+							math.ceil(crop.bottom()) - top}
+						offsets << SVGPatternFilterPlacement{filter_depth, placement[4], placement[5]}
+						placement[4] += delta.x
+						placement[5] += delta.y
+						if !math.is_finite(placement[4]) || !math.is_finite(placement[5]) { return none }
+						operations << PaintMaskOperation{
+							kind: .begin_opacity
+							filter: &PaintSVGMaskFilter{
+								bounds: pixel_crop
+								source_alpha: projected.source_alpha
+							}
+						}
+					} else {
+						effect := filter.source_color_filter()?
+						bounds := if rect := filter.bounds {
+							affine := painting.Affine{placement[0], placement[1], placement[2],
+								placement[3], placement[4], placement[5]}
+							?painting.Rect(affine.map_rect(rect))
+						} else {
+							?painting.Rect(none)
+						}
+						operations << PaintMaskOperation{
+							kind: .begin_opacity
+							filter: &PaintSVGMaskFilter{effect: effect, bounds: bounds}
+						}
+					}
+				}
+				continue
+			}
+			.end_filter {
+				if pattern_tile != none {
+					if filter_depth == 0 { return none }
+					if offsets.len != 0 && offsets.last().depth == filter_depth {
+						saved := offsets.pop()
+						placement[4] = saved.x
+						placement[5] = saved.y
+					}
+					filter_depth--
+					operations << PaintMaskOperation{kind: .end_opacity}
+				}
+				continue
+			}
+			.begin_opacity {
+				if pattern_tile != none && painting.svg_pattern_opacity_is_transparent(operation.opacity) {
+					index = painting.svg_pattern_scope_end(source, index)?
+					continue
+				}
+				operation_kind = .begin_opacity
+			}
+			.end_opacity { operation_kind = .end_opacity }
+			.image { operation_kind = .image }
+			.path { operation_kind = .path }
+		}
+		operation_transform := multiply_affine(placement, [
+			operation.transform.a,
+			operation.transform.b,
+			operation.transform.c,
+			operation.transform.d,
+			operation.transform.e,
+			operation.transform.f,
+		]!)
+		operations << PaintMaskOperation{
+			kind: operation_kind
+			opacity: operation.opacity
+			image_url: operation.image_url
+			image_rect: LayoutRect{
+				x: operation.image_rect.x
+				y: operation.image_rect.y
+				width: operation.image_rect.width
+				height: operation.image_rect.height
+			}
+			image_position_x: operation.image_position_x
+			image_position_y: operation.image_position_y
+			image_rendering: operation.image_rendering
+			image_paintable: operation.image_paintable
+			path_data: compatibility_pack_clip_path_segments(operation.path)
+			path_even_odd: operation.path.fill_rule == .even_odd
+			transform: operation_transform
+			fill_color: painting_color_string(operation.fill_color)
+			stroke_color: painting_color_string(operation.stroke_color)
+			fill_linear_gradient: operation.fill_linear_gradient
+			stroke_linear_gradient: operation.stroke_linear_gradient
+			fill_radial_gradient: operation.fill_radial_gradient
+			stroke_radial_gradient: operation.stroke_radial_gradient
+			fill_pattern: operation.fill_pattern
+			stroke_pattern: operation.stroke_pattern
+			has_fill: operation.has_fill
+			has_stroke: operation.has_stroke
+			fill_opacity: operation.fill_opacity
+			stroke_opacity: operation.stroke_opacity
+			stroke_width: operation.stroke_width
+			stroke_dasharray: operation.stroke_dasharray
+			stroke_dashoffset: operation.stroke_dashoffset
+			non_scaling_stroke: operation.non_scaling_stroke
+			stroke_linecap: int(operation.stroke_linecap)
+			stroke_linejoin: int(operation.stroke_linejoin)
+			stroke_miterlimit: operation.stroke_miter_limit
+			stroke_first: operation.stroke_first
+		}
+	}
+	if filter_depth != 0 { return none }
+	return operations
 }
 
 // Recover the concrete renderer commands retained by a DOM DisplayList. Like

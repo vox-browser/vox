@@ -1,9 +1,7 @@
 module layout
 
 import css
-$if prealloc {
-	import platform
-}
+import platform
 
 // InlineFormattingContext's inline box pieces. Each fragmented inline box gets
 // one piece per line it spans; the piece's border box covers the fragments the
@@ -583,12 +581,13 @@ fn inline_box_geometry_from_pieces(node &Node, pieces []InlineBoxPiece, horizont
 // height, so DOM geometry queries have something to answer from.
 fn inline_box_absolute_geometry(node &Node, state &LayoutState) ?InlineBoxGeometry {
 	mut pieces_by_container := map[u64][]InlineBoxPiece{}
-	return inline_box_absolute_geometry_cached(node, state, mut pieces_by_container)
+	return inline_box_absolute_geometry_cached(node, state, mut pieces_by_container, unsafe { nil })
 }
 
 // As above, reusing pieces already computed for the same containing block
 // during one traversal of a laid-out tree.
-fn inline_box_absolute_geometry_cached(node &Node, state &LayoutState, mut pieces_by_container map[u64][]InlineBoxPiece) ?InlineBoxGeometry {
+fn inline_box_absolute_geometry_cached(node &Node, state &LayoutState,
+	mut pieces_by_container map[u64][]InlineBoxPiece, arena &platform.Arena) ?InlineBoxGeometry {
 	containing_block := node.containing_block() or { return none }
 	containing_node := unsafe { &Node(containing_block) }
 	containing_styled := containing_node.as_node_with_style() or { return none }
@@ -599,8 +598,12 @@ fn inline_box_absolute_geometry_cached(node &Node, state &LayoutState, mut piece
 	container_position := layout_offset_in_svg_user_space(containing_node, state, containing_used)
 	container_key := u64(voidptr(containing_node))
 	if container_key !in pieces_by_container {
+		mut workspace := unsafe { &platform.Arena(arena) }
+		mut entry := platform.ArenaEntry{}
+		if workspace != unsafe { nil } { entry = workspace.enter() }
 		pieces_by_container[container_key] = compute_inline_box_pieces(containing_node,
 			containing_used, state)
+		if workspace != unsafe { nil } { workspace.leave(entry) }
 	}
 	pieces := pieces_by_container[container_key] or { []InlineBoxPiece{} }
 	local := inline_box_geometry_from_pieces(node, pieces, horizontal, used) or {

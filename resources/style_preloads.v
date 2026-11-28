@@ -34,6 +34,7 @@ fn (mut app BrowserApp) queue_initial_style_preload_completions(resources map[st
 			source_url:       filtered.source_url.clone()
 			request_type:     filtered.request_type.clone()
 			response_headers: filtered.response_headers.map(adblock.ResponseHeader{ name: it.name.clone(), value: it.value.clone() })
+			retained_for_process: false
 		}
 		// Promotion consumes these same bytes through the ordinary stylesheet
 		// completion path, without making a second request or creating a style tag.

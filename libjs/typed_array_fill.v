@@ -3,7 +3,7 @@ module libjs
 // TypedArrayPrototype.cpp::fast_typed_array_fill. The V numeric-byte boundary
 // supplies the source scalar's representation; the 256-byte chunk path and the
 // per-element shared path retain the pinned implementation's write granularity.
-fn fast_typed_array_fill(mut vm VM, array &TypedArray, begin u32, end u32, value Value) {
+fn fast_typed_array_fill(mut vm VM, array &TypedArray, begin u32, end u32, value Value) ! {
 	if begin >= end { return }
 	size := uint(array.element_size())
 	offset := uint(array.byte_offset)
@@ -23,6 +23,7 @@ fn fast_typed_array_fill(mut vm VM, array &TypedArray, begin u32, end u32, value
 		}
 		mut remaining := uint(end - begin) * size
 		for remaining > 0 {
+			vm.consume_execution_budget()!
 			chunk := if remaining < uint(pattern.len) { remaining } else { uint(pattern.len) }
 			buffer.overwrite(byte_index, pattern[..int(chunk)])
 			byte_index += chunk
@@ -30,7 +31,8 @@ fn fast_typed_array_fill(mut vm VM, array &TypedArray, begin u32, end u32, value
 		}
 		return
 	}
-	for _ in begin .. end {
+	for index in begin .. end {
+		if index % 128 == 0 { vm.consume_execution_budget()! }
 		buffer.overwrite(byte_index, raw)
 		byte_index += size
 	}
@@ -63,10 +65,11 @@ pub fn typed_array_prototype_fill(mut vm VM, prototypes PrimitiveObjectPrototype
 	if final_index > length { final_index = length }
 	if numeric.is_int32()
 		&& array.kind in [.uint8, .uint16, .uint32, .int8, .int16, .int32, .uint8_clamped] {
-		fast_typed_array_fill(mut vm, array, k, final_index, numeric)
+		fast_typed_array_fill(mut vm, array, k, final_index, numeric)!
 		return Value.from_object(array.object)
 	}
 	for k < final_index {
+		vm.consume_execution_budget()!
 		typed_array_set_element(mut vm, mut array, CanonicalIndex.create(.index, k), numeric)!
 		k++
 	}

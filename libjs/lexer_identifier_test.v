@@ -1,0 +1,53 @@
+module libjs
+
+fn test_lexer_ascii_identifier_runs_preserve_unicode_and_source_positions() {
+	first_source := r'alpha0_$𐐀more\u0061bc'
+	private_source := '#private3tail'
+	source := utf16(first_source + '\r\n' + private_source + ';éclair_ends42;final_7$')
+	mut lexer := Lexer.new(source, 1, 0)
+	first := lexer.next()
+	assert first.token_type == .identifier
+	assert first.value_len == u32(utf16(first_source).len)
+	assert first.identifier_value != unsafe { nil }
+	assert first.identifier_value.data == utf16('alpha0_$𐐀moreabc')
+
+	private_token := lexer.next()
+	assert private_token.token_type == .private_identifier
+	assert private_token.value_start == first.value_len + 2
+	assert private_token.line_number == 2
+	assert private_token.line_column == 1
+	assert private_token.trivia_has_line_terminator
+
+	separator := lexer.next()
+	assert separator.token_type == .semicolon
+	assert separator.line_column == u32(private_source.len + 1)
+	last := lexer.next()
+	assert last.token_type == .identifier
+	assert last.line_column == separator.line_column + 1
+	assert last.value_len == u32(utf16('éclair_ends42').len)
+	delimiter := lexer.next()
+	assert delimiter.token_type == .semicolon
+	assert delimiter.line_column == last.line_column + last.value_len
+	ascii_end := lexer.next()
+	assert ascii_end.token_type == .identifier
+	assert ascii_end.line_column == delimiter.line_column + 1
+	assert ascii_end.value_len == 8
+	end := lexer.next()
+	assert end.token_type == .eof
+	assert end.value_start == u32(source.len)
+	assert end.line_column == ascii_end.line_column + ascii_end.value_len
+}
+
+fn test_lexer_identifier_starts_keep_escaped_and_supplementary_lengths() {
+	mut lexer := Lexer.new(utf16(r'A $ _ 𐐀 #𐐀 \u0061 #\u0061 . 0'), 1, 0)
+	lengths := [u32(1), 1, 1, 2, 3, 6, 7, 1, 1]
+	for index, kind in [TokenType.identifier, .identifier, .identifier, .identifier,
+		.private_identifier, .identifier, .private_identifier, .period, .numeric_literal] {
+		token := lexer.next()
+		assert token.token_type == kind
+		assert token.value_len == lengths[index]
+	}
+	assert lexer.next().token_type == .eof
+	mut bad := Lexer.new(utf16(r'\u0030'), 1, 0)
+	assert bad.next().token_type == .invalid
+}

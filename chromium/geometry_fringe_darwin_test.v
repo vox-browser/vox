@@ -1,6 +1,8 @@
 // vtest build: macos
 module main
 
+import ggshape
+import layout
 import stbi
 
 fn test_native_leaf_fringe_preserves_the_compositor_tile_origin() {
@@ -157,4 +159,88 @@ fn test_root_filter_fringe_preserves_the_picture_origin_and_outside_pixels() {
 			}
 		}
 	}
+}
+
+fn test_scroll_shape_region_preserves_shadow_fill_and_border_pixels_on_the_original_grid() {
+	old := document_geometry_grid
+	defer { document_geometry_grid = old }
+	width, height := 116, 121
+	region := ggshape.SurfaceRegion{
+		surface_width: width
+		surface_height: height
+		x: 5
+		y: 55
+		width: 103
+		height: 17
+	}
+	backdrop := []u8{len: width * height * 4, init: if index % 4 == 3 { u8(255) } else { u8(index * 17 + index / 97) }}
+	for tiled in [false, true] {
+		document_geometry_grid = DocumentGeometryGrid{
+			width: 62
+			height: 64
+			columns: 2
+			rows: 2
+			cells: [i32(1), 2]
+		}
+		first_y := if tiled { 2 } else { -20 }
+		for kind in [0, 1, 9, 10] {
+			for radius in [f32(0), 5] {
+				shape := C.VoxGraphiteShape{
+					matrix: [f32(1), 0, .25, 0, 1, .5, 0, 0, 1]!
+					rect: [f32(12), 57, 88, 58, radius, radius, radius, radius, radius, radius, radius, radius]!
+					underlay_rect: [f32(15), 59, 82, 54, radius, radius, radius, radius, radius, radius, radius, radius]!
+					fill: i32(kind)
+					thickness: if kind == 9 { 0 } else { 4 }
+					anti_alias: 1
+					force_msaa: 1
+					red: 51
+					green: 83
+					blue: 119
+					alpha: 109
+					has_underlay: i32(kind == 0 && radius > 0)
+					underlay_rgba: [u8(102), 104, 160, 128]!
+					has_filter_clip: i32(kind == 10)
+					filter_clip: [f32(5), 55, 108, 72]!
+				}
+				mut full := backdrop.clone()
+				assert draw_document_shape_tiles(full.data, i32(width), i32(height), i32(width * 4),
+					1, 0, first_y, &shape) == 1
+				pitch := region.width * 4 + 16
+				mut cropped := []u8{len: region.height * pitch, init: 19}
+				for y in 0 .. region.height {
+					start := ((region.y + y) * width + region.x) * 4
+					copy(mut cropped[y * pitch..(y + 1) * pitch], backdrop[start..start + region.width * 4])
+				}
+				assert draw_document_shape_region(cropped.data, i32(pitch), 1, 0, first_y, region, &shape) == 1
+				mut changed := false
+				for y in 0 .. region.height {
+					start := ((region.y + y) * width + region.x) * 4
+					end := y * pitch + region.width * 4
+					matches := cropped[y * pitch..end] == full[start..start + region.width * 4]
+					assert matches,
+						'tiled=${tiled}, kind=${kind}, radius=${radius}, row=${y}'
+					assert cropped[end..(y + 1) * pitch].all(it == 19)
+					changed = changed || cropped[y * pitch..end] != backdrop[start..start + region.width * 4]
+				}
+				assert changed
+			}
+		}
+	}
+}
+
+fn test_transparent_outer_shadow_needs_no_native_raster_context() {
+	mut app := BrowserApp{}
+	shadow := layout.PaintCommand{
+		kind: 'paint_outer_box_shadow'
+		color: '#11223300'
+		opacity: 1
+		width: 2400
+		height: 5000
+	}
+	assert app.draw_chromium_outer_shadow(shadow, 0, 88, 0)
+	assert app.draw_chromium_outer_shadow(layout.PaintCommand{
+		...shadow
+		color: '#112233'
+		opacity: 0
+	}, 0, 88, 0)
 }

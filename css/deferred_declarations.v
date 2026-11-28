@@ -7,7 +7,7 @@ import platform
 struct DeferredStyleDeclaration {
 	declarations        []Declaration
 	source_declarations []DeferredPropertySource
-	params              ParsingParams
+	params              ?&ParsingParams
 mut:
 	base_url               string
 	resource_owner         ?&CSSStyleSheet
@@ -20,6 +20,26 @@ struct DeferredPropertySource {
 	name      string
 	text      string
 	important Important
+}
+
+// A whole-sheet conversion keeps these three fields fixed. Only rules
+// without additional grammar context can use the common snapshot.
+fn (mut parser RuleSelectorParser) share_empty_deferred_style_params() {
+	if parser.defer_style_declarations {
+		parser.shared_deferred_style_params = &ParsingParams{
+			document: parser.document
+			mode: parser.mode
+			is_ua_style_sheet: parser.is_ua_style_sheet
+		}
+	}
+}
+
+fn (parser &RuleSelectorParser) deferred_style_params() &ParsingParams {
+	if parser.shared_deferred_style_params != unsafe { nil } && parser.value_context.len == 0
+		&& parser.rule_context.len == 0 && parser.declared_namespaces.len == 0 {
+		return parser.shared_deferred_style_params
+	}
+	return &ParsingParams{...parser.parsing_params()}
 }
 
 fn (mut parser RuleSelectorParser) declaration_for_style_rule(declarations []Declaration) &CSSStyleProperties {
@@ -38,7 +58,7 @@ fn (mut parser RuleSelectorParser) declaration_for_style_rule(declarations []Dec
 			} else {
 				[]DeferredPropertySource{}
 			}
-			params:              parser.parsing_params()
+			params:              parser.deferred_style_params()
 		}
 	}
 }
@@ -51,13 +71,14 @@ fn (properties &CSSStyleProperties) ensure_declarations_parsed() {
 	defer { platform.leave_persistent(persistent) }
 	mut target := unsafe { &CSSStyleProperties(properties) }
 	target.deferred_declarations_ = none
+	params := deferred.params or { &ParsingParams{} }
 	mut parser := RuleSelectorParser{
-		document:            deferred.params.document
-		mode:                deferred.params.mode
-		value_context:       deferred.params.value_context
-		rule_context:        deferred.params.rule_context
-		declared_namespaces: deferred.params.declared_namespaces
-		is_ua_style_sheet:   deferred.params.is_ua_style_sheet
+		document:            params.document
+		mode:                params.mode
+		value_context:       params.value_context
+		rule_context:        params.rule_context
+		declared_namespaces: params.declared_namespaces
+		is_ua_style_sheet:   params.is_ua_style_sheet
 	}
 	mut parsed := if deferred.source_declarations.len > 0 {
 		parser.convert_source_declarations(deferred.source_declarations)

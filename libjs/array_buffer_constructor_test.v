@@ -166,7 +166,7 @@ fn test_array_buffer_constructor_uses_new_target_realm_fallback_and_is_view_bran
 		Value.from_object(buffer.object), Value.from_object(fake),
 		Value.from_object(view.object), Value.from_object(unset_view.object)] {
 		assert call(mut vm, is_view, js_null(), [value])!.as_bool() == (value.is_object()
-			&& value.as_object().data_view != none)
+			&& value.as_object().slots.data_view != none)
 	}
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 }

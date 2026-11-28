@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shared GG SVG path strokes</title>
+<style>
+  body { margin: 0; min-height: 4096px; background: white; }
+  .stage { position: fixed; top: 0; left: 0; width: 100%; }
+  header { height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<div class="stage">
+  <header></header>
+  <svg width="240" height="180">
+    <path id="round" d="M30 24H70" fill="none" stroke="#2244cc"
+          stroke-width="12" stroke-linecap="round"/>
+    <path d="M100 24H144" fill="none" stroke="#00f"
+          stroke-width="8" stroke-opacity=".5"/>
+    <path d="M174 24H215" fill="none" stroke="#d60"
+          stroke-width="10" stroke-linecap="square"/>
+    <path d="M12 70Q32 46 52 70 M74 70H110" fill="none" stroke="#0a0"
+          stroke-width="8" stroke-linejoin="round" transform="translate(0 -14) scale(1 1.2)"/>
+    <path d="M26 106H70V150H26Z" fill="#f00" stroke="#00f" stroke-width="12"/>
+    <path d="M104 106H148V150H104Z" fill="#f00" stroke="#00f" stroke-width="12"
+          stroke-linejoin="round" style="paint-order: stroke fill"/>
+  </svg>
+</div>

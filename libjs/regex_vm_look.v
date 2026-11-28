@@ -8,6 +8,8 @@ pub fn (mut vm RegexVm) handle_look_start(positive bool, forward bool, end u32) 
 	saved_pos := vm.pos
 	saved_choices := vm.scratch.backtrack_stack.len
 	saved_pool := vm.scratch.register_pool.len
+	saved_modifier_trail := uint(vm.scratch.modifier_trail.len)
+	saved_modifiers := vm.modifiers
 	saved_floor := vm.bt_floor
 	saved_backward := vm.backward
 	register_offset := vm.snapshot_registers()
@@ -23,7 +25,11 @@ pub fn (mut vm RegexVm) handle_look_start(positive bool, forward bool, end u32) 
 	vm.scratch.backtrack_stack.trim(saved_choices)
 	if result == .limit_exceeded { return result }
 	matched := result == .match
-	if !positive || !matched { vm.restore_registers(register_offset) }
+	if !positive || !matched {
+		vm.restore_registers(register_offset)
+		vm.undo_modifier_changes(saved_modifier_trail)
+		vm.modifiers = saved_modifiers
+	}
 	vm.scratch.register_pool.trim(saved_pool)
 	if matched == positive {
 		vm.pc = end

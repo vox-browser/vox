@@ -7,6 +7,39 @@
 // VOX_GG_SEPARATE_TRANSFERS=1 restores Sokol's transfers;
 // VOX_GG_SEPARATE_READBACK=1 and VOX_GG_SEPARATE_UPLOAD=1 restore one side.
 #include <dlfcn.h>
+#include <objc/runtime.h>
+#include "../../cpuraster/scan_workers.h"
+
+typedef struct {
+    uint8_t *destination;
+    const uint8_t *source;
+    size_t destination_pitch, source_pitch, row_bytes;
+} VoxGGMetalRowCopy;
+
+static void vox_gg_metal_copy_range(void *context, int32_t first, int32_t end) {
+    const VoxGGMetalRowCopy *copy = (const VoxGGMetalRowCopy *)context;
+    uint8_t *destination = copy->destination + (size_t)first * copy->destination_pitch;
+    const uint8_t *source = copy->source + (size_t)first * copy->source_pitch;
+    if (copy->destination_pitch == copy->row_bytes && copy->source_pitch == copy->row_bytes) {
+        memcpy(destination, source, (size_t)(end - first) * copy->row_bytes);
+        return;
+    }
+    for (int32_t row = first; row < end; ++row)
+        memcpy(destination + (size_t)(row - first) * copy->destination_pitch,
+            source + (size_t)(row - first) * copy->source_pitch, copy->row_bytes);
+}
+
+// Only the CPU copy is split. Workers finish before an upload is encoded or
+// before a read exposes the caller's buffer and releases its Metal storage.
+static void vox_gg_metal_copy_rows(void *destination, size_t destination_pitch,
+    const void *source, size_t source_pitch, size_t row_bytes, int32_t height) {
+    VoxGGMetalRowCopy copy = {destination, source, destination_pitch, source_pitch, row_bytes};
+    int32_t lanes = height < VOX_SCAN_WORKERS_MAX ? height : VOX_SCAN_WORKERS_MAX;
+    if (lanes > 1 && row_bytes * (size_t)height >= 8u * 1024u * 1024u && !vox_scan_workers_disabled())
+        vox_scan_workers_run(&copy, height, lanes, vox_gg_metal_copy_range);
+    else
+        vox_gg_metal_copy_range(&copy, 0, height);
+}
 
 // The last standalone upload. Its status is checked by the next read.
 static id<MTLCommandBuffer> vox_gg_metal_standalone_upload;
@@ -24,10 +57,7 @@ static bool vox_gg_metal_upload(_sg_image_t* img, int x, int y, int width, int h
         id<MTLBuffer> staging = [_sg.mtl.device newBufferWithLength:total
             options:MTLResourceStorageModeShared];
         if (nil == staging) return false;
-        uint8_t* staged = (uint8_t*)staging.contents;
-        for (int row = 0; row < height; ++row)
-            memcpy(staged + (size_t)row * row_bytes,
-                (const uint8_t*)pixels + (size_t)row * (size_t)pitch, row_bytes);
+        vox_gg_metal_copy_rows(staging.contents, row_bytes, pixels, (size_t)pitch, row_bytes, height);
         // Rendering already encoded in the enqueued frame buffer precedes the
         // upload, and later passes append to the same buffer after it. Without
         // pending rendering, a standalone buffer is committed before the next
@@ -74,6 +104,27 @@ static bool vox_gg_metal_complete_upload(void) {
     _SG_OBJC_RELEASE(vox_gg_metal_standalone_upload);
     return ok;
 }
+
+static char vox_gg_metal_readback_buffer_key;
+
+// Sokol serializes these transfers, and readback waits for the GPU before
+// returning. Keep one reusable buffer owned by this backend's command queue.
+static id<MTLBuffer> vox_gg_metal_acquire_readback_buffer(NSUInteger length) {
+    if (length > 4u * 1024u * 1024u || getenv("VOX_GG_FRESH_READBACK_BUFFER"))
+        return [_sg.mtl.device newBufferWithLength:length options:MTLResourceStorageModeShared];
+    id<MTLCommandQueue> queue = _sg.mtl.cmd_queue;
+    id<MTLBuffer> buffer = objc_getAssociatedObject(queue, &vox_gg_metal_readback_buffer_key);
+    if (buffer.length >= length) {
+        _SG_OBJC_RETAIN(buffer);
+        return buffer;
+    }
+    buffer = [_sg.mtl.device newBufferWithLength:length options:MTLResourceStorageModeShared];
+    if (buffer)
+        objc_setAssociatedObject(queue, &vox_gg_metal_readback_buffer_key,
+            buffer, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return buffer;
+}
+
 static void vox_gg_metal_readback_diagnostic(bool joined) {
     static unsigned reported;
     if (!getenv("VOX_GG_READBACK_DIAGNOSTICS") || reported >= 128) return;
@@ -111,8 +162,7 @@ _SOKOL_PRIVATE bool _sg_v_mtl_transfer(_sg_image_t* img, int x, int y,
 #ifdef VOX_TEST_GG_METAL_TRANSFER
         if (vox_test_gg_metal_fail_allocation) return false;
 #endif
-        id<MTLBuffer> staging = [_sg.mtl.device newBufferWithLength:total
-            options:MTLResourceStorageModeShared];
+        id<MTLBuffer> staging = vox_gg_metal_acquire_readback_buffer(total);
         if (nil == staging) return false;
         // begin_pass enqueues this buffer before rendering. A second buffer
         // cannot run ahead of it; append the copy after the last render pass.
@@ -142,10 +192,7 @@ _SOKOL_PRIVATE bool _sg_v_mtl_transfer(_sg_image_t* img, int x, int y,
         bool ok = commands.status == MTLCommandBufferStatusCompleted;
         ok = vox_gg_metal_complete_upload() && ok;
         if (ok) {
-            const uint8_t* source = (const uint8_t*)staging.contents;
-            for (int row = 0; row < height; ++row)
-                memcpy((uint8_t*)pixels + (size_t)row * (size_t)pitch,
-                    source + (size_t)row * row_bytes, row_bytes);
+            vox_gg_metal_copy_rows(pixels, (size_t)pitch, staging.contents, row_bytes, row_bytes, height);
             vox_gg_metal_readback_diagnostic(joined);
         }
         _SG_OBJC_RELEASE(staging);

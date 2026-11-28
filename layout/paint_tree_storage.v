@@ -13,6 +13,7 @@ mut:
 	pool       &PaintTreeStoragePool = unsafe { nil }
 	references int
 	document_storage &platform.RetainedArena = unsafe { nil }
+	scroll_frame_boxes []&BlockBox
 }
 
 @[heap]
@@ -69,6 +70,7 @@ fn (mut storage PaintTreeStorage) release() {
 	storage.references--
 	if storage.references > 0 { return }
 	if storage.references < 0 { panic('paint tree released too often') }
+	storage.scroll_frame_boxes = []&BlockBox{}
 	mut pool := storage.pool
 	for index, live in pool.live {
 		if voidptr(live) == voidptr(storage) {
@@ -105,6 +107,8 @@ pub fn release_paint_tree(handle voidptr) {
 }
 
 fn (mut result DocumentLayoutResult) retire_paint_tree_storage() {
+	mut index_arena := result.take_box_index_arena()
+	if index_arena != unsafe { nil } { index_arena.release() }
 	storage := result.paint_tree_storage
 	result.paint_tree_storage = unsafe { nil }
 	release_paint_tree(voidptr(storage))

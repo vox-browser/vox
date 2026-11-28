@@ -5,6 +5,7 @@ import dom
 import fetch
 import html
 import json2
+import libjs
 import os
 import platform
 import processmetrics
@@ -453,6 +454,13 @@ fn (mut host ModuleHost) supply(mut operation BrowserModuleOperation, code strin
 		}
 		if !retain_utf8_module_source { host.source_value_reported = true }
 	}
+	if runtime.site_native_warmup_ != none && !operation.key.contains('#vox-inline-') {
+		runtime.collect_site_native_source(libjs.NativeWarmupSource{
+			code: code
+			filename: operation.key
+			kind: .module
+		})
+	}
 	operation.finished = true
 	runtime.release_javascript_value(operation.resolve)
 	runtime.release_javascript_value(operation.reject)
@@ -548,6 +556,18 @@ fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
 	host.fetch_module(mut operation)
 }
 
+// Resume HTML's single-module fetch with the already consumed response.
+fn (mut host ModuleHost) complete_module_fetch(mut operation BrowserModuleOperation, response &fetch.Response, callback html.OnFetchScriptComplete) {
+	provided := fn [response] (_ &fetch.Request, _ html.TopLevelModule) !&fetch.Response {
+		return response
+	}
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	runtime.own_closure(voidptr(provided))
+	entry := operation.source
+	html.fetch_single_module_script(host.settings.realm(), dom.URL{ value: operation.key }, host.settings,
+		.script, entry.options, host.settings.realm(), entry.referrer, none, entry.top_level, provided, callback)
+}
+
 fn (mut host ModuleHost) fetch_module(mut operation BrowserModuleOperation) {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	key := operation.key
@@ -585,14 +605,8 @@ fn (mut host ModuleHost) fetch_module(mut operation BrowserModuleOperation) {
 		}
 		mut actual := unsafe { &fetch.Response(response.unsafe_response()) }
 		actual.set_body_bytes(body.bytes)
-		provided := fn [response] (_ &fetch.Request, _ html.TopLevelModule) !&fetch.Response {
-			return response
-		}
-		mut runtime := unsafe { &Runtime(host.runtime) }
-		runtime.own_closure(voidptr(provided))
-		entry := operation.source
-		html.fetch_single_module_script(host.settings.realm(), dom.URL{ value: operation.key }, host.settings,
-			.script, entry.options, host.settings.realm(), entry.referrer, none, entry.top_level, provided, callback)
+		if host.parse_libjs_module_in_background(mut operation, response, body.bytes, callback) { return }
+		host.complete_module_fetch(mut operation, response, callback)
 	}
 	runtime.own_closure(voidptr(consume))
 	operation.controller = fetch.fetch(request, fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{

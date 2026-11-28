@@ -3,12 +3,14 @@ module main
 import dom
 
 fn test_image_layout_batching_is_scoped_to_github_http_documents() {
-	for address in ['https://github.com/vlang/v', 'http://GITHUB.COM./vlang/v'] {
-		assert site_batches_image_completion_layout(address)
+	for address in ['https://github.com/vlang/v', 'http://GITHUB.COM.:8080/vlang/v',
+		'https://example.test@%67ithub.com/vlang/v', 'https://github.com../vlang/v'] {
+		assert site_is_github_http_url(dom.URL{value: address})
 	}
 	for address in ['https://github.com.example/vlang/v', 'https://github.com@elsewhere.test/',
-		'https://example.test/?github.com', 'file:///github.com', 'about:blank'] {
-		assert !site_batches_image_completion_layout(address)
+		'https://example.test/?github.com', 'file:///github.com', 'about:blank',
+		'https://[::1]/github.com', 'wss://github.com/vlang/v'] {
+		assert !site_is_github_http_url(dom.URL{value: address})
 	}
 }
 

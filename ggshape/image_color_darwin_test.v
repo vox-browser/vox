@@ -3,7 +3,31 @@ module ggshape
 
 import crypto.sha256
 import imageraster
+import math
 import stbi
+
+fn test_destination_gamut_conversion_precedes_mipmap_filtering() {
+	// Both red and green map to half-linear red (sRGB 188). Averaging the
+	// original pixels first would instead produce sRGB 128 in that channel.
+	gamut := [f32(.5), 0, 0, .5, 1, 0, 0, 0, 1]!
+	source := imageraster.Image{
+		width: 2
+		height: 2
+		pixels: [u8(255), 0, 0, 255, 0, 255, 0, 255].repeat(2)
+	}
+	before := source.pixels.clone()
+	converted := convert_image_srgb_gamut(source, gamut) or { panic('conversion') }
+	levels := gpu_image_mip_chain(imageraster.Image{
+		width: 2
+		height: 2
+		pixels: converted
+	}) or { panic('mips') }
+	assert levels.len == 2
+	for channel, expected in [188, 128, 0, 255] {
+		assert math.abs(int(levels[1].pixels[channel]) - expected) <= 1
+	}
+	assert source.pixels == before
+}
 
 fn test_legacy_png_upload_matches_the_independent_color_conversion_and_preserves_alpha() {
 	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/resources/vlang-mastodon.png').to_bytes()

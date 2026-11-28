@@ -60,8 +60,13 @@ fn (app &BrowserApp) cached_browser_tab_document_title() string {
 		&& cache.tree_version == tree_version && cache.character_version == character_version {
 		return cache.title
 	}
+	// The version can advance for mutations outside <title>. Retire the query
+	// and text normalization even when a busy document keeps the same title.
+	work := platform.begin_thread_scratch('browser tab title lookup')
+	defer { work.finish() }
 	resolved := document_title(document).replace('\n', ' ').replace('\r', ' ')
 	title := if resolved.trim_space() == '' { '' } else { resolved }
+	work.leave()
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	// Chrome owns its text even when the read ran in a document/paint arena.

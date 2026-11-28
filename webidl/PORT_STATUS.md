@@ -62,3 +62,15 @@ files pass. Arbitrary object ToPrimitive execution and Symbol values still
 require the VM boundary; these changes do not manufacture their side effects.
 Existing typed object-string convenience representations remain separate from
 claims of complete ECMAScript object conversion.
+
+The 2026-11-16 signed-integer follow-up keeps an already signed remainder in
+range before performing its final adjustment. The earlier unsigned round trip
+added 2^64 to small negative values and lost precision as a double; this affects
+File.lastModified, including -1. Signed boundaries, large multiples and narrow
+integer wrapping have four prepared regression functions, with a fifth File
+binding case. They remain uncompiled and unexecuted under the user's hold.
+Final normal and production/preallocation compiler-only import checks pass.
+This preserves mathematical signed modulo without the upstream-shaped
+intermediate double rounding; it does not change EnforceRange/Clamp or claim
+complete exact unsigned-64 representation through this f64 interface. See the
+[File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).

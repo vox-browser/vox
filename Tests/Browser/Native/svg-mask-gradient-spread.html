@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Repeating and reflecting SVG mask gradients</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="700" height="120" viewBox="0 0 700 120">
+  <defs>
+    <linearGradient id="repeat" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="40" y2="0"
+                    gradientTransform="translate(14 0)" spreadMethod="repeat">
+      <stop id="faint" stop-color="red" stop-opacity=".6"/>
+      <stop offset="1" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="reflect" gradientUnits="userSpaceOnUse" x1="0" y1="22" x2="0" y2="42"
+                    gradientTransform="translate(0 8)" spreadMethod="reflect">
+      <stop stop-color="black"/>
+      <stop offset="1" stop-color="white"/>
+    </linearGradient>
+    <radialGradient id="rings" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1"
+                    gradientTransform="translate(402.5 51.5) scale(20 12)" spreadMethod="repeat">
+      <stop stop-opacity="0"/>
+      <stop offset="1"/>
+    </radialGradient>
+    <radialGradient id="mirrored-rings" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1"
+                    gradientTransform="translate(580.5 51.5) scale(20 12)" spreadMethod="reflect">
+      <stop stop-color="black"/>
+      <stop offset="1" stop-color="white"/>
+    </radialGradient>
+    <mask id="horizontal" mask-type="alpha" maskUnits="userSpaceOnUse" x="10" y="10" width="140" height="98">
+      <rect x="14" y="20" width="128" height="80" fill="url(#repeat)"/>
+    </mask>
+    <mask id="vertical" maskUnits="userSpaceOnUse" x="162" y="10" width="143" height="98">
+      <rect x="171" y="12" width="130" height="96" fill="url(#reflect)"/>
+    </mask>
+    <mask id="repeat-radial" mask-type="alpha" maskUnits="userSpaceOnUse" x="320" y="8" width="160" height="96">
+      <g opacity=".5">
+        <rect x="330" y="12" width="144" height="88" fill="url(#rings)"/>
+      </g>
+    </mask>
+    <mask id="reflect-radial" maskUnits="userSpaceOnUse" x="490" y="8" width="160" height="96">
+      <rect x="490" y="12" width="160" height="88" fill="url(#mirrored-rings)"/>
+    </mask>
+  </defs>
+  <path fill="blue" mask="url(#horizontal)" d="M0 0H155V110H0Z"/>
+  <path fill="blue" mask="url(#vertical)" d="M156 0H312V110H156Z"/>
+  <path fill="blue" mask="url(#repeat-radial)" d="M315 0H482V110H315Z"/>
+  <path fill="blue" mask="url(#reflect-radial)" d="M484 0H654V110H484Z"/>
+  <path fill="#f80" d="M660 22h28v32h-28Z"/>
+</svg>
+<script>
+let frame = 0;
+function editRepeatedGradient() {
+    if (++frame === 12)
+        document.getElementById('faint').setAttribute('stop-opacity', '0');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-spread-ready', '');
+    else
+        requestAnimationFrame(editRepeatedGradient);
+}
+requestAnimationFrame(editRepeatedGradient);
+</script>

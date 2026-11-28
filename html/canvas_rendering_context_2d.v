@@ -235,9 +235,20 @@ pub fn html_canvas_element_surface(element &dom.HTMLCanvasElement) ?&dom.Bitmap_
 // layout/paint pass must not allocate a default 300x150 bitmap for a canvas
 // whose context has never been requested.
 pub fn html_canvas_element_present_existing_surface(element &dom.HTMLCanvasElement) ?&dom.Bitmap_ {
-	state := html_canvas_element_states[html_canvas_element_key(element)] or { return none }
-	html_canvas_element_present(element)
+	mut state := html_canvas_element_states[html_canvas_element_key(element)] or { return none }
+	if state.dirty || state.webgl_context != none {
+		state.present()
+	} else if source := state.external_content_source {
+		if source.current_frame() == none { state.present() }
+	}
 	return state.surface.bitmap()
+}
+
+fn html_canvas_element_register_context_for_paint(element &dom.HTMLCanvasElement) {
+	// The canvas can already have a cached foreground phase without a draw.
+	// First use adds the draw. Later pixel writes can keep the phase cache.
+	mut node := unsafe { &dom.Node(element) }
+	node.set_needs_repaint(.paint_commands)
 }
 
 pub fn html_canvas_element_allocate_painting_surface_if_needed(element &dom.HTMLCanvasElement) ! {
@@ -309,6 +320,7 @@ pub fn html_canvas_element_get_context(element &dom.HTMLCanvasElement, type_ str
 	}
 	context := CanvasRenderingContext2D.create(element, state.surface, settings)
 	state.context = context
+	html_canvas_element_register_context_for_paint(element)
 	return context
 }
 
@@ -318,6 +330,11 @@ pub fn html_canvas_element_bitmap(element &dom.HTMLCanvasElement) !&dom.Bitmap_ 
 
 pub fn html_canvas_element_set_canvas_content_dirty(element &dom.HTMLCanvasElement) ! {
 	mut state := ensure_html_canvas_element_state(element)!
+	// The compact bridge can replace the bitmap's bytes directly before
+	// reporting the draw, in addition to the ordinary 2D raster entry points.
+	if mut bitmap := state.surface.bitmap() {
+		bitmap.mark_pixels_changed()
+	}
 	state.dirty = true
 }
 
@@ -327,28 +344,28 @@ pub fn html_canvas_element_is_dirty(element &dom.HTMLCanvasElement) bool {
 }
 
 pub fn html_canvas_element_present(element &dom.HTMLCanvasElement) {
-	if state := html_canvas_element_states[html_canvas_element_key(element)] {
-		mut mutable_state := unsafe { &HTMLCanvasElementState(state) }
-		if context := state.webgl_context {
-			width,height := html_canvas_element_dimensions(element)
-			if width == 0 || height == 0 { return }
-			if !state.dirty && !context.needs_to_present() { return }
-			mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
-			if !mutable_context.prepare_for_compositing() { return }
-			frame := context.native.painting_surface() or { return }
-			mut surface := state.surface
-			surface.bitmap_ = webgl_frame_bitmap(frame)
-		}
-		if source := state.external_content_source {
-			mut mutable_source := unsafe { &CanvasExternalContentSource(source) }
-			if bitmap := state.surface.bitmap() {
-				mutable_source.update(dom.DecodedImageFrame_.create(bitmap.clone()))
-			} else {
-				mutable_source.clear()
-			}
-		}
-		mutable_state.dirty = false
+	if mut state := html_canvas_element_states[html_canvas_element_key(element)] {
+		state.present()
 	}
+}
+
+fn (mut state HTMLCanvasElementState) present() {
+	if context := state.webgl_context {
+		if !state.dirty && !context.needs_to_present() { return }
+		width, height := html_canvas_element_dimensions(state.element)
+		if width == 0 || height == 0 { return }
+		mut mutable_context := unsafe { &webgl.WebGLRenderingContext(context) }
+		if !mutable_context.prepare_for_compositing() { return }
+		if !state.publish_webgl_bitmap(context) { return }
+	}
+	if mut source := state.external_content_source {
+		if bitmap := state.surface.bitmap() {
+			source.update(dom.DecodedImageFrame_.create(bitmap.clone()))
+		} else {
+			source.clear()
+		}
+	}
+	state.dirty = false
 }
 
 pub fn html_canvas_element_is_origin_clean(element &dom.HTMLCanvasElement) bool {

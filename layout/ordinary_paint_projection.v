@@ -124,7 +124,7 @@ fn fill_ordinary_paint_box(node &Node, state &LayoutState,
 			has_children:      node.has_children()
 			flex_item:         node.is_flex_item()
 			grid_item:         node.is_grid_item_
-			paint:             RetainedBlockPaintBox{ box: template, origin: position }
+			paint:             RetainedBlockPaintBox{ box: template, origin: position, geometry: geometry }
 		}
 	}
 }

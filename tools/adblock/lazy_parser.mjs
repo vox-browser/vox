@@ -26,10 +26,18 @@ export function lazyParserObject(name) {
     });
 }
 
+// The value parsers the matching engine calls for removeparam and redirect
+// filters. They use only built-ins, so their own source is emitted: the first
+// such directive of a page otherwise evaluated the whole parser bundle (about
+// 100M instructions in the worker on github.com). parseHeaderValue and
+// parseReplaceByRegexValue call the parser's own helpers and stay lazy.
+export const eagerParserFunctions = new Set(['parseQueryPruneValue', 'parseRedirectValue']);
+
 export function parserStub(exports) {
     const lines = [`const lazyFunction=${lazyParserFunction},lazyObject=${lazyParserObject};`];
     for (const [name, value] of Object.entries(exports)) {
         if (typeof value === 'number') lines.push(`export const ${name}=${JSON.stringify(value)};`);
+        else if (typeof value === 'function' && eagerParserFunctions.has(name)) lines.push(`export const ${name}=${value.toString()};`);
         else if (typeof value === 'function') lines.push(`export const ${name}=/* @__PURE__ */lazyFunction(${JSON.stringify(name)});`);
         else if (value && typeof value === 'object') lines.push(`export const ${name}=/* @__PURE__ */lazyObject(${JSON.stringify(name)});`);
         else throw new Error('Unsupported parser export: ' + name);

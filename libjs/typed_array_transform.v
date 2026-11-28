@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // TypedArrayPrototype.cpp::filter/map. Both capture the iteration length;
 // filter creates its species result after callbacks, map before callbacks.
 pub fn typed_array_prototype_filter(mut vm VM, prototypes PrimitiveObjectPrototypes, constructor_getter TypedArrayIntrinsicConstructorGetter, prototype_getter TypedArrayIntrinsicPrototypeGetter) !Value {
@@ -11,6 +13,7 @@ pub fn typed_array_prototype_filter(mut vm VM, prototypes PrimitiveObjectPrototy
 	mut kept := []Value{}
 	mut captured := u32(0)
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		value := source.object.get(mut vm, PropertyName.from_number(k))!
 		selected := call(mut vm, Value.from_object(callback), this_arg, [value,
 			Value.from_f64(f64(k)), Value.from_object(source.object)])!.to_boolean()
@@ -23,11 +26,13 @@ pub fn typed_array_prototype_filter(mut vm VM, prototypes PrimitiveObjectPrototy
 	factory := fn [source, realm, captured, prototype_getter] (mut vm VM) !&TypedArray {
 		return source.create_default(mut vm, realm, captured, prototype_getter)
 	}
+	defer { platform.release_closure(voidptr(factory)) }
 	array := typed_array_species_create(mut vm, source, factory, [
 		Value.from_f64(f64(captured)),
 	], constructor_getter)!
 	mut object := array.object
 	for index, value in kept {
+		vm.consume_execution_budget()!
 		object.set(mut vm, PropertyName.from_number(u32(index)), value, .yes)!
 	}
 	return Value.from_object(object)
@@ -43,11 +48,13 @@ pub fn typed_array_prototype_map(mut vm VM, prototypes PrimitiveObjectPrototypes
 	factory := fn [source, realm, length, prototype_getter] (mut vm VM) !&TypedArray {
 		return source.create_default(mut vm, realm, length, prototype_getter)
 	}
+	defer { platform.release_closure(voidptr(factory)) }
 	array := typed_array_species_create(mut vm, source, factory, [
 		Value.from_f64(f64(length)),
 	], constructor_getter)!
 	mut object := array.object
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		key := PropertyName.from_number(k)
 		value := source.object.get(mut vm, key)!
 		mapped := call(mut vm, Value.from_object(callback), this_arg, [value, Value.from_f64(f64(k)),

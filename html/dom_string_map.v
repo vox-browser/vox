@@ -84,7 +84,7 @@ fn dom_string_map_attribute_name(name string, reject_hyphen_lowercase bool) !str
 		character := name[index]
 		if reject_hyphen_lowercase && character == `-` && index + 1 < name.len
 			&& name[index + 1] >= `a` && name[index + 1] <= `z` {
-			return error("Name cannot contain a '-' followed by a lowercase character.")
+			return error("SyntaxError: Name cannot contain a '-' followed by a lowercase character.")
 		}
 		if character >= `A` && character <= `Z` {
 			data_name << `-`
@@ -96,7 +96,7 @@ fn dom_string_map_attribute_name(name string, reject_hyphen_lowercase bool) !str
 	}
 	result := data_name.bytestr()
 	if !dom.is_valid_attribute_local_name(result) {
-		return error('Name is not a valid attribute local name.')
+		return error('InvalidCharacterError: Name is not a valid attribute local name.')
 	}
 	return result
 }

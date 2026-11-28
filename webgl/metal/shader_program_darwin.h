@@ -9,6 +9,7 @@ typedef struct {
     VoxMetalTranslatedProgram* translated;
 } VoxMetalShaderProgram;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static void vox_metal_program_destroy(void* handle)
 {
     VoxMetalShaderProgram* program = handle;
@@ -153,4 +154,5 @@ static int vox_metal_program_resource(void* handle, uint64_t index, VoxMetalShad
     *resource = program->translated->resources[index];
     return 1;
 }
+#endif
 #endif

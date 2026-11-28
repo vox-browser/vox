@@ -54,6 +54,7 @@ mut:
 	high_water_mark_         f64 = 1.0
 	size_algorithm_          SizeAlgorithm = default_size_algorithm
 	size_value_algorithm_    ?ValueSizeAlgorithm
+	size_algorithm_object_   ?SizeAlgorithmObject
 	write_algorithm_         ?WriteAlgorithm
 	close_algorithm_         ?CloseAlgorithm
 	abort_algorithm_         ?AbortAlgorithm
@@ -98,6 +99,7 @@ pub fn WritableStream.create(realm StreamRealm, sink UnderlyingSink, strategy Qu
 	mut stream := &WritableStream{
 		realm_: realm
 		size_value_algorithm_: strategy.size_value
+		size_algorithm_object_: strategy.size_object
 	}
 	initialize_writable_stream(mut stream)
 	set_up_writable_stream_default_controller_from_underlying_sink(mut stream, sink, high_water_mark, size_algorithm)!

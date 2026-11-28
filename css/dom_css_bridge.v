@@ -181,6 +181,7 @@ mut:
 	// them on every layout neither duplicates nor reparses them.
 	link_sheets  []&CSSStyleSheet
 	link_sources []string
+	link_responses map[string]ImportedStyleSheetSource
 }
 
 // The document's author-stylesheet holder, created on first use and cached on the document via its handle.
@@ -278,12 +279,26 @@ fn style_computer_invalidation_property_used_in_has_callback(target voidptr, pro
 	return style_computer.invalidation_property_used_in_has_selector(invalidation_property_from_dom(property), scope)
 }
 
-fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.InvalidationProperty, dom_scope &dom.StyleScope) dom.InvalidationPlan {
+fn style_computer_invalidation_plan_callback(target voidptr, properties []dom.InvalidationProperty, dom_scope &dom.StyleScope, storage &platform.Arena) dom.InvalidationPlan {
 	if dom_scope.css_handle == unsafe { nil } {
 		return dom.InvalidationPlan{}
 	}
 	style_computer := unsafe { &StyleComputer(target) }
 	scope := unsafe { &StyleScope(dom_scope.css_handle) }
+	// A targeted sheet replacement can leave every existing subject clean.
+	// Rebuild its invalidation plans before a subsequent attribute starts
+	// matching a newly installed rule.
+	scope.build_rule_cache_if_needed()
+	mut plan_storage := unsafe { &platform.Arena(storage) }
+	mut entry := platform.ArenaEntry{}
+	if plan_storage != unsafe { nil } {
+		entry = plan_storage.enter()
+	}
+	defer {
+		if plan_storage != unsafe { nil } {
+			plan_storage.leave(entry)
+		}
+	}
 	css_properties := properties.map(invalidation_property_from_dom(it))
 	return invalidation_plan_to_dom(style_computer.invalidation_plan_for_properties(css_properties, scope))
 }
@@ -466,10 +481,14 @@ fn document_theme_color_media_matches_callback(target voidptr, value string) boo
 // — the html parser can't build css.CSSStyleSheet objects (it doesn't import css), so author sheets are
 // attached here by css-aware callers.
 pub fn add_document_author_style_sheet(document &dom.Document, css_text string) {
+	add_document_author_style_sheet_at(document, css_text, none)
+}
+
+pub fn add_document_author_style_sheet_at(document &dom.Document, css_text string, location ?string) {
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
 	holder := css_author_style_sheets_for(document)
-	mut sheet := parse_css_stylesheet_with_params(ParsingParams{document: document}, css_text, none)
+	mut sheet := parse_css_stylesheet_with_params(ParsingParams{document: document}, css_text, location)
 	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(document) })
 	// The holder is @[heap] (stable address) reached through a cached handle; append through the pointer.
 	unsafe {
@@ -491,10 +510,16 @@ struct DocumentStyleSource {
 }
 
 fn resolve_stylesheet_url(reference string, base_url string) ?string {
+	// Stylesheet lookups keep the serialized key. The parsed base, URL
+	// record and temporary components have no readers after serialization.
+	scratch := platform.begin_thread_scratch('stylesheet URL resolution')
+	defer { scratch.finish() }
 	resolved := dom.dom_url_parse(reference, dom.URL{
 		value: base_url
 	}, 'utf-8') or { return none }
-	return resolved.to_string()
+	serialized := resolved.to_string()
+	scratch.leave()
+	return serialized.clone()
 }
 
 fn local_path_for_stylesheet_url(serialized string) ?string {
@@ -563,10 +588,28 @@ pub fn set_remote_link_style_sheet_response(resolved_url string, source Imported
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	remote_link_style_sheets[resolved_url.clone()] = ImportedStyleSheetSource{
-		css_text: decode_stylesheet_response_text(source.css_text)
+		css_text: decode_stylesheet_response_text(source.css_text, true)
 		response_url: source.response_url.clone()
 		content_type: source.content_type.clone()
 		cors_same_origin: source.cors_same_origin
+	}
+}
+
+// The browser already owns these immutable response strings in the document.
+// Store only a reference for CSS's fallback synchronization. A failed fetch
+// removes the previous response so it cannot supply an outdated sheet.
+pub fn set_document_link_style_sheet_response(document &dom.Document, resolved_url string,
+	response ?ImportedStyleSheetSource) {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
+	mut holder := css_author_style_sheets_for(document)
+	if source := response {
+		holder.link_responses[resolved_url] = ImportedStyleSheetSource{
+			...source
+			css_text: decode_stylesheet_response_text(source.css_text, false)
+		}
+	} else {
+		holder.link_responses.delete(resolved_url)
 	}
 }
 
@@ -589,7 +632,9 @@ fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(
 	if path := local_path_for_stylesheet_url(resolved_url) {
 		return os.read_file(path) or { return none }, resolved_url
 	}
-	source := remote_link_style_sheets[resolved_url] or { return none }
+	source := css_author_style_sheets_for(link.document()).link_responses[resolved_url] or {
+		remote_link_style_sheets[resolved_url] or { return none }
+	}
 	if mime := mimesniff.MimeType.parse(source.content_type) {
 		assume_css_in_quirks_mode := link.document().in_quirks_mode()
 			&& dom.URL{value: source.response_url}.origin().is_same_origin(link.document().origin())
@@ -644,6 +689,12 @@ fn dump_css_style_sheet_if_requested(sheet &CSSStyleSheet) {
 			eprintln(rule.dump(0))
 		}
 	}
+}
+
+// A style sheet response's text parsed as an owner node parses it (lazy
+// declarations for large sheets), for benchmarks and tools.
+pub fn parse_owner_style_sheet_text(document &dom.Document, css_text string, location string) &CSSStyleSheet {
+	return parse_css_style_sheet_for_owner_node(document, css_text, location)
 }
 
 // Load imports before the sheet joins its style sheet list so imported fonts,
@@ -730,7 +781,7 @@ pub fn install_link_style_sheet_with_base(owner &dom.HTMLLinkElement, css_text s
 	mut scope := css_style_scope_for_scope_node(scope_node)
 	mut list := scope.style_sheet_list()
 	resource_base_url := base_url or { location }
-	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), decode_stylesheet_response_text(css_text), resource_base_url)
+	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), decode_stylesheet_response_text(css_text, false), resource_base_url)
 	sheet.base.location = location
 	sheet.set_base_url(base_url)
 	// Cache-only synchronization has no CORS response to approve. A Fetch
@@ -816,13 +867,10 @@ pub fn style_element_sheet(element &dom.Element) ?&CSSStyleSheet {
 	return unsafe { &CSSStyleSheet(sheet) }
 }
 
-// Synchronize the document CSS style sheet list with its <link rel=stylesheet>
-// elements, then re-evaluate media rules for the current viewport. Style
-// elements maintain their own sheets through DOM::StyleElementBase.
-// Boundary: HTMLLinkElement does not yet fetch and process stylesheet
-// resources, so this bridge reads local link stylesheets, and remote ones the
-// browser fetched, on each layout and adds them to the list with the link's
-// media, title, and alternate flag.
+// Synchronize fallback link sheets, then re-evaluate media rules for the
+// current viewport. The bridge reads local files and cached remote responses
+// for links that have yet to install a sheet through resource completion.
+// Style elements maintain their own sheets through DOM::StyleElementBase.
 pub fn sync_document_style_elements(document &dom.Document) {
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }

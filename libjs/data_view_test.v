@@ -8,7 +8,7 @@ fn test_data_view_witnesses_preserve_fixed_and_tracking_lengths_across_buffer_re
 	buffer.maximum_byte_length = uint(16)
 	fixed := DataView.create(vm.realm(), buffer, ByteLength.from_u32(4), 2, prototype)
 	tracking := DataView.create(vm.realm(), buffer, ByteLength.auto_length(), 2, prototype)
-	assert voidptr(fixed.object.data_view?) == voidptr(fixed)
+	assert voidptr(fixed.object.slots.data_view?) == voidptr(fixed)
 	assert voidptr(fixed.object.prototype?) == voidptr(prototype)
 	assert fixed.object.own_property_keys().len == 0 && fixed.object.class_name == 'DataView'
 	assert fixed.byte_offset() == 2

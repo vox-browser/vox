@@ -1,0 +1,48 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shared GG SVG gradient strokes</title>
+<style>
+  body { margin: 0; min-height: 4096px; background: white; }
+  .stage { position: fixed; top: 0; left: 0; }
+  header { width: 16px; height: 8px; background: #34b786; }
+  svg { display: block; }
+</style>
+<div class="stage">
+  <header></header>
+  <svg width="395" height="140">
+    <defs>
+      <linearGradient id="line" gradientUnits="userSpaceOnUse" x1="20" x2="120"
+                      gradientTransform="translate(2)">
+        <stop offset="0" stop-color="red"/>
+        <stop id="line-end" offset="1" stop-color="blue"/>
+      </linearGradient>
+      <radialGradient id="radial" gradientUnits="userSpaceOnUse" cx="223" cy="18" r="32">
+        <stop offset="0" stop-color="white"/>
+        <stop offset="1" stop-color="#2071ca"/>
+      </radialGradient>
+      <linearGradient id="dash" gradientUnits="userSpaceOnUse" x1="14" x2="50" spreadMethod="repeat">
+        <stop offset="0" stop-color="#002244"/>
+        <stop offset="1" stop-color="#44cc44"/>
+      </linearGradient>
+      <linearGradient id="fixed-width" gradientUnits="userSpaceOnUse" x1="5" x2="35"
+                      gradientTransform="translate(2)">
+        <stop offset="0" stop-color="red"/>
+        <stop offset="1" stop-color="blue"/>
+      </linearGradient>
+      <linearGradient id="text-ink" gradientUnits="userSpaceOnUse" x1="302" x2="352">
+        <stop offset=".5" stop-color="lime"/>
+      </linearGradient>
+    </defs>
+    <path d="M20 18H120V56H20Z" fill="#40a0ff" stroke="url(#line)" stroke-width="8"
+          stroke-linejoin="round"/>
+    <path d="M190 18H262V56H190Z" fill="#b82020" stroke="url(#radial)" stroke-width="8"
+          stroke-linejoin="round" style="paint-order: stroke fill"/>
+    <path id="dashed" d="M14 94H146" fill="none" stroke="url(#dash)" stroke-width="8"
+          stroke-linejoin="round" stroke-dasharray="8 10" stroke-opacity=".8"/>
+    <path d="M5 8H35" fill="none" stroke="url(#fixed-width)" stroke-width="6"
+          stroke-linejoin="round" transform="translate(172 70) scale(3 2)"
+          vector-effect="non-scaling-stroke"/>
+    <text x="306" y="125" font-family="sans-serif" font-size="50" font-weight="bold"
+          fill="black" stroke="url(#text-ink)" stroke-width="4" stroke-linejoin="round">A</text>
+  </svg>
+</div>

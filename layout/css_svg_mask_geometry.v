@@ -41,11 +41,18 @@ fn css_svg_mask_operations_fit_image(operations []painting.SVGMaskPaintOperation
 		if operation.kind in [.begin_opacity, .end_opacity] { continue }
 		if operation.kind != .path { return false }
 		mut bounds := painting_clip_path_bounds(operation.path) or { return false }
-		if operation.has_stroke {
-			inset := operation.stroke_width * math.max(1, operation.stroke_miter_limit) / 2
-			bounds = painting.Rect{bounds.x - inset, bounds.y - inset, bounds.width + 2 * inset, bounds.height + 2 * inset}
+		inset := if operation.has_stroke {
+			operation.stroke_width * math.max(1, operation.stroke_miter_limit) / 2
+		} else {
+			0.0
 		}
-		mapped := operation.transform.map_rect(bounds)
+		if inset > 0 && !operation.non_scaling_stroke {
+			bounds = bounds.inflated(inset, inset, inset, inset)
+		}
+		mut mapped := operation.transform.map_rect(bounds)
+		if inset > 0 && operation.non_scaling_stroke {
+			mapped = mapped.inflated(inset, inset, inset, inset)
+		}
 		if mapped.x < -0.0001 || mapped.y < -0.0001
 			|| mapped.right() > width + 0.0001 || mapped.bottom() > height + 0.0001 {
 			return false

@@ -213,11 +213,18 @@ pub fn convert_to_int(value Value, bit_length int, is_signed bool, enforce_range
 	number = integer_part(number)
 	modulus := math.pow(2, bit_length)
 	number = math.mod(number, modulus)
+	if number == 0 { return 0 }
+	if is_signed {
+		// Keep an already signed remainder in that range. Adding 2^64 to
+		// -1 first rounds it to 2^64 as a double, losing the original value
+		// before the signed adjustment (notably File.lastModified = -1).
+		half := math.pow(2, bit_length - 1)
+		if number >= half { return number - modulus }
+		if number < -half { return number + modulus }
+		return number
+	}
 	if number < 0 {
 		number += modulus
-	}
-	if is_signed && number >= math.pow(2, bit_length - 1) {
-		return number - modulus
 	}
 	return number
 }

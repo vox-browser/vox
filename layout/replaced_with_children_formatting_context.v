@@ -41,7 +41,8 @@ fn run_replaced_with_children_formatting_context(mut state LayoutState, context_
 	wrapper_state.set_content_height(root_state.content_height())
 	wrapper_state.set_has_definite_width(true)
 	wrapper_state.set_has_definite_height(true)
-	wrapper_state.set_content_offset(CSSPixelPoint{})
+	origin := CSSPixelPoint{}
+	wrapper_state.set_content_offset(origin)
 	wrapper_state.set_containing_block_used_values(root_state)
 
 	result := layout_inside_independent_formatting_context(mut state, wrapper_node, mut

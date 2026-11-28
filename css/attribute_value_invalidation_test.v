@@ -249,3 +249,52 @@ fn test_value_tests_are_collected_once_per_distinct_selector() {
 	assert tests.tests.len == 4
 	assert insights.attribute_value_tests.len == 1
 }
+
+// A class attribute appearing on an element flips `[class]`, which only the
+// styled element's own compound tests (`div:not([class])`): the element is
+// restyled alone, while a flip of a test that ancestors use
+// (`[class^=pane-]>…`) still reaches its descendants.
+fn test_subject_only_attribute_tests_restyle_only_the_element() {
+	mut fixture := attribute_value_fixture('[class^=pane-]>[class^=inner-]{color:red}div:not([class]){border-top-style:dashed}')
+	defer { fixture.document.finalize() }
+	precise := os.getenv('VOX_RETAIN_ATTRIBUTE_NAME_INVALIDATION') == ''
+		&& os.getenv('VOX_RETAIN_SUBJECT_ATTRIBUTE_INVALIDATION') == ''
+	fixture.middle.remove_attribute('class')
+	fixture.document.update_style()
+	middle_style := computed_properties_for_element(fixture.middle) or { panic('middle') }
+	assert (middle_style.property(.border_top_style, .no) or { panic('border') }).css_text == 'dashed'
+	before := computed_properties_for_element(fixture.target) or { panic('missing style') }
+	skipped_before, applied_before := attribute_value_invalidation_statistics()
+	fixture.middle.set_attribute_value('class', 'loaded')
+	skipped_after, applied_after := attribute_value_invalidation_statistics()
+	fixture.document.update_style()
+	after := computed_properties_for_element(fixture.target) or { panic('missing style') }
+	restyled := computed_properties_for_element(fixture.middle) or { panic('middle') }
+	assert (restyled.property(.border_top_style, .no) or { panic('border') }).css_text == 'none'
+	if precise {
+		assert skipped_after == skipped_before + 1
+		assert applied_after == applied_before
+		assert voidptr(after) == voidptr(before)
+	} else {
+		assert applied_after == applied_before + 1
+	}
+	assert fixture.colors('loaded') == '${attribute_value_blue} ${attribute_value_blue}'
+	// `[class^=pane-]` is tested on the parent of the restyled descendant.
+	fixture.middle.set_attribute_value('class', 'pane-x')
+	assert fixture.colors('pane-x') == '${attribute_value_red} ${attribute_value_blue}'
+}
+
+// `:nth-child(… of [data-picked])` counts siblings carrying the attribute, so
+// a flip on one element changes the matches of its later siblings: the test
+// is not the element's own and the name's plan still applies.
+fn test_nth_child_of_attribute_tests_reach_siblings() {
+	mut fixture := attribute_value_fixture('p:nth-child(1 of [data-picked]){color:red}')
+	defer { fixture.document.finalize() }
+	// The sibling is the second child of the scope, after div.mid.
+	fixture.sibling.set_attribute_value('data-picked', '')
+	assert fixture.colors('sibling picked') == '${attribute_value_blue} ${attribute_value_red}'
+	fixture.middle.set_attribute_value('data-picked', '')
+	assert fixture.colors('middle picked') == '${attribute_value_blue} ${attribute_value_blue}'
+	fixture.middle.remove_attribute('data-picked')
+	assert fixture.colors('middle unpicked') == '${attribute_value_blue} ${attribute_value_red}'
+}

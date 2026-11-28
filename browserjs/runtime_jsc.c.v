@@ -97,7 +97,9 @@ fn js_exception_message(context voidptr, exception voidptr) string {
 }
 
 fn create_javascript_core_context(worker_global bool) voidptr {
-	return C.vox_browserjs_create_agent_context(i32(worker_global))
+	context := C.vox_browserjs_create_agent_context(i32(worker_global))
+	enable_jsc_sampling_profile(context)
+	return context
 }
 
 fn create_javascript_core_shared_context() voidptr {

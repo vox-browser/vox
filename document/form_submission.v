@@ -3,6 +3,20 @@ module main
 import browserjs
 import dom
 import html
+import platform
+
+@[heap]
+struct NativeLibJSFormSubmissionHost {}
+
+fn (_ &NativeLibJSFormSubmissionHost) submit_form(element &dom.Element, target string, submission html.FormSubmission) ! {
+	submit_browser_form(element, target, submission, .libjs)!
+}
+
+fn install_libjs_form_submission_host(mut runtime browserjs.Runtime) ! {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	runtime.set_libjs_form_submission_host(&NativeLibJSFormSubmissionHost{})!
+}
 
 fn browser_form_document_resource(submission html.FormSubmission) html.DocumentResource {
 	if submission.method != .post { return html.EmptyDocumentResource{} }

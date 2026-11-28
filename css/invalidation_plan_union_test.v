@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 fn plan_union_rule(name string, payload &InvalidationPlan) DescendantInvalidationRule {
 	mut set := InvalidationSet{}
@@ -132,6 +133,40 @@ fn test_plan_union_keeps_sibling_reach_any_matching_and_whole_subtree_actions() 
 	assert result.invalidate_whole_subtree
 	assert result.sibling_rules.len == 0
 	assert result.descendant_rules.len == 0
+}
+
+fn test_unordered_invalidation_rule_comparison_crosses_match_word_boundary() {
+	payload := &InvalidationPlan{invalidate_self: true}
+	mut left := InvalidationPlan.create()
+	for index in 0 .. 65 {
+		rule := plan_union_rule('item-${index}', payload)
+		left.descendant_rules << rule
+		left.sibling_rules << SiblingInvalidationRule{match_set: rule.match_set, payload: payload}
+	}
+	mut right := InvalidationPlan.create()
+	right.descendant_rules = left.descendant_rules.reverse()
+	right.sibling_rules = left.sibling_rules.reverse()
+	assert invalidation_plans_equal(left, right)
+	right.sibling_rules[64] = right.sibling_rules[63]
+	assert !invalidation_plans_equal(left, right)
+	right.sibling_rules[64] = left.sibling_rules[0]
+	right.descendant_rules[64] = right.descendant_rules[63]
+	assert !invalidation_plans_equal(left, right)
+}
+
+fn test_small_unordered_invalidation_comparisons_do_not_grow_the_arena() {
+	payload := &InvalidationPlan{invalidate_self: true}
+	first := plan_union_rule('first', payload)
+	second := plan_union_rule('second', payload)
+	left := &InvalidationPlan{descendant_rules: [first, second]}
+	right := &InvalidationPlan{descendant_rules: [second, first]}
+	assert invalidation_plans_equal(left, right)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 512 {
+		if !invalidation_plans_equal(left, right) { panic('same rules in reverse order') }
+	}
+	growth := platform.thread_arena_usage().used - before
+	assert growth == 0
 }
 
 fn test_merged_match_sets_invalidate_every_matching_dom_branch() {

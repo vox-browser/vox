@@ -1,6 +1,8 @@
 #pragma once
 extern int32_t vox_document_sampled_png_pixels(uint8_t*,int32_t,int32_t,int32_t,int32_t,
     int32_t,int32_t,uint8_t*,int32_t,int32_t,int32_t,int32_t,int32_t,float,float,float,float,float*);
+extern int32_t vox_document_jpegxl_circle_pixels(uint8_t*,int32_t,int32_t,int32_t,int32_t,
+    int32_t,int32_t,uint8_t*,int32_t,int32_t,int32_t,int32_t,int32_t,float,float,float,float,float*);
 
 static int native_draw_sampled_png_internal(const uint8_t *source,int source_width,int source_height,int natural_width,int natural_height,int gpu_mips,
     float x,float y,float width,float height,const float *clip,float page_x,float page_y,float scroll_y,
@@ -33,7 +35,10 @@ static int native_draw_sampled_png_internal(const uint8_t *source,int source_wid
         extern int32_t vox_document_shadowed_png_pixels(uint8_t*,int32_t,int32_t,int32_t,int32_t,int32_t,int32_t,uint8_t*,int32_t,int32_t,int32_t,int32_t,int32_t,float,float,float,float,float*,VoxGraphiteShape*);
         drawn=vox_document_shadowed_png_pixels(pixels,w,h,w*4,1,(int32_t)(geometry[0]-page_x),(int32_t)(geometry[1]-page_y+scroll_y),(uint8_t*)source,source_width,source_height,natural_width,natural_height,gpu_mips,page_x+x-geometry[0],page_y-scroll_y+y-geometry[1],width,height,local_clip,&local);
     } else {
-    if (drawn) drawn=vox_document_sampled_png_pixels(pixels,w,h,w*4,1,
+    if (drawn && gpu_mips==7) drawn=vox_document_jpegxl_circle_pixels(pixels,w,h,w*4,1,
+        (int32_t)(geometry[0]-page_x),(int32_t)(geometry[1]-page_y+scroll_y),
+        (uint8_t*)source,source_width,source_height,natural_width,natural_height,gpu_mips,page_x+x-geometry[0],page_y-scroll_y+y-geometry[1],width,height,local_clip);
+    else if (drawn) drawn=vox_document_sampled_png_pixels(pixels,w,h,w*4,1,
         (int32_t)(geometry[0]-page_x),(int32_t)(geometry[1]-page_y+scroll_y),
         (uint8_t*)source,source_width,source_height,natural_width,natural_height,gpu_mips,page_x+x-geometry[0],page_y-scroll_y+y-geometry[1],width,height,local_clip);
     }

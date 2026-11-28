@@ -1,5 +1,59 @@
 # Brave rendering fixtures
 
+`small-list-symbol-coverage` checks small filled list discs and square markers
+at three font sizes, including a lower document tile. Two fresh Brave references
+agree. `57c86c2f7` routes filled ellipses through document shape rasterization:
+the public control improves 92→0 pixels twice, and the recovered older Reddit
+page improves 18→6. Its 54-workload recheck preserves every prior PNG.
+
+`rounded-repeated-sprite-border` now passes with its unchanged reference,
+promoted from `diagnostic/` to `input/` and `expected/`. Its inline button uses
+the public Reddit sprite and an SVG curve in the same tile, preserving the
+multisample context of the recovered page. The companion
+`rounded-repeated-sprite-border-single-sample` omits that curve; two fresh Brave
+processes agree on its independent reference. Both controls and the recovered
+older Reddit page are exact in two fresh Vox captures. The renderer keeps the
+image, rounded clip, background and border in one pass and preserves texture
+coordinates after the geometry's antialiasing outset. See the
+[sprite audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).
+
+For full-uBO paint diagnostics, `tools/adblock/brave_parity.mjs` accepts
+`--post-capture-paint-dir PATH` alongside its normal saved reference. It records
+content-layer paint commands and a separate post-instrumentation PNG, releases
+the snapshots and checks that the original PNG is untouched. These logs omit
+opaque shader/text-blob contents. Instrumentation can change raster history:
+on Lobsters it repaired five captured 101-pixel failures. The later PNG never
+replaces the saved reference or supplies default-path acceptance.
+
+`tools/forum_news_pixels.py` writes `source-replay-browser-versions.json` and
+includes its fields in the site summary. Strict acceptance requires the recorded
+source version and both fresh replay versions to match. Different versions return
+`source-browser-mismatch`; missing or malformed versions return
+`source-browser-unverified`. A reference-repeat failure retains priority, and
+all source/native pixel counts and PNGs remain in the evidence. Matching versions
+are necessary; executable and library hash checks remain separate requirements.
+See the [version audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#source-and-replay-browser-version-qualification-2026-11-16).
+
+`diagnostic/webp-srgb-table` reuses the tracked CNN train WebP with its original
+1024-entry ICC sRGB transfer table. It draws native-size, 104×58.5 CSS-pixel
+and viewport-clipped copies at 1024×768, scale 1, without scripts. Two fresh
+Brave 157.1.99.57 processes produced identical references before the renderer
+change; the retained PNG SHA-256 is
+`141711ca2cdcd062dc1cbfaf031df00d6366141ea67a1713b3b1abc20b0a9c1e`.
+The GPU regression is exact at sample counts 1 and 4. Production `1e1ffdd4e`
+improves the browser control 5,059→588 differences. Correction `78f1fcf3b`
+then makes the complete browser capture exact twice, including its clipped
+bottom copy, now confirmed in production `2e089712`. See the
+[profiled WebP audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-srgb-profiles-and-rgb-webp-minification-2026-11-15).
+
+The registered CNN replay's unstable region at (460, 753) is an autoplay video;
+the train thumbnail is at (588, 753). `webp-srgb-table` remains a static image
+sampling control and does not establish video stability. `de138d5e5` routes
+native media through browser fetching when proxy policy may apply, enforcing
+the archive's missing-MP4 failures through browser transport. Its focused
+and 45-workload diagnostic pairs repeat exactly; production confirmation is
+pending. See the [media audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-media-routing-in-frozen-cnn-replay-2026-11-15).
+
 Many fixtures below were first matched through the Skia text bridge and the
 Graphite/Dawn GPU helpers. Vox no longer builds or loads either; the native
 library checks named in older entries (`tools/test_skia_*.py`,
@@ -1383,3 +1437,39 @@ sample ownership through browser replay, improving vlang.io from 341 to 284
 pixels with zero new differences. The reduced scene and underlay retain four
 and three differences; production confirmation is pending. See the
 [shape/glyph audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).
+
+
+`input/uniform-scaled-png.html` uses the same 40×40 PNG at 9×20 and 18×40,
+through direct, half-scale and double-scale draws. A separate SVG curve makes
+only the upper tile multisampled; the lower tile checks ordinary analytic
+antialiasing after a larger draw of the same resource. Its unchanged 1024×768,
+scale-1 expected PNG agrees in two independent fresh Brave captures. `40d8c41ed` matches twice in the final diagnostic, improving the published
+baseline **1,412→0 pixels**. All 56 prior PNGs remain byte-identical in the
+57-workload/114-capture cohort.
+The focused GPU regression checks both ellipse sizes at one and four samples;
+cache and tile-planning tests preserve constrained clips and decode history.
+Production confirmation remains pending. See the
+[PNG audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
+
+
+`input/reddit-title-domain-wrap.html` checks six title/domain combinations:
+narrow and wide titles, plain domains, links inside parentheses, nested
+parenthesis spans and a longer domain. The domain's `white-space:nowrap` must
+survive the parent's `overflow-wrap:break-word`. Its unchanged 800×600, scale-1
+reference agrees in two fresh Brave processes and is exact in two fresh
+production captures (`bbd47035`). This public regression does not reconstruct
+the missing account-bearing November 4 Reddit workload or verify its original
+2,046 differences. Run `python3 tools/check_archived_site_pixels.py --diagnostic
+--output Build/UNIQUE reddit-title-domain-wrap`. See the
+[wrapping check](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#public-reddit-title-domain-wrapping-2026-11-16).
+
+
+`input/odd-height-webp-atlas.html` reuses a tracked BBC 320×179 WebP and draws
+it in single-sample and four-sample document tiles. Its independent, repeated
+1024×768 scale-1 Brave reference is unchanged. `4924a3389` makes the control
+**17,320→0 pixels** twice by retaining ceiling-sized chroma planes and avoiding
+a redundant full-image rectangular clip that perturbed sampling. The complete
+BBC archive improves **32,482→23,822** twice, with 8,660 corrected pixels and none
+introduced. The cropped right-hand photo remains open. All 58 prior PNGs remain
+unchanged in the 59-workload diagnostic sweep; production confirmation of this
+new WebP change is pending. See the [odd-plane audit](../../../docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#odd-height-webp-planes-in-bbc-photos-2026-11-16).

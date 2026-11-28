@@ -20,6 +20,9 @@ $if linux {
 #flag windows -lJavaScriptCore
 #include "@DIR/../browserjs/jsc_abi.h"
 #include "@DIR/runtime.h"
+#include "@DIR/direct_call.h"
+
+fn C.vox_adblock_call_with_json_arguments(context voidptr, name &char, arguments voidptr) voidptr
 
 fn C.vox_adblock_utf8_string(&u8, uint) voidptr
 
@@ -41,16 +44,46 @@ fn C.vox_adblock_set_context(voidptr)
 fn C.vox_adblock_get_enabled() int
 fn C.vox_adblock_set_enabled(int)
 
-const compressed_engine_source = $embed_file('engine.js.gz')
+$if !vox_packaged_adblock_assets ? {
+	const compressed_engine_source = $embed_file('engine.js.gz')
+}
 
 // Protected by the same lock as the default engine. Cache hits that require
 // no VM evaluation do not postpone releasing that VM.
 __global default_engine_last_used_ns i64
 
+// Same-binary control: evaluate every engine call as a script.
+const evaluate_adblock_calls_as_scripts = os.getenv('VOX_EVALUATE_ADBLOCK_CALLS_AS_SCRIPTS') != ''
+
+// Request and response checks arrive as `voxAdblockCheck(<json>)` and
+// `voxAdblockCheckResponse(<json>,<json>)` with arguments from
+// encode_transport_json. Evaluating each as a script parsed and compiled a new
+// program for every request; calling the global function with the arguments
+// parsed as a JSON array gives it the same values. Anything else, or a call
+// whose arguments are not JSON or that throws, is evaluated as before.
+fn call_engine_function(context voidptr, source string) ?string {
+	if evaluate_adblock_calls_as_scripts || source.len < 3 || source[source.len - 1] != `)` {
+		return none
+	}
+	name := if source.starts_with('voxAdblockCheck(') {
+		'voxAdblockCheck'
+	} else if source.starts_with('voxAdblockCheckResponse(') {
+		'voxAdblockCheckResponse'
+	} else {
+		return none
+	}
+	arguments := script_string('[' + source[name.len + 1..source.len - 1] + ']')
+	defer { C.JSStringRelease(arguments) }
+	value := C.vox_adblock_call_with_json_arguments(context, &char(name.str), arguments)
+	if value == unsafe { nil } { return none }
+	return value_string(context, value) or { return none }
+}
+
 fn evaluate_context(context voidptr, source string) !string {
 	if context == unsafe { nil } {
 		return error('Adblock engine is closed')
 	}
+	if result := call_engine_function(context, source) { return result }
 	script := script_string(source)
 	defer { C.JSStringRelease(script) }
 	mut exception := unsafe { nil }
@@ -83,10 +116,12 @@ fn create_context(custom_filters ?string) !voidptr {
 		// Keep decompression, encoding and initialization-result temporaries out
 		// of the request thread's retained base arena.
 		if _ := custom_filters { return create_context_in_current_arena(custom_filters) }
-		persistent := platform.enter_persistent()
-		if snapshot_asset_path('engine.js.gz') == none { _ = compressed_engine_source.data() }
-		warm_snapshot_sources()
-		platform.leave_persistent(persistent)
+		$if !vox_packaged_adblock_assets ? {
+			persistent := platform.enter_persistent()
+			if snapshot_asset_path('engine.js.gz') == none { _ = compressed_engine_source.data() }
+			warm_snapshot_sources()
+			platform.leave_persistent(persistent)
+		}
 		mut scratch := platform.begin_thread_scratch('adblock initialization')
 		context := create_context_in_current_arena(custom_filters) or {
 			scratch.leave()
@@ -100,6 +135,20 @@ fn create_context(custom_filters ?string) !voidptr {
 	return create_context_in_current_arena(custom_filters)
 }
 
+fn read_engine_source() ![]u8 {
+	if path := snapshot_asset_path('engine.js.gz') {
+		return os.read_bytes(path) or {
+			kind := if snapshot_asset_directory() != none { 'diagnostic' } else { 'bundled' }
+			return error('Cannot read ${kind} adblock source: ${err}')
+		}
+	}
+	$if vox_packaged_adblock_assets ? {
+		return error('Cannot locate bundled adblock source')
+	} $else {
+		return compressed_engine_source.to_bytes()
+	}
+}
+
 fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 	context := C.JSGlobalContextCreate(unsafe { nil })
 	if context == unsafe { nil } {
@@ -109,13 +158,10 @@ fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 		C.JSGlobalContextRelease(context)
 		return err
 	}
-	compressed_source := if path := snapshot_asset_path('engine.js.gz') {
-		os.read_bytes(path) or {
-			C.JSGlobalContextRelease(context)
-			kind := if snapshot_asset_directory() != none { 'diagnostic' } else { 'bundled' }
-			return error('Cannot read ${kind} adblock source: ${err}')
-		}
-	} else { compressed_engine_source.to_bytes() }
+	compressed_source := read_engine_source() or {
+		C.JSGlobalContextRelease(context)
+		return err
+	}
 	source := decompress_engine_source(compressed_source) or {
 		C.JSGlobalContextRelease(context)
 		return error('Cannot decompress bundled adblock engine: ${err}')

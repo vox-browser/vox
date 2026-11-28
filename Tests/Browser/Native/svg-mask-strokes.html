@@ -1,0 +1,51 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG strokes inside mask sources</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="600" height="110" viewBox="0 0 600 110">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="8" y="8" width="112" height="82">
+      <g opacity=".5" fill="none" stroke="black">
+        <path d="M10 14H42" transform="translate(20 22) scale(2 1)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M65 38V64" stroke-width="8" stroke-linecap="square"/>
+        <path d="M85 54H104" stroke-width="8" stroke-opacity=".5"/>
+      </g>
+    </mask>
+    <mask id="ordered" maskUnits="userSpaceOnUse" x="144" y="8" width="188" height="82">
+      <rect x="160" y="24" width="48" height="44" fill="white" stroke="red" stroke-width="12"/>
+      <rect x="260" y="24" width="48" height="44" fill="white" stroke="red" stroke-width="12" paint-order="stroke fill"/>
+    </mask>
+    <linearGradient id="partial">
+      <stop stop-opacity=".25"/>
+      <stop offset="1" stop-opacity=".25"/>
+    </linearGradient>
+    <mask id="ramp" mask-type="alpha" maskUnits="userSpaceOnUse" x="352" y="8" width="96" height="82">
+      <rect x="370" y="24" width="60" height="44" fill="url(#partial)" stroke="black" stroke-width="16"/>
+    </mask>
+    <mask id="edited" mask-type="alpha" maskUnits="userSpaceOnUse" x="478" y="8" width="96" height="82">
+      <rect id="outline" x="500" y="24" width="52" height="44" fill="none" stroke="black" stroke-width="4" stroke-linejoin="bevel"/>
+    </mask>
+  </defs>
+  <path fill="blue" mask="url(#alpha)" d="M0 0H130V100H0Z"/>
+  <path fill="blue" mask="url(#ordered)" d="M140 0H340V100H140Z"/>
+  <path fill="blue" mask="url(#ramp)" d="M350 0H450V100H350Z"/>
+  <path fill="blue" mask="url(#edited)" d="M470 0H580V100H470Z"/>
+  <path fill="#f80" d="M580 20h12v20h-12Z"/>
+</svg>
+<script>
+let frame = 0;
+function editStroke() {
+    if (++frame === 12)
+        document.getElementById('outline').setAttribute('stroke-width', '12');
+    if (frame === 24)
+        document.body.setAttribute('data-mask-stroke-ready', '');
+    else
+        requestAnimationFrame(editStroke);
+}
+requestAnimationFrame(editStroke);
+</script>

@@ -91,6 +91,10 @@ fn (module_record &SourceTextModule) module_export_names(visited []voidptr) []Ut
 pub fn (module_record &SourceTextModule) export_value(mut vm VM,name Utf16String) !Value {
 	resolution := module_record.resolve_module_export(name,[]) or { return vm.throw_error(.syntax_error,'Module has no export named ${name.str()}') }
 	if resolution.ambiguous { return vm.throw_error(.syntax_error,'Ambiguous module export ${name.str()}') }
+	return resolution.binding_value(mut vm)
+}
+
+fn (resolution ResolvedModuleExport) binding_value(mut vm VM) !Value {
 	mut target := unsafe { &SourceTextModule(resolution.target) }
 	if resolution.namespace { return Value.from_object(target.get_module_namespace(mut vm)!) }
 	mut environment := target.module_environment or { return vm.throw_error(.reference_error,'Module has no environment') }
@@ -140,13 +144,14 @@ pub fn (mut module_record SourceTextModule) get_module_namespace(mut vm VM) !&Ob
 	object.class_name='Module'
 	module_record.module_namespace_=object
 	mut properties := []ModuleNamespaceProperty{}
-	owner := &module_record
 	for name in names {
 		resolved := module_record.resolve_module_export(name,[]) or { continue }
 		if resolved.ambiguous { continue }
 		key := PropertyName.from_utf16(name)
+		// Namespace creation fixes the target binding. Read its current value
+		// on every access, including before the target has been initialized.
 		getter := NativeFunction.create(mut vm,module_record.module_realm,module_record.module_realm.function_prototype,
-			fn [owner,name] (mut vm VM) !Value { return owner.export_value(mut vm,name) },0,key,'get')
+			fn [resolved] (mut vm VM) !Value { return resolved.binding_value(mut vm) },0,key,'get')
 		properties << ModuleNamespaceProperty{key,Value.from_object(getter.object)}
 	}
 	object.host_properties=&ModuleNamespaceProperties{properties:properties}

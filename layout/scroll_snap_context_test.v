@@ -109,3 +109,22 @@ fn test_layout_transport_preserves_scroll_padding_and_target_margin() {
 	assert scroller_box.scroll_snap().scroll_snap_type.strictness == .mandatory
 	assert target_box.scroll_snap().scroll_snap_align.block_alignment == .start
 }
+
+fn test_layout_transport_resolves_snap_edges_only_for_snap_participants() {
+	mut document :=
+		html.parse_document('<!doctype html><style>html,body{margin:0}#plain{height:50px;overflow:auto;scroll-padding-top:20px;scroll-margin-top:5px}#area{height:50px;scroll-snap-align:center;scroll-padding-top:9px}</style><div id="plain"></div><div id="area"></div>')
+	defer { document.finalize() }
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	plain := document.get_element_by_id('plain') or { panic('missing plain box') }
+	area := document.get_element_by_id('area') or { panic('missing area') }
+	plain_box := snap_context_box_for_node(&root, i64(plain.as_node().unique_id())) or {
+		panic('missing plain transport')
+	}
+	area_box := snap_context_box_for_node(&root, i64(area.as_node().unique_id())) or {
+		panic('missing area transport')
+	}
+	// Neither a snap area nor a snap container: its edges are never read.
+	assert isnil(plain_box.scroll_snap_data)
+	assert area_box.scroll_snap().scroll_snap_align.block_alignment == .center
+	assert area_box.scroll_snap().scroll_padding == BoxEdges{}
+}

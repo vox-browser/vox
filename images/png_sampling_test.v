@@ -71,6 +71,12 @@ fn test_png_decode_history_keeps_resource_and_compositor_scope_identity() {
 		other := os.join_path(@VMODROOT, 'Tests/Browser/Brave/resources/image-decode-separate.png')
 		separate := app.sampled_png_decode(other, image, 32, 32) or { panic('separate resource') }
 		assert separate.image.width == 32 && separate.image.id != first.image.id
+		// A later large draw keeps a separate upload. Returning to the small
+		// draw must retain its original decoded frame and sampling history.
+		upgraded := app.sampled_png_decode(other, image, 60, 60) or { panic('upgrade') }
+		assert upgraded.image.width == 63 && upgraded.image.id != separate.image.id
+		assert (app.sampled_png_decode(other, image, 32, 32) or { panic('small after large') }).image.id == separate.image.id
+		assert (app.sampled_png_decode(other, image, 60, 60) or { panic('reuse upgrade') }).image.id == upgraded.image.id
 		set_chromium_image_decode_scope(1)
 		layer := app.sampled_png_decode(path, image, 32, 32) or { panic('separate compositor') }
 		assert layer.image.width == 32 && layer.image.id != first.image.id

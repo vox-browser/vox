@@ -223,6 +223,30 @@ fn test_pipeline_patterns_match_skia() {
 	}) == fixture_hash('a749f56deb311819')
 }
 
+fn test_canvas_pattern_nearest_sampling_keeps_texels_under_fractional_scale() {
+	pattern := CanvasPattern{
+		pixels: [u8(255), 0, 0, 255, 0, 0, 255, 255]
+		width: 2
+		height: 1
+		pitch: 8
+		transform: [f32(1.5), 0, 0, 1, 0, 0]!
+	}
+	rect := rect_path(Rect{0, 0, 4, 1})
+	matrix := [f32(1), 0, 0, 1, 0, 0]!
+	mut nearest := []u8{len: 16}
+	mut filtered := []u8{len: 16}
+	assert fill_canvas_path(mut nearest, 4, 1, 16, 2, rect, matrix, 0,
+		CanvasPattern{...pattern, nearest: true}, 1, .src_over, 0, [], none)
+	assert fill_canvas_path(mut filtered, 4, 1, 16, 2, rect, matrix, 0,
+		pattern, 1, .src_over, 0, [], none)
+	red := [u8(255), 0, 0, 255]
+	blue := [u8(0), 0, 255, 255]
+	assert nearest[..4] == red
+	assert nearest[8..12] == blue
+	assert nearest[12..] == red
+	assert filtered[..4] != red
+}
+
 // apply_style() fails the draw for an image SkBitmap cannot install.
 fn test_uninstallable_patterns_decline() {
 	mut px := pattern_test_background()

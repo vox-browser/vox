@@ -11,6 +11,7 @@ import sys
 import tempfile
 
 CASES = [
+    "processmetrics/memory_test.v",
     "css/color_interpolation_test.v", "dom/range_mutation_order_test.v",
     "platform/gc_keepalive_linux_test.v",
     "libjs/stack_info_test.v",
@@ -50,6 +51,10 @@ def main():
         c_flags += " -Wno-error=incompatible-pointer-types-discards-qualifiers"
     environment = dict(os.environ, V_C_ERROR_BUG_REPORT_DISABLED="1",
                        V_MACOS_V3_NO_FALLBACK="1")
+    # Run the checked C build and its runtime cases within the same guard.
+    # V's additional generic-instance diagnostic worker overlaps the live
+    # compile graph and exceeds the cap on the hosted runner.
+    environment.setdefault("V_CHECK_INSTANCES_IN_BUILD", "0")
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
     environment.update(NO_PROXY=bypass, no_proxy=bypass)
     environment["PKG_CONFIG_PATH"] = str(repo / "Build/deps/lib/pkgconfig") + ":" + environment.get("PKG_CONFIG_PATH", "")
@@ -98,6 +103,7 @@ def main():
     output = Path(tempfile.mkdtemp(prefix="run-", dir=output_root))
     print(f"Logs: {output}", flush=True)
     print(f"C diagnostics: {c_compiler} -cstrict {c_flags}", flush=True)
+    failed_cases = []
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
             # v.mod selects fastc for the application; native ABI diagnostics
@@ -112,14 +118,27 @@ def main():
                 command += ["-d", "dynamic_boehm"]
             # Compile separately so execution has the focused 3 GiB budget,
             # while the caller's build guard retains its compiler allowance.
-            binary = Path(temporary) / Path(case).stem
-            command += ["-o", str(binary), case]
-            result = subprocess.run(command, cwd=repo, env=environment, text=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            log = output / (Path(case).stem + ".log")
-            log.write_text(result.stdout)
+            stem = Path(case).stem
+            project = Path(temporary) / stem
+            binary = project / stem
+            log = output / (stem + ".log")
+            # Let the frontend exit before invoking Clang so their working
+            # sets do not overlap inside the same process-tree memory budget.
+            command += ["-no-parallel", "-n", "-generate-c-project", str(project), case]
+            with log.open("w") as stream:
+                for phase, args_ in (("V code generation", command),
+                                     ("C compilation", ["sh", str(project / "build.sh")])):
+                    print(f"{phase}: {case}", flush=True)
+                    result = subprocess.run(args_, cwd=repo, env=environment,
+                                            stdout=stream, stderr=subprocess.STDOUT)
+                    if result.returncode:
+                        stream.flush()
+                        print(f"FAIL {case} ({phase}, exit {result.returncode}):\n"
+                              + log.read_text(errors="replace"), flush=True)
+                        failed_cases.append(case)
+                        break
             if result.returncode:
-                raise SystemExit(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}")
+                continue
             command = [sys.executable, str(repo / "tools/run_memory_bounded.py"),
                        "--limit-gib", "3", "--lock", str(output / (binary.name + ".lock")),
                        "--report", str(output / (binary.name + ".json")), "--", str(binary)]
@@ -128,8 +147,12 @@ def main():
             with log.open("a") as stream:
                 stream.write(result.stdout)
             if result.returncode:
-                raise SystemExit(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}")
+                print(f"FAIL {case} (exit {result.returncode}):\n{result.stdout}", flush=True)
+                failed_cases.append(case)
+                continue
             print(f"PASS {case} ({args.gc})", flush=True)
+    if failed_cases:
+        raise SystemExit(f"{len(failed_cases)} native test case(s) failed: {', '.join(failed_cases)}")
 
 
 if __name__ == "__main__":

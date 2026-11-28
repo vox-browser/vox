@@ -8,7 +8,7 @@ pub type TypedArrayIntrinsicPrototypeGetter = fn (realm &Realm, kind BufferEleme
 pub type TypedArrayDefaultConstruct = fn (mut vm VM) !&TypedArray
 
 pub fn (exemplar &TypedArray) create_default(mut vm VM, realm &Realm, length u32, prototype_getter TypedArrayIntrinsicPrototypeGetter) !&TypedArray {
-	validate_typed_array_length(mut vm, uint(length), exemplar.kind.size())!
+	validate_typed_array_length(mut vm, u64(length), exemplar.kind.size())!
 	buffer := ArrayBufferObject.create(mut vm, realm, uint(length) * exemplar.kind.size(),
 		realm.array_buffer_prototype_record())!
 	return TypedArray.create(realm, exemplar.kind, length, buffer, prototype_getter(realm,

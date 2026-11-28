@@ -305,6 +305,23 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                 self.assertEqual(arguments.count('-prod'), 1)
                 self.assertEqual(arguments[arguments.index('-gc') + 1], gc_mode)
 
+    def test_release_receipt_records_actual_prod_flags_and_backend(self):
+        self.compiler(self.helpers / 'v')
+        receipt = self.root / 'receipt'
+        receipt.mkdir()
+        for backend, prod in [('c', '1'), ('c', '0'), ('fastc', '1')]:
+            with self.subTest(backend=backend, prod=prod):
+                result = self.run_build(overrides={'VOX_BUILD_BACKEND': backend,
+                    'VOX_BUILD_V_PROD': prod, 'VOX_BUILD_C_MODE': 'single',
+                    'VOX_BUILD_RECEIPT_DIR': str(receipt)})
+                self.assertEqual(result.returncode, 0, result.stdout)
+                mode = json.loads((receipt / 'c-compile.json').read_text())
+                self.assertEqual(mode, dict(backend=backend, mode='single', requested='single',
+                                            v_prod=prod == '1'))
+                arguments = json.loads(self.compiler_log.read_text())['argv']
+                self.assertEqual('-prod' in arguments, mode['v_prod'])
+                self.assertEqual('-no-parallel' in arguments, backend == 'fastc')
+
     def test_explicit_compiler_name_is_found_on_path(self):
         compiler = self.compiler(self.helpers / 'v')
         self.assert_compiler_selected(self.run_build(v_bin='v'), compiler)

@@ -54,6 +54,21 @@ local files; animation, embedded ICC profiles and image transformations remain
 unsupported. The initial decoder checks ran on macOS; Linux runtime conformance
 for this path remains unverified.
 
+Install the GStreamer development libraries and playback plugins to enable
+native video decoding in the Linux browser build.
+
+```sh
+sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+    gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav glib-networking
+```
+
+The build selects this backend when `gstreamer-app-1.0` and
+`gstreamer-video-1.0` are available to pkg-config. GStreamer decodes on
+its streaming threads and the browser presents RGBA frames through GG.
+The browser stages progressive sources through its normal transport when
+a browser proxy is configured. The native path also accepts local files
+and direct HTTP/HTTPS media URLs.
+
 ```sh
 sh build-prod-browser.sh
 Build/linux/vox https://example.com
@@ -82,6 +97,144 @@ Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
 
 ```sh
 CC=gcc sh build-prod-browser.sh
+```
+
+## Arch Linux packages
+
+On Arch Linux x86-64, install the build dependencies, then configure V and UI2
+as described above:
+
+```sh
+sudo pacman -Syu --needed base-devel clang lld pkgconf git python libarchive zstd \
+    webkit2gtk-4.1 glib2 harfbuzz curl openssl libglvnd mesa libxi libxcursor \
+    libxrandr libx11 alsa-lib gc freetype2 fontconfig libwebp libpng \
+    libjpeg-turbo ca-certificates ttf-dejavu \
+    gst-plugins-base-libs gst-plugins-good gst-libav glib-networking
+./deploy.vsh --no-publish
+sudo pacman -U ./Build/deploy/vox-VERSION-1-x86_64.pkg.tar.zst
+```
+
+Deployment detects Arch and Arch derivatives through `/etc/os-release`.
+`--format arch` selects it explicitly; `--format deb` retains Debian packaging.
+Build on Arch itself: selecting a format does not translate another
+distribution's executable or dependencies. Run deployment as a regular user;
+[makepkg](https://man.archlinux.org/man/makepkg.8.en) creates the native package
+from the staged production executable. Only installation needs root.
+
+The build uses the C backend, literal V `-prod`, and one C unit. Packaging
+verifies the build receipt and executable hash, strips the staged executable and
+optional AVIF helper, and resolves their direct ELF dependencies to installed
+Arch packages with `readelf`, `ldd` and `pacman`. Unresolved or unowned libraries
+stop packaging. The archive includes `/usr/bin/vox`, `/usr/lib/vox`, the desktop
+launcher, icon, license and third-party notices. The finished archive is
+extracted and its executable runs `--headless-smoke` under the 3 GiB memory guard.
+The adjacent `.pkg.tar.zst.json` receipt records source/package hashes, native
+dependencies, sizes and guard results. Staging and guard files are removed.
+
+`./deploy.vsh --no-publish --package-only` reuses a matching completed production
+build. `--output PATH.pkg.tar.zst` selects the output. Without `--no-publish`,
+deployment commits both version sources, builds the release commit in the
+established release checkout, and publishes the native package to GitHub.
+Arch releases leave the macOS website version pointer unchanged.
+
+The **Arch Linux x86_64 release package** workflow accepts a source commit/tag
+containing Arch deployment support. It builds in an Arch container on an x86-64
+runner with pinned V/UI2 revisions and the existing memory limits, installs the
+package using `pacman -U`, verifies the installed executable hash, and runs
+`tools/test_linux_browser.py`, including the Xvfb rendering and input checks.
+It preserves the package and validation receipts as workflow artifacts; it does
+not upload a GitHub release automatically.
+
+Focused packaging regressions run with:
+
+```sh
+python3 tools/deploy_arch_test.py
+```
+
+On Arch, this also builds, extracts and executes a real package containing a
+small ELF fixture. In a disposable VM without Vox installed, set
+`VOX_ARCH_TEST_INSTALL=1` to test `pacman -U`, installed-file integrity and
+execution through `/usr/bin/vox`; the test removes the fixture package afterwards.
+This fixture checks packaging, not browser rendering or startup behavior.
+
+Validation on 2026-11-17 used the isolated Lima `vox-arch-release` x86-64 VM,
+with sources mounted from the canonical checkout. All ten Arch packaging tests
+passed with `VOX_ARCH_TEST_INSTALL=1`: native archive creation/extraction,
+`pacman -U`, `pacman -Qkk` (20 files, none altered), installed-command execution,
+and removal all succeeded. The guest test guard exited 0 and sampled a peak of
+94,388,224 bytes under its 3 GiB limit. Local deployment/release and CI-driver
+regressions also passed. No full Vox browser was built or run on Arch during
+these fixture checks. Full-browser validation followed for release 0.1.5.
+
+### Release 0.1.5 validation
+
+The native Arch browser was built from clean commit
+`d51c3d575a43c8d0b5254c7b56200a2c9376a16f` with the C backend, literal V
+`-prod`, and one C unit. Its [build run](https://github.com/vox-browser/vox/actions/runs/44114199850)
+completed compilation, startup and cookie-persistence checks, then stopped on
+the packaging tool's ELF-loader alias parsing. The [recovery run](https://github.com/vox-browser/vox/actions/runs/44119891689)
+reused the hash-verified executable and original receipts with the corrected
+packager. It installed the native archive using `pacman -U`, checked the installed
+executable hash, and passed the complete Linux browser smoke suite: JavaScript,
+DOM/events/wheel, local HTML, WebGL1/WebGL2, HTTPS verification, HTTP redirects,
+Xvfb pixels, keyboard navigation, resize, process tabs and normal shutdown.
+The browser guard exited 0 with a sampled peak of 1,131,094,016 bytes under its
+3 GiB limit. The Arch package SHA-256 is
+`0477e096dd8e667c6cc296fc0466be4532addb0e26dd88bad310a67cd73af086`.
+
+The [Debian amd64/arm64 release run](https://github.com/vox-browser/vox/actions/runs/44110380092)
+built the same clean source commit on native runners in Debian 12 containers.
+Both packaged browsers passed the same browser suite and cookie-persistence
+preflight. These release jobs pin V
+`5a39a4d2f31fda64e7a5ee489e2a291325babcc4`, VC
+`99533a7cecef5d59f7bf01ee5034f24b759ce294`, and UI2
+`f18e784d96a27991974ef8cfdd25b33830a9f067`. The release compiler's checked JSON2
+adapter preserves generic field pointer types when decoding narrow enums;
+incompatible-pointer diagnostics remain enabled. Package checksums and runtime
+provenance are attached to [release 0.1.5](https://github.com/vox-browser/vox/releases/tag/0.1.5).
+
+For packaging-only CI recovery, dispatch the Arch workflow with the same
+`release_ref` and the original `reuse_build_run` ID. It verifies the clean source
+receipt, production mode, executable hash and successful original compiler/cookie
+checks before repackaging, then repeats installation and browser validation.
+It preserves the original evidence hashes instead of claiming a new compiler
+binary identity. Packaging uses the Python process-tree memory guard directly,
+so recovery does not require rebuilding V.
+
+## Debian packages
+
+Run the deploy script on Debian/Ubuntu to build with the C backend and literal V `-prod`,
+strip the executable and optional AVIF helper, and create a native `.deb`:
+
+```sh
+sudo apt-get install dpkg-dev binutils
+./deploy.vsh --no-publish
+sudo apt-get install ./Build/deploy/Vox-VERSION-ARCH.deb
+```
+
+The version comes from `packaging/Info.plist`; `ARCH` is Debian's native
+architecture (`amd64`, `arm64`, etc.). The package installs `vox` in `/usr/bin`,
+its executable and optional helper in `/usr/lib/vox`, and a desktop launcher and
+icon. Runtime library dependencies are derived from the build host with
+`dpkg-shlibdeps`. Build on the oldest Debian/Ubuntu release you intend to support;
+the package depends on that host's library ABIs. Packaging extracts the finished
+archive and runs its stripped executable with `--headless-smoke` under the memory
+guard before replacing the output. A `.deb.json` receipt records source and
+package hashes, build mode, sizes and guard results.
+
+`./deploy.vsh --no-publish --package-only` reuses a completed canonical Linux
+build whose receipt proves `--backend c --prod --no-parallel-cc`. Older receipts
+without the compile mode require a new build. `--output PATH.deb` selects an
+output path. Without `--no-publish`, deployment follows the macOS release flow:
+commit the next version, build committed sources in the release checkout and
+publish a new GitHub release with the DEB. Linux releases leave the website's
+macOS version/download pointer unchanged. `--website-only` is macOS-specific.
+
+The packaging and release regressions run without a browser build:
+
+```sh
+python3 tools/deploy_linux_test.py
+python3 tools/release_macos_test.py
 ```
 
 Canvas 2D drawing and portable shadows use the V `cpuraster` module. Its exact
@@ -169,6 +322,11 @@ python3 tools/test_linux_native.py
 python3 tools/test_linux_native.py --gc none
 ```
 
+Set `VOX_GG_SVG=1` to try the shared `gg.canvas` renderer for solid SVG
+fills. It draws into OpenGL textures that GG presents in document order.
+`python3 tools/test_linux_browser.py --gg-svg` compares the OpenGL path with
+the portable path in real X11 windows using Mesa software rendering.
+
 The production arena ownership checks use the same staged compiler runtime as
 the production build, run without a collector, and poison released storage to
 expose stale borrowed payloads:
@@ -255,7 +413,9 @@ canvas and shadow checks passed as well.
 Linux uses the existing portable painter, with retained shaped text and V
 (`cpuraster`) shadows. Advanced effects implemented solely in the Cocoa painter, including
 some SVG paint servers, masks and filters, remain unported. Cocoa input-method
-integration and the macOS video-frame decoder also remain platform-specific.
+integration and AVFoundation remain macOS-specific. The Linux video adapter
+uses GStreamer. The standalone macOS video-frame extraction tool remains
+platform-specific.
 WebGL uses surfaceless EGL with robust GLES3 contexts for both WebGL versions.
 The backend targets Mesa hardware drivers and software llvmpipe; this verification
 used llvmpipe. No ANGLE headers, libraries or vendor entry points are required.

@@ -39,6 +39,23 @@ fn test_svg_background_rectangular_masks_use_geometry_instead_of_path_bounds() {
 	assert svg_background_rectangular_clip(layout.PaintClip{ ...clip, is_svg_content_mask: true }) == none
 }
 
+fn test_svg_background_rectangle_accepts_a_line_back_to_its_first_corner() {
+	stride := layout.compatibility_clip_path_segment_stride
+	mut data := svg_background_test_rectangle()
+	data << []f32{len: stride}
+	closing := stride * 4
+	data[closing] = 1
+	data[closing + 1] = data[1]
+	data[closing + 2] = data[2]
+	data[closing + stride] = 5
+	assert svg_background_rectangle_path(data)? == painting.Rect{15, 16, 126, 111}
+	data[closing] = 3
+	assert svg_background_rectangle_path(data) == none
+	data[closing] = 1
+	data[closing + 1] = data[1] + .25
+	assert svg_background_rectangle_path(data) == none
+}
+
 fn test_svg_background_outer_clip_folds_only_matching_rounded_ancestors() {
 	radius := layout.CornerRadius{10, 10}
 	radii := layout.BoxRadii{ top_left: radius, top_right: radius, bottom_right: radius, bottom_left: radius }

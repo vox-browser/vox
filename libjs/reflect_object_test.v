@@ -25,7 +25,7 @@ fn test_reflect_object_initialization_retains_all_thirteen_method_descriptors_an
 			&& !Value.from_object(function).is_constructor()
 		assert function.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == name
 		assert function.get(mut vm, PropertyName.from_str('length'))!.number == lengths[index]
-		assert function.native_initial_name?.str() == name
+		assert (*function.native_initial_name?).str() == name
 		for property in ['name', 'length'] {
 			metadata := function.internal_get_own_property(PropertyName.from_str(property))?
 			assert !metadata.writable? && !metadata.enumerable? && metadata.configurable?

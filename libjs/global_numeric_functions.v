@@ -175,9 +175,12 @@ fn set_default_global_numeric_functions(mut vm VM, realm &Realm) {
 		'parseInt':   NativeFunctionPointer(global_parse_int)
 	} {
 		length := if name == 'parseInt' { 2.0 } else { 1.0 }
-		function := NativeFunction.create_raw(mut vm, realm, realm.function_prototype, behaviour, length,
-			PropertyName.from_str(name), none)
+		function := match name {
+			'parseInt' { realm.parse_int_function or { panic('Missing parseInt intrinsic') } }
+			'parseFloat' { realm.parse_float_function or { panic('Missing parseFloat intrinsic') } }
+			else { NativeFunction.create_raw(mut vm, realm, realm.function_prototype, behaviour, length, PropertyName.from_str(name), none).object }
+		}
 		global.define_direct_property(PropertyName.from_str(name),
-			Value.from_object(function.object), attribute_writable | attribute_configurable)
+			Value.from_object(function), attribute_writable | attribute_configurable)
 	}
 }

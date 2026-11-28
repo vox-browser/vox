@@ -4,6 +4,8 @@ import vm from 'node:vm';
 import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
 import { builtinScriptlets } from '../../adblock/vendor/ublock/js/resources/scriptlets.js';
+import { deserialize } from '../../adblock/vendor/ublock/js/s14e-serializer.js';
+import util from 'node:util';
 const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', import.meta.url))).toString();
 const nativeSnapshot = await fs.readFile(new URL('../../adblock/engine.snapshot.bin', import.meta.url));
 const bytes = nativeSnapshot.subarray(16);
@@ -170,4 +172,61 @@ test('restored scriptlet functions and dependencies execute in the page', () => 
     vm.runInContext(filters.scriptlets,page);
     page.document.currentScript=null;
     assert.equal(page.voxSentinel,42);
+});
+
+test('requests without a headers-realm candidate never match any response headers', async () => {
+    const custom = engine([
+        '||via.example^$script,header=via:1.1 google',
+        '*$xmlhttprequest,header=x-request-id,domain=site.example',
+        '||absent.example^$header=x-keep:~yes',
+        '||allowed.example^$header=via',
+        '@@||allowed.example/ok.js$header=via',
+    ].join('\n'));
+    const responses = [[], [{name:'Via', value:'1.1 google'}], [{name:'x-request-id', value:'1'}],
+        [{name:'X-Keep', value:'yes'}], [{name:'etag', value:'W/"1"'}, {name:'via', value:'2.0'}]];
+    const requests = [
+        {url:'https://via.example/a.js', source_url:'https://site.example/', request_type:'script'},
+        {url:'https://via.example/a.png', source_url:'https://site.example/', request_type:'image'},
+        {url:'https://cdn.example/api', source_url:'https://site.example/', request_type:'xmlhttprequest'},
+        {url:'https://cdn.example/api', source_url:'https://other.example/', request_type:'xmlhttprequest'},
+        {url:'https://absent.example/x', source_url:'https://site.example/', request_type:'image'},
+        {url:'https://allowed.example/ok.js', source_url:'https://site.example/', request_type:'script'},
+        {url:'https://plain.example/', source_url:'https://site.example/', request_type:'sub_frame'},
+        {url:'https://via.example/', source_url:'https://via.example/', request_type:'main_frame'},
+    ];
+    const verdicts = [];
+    for (const request of requests) {
+        const free = custom.check(request).no_header_filters;
+        verdicts.push(free);
+        for (const headers of responses) {
+            const response = JSON.parse(custom.context.voxAdblockCheckResponse(request, headers));
+            if (free) assert.deepEqual(response, {blocked:false, exception:false, rule:'', redirect_url:'', error:''});
+        }
+    }
+    // Candidates follow the filters' patterns, types and domains, not the headers.
+    assert.deepEqual(verdicts, [false, true, false, true, false, false, true, true]);
+    assert.equal(JSON.parse(custom.context.voxAdblockCheckResponse(requests[0], responses[1])).blocked, true);
+    // Compilation normalizes header=x-keep:~yes to x-keep:yes (uBO 1.75.0).
+    assert.equal(JSON.parse(custom.context.voxAdblockCheckResponse(requests[4], responses[3])).blocked, true);
+    assert.equal(JSON.parse(custom.context.voxAdblockCheckResponse(requests[5], responses[1])).exception, true);
+
+    const defaults = engine();
+    const archive = JSON.parse(await fs.readFile(new URL('../../Tests/Browser/Brave/hn-home-instructions/manifest.json', import.meta.url)));
+    for (const [url, response] of Object.entries(archive.responses)) {
+        const type = url.includes('.css') ? 'stylesheet' : url.includes('.js') ? 'script' : url.endsWith('/') ? 'main_frame' : 'image';
+        const request = {url, source_url:archive.url, request_type:type};
+        if (!defaults.check(request).no_header_filters) continue;
+        assert.equal(JSON.parse(defaults.context.voxAdblockCheckResponse(request, response.headers)).blocked, false);
+    }
+});
+
+test('restored filter references load on first read and a later snapshot keeps every one', () => {
+    const defaults = engine();
+    assert.equal(defaults.check({url:'https://github.com/vlang/v/refs?type=branch',source_url:'https://github.com/vlang/v',request_type:'xmlhttprequest'}).blocked,false);
+    assert.equal(defaults.check({url:'https://securepubads.g.doubleclick.net/tag/js/gpt.js',source_url:'https://www.theverge.com/',request_type:'script'}).blocked,true);
+    const snapshot = deserialize(defaults.context.voxAdblockSnapshot());
+    const references = snapshot.network.filterRefs;
+    assert.ok(references.length > 1000);
+    assert.equal(references.findIndex((value, index) => index > 0 && value === undefined), -1);
+    assert.equal(util.types.isProxy(references), false);
 });

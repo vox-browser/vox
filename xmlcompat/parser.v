@@ -6,7 +6,6 @@
 module xmlcompat
 
 import encoding.xml as vxml
-import io
 import strings
 
 // A name must resolve to a stable value within one parse. The parser caches
@@ -44,12 +43,15 @@ mut:
 	// Even an empty map allocates a header. Ordinary XML references need no
 	// private map; create one only when the first HTML name is encountered.
 	entities ?map[string]string
+	recent_references [2]string
+	recent_replacements [2]string
+	next_reference int
 }
 
 // Only marked attribute values are indirect. Short ordinary values stay in
 // vlib's tree, avoiding a side-table lookup on the common small-SVG path.
 pub fn (document &Document) attribute_value(value string) !string {
-	if !value.starts_with('@') { return value }
+	if document.attribute_values.len == 0 || !value.starts_with('@') { return value }
 	index := value.substr_unsafe(1, value.len).int()
 	if index < 0 || index >= document.attribute_values.len {
 		return error('invalid XML attribute marker')
@@ -59,27 +61,15 @@ pub fn (document &Document) attribute_value(value string) !string {
 
 pub fn (document &Document) special_node(comment vxml.XMLComment) ?SpecialNode {
 	if !comment.text.starts_with(document.marker) { return none }
-	index := comment.text.substr_unsafe(document.marker.len, comment.text.len).int()
+	mut index := 0
+	for position in document.marker.len .. comment.text.len {
+		byte := comment.text[position]
+		if byte < `0` || byte > `9` || index >= document.special_nodes.len {
+			return none
+		}
+		index = index * 10 + int(byte - `0`)
+	}
 	return document.special_nodes[index] or { none }
-}
-
-struct XMLSourceReader {
-	source string
-mut:
-	position int
-}
-
-fn (mut reader XMLSourceReader) read(mut buffer []u8) !int {
-	if reader.position == reader.source.len {
-		return io.Eof{}
-	}
-	remaining := reader.source.len - reader.position
-	count := if buffer.len < remaining { buffer.len } else { remaining }
-	for index in 0 .. count {
-		buffer[index] = reader.source[reader.position + index]
-	}
-	reader.position += count
-	return count
 }
 
 fn xml_has_prefix(source string, position int, prefix string) bool {
@@ -199,12 +189,35 @@ fn expand_html_references(value string, mut context XMLReferenceContext) !string
 }
 
 fn decode_references(value string, mut context XMLReferenceContext) !string {
-	if !value.contains('&') { return value }
-	prepared := prepare_references(value, mut context, false)!
-	if entities := context.entities {
-		return vxml.unescape_text(prepared, entities: entities)
+	if !value.contains_u8(`&`) { return value }
+	for index, previous in context.recent_references {
+		if value == previous {
+			return context.recent_replacements[index]
+		}
 	}
-	return vxml.unescape_text(prepared)
+	prepared := prepare_references(value, mut context, false)!
+	decoded := if entities := context.entities {
+		vxml.unescape_text(prepared, entities: entities)!
+	} else {
+		vxml.unescape_text(prepared)!
+	}
+	context.recent_references[context.next_reference] = value
+	context.recent_replacements[context.next_reference] = decoded
+	context.next_reference = (context.next_reference + 1) % context.recent_references.len
+	return decoded
+}
+
+// Ordinary inline values need no side table. Scan each short value once.
+fn xml_attribute_needs_marker(value string) bool {
+	if value.len > 64 || (value.len > 0 && value[0] == `@`) {
+		return true
+	}
+	for byte in value {
+		if xml_is_space(byte) || byte == `&` || byte == `>` {
+			return true
+		}
+	}
+	return false
 }
 
 // vlib currently stops tags at the first '>', requires a quote immediately
@@ -229,21 +242,21 @@ fn xml_normalize_tag(tag string, mut references XMLReferenceContext, mut attribu
 		position++
 		if byte in [`'`, `"`] {
 			start := position
-			for position < tag.len && tag[position] != byte {
-				position++
-			}
-			if position == tag.len {
+			end := tag.substr_unsafe(position, tag.len).index_u8(byte)
+			if end < 0 {
 				return error('unterminated XML attribute value')
 			}
+			position += end
 			value := tag.substr_unsafe(start, position)
-			if value.contains('<') { return error('XML attribute values may not contain <') }
-			if !declaration && (value.len > 64 || value.contains_any(' \t\r\n&>') || value.starts_with('@')) {
+			if value.contains_u8(`<`) { return error('XML attribute values may not contain <') }
+			if !declaration && xml_attribute_needs_marker(value) {
 				// Keep long SVG paths and decoded values out of vlib's byte-by-byte
 				// scan. vlib still parses attribute syntax and rejects duplicate
 				// names. The owning payload survives DOM mapping.
 				output.write_string(tag.substr_unsafe(copied, start))
-				output.write_string('@${attribute_values.len}')
-				attribute_values << if value.contains('&') {
+				output.write_u8(`@`)
+				output.write_decimal(attribute_values.len)
+				attribute_values << if value.contains_u8(`&`) {
 					decode_references(value, mut references)!
 				} else {
 					value.clone()
@@ -281,15 +294,15 @@ fn xml_normalize_tag(tag string, mut references XMLReferenceContext, mut attribu
 // particular, external resources and DTD entity declarations are not loaded.
 fn xml_markup_end(source string, start int, doctype bool) !(int, int) {
 	mut position := start + 1
-	mut quote := u8(0)
 	mut depth := 0
 	mut subset := -1
 	for position < source.len {
 		byte := source[position]
-		if quote != 0 {
-			if byte == quote { quote = 0 }
-		} else if byte in [`'`, `"`] {
-			quote = byte
+		if byte in [`'`, `"`] {
+			closing := source.substr_unsafe(position + 1, source.len).index_u8(byte)
+			if closing < 0 { return error('unterminated XML markup') }
+			position += closing + 2
+			continue
 		} else if doctype && xml_has_prefix(source, position, '<!--') {
 			position = (source.index_after('-->', position + 4) or {
 				return error('unterminated XML doctype comment')
@@ -313,6 +326,12 @@ fn xml_markup_end(source string, start int, doctype bool) !(int, int) {
 // second element parser. A synthetic root retains prolog/epilog order and lets
 // us validate the entire input. Author comments that resemble a marker are
 // escaped through the same side table, so they cannot impersonate other nodes.
+fn write_special_node_marker(mut output strings.Builder, index int) {
+	output.write_string('<!--!')
+	output.write_decimal(index)
+	output.write_string('-->')
+}
+
 fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedSource {
 	source := if input.starts_with('\xef\xbb\xbf') { input[3..] } else { input }
 	marker := '!'
@@ -329,7 +348,8 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 	for position < source.len {
 		if source[position] != `<` {
 			start := position
-			for position < source.len && source[position] != `<` { position++ }
+			next_markup := source.substr_unsafe(position, source.len).index_u8(`<`)
+			position = if next_markup < 0 { source.len } else { position + next_markup }
 			text := source.substr_unsafe(start, position)
 			if depth == 0 {
 				if !xml_is_only_space(text) {
@@ -342,10 +362,10 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 				// Preserve text verbatim without expanding each whitespace byte
 				// into a reference. That expansion sorted every whitespace match
 				// and made vlib allocate an entity buffer for every single space.
-				output.write_string('<!--${marker}${special_nodes.len}-->')
+				write_special_node_marker(mut output, special_nodes.len)
 				special_nodes << SpecialNode{
 					is_text: true
-					data:    if text.contains('&') {
+					data:    if text.contains_u8(`&`) {
 						decode_references(text, mut references)!
 					} else {
 						text.clone()
@@ -361,7 +381,7 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 			data := source.substr_unsafe(position + 4, end)
 			if data.contains('--') || data.ends_with('-') { return error('invalid XML comment') }
 			if data.starts_with(marker) || data.len > 64 {
-				output.write_string('<!--${marker}${special_nodes.len}-->')
+				write_special_node_marker(mut output, special_nodes.len)
 				special_nodes << SpecialNode{ is_comment: true, data: data.clone() }
 			} else {
 				output.write_string(source.substr_unsafe(position, end + 3))
@@ -372,8 +392,8 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 		if xml_has_prefix(source, position, '<![CDATA[') {
 			if depth == 0 { return error('CDATA outside the XML document element') }
 			end := source.index_after(']]>', position + 9) or { return error('unterminated CDATA section') }
-			output.write_string('<!--${marker}${special_nodes.len}-->')
-			special_nodes << SpecialNode{ is_cdata: true, data: source[position + 9..end] }
+			write_special_node_marker(mut output, special_nodes.len)
+			special_nodes << SpecialNode{ is_cdata: true, data: source.substr_unsafe(position + 9, end).clone() }
 			position = end + 3
 			continue
 		}
@@ -383,13 +403,13 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 			for target_end < end && !xml_is_space(source[target_end]) { target_end++ }
 			target := source[position + 2..target_end]
 			check_name(target)!
-			if target.to_lower() == 'xml' {
+			if target.len == 3 && target.to_lower() == 'xml' {
 				if target != 'xml' || target_end == end || !xml_is_only_space(source[..position]) {
 					return error('XML declaration is only permitted at the beginning of the document')
 				}
 				declaration = xml_normalize_tag(source[position..end + 2], mut references, mut attribute_values, true)!
 			} else {
-				output.write_string('<!--${marker}${special_nodes.len}-->')
+				write_special_node_marker(mut output, special_nodes.len)
 				special_nodes << SpecialNode{ target: target, data: source[target_end..end].trim_space() }
 			}
 			position = end + 2
@@ -405,7 +425,7 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 			header := source[position..header_end] + '>'
 			parsed := vxml.XMLDocument.from_string(header + '<vox-xml-doctype/>')!
 			check_name(parsed.doctype.name)!
-			output.write_string('<!--${marker}${special_nodes.len}-->')
+			write_special_node_marker(mut output, special_nodes.len)
 			special_nodes << SpecialNode{ doctype: parsed.doctype }
 			saw_doctype = true
 		} else {
@@ -442,18 +462,105 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 	}
 }
 
+@[heap]
+struct XMLLiteralParseState {
+mut:
+	special_nodes []SpecialNode
+}
+
+fn (mut state XMLLiteralParseState) inline_markup(source string, start int) !vxml.XMLInlineMarkupResult {
+	if xml_has_prefix(source, start, '<!--') {
+		end := source.index_after('-->', start + 4) or { return error('unterminated XML comment') }
+		data := source.substr_unsafe(start + 4, end)
+		if data.contains('--') || data.ends_with('-') { return error('invalid XML comment') }
+		if !data.starts_with('!') {
+			return vxml.XMLInlineMarkupResult{node: vxml.XMLComment{data.clone()}, end: end + 3}
+		}
+		index := state.special_nodes.len
+		state.special_nodes << SpecialNode{ is_comment: true, data: data.clone() }
+		return vxml.XMLInlineMarkupResult{node: vxml.XMLComment{'!${index}'}, end: end + 3}
+	}
+	if xml_has_prefix(source, start, '<![CDATA[') {
+		end := source.index_after(']]>', start + 9) or { return error('unterminated CDATA') }
+		return vxml.XMLInlineMarkupResult{node: vxml.XMLCData{source[start + 9..end]}, end: end + 3}
+	}
+	if xml_has_prefix(source, start, '<?') {
+		end := source.index_after('?>', start + 2) or { return error('unterminated XML processing instruction') }
+		mut target_end := start + 2
+		for target_end < end && !xml_is_space(source[target_end]) { target_end++ }
+		target := source[start + 2..target_end]
+		check_name(target)!
+		if target.len == 3 && target.to_lower() == 'xml' {
+			return error('XML declaration is only permitted at the beginning of the document')
+		}
+		index := state.special_nodes.len
+		state.special_nodes << SpecialNode{ target: target, data: source[target_end..end].trim_space() }
+		return vxml.XMLInlineMarkupResult{node: vxml.XMLComment{'!${index}'}, end: end + 2}
+	}
+	return error('unsupported inline XML declaration')
+}
+
+// Try the standard cursor directly when the root and payload need no
+// normalization. Complex inputs use the existing compatibility scanner.
+fn xml_parse_literal_document(source string, borrow_text bool) ?Document {
+	// Large payloads already take the compatibility scanner's bulk text path.
+	if source.len > 256 * 1024 || !source.starts_with('<') || source.len < 3
+		|| source[1] in [`/`, `!`, `?`]
+		|| source.contains_u8(`&`) {
+		return none
+	}
+	mut state := ?&XMLLiteralParseState(none)
+	mut handler := ?vxml.XMLInlineMarkup(none)
+	// An inline declaration or processing instruction requires one of these
+	// bytes. Plain documents can skip allocating a callback and its state.
+	if source.contains_u8(`!`) || source.contains_u8(`?`) {
+		mut inline_state := &XMLLiteralParseState{}
+		callback := fn [mut inline_state] (input string, start int) !vxml.XMLInlineMarkupResult {
+			return inline_state.inline_markup(input, start)
+		}
+		state = inline_state
+		handler = callback
+	}
+	parsed, consumed := vxml.XMLDocument.from_string_with_consumed(source,
+		preserve_text: true
+		strict_markup: true
+		inline_markup: handler
+		borrow_text:   borrow_text
+	) or { return none }
+	if !xml_is_only_space(source.substr_unsafe(consumed, source.len)) {
+		return none
+	}
+	return Document{
+		children:      [vxml.XMLNodeContents(parsed.root)]
+		marker:        '!'
+		special_nodes: if inline_state := state {
+			inline_state.special_nodes
+		} else {
+			[]SpecialNode{}
+		}
+	}
+}
+
 // parse reads the entire XML document using vlib. The returned children retain
 // document order. Resolve marked comments through special_node and attributes
 // through attribute_value before consuming the tree. Large/verbatim payloads
 // bypass vlib's per-byte reader, while structure and reference decoding still
 // use the standard XML module.
-pub fn parse(source string, resolve_entity EntityResolver) !Document {
+@[params]
+pub struct ParseOptions {
+pub:
+	// Plain character data and ASCII attribute values may borrow this input.
+	// Keep the input alive until consumers finish reading or copy the values.
+	borrow_text bool
+}
+
+pub fn parse(source string, resolve_entity EntityResolver, options ParseOptions) !Document {
+	if literal := xml_parse_literal_document(source, options.borrow_text) {
+		return literal
+	}
 	prepared := xml_prepare_source(source, resolve_entity)!
-	// Keep the reader by reference: converting a value to io.Reader would copy
-	// its position, defeating the whole-input consumption check below.
-	mut reader := &XMLSourceReader{ source: prepared.source }
-	parsed := vxml.XMLDocument.from_reader(mut reader)!
-	if reader.position != prepared.source.len {
+	parsed, consumed := vxml.XMLDocument.from_string_with_consumed(prepared.source, preserve_text: true)!
+	if consumed != prepared.source.len {
 		return error('content after the XML document element')
 	}
 	mut roots := 0

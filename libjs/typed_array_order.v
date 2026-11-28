@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // TypedArrayPrototype.cpp::reverse. Reads/writes use numeric elements, matching
 // the active source body rather than treating reversal as a raw byte operation.
 pub fn typed_array_prototype_reverse(mut vm VM, prototypes PrimitiveObjectPrototypes) !Value {
@@ -9,6 +11,7 @@ pub fn typed_array_prototype_reverse(mut vm VM, prototypes PrimitiveObjectProtot
 	middle := length / 2
 	mut object := array.object
 	for lower := u32(0); lower != middle; lower++ {
+		vm.consume_execution_budget()!
 		upper := length - lower - 1
 		low_key := PropertyName.from_number(lower)
 		high_key := PropertyName.from_number(upper)
@@ -34,9 +37,11 @@ pub fn typed_array_prototype_sort(mut vm VM, prototypes PrimitiveObjectPrototype
 	compare := fn [compare_function] (mut vm VM, x Value, y Value) !f64 {
 		return compare_typed_array_elements(mut vm, x, y, compare_function)
 	}
+	defer { platform.release_closure(voidptr(compare)) }
 	sorted := sort_indexed_properties(mut vm, array.object, u64(length), compare, .read_through_holes)!
 	mut object := array.object
 	for index in 0 .. length {
+		vm.consume_execution_budget()!
 		object.set(mut vm, PropertyName.from_number(index), sorted[int(index)], .yes)!
 	}
 	return Value.from_object(object)

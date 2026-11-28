@@ -113,8 +113,7 @@ pub fn (form &HTMLFormElementModel) construct_entry_list_with_encoding(submitter
 				}
 			}
 		} else if is_input && state in [.checkbox, .radio_button] {
-			value := element.get_attribute_value('value')
-			entries << create_form_data_string_entry(name, if value == '' { 'on' } else { value })
+			entries << create_form_data_string_entry(name, element.get_attribute('value') or { 'on' })
 		} else if is_input && state == .file_upload {
 			mut input := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
 			files := input.file_list() or { panic('file input must expose a FileList') }
