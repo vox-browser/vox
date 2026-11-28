@@ -28,13 +28,18 @@ struct JSONPropertyKeyCacheEntry {
 	key   ?PropertyName
 }
 
+struct JSONPropertyKeyCache {
+mut:
+	entries [128]JSONPropertyKeyCacheEntry
+}
+
 struct JSONTextParser {
 	text          []u16
 	record_source bool
 	stack         StackInfo
 mut:
 	position      int
-	property_keys []JSONPropertyKeyCacheEntry
+	property_keys &JSONPropertyKeyCache = unsafe { nil }
 }
 
 struct JSONStringToken {
@@ -152,17 +157,17 @@ fn (mut parser JSONTextParser) property_name(mut vm VM) !PropertyName {
 	mut hash := u64(raw.len) * 31
 	if raw.len > 0 { hash += u64(raw[0]) * 17 + u64(raw.last()) }
 	// Scalar and array-only JSON parses never need a property cache.
-	if parser.property_keys.len == 0 {
-		parser.property_keys = []JSONPropertyKeyCacheEntry{len: 128}
+	if parser.property_keys == unsafe { nil } {
+		parser.property_keys = &JSONPropertyKeyCache{}
 	}
 	slot := int(hash % 128)
-	entry := parser.property_keys[slot]
+	entry := parser.property_keys.entries[slot]
 	if key := entry.key {
 		// Hash collisions must compare the complete raw UTF-16 spelling.
 		if raw == parser.text[entry.start..entry.end_] { return key }
 	}
 	key := PropertyName.from_utf16(parser.decode_string(token))
-	parser.property_keys[slot] = JSONPropertyKeyCacheEntry{
+	parser.property_keys.entries[slot] = JSONPropertyKeyCacheEntry{
 		start: token.start
 		end_: token.end_
 		key: key
