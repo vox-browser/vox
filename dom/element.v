@@ -7579,6 +7579,9 @@ fn (mut e Element) svg_use_clone_element_tree_as_our_shadow_tree(target ?&Elemen
 }
 
 fn (mut e Element) svg_use_process_the_url() {
+	if e.document().defer_initial_svg_use_updates_ {
+		return
+	}
 	target := e.svg_use_referenced_element()
 	e.svg_use_clone_element_tree_as_our_shadow_tree(target)
 }
@@ -7631,6 +7634,7 @@ pub fn (mut e Element) svg_element_removed(svg_element &Element) {
 pub fn (mut e Element) update_use_elements_that_reference_this() {
 	if !e.is_svg_element() || e.local_name() == 'use' || !e.is_connected()
 		|| e.document().readiness() == .loading || !e.document().has_seen_element_local_name('use')
+		|| e.document().defer_initial_svg_use_updates_
 		|| e.as_node().root().as_shadow_root() != none {
 		return
 	}
@@ -7662,6 +7666,26 @@ pub fn (mut e Element) remove_from_use_element_that_reference_this() {
 		}
 		return .@continue
 	})
+}
+
+// Build the instances once after projecting a fresh, inert XML tree. A loading
+// document already batches through its readiness transition, and a document
+// with a window or resource hook may have observable insertion side effects.
+pub fn (mut d Document) begin_initial_xml_svg_use_batch() bool {
+	if d.defer_initial_svg_use_updates_ || d.readiness() != .complete
+		|| d.get_window() != none || d.get_browsing_context() != none
+		|| d.svg_use_resource_hook_ != none || d.as_node().has_children() {
+		return false
+	}
+	d.defer_initial_svg_use_updates_ = true
+	return true
+}
+
+pub fn (mut d Document) finish_initial_xml_svg_use_batch() {
+	d.defer_initial_svg_use_updates_ = false
+	if d.has_seen_element_local_name('use') {
+		d.refresh_svg_use_shadow_trees()
+	}
 }
 
 pub fn (mut d Document) refresh_svg_use_shadow_trees() {

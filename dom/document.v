@@ -5420,6 +5420,7 @@ pub mut:
 	font_rendering_policy_ FontRenderingPolicy
 	layout_coordinate_scale_ f64
 	svg_use_resource_hook_ ?DocumentSVGUseResourceHook
+	defer_initial_svg_use_updates_ bool
 	display_device_pixel_ratio_ f64
 	rendering_device_pixel_ratio_ f64
 	embedder_window_inactive_ bool
