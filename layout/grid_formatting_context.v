@@ -2818,7 +2818,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			native_group << GridSpanGroupContribution{
 				start: placement.column
 				span: placement.column_span
-				minimum: if available_space.width.is_intrinsic_sizing_constraint() {
+				minimum: if available_space.width.is_max_content() {
 					grid_limited_content_contribution(state, container, container_state, available_space.width,
 						true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
 				} else { minimum_contribution }
@@ -3069,7 +3069,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			native_group << GridSpanGroupContribution{
 				start: placement.row
 				span: placement.row_span
-				minimum: if available_space.height.is_intrinsic_sizing_constraint() {
+				minimum: if available_space.height.is_max_content() {
 					grid_limited_content_contribution(state, container, container_state, available_space.height,
 						false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
 				} else { minimum_contribution }
