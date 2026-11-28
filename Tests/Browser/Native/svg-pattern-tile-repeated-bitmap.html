@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Repeated bitmap URLs used by an SVG pattern</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="136" height="64">
+  <defs>
+    <pattern id="tile" width="40" height="24" patternUnits="userSpaceOnUse">
+      <image href="tile.png" width="8" height="16" preserveAspectRatio="none"
+             image-rendering="pixelated"/>
+      <image href="tile.png" x="10" width="8" height="16" preserveAspectRatio="none"
+             image-rendering="pixelated"/>
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNg+M/wHwAEAQH/cetH5QAAAABJRU5ErkJggg==" x="20" width="8" height="16"
+             preserveAspectRatio="none" image-rendering="pixelated"/>
+      <image href="tile.png" x="30" width="8" height="16" preserveAspectRatio="none"
+             image-rendering="pixelated"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H128V56H0Z" fill="url(#tile)" stroke="url(#tile)" stroke-width="2"/>
+</svg>

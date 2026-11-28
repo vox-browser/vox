@@ -1,0 +1,135 @@
+module main
+
+fn test_compositor_phase_keeps_capture_and_presenting_grids_separate() {
+	previous := compositor_raster_phase
+	defer { compositor_raster_phase = previous }
+	select_compositor_raster_phase(760.7578125, 16, 2, 1, true)
+	assert compositor_raster_phase == [f64(0.5), 0]!
+	select_compositor_raster_phase(760.7578125, 16, 2, 2, true)
+	assert compositor_raster_phase == [f64(0), 0]!
+	select_compositor_raster_phase(760.7578125, 16, 2, 1, false)
+	assert compositor_raster_phase == [f64(0), 0]!
+	assert compositor_phase_translation([f32(1), 0, 10, 0, 1, 20, 0, 0, 1]!)
+	assert !compositor_phase_translation([f32(2), 0, 10, 0, 2, 20, 0, 0, 1]!)
+}
+
+fn test_compositor_svg_interpolates_sample_coverage_before_byte_rounding() {
+	previous := compositor_raster_phase
+	defer { compositor_raster_phase = previous }
+	compositor_raster_phase = [f64(0.5), 0]!
+	segments := [f32(3), 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+	path := C.VoxGraphitePath{
+		segments:      segments.data
+		segment_count: 1
+		red:           255
+		green:         255
+		blue:          255
+		alpha:         255
+	}
+	for counts in [[2, 3, 159]!, [2, 4, 191]!, [1, 2, 96]!] {
+		mut source := []u8{len: 3 * 3 * 4}
+		encoded := [u8(0), 64, 128, 191, 255]
+		for x in 0 .. 2 {
+			for k in 0 .. 4 { source[(3 + x) * 4 + k] = encoded[counts[x]] }
+		}
+		precise := compositor_msaa_coverage(source, &path)
+		assert precise.len == source.len
+		mut output := []u8{len: 4}
+		assert publish_compositor_svg_phase(output.data, 1, 1, 4, source, precise)
+		assert output == []u8{len: 4, init: u8(counts[2])}
+	}
+}
+
+fn test_compositor_svg_declines_unrecoverable_or_translucent_sample_data() {
+	segments := [f32(3), 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+	path := C.VoxGraphitePath{
+		segments:      segments.data
+		segment_count: 1
+		red:           255
+		green:         255
+		blue:          255
+		alpha:         255
+	}
+	assert compositor_msaa_coverage([u8(128), 128, 128, 128], &path).len == 4
+	for data in [[u8(127), 128, 128, 128], [u8(127), 127, 127, 127]] {
+		assert compositor_msaa_coverage(data, &path).len == 0
+	}
+	for guarded in [C.VoxGraphitePath{ ...path, alpha: 128 },
+		C.VoxGraphitePath{ ...path, has_clip: 1 }, C.VoxGraphitePath{ ...path, gradient: 1 }] {
+		assert compositor_msaa_coverage([u8(128), 128, 128, 128], &guarded).len == 0
+	}
+}
+
+fn test_compositor_resolve_quantizes_each_covered_unorm_sample_first() {
+	segments := [f32(3), 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+	path := C.VoxGraphitePath{
+		segments:        segments.data
+		segment_count:   1
+		has_float_color: 1
+		float_color:     [f32(1), 0.99999, 0.99998, 1]!
+	}
+	coverage := compositor_msaa_coverage([u8(128), 128, 128, 128], &path)
+	assert coverage == [f64(127.5), 127.5, 127.5, 127.5]
+}
+
+fn test_analytic_border_does_not_bleed_past_its_straight_edge() {
+	old_phase := compositor_raster_phase
+	old_grid := document_geometry_grid
+	old_bounds := compositor_capture_bounds
+	old_basis := compositor_shape_basis
+	defer {
+		compositor_raster_phase = old_phase
+		document_geometry_grid = old_grid
+		compositor_capture_bounds = old_bounds
+		compositor_shape_basis = old_basis
+	}
+	document_geometry_grid = DocumentGeometryGrid{}
+	compositor_capture_bounds = [f64(760), 16, 803, 52]!
+	compositor_shape_basis = 1
+	shape := C.VoxGraphiteShape{
+		matrix:     [f32(1), 0, -759, 0, 1, -14, 0, 0, 1]!
+		rect:       [f32(761.5), 16.5, 41, 35, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5]!
+		fill:       0
+		thickness:  1
+		anti_alias: 1
+		force_msaa: 1
+		red:        53
+		green:      61
+		blue:       55
+		alpha:      255
+	}
+	for phase in [f64(0), 0.5] {
+		compositor_raster_phase = [phase, f64(0)]!
+		mut pixels := []u8{len: 46 * 40 * 4}
+		for i in 0 .. 46 * 40 { pixels[i * 4 + 3] = 255 }
+		assert draw_document_shape_pixels(pixels.data, 46, 40, 184, 1, 759, 14, &shape) == 1
+		// The right outer edge is exactly x=803. Its exterior pixel must stay
+		// black; resampling the analytic coverage would introduce a new fringe.
+		for y in 8 .. 32 {
+			i := (y * 46 + 44) * 4
+			assert pixels[i..i + 4] == [u8(0), 0, 0, 255]
+		}
+	}
+}
+
+fn test_compositor_picture_size_snaps_independently_of_its_origin() {
+	bounds := compositor_picture_capture_bounds([f64(760.7578125), 16]!,
+		[f64(42.25), 36]!, 2, 1) or { panic('expected presenting raster extent') }
+	assert bounds == [f64(760), 16, 803, 52]!
+	negative := compositor_picture_capture_bounds([f64(-0.25), -0.75]!,
+		[f64(2.25), 2.25]!, 2, 1) or { panic('expected negative raster extent') }
+	assert negative == [f64(-1), -1, 2, 2]!
+	assert compositor_picture_capture_bounds([f64(0), 0]!, [f64(2), 2]!, 2, 2) == none
+	assert compositor_picture_capture_bounds([f64(0), 0]!, [f64(0), 2]!, 2, 1) == none
+}
+
+fn test_compositor_foreground_respects_its_texture_footprint() {
+	previous := compositor_raster_phase
+	defer { compositor_raster_phase = previous }
+	compositor_raster_phase = [f64(0.5), 0]!
+	source := []u8{len: 4 * 3 * 4, init: 255}
+	mut pixels := [u8(0), 0, 0, 255, 0, 0, 0, 255]
+	assert publish_compositor_phase_with_bounds(pixels.data, 2, 1, 8, source, [],
+		[f64(0), 0, 1, 1]!)
+	assert pixels == [u8(255), 255, 255, 255, 0, 0, 0, 255]
+}

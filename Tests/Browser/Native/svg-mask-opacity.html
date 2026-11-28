@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG mask opacity groups</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="10" y="10" width="160" height="100">
+      <g opacity=".5">
+        <path fill="black" d="M14 18h58v82H14Z"/>
+        <path fill="black" d="M40 18h50v82H40Z"/>
+        <g opacity=".5">
+          <path fill="black" d="M98 18h29v58H98Z"/>
+          <path fill="black" d="M112 18h23v58h-23Z"/>
+        </g>
+      </g>
+      <g opacity=".5"><path fill="black" d="M150 20h10v55h-10Z"/></g>
+    </mask>
+    <mask id="luminance" maskUnits="userSpaceOnUse" x="190" y="10" width="170" height="100">
+      <path fill="white" d="M190 20h166v70H190Z"/>
+      <g opacity=".5">
+        <path fill="#f00" d="M210 20h80v70h-80Z"/>
+        <path fill="#0f0" d="M240 20h75v70h-75Z"/>
+      </g>
+    </mask>
+  </defs>
+  <g id="sample">
+    <g mask="url(#alpha)">
+      <path fill="#00f" d="M0 0H610V180H0Z"/>
+      <path fill="#00f" d="M55 0H620V180H55Z"/>
+    </g>
+    <path mask="url(#luminance)" fill="#00f" d="M180 0H620V180H180Z"/>
+    <path fill="#f80" d="M370 27h40v40h-40Z"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/>
+  <use href="#sample" y="540"/><use href="#sample" y="720"/>
+  <use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/>
+  <use href="#sample" y="1620"/>
+</svg>

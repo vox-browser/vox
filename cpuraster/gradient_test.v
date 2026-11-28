@@ -57,15 +57,61 @@ fn gradient_stroke_hash(g CanvasGradient, line_width f32, alpha f32, mode BlendM
 fn test_gradient_stops_follow_skia() {
 	// Implicit end stops, then uniform positions become evenly spaced.
 	colors := [[f32(1), 0, 0, 1]!, [f32(0), 1, 0, 1]!, [f32(0), 0, 1, 1]!]
-	even, even_positions := gradient_stops(colors, [f32(0), 0.5, 1])
+	even, even_positions := gradient_stops(colors, [f32(0), 0.5, 1], .pad)
 	assert even.len == 3 && even_positions.len == 0
 	// A hard stop keeps both stops of the duplicate run.
-	hard, hard_positions := gradient_stops(colors, [f32(0.25), 0.5, 0.5])
+	hard, hard_positions := gradient_stops(colors, [f32(0.25), 0.5, 0.5], .pad)
 	assert hard_positions == [f32(0), 0.25, 0.5, 0.5, 1]
 	assert hard.len == 5 && hard[0] == colors[0] && hard[4] == colors[2]
 	// Evenly spaced stops index their gap by trunc(t * (count - 1)).
 	fill := gradient_fill(even, even_positions)
 	assert fill.kind == .evenly && fill.index(0.6) == 1 && fill.index(1) == 2
+}
+
+fn test_svg_gradient_tiles_wrap_negative_positions_and_use_inside_endpoint_colors() {
+	linear := CanvasGradient{
+		kind: 1
+		x0: 2.5
+		x1: 6.5
+		// Green at the two outer sides of the hard stops is outside the tile.
+		stops: [f32(0), 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1]
+	}
+	repeat := canvas_gradient_shader(CanvasGradient{...linear, spread: .repeat}, Matrix{1, 0, 0, 1, 0, 0}).gradient
+	reflect := canvas_gradient_shader(CanvasGradient{...linear, spread: .reflect}, Matrix{1, 0, 0, 1, 0, 0}).gradient
+	assert repeat.shade_highp(1, 0) == [f32(.25), 0, .75, 1]!
+	assert reflect.shade_highp(1, 0) == [f32(.75), 0, .25, 1]!
+	assert repeat.shade_highp(6, 0) == [f32(1), 0, 0, 1]!
+	assert reflect.shade_highp(6, 0) == [f32(0), 0, 1, 1]!
+}
+
+fn test_svg_radial_tiles_and_tangent_point_average() {
+	identity := Matrix{1, 0, 0, 1, 0, 0}
+	radial := CanvasGradient{
+		kind: 2
+		x0: 4.5
+		y0: .5
+		r0: 2
+		x1: 8.5
+		y1: .5
+		r1: 6
+		spread: .repeat
+		stops: [f32(0), 1, 0, 0, 1, 1, 0, 0, 1, 1]
+	}
+	// At the center of the focal circle t = -1/4. The other half-plane
+	// lies outside the tangent of the two positive-radius circles.
+	circles := canvas_gradient_shader(radial, identity).gradient
+	assert circles.shade_highp(4, 0) == [f32(.25), 0, .75, 1]!
+	assert circles.shade_highp(1, 0) == [f32(0), 0, 0, 0]!
+
+	point := canvas_gradient_shader(CanvasGradient{
+		...radial
+		r0: 0
+		r1: 4
+		stops: [f32(0), 1, 0, 0, 1, .25, 1, 0, 0, 1, .25, 0, 0, 1, .5, 1, 0, 0, 1, .5]
+	}, identity).gradient
+	// One quarter of the ramp is red and three quarters is half-opaque blue.
+	assert point.shade_highp(1, 0) == [f32(.25), 0, .375, .625]!
+	assert point.shade_highp(8, 0) == [f32(0), 0, .5, .5]!
 }
 
 // Hashes of vox_skia_canvas_path()'s output with LibWeb Skia for the same

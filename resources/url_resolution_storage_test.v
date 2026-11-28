@@ -12,6 +12,7 @@ fn test_document_reference_results_survive_query_workspace_reuse() {
 		['https://EXAMPLE.test', 'https://example.test/'],
 		['data:image/svg+xml,%3Csvg%3E', 'data:image/svg+xml,%3Csvg%3E'],
 		['', base],
+		[' \t\r\n', base],
 	]
 	mut results := []string{}
 	for sample in cases { results << resolve_document_reference(sample[0], base) }
@@ -24,16 +25,19 @@ fn test_document_reference_results_survive_query_workspace_reuse() {
 }
 
 fn test_document_reference_queries_retain_only_serialized_url_storage() {
+	path := 'long-path-'.repeat(400)
+	reference := '  ../${path}#mark  '
+	expected := 'https://resource.test/${path}#mark'
 	mut storage := platform.new_arena('serialized resource URLs')
 	entry := storage.enter()
 	before := storage.usage().used
 	mut results := []string{cap:128}
 	for _ in 0 .. 128 {
-		results << resolve_document_reference('../img/logo.svg#mark', 'https://resource.test/dir/page.html')
+		results << resolve_document_reference(reference, 'https://resource.test/dir/page.html')
 	}
 	growth := storage.usage().used - before
 	storage.leave(entry)
-	$if prealloc { assert growth < 128 * 192, '${growth} retained URL bytes' }
-	for result in results { assert result == 'https://resource.test/img/logo.svg#mark' }
+	$if prealloc { assert growth < 128 * (expected.len + 192), '${growth} retained URL bytes' }
+	for result in results { assert result == expected }
 	storage.release()
 }

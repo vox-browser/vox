@@ -51,7 +51,8 @@ fn test_script_inserted_stylesheet_links_restyle_the_document_when_fetched() {
 		request_type: 'stylesheet'
 	}
 	app.poll_background_resources()
-	assert css.has_remote_link_style_sheet(theme_url)
+	assert !css.has_remote_link_style_sheet(theme_url)
+	assert app.script_stylesheet_responses[theme_url].body == '#text { display: none }'
 	assert css.up_to_date_computed_properties_for_element(text).display().is_none()
 	sheet := css.style_sheet_for_owner_node(document, link) or { panic('missing theme sheet') }
 	assert sheet.css_rules().length() == 1
@@ -92,7 +93,8 @@ fn test_disk_cached_script_inserted_stylesheet_installs_without_a_request() {
 	mut head := mobile.as_node().parent_node() or { panic('missing head') }
 	head.pre_insert(link.as_node(), mobile.as_node()) or { panic(err) }
 	assert app.request_script_inserted_stylesheets()
-	assert css.has_remote_link_style_sheet(theme_url)
+	assert !css.has_remote_link_style_sheet(theme_url)
+	assert app.script_stylesheet_responses[theme_url].body == '#text { display: none }'
 	select {
 		_ := <-app.background_resource_results {
 			assert false, 'the cached sheet was requested again'

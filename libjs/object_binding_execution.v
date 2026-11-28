@@ -3,19 +3,33 @@ module libjs
 
 // Rust bytecode/codegen.rs::generate_object_binding_pattern. Binding names are
 // created before evaluating the initializer; each property/default then runs in
-// order and initializes its own binding. Array/assignment/parameter patterns
+// order and initializes its own binding. Assignment/parameter patterns
 // remain separate code-generation paths.
 fn (mut generator BytecodeGenerator) initialize_declaration_target(mut vm VM, target VariableDeclaratorTarget, value Operand, lexical bool) ! {
 	if target is IdentifierVarTarget {
-		generator.store_declared_binding(target.identifier.name, value, lexical)
+		generator.store_declared_binding(target.identifier, value, lexical)
 		return
 	}
 	if target is BindingPatternVarTarget {
-		generator.object_binding_pattern(mut vm, target.pattern, value, lexical)!
+		if !lexical && generator.with_depth > 0 {
+			generator.assignment_pattern(mut vm, target.pattern, value)!
+			return
+		}
+		generator.binding_pattern(mut vm, target.pattern, value, lexical)!
 	}
 }
 
-fn (mut generator BytecodeGenerator) store_declared_binding(name Utf16String, value Operand, lexical bool) {
+fn (mut generator BytecodeGenerator) store_declared_binding(identifier &Identifier, value Operand, lexical bool) {
+	name := identifier.name
+	if lexical {
+		if generator.initialize_lexical_register(identifier, value) { return }
+	} else if generator.with_depth > 0 {
+		generator.emit(Instruction{op: .set_binding, lhs: value, identifier: generator.identifier(name), strict: generator.strict})
+		return
+	} else if local := generator.variable_register(name) {
+		generator.emit(Instruction{op: .mov, dst: local, lhs: value})
+		return
+	}
 	generator.emit(Instruction{ op: if lexical {
 		OpCode.initialize_binding
 	} else {
@@ -33,11 +47,11 @@ fn (mut generator BytecodeGenerator) binding_entry_name(entry BindingEntry) ?Utf
 
 fn (mut generator BytecodeGenerator) initialize_binding_entry(mut vm VM, entry BindingEntry, value Operand, lexical bool) ! {
 	if pattern := entry.alias.binding_pattern {
-		generator.object_binding_pattern(mut vm, pattern, value, lexical)!
+		generator.binding_pattern(mut vm, pattern, value, lexical)!
 		return
 	}
-	if name := generator.binding_entry_name(entry) {
-		generator.store_declared_binding(name, value, lexical)
+	if identifier := binding_entry_identifier(entry) {
+		generator.store_declared_binding(identifier, value, lexical)
 		return
 	}
 	return generator.unsupported('binding pattern target')
@@ -86,19 +100,30 @@ fn (mut generator BytecodeGenerator) object_binding_pattern(mut vm VM, pattern B
 	}
 }
 
+fn (mut generator BytecodeGenerator) binding_pattern(mut vm VM, pattern BindingPattern, value Operand, lexical bool) ! {
+	if pattern.kind == .array { return generator.array_binding_pattern(mut vm, pattern, value, lexical) }
+	return generator.object_binding_pattern(mut vm, pattern, value, lexical)
+}
+
 // Object.cpp::CopyDataProperties, used by object rest. Excluded names have
 // already been converted to property keys before the property's GetV. Capture
 // own keys once, but recheck each descriptor and invoke getters in that order.
 fn copy_object_excluding_keys(mut vm VM, source Value, excluded []PropertyName) !&Object {
 	mut target := Object.create(vm.realm(), vm.realm().object_prototype)
 	object := source.to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
-	for key in object.own_property_keys() {
+	copy_enumerable_own_properties(mut vm, mut target, object, excluded)!
+	return target
+}
+
+// CopyDataProperties snapshots own keys, then checks each live descriptor
+// before Get and CreateDataProperty. Object rest and spread share this path.
+fn copy_enumerable_own_properties(mut vm VM, mut target Object, object &Object, excluded []PropertyName) ! {
+	for key in object.own_property_keys_checked(mut vm)! {
 		vm.consume_execution_budget()!
 		if excluded.any(it.equals(key)) { continue }
-		descriptor := object.internal_get_own_property(key) or { continue }
+		descriptor := object.get_own_property_checked(mut vm, key)!.descriptor or { continue }
 		if !(descriptor.enumerable or { false }) { continue }
 		value := object.get(mut vm, key)!
 		target.create_data_property_or_throw(mut vm, key, value)!
 	}
-	return target
 }

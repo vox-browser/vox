@@ -4,10 +4,11 @@ module libjs
 // Runtime/JSONObject.cpp::parse/parse_json/InternalizeJSONProperty. The native
 // simdjson dependency is replaced by a strict UTF-16 JSON grammar; JavaScript
 // conversion, ordinary property creation and reviver semantics stay in the VM.
-// stringify/rawJSON are separate runtime slices, not host JSON substitutes.
+// Stringification is implemented separately; rawJSON remains untranslated.
 fn create_json_object(mut vm VM, realm &Realm) &Object {
 	mut object := Object.create(realm, realm.object_prototype)
 	install_intrinsic_method(mut vm, realm, mut object, 'parse', 2, json_parse)
+	install_intrinsic_method(mut vm, realm, mut object, 'stringify', 3, json_stringify)
 	object.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()),
 		Value.from_string(vm.create_string_from_str('JSON')), attribute_configurable)
 	return object
@@ -33,7 +34,7 @@ struct JSONTextParser {
 	stack         StackInfo
 mut:
 	position      int
-	property_keys [128]JSONPropertyKeyCacheEntry
+	property_keys []JSONPropertyKeyCacheEntry
 }
 
 struct JSONStringToken {
@@ -150,7 +151,11 @@ fn (mut parser JSONTextParser) property_name(mut vm VM) !PropertyName {
 	// keys avoid another decode on a hit without allocating lookup strings.
 	mut hash := u64(raw.len) * 31
 	if raw.len > 0 { hash += u64(raw[0]) * 17 + u64(raw.last()) }
-	slot := int(hash % u64(parser.property_keys.len))
+	// Scalar and array-only JSON parses never need a property cache.
+	if parser.property_keys.len == 0 {
+		parser.property_keys = []JSONPropertyKeyCacheEntry{len: 128}
+	}
+	slot := int(hash % 128)
 	entry := parser.property_keys[slot]
 	if key := entry.key {
 		// Hash collisions must compare the complete raw UTF-16 spelling.
@@ -301,10 +306,10 @@ fn internalize_json_property(mut vm VM, holder &Object, key PropertyName, revive
 				keys << PropertyName.from_str(index.str())
 			}
 		} else {
-			for name in object.own_property_keys() {
+			for name in object.own_property_keys_checked(mut vm)! {
 				vm.consume_execution_budget()!
 				if name.is_symbol() { continue }
-				descriptor := object.internal_get_own_property(name) or { continue }
+				descriptor := object.get_own_property_checked(mut vm, name)!.descriptor or { continue }
 				if descriptor.enumerable or { false } { keys << name }
 			}
 		}
@@ -316,7 +321,7 @@ fn internalize_json_property(mut vm VM, holder &Object, key PropertyName, revive
 			}
 			replacement := internalize_json_property(mut vm, object, name, reviver, child, text, stack, depth + 1)!
 			if replacement.is_undefined() {
-				object.internal_delete(name)
+				object.delete_checked(mut vm, name)!
 			} else {
 				object.create_data_property(mut vm, name, replacement)!
 			}

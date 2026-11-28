@@ -46,6 +46,41 @@ fn test_native_bitmap_source_upload_alpha_flip_scaling_and_metadata() {
 	assert context.get_error() == no_error
 }
 
+fn test_large_native_bitmap_upload_flips_all_rows() {
+	width, height := 1031, 521
+	row_bytes := width * 4
+	mut pixels := []u8{len: row_bytes * height}
+	mut expected := []u8{len: pixels.len}
+	for y in 0 .. height {
+		src := y * row_bytes
+		dst := (height - y - 1) * row_bytes
+		for x in 0 .. width {
+			offset := src + x * 4
+			pixels[offset] = u8(y % 251)
+			pixels[offset + 1] = u8(x % 239)
+			pixels[offset + 2] = u8((x + y) % 233)
+			pixels[offset + 3] = 255
+		}
+		copy(mut expected[dst..dst + row_bytes], pixels[src..src + row_bytes])
+	}
+
+	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
+	texture := context.create_texture()
+	context.bind_texture(texture_2d, texture)
+	context.pixel_storei(unpack_flip_y_webgl, 1)
+	source := WebGLTextureImageSource{
+		kind:  .image_data
+		frame: WebGLBitmap{width: width, height: height, pixels: pixels}
+	}
+	context.tex_image2d_source(texture_2d, 0, int(rgba), rgba, unsigned_byte, source, none, 0)!
+	fbo := context.create_framebuffer()
+	context.bind_framebuffer(framebuffer, fbo)
+	context.framebuffer_texture2d(framebuffer, color_attachment0, texture_2d, texture, 0)
+	pixels_match := context.read_pixels(0, 0, width, height, rgba, unsigned_byte) == expected
+	assert pixels_match
+	assert context.get_error() == no_error
+}
+
 fn test_native_bitmap_source_3d_layer_update_and_validation() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	texture := context.create_texture()

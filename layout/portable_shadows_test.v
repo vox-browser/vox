@@ -1,6 +1,8 @@
 module layout
 
 import math
+import os
+import painting
 import platform
 
 fn test_portable_shadow_replays_transformed_radii_clip_and_source_bounds() {
@@ -58,4 +60,42 @@ fn test_portable_text_shadow_keeps_glyph_slices_and_baseline_translation() {
 		largest = u8(math.max(largest, bitmap.pixels[index]))
 	}
 	assert largest > 0 && largest <= 128
+}
+
+fn test_portable_text_raster_matches_the_visible_crop_of_a_retained_font() {
+	font := &platform.Font{
+		family:      'Origin'
+		point_size:  80
+		source_path: os.join_path(@VMODROOT, 'Tests/Browser/Brave/resources/glyph-origin.ttf')
+	}
+	command := PaintCommand{
+		kind: 'draw_text'
+		x: -8.25
+		y: 4.25
+		width: 160
+		height: 96
+		color: 'rgba(229,45,184,0.75)'
+		glyph_run: platform.shape_text(0, 0, 'Im', font, .ltr)
+		glyph_translation_x: -8.25
+		glyph_translation_y: 72.5
+	}
+	for scale in [1.0, 2.0] {
+		bitmap := rasterize_portable_shadow(PaintCommand{...command, kind: 'draw_text_shadow'}, scale)!
+		crop := painting.IntRect{0, 40, 63, 50}
+		clipped := rasterize_portable_text(command, scale, crop)!
+		assert clipped.width == crop.width
+		assert clipped.height == crop.height
+		assert f64(clipped.x) * scale == f64(crop.x)
+		assert f64(clipped.y) * scale == f64(crop.y)
+		dx := crop.x - int(f64(bitmap.x) * scale)
+		dy := crop.y - int(f64(bitmap.y) * scale)
+		for y in 0 .. crop.height {
+			expected := ((dy + y) * bitmap.width + dx) * 4
+			actual := y * crop.width * 4
+			assert clipped.pixels[actual..actual + crop.width * 4] == bitmap.pixels[expected..expected + crop.width * 4]
+		}
+		assert clipped.pixels.any(it > 0)
+		empty := rasterize_portable_text(command, scale, painting.IntRect{3000, 40, 50, 50})!
+		assert empty.pixels.len == 0
+	}
 }

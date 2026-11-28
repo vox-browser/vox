@@ -65,7 +65,7 @@ def main():
         for fixture in ('headless', 'host-only', 'host'):
             label = mode + '-' + fixture
             binary = output / label
-            command = [str(args.v_bin), '-new-compiler', '-b', 'c', '-cc', os.environ.get('CC', 'clang'),
+            command = [str(args.v_bin), '-b', 'c', '-cc', os.environ.get('CC', 'clang'),
                        '-memory-limit', '10G', '-cflags', ' '.join(options),
                        *(['-ldflags', '-fsanitize=address,undefined'] if mode == 'sanitized' else []),
                        *(['-d', 'vox_gles_host'] if fixture != 'headless' else []),

@@ -53,7 +53,7 @@ fn test_number_prototype_initialization_source_order_descriptors_and_own_positiv
 	prototype := NumberPrototype.create(mut vm, realm, parent, number_prototype_test_decimal, number_prototype_test_locale(mut vm,
 		realm, parent)).object
 	assert voidptr(prototype.internal_get_prototype_of()?) == voidptr(parent)
-	assert prototype.number_object?.value == 0 && !math.signbit(prototype.number_object?.value)
+	assert prototype.slots.number_object?.value == 0 && !math.signbit(prototype.slots.number_object?.value)
 	assert prototype.class_name == 'NumberPrototype'
 	assert !Value.from_object(prototype).is_function()
 	if _ := call(mut vm, Value.from_object(prototype), js_null(), []Value{}) {
@@ -107,7 +107,7 @@ fn test_number_records_support_boxing_coercion_and_bound_calls_without_inherited
 	}
 	value := Value.from_f64(1.25)
 	wrapper := value.to_object_with_prototypes(mut vm, primitives)!
-	assert wrapper.number_object?.value == 1.25
+	assert wrapper.slots.number_object?.value == 1.25
 	assert Value.from_object(wrapper).to_number(mut vm)!.number == 1.25
 	primitive_text := Value.from_object(wrapper).to_primitive_string(mut vm)!
 	assert primitive_text.str() == '1.25'
@@ -124,7 +124,7 @@ fn test_number_records_support_boxing_coercion_and_bound_calls_without_inherited
 	boxed := construct(mut vm, Value.from_object(constructor), [
 		Value.from_f64(-0.0),
 	], none)!
-	assert math.signbit(boxed.number_object?.value)
+	assert math.signbit(boxed.slots.number_object?.value)
 	assert voidptr(boxed.prototype?) == voidptr(prototype)
 	spoof := Object.create(realm, wrapper)
 	for name in ['valueOf', 'toExponential', 'toFixed', 'toLocaleString', 'toPrecision', 'toString'] {
@@ -192,7 +192,7 @@ fn test_number_construction_uses_new_target_realm_for_missing_intrinsic_prototyp
 		result := construct(mut vm, Value.from_object(constructor), [
 			Value.from_f64(1.25),
 		], new_target)!
-		assert result.number_object?.value == 1.25
+		assert result.slots.number_object?.value == 1.25
 		assert voidptr(result.prototype?) == voidptr(foreign_prototype)
 	}
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0

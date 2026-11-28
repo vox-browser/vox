@@ -6,10 +6,15 @@ module libjs
 // scope depth; it does not share upstream's packed bytecode/environment cells.
 fn (mut generator BytecodeGenerator) try_catch_statement(mut vm VM,statement &Statement) ! {
 	data := statement.kind.try_data or { return error('Missing try statement') }
-	if data.finalizer!=none { return generator.unsupported('try/finally') }
-	handler := data.handler or { return error('Try requires a catch or finally') }
-	if parameter := handler.parameter {
-		if parameter is CatchBindingPattern { return generator.unsupported('destructuring catch parameter') }
+	if finalizer := data.finalizer { return generator.try_finally_statement(mut vm, data, &finalizer) }
+	generator.try_catch_body(mut vm, data)!
+}
+
+fn (mut generator BytecodeGenerator) try_catch_body(mut vm VM, data &TryStatementData) ! {
+	handler := data.handler or {
+		generator.clear_completion()
+		generator.statement(mut vm, &data.block)!
+		return
 	}
 	generator.clear_completion()
 	depth := generator.scope_depth
@@ -22,12 +27,19 @@ fn (mut generator BytecodeGenerator) try_catch_statement(mut vm VM,statement &St
 	generator.emit(Instruction{op:.catch_op,dst:caught})
 	generator.clear_completion()
 	if parameter := handler.parameter {
-		binding := parameter as CatchBindingIdentifier
-		identifier := generator.identifier(binding.identifier.name)
 		generator.emit(Instruction{op:.enter_scope})
 		generator.scope_depth++
-		generator.emit(Instruction{op:.create_mutable_binding,identifier:identifier})
-		generator.emit(Instruction{op:.initialize_binding,identifier:identifier,lhs:caught})
+		if parameter is CatchBindingIdentifier {
+			identifier := generator.identifier(parameter.identifier.name)
+			generator.emit(Instruction{op:.create_mutable_binding,identifier:identifier})
+			generator.emit(Instruction{op:.initialize_binding,identifier:identifier,lhs:caught})
+		} else {
+			pattern := (parameter as CatchBindingPattern).pattern
+			mut names := []Utf16String{}
+			collect_pattern_names(pattern, mut names)
+			for name in names { generator.emit(Instruction{op: .create_mutable_binding, identifier: generator.identifier(name)}) }
+			generator.binding_pattern(mut vm, pattern, caught, true)!
+		}
 	}
 	generator.statement(mut vm,&handler.body)!
 	if handler.parameter!=none {
@@ -35,6 +47,10 @@ fn (mut generator BytecodeGenerator) try_catch_statement(mut vm VM,statement &St
 		generator.emit(Instruction{op:.leave_scope})
 	}
 	generator.patch(finished)
+	generator.protect_range(start, end, catch_start, depth)
+}
+
+fn (mut generator BytecodeGenerator) protect_range(start u32, end u32, catch_start u32, depth int) {
 	// Inner handlers already own their protected intervals. Fill the remaining
 	// intervals with the outer handler, including inner catch bodies.
 	mut protected := generator.executable.exception_handlers.clone()

@@ -68,6 +68,28 @@ static uint8_t *native_decode_webp_yuv(const uint8_t *bytes, size_t length,
     return planes;
 }
 
+// Straight libwebp rows. Callers must interpret any encoded color profile
+// before using this entry point; it performs no implicit color conversion.
+static uint8_t *native_decode_webp_raw_rgba(const uint8_t *bytes, size_t length,
+    int *width, int *height, int *pitch)
+{
+    native_load_webp_decoder();
+    *width = *height = *pitch = 0;
+    int w = 0, h = 0;
+    if (!bytes || !get_info || !decode_rgba || !get_info(bytes, length, &w, &h)
+        || w <= 0 || h <= 0 || w > INT_MAX / 4 || (size_t)w * h > INT_MAX / 4)
+        return NULL;
+    size_t size = (size_t)w * h * 4;
+    uint8_t *pixels = malloc(size);
+    if (!pixels) return NULL;
+    if (!decode_rgba(bytes, length, pixels, size, w * 4)) {
+        free(pixels);
+        return NULL;
+    }
+    *width = w; *height = h; *pitch = w * 4;
+    return pixels;
+}
+
 static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
     int *width, int *height, int *pitch)
 {
@@ -80,18 +102,7 @@ static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
     if (extended && (bytes[20] & 2)) return NULL;
     bool has_color_profile = extended && (bytes[20] & 32);
     if (get_info && decode_rgba && !has_color_profile) {
-        int w = 0, h = 0;
-        if (!get_info(bytes, length, &w, &h) || w <= 0 || h <= 0
-            || w > INT_MAX / 4 || (size_t)w * h > INT_MAX / 4) return NULL;
-        size_t size = (size_t)w * h * 4;
-        uint8_t *pixels = malloc(size);
-        if (!pixels) return NULL;
-        if (!decode_rgba(bytes, length, pixels, size, w * 4)) {
-            free(pixels);
-            return NULL;
-        }
-        *width = w; *height = h; *pitch = w * 4;
-        return pixels;
+        return native_decode_webp_raw_rgba(bytes, length, width, height, pitch);
     }
     // Keep the existing native image provider available without an optional
     // libwebp installation. The encoded stream retains its color profile.

@@ -673,7 +673,9 @@ pub fn set_html_select_element_indexed_option(select_element &dom.HTMLSelectElem
 			root.append_child(option_node(value))!
 		} else {
 			old_option := html_select_element_list_of_options(select_element)[index]
-			root.replace_child(option_node(value), option_node(old_option))!
+			old_node := option_node(old_option)
+			mut parent := old_node.parent_node() or { return error('NotFoundError: The indexed option has no parent.') }
+			parent.replace_child(option_node(value), old_node)!
 		}
 	} else {
 		html_select_element_remove_option(select_element, i32(index))

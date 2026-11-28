@@ -9,10 +9,10 @@ struct NameAndPropertyDescriptor {
 // conversion. Accepting an Object keeps primitive wrapper creation at the
 // untranslated Intrinsics boundary instead of substituting a host algorithm.
 pub fn (mut object Object) define_properties(mut vm VM, properties &Object) !&Object {
-	keys := properties.own_property_keys()
+	keys := properties.own_property_keys_checked(mut vm)!
 	mut descriptors := []NameAndPropertyDescriptor{}
 	for key in keys {
-		if property := properties.internal_get_own_property(key) {
+		if property := properties.get_own_property_checked(mut vm, key)!.descriptor {
 			if property.enumerable or { false } {
 				descriptor_object := properties.get(mut vm, key)!
 				descriptor := to_property_descriptor(mut vm, descriptor_object)!

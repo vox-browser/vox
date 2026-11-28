@@ -74,8 +74,7 @@ fn function_prototype_apply(mut vm VM) !Value {
 	this_argument := vm.argument(0)
 	argument_array := vm.argument(1)
 	if argument_array.is_nullish() { return call(mut vm, function, this_argument, []Value{}) }
-	call_arguments := create_argument_list_from_array_like(mut vm, argument_array)!
-	return call(mut vm, function, this_argument, call_arguments)
+	return vm.call_with_array_like_arguments(function, this_argument, argument_array)
 }
 
 fn function_prototype_call(mut vm VM) !Value {
@@ -84,6 +83,9 @@ fn function_prototype_call(mut vm VM) !Value {
 		return vm.throw_error_type(.type_error, .not_a_function, function.str())
 	}
 	this_argument := vm.argument(0)
+	if arguments := vm.forwarded_call_arguments(function) {
+		return call(mut vm, function, this_argument, arguments)
+	}
 	mut call_arguments := []Value{}
 	for index in 1 .. int(vm.argument_count()) {
 		call_arguments << vm.argument(u32(index))
@@ -100,10 +102,11 @@ fn function_prototype_bind(mut vm VM) !Value {
 	for index in 1 .. int(vm.argument_count()) {
 		call_arguments << vm.argument(u32(index))
 	}
-	function := BoundFunction.create(vm.realm(), target.as_object(), vm.argument(0), call_arguments)
+	prototype := target.as_object().get_prototype_of_checked(mut vm)!.prototype
+	function := bound_function_with_prototype(vm.realm(), target.as_object(), vm.argument(0), call_arguments, prototype)
 	mut object := function.object
 	mut length := 0.0
-	if target.as_object().has_own_property(PropertyName.from_str('length')) {
+	if target.as_object().has_own_property_checked(mut vm, PropertyName.from_str('length'))! {
 		target_length := target.as_object().get(mut vm, PropertyName.from_str('length'))!
 		if target_length.is_number() {
 			if math.is_inf(target_length.number, 1) {
@@ -126,11 +129,11 @@ fn function_prototype_to_string(mut vm VM) !Value {
 		return vm.throw_error_type(.type_error, .not_an_object_of_type, 'Function')
 	}
 	object := value.as_object()
-	if source := object.function_source_text {
+	if source := object.source_text() {
 		return Value.from_string(vm.create_string(source))
 	}
 	if object.native_callable {
-		name := object.native_initial_name or { value.as_function().name_for_call_stack() }
+		name := if initial := object.native_initial_name { *initial } else { value.as_function().name_for_call_stack() }
 		return Value.from_string(vm.create_string(utf16_concat([
 			utf16_string('function '),
 			name,

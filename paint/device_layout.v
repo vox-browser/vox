@@ -3,6 +3,8 @@ module main
 import css
 import dom
 import html
+import os
+import math
 
 fn browser_document_supports_device_layout(document &dom.Document) bool {
 	root := document.as_node()
@@ -47,13 +49,20 @@ fn invisible_replaced_embedding(element &dom.Element) bool {
 	return css.up_to_date_computed_properties_for_element(element).visibility() != .visible
 }
 
-// Display density is also the screenshot's requested raster scale (1 by
-// default). Both captures and windows use that density for eligible layout.
+fn browser_capture_render_device_ratio() f64 {
+	ratio := os.getenv('VOX_CAPTURE_RENDER_DEVICE_PIXEL_RATIO').f64()
+	return if ratio > 0 && !math.is_inf(ratio, 0) && !math.is_nan(ratio) { ratio } else { 0.0 }
+}
+
+// Emulated captures can retain the presenting screen's finer layout/font
+// grid while encoding one PNG pixel per CSS pixel. Media-query DPR is separate.
 fn browser_layout_coordinate_scale(document &dom.Document) f64 {
 	$if macos {
 		// SVG descendants retain user units inside their scaled viewport.
 		// Embedded documents, foreignObject and MathML retain CSS-pixel layout.
 		if browser_document_supports_device_layout(document) {
+			ratio := browser_capture_render_device_ratio()
+			if ratio > 0 { return ratio }
 			return C.native_display_device_pixel_ratio()
 		}
 	}
@@ -63,5 +72,6 @@ fn browser_layout_coordinate_scale(document &dom.Document) f64 {
 fn (mut app BrowserApp) sync_layout_coordinate_scale() {
 	if app.document == unsafe { nil } || app.layout_tree_only { return }
 	app.document.set_display_device_pixel_ratio(html.display_device_pixel_ratio())
+	app.document.set_rendering_device_pixel_ratio(browser_capture_render_device_ratio())
 	app.document.set_layout_coordinate_scale(browser_layout_coordinate_scale(app.document))
 }

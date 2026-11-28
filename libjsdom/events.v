@@ -3,6 +3,7 @@ module libjsdom
 import dom
 import libjs
 import platform
+import processmetrics
 
 struct Listener {
 	target    &dom.EventTarget
@@ -11,21 +12,30 @@ struct Listener {
 	native    &dom.IDLEventListener
 	capture   bool
 	attribute bool
+	abort_signal ?&dom.AbortSignal
+	abort_algorithm ?u64
 }
 
 fn (mut host Host) install_events(mut node libjs.Object) ! {
 	mut prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	host.event_prototype = prototype
-	for name in ['target', 'currentTarget', 'type', 'defaultPrevented'] {
+	prototype.define_direct_property(libjs.PropertyName.from_symbol(host.vm.well_known_symbol_to_string_tag()),
+		libjs.Value.from_string(host.vm.create_string_from_str('Event')), libjs.attribute_configurable)
+	for name in ['target', 'currentTarget', 'type', 'defaultPrevented', 'bubbles', 'cancelable', 'composed', 'eventPhase', 'timeStamp'] {
 		host.accessor(mut prototype, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			event := host.event(mut vm)!
 			mut owner := unsafe { &Host(host) }
 			if name == 'type' {
-				return libjs.Value.from_string(vm.create_string_from_str(event.type_))
+				return libjs.Value.from_string(vm.create_string(libjs.utf16_string_from_utf8_without_validation(event.type_)))
 			}
 			if name == 'defaultPrevented' {
 				return libjs.Value.from_bool(event.default_prevented())
 			}
+			if name == 'bubbles' { return libjs.Value.from_bool(event.bubbles()) }
+			if name == 'cancelable' { return libjs.Value.from_bool(event.cancelable()) }
+			if name == 'composed' { return libjs.Value.from_bool(event.composed()) }
+			if name == 'eventPhase' { return libjs.Value.from_i32(i32(event.event_phase())) }
+			if name == 'timeStamp' { return libjs.Value.from_f64(event.time_stamp()) }
 			mut event_target := event.target()
 			if name == 'currentTarget' { event_target = event.current_target() }
 			if target := event_target {
@@ -48,49 +58,29 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 			return libjs.js_undefined()
 		})
 	}
-	for name in ['addEventListener', 'removeEventListener'] {
-		host.method(mut node, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
-			actual := host.node(mut vm)!
-			if vm.argument_count() < 2 {
-				return vm.throw_error(.type_error, name + ' requires two arguments')
-			}
-			type_ := vm.argument(0).to_primitive_string(mut vm)!.str()
-			callback := vm.argument(1)
-			if callback.is_nullish() { return libjs.js_undefined() }
-			if !callback.is_object() {
-				return vm.throw_error(.type_error, 'Event listener must be an object')
-			}
-			options := vm.argument(2)
-			mut capture := false
-			mut once := false
-			mut passive := ?bool(none)
-			if options.is_object() {
-				object := options.as_object()
-				capture = object.get(mut vm, libjs.PropertyName.from_str('capture'))!.to_boolean()
-				if name == 'addEventListener' {
-					once = object.get(mut vm, libjs.PropertyName.from_str('once'))!.to_boolean()
-					value := object.get(mut vm, libjs.PropertyName.from_str('passive'))!
-					if !value.is_undefined() { passive = value.to_boolean() }
-				}
-			} else {
-				capture = options.to_boolean()
-			}
-			mut owner := unsafe { &Host(host) }
-			target := unsafe { &dom.EventTarget(actual) }
-			if name == 'addEventListener' {
-				owner.add_listener(target, type_, callback, dom.AddEventListenerOptions{ capture: capture, once: once, passive: passive }, false)
-			} else {
-				owner.remove_listener(target, type_, callback, capture)
-			}
-			return libjs.js_undefined()
-		})
+	host.method_attributes(mut prototype, 'composedPath', 0, fn [host] (mut vm libjs.VM) !libjs.Value {
+		event := host.event(mut vm)!
+		mut owner := unsafe { &Host(host) }
+		mut targets := []libjs.Value{}
+		for target in event.composed_path() { targets << owner.wrap_target(target) }
+		return libjs.Value.from_object(libjs.ArrayObject.create_from(mut vm, host.realm, targets, host.realm.array_prototype_record())!.object)
+	}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
+	host.install_event_constructor(mut prototype)
+	mut global := host.realm.global_object_record()
+	for name in ['addEventListener', 'removeEventListener', 'dispatchEvent'] {
+		global.define_direct_property(libjs.PropertyName.from_str(name),
+			host.event_target_prototype.get(mut host.vm, libjs.PropertyName.from_str(name))!,
+			libjs.attribute_writable | libjs.attribute_configurable | libjs.attribute_enumerable)
 	}
 	for type_ in ['click', 'input', 'change', 'load'] {
 		host.accessor(mut node, 'on' + type_, fn [host, type_] (mut vm libjs.VM) !libjs.Value {
 			target := unsafe { &dom.EventTarget(host.node(mut vm)!) }
-			for listener in host.listeners {
-				if listener.attribute && listener.type_ == type_ && voidptr(listener.target) == voidptr(target) {
-					return listener.callback
+			if callback := target.event_handler_attribute(type_) {
+				for listener in host.listeners {
+					if listener.attribute && voidptr(listener.native.callback()) == voidptr(callback) { return listener.callback }
+				}
+				for handler in host.inline_handlers {
+					if voidptr(handler.callback) == voidptr(callback) { return handler.function }
 				}
 			}
 			return libjs.js_null()
@@ -113,11 +103,79 @@ fn (mut host Host) install_events(mut node libjs.Object) ! {
 	}
 }
 
+// EventTarget methods accept both native nodes and the document's actual Window.
+// WebIDL uses the associated global object for an undefined/null receiver.
+fn (host &Host) event_target(mut vm libjs.VM) !&dom.EventTarget {
+	host.require_open(mut vm)!
+	receiver := vm.this_value()
+	if receiver.is_nullish() || (receiver.is_object()
+		&& voidptr(receiver.as_object()) == voidptr(host.realm.global_object_record())) {
+		if window := host.document.get_window() { return unsafe { &dom.EventTarget(window) } }
+		return vm.throw_error(.type_error, 'Document has no associated Window')
+	}
+	if receiver.is_object() {
+		if node := host.nodes[voidptr(receiver.as_object())] { return unsafe { &dom.EventTarget(node) } }
+		if target := host.event_targets[voidptr(receiver.as_object())] { return target }
+	}
+	return vm.throw_error(.type_error, 'EventTarget method called on incompatible receiver')
+}
+
+fn (mut host Host) install_event_target_methods(mut object libjs.Object) {
+	for name in ['addEventListener', 'removeEventListener'] {
+		host.method_attributes(mut object, name, 2, fn [host, name] (mut vm libjs.VM) !libjs.Value {
+			target := host.event_target(mut vm)!
+			if vm.argument_count() < 2 {
+				return vm.throw_error(.type_error, name + ' requires two arguments')
+			}
+			type_ := vm.argument(0).to_primitive_string(mut vm)!.str()
+			callback := vm.argument(1)
+			if !callback.is_nullish() && !callback.is_object() {
+				return vm.throw_error(.type_error, 'Event listener must be an object')
+			}
+			options := vm.argument(2)
+			mut capture := false
+			mut once := false
+			mut passive := ?bool(none)
+			mut signal := ?&dom.AbortSignal(none)
+			if options.is_object() {
+				object := options.as_object()
+				capture = object.get(mut vm, libjs.PropertyName.from_str('capture'))!.to_boolean()
+				if name == 'addEventListener' {
+					once = object.get(mut vm, libjs.PropertyName.from_str('once'))!.to_boolean()
+					value := object.get(mut vm, libjs.PropertyName.from_str('passive'))!
+					if !value.is_undefined() { passive = value.to_boolean() }
+					value_signal := object.get(mut vm, libjs.PropertyName.from_str('signal'))!
+					if !value_signal.is_undefined() { signal = host.signal_value(mut vm, value_signal)! }
+				}
+			} else {
+				capture = options.to_boolean()
+			}
+			if callback.is_nullish() { return libjs.js_undefined() }
+			mut owner := unsafe { &Host(host) }
+			if name == 'addEventListener' {
+				owner.add_listener(target, type_, callback, dom.AddEventListenerOptions{ capture: capture, once: once, passive: passive, signal: signal }, false)
+			} else {
+				owner.remove_listener(target, type_, callback, capture)
+			}
+			return libjs.js_undefined()
+		}, libjs.attribute_writable | libjs.attribute_configurable | libjs.attribute_enumerable)
+	}
+	host.method_attributes(mut object, 'dispatchEvent', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
+		target := host.event_target(mut vm)!
+		if vm.argument_count() < 1 || !vm.argument(0).is_object() { return vm.throw_error(.type_error, 'dispatchEvent requires an Event') }
+		event := host.events[voidptr(vm.argument(0).as_object())] or { return vm.throw_error(.type_error, 'dispatchEvent requires an Event') }
+		mut owner := unsafe { &Host(host) }
+		result := target.dispatch_event_binding(event) or { return owner.dom_error(mut vm, err) }
+		return libjs.Value.from_bool(result)
+	}, libjs.attribute_writable | libjs.attribute_configurable | libjs.attribute_enumerable)
+}
+
 fn (mut host Host) wrap_target(target &dom.EventTarget) libjs.Value {
 	if target.data.kind == .node { return host.wrap_node(unsafe { &dom.Node(target) }) }
 	if target.data.kind == .window {
 		return libjs.Value.from_object(host.realm.global_object_record())
 	}
+	if object := host.event_target_wrappers[voidptr(target)] { return libjs.Value.from_object(object) }
 	return libjs.js_null()
 }
 
@@ -131,22 +189,37 @@ fn (host &Host) event(mut vm libjs.VM) !&dom.Event {
 
 fn (mut host Host) wrap_event(event &dom.Event) libjs.Value {
 	if object := host.event_wrappers[voidptr(event)] { return libjs.Value.from_object(object) }
-	mut object := libjs.Object.create(host.realm, host.event_prototype)
-	object.class_name = 'Event'
+	prototype := if event.interface_ == .media_query_list_event { host.media_event_prototype }
+		else if event.interface_ == .custom_event { host.custom_event_prototype }
+		else if event.interface_ == .pop_state_event { host.pop_state_event_prototype }
+		else if event.interface_ == .message_event { host.message_event_prototype }
+		else if event.interface_ == .form_data_event { host.form_data_event_prototype }
+		else if event.interface_ == .submit_event { host.submit_event_prototype }
+		else if event.interface_ == .keyboard_event { host.keyboard_event_prototype }
+		else if libjsdom_is_mouse_event(event) { host.mouse_event_prototype }
+		else if libjsdom_is_ui_event(event) { host.ui_event_prototype }
+		else { host.event_prototype }
+	mut object := libjs.Object.create(host.realm, prototype)
+	return host.register_event_wrapper(mut object, event)
+}
+
+fn (mut host Host) register_event_wrapper(mut object libjs.Object, event &dom.Event) libjs.Value {
+	object.class_name = match event.interface_ {
+		.custom_event { 'CustomEvent' }
+		.pop_state_event { 'PopStateEvent' }
+		.message_event { 'MessageEvent' }
+		else { 'Event' }
+	}
 	host.events[voidptr(object)] = event
 	host.event_wrappers[voidptr(event)] = object
+	// Event.idl's LegacyUnforgeable attribute belongs on each instance.
+	host.accessor_attributes(mut object, 'isTrusted', fn [host] (mut vm libjs.VM) !libjs.Value {
+		return libjs.Value.from_bool(host.event(mut vm)!.is_trusted())
+	}, unsafe { nil }, libjs.attribute_enumerable)
 	return libjs.Value.from_object(object)
 }
 
-fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) {
-	if !attribute {
-		for listener in host.listeners {
-			if !listener.attribute && voidptr(listener.target) == voidptr(target) && listener.type_ == type_
-				&& listener.capture == options.capture && libjs.is_strictly_equal(listener.callback, callback) {
-				return
-			}
-		}
-	}
+fn (mut host Host) event_callback(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) &dom.CallbackType {
 	invoke := fn [host, callback, target, type_, options, attribute] (event &dom.Event, current ?&dom.EventTarget) !dom.JSValue {
 		if host.closed || host.document.has_been_destroyed() || !host.document.as_node().is_scripting_enabled() {
 			return dom.js_undefined()
@@ -154,6 +227,8 @@ fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback 
 		if permitted := host.hooks.can_run_callback {
 			if !permitted() { return dom.js_undefined() }
 		}
+		javascript_stage := processmetrics.begin_javascript_instruction_stage()
+		defer { javascript_stage.finish() }
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
 		if before := host.hooks.before_callback { before() }
@@ -173,27 +248,53 @@ fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback 
 			function = callback.as_object().get(mut vm, libjs.PropertyName.from_str('handleEvent'))!
 			receiver = callback
 		}
-		value := vm.call_with_limits(function, receiver, [owner.wrap_event(event)], libjs.ExecutionLimits{ max_instructions: 1000000 })!
+		value := vm.call_with_limits(function, receiver, [owner.wrap_event(event)], host.hooks.execution_limits)!
 		return if value.is_boolean() { dom.js_bool(value.as_bool()) } else { dom.js_undefined() }
 	}
 	report := fn [host] (err IError) {
-		if callback := host.hooks.exception { callback(exception_message(err)) }
+		if callback := host.hooks.exception { callback(exception_message_with_stack(err)) }
 	}
 	host.closures << voidptr(invoke)
 	host.closures << voidptr(report)
-	native := dom.IDLEventListener.create(&dom.CallbackType{ handle_event_with_exception: invoke, report_exception: report, callback_identity_: voidptr(callback.as_object()) })
+	return &dom.CallbackType{ handle_event_with_exception: invoke, report_exception: report, callback_identity_: voidptr(callback.as_object()), associated_window: host.document.get_window() }
+}
+
+fn (mut host Host) add_listener(target &dom.EventTarget, type_ string, callback libjs.Value, options dom.AddEventListenerOptions, attribute bool) {
+	if signal := options.signal { if signal.aborted() { return } }
+	if !attribute {
+		for listener in host.listeners {
+			if !listener.attribute && voidptr(listener.target) == voidptr(target) && listener.type_ == type_
+				&& listener.capture == options.capture && libjs.is_strictly_equal(listener.callback, callback) {
+				return
+			}
+		}
+	}
+	native := dom.IDLEventListener.create(host.event_callback(target, type_, callback, options, attribute))
 	if attribute {
 		target.set_event_handler_attribute(type_, native.callback())
 	} else {
 		target.add_event_listener(type_, native, options)
 	}
-	host.listeners << Listener{ target: target, type_: type_.clone(), callback: callback, native: native, capture: options.capture, attribute: attribute }
+	mut abort_id := ?u64(none)
+	if signal := options.signal {
+		remove := fn [host, target, type_, callback, options] () {
+			mut owner := unsafe { &Host(host) }
+			if !owner.closed { owner.remove_listener(target, type_, callback, options.capture) }
+		}
+		host.closures << voidptr(remove)
+		mut owner := unsafe { &dom.AbortSignal(signal) }
+		abort_id = owner.add_abort_algorithm(remove)
+	}
+	host.listeners << Listener{ target: target, type_: type_.clone(), callback: callback, native: native, capture: options.capture, attribute: attribute, abort_signal: options.signal, abort_algorithm: abort_id }
 }
 
 fn (mut host Host) remove_listener(target &dom.EventTarget, type_ string, callback libjs.Value, capture bool) {
 	for index, listener in host.listeners {
 		if !listener.attribute && listener.type_ == type_ && listener.capture == capture
 			&& voidptr(listener.target) == voidptr(target) && libjs.is_strictly_equal(listener.callback, callback) {
+			if signal := listener.abort_signal {
+				if id := listener.abort_algorithm { mut owner := unsafe { &dom.AbortSignal(signal) }; owner.remove_abort_algorithm(id) }
+			}
 			target.remove_event_listener(type_, listener.native, dom.EventListenerOptions{ capture: capture })
 			host.listeners.delete(index)
 			return

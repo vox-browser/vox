@@ -35,3 +35,26 @@ fn test_grouping_rule_parent_sheet_updates_child_rule_list() {
 	assert child.parent_rule? == group
 	assert child.parent_style_sheet? == sheet
 }
+
+fn test_cross_origin_sheet_rejects_cssom_access_but_keeps_its_rules_for_styling() {
+	mut sheet := CSSStyleSheet.create(CSSRuleList.create_empty(), MediaList.create_empty(), none)
+	assert sheet.insert_rule('p { color: red; }', 0)! == 0
+	assert sheet.checked_css_rules()!.length() == 1
+	sheet.base.origin_clean = false
+	if _ := sheet.checked_css_rules() {
+		assert false
+	} else {
+		assert err.msg().starts_with('SecurityError:')
+	}
+	if _ := sheet.insert_rule('p { color: blue; }', 1) {
+		assert false
+	} else {
+		assert err.msg().starts_with('SecurityError:')
+	}
+	if _ := sheet.delete_rule(0) {
+		assert false
+	} else {
+		assert err.msg().starts_with('SecurityError:')
+	}
+	assert sheet.css_rules().length() == 1
+}

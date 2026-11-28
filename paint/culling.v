@@ -72,6 +72,11 @@ fn (mut culling PaintCanvasCulling) replayed_command(command &layout.PaintComman
 
 fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f64, page_y f64,
     width f64, height f64) bool {
+    return culling.skip_with_leaf_bounds(command, page_x, page_y, width, height, .unprepared)
+}
+
+fn (mut culling PaintCanvasCulling) skip_with_leaf_bounds(command &layout.PaintCommand, page_x f64,
+    page_y f64, width f64, height f64, bounds PaintLeafCanvasBounds) bool {
     if !culling.enabled { return false }
     if culling.skipped_depth > 0 {
         culling.advance_scope(command.kind)
@@ -96,6 +101,7 @@ fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f6
         return false
     }
     if culling.resource_depth != 0 { return false }
+    if bounds != .unprepared { return bounds == .outside }
     if command.kind == 'draw_video' && !disable_offscreen_video_culling
         && video_is_outside_canvas(command, page_x, page_y, width, height) {
         if offscreen_video_culling_diagnostics {

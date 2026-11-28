@@ -37,9 +37,9 @@ fn test_array_to_string_calls_observable_join_with_boxed_object_and_no_forwarded
 			if receiver.is_object() {
 				assert voidptr(object) == voidptr(receiver.as_object())
 			} else if receiver.is_number() {
-				assert (object.number_object or { panic('fixture') }).value == receiver.number
+				assert (object.slots.number_object or { panic('fixture') }).value == receiver.number
 			} else if receiver.is_bigint() {
-				assert voidptr((object.bigint_object or { panic('fixture') }).bigint) == voidptr(receiver.as_bigint())
+				assert voidptr((object.slots.bigint_object or { panic('fixture') }).bigint) == voidptr(receiver.as_bigint())
 			} else {
 				assert (object.string_object or { panic('fixture') }).value.utf16 == receiver.as_string().utf16
 			}

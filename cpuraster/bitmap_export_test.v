@@ -1,6 +1,7 @@
 module cpuraster
 
 import crypto.sha256
+import os
 
 fn test_bitmap_export_uses_source_skia_premultiplication_flip_and_nearest_scaling() {
 	bitmap := BitmapSource{
@@ -92,7 +93,7 @@ fn test_bitmap_export_uses_platform_sampler_at_flipped_scale_boundary() {
 			pixels << [u8(x * 13), u8(y * 17), u8((x + y) * 7), u8(255)]
 		}
 	}
-	bitmap := BitmapSource{width: 15, height: 14, alpha_type: 2, pixels: pixels}
+	bitmap := BitmapSource{ width: 15, height: 14, alpha_type: 2, pixels: pixels }
 	exported := export_bitmap_to_byte_buffer(bitmap, .rgba8888, true, true, none, 49)!
 	$if linux {
 		assert exported.pixels[180..184] == [u8(0), 221, 91, 255]
@@ -101,4 +102,56 @@ fn test_bitmap_export_uses_platform_sampler_at_flipped_scale_boundary() {
 		assert exported.pixels[180..184] == [u8(0), 204, 84, 255]
 		assert sha256.sum(exported.pixels).hex() == '590b5ffa98fd8856a615d38a55fbd0a142d3a0d4df8691932ecff920267b24ef'
 	}
+}
+
+struct BitmapExportScanCase {
+	format      BitmapExportFormat
+	width       int
+	height      int
+	layout      int
+	color_space int
+	premultiply bool = true
+}
+
+fn test_large_bitmap_export_matches_serial_across_draw_tiles() {
+	serial_setting := 'VOX_SERIAL_CPU_RASTER'
+	previous := os.getenv_opt(serial_setting)
+	defer {
+		if value := previous {
+			os.setenv(serial_setting, value, true)
+		} else {
+			os.unsetenv(serial_setting)
+		}
+	}
+
+	width, height := 1031, 513
+	pitch := width * 4 + 28
+	pixels := []u8{len: pitch * height, init: u8((index * 13 + index / 127) & 255)}
+	original := pixels.clone()
+	for c in [
+		BitmapExportScanCase{ format: .rgb565, width: draw_tile_size + 19, height: 41, layout: 1 },
+		BitmapExportScanCase{ format: .rgba8888, width: 43, height: draw_tile_size + 17 },
+		BitmapExportScanCase{ format: .rgba8888, width: 1073, height: 505, color_space: 1, premultiply: false },
+	] {
+		bitmap := BitmapSource{
+			width:       width
+			height:      height
+			pitch:       pitch
+			layout:      c.layout
+			alpha_type:  2
+			color_space: c.color_space
+			pixels:      pixels
+		}
+		assert os.setenv(serial_setting, '1', true) == 0
+		serial := export_bitmap_to_byte_buffer(bitmap, c.format, true, c.premultiply, c.width,
+			c.height)!
+		assert os.unsetenv(serial_setting) == 0
+		parallel := export_bitmap_to_byte_buffer(bitmap, c.format, true, c.premultiply, c.width,
+			c.height)!
+		assert parallel.width == c.width && parallel.height == c.height
+		pixels_match := parallel.pixels == serial.pixels
+		assert pixels_match, 'parallel export differs for ${c.format} at ${c.width}×${c.height}'
+	}
+	source_unchanged := pixels == original
+	assert source_unchanged
 }

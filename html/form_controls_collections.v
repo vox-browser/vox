@@ -45,16 +45,15 @@ fn radio_node_list_element_checked(element &dom.Element) bool {
 }
 
 fn radio_node_list_set_element_checked(element &dom.Element, checked bool) {
-	mut input := unsafe { &dom.HTMLInputElement(element) }
-	html_input_element_set_checked(mut input, checked)
+	mut model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	model.set_checked_binding(checked)
 }
 
 @[heap]
 pub struct RadioNodeList {
 mut:
 	list &dom.NodeList
-	source_collection_ ?&dom.HTMLCollection
-	source_name_ string
+	form_owner_ ?&HTMLFormElementModel
 }
 
 pub fn RadioNodeList.create(root &dom.Node, scope dom.LiveNodeListScope, filter fn (&dom.Node) bool) &RadioNodeList {
@@ -64,27 +63,24 @@ pub fn RadioNodeList.create(root &dom.Node, scope dom.LiveNodeListScope, filter 
 }
 
 pub fn (list &RadioNodeList) collection() []&dom.Node {
-	if source := list.source_collection_ {
-		mut nodes := []&dom.Node{}
-		for element in source.collect_matching_elements() {
-			if element.id() or { '' } == list.source_name_
-				|| element.get_attribute('name') or { '' } == list.source_name_ {
-				nodes << element.as_node()
-			}
-		}
-		return nodes
-	}
+	list.refresh_form_root()
 	return list.list.collection()
 }
 
 pub fn (list &RadioNodeList) length() int {
-	return list.collection().len
+	list.refresh_form_root()
+	return list.list.length()
+}
+
+// The JS bridge shares the concrete list with inherited NodeList operations.
+pub fn (list &RadioNodeList) node_list() &dom.NodeList {
+	list.refresh_form_root()
+	return list.list
 }
 
 pub fn (list &RadioNodeList) item(index int) ?&dom.Node {
-	nodes := list.collection()
-	if index < 0 || index >= nodes.len { return none }
-	return nodes[index]
+	list.refresh_form_root()
+	return list.list.item(index)
 }
 
 pub fn (list &RadioNodeList) value() string {
@@ -112,12 +108,15 @@ pub fn (mut list RadioNodeList) set_value(value string) {
 		}
 	}
 	target := matching or { return }
-	// RadioNodeList's value setter explicitly updates the named group. This uses
-	// HTMLInputElement::set_checked(), whose C++ counterpart only changes one
-	// element; radio-group exclusivity belongs to the caller here.
-	for node in list.collection() {
-		element := radio_node_list_radio_element(node) or { continue }
-		radio_node_list_set_element_checked(element, voidptr(element) == voidptr(target))
+	// The named list can contain equal IDs from different radio groups. Update
+	// only the target; the concrete input owner enforces its actual radio group.
+	radio_node_list_set_element_checked(target, true)
+}
+
+fn (list &RadioNodeList) refresh_form_root() {
+	if form := list.form_owner_ {
+		mut native := list.list
+		native.node_root = html_form_element_root(form)
 	}
 }
 
@@ -141,6 +140,7 @@ pub type HTMLFormControlsNamedItem = HTMLFormControlsCollectionElement
 pub struct HTMLFormControlsCollection {
 mut:
 	collection &dom.HTMLCollection
+	form_owner_ ?&HTMLFormElementModel
 }
 
 pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCollectionScope, filter fn (&dom.Element) bool) &HTMLFormControlsCollection {
@@ -149,38 +149,23 @@ pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCol
 	}
 }
 
-fn form_collection_tree_order(a &dom.Element, b &dom.Element) bool {
-	return a.as_node().is_preceding(b.as_node())
-}
-
-pub fn HTMLFormControlsCollection.create_for_form(form &HTMLFormElementModel) &HTMLFormControlsCollection {
-	root := form_model_element(form).as_node()
-	return &HTMLFormControlsCollection{
-		collection: dom.HTMLCollection.create_from_collector(unsafe { &dom.ParentNode(root) },
-			fn [form] () []&dom.Element {
-				// V control records are lazy. Discover untouched controls in the
-				// form's current tree, then read the associated controls themselves.
-				materialize_form_associated_controls(form, html_form_element_root(form))
-				mut elements := []&dom.Element{}
-				for element in form.element.associated_elements_.clone() {
-					if html_form_element_is_form_control(form, element) {
-						elements << element
-					}
-				}
-				return elements
-			}, form_collection_tree_order)
-	}
-}
-
 pub fn (collection &HTMLFormControlsCollection) length() int {
+	collection.refresh_form_root()
 	return collection.collection.length()
 }
 
+pub fn (collection &HTMLFormControlsCollection) html_collection() &dom.HTMLCollection {
+	collection.refresh_form_root()
+	return collection.collection
+}
+
 pub fn (collection &HTMLFormControlsCollection) item(index int) ?&dom.Element {
+	collection.refresh_form_root()
 	return collection.collection.item(index)
 }
 
 pub fn (collection &HTMLFormControlsCollection) named_item_or_radio_node_list(name string) HTMLFormControlsNamedItem {
+	collection.refresh_form_root()
 	if name == '' {
 		return HTMLFormControlsCollectionEmpty{}
 	}
@@ -206,16 +191,24 @@ pub fn (collection &HTMLFormControlsCollection) named_item_or_radio_node_list(na
 	}
 	base_filter := collection.collection.filter
 	mut list := RadioNodeList.create(root, scope, fn [name, base_filter] (node &dom.Node) bool {
-		element := node.as_element() or { return false }
-		return base_filter(element) && (element.id() or { '' } == name || element.get_attribute('name') or {
-			''
-		} == name)
-	})
-	// A retained named list follows the same live collection, including form
-	// controls outside the form and a form moved to another tree or document.
-	list.source_collection_ = collection.collection
-	list.source_name_ = name
+			element := node.as_element() or { return false }
+			return base_filter(element) && (element.id() or { '' } == name || element.get_attribute('name') or {
+				''
+			} == name)
+		})
+	list.form_owner_ = collection.form_owner_
 	return HTMLFormControlsCollectionRadioNodeList{list: list}
+}
+
+fn (collection &HTMLFormControlsCollection) refresh_form_root() {
+	if form := collection.form_owner_ {
+		root := unsafe { &dom.ParentNode(html_form_element_root(form)) }
+		mut native := collection.collection
+		if voidptr(native.root) != voidptr(root) {
+			native.root = root
+			native.cache_initialized = false
+		}
+	}
 }
 
 pub fn (collection &HTMLFormControlsCollection) named_item_value(name string) HTMLFormControlsNamedItem {

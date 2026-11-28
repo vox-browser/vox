@@ -15,9 +15,11 @@ mut:
 fn navigable_destroyed_owner_fixture(address string) !(&dom.Document, &NavigableModel, &TraversableNavigable, &dom.Navigable) {
 	owner := page.Page.create(1)!
 	url := dom.URL{value: address}
-	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
-	native := document.navigable() or { return error('missing actual native Navigable') }
-	model := navigable_model_for_host(native) or { return error('missing actual local model') }
+	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
+	window := unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
+	native := &dom.Navigable{ active_document_: document }
+	document.set_cached_navigable(native)
+	model := NavigableModel.create(native, window.browsing_context())!
 	mut traversable := TraversableNavigable.new()
 	traversable.set_host_navigable(native)
 	traversable.active_document_ = document
@@ -28,7 +30,10 @@ fn test_actual_model_and_traversable_read_one_native_destroyed_flag() {
 	mut document, mut model, traversable, native := navigable_destroyed_owner_fixture('https://navigable-destroyed-owner.example/model')!
 	defer { document.finalize() }
 	assert !native.has_been_destroyed() && !model.has_been_destroyed() && !traversable.has_been_destroyed()
+	model.set_navigation_load_event_guard(document)
+	assert document.anything_is_delaying_the_load_event()
 	model.set_has_been_destroyed()
+	assert !document.anything_is_delaying_the_load_event()
 	assert native.has_been_destroyed() && model.has_been_destroyed() && traversable.has_been_destroyed()
 	assert voidptr(navigable_model_for_host(native)?) == voidptr(model)
 	assert voidptr(model.active_document()?) == voidptr(document)

@@ -5,7 +5,7 @@ module libjs
 pub fn ordinary_has_instance(mut vm VM, value Value, constructor Value) !Value {
 	if !constructor.is_function() { return Value.from_bool(false) }
 	object := constructor.as_object()
-	if bound := object.bound_function {
+	if bound := object.slots.bound_function {
 		return instance_of(mut vm, value, Value.from_object(bound.bound_target_function))
 	}
 	if !value.is_object() { return Value.from_bool(false) }
@@ -14,11 +14,11 @@ pub fn ordinary_has_instance(mut vm VM, value Value, constructor Value) !Value {
 		return vm.throw_error_type(.type_error, .instance_of_operator_bad_prototype,
 			constructor.str())
 	}
-	mut current := value.as_object().internal_get_prototype_of()
+	mut current := value.as_object().get_prototype_of_checked(mut vm)!.prototype
 	for {
 		parent := current or { return Value.from_bool(false) }
 		if same_value(prototype, Value.from_object(parent)) { return Value.from_bool(true) }
-		current = parent.internal_get_prototype_of()
+		current = parent.get_prototype_of_checked(mut vm)!.prototype
 	}
 	return Value.from_bool(false)
 }

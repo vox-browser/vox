@@ -9,8 +9,7 @@ pub fn reflect_apply(mut vm VM) !Value {
 	if !target.is_function() {
 		return vm.throw_error_type(.type_error, .not_a_function, target.str())
 	}
-	call_arguments := create_argument_list_from_array_like(mut vm, arguments_list)!
-	return call(mut vm, target, this_argument, call_arguments)
+	return vm.call_with_array_like_arguments(target, this_argument, arguments_list)
 }
 
 // Runtime/ReflectObject.cpp::construct. An absent newTarget defaults to target;

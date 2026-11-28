@@ -47,7 +47,7 @@ fn test_compiled_symbol_errors_preserve_sources_and_allow_subsequent_execution()
 		else {
 			object := thrown_value(err).as_object()
 			assert object.error_kind()? == .type_error
-			assert object.error_data?.stack_string(false).contains('symbols.js:1:'), source
+			assert object.slots.error_data?.stack_string(false).contains('symbols.js:1:'), source
 		}
 		assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 	}

@@ -5,10 +5,12 @@ import css
 import dom
 import html
 import mimesniff
+import os
 import platform
 import browsernet
 
 const max_browser_script_fetches = 8
+const defer_script_responses_until_rendering = os.getenv('VOX_DEFER_SCRIPT_RESPONSES_UNTIL_RENDERING') == '1'
 
 type BrowserScriptFetch = fn (string, string, chan PreloadedResource, &browsernet.RequestScope)
 
@@ -68,7 +70,7 @@ fn (loader &BrowserScriptRequestLoader) parser_fetch_hook() html.ScriptElementAs
 // calling this hook. This adapter supplies bytes only; HTML owns parser pauses,
 // deferred/async execution, load-event delays and each element's load/error event.
 fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTMLScriptElementModel,
-	address dom.URL, _ html.ScriptElementType) ! {
+	address dom.URL, kind html.ScriptElementType) ! {
 	if loader.cancelled { return error('Script loader is closed') }
 	scope := loader.request_scope
 	scope.retain()
@@ -81,8 +83,13 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 	resource_url := address.serialize()
 	if resource := loader.resources[resource_url] {
 		filtered := filter_preloaded_resource_with_scope(resource, loader.document.url.serialize(), 'script', scope)!
+		if kind == .module {
+			if host := loader.parser_host {
+				host.runtime.preparse_libjs_document_module(resource_url, filtered.body)
+			}
+		}
 		mut prepared := unsafe { &html.HTMLScriptElementModel(model) }
-		prepared.complete_external_fetch(filtered.body)
+		complete_browser_parser_script(mut prepared, filtered)
 		return
 	}
 	persistent := platform.enter_persistent()
@@ -97,6 +104,14 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 		loader.queued << resource_url.clone()
 	}
 	loader.start_fetches()
+}
+
+fn complete_browser_parser_script(mut model html.HTMLScriptElementModel, resource PreloadedResource) {
+	if resource.retained_for_process {
+		model.complete_external_fetch_from_retained_source(resource.body)
+	} else {
+		model.complete_external_fetch(resource.body)
+	}
 }
 
 // A paused parser may still encounter another element using an initial response.
@@ -275,7 +290,10 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 		}
 		if mut model := request.parser_model {
 			if resource := filter_preloaded_resource_with_scope(request.resource, loader.document.url.serialize(), 'script', scope) {
-				model.complete_external_fetch(resource.body)
+				if model.script_type() == .module {
+					runtime.preparse_libjs_document_module(request.url, resource.body)
+				}
+				complete_browser_parser_script(mut model, resource)
 			} else {
 				messages << 'Script ${request.url}: ${err.msg()}'
 				model.complete_external_fetch(none)
@@ -331,6 +349,37 @@ fn (mut app BrowserApp) poll_browser_script_requests() {
 	// Completion callbacks can insert another bundle before window.load.
 	if app.js_runtime != unsafe { nil } { app.poll_javascript_tasks() }
 	if voidptr(app.document) == voidptr(loader.document) { loader.discover() }
+}
+
+fn (app &BrowserApp) can_deliver_blocking_script_responses() bool {
+	if defer_script_responses_until_rendering || app.document == unsafe { nil }
+		|| !app.document.has_pending_parsing_blocking_script() {
+		return false
+	}
+	loader := app.script_request_loader or { return false }
+	if loader.results.len == 0 || loader.cancelled || loader.polling
+		|| voidptr(loader.document) != voidptr(app.document) {
+		return false
+	}
+	// The regular frame gives a replacing navigation priority over script
+	// completion on the outgoing document.
+	return !app.has_navigation_fetch_in_flight() && app.pending_page_preload == none
+		&& app.pending_navigation == none && app.pending_native_navigation == none
+		&& app.deferred_navigation_input == none
+}
+
+// Buffered script responses reach HTML's task queue even when this frame
+// skips drawing.
+fn (mut app BrowserApp) poll_blocking_script_responses_on_deferred_frame() {
+	if !app.can_deliver_blocking_script_responses() { return }
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+	defer { heap_scope.finish() }
+	if load_frame_throttle_diagnostics {
+		eprintln('VOX_LOAD_RENDER_THROTTLE delivering script responses')
+	}
+	app.poll_browser_script_requests()
 }
 
 fn copy_compact_script_started_state(original &dom.Node, copy &dom.Node) {

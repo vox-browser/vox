@@ -1,6 +1,7 @@
 #ifndef VOX_NATIVE_LAYER_PRESENTATION_DARWIN_H
 #define VOX_NATIVE_LAYER_PRESENTATION_DARWIN_H
 #import <Cocoa/Cocoa.h>
+#include "native_document_color_darwin.h"
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>
 #import <IOSurface/IOSurface.h>
@@ -211,7 +212,7 @@ static BOOL native_layer_begin_document_canvas(CGContextRef context,
             (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
         || !CGRectEqualToRect(CGContextGetClipBoundingBox(context),
             CGRectMake(0, 0, canvas_width, canvas_height))) return NO;
-    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGColorSpaceRef color = native_copy_document_render_space();
     BOOL same_color = color && CGBitmapContextGetColorSpace(context)
         && CFEqual(color, CGBitmapContextGetColorSpace(context));
     if (color) CGColorSpaceRelease(color);
@@ -219,7 +220,8 @@ static BOOL native_layer_begin_document_canvas(CGContextRef context,
     CGContextSaveGState(context);
     CGContextSetShouldAntialias(context, true);
     CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
-    native_layer_initial_document_clear = (VoxInitialDocumentClear){context, canvas_width, canvas_height};
+    native_layer_initial_document_clear = (VoxInitialDocumentClear){
+        .context = context, .width = canvas_width, .height = canvas_height};
     return YES;
 }
 
@@ -395,7 +397,17 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
                 }
                 buffer->locked = YES;
             }
-            if (!defer_clear) memset(buffer->pixels, 0, buffer->bytes);
+            if (!defer_clear) {
+                const size_t parallel_clear_min_bytes = 3840u * 2160u * 4u;
+                if (buffer->bytes >= parallel_clear_min_bytes) {
+                    // The slot stays reserved and the IOSurface stays locked
+                    // until every row, including padding, is transparent.
+                    vox_fill_frame_rows((uint8_t *)buffer->pixels, buffer->pitch, buffer->pitch,
+                        buffer->height, 0);
+                } else {
+                    memset(buffer->pixels, 0, buffer->bytes);
+                }
+            }
 #ifdef VOX_TEST_LAYER_FRAME_BUFFERS
             ++native_test_frame_buffer_reuses;
             if (defer_clear) ++native_test_frame_buffer_deferred_clears;
@@ -421,7 +433,7 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
         };
         spare->surface = IOSurfaceCreate((__bridge CFDictionaryRef)properties);
         if (spare->surface) {
-            CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+            CGColorSpaceRef color = native_copy_document_render_space();
             CFPropertyListRef profile = color ? CGColorSpaceCopyPropertyList(color) : NULL;
             BOOL tagged = profile != NULL;
             if (profile) { IOSurfaceSetValue(spare->surface, kIOSurfaceColorSpace, profile); CFRelease(profile); }
@@ -529,7 +541,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         && width * 4 * height <= 64 * 1024 * 1024;
     VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height, defer_clear, shared);
     BOOL pooled_owned = NO;
-    CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGColorSpaceRef color = native_copy_document_render_space();
     CGContextRef bitmap = CGBitmapContextCreate(pooled ? pooled->pixels : NULL, width, height,
         8, pooled ? pooled->pitch : width * 4, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(color);

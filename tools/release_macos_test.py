@@ -23,6 +23,10 @@ def info_plist(version='0.1', build='1'):
 
 
 class VersionTests(unittest.TestCase):
+    def test_renamed_canonical_checkout_keeps_the_established_release_checkout(self):
+        self.assertEqual(release.release_checkout(Path('/Users/alex/code/vox')),
+                         Path('/Users/alex/code/vox2-release'))
+
     def test_next_release_is_a_patch_bump_unless_info_plist_or_the_caller_chose_one(self):
         self.assertEqual(release.next_version('0.1', '0.1.0'), '0.1.1')
         self.assertEqual(release.next_version('0.1.0', '0.1.9'), '0.1.10')
@@ -49,11 +53,23 @@ class VersionTests(unittest.TestCase):
             self.assertEqual({k: v for k, v in info.items() if not k.startswith('CFBundle') or 'Version' not in k},
                              {k: v for k, v in before.items() if not k.startswith('CFBundle') or 'Version' not in k})
             self.assertEqual(len(updated.splitlines()), len(original.splitlines()))
-            # browserupdate embeds the raw plist and reads the string after the key.
+            # Preserve the bundle's version string for packaging readers.
             self.assertEqual(updated.split('<key>CFBundleShortVersionString</key>')[1]
                              .split('<string>')[1].split('</string>')[0], '0.1.1')
             self.assertFalse(release.set_bundle_version(path, '0.1.1'))
             self.assertEqual(path.read_text(), updated)
+
+    def test_packaging_rejects_a_stale_embedded_runtime_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'packaging').mkdir()
+            (root / release.INFO_PLIST).write_text(info_plist('0.1.4'))
+            runtime = root / release.VERSION_FILE
+            runtime.write_text('0.1\n')
+            with self.assertRaisesRegex(RuntimeError, 'wrong installed version'):
+                release.packaging_version(root)
+            runtime.write_text('0.1.4\n')
+            self.assertEqual(release.packaging_version(root), '0.1.4')
 
 
 def git(root, *arguments):
@@ -152,6 +168,40 @@ class ReleaseFlowTests(unittest.TestCase):
         self.assertEqual(self.calls[6][1], ('0.1.1', release.WEBSITE_HOST))
         self.assertEqual(self.calls[7][1], (release.REPOSITORY, '0.1.1', dmg.name))
 
+    def test_linux_release_packages_deb_and_publishes_without_advancing_macos_website(self):
+        def package(root, output, package_only):
+            artifact = self.deploy(root, output, package_only)
+            artifact.with_suffix('.dmg.json').rename(artifact.with_suffix('.deb.json'))
+            return artifact
+
+        with patch.object(release, 'command', return_value='amd64'), redirect_stdout(io.StringIO()):
+            deb = release.release(self.root, package, checkout=self.checkout, target='linux')
+        self.assertEqual(deb.name, 'Vox-0.1.1-amd64.deb')
+        self.assertEqual(self.names(), ['check_unreleased', 'commit_version', 'prepare_checkout',
+                                        'deploy', 'publish_release'])
+        self.assertEqual(self.calls[-1][1][:3], (release.REPOSITORY, '0.1.1', deb))
+
+    def test_staging_builds_and_validates_committed_sources_without_publishing(self):
+        artifact = self.release(publish=False)
+        self.assertEqual(self.names(), ['check_unreleased', 'commit_version', 'prepare_checkout', 'deploy'])
+        self.assertTrue(artifact.is_file())
+        self.compiled['head'] = 'wrong commit'
+        with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
+            self.release(publish=False)
+
+    def test_arch_release_uses_native_filename_manifest_and_skips_macos_website(self):
+        def package(root, output, package_only):
+            artifact = self.deploy(root, output, package_only)
+            artifact.with_suffix('.dmg.json').rename(artifact.with_name(artifact.name + '.json'))
+            return artifact
+
+        with patch.object(release.platform, 'machine', return_value='x86_64'), redirect_stdout(io.StringIO()):
+            artifact = release.release(self.root, package, checkout=self.checkout, target='linux-arch')
+        self.assertEqual(artifact.name, 'vox-0.1.1-1-x86_64.pkg.tar.zst')
+        self.assertEqual(self.names(), ['check_unreleased', 'commit_version', 'prepare_checkout',
+                                        'deploy', 'publish_release'])
+        self.assertEqual(self.calls[-1][1][:3], (release.REPOSITORY, '0.1.1', artifact))
+
     def test_failed_build_or_upload_publishes_nothing_further_and_a_rerun_keeps_the_version(self):
         for failure, published in [('deploy', []), ('publish_release', ['publish_release'])]:
             self.calls.clear()
@@ -229,6 +279,61 @@ class ReleaseInputTests(unittest.TestCase):
             self.verify()
         matches.assert_called_once_with(self.checkout, self.frozen)
 
+    def test_different_supervisor_filters_require_identical_complete_checkout_bytes(self):
+        current = dict(self.inputs, repository_sha256='same complete tree')
+        recorded = dict(current, build_inputs_sha256='V filtered inputs')
+        self.build['inputs'] = recorded
+        self.frozen['source_inputs'] = recorded
+        self.receipt.write_text(json.dumps(self.frozen))
+        with patch.object(release, 'matches_compiled_checkout', return_value=True), \
+                patch.object(release, 'repository_state', return_value=current):
+            self.verify()
+        for change in (dict(repository_sha256='changed'), dict(dirty=True), dict(head='changed')):
+            with self.subTest(change=change), \
+                    patch.object(release, 'repository_state', return_value=dict(current, **change)):
+                with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
+                    self.verify()
+
+    def test_inventory_filter_difference_keeps_all_consumed_file_checks(self):
+        inputs = dict(self.inputs, repository_sha256='identical complete tree')
+        self.build['inputs'] = inputs
+        self.frozen.update(source_inputs=inputs,
+                           source_inventory=dict(protocol='production-source-inventory-v1',
+                                                 names=['main.v'],
+                                                 early_inputs={str(self.proof): release.sha256(self.proof)}),
+                           exact_source_manifest={str(self.proof): release.sha256(self.proof)})
+        self.receipt.write_text(json.dumps(self.frozen))
+        with patch.object(release, 'matches_compiled_checkout', return_value=False), \
+                patch.object(release, 'repository_state', return_value=inputs):
+            self.verify()
+            self.proof.write_text('changed compiler input')
+            with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
+                self.verify()
+
+    def test_sealed_release_survives_external_vlib_edits_and_keeps_native_checks(self):
+        with tempfile.TemporaryDirectory(prefix='vox-external-compiler-') as directory:
+            external = Path(directory) / 'text_ops.v'
+            native = Path(directory) / 'native.h'
+            external.write_text('original vlib source')
+            native.write_text('original native header')
+            inputs = dict(self.inputs, repository_sha256='identical complete tree')
+            self.build['inputs'] = inputs
+            self.frozen.update(source_inputs=inputs,
+                               source_inventory=dict(protocol='production-source-inventory-v1',
+                                                     names=['main.v'],
+                                                     early_inputs={str(self.proof): release.sha256(self.proof)}),
+                               exact_source_manifest={str(self.proof): release.sha256(self.proof),
+                                                      str(external): release.sha256(external),
+                                                      str(native): release.sha256(native)})
+            self.receipt.write_text(json.dumps(self.frozen))
+            external.write_text('next compiler revision after the build')
+            with patch.object(release, 'matches_compiled_checkout', return_value=False), \
+                    patch.object(release, 'repository_state', return_value=inputs):
+                self.verify()
+                native.write_text('changed native header')
+                with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
+                    self.verify()
+
     def test_changed_checkout_or_consumed_files_are_never_released(self):
         for current, matching in [(dict(self.inputs, head='another-commit'), True),
                                   (dict(self.inputs, build_inputs_sha256='changed bytes'), True),
@@ -264,7 +369,8 @@ class GitTests(unittest.TestCase):
         upstream = Path(temporary.name) / 'upstream'
         upstream.mkdir()
         repository(upstream, {'.gitignore': '/Build/\n', 'main.v': 'older\n',
-                              'staged.v': 'committed\n', release.INFO_PLIST: info_plist()})
+                              'staged.v': 'committed\n', release.INFO_PLIST: info_plist(),
+                              release.VERSION_FILE: '0.1\n'})
         (upstream / 'main.v').write_text('committed\n')
         git(upstream, 'commit', '-q', '-am', 'second')
         # Like the canonical checkout, the fixture is a shallow clone.
@@ -284,7 +390,10 @@ class GitTests(unittest.TestCase):
         commit = release.commit_version(self.root, '0.1.1')
         self.assertEqual(commit, git(self.root, 'rev-parse', 'HEAD'))
         self.assertEqual(git(self.root, 'log', '-1', '--format=%s'), 'Release Vox 0.1.1')
-        self.assertEqual(git(self.root, 'show', '--format=', '--name-only', 'HEAD'), release.INFO_PLIST)
+        self.assertEqual(git(self.root, 'show', '--format=', '--name-only', 'HEAD').splitlines(),
+                         [release.INFO_PLIST, release.VERSION_FILE])
+        self.assertEqual(git(self.root, 'show', 'HEAD:' + release.VERSION_FILE), '0.1.1')
+        self.assertEqual(release.packaging_version(self.root), '0.1.1')
         self.assertEqual(git(self.root, 'diff', '--cached', '--name-only'), 'staged.v')
         self.assertEqual((self.root / 'main.v').read_text(), 'work in progress\n')
         info = plistlib.loads(git(self.root, 'show', 'HEAD:' + release.INFO_PLIST).encode())
@@ -300,6 +409,24 @@ class GitTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'uncommitted changes besides the version'):
             release.commit_version(self.root, '0.1.3')
         self.assertEqual(git(self.root, 'rev-parse', 'HEAD'), head)
+
+    def test_rerun_repairs_runtime_version_without_advancing_the_existing_bundle_build(self):
+        (self.root / release.INFO_PLIST).write_text(info_plist('0.1.4', '5'))
+        git(self.root, 'commit', '-q', '-am', 'old release bump')
+        before = (self.root / release.INFO_PLIST).read_bytes()
+        commit = release.commit_version(self.root, '0.1.4')
+        self.assertEqual(git(self.root, 'show', '--format=', '--name-only', commit), release.VERSION_FILE)
+        self.assertEqual((self.root / release.INFO_PLIST).read_bytes(), before)
+        self.assertEqual(release.packaging_version(self.root), '0.1.4')
+        self.assertEqual(release.commit_version(self.root, '0.1.4'), commit)
+
+    def test_non_version_runtime_edits_stop_before_either_file_is_written(self):
+        original = (self.root / release.INFO_PLIST).read_bytes()
+        (self.root / release.VERSION_FILE).write_text('0.1\nkeep this note\n')
+        with self.assertRaisesRegex(RuntimeError, 'uncommitted changes besides the version'):
+            release.commit_version(self.root, '0.1.1')
+        self.assertEqual((self.root / release.INFO_PLIST).read_bytes(), original)
+        self.assertEqual(git(self.root, 'rev-parse', 'HEAD'), self.first)
 
     def test_release_checkout_holds_only_committed_sources_and_keeps_its_build_caches(self):
         (self.root / 'main.v').write_text('work in progress\n')
@@ -368,6 +495,31 @@ class PublishingTests(unittest.TestCase):
                 self.assertIn('macOS 15.0 or later', commands[0][commands[0].index('--notes') + 1])
                 with self.assertRaisesRegex(RuntimeError, 'does not carry'):
                     release.publish_release('owner/repo', '0.1.1', dmg, '15.0')
+
+    def test_deb_release_notes_identify_linux_and_verify_uploaded_digest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            deb = Path(temporary) / 'Vox-0.1.1-amd64.deb'
+            deb.write_bytes(b'deb')
+            digest = 'sha256:' + release.sha256(deb)
+            with patch.object(release, 'command') as command, \
+                    patch.object(release, 'release_assets', return_value={deb.name: digest}), \
+                    redirect_stdout(io.StringIO()):
+                release.publish_release('owner/repo', '0.1.1', deb, None)
+            arguments = command.call_args.args[0]
+            notes = arguments[arguments.index('--notes') + 1]
+            self.assertIn('Linux (Debian package)', notes)
+            self.assertNotIn('macOS', notes)
+
+    def test_arch_release_notes_identify_the_package_and_verify_its_digest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifact = Path(temporary) / 'vox-0.1.4-1-x86_64.pkg.tar.zst'
+            artifact.write_bytes(b'arch')
+            with patch.object(release, 'command') as command, \
+                    patch.object(release, 'release_assets', return_value={artifact.name: 'sha256:' + release.sha256(artifact)}), \
+                    redirect_stdout(io.StringIO()):
+                release.publish_release('owner/repo', '0.1.4', artifact, None)
+            arguments = command.call_args.args[0]
+            self.assertIn('Arch Linux package', arguments[arguments.index('--notes') + 1])
 
     def test_site_download_must_redirect_to_the_uploaded_dmg(self):
         uploaded = 'https://github.com/owner/repo/releases/download/0.1.1/Vox-0.1.1-arm64.dmg'

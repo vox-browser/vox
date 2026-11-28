@@ -1,6 +1,31 @@
 module css
 
 import dom
+import platform
+
+fn test_stylesheet_url_resolution_retains_only_the_serialized_keys() {
+	base := 'https://styles.test/news/patch.html?old=1'
+	long_path := 'nested-directory/'.repeat(64)
+	reference := '../${long_path}main.css?lang=日本語#tag'
+	expected := 'https://styles.test/${long_path}main.css?lang=%E6%97%A5%E6%9C%AC%E8%AA%9E#tag'
+	mut storage := platform.new_arena('stylesheet URL results')
+	defer { storage.release() }
+	entry := storage.enter()
+	defer { storage.leave(entry) }
+	before := storage.usage().used
+	mut keys := []string{cap: 64}
+	for _ in 0 .. 64 {
+		keys << link_style_sheet_url(reference, base) or { panic('failed to resolve stylesheet') }
+	}
+	growth := storage.usage().used - before
+	$if prealloc {
+		assert growth < i64(keys.len) * (expected.len + 96), '${growth} retained stylesheet URL bytes'
+	}
+	assert link_style_sheet_url('//STYLE.test/../font.css', base)? == 'https://style.test/font.css'
+	assert link_style_sheet_url('sub.css', 'file:///test/document.html')? == 'file:///test/sub.css'
+	assert link_style_sheet_url('sub.css', 'http://[') == none
+	for key in keys { assert key == expected }
+}
 
 // Ladybird 70df302eeebc40488afc780ca53a7307f24fe5f0. Reusing a cached
 // response must enforce the same MIME decision as the link fetch completion.
@@ -41,6 +66,37 @@ fn remote_link_test_append(mut parent dom.Node, document &dom.Document, name str
 	}
 	parent.append_child(element.as_node())!
 	return element
+}
+
+fn test_document_link_cache_borrows_its_response_and_isolates_documents() {
+	mut document := dom.Document.create(dom.URL{value: 'https://document-link-cache.test/'})
+	mut other := dom.Document.create(document.url)
+	defer {
+		other.finalize()
+		document.finalize()
+		document.release_native_storage()
+	}
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	address := 'https://document-link-cache.test/style.css'.clone()
+	final_url := 'https://document-link-cache.test/assets/style.css'.clone()
+	text := '/*${'a'.repeat(1024 * 1024)}*/ html { color: red }'
+	set_document_link_style_sheet_response(document, address, ImportedStyleSheetSource{
+		css_text: text
+		response_url: final_url
+		content_type: 'text/css'
+	})
+	owner.finish()
+	link := document.create_element_ns(dom.namespace_html_uri, 'link')!
+	other_link := other.create_element_ns(dom.namespace_html_uri, 'link')!
+	actual, location := read_link_stylesheet(link, address, document.url.serialize())?
+	assert actual == text
+	assert actual.str == text.str
+	assert location == final_url
+	assert !has_remote_link_style_sheet(address)
+	assert read_link_stylesheet(other_link, address, other.url.serialize()) == none
+	set_document_link_style_sheet_response(document, address, none)
+	assert read_link_stylesheet(link, address, document.url.serialize()) == none
 }
 
 fn test_remote_link_cache_preserves_request_location_and_redirect_base() {

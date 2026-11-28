@@ -155,9 +155,23 @@ fn find_matching_layout_text(handle voidptr, query string, sensitivity dom.CaseS
 		mut offset := 0
 		for {
 			index := search_text_index(block.units, units, offset, sensitivity == .case_sensitive) or { break }
-			if range := block.dom_range(index, index + units.len) { matches << range }
-			// Source advances past one additional code unit after each match.
-			offset = index + units.len + 1
+			if mut range := block.dom_range(index, index + units.len) {
+				mut repeats_previous_match := false
+				if matches.len > 0 {
+					previous := matches[matches.len - 1]
+					// Case expansion can map consecutive matches to the same source text.
+					repeats_previous_match = voidptr(previous.start_container()) == voidptr(range.start_container())
+						&& previous.start_offset() == range.start_offset()
+						&& voidptr(previous.end_container()) == voidptr(range.end_container())
+						&& previous.end_offset() == range.end_offset()
+				}
+				if !repeats_previous_match {
+					matches << range
+				} else {
+					range.finalize()
+				}
+			}
+			offset = index + units.len
 			if offset >= block.units.len { break }
 		}
 	}

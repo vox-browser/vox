@@ -39,6 +39,31 @@ def png(background=b"\x2c\xa0\x5a", stale_edge=False, text=True, chrome=False):
 
 
 class LinuxBrowserSmokeTest(unittest.TestCase):
+    def test_png_filter_golden_scanlines(self):
+        expected = [bytes([10, 20, 30, 40, 50, 60]), bytes([11, 22, 33, 44, 55, 66])]
+        filtered = {
+            0: [[10, 20, 30, 40, 50, 60], [11, 22, 33, 44, 55, 66]],
+            1: [[10, 20, 30, 30, 30, 30], [11, 22, 33, 33, 33, 33]],
+            2: [[10, 20, 30, 40, 50, 60], [1, 2, 3, 4, 5, 6]],
+            3: [[10, 20, 30, 35, 40, 45], [6, 12, 18, 19, 19, 20]],
+            4: [[10, 20, 30, 30, 30, 30], [1, 2, 3, 4, 5, 6]],
+        }
+        for kind, rows in filtered.items():
+            previous = bytearray(6)
+            for encoded, wanted in zip(rows, expected):
+                previous = smoke.unfilter_png_row(kind, bytearray(encoded), previous, 3)
+                self.assertEqual(bytes(previous), wanted, (kind, encoded))
+        self.assertEqual(smoke.unfilter_png_row(1, bytearray([10, 20, 30, 40, 40, 40, 40, 40]),
+                         bytearray(8), 4), bytearray([10, 20, 30, 40, 50, 60, 70, 80]))
+
+    def test_png_paeth_selection_and_byte_wrap(self):
+        self.assertEqual(smoke.unfilter_png_row(4, bytearray([2, 255, 7, 4, 1, 248]),
+                         bytes([7, 3, 1, 10, 5, 4]), 3), bytearray([9, 2, 8, 14, 6, 0]))
+        self.assertEqual(smoke.unfilter_png_row(4, bytearray([251, 3]), bytes([15, 20]), 1),
+                         bytearray([10, 18]))
+        with self.assertRaisesRegex(AssertionError, 'Unsupported PNG filter'):
+            smoke.unfilter_png_row(5, bytearray(3), bytes(3), 3)
+
     def test_webgl_capture_requires_a_new_script_audit(self):
         with tempfile.TemporaryDirectory() as directory:
             artifacts = Path(directory)
@@ -48,7 +73,7 @@ class LinuxBrowserSmokeTest(unittest.TestCase):
             audit.write_text(json.dumps(dict(title='WebGL GPU smoke PASS', ready='complete',
                 native_reported_error_count=0,
                 javascript_diagnostics=['WEBGL_GPU_SMOKE_PASS ["Mesa","Mesa"]'])))
-            with mock.patch.object(smoke, 'run', return_value=''):
+            with mock.patch.object(smoke, 'run_windowed', return_value=''):
                 with self.assertRaises(FileNotFoundError) as error:
                     smoke.check_webgl_browser(binary, artifacts, artifacts / 'private')
             self.assertEqual(Path(error.exception.filename), audit)
@@ -122,12 +147,61 @@ class LinuxBrowserSmokeTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "Missing Linux smoke dependencies: scrot"):
                 smoke.require_tools()
 
+    def test_window_runner_reaps_its_display_and_keeps_the_callers_environment(self):
+        server = mock.Mock()
+        inherited = dict(DISPLAY=':old', KEEP='yes')
+        with mock.patch.object(smoke.os, 'pipe', return_value=(31, 32)), \
+                mock.patch.object(smoke.os, 'close') as close, \
+                mock.patch.object(smoke.os, 'read', return_value=b'87\n'), \
+                mock.patch.object(smoke.select, 'select', return_value=([31], [], [])), \
+                mock.patch.object(smoke.subprocess, 'Popen', return_value=server) as start, \
+                mock.patch.object(smoke, 'run', return_value='completed') as execute:
+            self.assertEqual(smoke.run_windowed(['vox'], screen='1280x960x24', env=inherited), 'completed')
+        self.assertEqual(inherited['DISPLAY'], ':old')
+        self.assertEqual(execute.call_args.kwargs['env'], dict(DISPLAY=':87', KEEP='yes'))
+        self.assertIn('1280x960x24', start.call_args.args[0])
+        self.assertEqual(close.call_args_list, [mock.call(32), mock.call(31)])
+        server.terminate.assert_called_once()
+        server.wait.assert_called_once_with(timeout=10)
+
+    def test_window_runner_cleans_up_after_startup_and_client_failures(self):
+        for ready in ([], [31]):
+            server = mock.Mock()
+            server.wait.side_effect = [subprocess.TimeoutExpired('Xvfb', 10), -9]
+            with mock.patch.object(smoke.os, 'pipe', return_value=(31, 32)), \
+                    mock.patch.object(smoke.os, 'close'), \
+                    mock.patch.object(smoke.os, 'read', return_value=b'87\n'), \
+                    mock.patch.object(smoke.select, 'select', return_value=(ready, [], [])), \
+                    mock.patch.object(smoke.subprocess, 'Popen', return_value=server), \
+                    mock.patch.object(smoke, 'run', side_effect=RuntimeError('client failed')) as execute:
+                with self.assertRaisesRegex(RuntimeError, 'client failed' if ready else 'publish its display'):
+                    smoke.run_windowed(['vox'])
+            self.assertEqual(execute.call_count, bool(ready))
+            server.terminate.assert_called_once()
+            server.kill.assert_called_once()
+            self.assertEqual(server.wait.call_args_list, [mock.call(timeout=10), mock.call(timeout=10)])
+
     def test_each_wait_gets_its_own_deadline(self):
         clock = mock.Mock(side_effect=[0, 0, 0.2, 10, 10, 10.2])
         with mock.patch.object(smoke.time, "monotonic", clock), mock.patch.object(smoke.time, "sleep"):
             for _ in range(2):
                 predicate = mock.Mock(side_effect=[False, "ready"])
                 self.assertEqual(smoke.wait_for("phase", predicate, timeout=1), "ready")
+
+    def test_emulated_window_deadline_is_configurable_and_bounded(self):
+        with mock.patch.dict(smoke.os.environ, {}, clear=True):
+            self.assertEqual(smoke.window_wait_seconds(), 20)
+        with mock.patch.dict(smoke.os.environ, {"VOX_LINUX_TEST_WAIT_SECONDS": "120"}):
+            clock = mock.Mock(side_effect=[0, 0, 21])
+            with mock.patch.object(smoke.time, "monotonic", clock), mock.patch.object(smoke.time, "sleep"):
+                self.assertTrue(smoke.wait_for("slow VM paint", mock.Mock(side_effect=[False, True])))
+            with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), mock.patch.object(smoke.time, "sleep"):
+                with self.assertRaisesRegex(AssertionError, 'explicit deadline'):
+                    smoke.wait_for("explicit deadline", lambda: False, timeout=1)
+        for value in ("0", "-1", "nan", "inf", "3601", "invalid"):
+            with mock.patch.dict(smoke.os.environ, {"VOX_LINUX_TEST_WAIT_SECONDS": value}):
+                with self.assertRaisesRegex(RuntimeError, 'positive, finite'):
+                    smoke.window_wait_seconds()
 
     def test_wait_rejects_early_exit_even_if_window_predicate_would_pass(self):
         browser = mock.Mock(returncode=7)

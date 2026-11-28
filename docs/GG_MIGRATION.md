@@ -1,5 +1,10764 @@
 # Migrating from Skia to vlib/gg
 
+## Canvas saved layers on Windows and Linux
+
+D3D11 now restores saved layers through the shared Canvas renderer. It
+samples the premultiplied GPU texture directly with the existing nearest
+sampler. Integer bounds, fractional edges, rounded clips and nested layers
+use the same recorded geometry and draw order as Metal and OpenGL. The
+image shaders compile on first use. Document image filtering and color
+conversion remain separate work on D3D11.
+
+The Linux layer test exposed a shader compilation failure in the staged
+Canvas image code. GLSL now uses `uintBitsToFloat` for the shared transfer
+curve's constants, and the threshold comparisons explicitly use vectors
+on both Metal and OpenGL.
+
+The guarded smoke checked translated nested layers, premultiplied blending,
+the difference between logical and allocated texture dimensions, and
+fractional, rounded and difference clips. It passed on macOS Metal, Linux
+Mesa OpenGL and Windows 11 D3D11 under QEMU. All 49 staging and replay-tool
+tests passed. glslang compiled all 12 layer shader variants and generated
+byte-identical SPIR-V for 176 existing solid and gradient shader variants.
+The Windows smoke executable kept SHA-256
+`df3547777a2deb145973392bb26cbcd07aa5948441711ce16b6897d865a669d3`
+before and after launch, exited zero under the 3 GiB guard and reproduced
+the prior projection, color and text PNG byte for byte.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `41e0a7dbe277d27bb9e83843ba84accb52b0ca356e40667b64fe138509caf497`
+throughout the replay. The portable, full-cache, texture-cache-only and
+uncached modes each matched their previous D3D11 browser's 800 × 100
+document crop byte for byte. The first portable launch took roughly six
+minutes in QEMU. These runs verify pixel output and process completion.
+Hardware frame timings remain unmeasured.
+
+## Analytic Canvas shapes on Windows D3D11
+
+D3D11 uses the shared analytic render step for rounded rectangles, ovals,
+fractional rectangles and simple strokes. The HLSL shaders use the existing
+indexed corner template, instanced shape data, paint buffer and clip record.
+The standard Canvas path dispatch selects these shapes on Windows. The
+pixel shader computes edge coverage, so these shapes can render without a
+multisample resolve.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked fractional rectangle coverage,
+mixed rounded corners, a translated and clipped gradient oval, and a
+hollow rounded stroke. The Windows executable kept its SHA-256 before
+and after launch (`3ddf5a38d6525ac1986f3b3dafa885097f3d2fc2bf091c376548d08d3daeb5dd`),
+exited zero and reproduced the prior window PNG byte for byte. The 24
+staging and replay-tool tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `f8be107b9270678c786ee8e5cca039cc205c91ced341a2c0e548b7956e88a12d`
+throughout replay. The portable, full-cache, texture-cache-only and
+uncached modes each reproduced their preceding D3D11 browser's 800 × 100
+document crop byte for byte. The replay exercised the nested rectangular
+fill, simple solid and gradient strokes, and the SVG texture cache.
+Hardware frame timings remain unmeasured.
+
+## Analytic Canvas clips on Windows D3D11
+
+D3D11 Canvas bounds, wedge fills and tessellated strokes now apply
+Graphite's analytic coverage for fractional rectangular clips and supported
+rounded clips. Intersect and difference clips use the shared clip record
+after the paint data. A clipped fragment reads from the same paint buffer
+as its vertex shader. Clip coverage compiles only into clipped shader
+variants, which are created on first use.
+
+The guarded smoke passed on macOS Metal, Linux Mesa OpenGL and Windows 11
+D3D11 under QEMU. It checked quarter-pixel coverage around a rectangular
+cutout, a rounded corner over a gradient wedge fill and a fractional
+intersect clip on a tessellated stroke. The Windows executable kept its
+SHA-256 before and after launch
+(`5daaaa8e17259262ffba6e93bd42865d3962a77c869d8de6839ee73dce982876`). It
+exited zero and reproduced the prior window PNG byte for byte. The 24
+staging and replay-tool tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `8540d9eb3dcb07097bfae32649dfd89d9b4a28dde5a81a067ee78f9a0f4cea68`
+throughout replay. The portable, full-cache, texture-cache-only and
+uncached modes each reproduced the corresponding 800 × 100 document
+crop from the preceding D3D11 browser byte for byte. The replay checked
+existing SVG paint and cache behavior. The smoke exercised the analytic
+clip shaders directly. Hardware frame timings remain unmeasured.
+
+## Tangent focal SVG gradients on Windows D3D11
+
+The opt-in Windows Canvas route renders internally tangent SVG radial fills
+and strokes. The shader reads the existing tangent paint record, blends the
+gradient with paint opacity, and dithers the result. Outside the tangent, a
+repeating point focus uses its weighted premultiplied stop average. Other
+tangent gradients are transparent there. Noncontained circles use the
+portable rasterizer. Tangent shaders compile on first use and reuse the
+same GPU texture cache as the other gradients.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked an eight-stop repeating point focus
+with stop and paint opacity, a reflected stroke with a positive focal
+radius, and transparency outside the stroke's tangent. The Windows smoke
+exited zero, reproduced the prior projection, font and color PNG byte for
+byte, and kept the same executable SHA-256 before and after launch
+(`96837fc9ca3d04a31fac6a5299f0bc9d329ceda4fa1dbacc7256a2dc5412dbce`).
+The 24 staging and replay-tool tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `f6705f20386d7129be6541bfe818052b257f6126165c8c82af280503a8b36492`
+throughout the replay. Full-cache, texture-cache-only and uncached runs
+produced identical 800 × 100 document crops. The tangent fill and stroke
+differed from portable output by at most one level per RGB channel. Other
+gradient ramps matched the preceding D3D11 capture byte for byte. The logs
+confirmed that both tangent draws used Canvas and hit its GPU texture cache.
+Hardware frame timings remain unmeasured.
+
+## Contained focal SVG gradients on Windows D3D11
+
+The opt-in Windows Canvas route uses the existing radial shader for SVG
+fills and strokes whose off-center focal circle fits strictly inside the
+outer circle. The browser compares center distance against the difference
+in radii before allocating a texture. At this stage tangent and noncontained
+circles used the portable rasterizer. Eligible draws share the existing GPU
+texture cache. This uses the same shader and paint record as concentric
+radial gradients.
+
+Four fresh Windows 11 QEMU browser processes exited zero under the 3 GiB
+guard. The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `eff0798ba8ab36cc8c2594f695e4fdf2eddda55301d85b7654e85b839517f2bd`
+throughout the replay. The full-cache, texture-cache-only and uncached
+runs produced identical 800 × 100 document crops. Both contained focal
+ramps differed from portable output by at most one level per RGB channel.
+The linear and concentric radial ramps matched the preceding D3D11 capture
+byte for byte, and the tangent fallback matched portable output exactly.
+The logs confirmed cache hits for both focal draws and portable rendering
+for both tangent draws. The 23 replay-tool tests passed. Hardware frame
+timings remain unmeasured.
+
+## Concentric radial SVG gradients on Windows D3D11
+
+The opt-in Windows Canvas route renders concentric radial SVG fills and
+strokes with up to eight effective stops through the shared paint records and
+texture cache. Radial shaders use both transformed coordinates, the existing
+radial parameters and the shared dither lookup. Linear shaders retain a
+single gradient coordinate. At this stage off-center focal gradients used
+the portable rasterizer.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked both axes of the radial ramp, an
+eight-stop reflected stroke with paint opacity, and a strictly contained
+off-center focal circle through the Canvas API. The Windows smoke exited
+zero and reproduced the prior projection, font and color PNG byte for byte.
+Its executable SHA-256 matched before and after launch
+(`fe4f11471b3148feb6d481a33f37e248b51c84b7837be3c8713de1ff7019a11e`).
+The staging parity and replay-runner tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `e086016afec0fc4a246d5598afa58c076693dace3181b7f76b18ae14064cf3bc`
+throughout the replay. The full-cache, texture-cache-only and uncached
+runs produced identical 800 × 100 document crops. The concentric radial
+ramps differed from portable output by at most one level per RGB channel.
+Linear ramps matched the preceding D3D11 capture byte for byte, and the
+off-center focal fills and strokes matched portable output exactly. The
+logs confirmed cache hits for both concentric radial paints and portable
+rendering of the off-center paths. Hardware frame timings remain unmeasured.
+
+## Linear Canvas gradients on Windows D3D11
+
+The opt-in Windows Canvas route renders sRGB linear SVG fills and strokes
+with up to eight effective stops through the shared Canvas bounds, wedge and
+stroke pipelines. The shaders read the existing paint buffer and dither LUT.
+The browser draws from the resolved GPU texture and reuses its texture
+cache. Each new gradient shader variant compiles on first use. At this
+stage radial and focal gradients used the portable rasterizer.
+
+The guarded Canvas smoke passed on macOS Metal, Linux Mesa OpenGL and
+Windows 11 D3D11 under QEMU. It checked an eight-stop reflected bounds fill
+with a hard stop and paint opacity, a shaded wedge and a gradient stroke.
+The Windows smoke executable SHA-256 matched before and after launch
+(`cdeca562b850d4aa672e6d14074cd4a66f4bc52cd96bc5ff66d62d94fce6cba4`). Its
+process exited zero and the projection, font and color capture reproduced
+the prior PNG byte for byte. The staging and replay-runner tests passed.
+
+Four fresh Windows browser processes exited zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 build used `-prod -no-prod-options`.
+Its SHA-256 stayed `6c324cfcf274160aba4b98fb2b583cb6c24a1b6ca820faf5f7ec17af14b891e4`
+throughout the replay. Full-cache, texture-cache-only and uncached runs
+produced the same 800 × 100 document crop. The linear ramps differed from
+the portable reference by at most one level per RGB channel, and all other
+pixels matched exactly. The logs confirmed GPU cache hits for both linear
+paints and portable rendering for both radial paints. Hardware frame
+timings remain unmeasured.
+
+## Solid SVG strokes on Windows D3D11
+
+The opt-in Windows Canvas route now accepts solid SVG strokes. Its HLSL
+vertex shader uses the shared stroke patches, 48-byte paint records, and
+multisample triangle strips. Line and simple shape paths use the stroke
+tessellator on D3D11. Resolved images stay on the GPU and use the same
+browser texture cache as solid fills. At this stage gradient fills and strokes
+used the portable rasterizer. Hardware frame timings remained unmeasured.
+
+The shared smoke passed the square line cap, cubic stroke with a round
+join, rational conic stroke, and surrounding transparent pixel checks on
+Linux Mesa, macOS Metal, and Windows 11 D3D11 under QEMU. The guarded
+Windows executable (`09fa97d51100c0e44aea634c837f23fefe9d2f7edeb5f2d790cf1d8cf86f1a0b`)
+exited zero and reproduced the previous window capture byte for byte.
+
+The Windows browser build used V `4478fc4` and MinGW GCC 16.2.0 with
+`-prod -no-prod-options`. Its SHA-256 was
+`2471529b2bee3848bcc000d20e2abbad60d20a1cd21eec768e163413176178f1`
+before and after the four guarded replay launches. The portable, cached,
+texture-only cache, and uncached runs produced the same 800 × 100 RGB
+document crop (`3d8482f8435662d56deab5e940bcdd0b7c884559d68e45f86d8bf40134e817ef`).
+The replay verified D3D11 solid-stroke draws and cache hits, and portable
+gradient fills and strokes on the same page. Each process exited zero
+under the 3 GiB guard. The staging parity and replay runner checks passed.
+
+## OpenGL multisample resolves after clipped draws
+
+Sokol's OpenGL `glBlitFramebuffer` resolve observes the last draw's
+scissor. When the final batch used a smaller scissor, the resolve left
+old pixels outside it, even after the multisample pass cleared those
+pixels. Canvas now widens the scissor to the backing texture immediately
+before a resolve that needs it. [OpenGL specification, framebuffer blits](https://registry.khronos.org/OpenGL/specs/gl/glspec30.pdf)
+
+The ARM64 Linux Mesa control left pixel `(26, 5)` green after an inverse
+fill and a subsequent clipped clear. The fixed smoke verified transparent
+pixels outside the intersect clip, retained its even-odd hole, and passed
+with both Linux module staging paths. The same pixel checks passed on
+macOS Metal. A separate Sokol counter run observed one additional scissor
+call in the clipped MSAA pass and no additional calls in the single-sample
+and full-surface MSAA cases. Hardware frame timings remain unmeasured.
+
+The Windows 11 QEMU smoke passed the same clip and window pixel checks on
+Mesa WGL and D3D11, with both processes exiting zero under the 3 GiB guard.
+The V `4478fc4` and MinGW GCC 16.2.0 builds used `-prod -no-prod-options`.
+SHA-256 matched before and after launch for WGL
+(`5b08a4be7e5b0cd9a4abfc1ecb19f5f5b1c62941f3fbedeba2d46b2a52c33c36`)
+and D3D11 (`779e624a11f4e158d44f4a4335b25b16affb6fa385968169e026be103182f785`).
+The D3D11 window capture matched the previous capture byte for byte.
+The focused V/Python staging parity and UI2 staging checks passed.
+
+## Windows D3D11 document SVG fills
+
+The standard Windows build accepts `VOX_GG_SVG=1` to render solid SVG
+path fills through `gg.canvas`. The browser reuses its existing SVG
+texture cache and submits the resolved GPU image in document order using
+the Windows GG shader and premultiplied blending. The image stays on the
+GPU through presentation. Pixel-aligned rectangles
+use the single-sample bounds shader. Paths that need curved edges or a
+hole use the shared multisample wedge renderer. At this stage, gradients
+and strokes used the portable rasterizer. The option remains off by
+default while hardware frame timings are unmeasured.
+
+The Windows 11 QEMU browser used V `4478fc4` and MinGW GCC 16.2.0 with
+`-prod -no-prod-options`. Its SHA-256 was
+`43382068ea4ed340320976330b339b0f1b0c8a4b82ea96efe59d67730c71ee24`
+before and after the four launches. The portable, cached Canvas,
+texture-only cache, and uncached Canvas runs produced the same 800 × 100
+RGB document crop (`71751b2eac471adc33ce60b00348a8d94ce4423fa638df815fe4653e7017d352`).
+Diagnostics confirmed D3D11 draws for the even-odd hole, translucent
+overlap, and translated fill. Gradients and strokes used portable replay
+in all four runs. Each process exited zero under the 3 GiB guard. The
+Linux browser source check and the staging and runner checks passed.
+
+## Solid Canvas fills on D3D11
+
+An initialized Windows Sokol D3D11 window can now host `gg.canvas`
+surfaces for solid pixel-aligned rectangles and tessellated path fills.
+The HLSL shaders use the shared Canvas instance layouts, draw batching,
+paint order, and stencil state. Each flush packs its paint and transform
+records into one vertex-stage storage buffer. A multisample pass resolves
+on the GPU and loads the existing resolve texture when a later draw needs
+to preserve it. Sokol checks depth-stencil MSAA against the typed depth
+format, which unblocks creation of 4× depth-stencil attachments.
+[D3D11 depth-stencil views](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_depth_stencil_view_desc)
+
+The initial Windows implementation accepted solid bounds and wedge
+passes, including path clips that use depth and stencil. Unsupported
+shading or geometry returns an error before opening a render pass.
+Hardware frame timings remain unmeasured.
+
+The guarded Windows 11 QEMU smoke used V `4478fc4` and MinGW GCC 16.2.0
+with `-prod -no-prod-options`. The rectangle, premultiplied blend, convex
+curve, winding and even-odd fills, inverse fill, intersect clip, MSAA
+reload, and rejected-draw recovery checks passed. The executable SHA-256
+was `26a4e7b395ab038fe79c1df635cb9c82f0ea09332030823aa580795ec1731549`
+before and after launch. The process exited zero under the 3 GiB guard.
+Its window capture was byte-identical to the prior D3D11 projection and
+font smoke capture.
+
+The shared solid fill and gradient stroke checks passed on Metal and
+ARM64 Linux Mesa. Metal also passed the intersect clip check. Mesa left
+the pixel at `(26, 5)` green outside the clip at the time of this run.
+The OpenGL resolve fix above restored that check on Mesa. The Windows
+D3D11 browser source check, V/Python staging parity, and both staging test
+suites passed.
+
+## D3D11 texture regions for shared Canvas surfaces
+
+The staged Sokol D3D11 backend implements the same rectangular texture
+upload and readback calls used by Canvas. BGRA8 and RGBA8 uploads preserve
+the destination outside the region. Readback copies the region into a
+staging texture, then copies the mapped rows into the caller's stride.
+The backend keeps one staging texture for up to 4 MiB of pixel data and
+releases it at shutdown. Larger reads use a temporary texture.
+[D3D11 uploads](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-updatesubresource)
+[D3D11 region copies](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-copysubresourceregion)
+
+The Windows 11 QEMU smoke used V `4478fc4` and MinGW GCC 16.2.0 with
+`-prod -no-prod-options`. An initial run stripped the V assertions, so
+the smoke now checks the operations explicitly. The unpatched control
+failed at the first valid subrectangle upload. The patched executable
+(`27dbbf489fd4b100b8b09f3c344e7536cc1939e7e5d43e1ad50a83e6e00e0627`)
+passed on both formats. The cases checked padded source and destination
+rows, preservation outside the upload, smaller reads, rejection of
+invalid regions and transfers within a pass, and a 1025 × 1024 readback
+above the cache budget. The guarded Windows process exited zero.
+
+The standard D3D11 browser source check, the offscreen SVG stroke and
+readback checks on macOS Metal and ARM64 Linux Mesa, and the focused
+Sokol staging parity test passed. Two broader staging checks stopped at
+existing differences in the `vox_path_math.m` wrapper and the staged
+`gg/canvas/paint.v`. Hardware timings remain unmeasured.
+
+## Canvas SVG capability detection in Windows OpenGL windows
+
+The Windows OpenGL browser uses its normal window context when
+`VOX_GG_SVG=1`. The Canvas renderer checks that context for OpenGL 4.3
+and shader storage buffers before recording SVG draws. A context below
+that capability can open the window and use the shared portable SVG
+rasterizer. The Windows runner's `--gg-svg` option shares the Linux
+checks for paint order, the even-odd hole, orientation, texture reuse,
+and the GL 4.2 fallback.
+[SVG fill fixture](../Tests/Browser/Native/svg-gg-path-fill.html)
+
+The ARM64 Linux Xvfb run used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable SHA-256 was
+`650a975fd096d03eccaacb802083b681e7f14efccf564ffed4aaf19c43cd7c25`.
+All five captures matched, including all cache modes and the forced
+GL 4.2 fallback. The 800 × 100 RGB crop SHA-256 was
+`105829155fd05a83a582525ad18782d3930c96c78eb0b2dbdcc5e77b0d0ee79a`.
+The browser processes, 3 GiB guard and 21 Python runner tests passed.
+
+The Windows 11 QEMU run used Mesa WGL with llvmpipe. The x64 browser
+used V `4478fc4` and MinGW GCC 16.2.0 in one C unit with
+`-prod -no-prod-options`. Its executable SHA-256 was
+`fdb4b1378838024580c39244bd2ed252974ec4727a90e37e66b18778679fce89`
+before and after the captures. The same five cases passed and produced
+the same 800 × 100 RGB crop as Linux. Diagnostics confirmed Canvas cache
+hits when enabled, and one capability rejection followed by CPU texture
+and bounds cache hits on forced GL 4.2. All five browser exits and 3 GiB
+guards were zero. A separate graphics probe that explicitly requested GL
+4.3 on the forced 4.2 driver failed at WGL context creation with child exit
+3221226505. The standard Windows D3D11 source check passed. Hardware
+frame timings remain unmeasured.
+
+## Slanted edge coverage in portable GG replay
+
+Portable affine draws of full textures use a narrow coverage ramp along
+slanted image, canvas and video edges. The same texture and sampler draw
+the interior and edges in one batch. A shear with two slanted edges adds
+two quads, and another affine transform may add up to four. The extra
+geometry shares the existing 32,768-vertex coverage limit with rounded
+image clips. Very thin geometry and source crops use the single-quad draw.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The ARM64 Linux build used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable
+(`887d88ac27d3164e6501a052600bf7810d9bca6a67647b47739f8f3fe9c6ed21`)
+passed the edge, texture reuse, rounded-image, WebGL, video and headless
+checks under the 3 GiB guard. Reuse enabled and disabled produced the same
+800 × 516 RGBA document at SHA-256
+`0a2cb834d96e1965bd596ac7afb6039dee953d5c61ae788ccc9ce45ef7b11a87`.
+The previous Linux capture failed the edge coverage assertion. All 160
+changed pixels were within the three shear regions. A second Xvfb capture
+checked all four diagonal edges on both a rotated and a reflected image.
+
+The fresh macOS reference capture from the published executable
+(`db82b90a1b7126ccae3db563483114a7aef51e820c342089e5ee56d3eff81e2f`)
+passed the new coverage assertions. Both the capture and guard exited zero.
+The Linux sum of absolute RGB differences from that reference fell from
+11,181 to 7,131 in the sheared decoded image and from 6,984 to 5,022 in
+the sheared two-color filter control. In the sheared canvas, the two edge
+columns improved from 7,020 to 6,071. The whole canvas crop rose from
+8,040 to 12,191 because the new triangles changed which texel wins at some
+exact nearest-neighbor boundaries. The macOS source check and all 21
+Python runner tests passed.
+
+The Windows 11 QEMU capture used the x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. The
+executable SHA-256 was
+`84ce05365501769daa22974dcc5a2ee23b34c18c76ebf3624b202c61c0233ee4`
+before and after the capture. The coverage and filtering assertions passed,
+with one upload per canvas and poster. The 3 GiB guard reported a zero
+browser exit. The 800 × 516 RGBA document had SHA-256
+`370a91c136ae095cf87ef01a7e6bc38b1df6a7067235c803ff56e56a114522ff`.
+All 144 changed Windows pixels were within the three shear regions. The
+Windows sheared decoded image's absolute RGB error against macOS fell from
+7,356 to 4,092. Hardware frame timings remain unmeasured.
+
+## CSS image sampling in portable GG replay
+
+Portable replaced images select nearest-neighbor sampling for `pixelated`
+and `crisp-edges` draws. The window shares one sampler across rectangular,
+affine and rounded coverage draws. The point sampler uses the base texture
+level, including when `crisp-edges` minifies an image. Smooth draws use the
+decoded texture's usual filter and mipmaps. Draws of the same image can
+select either filter while sharing its decoded texture.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The ARM64 Linux single-unit Clang 18.1.3 `-O0` builds used V `5a39a4d`.
+The baseline (`53f6673be47f936c1d5ad347e2c772fb30b2580834c5a6f165e57d100c3ef33c`)
+failed the first nearest-neighbor pixel assertion. The candidate
+(`4bd5de4579bfbe165878ab01eb65dbb42726687abcb97954e6d9b8f3ef9d4552`)
+passed the nearest, smooth, rounded, sheared and minification assertions.
+The smooth image and streaming media control regions matched the baseline.
+The 800 × 516 RGBA crop had SHA-256
+`db5a2a05b882d09a8cd83726def5a5f058f2276ad4e71e5742d60be4847f3cf8`
+with texture reuse enabled and disabled. Rounded-image, WebGL and headless
+smoke checks passed under the 3 GiB guard. A separate live X11 window
+displayed the nearest-filtered boundary and exited normally on window close.
+
+The published native macOS reference
+(`945e46f85f4bfe3e54e4c05a82a0a9b30526733b69e619fc78056f0aa9186dd0`)
+passed the same sampling assertions. The Linux sheared decoded image differed
+from this reference at 148 pixels before the change and 53 after it. The macOS
+source check and all 23 Python runner unit tests passed.
+
+The guarded Windows 11 QEMU run used the x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. The executable
+SHA-256 was `2fc6e40021d957ba3247a0170efbf2fec3dff7ccc8cb763bdb293a1ddac6e6a9`
+before and after capture. It passed the same assertions, including the mipmap
+control. Its 800 × 516 RGBA crop had SHA-256
+`a497a55d7640f299ac591fdff7926f265bfff8b475cae2b8996128fda8e3ed37`.
+The sheared decoded image differed from Linux at five pixels. The browser and
+3 GiB job guard exited zero. Hardware frame timings remain unmeasured.
+
+## Reusing decoded video poster textures
+
+Both browser poster decoders mark newly decoded pixels for the same upload
+revision mechanism used by Canvas 2D and WebGL. A portable GG slot can keep
+the poster texture across frames. Decoding a replacement of the same size
+gives it a fresh revision, so the next draw uploads the new pixels.
+
+The ARM64 Linux single-unit Clang 18.1.3 `-O0` builds used V `5a39a4d`.
+The baseline executable
+(`1e838916cf8aa2b39ddfb37d7362b88c60a27cf50254dc86b01ca81c0a27d944`)
+uploaded the affine fixture's static poster 97 times. The candidate
+(`3cd992c432508c44d5e8049c7c8c2e20344735c53c9dde9c53eb0cd4361f2507`)
+uploaded it once with reuse and 97 times with reuse disabled. All three
+800 × 516 RGBA document crops matched at SHA-256
+`e0fb90329714533506a2500761102b948ba8ffcc746f6cb71a434a202f5d1e11`.
+A delayed same-size cyan poster replacement reached the rotated rectangle
+with two uploads total. Portable video, rounded clipping, WebGL and headless
+startup checks passed under the 3 GiB guard. The Canvas 2D and WebGL V test
+files and all 23 Python runner unit tests also passed.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The Windows x64 D3D11 build used V `4478fc4` and MinGW GCC 16.2.0 in one C
+unit with `-prod -no-prod-options`. Its executable SHA-256 was
+`12fc85b42316160d4bf1d10e0ee6907630b14b62a12f59f6dec0c8d2d28343a0`.
+The earlier affine fixture capture uploaded the poster 19 times. The updated
+build uploaded it once in Windows 11 QEMU. Both documents matched at SHA-256
+`b50fa8f4e71cd65b9f041623456a351d1ad7ee71e95ab36621e6fdc1854285fa`.
+The browser and 3 GiB job guard exited zero. The macOS source check passed.
+Hardware frame timings remain unmeasured.
+
+## Shared affine draws for decoded images
+
+Portable replaced images now use the same GG textured quad as affine canvas
+and video draws. The four transformed destination corners retain the clipped
+source coordinates in local order, preserving rotation, reflection, shear,
+and `object-fit: cover` crops. Positive axis-aligned draws use GG's rectangle
+draw. Rounded clips use the existing coverage path.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The ARM64 Linux Xvfb baseline failed the rotated image interior assertion.
+The updated V `5a39a4d` and Clang 18.1.3 single-unit `-O0` executable
+(`04bf0757a4b0c1f9c3b01f2c524426870272ebe3de5da589d4f1f1268c956c70`)
+passed the expanded fixture, rounded image and WebGL regressions, and headless
+startup. The 800 × 516 RGBA crops matched with canvas reuse enabled and
+disabled at SHA-256 `e0fb90329714533506a2500761102b948ba8ffcc746f6cb71a434a202f5d1e11`.
+The three canvas textures uploaded three times with reuse and 315 times
+with reuse disabled. The browser and 3 GiB guard completed successfully.
+
+The published macOS native reference executable
+(`16baa3eca911d8b3ee323e6989b9e1336c46db00eacf04d7a3fd91d968e841ea`)
+passed the same pixel assertions. Its crop differed from Linux at 198 pixels
+along the sheared canvas and sheared image edges and color transitions.
+The updated macOS source check passed with V `4478fc4`.
+
+The Windows 11 QEMU guest ran the guarded x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. Its
+executable SHA-256 was `51230859c65f46150a10990bd859f3dc7771a8e29d8a5d7a1915be8e643b75f6`
+before and after capture. The pixel assertions passed, and the three canvas
+textures each uploaded once. The 800 × 516 RGBA crop had SHA-256
+`b50fa8f4e71cd65b9f041623456a351d1ad7ee71e95ab36621e6fdc1854285fa`.
+Its 87 differences from Linux were confined to the sheared canvas and image.
+The browser and 3 GiB job guard exited zero. All 23 Python runner unit tests
+passed. Hardware frame timings remain unmeasured.
+
+## Waiting for the updated WebGL frame in screenshot tests
+
+The WebGL texture reuse fixture emits `WEBGL_TEXTURE_UPDATE_COMPLETE` after
+the successful yellow clear in its twelfth animation callback.
+`VOX_CAPTURE_READY_CONSOLE_MESSAGE` waits for that exact document diagnostic
+before scheduling the screenshot. The fixture changes no DOM nodes, so the
+capture still exercises the canvas's own paint invalidation. The runner
+requires the diagnostic, both canvas pixel regions, and the expected texture
+upload counts. [WebGL texture reuse fixture](../Tests/Browser/Native/webgl-texture-reuse.html)
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable SHA-256 was
+`becf85dbf651ab3a618bb87f5741d39c3915f46cb4253012782f7b3f635c5d02`.
+A separate Xvfb run delayed the animation by five seconds. With the previous
+three-second settle as the only condition, the capture showed blue and had
+one animated upload. The readiness gate captured yellow with a zero-second
+settle and two animated uploads. The original fixture matched pixel for pixel
+with texture reuse enabled and disabled. Upload counts were one static and
+two animated with reuse, and 168 each without reuse. The delayed canvas,
+selector-gated video and headless smoke checks also passed. The 3 GiB guard
+exited zero. All 23 Python runner unit tests passed.
+
+The latest completed macOS production bundle matched the four changed V
+sources in its build manifest. Executable SHA-256
+`9b6345db70ad335f839ba64428c39d0c5d78e754b151cacd60030307633c84ff`
+captured the five-second delayed draw with a zero-second settle. Its 800 × 516
+RGBA document matched the Linux capture at SHA-256
+`5b607c45a12d4c936a1fcdc86e35fccbcac6b83bdef9c836b902aad883a1ee9f`.
+The browser and 3 GiB guard exited zero.
+
+The Windows x64 D3D11 build linked with V `4478fc4` and MinGW GCC 16.2.0
+in one C unit with `-prod -no-prod-options`. Executable SHA-256 was
+`78379dad319179569b80ba1aec574a4398502a532bf65dd94cff605608b664d7`.
+The earlier Windows 11 QEMU runner reached its first guarded capture and
+exited 1 with empty capture and guard outputs. Its input manifest matched
+the staged executable, guard, runners and fixture.
+
+A fresh x64 D3D11 build with the same compiler configuration had executable
+SHA-256 `5745011ed139dfe5edb99d2d05a3699b888d095e8ec8bd58d7092173fdd22780`.
+The Windows 11 QEMU guest matched that hash before and after two fresh
+interactive captures. The launcher ran the native 3 GiB guard directly and
+recorded process startup phases. Both browser captures and their guards exited
+zero, with peak job committed memory of 543,535,104 and 546,234,368 bytes.
+The capture traces waited for the console message, and both audits recorded
+it. The shared pixel assertions passed, and both 800 × 516 RGBA crops matched
+the Linux and macOS hash above. Reuse recorded one static and two animated
+uploads. With reuse disabled, each canvas uploaded 36 times. Hardware frame
+timings remain unmeasured.
+
+## Affine transforms on canvas and video textures
+
+Portable replay maps all four clipped destination corners for rotated,
+sheared and reflected canvas and video draws. It pairs those vertices with
+the original cropped texture coordinates and emits one GG textured quad.
+Axis-aligned draws keep the regular image path. Rounded transforms keep
+their coverage path, and affine draws reuse the existing texture slots.
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`. Its executable SHA-256 was
+`5a9db888d3a0fec8feaf7b61733771e1158436c5c4323612eeb90bf2dcb6eecb`.
+The Xvfb runs checked canvas quadrant order, shear bounds and a rotated
+video poster with `object-fit: cover`. The 800 × 516 RGBA crops matched
+with reuse enabled and disabled at SHA-256
+`81c320d02a97d01a6730856a0681aa3cb427f9ff4974d035ca89ac2ff86d8588`.
+The three canvas textures uploaded three times in total with reuse enabled
+and 264 times with reuse disabled. A separately linked control that bypassed
+the affine branch failed the rotated quadrant assertion. Linux headless
+startup and the video, rounded clip, WebGL and delayed canvas checks passed.
+[Affine media fixture](../Tests/Browser/Native/affine-media.html)
+
+The published macOS bundle (`df7cfba52595ed02ba651596fb1bdaf8ac9c5d8178392d0404b7198e8aa18b54`)
+passed the same pixel assertions. Its complete document crop differed from
+Linux at 50 pixels on the sheared canvas edges and color boundaries.
+
+The Windows 11 QEMU guest used a guarded x64 D3D11 build with V `4478fc4`
+and MinGW GCC 16.2.0 in one C unit with `-prod -no-prod-options`. Its
+executable SHA-256 was
+`e06c46c931079b892dde8fe3f722955b773c8da5dfc651f7ac1fd554fb627c52`.
+The full canvas run passed delayed initialization and stopped after the
+WebGL animation capture still showed its initial blue frame. A focused
+rerun with the same executable passed both affine captures. The three
+canvases uploaded three times in total with reuse enabled and 57 times
+with reuse disabled. Both crops had SHA-256
+`b8dca86ebc3f0734a5f8321fa423a2fdb3cc3099d83d3222b8b35c6cc12f3398`.
+They differed from Linux at four sheared-canvas color boundary pixels.
+The focused runner and both browser guards exited zero with pinned inputs.
+All 23 Python runner unit tests passed. Hardware frame timings remain
+unmeasured.
+
+## Painting canvases initialized after first layout
+
+The retained paint tree keeps canvas geometry before a context exists. First
+context creation invalidates the canvas paint commands, and recording resolves
+the current surface. Later draws keep the retained geometry and use the same
+texture revision mechanism. A canvas without a surface emits no draw.
+
+The published macOS build from `4319484d7` left both canvas rectangles at the
+background color after the delayed script. Its executable SHA-256 was
+`91c8d2d1d543f29affc5e8e7fe8cc83d270b02c116418115f3a361e21fe75799`.
+The 800 × 516 RGBA document crop had SHA-256
+`2d4d57e2bbe7296f401f46f619b24e88c677e55c36bf780429b631ec8418150c`.
+[Delayed Canvas 2D and WebGL fixture](../Tests/Browser/Native/late-canvas.html)
+
+The guarded ARM64 Linux candidate used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. Its executable SHA-256 was
+`4b8cda9ca3ce75b8cb7f13bb5dcfeffb83eb0c331dfaf888c126b0dd53e39f03`.
+Xvfb captured both complete painted rectangles, with one GG upload each.
+The 800 × 516 RGBA crop matched the reference colors and had SHA-256
+`5b607c45a12d4c936a1fcdc86e35fccbcac6b83bdef9c836b902aad883a1ee9f`.
+In a separate diagnostic capture, the initial layout had six paint entries.
+Context creation refreshed the two canvas entries and recorded one draw per
+canvas. The trace recorded one layout pass, before either context existed.
+The existing WebGL animation and texture reuse check produced the same crop
+with reuse enabled and disabled. It recorded one static and two animated
+uploads with reuse, and 139 of each with reuse disabled. WebGL shader and
+readback checks, video and rounded clip checks, headless startup, and all
+21 Python driver tests passed. The Linux layout regression verified that
+both contexts can appear after the initial display list and that later
+WebGL pixels use the same layout and canvas geometry. macOS and Windows
+x64 D3D11 source checks passed with V `4478fc4`. Frame timings remain unmeasured.
+
+The next published macOS bundle captured both the delayed and animated
+canvas fixtures in fresh processes at 1×. Its verified inputs included
+`b6ece7acb`, and its executable SHA-256 was
+`df7cfba52595ed02ba651596fb1bdaf8ac9c5d8178392d0404b7198e8aa18b54`.
+Both 800 × 516 RGBA crops matched the Linux document hash above. The
+author-script audits, browser processes and 3 GiB guards passed.
+
+The Windows x64 D3D11 build used V `4478fc4` and MinGW GCC 16.2.0 in one C
+unit with `-prod -no-prod-options`. Its executable SHA-256 was
+`eaa050af60e7b195e29229d7ab57355049da4e2d6c9764f8e2d82c5bcae5a390`.
+The interactive Windows 11 QEMU guest used the shared runner with
+`--canvas-only`. All three document crops matched the Linux hash. The
+delayed Canvas 2D and WebGL draws each uploaded one texture. With reuse
+enabled, the animation fixture uploaded the static canvas once and the
+animated canvas twice. With reuse disabled, it uploaded each 16 times.
+All three browser exits and the runner
+exit were zero. The executable, guard, 36 DLLs, runners and fixtures kept
+their pinned identities. The guest used the embeddable Python 3.12.10
+runtime. [Python release](https://www.python.org/downloads/release/python-31210/)
+
+## Reusing unchanged WebGL canvas textures
+
+WebGL presentation updates the canvas-owned bitmap and advances its
+upload revision when new pixels arrive. Retained paint commands resolve
+the current canvas surface when they are recorded. Same-size updates
+reuse the bitmap storage, and JavaScript readbacks and published decoded
+frames keep their own pixels.
+
+Linux WebGL now restores the EGL context and surfaces used by Sokol
+after each GLES call. Before this change, a `requestAnimationFrame`
+draw on the second canvas left the offscreen context current. The next
+window pass hit `GL_INVALID_FRAMEBUFFER_OPERATION` and aborted. With
+context restoration alone, the window survived but displayed the first
+frame. Refreshing the retained canvas draw brought the later frame to GG.
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. Its executable SHA-256 was
+`a1ebb4acb30366c161e9933ef46caf1884b455abf4ea1e5b4db5062b38ec021f`.
+Fresh Xvfb runs of that executable rendered the same 800 × 516 RGBA
+document with reuse enabled and disabled. Both crops had SHA-256
+`5b607c45a12d4c936a1fcdc86e35fccbcac6b83bdef9c836b902aad883a1ee9f`.
+The static 64 × 40 canvas went from 127 uploads to one. The 48 × 32
+canvas went from 127 uploads to two, one for each displayed color.
+[WebGL fixture](../Tests/Browser/Native/webgl-texture-reuse.html)
+
+Linux headless startup, the native WebGL1 and WebGL2 shader and
+readback smoke, and portable video and canvas captures passed. The focused
+HTML tests covered revision stability, retained-frame ownership, resizing
+and repaint callbacks. The optimized and ASan/UBSan GLES tests passed
+headless and with a GLX host. The macOS and Windows x64 D3D11
+production-mode source checks passed with V `4478fc4`. All 21 Python
+driver tests passed.
+The compiler, browser processes and guards exited zero. Hardware frame
+timings remain unmeasured.
+
+## Reusing unchanged Canvas 2D textures
+
+Canvas 2D pixel writes mark the bitmap dirty, including writes to a
+bitmap already retained by the paint list. Replay assigns a process-wide
+revision when it next needs those pixels. GG reuses the texture when
+the slot already holds that revision. Bitmap replacement, same-size
+resizing and a slot reused for another resource invalidate the match.
+
+The guarded ARM64 Linux build used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. Its executable SHA-256 was
+`f8707854498d6d787b5f8d5933023b346200b80435bd3a3e26591757de200614`.
+The same binary captured the video and canvas fixture with reuse enabled
+and disabled. The static 48 × 48 canvas went from 101 source uploads to
+one. The 32 × 24 canvas went from 101 uploads to two, one for its initial
+pixels and one after an in-place color change. Both 800 × 516 document
+crops matched at SHA-256
+`c5fbac00860d1e4d17d41c95fb964079ac0c4141bb42c4d5a33af74809ca78ac`.
+[Video and canvas fixture](../Tests/Browser/Native/portable-video.html)
+
+Linux headless startup and nine Xvfb captures passed. The focused HTML
+canvas tests covered draws, pixel writes, clearing, cloning and same-size
+resets. The builds, captures, native tests and guards exited zero. The
+macOS and Windows D3D11 source checks and 21 Python driver tests also
+passed. Hardware frame timings remain unmeasured.
+
+## Deferring streaming texture uploads until draw
+
+Rounded bitmap replay now acquires a streaming texture after it finds
+coverage rectangles to draw. The raster fallback reads the retained bitmap
+and uploads its viewport-sized result only. It skips the source texture
+allocation, alpha conversion and upload. A drawable stream still takes
+one slot per frame, and the slot keeps the identity of its uploaded video.
+
+Two guarded Linux ARM64 builds used V `5a39a4d` and single-unit Clang
+18.1.3 `-O0`. The baseline (`ebc9bffeebd6cb0a007d79afadf302c4c0798de2806f298ce112df144e449f14`)
+included upload diagnostics and used the previous upload order. The
+candidate SHA-256 was `654c04b643bdfb153962aa7274aa1a937843608d95e85e2e1308807b1a8aa51f`.
+The Xvfb fixture displayed a rotated 256 × 256 canvas in a 48 × 48 CSS
+box. Its source was uploaded 129 times in the baseline capture and zero
+times in the candidate. This removed 32.25 MiB of source upload payload
+from the baseline workload. The axis-aligned canvas and the video still
+uploaded their textures, and disabling clipping exercised the direct
+source upload for the larger canvas.
+
+The before and after 800 × 516 document pixels matched with clipping
+enabled (`3ecfb78c4cb036828bc3d7f4ee493fe8ff70cb864f9bb31a6b8c2518734d6d61`)
+and disabled (`01647ad4bf3637458a52c8378117d7dd07b60f0bb4a30a3796b2074c662a4208`).
+The decoded video frame, fixture and linked library hashes matched. Both
+builds and capture runs exited zero. The regression assertion detects
+the redundant upload in the baseline. The candidate also passed headless
+startup, the rounded image and poster checks, and the gradient checks.
+The macOS and Windows x64 D3D11 production-mode source checks and 21
+Python driver tests passed. Hardware frame timings remain unmeasured.
+
+## Rounded clips on streaming textures
+
+Portable GG replay now applies `border-radius` to video frames, posters
+and canvas elements. Axis-aligned draws use the same cached antialiased
+coverage as ordinary images. They keep the original texture, sampler
+and object-fit crop. Square draws still submit one quad and a paused
+video can keep its uploaded frame. Rotated draws and clips that exceed
+the quad budget use the viewport-bounded raster fallback. The fallback
+reads the retained bitmap with its original alpha representation.
+
+A fresh ARM64 Linux browser used V `5a39a4d` and single-unit Clang 18.1.3
+`-O0`, with executable SHA-256
+`3085ceff1add70723350e349c78a92386b4cb12a48c1c278d4066ed47929733d`.
+Headless startup and eight guarded Xvfb captures passed. The video fixture
+paused and sought to the same decoded H.264 frame in both modes, and
+sampled interior colors matched. Its translucent canvas checks covered
+the axis-aligned path and the rotated fallback, including exterior and
+partially covered pixels. The poster kept the `object-fit: cover` crop.
+The rounded-image and gradient comparisons still passed. The compiler,
+linker, browser processes and 3 GiB runtime guard exited zero.
+[Video and canvas fixture](../Tests/Browser/Native/portable-video.html)
+
+The macOS and Windows x64 D3D11 production-mode source checks passed
+with V `4478fc4`. All 21 Python driver tests passed. This change's
+window captures ran on Linux. Hardware frame timings remain open.
+
+## Portable gradient, rounded image and poster checks
+
+The Linux and Windows window checks share the same gradient and image
+fixtures. They compare the gradient ramp against full raster output
+and check that clip reuse preserves the captured document. The image
+fixture also samples a video poster cropped with `object-fit: cover`.
+The Windows runner uses the existing 3 GiB job-object guard.
+[Windows test command](WINDOWS.md#focused-native-checks)
+
+The Linux ARM64 window checks passed twice under Xvfb, using V `5a39a4d`
+and a single Clang `-O0` unit. The executable SHA-256 was
+`da154d5672309d96ec568116ccf609513948a2b86b0fbb207356c516a63985c0`.
+All six final browser captures and their 3 GiB guard exited zero. The
+executable, linked libraries and fixtures retained their hashes.
+The three gradient modes yielded the same 1024 × 530 RGBA crop,
+`fc11369cc40f7256accaf9c645557a2d71ebd2ceab9f45009a1630c8d9c444de`.
+The cached and uncached rounded image modes yielded the same 800 × 516
+RGBA crop, `c96ec9b866b2791366d17651607e3800de587a5962d6df498f64341b35d01f82`.
+
+The published macOS bundle from `3834bb4c6` passed the same gradient
+pixel assertions in a fresh 1× capture. Its executable SHA-256 was
+`7376efe6624d0ad95293e82f9d269df8c69c9acf1b9561e09d03151315f529f3`.
+The browser and 3 GiB guard exited zero. Its 1024 × 530 RGBA crop
+SHA-256 was `e133187bf20eb3be0535419e81ca6a3736f6e8d2c80a0bb53e3a1e29ef3be082`.
+
+The Windows x64 D3D11 console build started from `1c5940cd4` with
+concurrent checkout edits. It used V `4478fc4`, MinGW GCC 16.2.0 and
+single-unit C `-prod -no-prod-options`. The executable imports
+`D3D11CreateDeviceAndSwapChain` and has SHA-256
+`d8b24e6339dfdbf3261b646171b99f0afb14aa1cebbf449bd5a326c071235e2e`.
+The 12 GiB compile guard exited zero at a sampled peak of 10,180,132,864
+bytes. All 21 Python smoke-driver unit tests passed.
+
+The first Windows guest reached sign-in and stalled during desktop
+setup. It shut down normally. The retry used multithreaded QEMU TCG,
+a RAM-backed overlay and the interactive Windows 11 x64 desktop. The
+runner and all six guarded browser processes exited zero. Peak committed
+job memory ranged from 317,186,048 to 336,044,032 bytes. The executable,
+guard, 36 adjacent DLLs and fixture inputs retained their hashes.
+The runner used the embeddable Python 3.12.10 distribution.
+[Python release](https://www.python.org/downloads/release/python-31210/)
+
+The three Windows gradient modes yielded the same 1024 × 530 RGBA
+crop, `1f8eb02bc8bf08ea20020e078be0abcc813eafb1a74f87e96022786758d35947`.
+The rounded image modes with clipping enabled yielded the same
+800 × 516 RGBA crop,
+`3da9d4038a4839ea521c230f72e87a815f108669c52211666004e2d0cb80484b`.
+The RAM disk filled after the runner exited. The capture files and
+guard receipts were recovered and the document comparisons rechecked
+on the host. The disposable overlay was stopped after it filled again.
+QEMU and its 12 GiB guard exited zero at a sampled peak of 8,328,658,944
+bytes. Hardware frame timings remain unmeasured.
+
+## Linux video playback through GG
+
+The compilation demo loads a silent H.264 MP4. Linux now uses
+GStreamer for native decoding and presents the retained RGBA frame
+through the same GG streaming texture path used for canvas bitmaps.
+A video resource identity skips repeated uploads of a paused frame.
+The appsink queue holds one sample, and the browser borrows tightly
+packed rows while updating its owned frame. Padded rows reuse a native
+buffer. The existing V media owner handles metadata, selection, autoplay,
+seek, end events, and teardown.
+
+On Ubuntu 24.04 ARM64 with GStreamer 1.24.2, a focused native probe
+decoded the live 1426 × 1080 demo and exercised local preroll, paused
+seeking, playback rate and end-of-stream. The initial adapter cleared
+its paused preroll by checking the regular appsink queue first. The
+retry pulled preroll before polling that queue and passed.
+
+The diagnostic Linux browser used V `5a39a4d` and a single Clang
+18.1.3 `-O0` unit. Its executable SHA-256 was
+`660abce9786efa692d3f52d56890e098fe9ca0e6f71ac91faf6dd95a9bf8e2c6`.
+The [local video fixture](../Tests/Browser/Native/portable-video.html)
+started muted playback, paused, sought to 1.6 seconds, and showed the
+red top and green bottom of the requested frame under Xvfb. The 48 × 32
+fixture movie SHA-256 was
+`0907a2b61970f21d9500665ce33d8964e4bf3c819b6a50a733848eee34f82b08`.
+Headless startup and the existing portable-gradient window checks passed.
+The browser and 3 GiB guard exited zero. Debian and Arch package tests
+verified that media-enabled packages declare their playback plugins.
+
+A fresh Linux Xvfb window loaded live [vlang.io](https://vlang.io/)
+at a 1280 × 800 document viewport with JavaScript enabled. The loaded
+video had a 1426 × 1080 decoded frame, no media error and an active
+playback clock. The capture showed the terminal recording in the
+compilation card. Its window PNG SHA-256 was
+`d6217a2db7c56f3317ea0ccdc855d39640f3379cdc86aa0f1eb210f510aca8a1`.
+The browser and 3 GiB guard exited zero. The macOS and Windows x64 D3D11
+production-mode source checks passed. These runs establish playback and frame presentation
+under software OpenGL. Hardware playback performance remains unmeasured.
+
+## Rounded raster images in portable replay
+
+The portable replaced-image draw now carries the image element's own
+`border-radius` into replay. This fixes the square Veery portrait on
+Linux. The draw retains the source crop computed from `object-fit`.
+For axis-aligned images, the shared antialiased raster clip supplies
+disjoint coverage rectangles. GG batches those rectangles in document
+order against the original texture and sampler, preserving its mipmaps.
+The vertex budget and other affine transforms can use a viewport-bounded
+raster fallback. Images with square corners keep their single GG quad.
+Each tab can retain one set of up to 128 coverage rectangles. The key
+includes the clip geometry in local device coordinates and the visible
+dimensions, so whole-pixel movement and matching images can share it.
+Fractional offsets and changed visible crops use their own coverage.
+
+The first implementation resampled every rounded image. A live
+[vlang.io](https://vlang.io/) capture showed the intended corner but
+changed the center of the portrait from RGB `167,96,58` to `138,85,44`.
+The controlled downsampling fixture reproduced that sampling change.
+The raster coverage test matched the disjoint spans to every reference
+alpha, including an opaque run longer than 255 pixels and the span limit.
+
+The Linux ARM64 diagnostic builds used V `5a39a4d`, a single Clang
+18.1.3 `-O0` unit and the canonical checkout with working changes present.
+The final cached build at HEAD `644ce78e` had executable SHA-256
+`2cb95bd842e6ccd5f8666f15b927e3f2d8677bcba7e86460bf7738a4834dc691`.
+Under Xvfb and Mesa software OpenGL, headless startup and the portable
+gradient and rounded-image window tests passed. The image test verified
+asymmetric corners, antialiasing, `cover` cropping, `contain` letterboxing
+and bit-exact square controls. The centered 128 × 128 → 24 × 24 samples
+agreed with the square draw within one channel level. Cached and uncached
+document pixels matched exactly, including a fractional translation.
+The executable, test driver and loaded library hashes held through the
+checks. Browser and 3 GiB guard exits were zero. The Windows x64 D3D11
+production-mode C-backend source check of the cached change passed in
+37.1 seconds. Its guard recorded 5,169,037,312 bytes of peak sampled
+process-tree RSS. Windows runtime remains unverified.
+
+The timing workload displayed two 24 × 24 badges every 84 CSS pixels
+for 32 rows. Its fixture SHA-256 was
+`003399a6ab40289551bda5a4158da7f5e01ae7e96c0d798992cdc2327b82caf4`.
+Each run launched a fresh process and profile, retained OS caches, used
+an 800 × 516 document viewport at 1×, settled for one second and completed
+32 synthetic 42 px callbacks. Scroll offsets and paint-command counts
+matched. The first CPU-resampling build and the uncached span build each
+ran four paired modes. Their rounded replay medians with clipping off/on
+were 0.937/2.672, 0.881/2.443, 0.989/2.015 and 4.452/2.086 ms for CPU
+resampling, then 2.771/3.288, 1.343/3.200, 2.813/2.033 and 1.548/2.837 ms
+for spans. The software controls varied substantially between builds.
+
+Four alternating triplets on the final executable compared clipping
+disabled, uncached spans and cached spans. Browser, driver and 3 GiB
+guard exits were zero. Guest one-minute load at trial starts was
+0.46–1.50. Host one-minute load was 11.26 before and 10.44 after the
+cohort on 18 logical CPUs.
+
+| Triplet | Median replay (ms) | p95 (ms) | Max (ms) | Median allocation (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.898 / 1.565 / 1.333 | 1.160 / 3.725 / 3.606 | 2.815 / 3.897 / 4.035 | 528.5 / 954.0 / 590.0 |
+| 2 | 1.382 / 2.408 / 1.482 | 1.699 / 5.888 / 3.563 | 4.655 / 6.263 / 4.097 | 527.5 / 952.5 / 590.5 |
+| 3 | 1.298 / 2.033 / 1.149 | 3.775 / 4.930 / 3.352 | 4.638 / 5.013 / 3.354 | 528.0 / 953.5 / 590.5 |
+| 4 | 0.940 / 2.308 / 1.210 | 1.110 / 5.552 / 3.103 | 3.032 / 5.669 / 3.646 | 528.0 / 952.5 / 591.0 |
+
+The cache saved 361.5–364.0 KiB per callback and reduced median replay
+by 15–48% against uncached spans. Compared with clipping disabled,
+median replay rose by 0.10–0.44 ms in three triplets and fell by
+0.15 ms in one. These observations cover synthetic software callbacks.
+Optimized hardware performance remains open.
+
+The first live span-only attempt reached its 65-second capture deadline.
+Two fresh 1280 × 800 live Linux runs of the cached executable used a
+110-second per-browser deadline and reached complete readiness with
+JavaScript enabled. The Veery portrait's top-left pixel matched the
+adjacent background at RGB `9,11,15` when clipped. With clipping
+disabled it was `254,254,254`. The center was `167,96,58` in both runs.
+The window PNG SHA-256 values with clipping enabled and disabled were
+`df1e6d226aea9d64feb6300f1d560b7d248ee90188ab3128f5781f0ee4a663cb`
+and `545a75c98caea00f63c75a64556bcf732eca48bf1ce178db13fafeb3ba92edce`.
+Both browser processes and the 3 GiB guard exited zero.
+
+## Rounded clips on portable CSS gradients
+
+The portable gradient painter applies the CSS background's rounded box and
+rounded overflow ancestors in texture coordinates. The shared rasterizer
+keeps the antialiasing in run-length coverage and leaves opaque runs alone.
+Rectangular gradients keep the one-row or one-column texture path. A ramp
+that crosses a rounded corner still samples colors once along the gradient axis,
+then expands into a texture that can carry the corner coverage.
+
+The [window fixture](../Tests/Browser/Native/portable-gradients.html)
+checks the background's own corner, two rounded ancestor corners, the
+square bottom corners, and unchanged foreground and gradient text. The
+ramp and full-raster captures matched pixel for pixel. The focused raster
+test checks partial alpha against the Canvas clip coverage and passed on
+Linux and macOS. The Linux GG SVG window suite passed all 18 checks.
+The Windows D3D11 production-mode source check passed, and the focused
+raster test cross-linked as an x64 PE executable. The full MinGW build
+reached C compilation before its 350-second guard deadline.
+
+Fresh Linux ARM64 X11 captures of live vlang.io showed the header, gradient
+version text, social icons and compilation card at both widths. The
+desktop navigation and mascot appeared at 1280 px, following the site's
+responsive styles. The corrected browser changed exactly 84 visible
+document pixels at 1024 × 768 and 83 at 1280 × 800, all within the card's
+top corners. The document loaded with JavaScript enabled and reached
+complete readiness in each run. The macOS reference
+`bfdf3dd1c71bd43f1817a9b4feca9b95cb5216231823ec3f1b406c558dbcf423`
+also decoded the compilation video. The Linux media adapter still returns
+no video frame.
+
+The Linux controls and candidate used V `5a39a4d`, matching single-unit
+Clang `-O0` flags and Mesa software OpenGL. The executable SHA-256 values
+were `81ad57ac817e1600d2426c84902e81cddd87b1f3ae06b8c8b126d401a23a5577`
+and `6c55a9afb3eeacd821b400065f8632b606727e1aa9253008e8ec544787bd259e`.
+Two alternating pairs per fixture used fresh processes, profiles and caches
+at 1024 × 600 with one second to settle and OS caches available. The
+[rectangular fixture](../Tests/Browser/Native/scroll-gradient-ramps.html)
+used 48 synthetic 42 px callbacks. The rounded fixture used 32 callbacks
+over twelve 256 px cards with 24 px top radii and radial and diagonal
+gradients. Input hashes, paint-command counts and scroll positions matched
+within each cohort. All browser, driver and 3 GiB guard exits were zero.
+One-minute guest load ranged from 1.30 to 2.50 on four vCPUs.
+
+| Fixture and pair | Median replay, before / after (ms) | p95, before / after (ms) | Max, before / after (ms) | Median allocation, before / after (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| Rectangular 1 | 3.620 / 3.655 | 4.800 / 4.738 | 7.313 / 8.452 | 576.5 / 575.0 |
+| Rectangular 2 | 3.464 / 3.236 | 4.742 / 3.809 | 8.440 / 7.366 | 578.0 / 577.0 |
+| Rounded 1 | 311.328 / 377.340 | 425.239 / 430.769 | 427.588 / 444.475 | 4785.0 / 4947.5 |
+| Rounded 2 | 379.236 / 392.711 | 411.462 / 426.015 | 427.093 / 427.741 | 4785.0 / 4947.5 |
+
+The rounded draws allocated another 162.5 KiB per callback, and replay took
+longer in both pairs. The controls varied by 22% at the median. These
+results describe synthetic software replay. Production and hardware
+scrolling costs remain open.
+
+### Opt-in reuse of rounded gradient clips
+
+`VOX_PORTABLE_BACKGROUND_CLIP_REUSE=1` reuses up to four single rounded
+clips per portable replay. A match requires the same rectangle, corner
+radii, texture-space matrix, width and height. The cache is cleared
+before replay scratch is reset. Unclipped draws and multiple rounded
+ancestors follow their regular paths.
+
+The raster tests passed on Linux and macOS. They checked fractional
+translations, changed texture dimensions, eviction, and full coverage.
+The same tests cross-linked as a Windows x64 executable. A focused adapter
+test on macOS also matched the uncached pixels for reused clips, nested
+clips and unclipped draws.
+On Linux ARM64, a single C-backend executable exercised four clip
+requests at each of three geometries over 400 simulated replays. Reuse
+reduced rasterizations from 4,800 to 1,200 and reused 3,600 clip results.
+The executable SHA-256 was
+`850b27eb34bc84cee1126ec94afcf8ed371410e84999e3b7cb872e2d3303a14d`.
+Three alternating fresh-process pairs used the same executable, geometry
+and iteration count. The table records child user and system CPU time from
+process launch through exit. Each browser-independent harness and its
+3 GiB guard exited zero. The four-vCPU guest's one-minute load was 6.16
+to 6.53.
+
+| Pair | Rasterize each layer (CPU s) | Reuse clip (CPU s) |
+| --- | ---: | ---: |
+| 1 | 0.836 | 0.186 |
+| 2 | 0.504 | 0.133 |
+| 3 | 0.553 | 0.125 |
+
+The harness measures clip preparation with synthetic geometries.
+The initial Linux control build and Windows production-mode source
+check timed out. The original Linux VM also lacked memory for the
+candidate build while other jobs were active.
+
+#### Linux window verification
+
+A temporary Ubuntu 24.04 ARM64 VM with four vCPUs and 10 GiB RAM
+built `5492e717e` from the canonical checkout mounted read-only. V
+`5a39a4d` generated one C unit. After a 360-second guard timeout, the
+retry completed C generation in 334.8 seconds with peak sampled RSS
+of 6,055,100,416 bytes. Clang 18.1.3 linked the diagnostic `-O0`
+executable from those same C inputs. The `-O2` link timed out at
+365 seconds.
+
+The diagnostic executable SHA-256 was
+`32ef5b13041dd516f178c7006b216a51ff37795bca54604570936fc20af442a9`.
+Headless startup and the portable-gradient window checks passed.
+The latter matched the ramp, full-raster and uncached-clip captures
+and confirmed cache hits in the enabled runs. The rounded scrolling
+fixture also matched pixel for pixel with the cache on and off at
+four CSS scroll offsets. These were fresh 1024 × 600 Xvfb document
+viewports at 1×, using Mesa llvmpipe with LLVM 20.1.2. All browser
+exits and the 3 GiB guard exit were zero. Executable, fixture, Xvfb
+and native-library hashes held throughout.
+
+| Scroll offset (CSS px) | Decoded document SHA-256 in both modes |
+| ---: | --- |
+| 0 | `e36c6402712c43cad77b070b7bf51ecc7f2c7f909aed2201a64596548e7bd4b6` |
+| 42 | `0794a047854b7bf884b527549dc19619c12d822fcc5cdf906895d1f35af7b25e` |
+| 256 | `e30d303645c32003411db3e1f870906e844b579c0cb0928b6aa42bbbe8d93bab` |
+| 310 | `11991ad79afb72a2e325df5e47ea3171d22e5de6e655784133f9d478157e3ea4` |
+
+#### Linux software replay timings
+
+Separate diagnostic runs counted 21 hits and 21 misses after the first
+completed scroll callback on the rounded fixture, and zero clip lookups
+on the rectangular fixture. Timing runs had clip diagnostics disabled.
+Three pairs per fixture used the same pinned diagnostic executable,
+fresh processes, profiles and caches, a 1024 × 600 document viewport,
+one second to settle and retained OS caches. The cache order was off/on,
+on/off, off/on. The rectangular fixture used 48 synthetic 42 px callbacks.
+The rounded fixture used 32 and matched the earlier twelve-card workload.
+Each pair had identical scroll positions and paint-command counts.
+All browser, driver and 3 GiB guard exits were zero. Guest one-minute
+load ranged from 1.24 to 2.94. Host one-minute load was 13.74 before
+and 9.87 after the cohort.
+
+| Fixture and pair | Median replay, off / on (ms) | p95, off / on (ms) | Max, off / on (ms) | Median allocation, off / on (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| Rectangular 1 | 2.752 / 2.870 | 3.413 / 5.562 | 6.153 / 6.087 | 579.0 / 578.0 |
+| Rectangular 2 | 2.867 / 2.586 | 5.634 / 3.376 | 7.087 / 5.953 | 578.5 / 579.5 |
+| Rectangular 3 | 2.831 / 2.582 | 3.568 / 3.004 | 5.517 / 3.353 | 580.0 / 578.0 |
+| Rounded 1 | 408.297 / 378.381 | 450.287 / 407.608 | 550.279 / 410.715 | 4947.0 / 4870.0 |
+| Rounded 2 | 315.378 / 339.695 | 770.375 / 414.575 | 898.162 / 416.652 | 4945.0 / 4865.5 |
+| Rounded 3 | 310.356 / 387.595 | 350.666 / 412.079 | 352.122 / 416.999 | 4950.0 / 4869.0 |
+
+Rounded draws saved 77–81 KiB of median allocation per callback. Median
+replay time fell in one pair and rose in two, with 32% variation among
+the rounded controls. These timings cover synthetic `-O0` software replay.
+Reuse remains opt-in. The Windows production-mode source retry for this
+checkpoint timed out at 350 seconds.
+
+#### Optimized Linux replay and Windows source check
+
+V `5a39a4d` generated one C unit from the canonical checkout with
+HEAD at `be0bad757` and working changes present. C generation took
+385.4 seconds. The 6 GiB ARM64 guest killed the Clang
+link after 411.1 seconds when it ran out of memory. The next attempt
+used the same generated C and compiler flags in a temporary 12 GiB
+Ubuntu 24.04 ARM64 guest with four vCPUs. The C and flag SHA-256 values were
+`e23aefc390f1c7a89fdb2ea58b31fd17596ad1c993b7ab5b3565e5cde1b1bc83`
+and `9088088adf9c38194c45f64bf6193fbd3bfe975b143c5b1205a31d8a03b3172f`.
+Clang 18.1.3 finished the single-unit `-O2` link in 484.5 seconds. The
+guard recorded a peak sampled process-tree RSS of 6,208,557,056 bytes.
+The executable SHA-256 was
+`3f02313e045563d2abb89013aacb273a5d838e75b4012f14e7f969dbba7cde73`.
+
+Headless startup passed. Under Xvfb and Mesa 25.2.8 llvmpipe with LLVM
+20.1.2, the three portable-gradient window captures matched exactly.
+With reuse on or off, the [twelve-card scrolling fixture](../Tests/Browser/Native/scroll-gradient-rounded.html)
+matched the four decoded document hashes above at 0, 42, 256 and 310 CSS
+pixels. Its source SHA-256 was
+`a5c3af398400a87c31b88425d30e07d6cc186861329f7ba0457eb79113498143`.
+The pinned executable, Xvfb, native library and fixture hashes held
+throughout. Browser exits and the 3 GiB coverage guard exit were zero.
+
+The separate diagnostic runs saw 21 hits and 21 misses after the first
+completed callback on the rounded fixture, and zero clip lookups on the
+rectangular fixture. Four fresh-process pairs per fixture then ran with
+clip diagnostics disabled in off/on, on/off, off/on, on/off order. Each
+run used a 1024 × 600 document viewport at 1×, a one-second settle, fresh
+profiles and caches, and retained OS caches. The rectangular and rounded
+fixtures used 48 and 32 synthetic 42 px callbacks respectively. Scroll
+positions and paint-command counts matched throughout. Child CPU time
+covers the driver, Xvfb and browser from launch through exit. All browser,
+driver and 3 GiB guard exits were zero. Guest one-minute load at trial
+starts ranged from 0.86 to 1.53. Host one-minute load was 18.54 before
+the cohort and 21.30 after it on 18 logical CPUs.
+
+| Fixture and pair | Median replay, off / on (ms) | p95, off / on (ms) | Max, off / on (ms) | Median allocation, off / on (KiB) | Child CPU, off / on (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Rectangular 1 | 1.030 / 1.105 | 3.458 / 3.675 | 3.958 / 4.028 | 577.0 / 575.0 | 4.344 / 4.050 |
+| Rectangular 2 | 1.418 / 1.075 | 1.687 / 2.389 | 4.588 / 3.876 | 575.0 / 578.0 | 4.907 / 4.141 |
+| Rectangular 3 | 1.281 / 1.362 | 4.123 / 4.341 | 4.722 / 4.734 | 579.0 / 575.5 | 4.553 / 5.224 |
+| Rectangular 4 | 1.299 / 1.516 | 2.101 / 4.608 | 4.618 / 6.851 | 576.0 / 575.0 | 5.261 / 7.762 |
+| Rounded 1 | 49.230 / 50.916 | 53.044 / 61.730 | 53.661 / 63.573 | 4944.5 / 4866.0 | 6.025 / 5.778 |
+| Rounded 2 | 56.286 / 58.838 | 62.183 / 64.558 | 65.198 / 66.013 | 4948.5 / 4870.5 | 8.543 / 6.729 |
+| Rounded 3 | 57.159 / 53.098 | 60.850 / 60.993 | 62.754 / 62.672 | 4945.5 / 4868.5 | 8.442 / 8.323 |
+| Rounded 4 | 61.144 / 72.679 | 73.937 / 142.341 | 78.509 / 158.916 | 4947.0 / 4868.5 | 9.174 / 9.512 |
+
+Rounded callbacks saved 77–79 KiB of median allocation. Median replay
+was 7.1% faster in one pair and 3.4–18.9% slower in three. Whole-run
+child CPU time fell in three pairs. The rectangular controls varied by
+38% at the median with zero cache lookups. The observed timing variation
+and the rounded replay regressions leave reuse opt-in. These timings
+cover synthetic software replay. Hardware performance remains open.
+
+Fresh live [vlang.io](https://vlang.io/) captures reached complete document
+readiness with JavaScript enabled at 1280 × 800 on Linux and macOS. Both
+showed the navigation, gradient version text, mascot and compilation card.
+The Linux capture with reuse enabled recorded 38 clip hits and 38 misses
+across the launch. The compilation video area remained blank on Linux and
+the bird social icon had square corners. The macOS production bundle at
+`5492e717e` decoded a 1426 × 1080 video frame. Its executable SHA-256 was
+`06b1d0b16ca02d35de0a297c8c670b3c31f38aca12b97d35209823a52eb8f7db`.
+The Linux window PNG SHA-256 was
+`9bf7f2c0bc57701bbfd7383417f45213d35f3856524367fc77bfb90b3d676557`, and
+the macOS document PNG SHA-256 was
+`b8368e15d20bf3aef72ade6bb7d9358876e50abf35b223f2eca1a2aaab6111e2`.
+Both browsers and their 3 GiB guards exited zero.
+
+The Windows x64 D3D11 source retry passed with the C backend,
+`-check -prod -no-prod-options` and `-d sokol_d3d11`. It took 233.0
+seconds and the 12 GiB guard recorded a peak sampled process-tree RSS
+of 3,719,282,688 bytes. Windows execution of this revision remains open.
+
+## Opt-in direct compositing for solid rectangular SVG masks
+
+With `VOX_SVG_MASK_SOLID_RECTS=1`, the portable group player applies a
+single pixel-aligned solid mask rectangle directly to the group's alpha.
+It verifies the packed corners in device coordinates and uses the existing
+premultiplication and luminance weights. Fractional boundaries use the
+path rasterizer. An opaque rectangle covering the group needs no
+per-pixel mask pass. The default uses the raster mask.
+
+The focused raster tests compared all 65,536 channel and alpha pairs
+against both canvas blenders and compared rasterized integer rectangles
+with the direct coverage, including clipped, narrow, and reflected
+rectangles. They passed with ASan and UBSan. The browser regression
+checked partial alpha, reflected luminance, opaque coverage, and a
+fractional edge.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `2f98a0d0cbdf1ba4621255a1bf8535c57d6e26d32c8e81f833ad15d88a254510`
+and `cd4e1a9734f4d827cbe6cc7961ab1c00719774d38328cd01c5aba93203e31a82`.
+The default and opt-in modes matched the previous 800 × 600 document
+captures for both fixtures at scroll offsets 0 and 42 CSS pixels. A
+marker identified the document viewport. Diagnostics confirmed the
+alpha and luminance rectangle paths in opt-in mode.
+
+| Fixture | Decoded RGBA SHA-256 at 0 px | Decoded RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Content masks | `7078409b2933f1e3648207611c4e2e4e5426cb66f48ed9db4466a3d08c7a8bbc` | `8e703dfc217ae9b2b5534378a5f3856eb21cc3835580c71d64b5b28a31d4b852` |
+| Solid rectangle masks | `38ca83ed1a278acfde5fb4fe14f04b14b33982da4a58bb01583241f85fe60164` | `9802586f5ce9218ab97886d75b0d3d6eb5a66e3e7186153050ed8e1fc7f05c8d` |
+
+The initial candidate `867bf2d039ddc0470d73ee78509a000d137434bd1ea5941bc4e624e7aba18834`
+decoded a path before checking its rectangle. The content-mask
+fixture stayed on the raster path and its median replay rose in both
+pairs. Its median paint preparation time rose too, from 288 to 375 µs and
+from 270 to 324 µs. The revised candidate checks packed corners directly
+and checks the operation count before calling the rectangle helper.
+
+| Initial fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Content 1 | 4.712 / 6.199 | 9.136, 23.110 / 9.354, 28.405 | 2130.5 / 2135 |
+| Content 2 | 4.629 / 6.237 | 8.787, 22.762 / 7.525, 22.939 | 2127.5 / 2130.5 |
+| Rectangle 1 | 13.526 / 7.491 | 14.598, 31.938 / 8.462, 21.944 | 3423.5 / 2684 |
+| Rectangle 2 | 15.996 / 5.486 | 18.314, 36.207 / 8.021, 25.680 | 3418.5 / 2683.5 |
+
+The packed-coordinate candidate
+`c22a14f476faf2567e68597f02f40baccddefb7bbbcc59d6509f970ac3e0494d`
+used the same direct path as the opt-in mode. Both cohorts used
+alternating builds, fresh processes and private profiles, a 1024 × 712
+Xvfb window, Mesa software rendering, and a one-second settle period.
+JavaScript, GPU SVG replay, SVG texture reuse, and leading-row cropping
+were disabled. Each trial processed 80 synthetic callbacks with
+matching command counts and scroll offsets up to 1248 CSS pixels.
+The content and rectangle fixture SHA-256 values were
+`6dc176903d66f637659b97484bc34a89ee0357c828c182ff9fefca52b8f3f966` and
+`cd16d9ff6d4817947444efa78d084354701b3805080a3183778229f6688b433d`.
+Input hashes stayed fixed and browser and guard exits were zero.
+Guest one-minute load ranged from 1.10 to 1.34 in the initial cohort
+and 0.66 to 1.83 in the packed cohort on four vCPUs.
+
+| Packed fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Content 1 | 4.396 / 8.876 | 8.961, 22.443 / 11.220, 26.595 | 2136.5 / 2134 |
+| Content 2 | 4.705 / 9.437 | 9.084, 22.048 / 11.363, 26.457 | 2134 / 2136.5 |
+| Rectangle 1 | 13.401 / 7.380 | 15.077, 25.236 / 8.081, 21.432 | 3421 / 2675.5 |
+| Rectangle 2 | 13.376 / 9.087 | 15.538, 31.812 / 9.755, 25.425 | 3425.5 / 2680.5 |
+
+The packed candidate saved 745–746 KiB per callback on the rectangle
+fixture. Replay medians rose in both content-fixture pairs. Those
+candidate trials had a median of three garbage collections per callback,
+while both controls had zero. Paint preparation rose from 257 to
+2501 µs and from 284 to 2510 µs. These software replay results leave the
+direct solid-mask path opt-in. All 21 Linux browser checks, the pinned
+Skia differential suite, and the macOS and Windows source checks passed.
+
+## Skipping invisible SVG mask opacity groups
+
+The mask player uses the bitmap compositor's opacity byte before
+allocating an isolated layer. When that byte is zero, it advances to the
+matching end marker, including across nested opacity scopes. The
+line-path bounds check also skips empty scopes and groups wholly above
+the clip. The opt-in row-band path can recognize groups below the clip.
+
+The browser regression verified that opacity `.003` skips a nested
+group, opacity `.004` still contributes one alpha byte, and a line
+group wholly above the clip is skipped. Sibling and nested visible
+groups still matched their expected pixels. The focused canvas layer
+tests and pinned Skia differential suite passed.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `ff14bdef6e5182048f190fca2b55c5c7175db7891ca8d59e0c726986a1a90ca4`
+and `cc1bf01dd908d7fcf485d0bf80c8cb496231929b8c758bafc035dc971d24dee8`.
+The ordinary, gradient, and invisible-group fixtures matched pixel for
+pixel in 800 × 600 document captures at scroll offsets 0 and 42 CSS
+pixels. The invisible-group fixture extends the solid mask regions to
+170 pixels and adds a four-level opacity subtree at `.003` plus a
+group above the clip. Its pixels matched the ordinary solid fixture.
+The solid and gradient hashes match the
+[previous opacity captures](#blending-svg-mask-opacity-layers-directly-on-linux).
+
+Two alternating replay pairs per fixture used fresh processes and
+private profiles, a 1024 × 712 Xvfb window, Mesa software rendering,
+and a one-second settle period. JavaScript, GPU SVG replay, SVG texture
+reuse, and leading-row cropping were disabled. Each trial completed 80
+synthetic callbacks with matched paint command counts and scroll offsets
+up to 1248 CSS pixels. The ordinary and invisible-group fixture SHA-256
+values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51` and
+`34c38493efc649a8bd7a32af592cf5e073ff6b66a0f22edf4d21ae825892d680`.
+Input hashes stayed fixed and all browser and guard exits were zero.
+Guest one-minute load ranged from 0.92 to 0.95 on four vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Ordinary 1 | 7.059 / 6.439 | 13.375, 25.402 / 13.623, 29.785 | 2903.5 / 2905.5 |
+| Ordinary 2 | 6.421 / 6.461 | 13.818, 26.074 / 13.375, 25.971 | 2901.5 / 2905 |
+| Invisible 1 | 17.417 / 15.045 | 30.567, 34.771 / 17.520, 32.755 | 4970.5 / 3786 |
+| Invisible 2 | 26.822 / 8.824 | 32.033, 49.871 / 18.050, 31.102 | 4968.5 / 3798 |
+
+The invisible-group fixture allocated 1171–1185 KiB less per callback.
+Its p95 fell by 43–44% across the two pairs. Its median varied between
+trials, and ordinary-fixture timings were mixed. These results cover
+software-rendered synthetic replay. All 20 Linux browser checks passed,
+along with macOS source checks and Windows source checks for D3D11 and
+OpenGL.
+
+## Opt-in leading-row cropping for SVG mask opacity layers
+
+With leading-row cropping enabled, the mask player stores a row band
+around the occupied area of a line-only opacity layer. The scan converter
+and gradient shaders use the original device coordinates. The blitter
+subtracts the first row when addressing the layer's backing store.
+Restoring the band uses its row offset in the parent and keeps the full
+row width for both blend rules. Leading rows
+are dropped when they account for at least a quarter of the layer
+remaining after trailing-row trimming. Set `VOX_SVG_MASK_ROW_BANDS=1`
+to enable the experimental crop. The default uses trailing-row trimming.
+
+Focused tests matched the full-surface renderer for fractionally
+transformed solid and gradient paths in both blend modes. A padded,
+odd-width restore matched the full layer and preserved the surrounding
+rows. The focused suite passed with ASan and UBSan, and the pinned Skia
+differential suite passed. The browser regression checked nested groups,
+growth and reuse across siblings, and a curve using the parent surface.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `de754489737b6fd9f901f75e35d536c4053532a1b2a4b55bbe3c995d483b5206`
+and `f60242a79478fb506352a9ef3a5b98f7a1554960d6283070be4ede1061c7a8ba`.
+Both settings matched the previous 800 × 600 document captures for all
+three fixtures at 0 and 42 CSS pixels of scrolling. The default matched
+the previous row extents. The solid and gradient fixtures retained their
+[earlier pixel hashes](#blending-svg-mask-opacity-layers-directly-on-linux).
+The lower mask fixture raises both mask regions to 170 pixels and moves
+the three outer opacity groups down 64 pixels. It produced a band of
+84 rows starting at row 71. Its decoded RGBA SHA-256 values were
+`665eafd32174c63f3b39f38acd3472dfe3bf80bcc06aec5e4a9a492c80318097` and
+`9c05dd173cfaf171059a256ae717f6a67888ee0e99dd14b67667da7f4fdb100c`.
+
+The initial candidate `de1c4bba6053679651d354dbcf4c9ae9dabc7f40840dbc859cac8c86bb38d5cb`
+also trimmed small leading bands in the solid fixture. Its median replay
+rose in both solid pairs, motivating the quarter-layer cutoff.
+
+| Initial fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid 1 | 6.242 / 7.119 | 12.109, 30.114 / 11.966, 28.782 | 2903.5 / 2848.5 |
+| Solid 2 | 6.227 / 6.406 | 11.684, 24.648 / 13.710, 24.919 | 2898 / 2848 |
+| Lower 1 | 8.336 / 8.053 | 17.875, 36.504 / 16.481, 25.670 | 3916 / 3455 |
+| Lower 2 | 8.470 / 7.758 | 18.333, 27.279 / 15.748, 32.177 | 3922 / 3455 |
+
+The cutoff build `f3fdb092d86e8de700a41159dae6889474b14ce373b9ac18929c92a7f6da297a`
+used the same crop as the opt-in path. Both cohorts used fresh processes
+and private profiles, a 1024 × 712 Xvfb window, Mesa software rendering,
+and a one-second settle period. JavaScript, GPU SVG replay, and SVG texture
+reuse were disabled. Each trial processed 80 synthetic callbacks with
+matched command counts and scroll offsets up to 1248 CSS pixels. The
+solid and lower fixture SHA-256 values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51` and
+`54b5bacc238da3f54c8e3647c5586d46ffadb9197e348c0898627955fb01d381`.
+Input hashes stayed fixed and the browser and memory guard exited zero.
+Guest one-minute load ranged from 0.80 to 1.03 in the first cohort and
+from 1.00 to 1.23 in the cutoff cohort on four vCPUs.
+
+| Cutoff fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid 1 | 6.046 / 8.367 | 11.318, 23.116 / 12.566, 28.464 | 2901 / 2902 |
+| Solid 2 | 8.441 / 6.193 | 13.380, 23.158 / 13.493, 26.396 | 2894.5 / 2904 |
+| Lower 1 | 8.917 / 14.536 | 18.185, 28.528 / 17.178, 28.919 | 3919 / 3461 |
+| Lower 2 | 7.788 / 10.170 | 17.578, 26.491 / 15.555, 26.005 | 3926.5 / 3459 |
+
+In the cutoff cohort the lower fixture allocated 458–468 KiB less per
+callback and its p95 fell. Both lower-fixture median times rose. The
+synthetic timing results leave the leading-row crop opt-in. All 20
+Linux browser checks passed, along with macOS source checks and Windows
+source checks for D3D11 and OpenGL.
+
+## Omitting empty trailing rows from SVG mask opacity layers
+
+The mask player bounds line-only opacity layers using device-space path
+points, including those in nested groups. It keeps the original pixel
+origin and row width, with a guard row past the last possible coverage.
+Curve-containing layers use the parent height. At each opacity depth the
+player reuses capacity across siblings and clears and restores only the
+current layer's rows.
+
+The browser regression covers a seven-row layer, growth to 91 rows,
+a nested 67-row layer, reuse for a 66-row sibling, and a curved layer
+that uses all 100 parent rows. A focused padded-stride raster test restored
+a three-row, odd-width layer into a nine-row target and matched a
+full-size transparent-padded reference with both blend rules. The test
+passed with ASan and UBSan. The pinned Skia differential suite also passed.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`9fc67fac31bf2229f38fa511dd3754a6d79eb0564574743f0ed3595634309de7`
+and `3341757a07897de34455a4e039e4f4859f005959e177dd8a41affb13b9075241`.
+The solid, gradient, and tall mask fixtures matched pixel for pixel in
+800 × 600 document captures at scroll offsets 0 and 42 CSS pixels.
+The decoded hashes matched the
+[earlier opacity captures](#blending-svg-mask-opacity-layers-directly-on-linux).
+The tall fixture raises both 100-pixel mask regions to 170 pixels and
+leaves the painted paths at their original heights. Its diagnostics
+reported restores as short as 66 rows within a full 170-row region.
+
+Two alternating replay pairs per fixture used a 1024 × 712 Xvfb window,
+software OpenGL, fresh processes and private profiles, and a one-second
+settle period. JavaScript, GPU SVG replay, and SVG texture reuse were
+disabled. Each trial completed 80 synthetic callbacks with matched
+command counts and scroll offsets up to 1248 CSS pixels. The solid and
+tall HTML SHA-256 values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51` and
+`93cba5210e94a8710c7bc79d2f6d403c7974deafb4f79c2530b2f640ba25123d`.
+Input hashes stayed fixed and both browsers and the memory guard exited
+zero. Guest one-minute load ranged from 0.67 to 1.99 on four vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid 1 | 6.647 / 6.847 | 13.944, 24.893 / 14.247, 29.486 | 3035.5 / 2898.5 |
+| Solid 2 | 7.228 / 6.609 | 15.811, 26.082 / 13.976, 31.291 | 3030 / 2899.5 |
+| Tall 1 | 9.155 / 9.338 | 20.884, 30.517 / 17.747, 33.393 | 4084 / 3516 |
+| Tall 2 | 15.375 / 8.567 | 22.297, 48.143 / 17.785, 38.667 | 4086.5 / 3512.5 |
+
+Allocation fell in every pair. The first pair for each fixture had a
+slightly higher candidate median, and the maximum rose in three pairs.
+The second tall control ran at the highest guest load and had a much
+higher median than the first. The timing results cover synthetic replay
+with varying load. All 20 Linux browser checks passed, along with macOS
+and Windows D3D11 and OpenGL source checks.
+
+## Blending SVG mask opacity layers directly on Linux
+
+An isolated mask layer has the same dimensions and pixel origin as its
+parent. On Linux, a disjoint premultiplied sRGB layer can now restore
+directly into the parent's rows using the existing 8-bit source-over
+rounding. Transparent pixels leave the backdrop untouched. Large restores
+can use the existing row workers. The shared entry point selects the
+legacy sprite blend on macOS and Windows.
+
+Focused tests compared the direct blend with image replay at all 256
+opacity bytes, using every source alpha byte, padded strides, and an
+odd-width target. The large restore matched with default and forced serial
+scheduling. Invalid and aliased layouts declined the direct path. The
+focused tests passed with ASan and UBSan, and the pinned Skia differential
+suite passed, including 10,000 canvas image draws.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`f076eb4b88a922bdd3653aaf5fcf0edc4d6e3bb9ec28410529850e6fcff807ab`
+and `6854af820046dc7e274637ef131642696a6f6a7cfbdf21ea303632bd663d5225`.
+The 800 × 600 document captures matched pixel for pixel at 0 and 42 CSS
+pixels of scrolling. Diagnostics confirmed that the portable player
+composited the isolated alpha and luminance groups. The solid fixture also
+exercised nested and sibling groups.
+
+| Fixture | Decoded RGBA SHA-256 at 0 px | Decoded RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Solid opacity groups | `9b8b28f0a6f88bc8aa43e67bd781a007929e2ed357705ef5296a4637d3957797` | `ea96e6d798c7c050881db806327df547beab92f82d177109a44911c4c7a8e7b6` |
+| Gradient opacity groups | `a42cf4b37188b15819173e6af7f86314c9296becd6072b603036e6f5148a6933` | `b1ab791c2350016696a2655f4b333f094b6d3be2c0d7874fe5df519ef2f7db99` |
+
+The synthetic replay cohort used fresh processes, private profiles and
+caches, a 1024 × 712 Xvfb window, software OpenGL, and a one-second settle
+period. JavaScript, GPU SVG replay, and SVG texture reuse were disabled.
+The original fixture SHA-256 values were
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51`
+and `c4768659c273d4ecaa356425dd16ee6070fd102805a8951d54de60cabfd2572d`
+in table order. The 120 callbacks in each trial matched their paired
+command counts and scroll offsets. The offsets reached 1248 and 1240 CSS
+pixels, respectively. All input hashes stayed fixed. Both browser and
+memory guard exits were zero. Guest one-minute load ranged from 0.58 to
+1.19 on four vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid opacity 1 | 31.851 / 7.903 | 39.162, 45.254 / 13.138, 24.421 | 3048 / 3031.5 |
+| Solid opacity 2 | 33.281 / 6.080 | 41.250, 53.984 / 10.916, 26.625 | 3057 / 3034.5 |
+| Gradient opacity 1 | 30.013 / 15.425 | 37.155, 49.112 / 21.741, 36.473 | 2954 / 2943 |
+| Gradient opacity 2 | 28.609 / 15.193 | 35.427, 45.891 / 21.195, 35.318 | 2950 / 2939 |
+
+Median, p95, and maximum replay time fell in all four pairs. These
+measurements cover uncached callbacks in unoptimized software-rendered
+Linux builds. All 20 Linux browser checks passed. Source checks passed
+for macOS and Windows amd64 with D3D11 and OpenGL. Native scrolling and
+macOS and Windows runtime timings were outside this comparison.
+
+## Compositing SVG mask strips directly into group alpha
+
+Portable linear SVG masks shade one row or column and apply its samples
+directly to the group's alpha. For luminance masks, each premultiplied RGB
+sample is converted once. This removes the full-size RGBA mask allocation
+and the strip expansion. The macOS native mask surface uses the same
+strip shader to populate its full bitmap.
+
+The Linux fixture tests compare strip compositing with the full-size
+shader at 0 and 42 CSS pixels of scrolling. They include a translucent
+masked path and verify the scroll offset from visible document pixels.
+The previous and updated builds also matched for every pixel in the
+1024 × 600 document viewport at both offsets. Diagnostics confirmed
+vertical alpha and both axes of luminance mask coverage.
+
+| Fixture | Decoded RGBA SHA-256 at 0 px | Decoded RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Vertical alpha | `197de6e1fe4824a937eaed9524e953ad67299af4154ed580343d17d7a993841f` | `6ad53b97a410744ec017651a431a7631166570e057a2686ec10939bbf8541037` |
+| Linear luminance | `b7e5995fec1588c8c74fdf0d2dce51feabc2c0510706769818e007c6f862499c` | `a55863e545add569e0fe4eab311309e0cd7b29ad721b7d17b262526697c5b021` |
+
+Fresh Linux aarch64 builds used V `5a39a4d` and matching single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`a101e54b1eb80744e9b34e4f81a245fba63a586fe3ba76d866f9830bbd82dcf4`
+and `e610ef63d5af8a5ee1d12dd815308871a19b955b4d9915463fbd09644a9d9453`.
+Replay timings used the original fixture HTML, a fresh profile and
+cache, a 1024 × 712 Xvfb window, and a one-second settle period. Mesa
+used software rendering. JavaScript, GPU SVG replay, and SVG texture
+reuse were disabled. Each trial completed 180 synthetic callbacks
+with the same command counts and scroll offsets between 0 and 1240 CSS
+pixels in its pair. The fixture SHA-256 values were
+`c19ec971f0e234926c0c7aae97081d19c53d249cd2391d18507c0bb2ad4ffeff`
+and `263051a227a5964cd27fe855f4e2d00a8e2c6a262958706aaa774b2b4f614f27`
+in table order. Input hashes stayed fixed and all browser and guard
+exits were zero. Guest one-minute load ranged from 1.00 to 1.54 on four
+vCPUs.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Vertical alpha 1 | 3.432 / 2.566 | 7.796, 24.061 / 6.069, 22.258 | 2260 / 1709.5 |
+| Vertical alpha 2 | 3.707 / 2.640 | 7.890, 21.418 / 5.014, 24.560 | 2263.5 / 1711 |
+| Linear luminance 1 | 6.177 / 2.580 | 8.356, 23.785 / 6.580, 22.810 | 2253.5 / 1716 |
+| Linear luminance 2 | 4.680 / 2.597 | 8.623, 22.969 / 5.075, 23.596 | 2258.5 / 1714 |
+
+Median time, p95, and median allocation fell in all four pairs. Maximum
+replay time rose in two pairs, and the luminance controls varied in
+median time. These measurements cover uncached software-rendered
+callbacks. All 20 Linux browser checks passed. The macOS source check and
+both Windows amd64 source checks passed. Platform runtime timings and
+native scrolling were outside this comparison.
+
+## Storing geometric SVG clip coverage in one byte per pixel
+
+Portable geometric SVG clips composite path components into a packed
+alpha plane. The coverage buffer uses one byte per pixel instead of four.
+The scan converter and the existing platform-specific rounding at
+intersections and antialiased edges are preserved.
+
+The focused macOS `-prod -gc none` checks passed for both Canvas2D rounding
+rules, including all 65,536 alpha and coverage pairs, overlapping
+fractional paths, an even-odd hole, and invalid bounds. The same tests
+passed with ASan and UBSan. The pinned Skia differential suite passed with
+the default GC and 20,000 randomized path fills.
+
+Fresh Linux aarch64 builds used V `5a39a4d` and identical single-unit
+Clang `-O0` flags. Control and candidate executable SHA-256 values were
+`3ee34dbae0d5ca40e14cc687b49c4744890f995b98eb45c886b60875cddaae48`
+and `857f82696d62bc7d36adbe0bf517fd1ad4c0189e6bdb9ba69a5d058594cde9f0`.
+The `svg-clip-groups.html` capture added a fixed marker to identify the
+800 × 600 document area inside the 800 × 712 window. Both builds matched
+every document pixel at scroll offsets 0 and 42 CSS pixels. Diagnostics
+confirmed that the curved union and fractional clip used the coverage
+buffer. The decoded RGBA hashes were
+`597ce7150fc24f0fe99910a49967f8556bd5b93b498c17aa9fae214846ac1b8e` and
+`4cd18ce24fbe9af912d9c68435a8d253f2161c6311470f3a0e7c55e1ec88b506`.
+
+The replay benchmark used the original fixture with SHA-256
+`1d8db436b21f32f96dc5496db99be7867e73508823d056f5dc8939ace2c06a31`.
+Each fresh process used a private profile and cache, a 1024 × 712 Xvfb
+window, a one-second settle period, and Mesa software rendering.
+GPU SVG replay and SVG texture reuse were disabled. Both alternating
+pairs processed 180 synthetic callbacks with identical paint command
+counts and scroll changes between 0 and 1248 CSS pixels. Hash checks for
+the inputs and the browser and memory-guard exits passed. Guest
+one-minute load ranged from 1.25 to 1.41 on four vCPUs.
+
+| Pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| 1 | 2.622 / 2.429 | 5.070, 23.477 / 5.180, 22.617 | 1774 / 1653.5 |
+| 2 | 2.617 / 2.405 | 5.110, 22.059 / 2.915, 21.923 | 1755.5 / 1650 |
+
+Both trials had lower median replay time and allocation. The first pair
+had a slightly higher p95. The timings cover synthetic raster and replay
+callbacks. The 20 Linux browser checks and all 17 Linux GG SVG checks
+passed. Windows amd64 source checks passed for D3D11 and OpenGL.
+Native scrolling and Windows runtime performance remain unmeasured.
+
+## Converting portable SVG rasters in place before upload
+
+CPU SVG fills, strokes, and composited groups now convert their owned
+premultiplied RGBA buffer to straight alpha in place. Opaque pixels need
+no writes. The conversion uses the existing readback rounding and runs
+large buffers through disjoint packed scan ranges. Clip and mask coverage
+is applied after conversion. At scroll position zero, the three group
+uploads in the fixture previously allocated 94,464 bytes of temporary pixel
+storage per uncached replay.
+
+The focused macOS `-prod -gc none` test matched all 65,536 channel and alpha
+pairs and compared a 1051 × 533 raster with serial and worker scheduling.
+It also checked trailing bytes after an incomplete pixel. The focused
+test passed with AddressSanitizer and UndefinedBehaviorSanitizer. The pinned
+Skia suite passed, including 76 exhaustive and 20,000 randomized readback
+cases. The Linux CPU fallback captures matched pixel for pixel for fill,
+stroke, and group fixtures at 0 and 42 CSS pixels. The stroke comparison's
+capture fixture puts the stage in document flow so scrolling clips it.
+Diagnostics confirmed that the CPU fill, stroke, opacity, clip, and mask
+paths drew the samples.
+
+The Linux Clang `-O3` microbenchmark timed conversion and the copy mode's
+output allocation. Both modes start with a filled input buffer. Two
+alternating pairs used fresh processes with 101 measured calls after 11
+warmups. All output hashes matched. Both modes used executable SHA-256
+`8fe98421f7799962399128ee4d3700b52d8ce6961f289dab8e73f4031123a76f`.
+
+| Raster | Copy medians, µs | In-place medians, µs |
+| --- | ---: | ---: |
+| 144 × 72 opaque | 9.750, 12.958 | 3.042, 3.292 |
+| 144 × 72 mixed | 25.084, 22.333 | 23.083, 24.667 |
+| 144 × 72 translucent | 75.875, 108.167 | 37.833, 40.792 |
+| 1051 × 533 opaque | 254.584, 295.876 | 121.542, 126.751 |
+| 1051 × 533 mixed | 1612.506, 1836.507 | 1519.839, 1505.547 |
+| 1051 × 533 translucent | 1914.215, 1855.966 | 1699.965, 1757.423 |
+
+The browser comparison used matching single-unit Clang `-O0` flags
+and V `5a39a4d`. Control and candidate executable SHA-256 values were
+`e5002f13a1207bf2bec6ae001d85df9bcfa0672d2e7b9ae22bf53e79ee4c9c62`
+and `81786f2b29c23d7e3781b789b73a5e2f749905cae150de7d5c5754122f973bc9`.
+Each of two alternating pairs per fixture used the previous
+[gradient callback setup](#writing-full-coverage-gradient-source-spans-directly)
+with texture reuse disabled and fresh private state. Scroll positions
+and paint command counts matched across the 180 callbacks in each trial.
+Guest one-minute load ranged from 0.48 to 1.60 on four vCPUs. All measured
+processes and guards exited zero.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | --- | ---: |
+| Grouped 1 | 3.954 / 4.050 | 4.921, 6.254 / 5.814, 6.398 | 870.5 / 784 |
+| Grouped 2 | 4.170 / 3.742 | 4.900, 6.872 / 4.334, 6.175 | 868 / 784 |
+| Individual 1 | 9.659 / 8.664 | 10.981, 17.830 / 9.448, 10.867 | 1135 / 858 |
+| Individual 2 | 9.271 / 8.712 | 10.153, 11.604 / 9.524, 10.685 | 1133.5 / 856.5 |
+
+Grouped replay timings varied, with the second control running at higher
+host load than its candidate. The allocation samples fell in every pair.
+The individual fixture also had lower medians and tails in both pairs.
+The Linux browser suite, all 17 GG SVG checks, and both Windows amd64
+source checks passed. These synthetic software-rendered timings leave
+native scrolling, Windows runtime, and hardware GPU performance unverified.
+
+## Writing full-coverage gradient source spans directly
+
+The CPU raster pipeline writes clamped source bytes directly when
+a low-precision gradient span has full coverage and uses source replacement.
+This includes opaque source-over fills. Linear spans of at least eight
+pixels use the existing batched shader. Smaller spans and radial spans
+use the scalar shader. Partial coverage, paint alpha, and filters follow
+the general pipeline.
+
+Focused `-prod -gc none` span, gradient, and mask tests passed on macOS.
+The pinned Skia differential suite passed with the default GC, including
+10,000 gradient draws. The Linux group and individual gradient fixtures
+matched the control pixel for pixel at 0 and 42 CSS pixels of scrolling.
+A separate generated-C probe counted 14,208 linear and 5,184 radial
+pixels entering the replacement span at the return to the full group
+viewport. The probe binary was excluded from timings.
+
+Matching Linux V `5a39a4d` builds used single-unit Clang `-O0`.
+Control and candidate browser executable SHA-256 values were
+`51b59b2e77fdf96758ce623fad76a8efcb5a99422835a79b48d4dbe85d6eae4c`
+and `ce045250148997ebf2915984dfcd5a6c660b9065d81e0f04dcf3bc1c10edaf95`.
+The timings use the [group viewport cohort's](#reusing-svg-group-textures-when-scrolling-back)
+synthetic callback scope, local fixtures, four-vCPU guest, private browser
+state, one-second settle, and software OpenGL under Xvfb. Both fixtures
+used a 642 CSS pixel document with six moves in 180 callbacks. Scroll
+positions, paint command counts, binaries, fixtures, and shader inputs
+were checked across trials. The emitted C differed in the span routines,
+build timestamps, and a generated closure name. One-minute guest load was
+0.51–1.38. All timed process and memory guard exits were zero.
+
+| Fixture and pair | First two moving replays before / after, ms | All-callback median before / after, ms | All-callback p95 and maximum before / after, ms |
+| --- | --- | ---: | --- |
+| Grouped 1 | 7.598, 5.487 / 4.154, 4.405 | 1.107 / 1.110 | 2.956, 7.598 / 2.823, 4.405 |
+| Grouped 2 | 4.674, 4.883 / 6.219, 7.879 | 1.090 / 1.087 | 1.530, 4.883 / 3.224, 7.879 |
+| Individual, cache off 1 | 9.300, 10.086 / 9.054, 10.302 | 9.506 / 9.424 | 10.500, 11.220 / 10.145, 11.861 |
+| Individual, cache off 2 | 8.956, 9.921 / 8.861, 10.322 | 9.249 / 9.261 | 10.640, 11.921 / 10.402, 11.430 |
+
+Cold browser results varied between pairs. The cohort leaves the
+first-visit browser speedup unresolved.
+
+Two further alternating pairs disabled group texture reuse for every
+callback, so all 180 callbacks rasterized the grouped fixture. The same
+builds, viewport and input schedule ran at one-minute load 1.07–1.20.
+
+| Pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms |
+| --- | ---: | --- |
+| 1 | 4.633 / 3.860 | 5.268, 6.938 / 4.976, 6.095 |
+| 2 | 4.151 / 3.831 | 4.482, 6.226 / 5.410, 8.540 |
+
+The optimized Clang `-O3` microbenchmark timed the path fill into a
+preallocated RGBA buffer cleared before each call. Its control sends
+source replacement through the generic pixel loop by changing the
+dispatch condition in generated C. Both binaries share the rest of the
+compiled implementation. SHA-256 values were
+`12e79f5f5a7c6cde50476cc7c8f31de8a2b23cc57cc500bc456ea6abf0c80213`
+and `5b05186f00ab9d9385eb3b7f847cd6f0dd3adead02d31f207da0b1377948fb1f`.
+Each row shows both 121-call medians from fresh processes, in pair order.
+The outputs matched for all four inputs and the guard and processes exited zero.
+
+| Gradient and dimensions | Control medians, µs | Candidate medians, µs |
+| --- | ---: | ---: |
+| Opaque linear 144 × 72 | 99.667, 97.416 | 54.583, 55.791 |
+| Opaque radial 144 × 72 | 111.667, 104.625 | 84.625, 90.334 |
+| Opaque linear 6 × 100 | 7.708, 7.167 | 6.541, 6.875 |
+| Translucent linear 144 × 72 | 81.375, 76.917 | 76.125, 79.375 |
+
+The Linux browser suite, all 17 GG SVG checks, and both Windows amd64
+source checks passed. These synthetic and raster-only timings leave
+native scrolling, Windows execution, and hardware GPU performance unverified.
+
+## Reusing SVG group textures when scrolling back
+
+`VOX_GG_SVG_VIEWPORT_REUSE=1` lets each of the 16 portable SVG group slots
+keep one alternate texture of up to 65,536 pixels. The cached placement
+includes the document's paint revision, the recorded viewport, the replay
+viewport, origin, and scale. Root scrolling can rebuild the lowered commands
+while keeping the paint revision. Returning to a recorded placement selects
+its exact texture, including for clipped gradients whose pixels depend on
+the raster origin. Paint changes, unrelated uploads, and retired slots
+discard their old textures.
+
+The window fixture alternated between 0 and 42 CSS pixels and edited a
+gradient stop after both placements were cached. The edited group rasterized
+at the next placement, then reused the updated texture on a later visit.
+Diagnostics counted 15 alternate hits across opacity, clip, and mask scopes.
+The clipped document pixels matched with viewport reuse on and off. Their
+decoded SHA-256 was
+`b486409d21779baf4ddfb12a35db4752216c5278a3c7dd355c1c9b2edeae64d8`.
+
+The performance cohort used the same fixtures and software OpenGL callback
+scope as the [gradient group comparison](#preserving-gradients-in-portable-svg-groups).
+The two builds used V `5a39a4d` and identical single-unit Clang `-O0` flags.
+Control and candidate executable SHA-256 values were
+`4dbcf8d6bf8c1c7b9d2622f6ee2c7371fd334271e93a2f01f7fdf6a9f71483e1`
+and `26c26ac008c3cfcaed30219a1c15db565af7e516116d80a3772982c01724a05f`.
+The gradient timing copy retained SHA-256
+`34329b0b5ba8e8419b7974ed15e60fb50094f8650d4c98b18888d59b454214f5`.
+Two alternating pairs per fixture matched scroll positions and paint-command
+counts. Guest one-minute load ranged from 0.99 to 1.13 on four virtual CPUs.
+All timed browser processes and the memory guard exited zero.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and max before / after, ms |
+| --- | ---: | --- |
+| Solid, all 1 | 5.906 / 6.135 | 7.471 and 27.430 / 7.540 and 25.734 |
+| Solid, all 2 | 5.832 / 5.848 | 7.450 and 25.870 / 6.345 and 27.616 |
+| Gradient, all 1 | 1.073 / 1.084 | 2.961 and 4.967 / 2.701 and 4.812 |
+| Gradient, all 2 | 1.116 / 1.133 | 2.829 and 4.944 / 1.400 and 4.926 |
+| Gradient, moving 1 | 4.575 / 1.140 | 4.967 and 4.967 / 4.812 and 4.812 |
+| Gradient, moving 2 | 4.595 / 1.151 | 4.944 and 4.944 / 4.926 and 4.926 |
+
+The first two moving callbacks cost 4.537 and 4.812 ms in the first
+candidate trial and 4.620 and 4.926 ms in the second. The remaining four
+moving callbacks had medians of 1.089 and 1.053 ms, down from 4.442 and
+4.616 ms. The separate diagnostic replay confirmed raster misses on the
+first two moves and three alternate hits on each subsequent move.
+The solid fixture matched the control pixel for pixel. These timings
+cover synthetic software-rendered callbacks. The Linux browser suite, all
+17 GG SVG checks, and both Windows amd64 source checks passed. Windows
+runtime and hardware GPU timing remain unverified.
+
+## Preserving gradients in portable SVG groups
+
+The shared portable renderer composites supported linear and radial fills
+with the other paths in an SVG opacity, clip, or mask scope. It restores
+leaf fill alpha before blending the group and applies the group opacity
+or coverage once. The existing path count, area limits, and fallback for
+unsupported paints still apply.
+
+Top-level groups reuse their GG texture when the recorded paint generation,
+scope position, viewport, origin, and scale match. The streaming slot
+invalidates the group on upload or retirement. The fixture verifies the
+same pixels with the GG Canvas setting enabled, disabled, and with texture
+reuse disabled. It changes a gradient stop during animation and checks the
+updated masked pixels. The overlap changed from RGB `(127, 63, 191)` to
+`(127, 127, 255)`. The gradient previously painted outside the curved
+clip and alpha mask.
+
+Linux used V `5a39a4d` and matching single-unit Clang `-O0` flags. The
+control, grouped raster without reuse, and final executable SHA-256 values
+were `25322d3dfaa9abd7e499582a78716f9c7797ae18e9941f4fdc90819dd9daabf6`,
+`62dba1b39a28803be1f06b19d679a3a0fd772b02ccf1af2946e2650c10cd0546`,
+and `98eac3719d2cf94c7a6a07bc3016a277855868f7e4de606e665bb63bb4254e92`.
+The animation test starts with `svg-gradient-groups.html`, SHA-256
+`0d186c3a4faa88d19d00a1018df54d81005438de0f9a4f264861b6750f09d110`.
+
+Two alternating pairs per fixture used private browser state, a 1024 × 712
+window, software OpenGL with `LP_NUM_THREADS=1` under Xvfb, and a one-second
+settle. The synthetic driver sent 180 callbacks and reversed direction
+every 30. The gradient timing copy set a 642 CSS pixel minimum body height,
+giving six moving callbacks. Scroll offsets and paint-command counts matched.
+Guest one-minute load was 0.71–0.94 on four vCPUs in the final cohort.
+Process and guard exits were zero.
+
+| Fixture and pair | Replay median before / final, ms | Replay p95 before / final, ms | Replay maximum before / final, ms |
+| --- | ---: | ---: | ---: |
+| Solid, all 1 | 5.456 / 5.536 | 7.079 / 6.327 | 7.854 / 24.798 |
+| Solid, all 2 | 5.703 / 5.494 | 8.077 / 7.279 | 11.014 / 24.679 |
+| Gradient, all 1 | 1.017 / 1.092 | 2.271 / 2.893 | 3.120 / 4.780 |
+| Gradient, all 2 | 1.002 / 1.039 | 2.528 / 2.924 | 3.245 / 4.858 |
+| Gradient, moving 1 | 2.035 / 4.628 | 2.271 / 4.780 | 2.271 / 4.780 |
+| Gradient, moving 2 | 2.040 / 4.339 | 2.528 / 4.858 | 2.528 / 4.858 |
+
+The intermediate build rebuilt the gradient groups and spent 4.244–4.483 ms
+at the all-callback median. The final build reused unchanged viewport
+textures. The solid fixture matched the control pixel for pixel, with
+higher maximum replay times in the final cohort. Moving the gradients still
+rebuilds a correct group at the new viewport. These are software renderer
+callback timings. The full Linux browser smoke suite, all 16 Linux GG SVG
+window checks, and Windows amd64 D3D11 and OpenGL source checks passed.
+Windows execution and hardware GPU timing remain unverified.
+
+## Isolating solid SVG strokes in portable paint groups
+
+In `5f059e114`, portable SVG opacity, clip, and mask groups
+composite solid strokes into the same surface as their fills. They use the
+leaf stroker's cap, join, dash, and non-scaling geometry, and expand
+the surface bounds for the stroke. The raster follows SVG paint
+order and applies group opacity after both paints. One path with
+both a fill and stroke can enter the opacity path. The existing
+scope and surface limits still apply.
+
+The window fixture checks opacity over overlapping leaves, a single
+path with stroke-first paint order, square caps, a dashed stroke
+through a circular clip, and a non-scaling stroke through an alpha
+mask. The previous build painted the first overlap as `#7f3fbf`
+because both leaves applied group opacity. The new result is
+`#7f7fff`. The Linux captures were pixel-identical with GG Canvas
+enabled and disabled, and diagnostics confirmed cached group reuse.
+The fixture SHA-256 was
+`b8edf7825805e5cb1f93ecc93ccbef87e1bbca14730180ef2d03147c0453cd76`.
+The 800 × 516 decoded document SHA-256 was
+`bd17930f0de302ccba94d6f98497cb5bcdba7a5fd06247da7a4e4fb8d4b44a2b`.
+
+Two matched pairs per unchanged fixture used V `5a39a4d` and
+identical single-unit Clang `-O0` flags. The control and candidate
+executable SHA-256 values were
+`074714026bc7f4ee3092a94d26b01f1674a7b49cdb6d4b8310bd4a43f515ecfe`
+and `e9a1e7c03937c305451b59bb0b6abc30af18793f7d9385b08a143d60e3fb661c`.
+The fill-only groups and ungrouped stroke fixture SHA-256 values were
+`2e7e05415b1dfe83b7aef3cdf62d0c963baa0b368c71f7585a80a43cba0d9cae`
+and `69825975e05ffb73e936b53ed45187ede0af0caa7b0c686f89e7e389db562096`.
+Both used an isolated profile and cache per process, a 1024 × 712
+Xvfb window with one Mesa software worker, a one-second settle, and
+48 synthetic callbacks with JavaScript disabled. The stroke fixture
+disabled texture caching to exercise each raster. Offsets ended at
+504 CSS pixels. The 1024 × 628 document captures, command counts,
+and scroll offsets matched. Executables, libraries, and fixtures
+retained their hashes through the runs. Browser and guard exits
+were zero. The first harness attempt looked for colors from the
+initial viewport after scrolling. The corrected assertion uses
+the colors in the final viewport.
+
+Separate diagnostics counted 139 group rasters per build on the
+fill fixture and 282 stroke rasters per build on the stroke fixture.
+The first cohort's one-minute guest load ranged from 0.44 to 0.73
+on four vCPUs.
+
+| Route and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Fill-only groups 1 | 5.550 / 6.867 | 7.622, 29.201 / 7.903, 27.555 | 878 / 878.5 |
+| Fill-only groups 2 | 5.579 / 5.330 | 7.994, 28.068 / 7.306, 28.030 | 879 / 878 |
+| Ungrouped strokes 1 | 1.073 / 1.060 | 2.844, 3.088 / 2.947, 2.984 | 324 / 322.5 |
+| Ungrouped strokes 2 | 1.043 / 1.027 | 2.946, 3.180 / 2.861, 2.963 | 323 / 323.5 |
+| Fill-only groups 3 | 7.620 / 8.918 | 9.614, 32.068 / 11.509, 36.527 | 878 / 882 |
+| Fill-only groups 4 | 7.450 / 6.785 | 8.402, 32.053 / 8.656, 33.282 | 879.5 / 879.5 |
+
+The follow-up fill cohort repeated the same pixel, command count,
+and scroll checks at guest load 2.64–2.91. Fill medians rose in two
+pairs and fell in two. In the first pair, collection counts were
+22 before and 28 after. Medians for callbacks without collections
+were 5.156 and 5.203 ms. The cause of the whole-run timing variation
+remains unresolved. Ungrouped stroke medians stayed within 0.02 ms
+in software replay. The Linux browser smoke suite passed all 26
+checks, the GG SVG window suite passed all 18 checks, and macOS,
+Windows D3D11, and Windows OpenGL source checks passed. Windows
+runtime and hardware GPU performance remain unverified.
+
+## Isolating SVG gradient strokes in portable paint groups
+
+In `3bbab0f63`, the portable group renderer carries a resolved
+linear or radial gradient into the shared stroke rasterizer. It applies leaf stroke
+opacity before compositing the path and applies group opacity once
+to the finished surface. The same path handles stroke-first order,
+dashes, and non-scaling geometry through clips and masks.
+
+The Linux fixture edits a gradient stop after the initial group
+texture is drawn. It also checks a single path with stroke-first
+order, radial dashes through a circular clip, and a non-scaling
+gradient stroke through an alpha mask. The control declined the
+opacity scope and drew the overlap pixel as `#bf6f8f`. The isolated
+result is `#bf90af`. The 800 × 516 document pixels matched with
+GG Canvas enabled, disabled, and the texture cache disabled.
+Diagnostics confirmed that cached groups rerasterized after the edit.
+
+The fixture SHA-256 was
+`e731370cb2e13e977d2926d586b2270d161c2d761f438cf2ebe522426f814187`.
+The decoded document SHA-256 was
+`9f32c289d416eab900bd56c80e05f1804951eb3c413be2ca5a5cdf5fad06ba9c`.
+
+Two alternating pairs on each existing fixture checked uncached
+gradient fills and solid strokes inside groups. V `5a39a4d` and
+single-unit Clang `-O0` flags matched. The control and candidate
+executable SHA-256 values were
+`38beefa3995fb31c2dad8df0a61654cbc6063f5d8120ed77413ace9a18f955da`
+and `46e92aca16f3f0832b561cd184b8372aa4fdb3c5c645f94a10718895d824dfbb`.
+The fixed-position fill and solid stroke fixture SHA-256 values were
+`dcf5917e79624578f9aa6774ad2cd84302f45c38cbc011589e68797499a9231b`
+and `e99a2366b997e27235e1825e18af83f8f06094be249ceca0964bf75f10fd9a35`.
+
+Trials used fresh processes and private browser state in an
+800 × 712 Xvfb window with one Mesa software worker. Each trial
+settled for one second and recorded 48 synthetic callbacks with
+JavaScript and texture caching disabled. The 800 × 628 document
+pixels, paint command counts, and scroll offsets through the final
+504 CSS pixels matched within each route. Executable, library, and
+fixture hashes stayed fixed. Browser and guard exits were zero.
+One-minute guest load ranged from 1.76 to 2.14 on four vCPUs.
+Separate diagnostics counted 47 opacity rasters per build on the
+fill fixture and 94 on the solid stroke fixture.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Gradient fills 1 | 2.661 / 2.729 | 4.402, 6.431 / 4.467, 4.663 | 407 / 407 |
+| Gradient fills 2 | 2.567 / 2.532 | 4.163, 4.214 / 4.217, 4.317 | 407 / 407 |
+| Solid strokes 1 | 0.938 / 0.929 | 2.466, 2.519 / 1.135, 2.550 | 413 / 413 |
+| Solid strokes 2 | 0.922 / 0.930 | 2.428, 2.669 / 1.117, 2.657 | 414 / 413 |
+
+Median replay differences stayed within 0.07 ms for gradient fills
+and 0.01 ms for solid strokes. These timings cover synthetic software
+replay. All 27 Linux browser smoke checks and 18 GG SVG window checks
+passed. macOS, Windows D3D11, and Windows OpenGL source checks passed.
+Windows runtime and hardware GPU performance remain unverified.
+
+## Drawing solid strokes inside SVG masks
+
+In `ef7fd4c84`, the portable group player draws solid strokes in
+SVG mask sources with the shared stroke rasterizer. It blends stroke
+and fill in SVG paint order, resolves nested opacity, and then uses
+alpha or premultiplied luminance as the coverage. Layers containing
+strokes keep the parent row range so caps and joins stay within the
+rasterized area. The single-fill rectangle and gradient-strip paths
+decline mixed paint.
+
+The old Linux executable drew the alpha-mask sample at (33, 36)
+as solid blue because it declined the mask. The new sample is
+half-opacity blue (`#8080ff`). The fixture also checks transformed caps, stroke
+opacity, luminance paint order, gradient fill inside a stroked
+rectangle, and an animation-frame edit to stroke width. The
+800 × 516 document pixels matched with GG Canvas enabled, disabled,
+and the texture cache disabled. Both cached routes drew the mask again
+after the edit.
+
+The fixture SHA-256 was
+`04780a8d17431f0629d4d3c14048f11b4a7c45176118a9535863ba004315604d`.
+The decoded document SHA-256 was
+`dda2266fc74b68a5656561f61ef1010bb22afc2fc0f6121c30a7603ecfcff120`.
+
+Two cohorts each ran two alternating pairs against the existing
+fill-only opacity-mask fixture. The test copy fixed the SVG and the
+document marker in an 800 × 712 Xvfb window while its body scrolled.
+Each process used a fresh private profile and cache, one Mesa
+software worker, and no page scripts. One second of settling
+preceded 48 synthetic callbacks with the SVG texture cache disabled.
+Separate diagnostic runs confirmed eight mask rasters per callback
+across 47 complete intervals in each build. Paint command counts,
+offsets through the final 504 CSS pixels, and 800 × 628 document
+pixels matched across all trials.
+
+The aarch64 builds used matching V `5a39a4d` and single-unit Clang
+`-O0` flags. The control and candidate executable SHA-256 values were
+`95644e6f60f24388154cb7b9b6bcb316b5e98eb88beb5b4d9ab5f136d5d50bcf`
+and `69a97218ad5655078dc16eb67402eb8e17a2a4dfdbc9db4e7ae4621db6f90157`.
+The test fixture and decoded document hashes were
+`e5c771fd6f108c57ee9949913f9f5506f4ebe1bdd4d75f101190432f53594652`
+and `7a8d1e777da0d1b6e39db2bf30303ef165edfca5ad69425aea14301a9262711e`.
+Executable, fixture, and library hashes stayed fixed during both
+cohorts. The generated C also carried a concurrent LibJS change.
+One-minute guest load ranged from 1.31 to 1.59 on four vCPUs.
+
+| Cohort and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| First, 1 | 7.900 / 8.761 | 11.167, 11.649 / 12.308, 12.733 | 2628 / 2628 |
+| First, 2 | 9.209 / 8.848 | 12.791, 13.221 / 12.218, 12.535 | 2629.5 / 2627.5 |
+| Repeat, 1 | 11.772 / 13.722 | 16.330, 17.559 / 19.185, 19.668 | 2630.5 / 2631 |
+| Repeat, 2 | 13.202 / 13.677 | 17.907, 18.170 / 18.852, 22.000 | 2629 / 2628.5 |
+
+Three pairs recorded higher candidate replay medians. Control
+medians also varied by 5.30 ms, so these synthetic results leave
+the production performance impact unresolved. Browsers and memory
+guards exited zero in both cohorts. An extra shell delimiter returned
+127 after the first guarded benchmark finished. The repeat command
+exited zero.
+
+All 28 standard Linux browser checks and 18 GG SVG window checks
+passed under the memory guard. macOS, Windows D3D11, and Windows
+OpenGL source checks passed. macOS and Windows runtime validation
+and hardware GPU timing remain pending.
+
+## Blitting opaque SVG mask rectangles
+
+In `3f6a08f86`, the shared mask rasterizer recognizes an opaque
+fill-only rectangle directly from its packed path segments. It
+intersects the integral device rectangle with the active row band
+and writes premultiplied RGBA through the solid blitter. This avoids
+allocating a decoded path and scanning edges for those fills. Pixel
+tests compare the complete padded surface against both canvas
+blenders, including clipped, reflected and right-angle transforms.
+All eight focused Linux window checks and the macOS, Windows D3D11
+and Windows OpenGL source checks passed.
+
+The Linux repeat used the same fixed-position opacity fixture and
+48-callback input as the preceding section. Each fresh process ran
+in an 800 × 712 Xvfb window with one software raster worker,
+one second of settling, JavaScript disabled and texture caching
+disabled. One executable supplied both routes. A temporary switch
+in the generated C bypassed the direct fill for the control.
+Separate diagnostic launches observed 32 direct fills per callback
+over 47 complete intervals, versus zero with the bypass. Both had
+eight mask rasters per callback. The unmodified candidate also
+matched the reference.
+
+The guarded ARM64 single-unit Clang `-O0` executable used V
+`5a39a4d`. Its SHA-256 was
+`eadac616fea17d1e2e48b7f5d4a535f72cbedc77aa8aac263c348a4176f67352`.
+The comparison executable SHA-256 was
+`cd291484dd748b2a52edaca082df69a6fee6d31bfe979f7ef986e68686d48561`.
+The fixture and decoded viewport hashes matched the preceding
+section. Executable, fixture and linked-library hashes, scroll
+offsets, and paint command counts stayed fixed. Every browser and
+memory guard exited zero. The guest had four vCPUs and one-minute
+load between 1.40 and 1.65.
+
+| Pair | Scan / direct replay median, ms | Scan / direct p95 and maximum, ms | Scan / direct median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 19.731 / 22.220 | 21.777, 22.966 / 26.404, 27.078 | 2627 / 2521 |
+| 2 | 18.889 / 17.995 | 20.371, 20.459 / 20.429, 24.134 | 2628 / 2520 |
+| 3 | 21.707 / 17.059 | 22.576, 24.090 / 20.426, 20.511 | 2627.5 / 2520 |
+| 4 | 19.023 / 18.745 | 20.397, 20.896 / 23.178, 24.769 | 2629 / 2519 |
+
+The direct route reduced median allocation by 106–110 KiB per
+callback in every pair. Replay medians improved in three pairs.
+The first pair was 2.49 ms slower and p95 rose in three pairs.
+
+A separate macOS single-unit Apple Clang `-O2` probe with V
+`1955619` and `-gc none` measured thread CPU time for the fill
+operations. Each fresh process warmed four fixture-sized rectangles
+and then drew 24,000 fills into a premultiplied 190 × 90 band with
+a padded stride. Four alternating pairs took 8.529 / 6.962,
+8.398 / 6.982, 8.511 / 7.035, and 8.554 / 7.050 µs per fill
+for scan and direct respectively. The median fell from 8.520 to
+7.009 µs. One-minute host load ranged from 15.59 to 15.71.
+The executable SHA-256 was
+`935fc814a564eaecda8ea5e61caee5aeee56dc46bee3012d9b882ad84f9c8aea`.
+Every process and the guard exited zero and produced the same
+surface SHA-256
+`7874e8ac3dd3f47dddce23589afbdde2fbc7ea2cabdc2315e80fb27457012c14`.
+Native window timing on the candidate remains pending.
+
+## Shading gradient strokes inside SVG masks
+
+In `9eacc94e2`, the portable mask player uses the shared linear
+and radial shaders to paint stroke coverage. The stroke shader
+uses the mask's alpha or luminance mode and keeps gradient
+transforms, spread and stroke opacity. The resolved layer
+composites with the existing fill order and group opacity.
+
+The new fixture exercises a translated reflected gradient in an
+alpha mask, anisotropic radial strokes in a luminance mask, and a
+stop-opacity edit after the first raster. Linux previously drew the
+target unmasked, including a solid blue pixel at (28, 44). The
+candidate drew `#fefeff` there after the edit. All 800 × 516
+document pixels matched with GG Canvas enabled, disabled and the
+texture cache disabled. Cached runs rasterized the alpha mask
+again after the edit.
+
+Eleven interior and exterior samples matched the published macOS
+build exactly. That capture launched PID 47521 from the verified
+`4dba39031` bundle with executable SHA-256
+`52cb359d8d13e7457d8dafa4b474ecf76bb1f7f3ef02bbe3c18095e0c5e46fa9`.
+The fixture and Linux decoded document SHA-256 values were
+`bfe90a7916edd891489c8df5d10f470843b2b82c3b63a2d144cda3586073284e`
+and `68b9d5e34b77d4a2d294a74ec57a44a6dd6f7de35ac49c74ef8636c325fde4df`.
+The new Linux regression and nine neighboring SVG window checks
+passed. macOS and Windows D3D11 and OpenGL source checks passed.
+
+Two alternating pairs per fixture checked existing masks containing
+solid strokes and fill-only opacity groups. Both ARM64 builds used
+V `5a39a4d` with matching single-unit Clang `-O0` flags. The
+generated C differed in the stroke change, build timestamps and
+compiler-generated closure names. The executable hashes were
+`8ae392c6ea19c89c6e54a13cae2ff3f481f4fd53ca8dd7aefbf0bebc7720bfb5`
+and `1830d5c088b6d70a28d069b670f2463af121c9ee3d366c0d096e72eb5ce72b8c`.
+
+Fresh Linux processes used an 800 × 712 Xvfb window, one software
+rendering worker, a private profile and cache, and 48 synthetic
+callbacks after one second of settling. JavaScript and SVG texture
+caching were disabled. Separate diagnostics confirmed four and
+eight mask rasters per callback across 47 complete intervals on
+the solid-stroke and fill-only fixtures. The 800 × 628 decoded
+document pixels, paint command counts, and offsets through the
+final 504 CSS pixels matched within each fixture. The input and
+library hashes stayed fixed. The fixed-position fixture hashes were
+`594880d11313d0865501fbd986e234665db5d6e1909394e416bbfe0f5a092c8f`
+and `e5c771fd6f108c57ee9949913f9f5506f4ebe1bdd4d75f101190432f53594652`.
+The corresponding decoded document hashes were
+`9bf481aaa6b46fcfe7428d5b2d44689f23d75dbdf51a9010c6e798757bad4cc1`
+and `7a8d1e777da0d1b6e39db2bf30303ef165edfca5ad69425aea14301a9262711e`.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Solid strokes 1 | 2.908 / 2.735 | 5.320, 5.372 / 4.946, 5.210 | 680 / 678.5 |
+| Solid strokes 2 | 3.636 / 2.978 | 6.530, 7.121 / 5.849, 6.463 | 678.5 / 678.5 |
+| Fill only 1 | 19.050 / 9.513 | 20.021, 20.704 / 12.461, 13.495 | 2520.5 / 2521 |
+| Fill only 2 | 14.504 / 16.857 | 17.101, 17.177 / 20.079, 20.664 | 2521.5 / 2522 |
+
+Timed launches saw one-minute guest load of 1.48–2.10 on four
+vCPUs. Other compiler processes were present during the solid-stroke
+diagnostics. Every timing run and its guard exited zero. The
+solid-stroke medians improved in both pairs. The fill-only replay
+timings moved in opposite directions and varied across controls.
+Native GPU performance and Windows runtime verification remain pending.
+
+## Repeating and reflecting SVG mask fills
+
+In `fb4a67f5c`, portable alpha and luminance masks accept linear
+and radial fills with the SVG `repeat` and `reflect` spread methods.
+The shared shaders use the resolved gradient transform, stops, and
+opacity. Integral axis-aligned rectangles with a linear gradient
+can shade one strip and apply it across the constant axis.
+
+The fixture checks horizontal repetition, vertical reflection,
+elliptical radial rings, isolated opacity, and a stop opacity edit.
+The Linux control drew the masked target in solid blue, including
+the pixel at (12, 44) outside the intended coverage. The candidate
+left that pixel white. All 800 × 516 document pixels matched across
+cached CPU replay, GG Canvas, and uncached full-shader replay.
+Diagnostics confirmed both strip axes and a reraster after the edit.
+The fixture and decoded document hashes were
+`e2deb09306a274eb65412d1e49dea8b1ac762ba9abd109996c49cc96d27fe947`
+and `579a9211437daf38e7b314117b8643a9336ffd5bbc8a53e7e0e91233bea1eeda`.
+
+A fresh macOS capture in PID 95218 used the published `c3370b40f`
+bundle with executable SHA-256
+`2626c50798f17dd0fe6ab7942da76f0ab20c71fcfdea6f04ccab71ad34f83ef9`.
+Twelve of 24 sampled pixels matched exactly and the maximum channel
+difference was three. The new Linux regression and ten neighboring
+SVG window checks passed. macOS and Windows D3D11 and OpenGL source
+checks passed.
+
+The Linux timing comparison toggled `VOX_DISABLE_SVG_MASK_RAMP` on
+the same ARM64 single-unit Clang `-O0` executable built with V
+`5a39a4d`. The executable SHA-256 was
+`0343557673905571209d58dba623a0f1a9f92f13b43e3a96884703c3df2dad62`.
+The timed fixture fixed the SVG and document marker while the page
+scrolled. Its SHA-256 was
+`b6a2f6ccd9f4fdae28167bbd4ecf284fc65e2500213c2d6f1e5f0d0ca4536f47`.
+Fresh processes used private profiles and caches, one Mesa software
+worker, and an 800 × 712 Xvfb window. JavaScript and texture caching
+were disabled. A one-second settle preceded 48 synthetic callbacks.
+Separate diagnostics confirmed four masks per callback and two
+strips when enabled across 47 complete intervals. The 800 × 628
+decoded document hash was
+`5e30390ea243f1266a74611fab927e23e5cf849188301028ca21dee738fc634f`.
+Pixels, paint command counts, offsets through the final 504 CSS
+pixels, and executable, fixture and library hashes stayed fixed.
+
+| Pair | Full / strip replay median, ms | Full / strip p95 and maximum, ms | Full / strip median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 19.268 / 11.351 | 22.714, 23.182 / 13.851, 14.062 | 801.5 / 694 |
+| 2 | 24.762 / 13.418 | 27.930, 28.064 / 16.238, 16.305 | 801 / 693.5 |
+| 3 | 21.321 / 12.633 | 25.566, 26.636 / 15.532, 17.317 | 800 / 694 |
+| 4 | 18.631 / 13.311 | 21.053, 21.411 / 14.532, 15.326 | 801 / 695.5 |
+
+The strip route reduced median replay time by 29–46% and median
+allocation by 105.5–107.5 KiB per callback. The four-vCPU guest's
+one-minute load was 1.49–2.02 at the timed launches and no compiler
+processes were observed at launch. Browsers and the memory guard
+exited zero. This comparison measures synthetic software replay.
+Windows runtime and hardware GPU timing remain pending.
+
+## Compositing raster images inside SVG masks
+
+In `1e32dd381`, portable SVG mask replay borrows RGBA pixels from
+the existing decoded-image cache and uses the shared canvas image
+rasterizer. The SVG image placement supplies the destination,
+aspect-ratio clip, and interpolation mode. Bitmap alpha or
+premultiplied luminance contributes coverage after opacity groups
+blend. An image whose pixels are unavailable contributes transparent
+coverage and prevents texture retention for that replay.
+
+A live image reference edit exposed a stale SVG mask description
+in the first Linux check and in the published macOS build.
+SVG masks now use the existing paint-resource invalidation path
+for descendant edits, including XLink image references.
+
+The Linux fixture uses a 4 × 2 RGBA image to exercise letterboxing,
+slice clipping, transparent pixels, and isolation. A script
+replaces an image with a same-sized bitmap served by a loopback
+handler after a 400 ms delay. All four 800 × 516 document captures
+matched across cached CPU replay, GG Canvas, uncached replay,
+and the legacy `xlink:href` variant. Cached runs rasterized the
+edited group 25–26 times in total and retained two textures.
+The fixture and decoded document SHA-256 values were
+`0668dbb4036b80c2d386e406bd4382ec5d1aa16dfb43ffd9d65447d07db18619`
+and `a6432b37b192b40320d2698b6b21d7987a7cb18efd9665a4e213e78058277647`.
+
+A native reference capture launched PID 16644 from the published
+`57cc6ceed` build with executable SHA-256
+`48cf9b0d55ef0a6bb661bb0ab3479bdf87e31518e4906dc1d9be75dd5a506c3e`.
+Eleven of 15 static samples matched exactly and the maximum channel
+difference was one. The native capture retained the original
+edited-mask pixel at (356, 50). The Linux candidate drew
+`#7f7fff` there after the delayed replacement. Ten neighboring
+Linux SVG window checks and the new fixture passed. macOS and
+Windows D3D11 and OpenGL source checks passed. The standalone
+layout test exceeded the compile memory guard. The windowed
+fixture covers both forms of the attribute edit.
+
+Two alternating pairs timed the same ARM64 single-unit Clang
+`-O0` executable with V `5a39a4d`. Its SHA-256 was
+`fc5cbdedad815eab57e9aa242c5079ab0126dd392a8966bc0cf95409f81e60d0`.
+Fresh private processes used the local fixture, JavaScript
+disabled, one Mesa worker, one second of settling, and 48
+synthetic idle replay callbacks at 800 × 600. Diagnostics observed
+three mask rasters per callback with caching disabled and three
+cache hits per callback with caching enabled across 47 complete
+intervals. Paint command counts and position matched. The decoded
+viewport SHA-256 was
+`537d9b34887c7054cc739f813c472bef249ec70859f0fb39a0a5eb3e51c7e3bc`.
+Executable, fixture and library hashes stayed fixed.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 10.279 / 1.362 | 13.828, 14.573 / 1.643, 4.729 | 529 / 121 |
+| 2 | 8.983 / 1.350 | 11.590, 13.431 / 1.593, 4.020 | 527 / 121 |
+
+Browser and guard exits were zero. One-minute guest load ranged
+from 1.26 to 1.33 at timed launches on four vCPUs. These timings
+cover warmed idle software replay. Candidate macOS and Windows
+runtime checks and native GPU timing remain pending.
+
+## Repeating vector and bitmap pattern fills in SVG masks
+
+In `34f9cc5f1`, the portable mask player uses the retained pattern
+operations to rasterize one premultiplied tile. It shades the mask
+path with the shared repeating bitmap shader, mapping the tile back
+to its SVG origin, period and transform. Tiles can include paths,
+images and isolated opacity groups. The mask's existing pixel budget
+bounds the total size of tiles generated per replay. The finished
+mask texture can be retained once its tile images are available.
+
+The fixture checks a translated vector tile with overlapping shapes
+inside an opacity group and a bitmap tile in a luminance mask. It
+also changes the vector tile's opacity after the first raster. The
+fallback capture with portable masks disabled drew the target
+solid blue at (9, 20), outside the intended pattern coverage.
+The candidate left that pixel white. All 800 × 516 document pixels
+matched across cached CPU replay, GG Canvas and uncached replay.
+The fixture and decoded document SHA-256 values were
+`6851f39c499e077c69a99ff144b705b6f7b6f20176de9fed8c596f993d90f18c`
+and `2818ef8c339118b218fb8a26627d1b100098d825d5dc88761fee3849f9ada073`.
+
+A native reference capture launched PID 70013 from the published
+`f96eeac1d` bundle with executable SHA-256
+`d3b5db917260170abf2a93c2d625a558532eb920f977831f2dba0e6092972567`.
+Twelve of 16 samples matched exactly. The four remaining samples
+differed by one channel value on the overlapping opacity group.
+The new Linux regression and eleven neighboring SVG window checks
+passed. The raster test checks that nearest sampling preserves texels
+under fractional scale. macOS and Windows D3D11 and OpenGL source
+checks passed.
+
+Two alternating pairs timed the same ARM64 single-unit Clang
+`-O0` executable with V `5a39a4d`. Its SHA-256 was
+`a6dd8ab9be00ed6f05968310d4af79ded4ff6bab0096e7e08c3fa75a4170a7aa`.
+Fresh processes used private profiles and caches, one Mesa worker,
+JavaScript disabled, and an 800 × 600 Xvfb window. A one-second
+settle preceded 48 synthetic idle replay callbacks. Diagnostics
+observed two mask rasters per callback with caching disabled and
+two texture hits with caching enabled across 47 complete intervals.
+The viewport pixel hash was
+`9688c70c525602005f27e0742cd1f3de70c67d6b23bc14e89aedcb72b2c614c5`.
+Pixels, paint command counts, position and input hashes matched.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 13.059 / 0.932 | 15.218, 16.475 / 1.260, 3.591 | 441 / 120 |
+| 2 | 12.661 / 0.885 | 15.847, 16.214 / 1.083, 3.359 | 443 / 120 |
+
+The four-vCPU guest's one-minute load was 0.96–1.05 at timed
+launches. All browser processes and the memory guard exited zero.
+The comparison measures warmed idle software replay. Candidate
+macOS and Windows runtime checks and native GPU timing remain pending.
+
+## Repeating vector and bitmap pattern strokes in SVG masks
+
+In `75ad42064`, the portable mask player shades stroke coverage with
+the same retained tile renderer used by pattern fills. Fills and
+strokes share the mask's tile budget. Stroke opacity, cap geometry,
+and SVG paint order apply before the finished mask supplies alpha or
+luminance coverage. An incomplete tile can contribute available
+pixels while leaving the group texture eligible for a fresh replay.
+
+The fixture checks a translated vector tile on a square-capped
+stroke, a bitmap tile over solid white fills in both paint orders,
+and a live opacity edit inside the vector tile. Disabling portable
+masks reproduced a solid blue pixel at (10, 44) outside the stroke.
+The candidate left it white. All 800 × 516 document pixels matched
+across cached CPU replay, GG Canvas, and uncached replay.
+
+A separate Linux run served the bitmap tile after a 400 ms loopback
+delay. Its final pixels matched the local fixture exactly. The
+luminance mask rasterized three times before retaining the first
+complete texture. The fixture and decoded document SHA-256 values
+were
+`8db1fbf2f818aa9f818b186162b16a8ab9896e810dda70299b16fce290a10513`
+and `b85a5a7bf73e57b8c86aeee5693542d415061129cc2fee8bcfdfb167efbd3648`.
+
+The macOS reference launched PID 594 from the published
+`b13808d00` build with executable SHA-256
+`5f556e4cdda418f4fa1b2f58d83ce4044aa1d6b7f3e51e012a36120c9ab4b2f1`.
+Twelve of 15 samples matched exactly. The three remaining samples
+from the isolated vector stroke differed by one channel value.
+A separate launch of that same build in PID 11801 rechecked
+the earlier raster image mask edit. Both sampled replacement
+pixels were `#7f7fff` after the live `href` change.
+The patterned-stroke checks and twelve neighboring Linux SVG
+window checks passed. macOS and Windows D3D11 and OpenGL source
+checks passed.
+
+Two alternating pairs timed the same ARM64 single-unit Clang
+`-O0` executable with V `5a39a4d`. Its SHA-256 was
+`e77c80014778952127178c282fbda1bb845e6b64eb3ea4d1b197a7833b73480e`.
+Fresh private processes used one Mesa software worker, an
+800 × 600 Xvfb window, JavaScript disabled, and one second of
+settling before 48 synthetic idle callbacks. Diagnostics recorded
+two mask rasters per callback with caching disabled and two texture
+hits with caching enabled across 47 complete intervals. Pixels,
+paint command counts, position, and input hashes stayed fixed.
+The decoded document SHA-256 was
+`1236a523e81e3b3232feca4a41120dcf487a6629b8ee48c9df1faad4d2eb16a0`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 7.097 / 0.886 | 7.587, 7.810 / 1.065, 3.322 | 498 / 121 |
+| 2 | 6.795 / 0.826 | 9.082, 9.361 / 1.058, 3.077 | 498 / 120 |
+
+The four-vCPU guest's one-minute load was 0.84–1.00 at the timed
+launches. Every browser process and the memory guard exited zero.
+This comparison covers warmed idle software replay.
+
+The subsequently published macOS build `894f19090` had executable
+SHA-256 `f1bae5284118c638f79578e68cf2d7e99d21c29d144b3bd6abc328f3dafd9010`.
+Its first capture at the fixture's readiness selector, PID 56336,
+had five sampled pixels differ by more than one channel level.
+A fresh launch with an explicit two-second settle, 1× capture and a
+private cache, PID 61374, matched 12 samples exactly and the other
+three within one channel level. Both guarded launches exited zero.
+Windows runtime checks and hardware GPU timing remain pending.
+
+## Transformed SVG mask regions
+
+In `986d6dc55`, portable SVG replay uses the transformed mask region's
+bounding box to size the texture. For a non-axis-aligned region, the
+shared coverage rasterizer clips the completed mask to the four
+transformed corners. Axis-aligned regions and quarter-turns use the
+existing edge coverage. A rectangular viewport with the same transform
+can share the mask's clip when it fully contains the mask region.
+Other non-axis-aligned viewport clip combinations still use fallback.
+
+The fixture checks a skewed alpha mask, reflected luminance with group
+opacity, a quarter-turn, and a live edit to the alpha mask's origin.
+The Linux preflight's viewport guard left (50, 47) solid blue. The
+candidate matched the white macOS pixel. All 800 × 516 document pixels
+matched across cached CPU, GG-enabled and uncached Linux replay. The
+fixture SHA-256 was
+`b981647b3e29eda651fddf42f91bfc80e7f26856c573f85ae63376aa1f4cce7b`.
+The decoded RGB document SHA-256 was
+`ac8fb88988e1a3838117887adfa2dad4fd42a857e1b56932bb5d3d531b3b64b2`.
+
+The macOS reference used a fresh launch, PID 25163, of the published
+single-C-unit `e33c5cf2b` build with executable SHA-256
+`184be3652b72e181fd5679d36da4bb36eee1b9491e207654728000fe1f5f996a`.
+It matched 408,456 of 412,800 document pixels exactly. Each of the
+4,344 remaining pixels differed by at most one channel level. The
+new window check and fourteen neighboring Linux checks passed under
+the memory guard. The macOS and Windows D3D11 and OpenGL C backend
+source checks and 21 Linux smoke-driver unit tests passed.
+
+Two alternating pairs used the same single-unit Clang `-O0` Linux
+ARM64 executable, built with V `5a39a4d`. Its SHA-256 was
+`96d2dd94c77a44e5c68080e6f2bdff6fd5092a756efec129d1c8191b428a6390`.
+Four-vCPU Xvfb ran an 800 × 600 window with one Mesa software worker.
+Fresh processes used private profiles and caches and JavaScript off.
+A one-second settle preceded 48 synthetic idle callbacks. In separate
+diagnostics, every complete interval recorded three mask rasters
+with caching disabled and three texture hits with caching enabled.
+All timing captures preserved command counts and scroll offsets and
+matched decoded document SHA-256
+`05c9ec0dbc9b1f2c43f1754e5dfc69d7403dea3cd57229ec1544941cb94262ad`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 1.856 / 0.837 | 2.263, 4.837 / 1.132, 1.270 | 387 / 120.5 |
+| 2 | 1.926 / 0.797 | 2.095, 4.119 / 0.935, 1.004 | 386 / 120 |
+
+The same session's earlier build, SHA-256
+`a0a94a6af8e1f65c312100c9d26a8a63245c7ed98cf1a5692338e9d3c0374977`,
+allowed transformed regions through the coverage rasterizer and
+retained the viewport eligibility guard. Two alternating comparisons
+of the cached, axis-aligned patterned-stroke fixture moved median
+replay from 0.824 to 0.858 ms and from 0.828 to 0.862 ms. The p95
+and maximum moved from 0.956 and 1.080 to 1.017 and 1.165 ms, and
+from 1.057 and 1.102 to 1.068 and 1.362 ms. Pixels and logged work
+counts matched. These timings include software window replay, and
+the source difference does not isolate the cost of the viewport
+check.
+
+The one-minute guest load at timed launches was 0.51–0.85. Input
+hashes stayed fixed, and both executables used the same linked library
+set. All browser and guard exits in the final runs were zero. Native
+Windows pixels and hardware GPU timings remain pending.
+
+## SVG masks intersecting transformed viewports
+
+In `79bd5dee3`, the portable player intersects a mask region with
+rectangular viewport clips that share its transform. It computes the
+overlap in local coordinates before allocating the surface and rasterizing
+its edges. An empty intersection consumes the group without drawing.
+Every leaf must resolve to the same rectangle. Transformed clips in
+different coordinate systems retain fallback.
+
+The fixture covers a skewed alpha mask with two foreground paths, a
+reflected luminance mask with a live origin edit, and a disjoint viewport.
+An untimed Linux fallback run left (98, 85) blue. The candidate and the
+macOS reference left it white. The cached CPU, GG-enabled, and uncached
+Linux captures match across the 800 × 516 document. The fixture SHA-256
+is `0eaa19ba11bddf05fe58939c11af7c9408330ed7ce638b881ac301ef7cc72a78`.
+The decoded RGB document SHA-256 is
+`d2e3b2adc4e0a71d4e1539f0b6a0fddb37bc6edc57b960fcae95f2e364e9a64a`.
+
+The macOS reference was PID 68648 from the published single-C-unit
+`894f19090` build, executable SHA-256
+`f1bae5284118c638f79578e68cf2d7e99d21c29d144b3bd6abc328f3dafd9010`.
+Of 412,800 pixels, 410,845 matched exactly and 1,875 differed by one
+channel level. The remaining 80 differed by up to seven levels along
+the antialiased interior red path. The prior transformed-region fixture
+also retained its exact macOS document pixels in a fresh launch of
+`fb702c8d6`, PID 74867, executable SHA-256
+`62b391b3b68052a2a04d009a02505a3dd0b86659e52e2ec55c1a41676e7bc8c8`.
+
+The new check and eighteen neighboring Linux window checks passed under
+the memory guard. The macOS and Windows D3D11 and OpenGL C backend source
+checks and 21 smoke-driver unit tests passed.
+
+Two alternating pairs used one Linux ARM64 executable built in a single
+C unit with V `5a39a4d` and Clang `-O0`. Its SHA-256 is
+`7fc05aa07ae45e77d17a9b8a271468b77c67cb84148d95ebb84da54c35d935f8`.
+Fresh processes used private profiles and caches, JavaScript off,
+and one Mesa software worker in an 800 × 600 Xvfb window. A one-second
+settle preceded 48 synthetic idle callbacks. Separate diagnostics
+recorded two mask rasters per complete interval with caching disabled
+and two texture hits with caching enabled. All timings used identical
+paint command counts, stationary offsets, and decoded pixels, SHA-256
+`d5bd27e16c0d80a9e16b729784ad25ea60bf2836e90510765190bd3655942de6`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 1.525 / 0.842 | 1.833, 1.867 / 1.052, 1.154 | 280.5 / 119 |
+| 2 | 1.666 / 0.814 | 1.874, 2.063 / 0.967, 1.163 | 280 / 120 |
+
+One-minute guest load ranged from 1.38 to 1.54 across the timed
+launches on four vCPUs. The fixture, executable, and linked libraries
+retained their hashes. The browser processes and all final guards
+exited zero. Native Windows pixels and hardware GPU timing remain
+pending.
+
+## SVG masks and independently transformed viewports
+
+In `817048097`, portable replay admits rectangular viewport clips with
+different transforms when the group's leaves share their clip geometry. On a
+texture miss, it intersects the device-space mask polygon with up to
+eight viewport rectangles and rasterizes the resulting silhouette
+once. Reflections preserve the interior side of each clip edge.
+Rectangles that share a transform still intersect in local coordinates.
+Axis-aligned clip stacks keep their existing coverage path. A texture
+hit skips polygon construction and coverage rasterization.
+
+The fixture exercises a skewed mask with independently skewed viewport
+clipping, two foreground paths, and a reflected viewport around an
+axis-aligned mask with a live origin edit. Cached CPU, GG-enabled, and
+uncached Linux replay matched all 800 × 516 document pixels. Both prior
+transformed-mask fixtures retained their recorded Linux pixel hashes.
+An untimed fallback capture painted blue at (180, 119) and (414, 78).
+The candidate and macOS reference left both pixels white.
+The new fixture SHA-256 is
+`abf71f4024b0df24464603a45baa2d4f23aba64511b97c92b1fb6a7c5f2c5037`.
+The decoded RGB document SHA-256 is
+`67b7761c4c83ec3d298c37ce8a936ad4a21e1531975ad3887b4030313cbe3255`.
+
+The native macOS reference was PID 52508 from published single-unit
+build `93fa84ca2`, executable SHA-256
+`8b66b96b83240020dd4e3aa827707ac4f97a5f089e70828eb0d13b501c9b06aa`.
+Of 412,800 document pixels, 412,442 matched exactly and 110 differed
+by one channel level. The remaining 248 differed by up to 56 levels
+at antialiased edges of the skewed mask and its interior red path.
+The new check and nineteen neighboring Linux window checks passed.
+The macOS and Windows D3D11 and OpenGL C backend source checks
+and 21 Linux smoke-driver unit tests passed.
+
+Two alternating pairs used the same Linux ARM64 executable built from
+`93fa84ca2` and the mask changes in one C unit with V `5a39a4d` and
+Clang `-O0`. The executable SHA-256 is
+`895cfb8ff29a26326c55629e757c0f022ea5d966c9af3dbd4411eee98e4f9015`.
+Fresh profiles and caches, JavaScript off, and one Mesa software worker
+were used in an 800 × 600 Xvfb window. A one-second settle preceded 48
+synthetic idle callbacks. Separate diagnostics recorded two mask rasters
+per complete interval with caching disabled and two texture hits with
+caching enabled. All timed captures used identical command counts and
+stationary offsets and had decoded document SHA-256
+`9941cd93858dfbb3b6d1678ac86c19d517ae4b202d8a934cba945ac648ef1966`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 2.501 / 0.804 | 2.902, 5.768 / 0.987, 1.058 | 356.5 / 120.5 |
+| 2 | 2.087 / 1.121 | 2.305, 4.766 / 4.492, 13.648 | 356 / 120 |
+
+The second cached trial had a higher p95 and maximum than its uncached
+pair. One-minute guest load ranged from 0.61 to 0.66 at timed launches
+on four vCPUs. The fixture, executable, and linked library hashes
+stayed fixed. All refreshed browser and guard exits were zero. Windows
+runtime pixels and hardware GPU timing remain pending.
+
+## Rounded viewports around masked SVGs
+
+In `9917e2f1c`, the portable mask compositor preserves rounded overflow
+clips when all paths in the group share their viewport geometry. It rasterizes their
+elliptical corners using the viewport's own transform and applies the
+coverage to the masked image before upload. Matching viewport clips
+are applied once. A texture hit skips rounded coverage rasterization.
+
+The window fixture exercises a live border-radius edit around an alpha
+mask with overlapping foreground paths. It also exercises a reflected
+viewport with asymmetric elliptical corners around a luminance mask.
+All 800 × 516 pixels matched across Linux cached CPU, GG-enabled, and
+uncached replay. The three earlier transformed-mask fixtures retained
+their recorded RGB hashes. The new fixture SHA-256 is
+`2b1605a17531f420c74eb9cd388357d311fb0e42c0fc90a9298604114e796dc5`.
+The decoded RGB document SHA-256 is
+`e905621b0779f6966fb9ef8a03db598fee19b630effe0691f6fe46eb311e612f`.
+
+The native macOS reference was PID 95566 from published single-unit
+build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+Of 412,800 pixels, 412,572 matched exactly and 43 differed by one
+channel level. The remaining 185 differed by up to 63 channel levels
+along the rounded edges.
+
+The rounded-viewport check and twenty neighboring Linux window checks
+passed under the memory guard. macOS and Windows D3D11 and OpenGL C backend
+source checks and 21 Linux smoke-driver unit tests passed. The Linux
+runtime build zero-initialized the duplicate-clip array in generated C.
+The final source marks its initializer unsafe to satisfy the compiler's
+reference-array check. The loop inspects only entries it has assigned.
+
+With portable masks disabled, the fallback painted (313, 159) blue.
+The enabled compositor and the macOS reference both left that pixel white.
+
+Two alternating pairs used single-unit V `5a39a4d` and Clang `-O0` on
+Linux ARM64. The executable SHA-256 is
+`3f1c66971188a4b5d073714ca2c663efaf02572c5cad71542c2a67a5077740a6`.
+Fresh processes used private profiles and caches, JavaScript off, an
+800 × 600 Xvfb window and one Mesa software worker. A one-second settle
+preceded 48 synthetic idle callbacks. Separate diagnostics recorded
+two mask rasters per complete interval with caching disabled and two
+texture hits with caching enabled. All timed captures shared paint
+command counts, stationary offsets and decoded document SHA-256
+`3c82fc428020f3f23e31fc26172322ef65020b8a08121ee8c072c130d14917bb`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 3.575 / 1.407 | 7.918, 30.056 / 9.892, 18.662 | 364.5 / 120 |
+| 2 | 3.241 / 1.479 | 5.688, 23.291 / 7.984, 43.120 | 364.5 / 120 |
+
+Cached medians fell in both pairs and cached p95 rose in both pairs.
+The 18-CPU host's one-minute load was 98.15 before the run and 83.56
+after it. A script indentation error stopped the original launcher
+before any browser ran. The corrected cohort preserved executable,
+fixture and library hashes, and its browser and guard exits were zero.
+Windows runtime pixels and hardware GPU timing remain pending.
+
+## Patterned foreground fills on masked SVGs
+
+In `843274495`, the shared SVG mask compositor reuses the pattern tile
+rasterizer for foreground fills. The tile retains its color and transparency, then
+the group applies stroke order and mask coverage. The finished texture
+enters the cache after both the foreground and mask resources are ready.
+
+The fixture combines a translated vector pattern with a live opacity edit
+and a stroke painted before the fill. A second shape combines a bitmap
+pattern with a luminance mask. The macOS reference was PID 35650 from
+published single-unit build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+All 412,800 document pixels matched across that reference and Linux
+cached CPU, GG-enabled, and uncached replay. The fixture SHA-256 is
+`fc5a307e0310c454d71a0637a019468e4ba86a248c7201d4fef74c68dea0511b`.
+The decoded RGB document SHA-256 is
+`4f0ec7389e5b87c3d9c9bba6267f6205162249d732e5352502cbca991ee5e4f6`.
+
+A loopback run delayed the bitmap response by one second. The group
+replayed 26 luminance-mask rasters before it retained the first complete
+texture. Its final document exactly matched the local fixture. The new
+fixture, twelve neighboring Linux window checks, and the 21 Linux
+smoke-driver unit tests passed.
+
+The macOS and Windows D3D11 C backend source checks passed. The first
+Windows OpenGL check reported missing GG fields and helpers in the
+shared staging directory. Repeating the check with freshly staged
+UI2 and GG dependencies in a private cache passed.
+
+Disabling portable masks left document pixel (40, 50) white. The
+enabled compositor painted the expected translucent red.
+
+Two alternating pairs used single-unit V `5a39a4d` and Clang `-O0`
+on Linux ARM64. The executable SHA-256 is
+`daa5c41fba6d8e0271145c2f51b932974b685e31e6f0b65579c3600a41738ecc`.
+Each trial used a fresh profile and cache, default script policy, an
+800 × 600 Xvfb window, and one Mesa software worker. A one-second settle
+preceded 48 synthetic idle callbacks. Separate diagnostics recorded
+two mask rasters per complete interval with caching disabled and two
+texture hits with caching enabled. All timed captures agreed on paint
+command counts, stationary offsets, and decoded document SHA-256
+`ad37505b25a6827d21f0f91ecd06e150527a84bde1005b71882fbaaa2252761b`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 19.061 / 1.345 | 57.480, 112.118 / 2.259, 6.228 | 306.5 / 119 |
+| 2 | 14.118 / 1.392 | 34.449, 37.548 / 3.710, 12.372 | 303 / 119 |
+
+The 18-CPU host's one-minute load was 92.83 during the diagnostic
+trials and 86.77 after the cohort. The guest's one-minute load ranged
+from 0.71 to 0.78 on four vCPUs during timed launches. The executable,
+fixture, and linked library hashes stayed fixed, and all browser and
+guard exits were zero. Windows runtime pixels and hardware GPU timing
+remain pending.
+
+## Patterned foreground strokes on masked SVGs
+
+In `caa868066`, the portable group player replays vector and bitmap
+patterns on foreground strokes before applying the SVG mask. It uses
+the existing tile budget and GG texture cache. A non-scaling stroke
+uses the transformed path for geometry and maps the pattern into the
+same surface coordinates, so the pattern follows the path transform.
+
+The fixture exercises a translated vector tile, an alpha mask, a
+bitmap tile under a luminance mask, both paint orders, a live opacity
+edit, and a non-scaling stroke under a 2× transform. All 412,800
+document pixels matched across Linux cached CPU, GG-enabled, and
+uncached replay. The fixture SHA-256 is
+`021b7c41c6a92e360643dc831cc4eb49bca9dbd3e5593abe1a6b85f6200a274b`.
+The decoded RGB document SHA-256 is
+`3dbc0a068b4fb550657ec6e9f8380f3f6aeceab285d41ff693f61baea129bbd8`.
+
+The macOS reference used a fresh process, PID 30512, from published
+single-unit build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The ordinary strokes matched exactly. All 828 differing pixels were
+in the transformed stroke, where the published native painter drew
+12 pixels of width and the portable path drew the specified six at
+1× backing scale.
+
+A loopback run delayed the bitmap response by one second. It
+recorded ten luminance-mask rasters without retaining the incomplete
+texture, then retained both stroke groups. Its final document
+matched the local capture. The fixture, thirteen neighboring Linux
+window checks, and all 21 Linux smoke-driver unit tests passed.
+The macOS and Windows D3D11 source checks passed. The initial
+Windows OpenGL check stopped on a LibJS warmup type error while that
+file was being edited. A guarded retry passed against the current
+tree using the same private UI2 and GG staging.
+
+Two alternating pairs used the same Linux ARM64 V `5a39a4d` binary
+with single-unit Clang `-O0`, SHA-256
+`0bd8fc8949811475af237624ec5b662ccdb0281b948e36f0101e55fb919dda7b`.
+Each trial used a fresh profile and cache, an 800 × 600 Xvfb window,
+one Mesa software worker, and a one-second settle period before
+48 synthetic idle callbacks. JavaScript and GG Canvas SVG replay
+were disabled. Separate diagnostics recorded four mask rasters per
+complete interval without caching and four texture hits with
+caching. All trials had 14 paint commands and a stationary offset.
+Decoded RGB SHA-256 was
+`a0d2fcb11c006d9ded6bff3f055c344476771b344394ad5f0877e9d94ece90be`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 8.362 / 3.097 | 30.482, 79.472 / 34.894, 49.022 | 390 / 121 |
+| 2 | 8.672 / 1.562 | 22.154, 60.994 / 20.003, 133.362 | 390.5 / 121 |
+
+The 18-CPU host's one-minute load was 104.55 during the diagnostic
+trials and 113.18 after the cohort. Guest one-minute load ranged
+from 0.42 to 0.55 on four vCPUs for the timed launches. The executable,
+fixture, and linked library hashes stayed fixed. The Linux build,
+window checks, timing trials, and their guards exited zero. The
+first pair's p95 and the second pair's maximum rose with caching.
+Windows runtime pixels and hardware GPU timing remain pending.
+
+## Standalone patterned SVG paths
+
+In `48068f85f`, Linux and Windows replay standalone vector and bitmap
+patterns with the same rasterizer used inside SVG content masks. The
+renderer preserves fill and stroke order, stroke dashes, and
+non-scaling width. It also accepts patterned paths in eligible SVG
+clips and isolated opacity scopes. Adopted root commands reuse the
+rendered GG texture by recording and command index.
+
+The fixture covers standalone fills and strokes, a circle clip, a
+single path with both fill and stroke patterns inside an opacity
+scope, and a dashed non-scaling stroke under a 2× transform. It also
+edits the vector tile's opacity after painting. Linux cached CPU,
+GG-enabled, and uncached replay matched across all 412,800 document
+pixels. The fixture SHA-256 is
+`7bec1c834da8f66cf47ed8e7e1b6c5006cf11caf255bc20f3dc05fb763186d66`.
+The decoded RGB document SHA-256 is
+`bc7f0e70fd171cef651a5bc918c4ad7a386802c8204ccbf126873066cf58a1b0`.
+
+The macOS reference was PID 54806 from published single-unit build
+`6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The standalone fill and stroke matched exactly. The curved clip
+differed at 39 pixels by up to 21 channel levels. The opacity group
+differed by one level at 958 pixels and by up to 128 levels at two
+tile-boundary pixels. The native stroke painted through the dash gaps
+and doubled its width. The portable stroke preserved six pixels at
+1× backing scale and left the expected gaps.
+
+The loopback fixture delayed the bitmap by one second. Both the clip
+and opacity scopes drew six incomplete rasters before retaining the
+completed textures. Final pixels matched the local fixture. The first
+diagnostic incorrectly attributed a neighboring command's cache event
+to the clip scope. The retry matched cache events by command index.
+The fixture, ten neighboring Linux window checks, all 21 smoke-driver
+unit tests, and the macOS, Windows D3D11, and Windows OpenGL source
+checks passed.
+
+The initial Linux build failed during C compilation of the LibJS warmup
+channel and optional job. Reduced cases passed on V `5a39a4d` and
+`4460fc9` with runtime channel initialization and explicit optional
+construction. Those fixes also landed in `6055c69e7`. The retry built
+with V `5a39a4d` and single-unit Clang `-O0` on Linux ARM64, executable
+SHA-256 `026a283295eeb7c17e788399c03694883d6b1573bf5016e12f7fbce4bcbfd706`.
+
+Two alternating pairs used the same executable, fresh profiles and
+caches, an 800 × 600 Xvfb window, and one Mesa software worker. A
+one-second settle preceded 48 synthetic idle callbacks. JavaScript
+and GG Canvas SVG replay were disabled. Separate diagnostics recorded
+five texture hits per complete cached interval and a clip and opacity
+raster per uncached interval. All trials produced 11 paint commands
+at a stationary offset and decoded RGB SHA-256
+`8d5c0d049da33d439cfb833a44fe9480f6e9e616ae50ff2ea65a82d1a4cdf80d`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 94.175 / 2.575 | 221.965, 315.117 / 27.256, 152.932 | 379 / 119 |
+| 2 | 93.234 / 2.541 | 193.474, 252.531 / 54.573, 76.016 | 379 / 119 |
+
+The 18-CPU host's one-minute load was 158.05 near the start of timing
+and 139.07 after the cohort. Guest one-minute load ranged from 1.10 to
+1.33 on four vCPUs during timed launches. The executable, fixture, and
+linked libraries stayed fixed. The successful build, timed browsers,
+and timing guard exited zero. These measurements cover repeated
+software replay. Windows runtime pixels and hardware GPU timing
+remain pending.
+
+## Patterned stroke geometry on macOS
+
+In `2f6e156b0`, foreground SVG pattern strokes pass the dash array,
+dash offset, and vector effect to the native painter. CoreGraphics
+applies the dash state when it expands the stroke into a clip.
+Non-scaling strokes expand the transformed centerline at the same
+width used for solid strokes. The cached tiles still follow the
+original SVG path and pattern transforms.
+
+The focused CoreGraphics pixel test passed with Clang `-O2` and
+under ASan and UBSan. It verified 6- and 12-pixel widths under a 2×
+path transform, dash gaps and phase, round zero-length dashes, tile
+color and opacity, and an even-odd fill. The macOS C-backend V
+source check passed.
+
+The ordinary fill and undashed stroke matched the previous native
+painter exactly in a 128 × 96 offscreen comparison with fractional
+tile placement and shear. Two alternating pairs used fresh processes,
+one `-O2` executable, and 2,000 draws per trial after 100 warm-up draws.
+The baseline/candidate thread CPU times were 216.094/213.399 ms
+and 222.171/220.115 ms. The initial implementation constructed a
+separate dashed path and measured 217.542/225.154 ms and
+216.695/219.752 ms on the same ordinary paints. Host load was high
+throughout. These measurements cover the offscreen tile painter.
+
+A fresh baseline window from published build `6209346d8` reproduced
+the filled dash gap and doubled width on
+`svg-foreground-patterns.html`. It was PID 97856, with executable
+SHA-256 `a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+The published bundle predates the fix. Browser window pixels and
+production performance for the candidate await the managed rebuild.
+
+## Dashed strokes in shared SVG masks and pattern tiles
+
+In `716037c26`, SVG resource recordings retain the dash intervals and
+phase resolved in the path's user space, including `pathLength`
+calibration. The shared rasterizer uses them for strokes in masks and
+repeating pattern tiles. Resource cache identity includes the dash
+geometry, so a style edit can replace a retained texture.
+
+The fixture exercises a calibrated alpha mask, a gradient stroke
+inside a transformed luminance mask, and a repeating tile painted
+with a dashed stroke. JavaScript changes the alpha mask's offset
+and the tile's dash intervals after painting. All 412,800 document
+pixels matched across Linux cached CPU, uncached, GG-enabled replay,
+and viewport recording reuse. The fixture SHA-256 is
+`489b6af6792d6d83b7000b3de66d7bcbb018f541e3698205b2686693997ce64f`.
+The decoded RGB SHA-256 is
+`4af7273801ef1614e8f9ef3ea3c83be4bd288d007334a094be9bae54341259e6`.
+The fixture, eight neighboring Linux window checks, all 21
+smoke-driver unit tests, and the macOS, Windows D3D11, and Windows
+OpenGL source checks passed.
+
+The published macOS native painter drew through the gaps in all
+three resources. The reference was PID 12879 from single-unit
+build `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`.
+At this revision the Quartz resource painter still ignored the
+dash data. The earlier macOS fix covered foreground strokes.
+
+Two alternating pairs used Linux ARM64 V `5a39a4d` with single-unit
+Clang `-O0`, executable SHA-256
+`36fd95f8d30efe866e284ae8e51f522059206e5231c20c74a7f8f7c8cfbab7ec`.
+Each trial launched with a fresh profile and cache, an 800 × 600
+Xvfb window, and one Mesa software worker. After a one-second settle,
+each ran 48 synthetic idle callbacks. JavaScript and GG Canvas SVG
+replay were disabled. The initial dash phase and tile intervals
+were checked in the captured pixels. Separate diagnostics recorded
+two mask rasters per complete uncached interval and three texture
+hits per cached interval. The captures agreed on 9 paint commands,
+a stationary offset, and decoded RGB SHA-256
+`6bdd7e70eb6e8bf3995b55064fd8e0ddb8cb3f1549f76b9f09fd072194ef5e90`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 6.328 / 0.989 | 26.934, 31.249 / 9.521, 10.303 | 338.5 / 118.5 |
+| 2 | 5.968 / 1.145 | 9.075, 9.508 / 5.138, 8.632 | 337.5 / 119 |
+
+The 18-CPU host's one-minute load was 115.99 during the cohort.
+The four-vCPU guest's one-minute load ranged from 1.11 to 1.18
+during timed launches. The executable, fixture, and linked
+libraries stayed fixed. The Linux build, browser runs, and
+their guards exited zero. Windows runtime pixels and hardware
+GPU timing remain pending.
+
+## Dashed SVG resources in the macOS native painter
+
+In `bb4b6258c`, Quartz receives the retained dash intervals and
+phase for solid, linear-gradient, radial-gradient, and nested
+pattern strokes inside masks and tiles. Dashed solid mask strokes
+use the Quartz draw path because the accelerated mask path has no
+dash input. The dash state is scoped to each draw. Small arrays use
+stack storage for the conversion to `CGFloat`.
+
+The focused pixel test verified dash phase under a scaled transform,
+direct stroke coverage, a stroked clip, the heap conversion for a
+longer array, and restoration of undashed state. A separate
+offscreen harness compiled the seven native entry paths with a
+bitmap context and a line-path decoder. Its pixel checks verified
+that each path left the expected gap and that the ordinary solid
+mask stroke still entered the accelerated shortcut. Both tests
+passed with Clang `-O2`, ASan, and UBSan. The macOS C-backend V
+source check also passed.
+
+Ordinary strokes matched the previous painter pixel for pixel
+in the offscreen resource harness. Two alternating pairs used the
+same optimized executable, fresh processes, and 3,600 draws per
+trial after 60 warm-up draws. The baseline/candidate thread CPU
+times were 23.943/23.956 ms and 23.917/23.210 ms. The inputs
+retained their hashes and the tests and guards exited zero. These
+measurements cover the offscreen native routines.
+
+The published bundle was still `6209346d8` during verification.
+An earlier managed build stopped on deprecated `usize` uses in
+the in-progress JavaScriptCore word-view bridge. Browser-window
+pixels and production timing await a rebuilt bundle.
+
+## Non-scaling strokes inside shared SVG masks
+
+In `4790b82ba`, the portable mask player transforms a non-scaling
+stroke's centerline into the raster surface before applying its width,
+dash lengths, and phase. Gradient and pattern paint stay aligned with
+the transformed path. Layout includes the vector effect in the retained
+mask key and computes the fixed-width stroke bounds after the local
+transform when checking CSS mask tile clipping.
+
+The regression exercises a dashed alpha mask under 2× enlargement, a
+pattern-painted stroke under 0.5× reduction, and a gradient-painted
+stroke under enlargement. JavaScript changes the alpha mask's vector
+effect after the first paint. Cached CPU, uncached, GG-enabled, and
+viewport recording reuse produced the same 800 × 516 document pixels.
+The fixture SHA-256 is
+`6091577e48dd93d833f85d50774e7170dc7f3c79023250c0fba6ce86dafb4db7`.
+The decoded RGB SHA-256 is
+`28a50a2c1e69218e03974a9aaaeb019c8e1d442b81dcca46074e46014d3d61c0`.
+Eight neighboring Linux window checks, 21 smoke-driver tests, and
+the macOS GG, Windows D3D11, and Windows OpenGL source checks passed.
+The full layout test runner exceeded its 12 GiB process-tree cap
+in both the regular and serial builds. The exact tile-bounds test
+passed in a smaller executable built from the production geometry
+helpers and painting module.
+
+Two alternating pairs used the same Linux ARM64 executable, V
+`5a39a4d`, and single-unit Clang `-O0`. The executable SHA-256 is
+`317a0d0fcd8e90365dc3e90824e8b9042432e494d2d3529572d5bd344e8eb377`.
+Fresh processes used private profiles and caches, an 800 × 600 Xvfb
+window, and one Mesa software worker. Each ran 48 synthetic idle
+callbacks after a one-second settle. JavaScript and GG Canvas SVG path
+replay were disabled for timing, so the first mask retained its original
+scaling stroke. The matches included all document pixels, 11 paint
+commands per callback, and stationary scroll offsets. Decoded RGB
+SHA-256 was
+`51d9e0e46d337b651d0a4aa95ec0623133e79a78dc7648bf8eca33f523238e98`.
+Separate diagnostics found three mask rasters per uncached interval and
+three texture hits per cached interval.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 4.223 / 1.610 | 8.699, 14.435 / 5.818, 9.206 | 512 / 119 |
+| 2 | 6.932 / 1.551 | 11.083, 14.486 / 5.094, 9.147 | 511.5 / 119.5 |
+
+Input hashes stayed fixed and the Linux build, browser runs, and
+guards exited zero. The four-vCPU guest's one-minute load ranged from
+1.12 to 1.17 during timing. The 18-CPU host's one-minute load was over
+100 during verification. These measurements cover cached and uncached
+software replay in the same build. Production performance and Windows
+runtime pixels remain unverified. At this revision the macOS resource
+fallback and the paths used to paint a repeating tile still treated
+these as ordinary scaling strokes.
+
+## Non-scaling strokes in macOS SVG masks
+
+In `867ebb617`, macOS forwards the vector effect on solid
+mask strokes to the existing GG path rasterizer. Quartz draws dashed
+and painted strokes in backing-pixel coordinates. The gradient and
+pattern paint then use the original SVG transform. The gradient clip
+bounds cover the stroke caps for repeating and reflected paint.
+
+The published single-unit bundle `6209346d8`, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`,
+reproduced the difference in a fresh 1024 × 600, 1× document
+capture of the [stroke fixture](../Tests/Browser/Native/svg-mask-non-scaling-strokes.html).
+After the scripted edit, the old bundle drew blue through the
+expected alpha dash gap at (43, 56) and left the reduced pattern
+stroke's sample at (194, 53) white. The process and guard exited zero.
+
+The focused CoreGraphics pattern test passed at 1× and 2× with
+Clang `-O2`, ASan, and UBSan. The offscreen driver exercised the actual
+solid, linear, and radial mask functions with a bitmap context. It
+checked six device pixels of stroke width and the same dash spacing
+at both scales, paint order, and pad, repeat, and reflect colors within
+one byte of the corresponding gradient fill. A stub recorded the GG
+descriptor and declined so the solid fallback also executed. The
+separate GG Canvas non-scaling pixel-oracle test, native mask layer
+and luminance pixel suites, and macOS V source check passed.
+
+The ordinary dashed strokes produced identical 128 × 96 RGBA
+pixels in two alternating offscreen timing pairs. Each process
+drew 3,600 solid, linear, and radial strokes after 90 warm-up
+draws, with no browser or window. Both variants were compiled
+into the same Clang `-O2` executable, SHA-256
+`28c9897d38382c4b6192d1d3665c557a22ded67e7d6b1880a667f7a525c31a68`.
+Thread CPU times before and after were 31.351/31.823 ms and
+31.105/31.022 ms. The 18-CPU host's one-minute load was 95.65.
+The inputs stayed fixed and the guards exited zero. The RGBA SHA-256
+in all four trials was
+`897157cdbe3f389876ebe0ddc61ed4694c03e9a4a09737a60bc3294378998278`.
+Production window parity and performance await a bundle containing the
+change. Non-scaling strokes inside a repeating tile still require
+geometry that accounts for the tile-to-device transform.
+
+## Non-scaling strokes inside shared SVG pattern tiles
+
+In `b253d68b6`, the portable tile renderer includes the linear
+part of the tile-to-device transform when it constructs non-scaling
+strokes. The stroke width, dash lengths, and phase are in device
+coordinates. The renderer maps the outline back into the tile bitmap
+for clipping and retains the paint's original placement. All copies
+of the tile use the same stroke geometry across scroll offsets.
+
+The [fixture](../Tests/Browser/Native/svg-pattern-tile-non-scaling-strokes.html)
+checks six device pixels of width in a half-size tile, preserved
+gradient colors in an enlarged tile inside a luminance mask, and dash
+spacing along a sheared stroke inside an alpha mask. JavaScript edits
+the first tile's vector effect after 12 frames. The cached CPU, uncached,
+GG-enabled, and viewport recording reuse captures matched in all
+800 × 516 document pixels. The fixture and decoded RGB SHA-256 values
+were `e6e4707d3d16b9839364a14667f700bd368e28d4e1f9a02e3d04e2e45a2d0b37`
+and `ffc01f015a05c64070946775265276eb0e852daab9e53a8212dc2db2908ecef2`.
+Eight neighboring Linux window checks and 21 smoke-driver unit tests
+passed. The macOS, Windows D3D11, and Windows OpenGL source checks
+also passed.
+
+Two alternating software replay pairs used the same Linux ARM64
+executable with V `5a39a4d` and single-unit Clang `-O0`. The executable
+SHA-256 was
+`e2dc9e66c16ca192fcee88f31ecb28c494eca2b8d7ff6e67c1aea5ab70f96837`.
+Each run used a fresh private profile and cache, an 800 × 600 Xvfb
+window, and one Mesa software worker. The 48 synthetic idle callbacks
+followed a one-second settle period. JavaScript and GG Canvas SVG path
+replay were disabled, so the first tile retained its scaling stroke
+and the two masked tiles exercised non-scaling strokes. Each run recorded nine paint commands per callback and a
+stationary scroll offset. The decoded RGB SHA-256 was
+`ca73eeca15f44800e674c3c83fe4f2f0792db368ea7e90e4733030873eaa623d`.
+Separate diagnostics found two mask rasters per complete uncached
+interval and three texture hits per cached interval.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95 and maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: |
+| 1 | 91.300 / 1.325 | 252.904, 358.216 / 23.185, 62.318 | 518.5 / 120 |
+| 2 | 71.385 / 1.409 | 127.957, 132.112 / 14.670, 27.926 | 518.5 / 119 |
+
+The four-vCPU guest's one-minute load ranged from 0.90 to 1.31
+during timing. The 18-CPU host's one-minute load reached 228.25
+during verification. These measurements cover software replay with
+and without cache reuse in the same build.
+
+The Linux build, browser processes, and guards exited zero, and
+fixture, library, and executable hashes stayed fixed.
+
+## Shared non-scaling SVG pattern tiles on macOS
+
+In `a8ac3064f`, top-level vector tiles with non-scaling strokes use
+the portable rasterizer on macOS. Quartz composites the resulting
+premultiplied RGBA tile over a path or into a mask. An owned image
+keeps each tile available after the V frame arena resets. The native
+tile cache keys include all four linear coefficients of the device
+transform, so scaling, reflection, and shear changes can invalidate
+the tile while placement and scroll changes can reuse it. Nested
+patterns, filters, and image tiles use the native resource painter.
+
+The macOS V source check and the focused CoreGraphics tests passed.
+With Clang `-O2`, ASan, and UBSan, the pattern test checked row orientation,
+premultiplied alpha, and ownership after overwriting the source bytes.
+The offscreen route harness used the production install, lookup, and
+finish functions. It checked pixel-exact reuse between foreground and
+mask destinations, 2× mask scale, an invalid buffer, and stack balance.
+
+Two alternating timing pairs used 3,000 offscreen draws of a 128 × 128
+tile after 60 warm-up draws, with fresh processes and a shared Clang
+`-O2` executable. Uncached and cached thread CPU times were 53.381 /
+33.193 ms and 53.283 / 34.659 ms. All four captures had decoded RGBA
+SHA-256 `69669ce6723134b6cc708257f2f5cdf28ee7bdfc5b3c81a2c31f6edb0075194e`.
+Executable SHA-256 was
+`4e72a5b6e67e7d2471438aa993130ee8e2347aea2980f563483011e6419ae1ef`.
+Input hashes stayed fixed and the harness and guards exited zero.
+One-minute host load ranged from 99.44 to 99.97 on 18 CPUs. These
+timings cover image installation and Quartz replay.
+
+The new `--pattern-strokes-only` window check uses the shared fixture
+at 1× and 2×. The published `6209346d8` bundle, executable SHA-256
+`a92b702d32ab26cf7835f2d4b148a39c8cca22f7ca841ede9542820d4a24a034`,
+reproduced the failure at 1×. PID 83922 exited zero and the check found
+white at (1, 15), where the non-scaling stripe should paint green.
+The previous managed build rejected a header that changed during
+compilation.
+
+In `fbc605138`, the native pattern fallback supplies the new stroke
+transform argument at all three call sites. The guarded CoreGraphics
+test used the production functions and matched the earlier painter
+pixel for pixel across 16 combinations of fill, stroke, dash, and
+paint order with Clang `-O2`, ASan, and UBSan.
+
+The build from that fix, executable SHA-256
+`26467f157104051092e535c374a08040ce9eccde0f48ccb1985dbcfb00dd3dc6`,
+passed the 1× samples. At 2× it painted the green stripe at tile rows
+37–39 instead of 17–22, including with presented capture enabled.
+The baseline browser processes exited zero. The focused CoreGraphics
+control placed a pre-rendered stripe at the expected rows at 2×.
+
+In `2907ddab3`, tile normalization applies the outer SVG viewport
+transform only to bounding-box resources. User-space resources
+already inherit it during layout. This also removes an intermediate
+operation list for user-space tiles. The standard layout test run
+reached the 12 GiB guard. A standalone test using the same production
+layout APIs passed the 1× and 2× retained stroke coordinate assertions
+and two existing raster image normalization cases.
+
+Production receipt `20261122-211039-33f08316` used single-unit C and
+literal V `-prod`. Its executable SHA-256 was
+`b91cb8bf6bdfe82f754957ade71a39395f8024054fcb2ff15173207d6d4ff4f1`
+and its AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The build started at `a036cce9a` in the shared dirty checkout. Its
+frozen source manifest matched the committed adapter, the native
+painter and its header, and the shared tile raster entry point.
+
+The guarded run of the `--pattern-strokes-only` assertions passed all
+24 color samples within two channel levels and exercised the live
+vector-effect change.
+Fresh browser PIDs 19283 and 19292 and their guard exited zero. Both
+densities recorded three tile misses and one hit. The full 1024 × 600
+1× capture matched the earlier build exactly. PID 19373 verified the
+2048 × 1200 2× capture with presented capture enabled and exited zero
+under its guard. The two 2× captures matched exactly. The executable,
+library, and fixture identities stayed fixed throughout each check.
+
+| Capture | Decoded RGBA SHA-256 |
+| --- | --- |
+| 1× | `d6622793fba70b659ebca02d099ee76725458b58e5f5e757c1e16fe5f9171d8d` |
+| 2× | `d69c9f35ee7630d60fbf6c40f14e5070060d4bf470202899edb46286da1993fa` |
+
+The [Windows D3D11 check](#d3d11-svg-pattern-runtime-verification)
+also passed this fixture. Production frame timings remain unmeasured
+for this change.
+
+### Bitmap content in shared macOS pattern tiles
+
+In `006e5ee70`, a tile containing both a bitmap and a non-scaling
+stroke can use the shared SVG tile rasterizer. The cache key includes
+the document, GG context, and decoded image slots for these tiles.
+While an image is pending, the vector stroke can paint and the
+partial bitmap stays out of the cache. A later draw can retain the
+completed tile.
+
+The earlier single-unit production executable, SHA-256
+`7e40e05b73654f1d20a456bb1464945ebc1dc1a393e704b03d09b18446fc4951`,
+drew a three-pixel green stripe in the 1× mixed-tile fixture. The
+six-pixel check failed at the upper edge, and the delayed blue image
+was missing in both sampled repeats. Browser PID 96198 exited zero.
+The macOS V source check and the CoreGraphics pattern tests under
+ASan and UBSan passed.
+
+The first candidate captured the completed bitmap with the same
+three-pixel stroke. Its log showed a shared tile while the image was
+pending. After decoding, the rasterizer's channel check rejected the
+native PNG row marker and returned to Quartz.
+
+In `936131aaa`, the rasterizer accepts top-down straight and
+premultiplied native RGBA and forwards their alpha representation
+to the shared bitmap sampler. Images that require native color
+conversion use the native painter. The source check, native ICC and
+retagging checks under ASan and UBSan, and Linux ARM64 canvas image
+tests passed. The available Linux browser failed to load OpenSSL
+3.2 and 3.4 symbol versions in the test guest.
+
+The final single-unit production bundle used literal V `-prod`.
+Receipt `20261122-223409-82bb5f77` pinned the shared tile adapter,
+bitmap replay and native color profile header. The executable
+SHA-256 was `23ecb7021a1829911b103a685c366e3425e3858ef0d53267a5321abdaf33a942`.
+It was built in the shared checkout with concurrent edits elsewhere.
+
+The loopback fixture delayed an asymmetric blue and red PNG by
+500 ms. Two rectangles used the same tile at different positions.
+Each density passed 11 exact color samples, including the six-pixel
+stroke edges and image row order in both rectangles. Each logged two
+uncached draws while the image was pending, one raster of the complete
+40 × 40 tile, and one cache hit for the second rectangle.
+
+| Scale | Browser PID | Document | Decoded RGBA SHA-256 |
+| --- | ---: | --- | --- |
+| 1× | 6489 | 1024 × 600 | `cd79204454fe89a152ec908daa8491c81fba4ea36f9cd24fa7ef28477d6f522f` |
+| 2× | 6508 | 2048 × 1200 | `3aea8263d85450c081b862ba544e41be79dc14ac5c77a8fda2e47a8aedff255d` |
+
+The same bundle's vector-only pattern captures, PIDs 6475 and 6480,
+matched the earlier production control at both densities. All four
+browser processes and the 3 GiB guard exited zero. The executable,
+library, and fixture hashes remained fixed within the check.
+Production frame timings remain unmeasured for the mixed tile.
+
+#### Linux window verification
+
+The mixed-tile check now runs in the Linux browser smoke suite and
+uses the same delayed image and 11 color samples as the macOS test.
+It also compares every document pixel with the Linux SVG group
+texture cache on and off.
+The fixture and PNG SHA-256 values were
+`58dd7fe567220437b142ba003e2b7541d2fe777ee0508e03608ae6fd898a307f`
+and `2e360a7d238dc85aa9b5a9c6dc6c99b6784d4d4aca0f9fe5a845142628843853`.
+
+A private Linux ARM64 build linked against Ubuntu 24.04's OpenSSL
+3.0.13 and started successfully. The build used V `5a39a4d`,
+single-unit Clang `-O0`, and the default Boehm GC. It started from
+`c4a31348b` in the shared checkout with unrelated edits present.
+Its executable SHA-256 was
+`8280a2b3f2db5c12ea337daa10d3595cc78dce289c8f8a941da938bb7bc6c27d`.
+
+Both fresh Xvfb launches passed all 11 samples. The cached launch
+recorded two group misses and 124 hits across two distinct groups.
+The uncached launch recorded zero hits. The full 800 × 516 decoded
+document RGBA matched across both modes with SHA-256
+`5bfd67e3ccaa4ef706d7364fd4a3cc95d8100e1392c582c02ff1e9425b86e09c`.
+All 27,648 RGB pixels in the 256 × 108 authored fixture area
+matched the macOS 1× capture. Its cropped RGB SHA-256 was
+`83f4028572a4d112dc80caf090c898b552559688072147004d6941f86abb0a78`.
+Fresh macOS launches using the shared test helpers reproduced the
+earlier 1× and 2× full document hashes on the pinned production bundle.
+All 21 smoke-driver unit tests passed. The build, browser processes,
+and memory guards exited zero, and the input hashes stayed fixed.
+
+Two alternating replay pairs used the same Linux executable in fresh
+processes with private profiles and caches. Each 800 × 600 Xvfb
+window used one Mesa software worker. JavaScript and GG Canvas SVG
+path replay were disabled. After a one-second settle, 48 synthetic
+idle callbacks each processed four paint commands at scroll offset
+zero. A separate pair with SVG diagnostics recorded 94 hits between
+the first and last callback receipts with the cache enabled and zero
+with it disabled. Every replay capture matched the document hash above.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 6.843 / 0.426 | 8.416 / 0.570 | 8.511 / 1.958 | 304 / 160 |
+| 2 | 6.904 / 0.374 | 7.027 / 0.507 | 8.434 / 1.837 | 305 / 160 |
+
+The guest's one-minute load ranged from 0.09 to 0.16 on four vCPUs
+during timing. Host load was 3.69 before and 3.49 after the replay
+checks on 18 CPUs. The six browser processes and 3 GiB guard exited
+zero. Executable, library, fixture and image hashes stayed fixed.
+These timings cover synthetic software replay of a stationary fixture.
+
+#### Windows mixed-tile verification setup
+
+The Windows runner shares the delayed PNG, exact pixel samples, and
+whole-document cache comparison with the Linux smoke test. It launches
+each window under a 3 GiB job-object guard and checks the browser, guard,
+and adjacent DLL identities. The two Windows runner unit tests and all
+21 Linux driver unit tests passed. Fresh 1× and 2× captures also passed
+on the published macOS bundle with executable SHA-256
+`5125e51509999049e77a1a210c0c98e861c50990b8f3b21850e58da502555c4e`.
+
+A private Windows amd64 D3D11 console build used V `d79ca45`, MinGW
+GCC 16.2.0, and single-unit C `-prod -no-prod-options`, starting from
+`8a9fd55f9` with concurrent edits elsewhere in the checkout. Its
+SHA-256 was `2b4c288b095dbc042ccce7e2dfedf7501cd2fbe0bbe97b287fb1bb5854b98615`.
+The build and its 12 GiB host guard exited zero at a sampled peak of
+9,876,815,872 bytes. The executable includes the portable group cache,
+pattern painter, and group rasterizer. The Windows job-object guard
+cross-compiled with the documented flags.
+
+The standard Windows guest launcher reported 4.39 GiB free against
+its 5 GiB host disk reserve. [Windows test command](WINDOWS.md)
+
+#### Windows runtime pixel verification
+
+The Windows 11 x86-64 guest booted under single-threaded QEMU TCG
+using an 8 GiB RAM disk for a writable QCOW2 overlay and a copy of
+its UEFI variables. QEMU reported the installed guest image read-only.
+The test ran in the guest's desktop session, with the fixture and
+capture output on a temporary virtual USB disk. The loopback server
+used CPython 3.12.10. [Python release](https://www.python.org/downloads/release/python-31210/)
+
+The D3D11 console build started from `760b0e24f` with concurrent
+edits elsewhere in the checkout. It used V `d79ca45`, MinGW GCC
+16.2.0 and single-unit C `-prod -no-prod-options`. Its executable
+SHA-256 was
+`3c642f6bb3feb993bad3706823675ef129e8c1bf6dbb32ba162c64b8fb04a0b0`.
+The build and its 12 GiB guard exited zero at a sampled peak of
+8,388,247,552 bytes.
+
+The first window attempt launched from the virtual USB disk. The
+retry used the same executable bytes copied to the guest's internal
+NTFS disk alongside the installed runtime DLLs. In both attempts
+the Python driver hit its 260-second timeout in the first, cached
+capture. Both browser streams and job receipts were empty. During
+the NTFS attempt a guest process listing found no Vox process.
+
+The same guard launched Windows' `whoami.exe` and returned child
+exit zero in an SSH-session probe. Vox PID 6732 also passed
+`--headless-smoke` under the 3 GiB guard, including JavaScript DOM
+mutation, click handling, and wheel routing. Peak job committed
+memory was 446,803,968 bytes. In that SSH session, the windowed
+driver reached Sokol's D3D11 swap-chain assertion. Browser PID 2548
+exited `0xc0000409` without a job timeout.
+
+Writing the guard receipt directly to a file let the desktop
+diagnostic complete. The repository runner adopted that change in
+`802e882ba` and passed a fresh pair on the same D3D11 executable.
+Both 800 × 600 captures passed all 11 color samples, including the
+delayed PNG's row order and the device stroke edges.
+
+| Mode | Browser PID | Browser and guard exit | Peak job committed bytes | Group cache hits |
+| --- | ---: | ---: | ---: | ---: |
+| Cached | 4468 | 0 | 581,713,920 | 8 |
+| Uncached | 1716 | 0 | 571,752,448 | 0 |
+
+The 800 × 516 document RGBA was identical in both cache modes and
+matched Linux's decoded SHA-256
+`5bfd67e3ccaa4ef706d7364fd4a3cc95d8100e1392c582c02ff1e9425b86e09c`.
+The 27,648 authored RGB pixels also matched macOS at 1× with crop
+SHA-256 `83f4028572a4d112dc80caf090c898b552559688072147004d6941f86abb0a78`.
+The two Windows runner unit tests and 21 Linux driver unit tests
+passed. The verifier matched the executable, guard, JavaScriptCore
+DLL, fixture, and runner bytes against the host inputs.
+
+Windows shut down normally. QEMU and the host guard exited zero with
+a sampled peak of 8,901,165,056 bytes. The installed disk and original
+UEFI variable hashes matched their preflight values after the
+captures. These results cover D3D11 pixels in the emulated guest.
+Hardware frame timings remain unmeasured.
+
+### Nested vector content in shared SVG pattern tiles
+
+In `0729ffc63`, the portable rasterizer accepts one level of nested
+vector patterns in fills and strokes. The outer and inner tiles share
+the 64-operation eligibility limit and the 4 Mi-pixel allocation
+budget. Nested images, filters, and nested non-scaling strokes use
+the fallback path. Layout includes the enclosing resource transform
+before normalizing the nested tile. This keeps translated copies
+in the same tile coordinates and gives them the same cache key.
+
+The earlier macOS production executable, SHA-256
+`70bd644dd462f4c528cd7ed6fa0e97f66b9635df5997789309db16b44e3cd840`,
+left the nested fill and stroke blank on the translated copy at both
+1× and 2×. The first Linux candidate still failed the translated
+stroke sample before the layout correction. The fixture SHA-256 was
+`0a1bc1db69adf2f73f72af01aca1c654c8a73be5ab8d8c5a5ad1bd1a5368f2e1`.
+
+The corrected Linux build used V `5a39a4d`, single-unit Clang
+`-O0`, and Boehm GC. Its executable SHA-256 was
+`f2527f8a89c2d118010b14a4a2d45650f13dc3c3d2d2a03614021f190f77b6e4`.
+Both cache modes passed 20 exact samples after the live color edit.
+The 800 × 516 document RGBA matched with SHA-256
+`b44e9cea2234deb2ef34d447aa64ad1363e325de08bd715edacb13b48e7c9c43`.
+The cached run logged 248 hits across two groups. Six existing
+Linux pattern and mask fixtures and 21 smoke-driver unit tests passed.
+
+The private macOS check used the prealloc runtime and single-unit
+C with V `d79ca45` and `-prod -no-prod-options`. Its executable
+SHA-256 was
+`d770cc0eb01ba69242bdaa56e1bcdd1fd6f2dd1a68dcbdf56158d08b881186b9`.
+Fresh windows passed at 1× and 2× before and after the edit, with
+both the original and updated tiles reused. All 27,648 pixels in
+the 1× fixture area matched Linux in each state. The original and
+edited crops had RGB SHA-256 values
+`90e901837188ff344e9b44459fe3e1ebe6ba4fd3580e7906004d14bff7a169ae`
+and `3049f269ca39d64b4362be6c4400ea239e287abf67bb077f5b7451d1794ffe26`.
+The existing macOS non-scaling stroke and delayed image fixtures
+passed at both densities. The standard layout test reached the
+memory guard. A standalone probe using the public layout entry
+point passed the tile coordinates and cache identity assertions
+at both densities. Windows D3D11 and OpenGL source checks passed.
+
+Two alternating Linux replay pairs used the same executable with
+fresh profiles and caches, one Mesa software worker, and 800 × 600
+Xvfb windows. After a one-second settle, each run completed 48
+synthetic idle callbacks with four paint commands at scroll offset
+zero. JavaScript and GG Canvas SVG path replay were disabled.
+Separate diagnostics found 94 cache hits between the first and last
+callback receipts with caching enabled and zero with it disabled.
+The guest one-minute load ranged from 0.31 to 0.44 across four CPUs
+during timing. The timed runs and guard exited zero and had identical
+decoded document RGBA, SHA-256
+`872ef0eabe09aff20e26860fffd5a3d85b262e9a9f18523667ca14ed85039170`.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 7.997 / 0.623 | 9.520 / 0.899 | 9.855 / 2.074 | 352 / 163 |
+| 2 | 7.682 / 0.608 | 8.982 / 0.784 | 9.193 / 2.153 | 353 / 163 |
+
+These timings cover stationary software replay. Windows runtime
+pixels and hardware frame timing for nested tiles remain open.
+
+### Bitmap content in nested SVG pattern tiles
+
+In `9d71bed62`, the shared rasterizer accepts bitmap operations
+inside a nested pattern. macOS includes descendant image slots
+when it keys the outer tile. While an image is pending, the shared
+renderer draws available content and leaves the partial tile out
+of the cache. Vector-only tiles skip the image lookup pass.
+
+The previous macOS bundle, SHA-256
+`6163ca64724ec58f2bffd3d0b069b1f4deab1a736c59c431401c369176d88dce`,
+drew the outer stroke and left the nested bitmap samples white
+at 1× and 2×. The loopback fixture delays an asymmetric PNG by
+500 ms and uses the nested bitmap as both fill and stroke paint.
+The fixture and PNG SHA-256 values were
+`b8a2fe2bb2da590771b4e29eaf8aed7df65afdb8f332da020fff5a58420e8005`
+and `2e360a7d238dc85aa9b5a9c6dc6c99b6784d4d4aca0f9fe5a845142628843853`.
+
+The Linux build used V `5a39a4d`, single-unit Clang `-O0`, and
+Boehm GC. Its executable SHA-256 was
+`c8ef8eeb5fad92f4b306c7fd6dcb5ebb34475bec99c8203c6df742e32a6b0e82`.
+Both cache modes passed 11 exact color samples and had identical
+800 × 516 document RGBA, SHA-256
+`7cb6a68a550a151d3a3d0e13bfdad628c636f8e3a20ed28e09f9ad1a4b78fbac`.
+The cached run logged 126 hits across two groups.
+
+The private macOS build used V `d79ca45`, prealloc, and single-unit
+C `-prod -no-prod-options`. Its executable SHA-256 was
+`d0fb9e7d71f8508c5d0a8be8ea6ce53976856b692e30ad77194bc866ebc7353f`.
+Both densities passed all samples. Each logged two uncached draws
+while the image was pending, then one completed tile and one reuse.
+All 27,648 fixture pixels at 1× matched Linux. The RGB crop SHA-256
+was `6d3836133589793f66735dbb63045dac4ffd6896887512d103608a795d811830`.
+The existing mixed bitmap and nested vector checks passed on both
+platforms. The macOS non-scaling tile checks, 23 driver unit tests,
+and Windows D3D11 and OpenGL source checks also passed. Both builds,
+all test processes, and their guards exited zero.
+
+Two alternating Linux replay pairs used fresh profiles and caches,
+one Mesa software worker, and 800 × 600 Xvfb windows. The 48 synthetic
+idle callbacks ran after a one-second settle, with four paint commands
+at scroll offset zero. JavaScript and GG Canvas SVG path replay were
+disabled. Separate diagnostics counted 94 hits between the first and
+last callback receipts with the cache enabled, and zero with it
+disabled. Guest one-minute load ranged from 0.38 to 0.49 across four
+CPUs during timing. All six captures had the same document RGBA as
+the window regression. Executable, linked libraries, and fixture
+hashes stayed fixed through the replay checks.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 7.639 / 0.550 | 9.228 / 0.765 | 9.327 / 2.187 | 350.5 / 161 |
+| 2 | 7.689 / 0.540 | 9.285 / 0.732 | 9.515 / 2.115 | 349 / 162 |
+
+These timings cover stationary software replay. Windows runtime
+pixels and hardware frame timings for this fixture remain open.
+
+### Non-scaling strokes in nested SVG pattern tiles
+
+In `01743c256`, each tile keeps its sampling grid in the parent
+bitmap and inherits the parent's linear map to physical pixels
+for stroke expansion. Layout records whether a tile or descendant
+needs the device metric. macOS uses this flag to select the shared
+rasterizer and keys the result by the document's linear transform
+and backing density. The software paths on Linux and Windows use
+the same rasterizer.
+
+The regression paints a nested stripe as both fill and stroke,
+then repeats the outer tile with a translation and with a vertical
+stretch. The published macOS baseline, SHA-256
+`5559c0c6cbddbaae05a5d0216244f795e796b55d23796c38dc110bb99efa2b3f`,
+drew the stripe two physical pixels wide at 1× and four at 2× in
+the smaller tile. The candidate drew six in all three copies at
+both densities. At each density, macOS logged two raster misses
+and one hit for the translated tile. At 1×, both misses produced
+48 × 60 bitmaps with distinct keys, so the stretched copy could
+use its own stroke metric despite identical bitmap dimensions.
+
+The 320 × 98 fixture crop matched pixel for pixel across macOS and
+Linux at 1×. Its input SHA-256 was
+`d5d116f69b62c55c92e440492b0f22a46faf6e81f8d7717424d69b9f7ce1ecf7`.
+The crop's RGB SHA-256 was
+`5ecc122d99c541ad054f32a64c7f2a3e2a56f6bddb1d9c9f853527b4e11d40e1`.
+Both Linux cache modes produced the same 800 × 516 document RGBA
+with SHA-256
+`bbc917efc69336e2b2ea2ff4303af6680003442dfac68903b6619ddc6825d8e2`.
+The existing nested-vector mutation, delayed nested-bitmap and
+top-level non-scaling tile checks passed on both systems. macOS ran
+those checks at both densities. The 23 driver unit tests and
+Windows D3D11 and OpenGL source checks passed.
+
+The private macOS build used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`. Its executable SHA-256 was
+`3dc0b9cc5d353c3afc4012de0ddb8d21c00352259814c770923ef92e162eddcc`.
+The Linux build used V `5a39a4d`, single-unit Clang `-O0` and Boehm
+GC. Its executable SHA-256 was
+`bd3d8aa9b2af31a2597642a24be704dfaf40e21b8d0e3bd83177af05f34f92ef`.
+
+Two alternating Linux replay pairs used the same executable,
+fresh profiles and caches, one Mesa software worker, and
+800 × 600 Xvfb windows. Each trial ran 48 synthetic idle callbacks
+after a one-second settle, with five paint commands at scroll
+offset zero. JavaScript and GG Canvas SVG path replay were disabled.
+Separate diagnostics found 141 hits over three groups between
+the first and last callbacks with caching enabled, and zero with
+it disabled. Guest one-minute load ranged from 0.45 to 0.78 over
+four CPUs during timing. Host load ranged from 5.09 to 5.14 over 18
+logical CPUs. All six captures matched the regression document.
+Executable, linked-library and fixture hashes stayed fixed.
+Both builds and their guards, the passing test runs, and all replay
+processes and their guard exited zero.
+
+| Pair | Uncached / cached median replay, ms | Uncached / cached p95, ms | Uncached / cached maximum, ms | Uncached / cached median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 9.971 / 0.650 | 11.605 / 0.778 | 11.959 / 2.189 | 457 / 165 |
+| 2 | 10.020 / 0.635 | 11.521 / 0.744 | 11.640 / 2.028 | 455.5 / 165 |
+
+These results measure stationary software replay with and without
+the cache on one build. Hardware frame timings and Windows runtime
+pixels for this fixture remain open.
+
+### Deeper SVG pattern trees
+
+In `4d2f7d388`, the shared rasterizer accepts up to 16 pattern
+levels, matching the retained SVG serializer. A tree still shares
+the 64-operation and 4 Mi-pixel budgets. A Linux boundary check
+rendered six physical pixels per stripe through 16 tiles and
+observed 110 cache hits. At 17 tiles the shared renderer declined
+the tree and published no cached group.
+
+The three-tile fixture repeats the preceding two-tile composition
+with an additional scaling transform. The old Linux renderer
+declined the group and its capture contained no green at the
+stripe samples. The published macOS baseline, SHA-256
+`85d92b56295424799c28b9a35217c43a8829dcf79b34cfde9195331822849693`,
+drew a one-pixel stripe at 1× and a two-pixel stripe at 2× in the
+smaller tile. The shared rasterizer drew six physical pixels at
+both densities on macOS and at 1× on Linux. macOS reused the
+translated tile and separately cached the stretched tile at both
+densities. Linux produced identical document pixels with the
+cache on and off.
+
+The fixture SHA-256 was
+`8cadbf6c4be2b9dec1a48768d2c95c6f29e45a78d4d444a830bcbfc4aeb15ac0`.
+The 320 × 98 fixture crop matched across both systems at 1×, with
+RGB SHA-256
+`5ecc122d99c541ad054f32a64c7f2a3e2a56f6bddb1d9c9f853527b4e11d40e1`.
+The existing nested vector, device-width and delayed bitmap checks
+passed on both platforms. The 23 driver unit tests and Windows
+D3D11 and OpenGL source checks passed.
+
+The Linux builds used V `5a39a4d`, single-unit Clang `-O0` and
+Boehm GC. Their baseline and candidate executable SHA-256 values
+were `1c7c6d9b8d0593390af3829bf4b9e0878236e958302f403e8d4db1c860314849`
+and `fed7c43e7da50a346369ab3dd0644bc30c71966805a0795bcc0186d5cd215bd1`.
+The private macOS candidate used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`, with executable SHA-256
+`f611bd605a5637ad36feaf0ba3acf2ea27128c4d988fbb32f314d727f8fbd31f`.
+
+Two alternating Linux baseline/candidate pairs measured cached
+replay of the existing two-tile device-width fixture. Each run
+used a fresh profile and cache, one Mesa software worker and an
+800 × 600 Xvfb window. All 48 synthetic idle callbacks ran after
+a one-second settle with five paint commands at scroll offset
+zero. JavaScript and GG Canvas SVG path replay were disabled.
+Separate diagnostics on both builds recorded 141 hits across
+three groups between the first and last callbacks. All six
+captures matched the 800 × 516 document RGBA checksum
+`bbc917efc69336e2b2ea2ff4303af6680003442dfac68903b6619ddc6825d8e2`.
+Executable, linked-library and fixture hashes stayed fixed.
+Guest one-minute load ranged from 0.57 to 0.62 across four CPUs.
+Host load ranged from 5.85 to 6.67 across 18 logical CPUs.
+The builds, test and replay processes, and memory guards exited zero.
+
+| Pair | Baseline / candidate median replay, ms | Baseline / candidate p95, ms | Baseline / candidate maximum, ms | Baseline / candidate median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.637 / 0.623 | 0.739 / 0.796 | 2.200 / 2.318 | 166 / 166 |
+| 2 | 0.635 / 0.637 | 2.258 / 2.087 | 2.529 / 2.269 | 165 / 165 |
+
+These timings cover stationary software replay of the existing
+fixture. Windows runtime pixels and hardware frame timing for the
+deeper tiles remain open.
+
+### Ordinary nested SVG pattern tiles on macOS
+
+In `16741ce21`, macOS selects the shared tile rasterizer for
+eligible nested fills and strokes, including trees with ordinary
+scaling strokes. Layout records whether a tile contains nested
+paint so the Mac adapter can select the route without walking the
+display list on every draw. The existing eligibility limits and
+native fallback apply to unsupported tiles.
+
+Both updated fixtures use a 12-unit stroke inside a tile scaled by
+one half. The unedited vector fixture matched the published
+macOS build's pixels at both backing densities. The published
+executable's SHA-256 was
+`861aac25b801a77fc93702ae7ac4fe1483c8ad0ed03a7335419a5592db78f50f`.
+The candidate logged a shared tile miss followed by a hit for the
+translated copy. The live color edit produced a new key and a
+second translated hit. The delayed bitmap fixture recorded two misses
+with zero keys while the image loaded, then a keyed miss and a hit
+after decoding. Both fixtures passed at 1× and 2× on macOS.
+
+At 1× the 256 × 108 crops matched Linux. The edited vector crop's
+RGB SHA-256 was
+`3049f269ca39d64b4362be6c4400ea239e287abf67bb077f5b7451d1794ffe26`,
+and the delayed bitmap crop's was
+`6d3836133589793f66735dbb63045dac4ffd6896887512d103608a795d811830`.
+The input hashes were
+`9603d8dc406b060375d2c0447ecff98ed9e40a0aa7fa6ee513f5e6f5c9e368d9`
+and `b419de30b38e4a2c74215632d10b1f15ede20e3853121acab52b245a6a93e2a1`,
+respectively. Linux passed cached and uncached pixel checks with V
+`5a39a4d`, single-unit Clang `-O0` and Boehm GC. Its executable
+SHA-256 was `81caf85a9b17e4d0d2bb7b544d60c4563a74abda5cc71fff3301124515bae83b`.
+The non-scaling, three-level and delayed bitmap regressions passed.
+The 23 smoke-driver unit tests and both Windows source checks passed.
+
+The private macOS timing builds used V `d79ca45`, prealloc and
+single-unit C `-prod -no-prod-options`. The baseline and candidate
+executable SHA-256 values were
+`eab789d70ccf961480c66cf5ad68d153b2d97d125b2364bf8e1a1304edbfca1c`
+and `62a7aec29c668fe0013dda711597786337f538421d76d28cb98f7f2739e5671f`.
+Each run used a fresh profile and cache. The 1024 × 600 viewport at
+1× displayed 40 translated copies of the same tile, with 42 paint
+commands and no JavaScript. The fixture SHA-256 was
+`85567a376ec7e65620ba891696299d22d0f83e3e82615ad37118d2fa2fdfac02`.
+Whole-frame raster reuse was disabled on both builds to exercise tile
+replay. Each trial ran 48 synthetic idle callbacks at scroll offset
+zero after a one-second settle. The candidate diagnostic counted
+1,880 shared cache hits between the first and last callback logs.
+The baseline diagnostic counted zero. Timed trials disabled tile logging.
+Host one-minute load ranged from 4.80 to 4.82 across 18 logical CPUs.
+
+The initial diagnostic stopped at a screenshot size assertion because
+the profiling exit saved a full window. The corrected check cropped
+600 document rows starting at the marker at y=60. All six corrected
+captures matched with document RGBA SHA-256
+`8d5b5d389cab13d6163e2cc2088875fd1e74054e197e7c0326e3b6bc8238da98`.
+Executables, bundled libraries and fixtures stayed fixed. Both builds,
+the corrected checks and the timing guard exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.941 / 0.729 | 1.783 / 1.429 | 1.790 / 1.696 | 3 / 3 |
+| 2 | 0.901 / 0.795 | 1.776 / 1.507 | 1.801 / 1.600 | 3 / 3 |
+
+These timings measure stationary software replay. Windows runtime
+pixels and hardware frame timing remain open.
+
+### Standalone SVG pattern tiles on macOS
+
+In `074797eb1`, the shared rasterizer accepts eligible standalone
+vector and mixed bitmap tiles in the macOS foreground and mask
+routes. Existing allocation and operation limits govern selection.
+The single-image fast path still runs first for eligible foreground
+fills. A color-matrix fixture stayed on the native
+filter route and matched the previous build pixel for pixel.
+
+The standalone vector fixture uses one tile for a fill and a
+translated stroke. Its original document matched the native
+baseline at 1× and 2×. The candidate reused the filled tile to
+paint the stroke and created a new cache key for a live color edit
+at both densities. The mixed bitmap fixture drew uncached tiles
+while waiting for the image, then reused a keyed tile after decode.
+Its scaling stroke measured six CSS pixels at both densities. Both
+fixtures passed Linux cache-on and cache-off pixel checks.
+
+The edited vector and delayed bitmap 256 × 108 crops matched across
+macOS and Linux pixel for pixel at 1×. Their RGB SHA-256 values were
+`3049f269ca39d64b4362be6c4400ea239e287abf67bb077f5b7451d1794ffe26`
+and `83f4028572a4d112dc80caf090c898b552559688072147004d6941f86abb0a78`.
+Their input SHA-256 values were
+`ff5eaf8e58d922f0fef65bd83e7935b99ee6ec2666600e52597b162dcf63a60e`
+and `15a2f264f95800ed3c1e73a8f7a211f3552c463610e248c737271abbe7011b31`,
+respectively. The Linux ARM64 check used V `5a39a4d`, single-unit
+Clang `-O0` and Boehm GC, with executable SHA-256
+`2107e2b5fa6cbd55427d17cfcbabd4d6cf7acf681f8894b0519eb62277195e80`.
+Nested, three-level, delayed image, and non-scaling stroke checks
+passed. The 23 smoke-driver unit tests and Windows D3D11 and OpenGL
+source checks passed.
+
+Both macOS timing builds used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`. Their baseline and candidate executable
+SHA-256 values were
+`1164cbd66c702350df5a71e2ef8b455998f1d4e1f7d7e1cc72474b0f711b476d`
+and `81d455ce72f6d225999737d1cf0ad39a46ec2d9c803de5957808f7cb39671ede`.
+Two alternating pairs replayed 20 fills and 20 strokes with the
+same tile at different positions. The generated fixture SHA-256 was
+`803e90d6f28787b725090095873f82ecaa289908d0dc3448467f58d1f1c4d59f`.
+Each 1024 × 600 viewport at 1× used a fresh profile and cache.
+JavaScript and whole-frame raster reuse were disabled. Each trial
+ran 48 synthetic idle callbacks with 42 paint commands at scroll
+offset zero after a one-second settle. The candidate diagnostic
+recorded 1,880 shared cache hits between the first and last callbacks.
+The baseline diagnostic recorded zero. The timed runs disabled tile
+logging. Host one-minute load ranged from 6.24 to 6.56 across 18
+logical CPUs.
+
+All six document captures had RGBA SHA-256
+`8d5b5d389cab13d6163e2cc2088875fd1e74054e197e7c0326e3b6bc8238da98`.
+Executable, bundled library and fixture hashes stayed fixed.
+The builds, browser processes and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.804 / 0.716 | 0.863 / 0.771 | 0.871 / 0.786 | 3 / 3 |
+| 2 | 0.790 / 0.718 | 0.843 / 0.766 | 0.873 / 0.810 | 3 / 3 |
+
+These results cover stationary software replay. Windows runtime
+pixels and hardware frame timing remain open for this change.
+
+### CSS opacity filters inside shared SVG pattern tiles
+
+In `c83cd496a`, the shared pattern renderer lowers a list of CSS
+`opacity()` functions to an isolated opacity layer. It multiplies
+the filter amounts and applies the result after compositing the
+children. The layer uses the existing row bounds and nesting
+limits. A separate fixture that combines opacity and blur uses the
+native macOS fallback and produced identical pixels in both builds.
+
+The regression fixture applies `opacity(80%) opacity(50%)` to two
+overlapping shapes and uses the same tile as a fill and a translated
+stroke. It also includes a fully transparent filter and edits the
+first filter to `opacity(60%)` after painting. The unedited document
+matched the native macOS baseline at 1× and 2×. The candidate
+reused the tile across the two paths at both densities and reused
+the new tile after the edit. Linux matched cached and uncached
+documents. The edited 256 × 108 crop matched across macOS and Linux
+at 1×, with RGB SHA-256
+`a5cc82b03926ea3a478bf2e7614acf21f7869ce19fd3feecf08a29d98bd75ba0`.
+The fixture SHA-256 was
+`41a47fc6301edfd7bafc8467f2a0ad3ac6eabe33af5638f96f177e2bafdb9945`.
+
+The Linux ARM64 check used V `5a39a4d`, single-unit Clang `-O0`
+and Boehm GC, with executable SHA-256
+`0cdbee6ce4a35bd90e5a445bac40947c9578f7072917b5623ae9a59f9609ae28`.
+The neighboring standalone, nested, delayed image, device stroke
+and Linux alpha/luminance mask-opacity checks passed. The painting
+effects tests, 23 smoke-driver unit tests, and Windows D3D11 and
+OpenGL source checks passed.
+
+The two macOS timing builds used V `d79ca45`, prealloc and
+single-unit C `-prod -no-prod-options`. The native and shared
+executable SHA-256 values were
+`59fe55632acb01f07302cf00815dd77cc7a09a112cf8496ada079e93141701c1`
+and `676690384d594dd78ac58ee3f6b8451ffc4a7e6696ad0e9703a1c3354eeaae64`.
+Two alternating pairs replayed 20 fills and 20 strokes from the
+same opacity-filtered tile at different positions. The generated
+input SHA-256 was
+`88a5d22fae785f056750dee9179f1fa921930fd1a6e3087b8762842496c226bf`.
+Each run used a 1024 × 600 viewport at 1× and a fresh profile and
+cache. JavaScript and whole-frame raster reuse were disabled.
+After a one-second settle, 48 synthetic idle callbacks replayed
+42 commands at scroll offset zero. The shared diagnostic logged
+1,880 cache hits between the first and last callbacks. The native
+diagnostic logged zero shared hits. Timed trials disabled tile
+logging. Host one-minute load ranged from 5.38 to 5.50 over 18
+logical CPUs.
+
+All six document captures had RGBA SHA-256
+`2e0d126d48853ea04bcc6c7a909f0309da7972edf75aa2892989bd3b7d121bb9`.
+Executables, bundled libraries and fixture hashes stayed fixed.
+The builds, browsers and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 0.817 / 0.757 | 0.955 / 0.879 | 1.049 / 0.920 | 3 / 3 |
+| 2 | 0.843 / 0.762 | 0.988 / 0.835 | 1.043 / 0.868 | 3 / 3 |
+
+The timings cover stationary software replay. Hardware frame
+timing and Windows runtime pixels remain unverified.
+
+### SVG color matrices inside shared pattern tiles
+
+In `5b9d1746b`, a single sRGB `feColorMatrix` on SourceGraphic
+with an unchanged alpha row can run in the shared renderer.
+The renderer maps the source bounds into the tile, clips
+pixel-aligned regions and filters the premultiplied isolation
+bitmap in place. Applying the same resource transform to the bounds
+and the paint lets translated copies share a cache key. The
+alpha-changing and linearRGB cases exercised the native fallback
+and matched the baseline.
+
+The fixture swaps color channels on opaque and translucent shapes,
+reuses the tile for a fill and a translated stroke, and edits the
+matrix after painting. The original shared document matched the
+native macOS baseline at 1×. At 2× the native baseline clipped the
+first copy to an eight-CSS-pixel green stripe and omitted its
+translucent shape. The shared renderer drew the full twelve-pixel
+stripe and the translucent shape in both copies. A separate
+filtered-stroke capture matched the native clipping at 1×.
+macOS logged one tile miss and one hit at each density before the
+edit, then a new key and another hit after the edit.
+
+The edited 256 × 108 crop matched across macOS and Linux at 1×,
+with RGB SHA-256
+`dc580ee477cf3d551631158c70fd08eb1763063f0671ba5421ec545731d1da7d`.
+The fixture SHA-256 was
+`f2705edf649d425407f938f820776663a20e1270d42209db70463149f0cb8976`.
+The Linux ARM64 executable used V `5a39a4d`, single-unit Clang
+`-O0` and Boehm GC. Its SHA-256 was
+`8928e0d940c378d1e4fa10c914b64c6db024286810c261813dc5084153343319`.
+The Linux cache-on and cache-off documents matched. The opacity,
+nested, delayed image, device-width and mask-opacity checks passed.
+The 23 smoke-driver unit tests and Windows D3D11 and OpenGL source
+checks passed. The matrix unit test passed with explicit V C mode
+after the default FastC compile timed out.
+
+The private macOS timing builds used V `d79ca45`, prealloc and
+single-unit C `-prod -no-prod-options`. The native and shared
+executable SHA-256 values were
+`6458c0c1bec71887555460daaa86a53469aa2f97e444552b518879a7b94c6e19`
+and `d22f2f1039ed7feaa6666169e392561acf041922e39d5a9b199a65e1a2b80e1b`.
+The shared build includes the concurrent adblock worker logging
+change `6cb8d7c22` and a newer bundled worker. Worker diagnostics
+were disabled in both runs.
+
+Two alternating pairs replayed 20 fills and 20 strokes from one
+tile at different positions. The generated input SHA-256 was
+`fc395983248d319d1cc4211e2e3dd39809ba9520373effd8fef7b958c8125a74`.
+Each 1024 × 600 viewport used 1× backing, a fresh profile and cache,
+and disabled JavaScript and whole-frame raster reuse. After a
+one-second settle, 48 synthetic idle callbacks replayed 42 commands
+at scroll offset zero. Separate diagnostics recorded 1,880 shared
+hits between the first and last callbacks on the candidate and zero
+on the native baseline. Tile logging was disabled during timing.
+Host one-minute load ranged from 9.05 to 9.23 across 18 logical CPUs.
+All six documents had RGBA SHA-256
+`37caadcb1ca020a57cf083caa6ff078ae4f13e7aa74f87bd3d0b1fbf97cd4522`.
+The executables, bundled libraries and fixtures were pinned for
+each run. The final builds, browsers and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 17.631 / 1.027 | 18.459 / 1.092 | 20.370 / 1.162 | 3 / 3 |
+| 2 | 16.675 / 0.913 | 17.825 / 0.992 | 18.324 / 1.077 | 3 / 3 |
+
+The timings cover stationary software replay of repeated tiles.
+Hardware frame timing and Windows runtime pixels remain unverified.
+
+### Default linearRGB matrices inside shared pattern tiles
+
+In `be3fa6427`, the shared renderer accepts the retained SVG
+graph for one alpha-preserving `feColorMatrix` on SourceGraphic
+in the default linearRGB space. The CPU pass unpremultiplies the
+source, decodes sRGB, applies the matrix in linear RGB, encodes
+sRGB and writes the premultiplied result back to the tile. Conversion
+and filtering stay in floating point until the final byte write.
+The alpha-changing linearRGB fixture used the native fallback and
+matched the prior native build.
+
+The fixture scales opaque and translucent midtones in linear
+space and edits the scale from .25 to .5 after painting. The
+macOS and Linux edited 256 × 108 crops matched at 1×, with RGB
+SHA-256 `caf9ba77ab3d13a4a7193afc32b040002e0e8ebc15876a988f157c555b7850ff`.
+The untouched shared macOS document matched the native reference
+at 1×. At 2× the native reference clipped part of the first solid
+shape and all of the first translucent shape. The shared renderer
+drew both shapes at their full extent in both copies. At each
+density the fill and translated stroke reused a key, and the edit
+produced a new key followed by reuse.
+
+The fixture SHA-256 was
+`3df7dcba6beb0832addd5fe8d37c2e77a380aaddc502f78fc4c8d82ece139a5c`.
+The Linux executable used V `5a39a4d`, single-unit Clang `-O0`
+and Boehm GC. Its SHA-256 was
+`73a30382d9e560206dfec46cdfeecb9a4335cb3de8f36ba1cb4541da174897ba`.
+Cached and uncached Linux document captures matched. The adjacent
+sRGB, opacity, nested and delayed image checks passed, as did
+the CPU matrix and transfer tests, painting effects tests, 23
+smoke-driver unit tests, and both Windows source checks.
+
+Both macOS timing builds used V `d79ca45`, prealloc and single-unit
+C `-prod -no-prod-options`. The native and shared executable
+SHA-256 values were
+`8dbc48bcad6565f6e44d99854525282d708622564c191398d536bb0663a37d8e`
+and `fb3ffe4aa99d0f61c0a86dda3f38ce02221046d9b5e43e58b28c0e078883e4cf`.
+The bundled image library and adblock worker hashes matched
+between builds. Executable, library and input hashes stayed fixed.
+
+Two alternating pairs replayed 20 fills and 20 strokes from the
+same tile at different positions. The generated fixture SHA-256
+was `40849a92e5a2047db8b63e6d8a164a8aff9c41d76223f9771659884954cda9bd`.
+Each run used a 1024 × 600 viewport at 1×, a fresh profile and cache,
+and disabled JavaScript and whole-frame raster reuse. After a
+one-second settle, 48 synthetic idle callbacks replayed 42 commands
+at scroll offset zero. Separate diagnostics recorded 1,880 shared
+cache hits on the candidate between the first and last callback,
+and zero on the native baseline. Timed trials disabled tile
+logging. Host one-minute load ranged from 14.60 to 14.82 across 18
+logical CPUs during timing. All six cropped documents had RGBA
+SHA-256 `fc57f0aaa195cc35b7cafa978333937be48eb97fd0ce6702afbc5f73dd98bd41`.
+The builds, browsers and memory guards exited zero.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 27.576 / 1.417 | 30.217 / 1.488 | 30.656 / 1.500 | 3 / 3 |
+| 2 | 24.615 / 1.649 | 27.170 / 2.804 | 27.680 / 3.047 | 3 / 3 |
+
+These results cover stationary software replay of repeated,
+cached tiles. Hardware frame timing and Windows runtime pixels
+remain unverified.
+
+### Alpha-changing matrices inside shared pattern tiles
+
+In `03d4afe06`, shared tile replay accepts a single sRGB or linearRGB
+`feColorMatrix` on SourceGraphic when transparent black stays
+transparent. That constraint lets the filter layer keep the
+existing bounds derived from its source paths. Alpha-only masks
+preserve RGB in a tile whenever the matrix can change coverage.
+This also preserves colors in any nested paint the matrix reads.
+
+The fixture derives alpha from red, then switches to blue with a
+live matrix edit. It samples a fill, a translated stroke and an
+alpha mask. [Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-alpha.html)
+
+Fresh macOS captures passed at 1× and 2×. The translated tiles
+reused their cache key, and the edit produced a fresh reusable key.
+The initial 384 × 108 RGB crop matched the native 1× capture,
+with SHA-256 `c68062c61789f5faf95d9817437a4fa46cee81654effdaadefe7053a05b5b6b4`.
+The adjacent macOS nested-pattern and opacity-filter checks passed.
+The CPU and painting tests passed, along with 23 smoke-driver unit
+tests and the Windows D3D11 and OpenGL source checks.
+
+Linux Xvfb captures passed with caching enabled and disabled
+for the alpha-changing fixture and both earlier matrix fixtures.
+The edited 384 × 108 RGB crops matched macOS at 1× with SHA-256
+`d9fd2b8454d1405e2e3b413f49359221992cce86c4c19a81b81e405fee0a6879`.
+The arm64 test build used V `5a39a4d` with Boehm GC and Clang
+`-O0`. The combined build was killed after V emitted C in the
+6 GiB VM. The separate guarded native compile and link reused
+that C, yielding executable SHA-256
+`487cc3108b81ff2c8386d57d35b7b27edcc2134cf7ec30e4ff61547a201bdc2d`.
+The executable, libraries and fixtures retained their hashes
+throughout the captures. The compile, link and capture guards
+each exited zero.
+
+Two alternating macOS pairs exercised 20 fills and 20 strokes
+using translated copies of the same tile. Each fresh process
+used a 1024 × 600 document viewport at 1×, a private profile and
+cache, disabled JavaScript and whole-frame raster reuse, and
+settled for one second. The 48 stationary callbacks drew 42
+commands at scroll position zero. Separate diagnostics found
+1,880 shared cache hits between the first and last callback in
+the candidate and zero in the native control. All six document
+captures had RGBA SHA-256
+`4d338c58beb67c5d07d9e2cc987f083d700c1d1eef5f55339d3cb4e392f550b7`.
+The browsers and guards exited zero. The timing fixture SHA-256
+was `c11942702eeff84c12a9d9f9bd82c2acc26c4b2bcf2d05d778a0447a284d79dd`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 36.283 / 1.649 | 51.484 / 2.443 | 58.546 / 2.654 | 3 / 3 |
+| 2 | 32.785 / 1.774 | 36.975 / 2.804 | 41.642 / 3.336 | 3 / 3 |
+
+Both builds used single-unit C and prealloc. The published
+control used literal `-prod` and had executable SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` and had
+executable SHA-256
+`9ca561bbc33f3b0f21b7d271b6322f2ef90d4793fe974fc61b11f68336e4da87`.
+The image library and adblock worker hashes agreed between the
+builds. Executable, library and fixture hashes stayed fixed.
+The timings are diagnostic because the optimization flags differed
+and the one-minute load ranged from 154.63 to 160.10 on 18 logical
+CPUs. Display timing and Windows runtime pixels remain unverified.
+
+### Positive alpha bias in SVG pattern tiles
+
+In `ea78e56e5`, a source color matrix can fill transparent pixels
+inside a whole-pixel retained crop. The tile keeps rows through
+the matrix layer and its enclosing opacity layers when the bias
+can add coverage. The crop clears any spill after the matrix.
+Matrices that preserve transparent pixels still clear before
+filtering, so the raster scan skips those pixels.
+
+The fixture uses a path without a fill to extend the retained
+rectangle past visible source ink. It checks that the matrix
+paints the empty rows, clips the result, and updates the fill,
+translated stroke, and alpha mask when its values change.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-bias.html)
+
+Fresh macOS captures passed at 1× and 2×, including the older
+matrix, nested-pattern, and opacity-filter cases. The 1× fill
+matched the published native output in both fixture states.
+Each native capture had 9,840 RGB pixel differences across
+the shifted stroke and mask because the native crop spilled
+into adjacent transparent areas. The shared crops matched
+the sample expectations on both platforms. The edited 384 × 108
+RGB crop had SHA-256
+`c6fb1f939060e72464b0d0025499ad4240189914eb1ef35bd6c42dde95628320`
+on macOS and on Linux with caching enabled and disabled.
+
+Linux Xvfb passed all four matrix fixtures with both row-band
+settings. The arm64 build used V `5a39a4d`, Boehm GC, and Clang
+`-O0`. Emitting C and then running Clang separately let
+the 6 GiB guest release the V compiler's memory between stages.
+The executable SHA-256 was
+`854ab6a53e005a94cb0676fe3e0e64322dba9b5a74bc7c0ac501404ade5d973c`.
+The CPU and painting tests, 23 smoke-driver tests, and
+Windows D3D11 and OpenGL source checks passed.
+
+Two alternating macOS pairs replayed 20 fills and 20 strokes
+with a tile-wide crop. The test used 48 stationary callbacks and
+42 commands per callback at scroll position zero. Each fresh
+process used a private profile and cache, a 1024 × 600 viewport
+at 1×, and one second to settle. JavaScript and whole-frame
+raster reuse were disabled. Separate diagnostics recorded
+1,880 shared tile hits in the candidate and zero in the native
+control between the first and last callback. The six RGBA
+document captures shared SHA-256
+`a185ce16a6535f6e7481955b481d923c9c2558fd7350f446941baf517d019d89`.
+The timing fixture SHA-256 was
+`7844a3f990d8a623b8b67769a179cfd6c7b3527c40837843fcb0ffc57076e4cd`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 97.131 / 1.750 | 117.918 / 2.088 | 130.540 / 3.645 | 3 / 3 |
+| 2 | 70.892 / 1.780 | 103.719 / 3.995 | 114.538 / 5.102 | 3 / 3 |
+
+Both timing builds used single-unit C and prealloc. The published
+control used literal `-prod` and had executable SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` and had
+executable SHA-256
+`166cccee524659af8dd15b68288ad55a3ff3c2d15d8acef4fc51c7b7d22e975b`.
+Input hashes stayed fixed, including the matching image library and
+adblock worker. Final browsers and guards exited zero. The timings
+are diagnostic given the different optimization flags and one-minute
+host load of 69.52–76.86 across 18 logical CPUs. Windows runtime
+pixels and display timing remain unverified.
+
+### Component transfer inside shared pattern tiles
+
+In `845cad5ce`, one `feComponentTransfer` on SourceGraphic can
+replay in the shared tile rasterizer in sRGB or linearRGB.
+Replay looks up straight RGBA channels and premultiplies the
+mapped output. The linearRGB pass decodes before indexing the
+table and encodes before writing the result. A lookup that
+gives transparent black coverage uses the existing layer and
+crop handling for filters that can fill clear pixels.
+
+The fixture checks both color spaces, translated fill and stroke
+tiles, and alpha masks. Its live edit changes the red and alpha
+tables and fills previously empty rows inside the crop.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-component-transfer.html)
+
+macOS passed at 1× and 2×. The initial 384 × 208 RGB crop
+matched the published native renderer with SHA-256
+`2b2aa824f8090becf3c62357eb63a59b537745f0789aba7b37b378374421c6a8`.
+The edited crop had SHA-256
+`962b02941bae4a40b2ede88ae9c552e82a2823e937e040480f9de72ec3a35f4e`
+on macOS and Linux. The edited native capture differed in
+24,600 pixels where its shifted copies extended past their
+crop. The original sRGB fill position matched in both states.
+Linux Xvfb passed with caching enabled and disabled in both
+row-band modes. The Linux executable SHA-256 was
+`f81ad7c9187281c7020ae9a1fe81152bb86ba855dc7a500c9d211962851b65d8`.
+The adjacent matrix fixtures, macOS opacity-filter fixture, CPU
+and painting tests, 23 smoke-driver tests, and Windows D3D11 and
+OpenGL source checks passed.
+
+Two alternating macOS pairs replayed 20 fills and 20 strokes from
+the unedited sRGB tile. Fresh processes used a 1024 × 600
+viewport at 1×, a private profile and cache, and a one-second
+settle. JavaScript and whole-frame raster reuse were disabled.
+Each run drew 42 commands in 48 stationary callbacks. Separate
+diagnostics showed zero shared tile hits in the published native
+control and 1,880 in the candidate between the first and last
+callback. All six document captures had RGBA SHA-256
+`250c522c69eaf6a14c4a6925d0bf26499fda7a8ae98a2a6724a5a29327e2ac40`.
+The timing input SHA-256 was
+`a60cea6992e9b2ab6a474c35fcc47ddcc112002e1d2617913749561ed471e005`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 20.481 / 1.185 | 21.991 / 1.224 | 23.670 / 1.266 | 3 / 3 |
+| 2 | 24.366 / 1.170 | 26.577 / 1.270 | 28.380 / 1.427 | 3 / 3 |
+
+Both macOS timing builds used single-unit C and prealloc. The
+published control used literal `-prod` with executable SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` with SHA-256
+`32abed5829e05abd9c9489d4cbc354ac0f8923d1cb8c8ee56261a99c0345b50d`.
+Executable, asset, and fixture hashes stayed fixed. Browsers
+and guards exited zero. The timings are diagnostic given the
+different C optimization flags. Host one-minute load was
+17.30–18.78 across 18 logical CPUs. Windows runtime pixels and
+display timing remain unverified.
+
+### Sequential component transfers inside shared SVG tiles
+
+In `255974010`, a tile can replay up to four consecutive
+`feComponentTransfer` stages on SourceGraphic in a single
+color space. The cold raster pass composes the tables before
+scanning pixels. If an intermediate stage reaches zero alpha,
+the composed lookup uses the RGB that the following stages
+would produce from transparent black. LinearRGB chains
+decode once and encode once.
+
+The fixture checks a fill, a translated stroke, and an alpha
+mask. Its live edit makes the first stage clear the source
+and the second restore coverage inside the retained crop.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-component-transfer-chain.html)
+
+macOS passed at 1× and 2×. The initial 384 × 108 RGB crop
+matched the published native renderer with SHA-256
+`111b21bebf2e41124579b4374af21268569982ebfd3713f0dd93721ea17002e4`.
+The edited macOS and Linux crops matched with SHA-256
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The edited native fill matched at its original position, and
+the native translated stroke and mask differed in 9,840
+pixels outside the crop. Linux passed with caching enabled
+and disabled in both row-band modes. A separate Linux sRGB
+capture passed the repeated fill and stroke samples. The
+Linux executable SHA-256 was
+`17e6bb4d12a2dbf8af7e3c01adc5245786c994d6e3dda3e743131d07c9d9d83c`.
+The single-transfer and matrix regressions, macOS opacity
+fixture, CPU and painting tests, 23 smoke-driver tests, and
+Windows D3D11 and OpenGL source checks passed.
+
+Two alternating macOS pairs replayed 20 fills and 20 strokes
+from the unedited sRGB chain. Fresh processes used a
+1024 × 600 viewport at 1×, a private profile and cache, and
+a one-second settle. JavaScript and whole-frame raster reuse
+were disabled. All 48 stationary callbacks drew 42 commands.
+Separate diagnostics recorded zero shared cache hits in the
+published native control and 1,880 in the candidate between
+the first and last callback. All six RGBA document captures
+had SHA-256
+`7fb875b560541d82bd8c8b9f077fa4161976d15a35458822835d5e32b20563e8`.
+The timing input SHA-256 was
+`1eebf78ac42c7e256019893c56bd60150a8043a0fe33e8f8867712ab526ad4e1`.
+
+| Pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 45.050 / 1.661 | 159.864 / 2.431 | 188.734 / 2.693 | 3 / 3 |
+| 2 | 45.310 / 1.998 | 67.293 / 2.587 | 82.606 / 3.756 | 3 / 3 |
+
+Both timing builds used single-unit C and prealloc. The
+published control used literal `-prod` and had SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private candidate used `-prod -no-prod-options` and had
+SHA-256
+`6c0ebc9b51fbf95c3fb55e5fed0e2a6ffee2e35143619aa05c1fe54cf9458a64`.
+Input hashes stayed fixed. The browsers and guards exited
+zero. Different C optimization flags and one-minute load of
+43.73–46.83 on 18 logical CPUs make these timings diagnostic.
+Windows runtime pixels and display timing remain unverified.
+
+### Consecutive color matrices inside shared SVG tiles
+
+In `4392579a3`, up to four adjacent SourceGraphic color matrices
+in the same color space share one bitmap pass. Each stage clamps and
+premultiplies its result. Zero alpha clears the RGB seen by the
+next stage, and only the final result is quantized. LinearRGB
+chains decode and encode once. A positive alpha bias reserves
+the filter crop so later stages can read the new coverage.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitivesOverview)
+
+The fixture exercises translated fills and strokes and an alpha
+mask. A live edit clears alpha in the first matrix and restores
+it in the second. macOS passed at 1× and 2×. At 1×, the initial
+384 × 108 RGB crop matched the published native renderer with
+SHA-256
+`b7f3a6d3b33826cb2966ca0eb206184db01c17dd67f409cfb8a362fb6d82128e`.
+The edited macOS and Linux crops matched with SHA-256
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The published native capture differed at 12,240 pixels, including
+red retained at the sampled fill interior (`#b86666`). The shared
+renderer and Brave's CDP capture of the edited fixture both
+produced `#666666` there. [Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-chain.html)
+
+Linux Xvfb passed with caching enabled and disabled and in both
+row-band modes. Its aarch64 executable SHA-256 was
+`0a0f2d2c05b2bd3237f4547beeff68deaa8e99e79b77baa14eac59ec0f1bff45`.
+The adjacent matrix, component-transfer and macOS opacity fixtures
+passed, along with the focused CPU and painting suites, 23
+smoke-driver tests, and Windows D3D11 and OpenGL source checks.
+
+Two alternating macOS pairs per workload replayed 20 fills
+and 20 strokes. Fresh processes used a 1024 × 600 viewport at
+1×, private profiles and caches, and a one-second settle.
+JavaScript and whole-frame raster reuse were disabled. All 48
+stationary callbacks drew 42 commands. The cached workload
+repeated one pattern. The cache-pressure workload cycled ten
+patterns through the eight-entry cache. Separate diagnostics
+recorded 1,880 shared hits on the first workload and 1,880
+shared misses on the second between the first and last
+callback. The published control recorded zero shared hits
+and misses. The GG SVG cache toggle leaves the macOS pattern
+cache active, so the cache-pressure workload used distinct
+pattern keys. All 12 RGBA document captures matched with SHA-256
+`cb0e8d92447d57df070bc09ed9001801092c2f13dd30b57a32e2bcff956a935f`.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 55.165 / 1.556 | 82.006 / 2.677 | 90.493 / 3.243 | 3 / 3 |
+| Cached 2 | 54.617 / 1.528 | 82.471 / 1.804 | 84.299 / 1.859 | 3 / 3 |
+| Cache pressure 1 | 42.388 / 5.401 | 75.202 / 9.161 | 97.682 / 10.123 | 3 / 3 |
+| Cache pressure 2 | 61.960 / 6.304 | 92.470 / 9.152 | 101.526 / 9.907 | 3 / 3 |
+
+The cached and cache-pressure fixture hashes were
+`2e01650d316c4b5ddf8e57d38a9de79e1168000afc2a5e87741048925e5400ea`
+and
+`790455c66f2bb38a3191466c67ab3374588bca7c64b7ab5faec26854c633c672`.
+Both builds used single-unit C and prealloc. The published
+literal `-prod` control executable SHA-256 was
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+The private `-prod -no-prod-options` candidate SHA-256 was
+`99ada788d13a60b5d0da87ff08f4a09e98dec4ff627a934e2ddf1055500b2897`.
+Input hashes stayed fixed, including the native library and
+adblock worker. Final browsers and guards exited zero. The different
+optimization flags and one-minute load of 102.83–129.92 on 18
+logical CPUs limit these measurements to diagnostic replay.
+Windows runtime pixels and display timing remain unverified.
+
+### Mixed color matrices and component transfers inside shared SVG tiles
+
+In `c1e423923`, the shared rasterizer replays up to four adjacent SourceGraphic
+matrix and component-transfer stages in one color space. The
+stage order is preserved and the layer is scanned once. Matrices
+clamp each result, transfer tables round lookup indices, and
+identity channels retain their precision. A zero-alpha result
+becomes transparent black before the next stage. LinearRGB
+replay decodes and encodes once.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitivesOverview)
+
+The live fixture edits a matrix to clear alpha and a transfer
+table to restore it inside the retained crop. macOS at 1× and
+2× and aarch64 Linux under Xvfb passed the fill, translated stroke,
+and alpha mask checks. At 1× the initial 384 × 108 RGB crop
+matched the published macOS renderer with SHA-256
+`6a0bf463b7496d63b17f06966934becbd7a32d8cf19e255c0d554abbb1cb3e2a`.
+The edited shared crops matched with SHA-256
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The published renderer extended gray coverage into 9,840 pixels
+outside the crop in its shifted stroke and mask. Brave's CDP
+reference matched the sampled fill and stroke interiors in both
+states. [Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-transfer.html)
+
+The Linux executable had SHA-256
+`e2f155fa6c67fb41a0b503007563d04566d5473a5efacf1bdd2c94d45e3f597e`.
+Captures covered the portable path with caching enabled and disabled
+in both row-band modes and a separate run with GG SVG enabled.
+The diagnostic Linux link used Clang `-O0` and downgraded a generated
+function-pointer type error in concurrent LibJS code. The fixture
+ran through JavaScriptCore. Focused raster and graph tests, 23
+smoke-driver tests, and Windows D3D11 and OpenGL source checks passed.
+
+Each of two macOS workloads drew 20 fills and 20 strokes with
+the same sRGB matrix and transfer chain. Two alternating pairs
+per workload used fresh processes and private profiles and
+caches, a 1024 × 600 viewport at 1×, and a one-second settle.
+All 48 stationary callbacks drew 42 commands. JavaScript and
+whole-frame raster reuse were disabled. One workload repeated a
+pattern. The other cycled ten patterns through the eight-entry
+cache. Separate diagnostics counted 1,880 shared hits in the
+first workload and 1,880 shared misses in the second between the
+first and last callbacks. The control recorded zero shared hits
+and misses. All 12 RGBA document captures matched with SHA-256
+`2134c5029954da21f391aa27e8c73a07d4ae6daf038085113e7c2263ea147cb6`.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 42.486 / 1.704 | 59.477 / 2.380 | 70.422 / 3.198 | 3 / 3 |
+| Cached 2 | 50.581 / 1.587 | 76.037 / 1.923 | 92.671 / 3.153 | 3 / 3 |
+| Cache pressure 1 | 38.025 / 6.377 | 72.277 / 8.916 | 75.077 / 11.266 | 3 / 3 |
+| Cache pressure 2 | 54.050 / 6.498 | 69.076 / 9.852 | 114.574 / 13.755 | 3 / 3 |
+
+The cached and cache-pressure fixture hashes were
+`f646b75c89981abc71bc2f20c8596655cebfc74b1998db72ced7056fb35459f0`
+and
+`476c975294a5102ea090ac79e56db0e74a930457a6271a6187377db020b2a88d`.
+The pixel control had SHA-256
+`f35ad55c47210ecf13859efd66b30e75007d3a86667bce0a6f8254a1bd29705e`.
+A new production bundle published before timing started. Its
+literal `-prod` single-C executable had SHA-256
+`c4a8468c151de7e25ec8949497d8d2e9fad7a228a92350ef8231827fbbcd3224`.
+The private single-C candidate used `-prod -no-prod-options`
+with a Clang `-O0` override and had SHA-256
+`c1659787e8e2c50d45fe0ac9c53bf894db2e348524391955bf2171ae83874d65`.
+The timed inputs stayed fixed, including the native library
+and adblock worker. The browsers and guards exited zero.
+Different compiler flags and one-minute load of 108.43–112.06
+on 18 logical CPUs limit the timings to diagnostic replay.
+Windows runtime and display timing remain unverified.
+
+### Saturation and hue rotation inside shared SVG tiles
+
+In `a6b7e3e8e`, the shared tile renderer expands the `saturate` and `hueRotate`
+forms of `feColorMatrix` when preparing the filter. Hue angles
+wrap at 360°. These stages can share a bitmap scan with explicit
+matrices and component transfers in the same color space.
+The existing matrix scan clamps the result of each stage and
+preserves source alpha through both forms.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#feColorMatrixElement)
+
+The fixture checks a fill, a translated stroke, and an alpha
+mask. It starts with saturation 0.5 and a 90° hue rotation in
+sRGB. A live edit switches to linearRGB, saturation 2, and a
+−90° rotation. The published macOS renderer showed `#d100ff`
+in the edited fill. This matches using the out-of-range
+saturation result as the next matrix input. The shared
+sequence clamps after saturation and produces `#af4bff`,
+matching Brave's reference.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-adjustments.html)
+
+macOS passed at 1× and 2×. Linux Xvfb passed with and
+without tile caching, with and without row bands, and with
+GG SVG enabled. At 1×, the 384 × 108 RGB crops matched
+between macOS, Linux, and Brave in both states. The initial
+crop also matched the published macOS renderer. Its SHA-256
+was `f5104963bcae3b3daac3d886e315b7938667b76e43d5e2d9b9de042df2b58f18`.
+The edited crop SHA-256 was
+`fa298242bc6c2c5c551ddb7169dfd157e3997f67566cc9139870dfc81becf3d3`.
+The published control differed in 2,400 edited pixels across
+the fill and stroke. The alpha-mask region matched.
+
+The aarch64 Linux executable SHA-256 was
+`064e6d5d98ec449cf598b28292239eefb6a78e86d923131cfb75cc69382b2d82`.
+The diagnostic Clang `-O0` link retained the generated LibJS
+function-pointer diagnostic allowance. The older matrix and
+transfer fixtures, the macOS opacity fixture, the focused
+painting suite, 23 smoke-driver tests, and Windows D3D11
+and OpenGL source checks passed.
+
+Two alternating macOS pairs per workload drew 20 fills and
+20 strokes in sRGB using fresh processes and private profiles
+and caches. The viewport was 1024 × 600 at 1× with a one-second
+settle. JavaScript and whole-frame raster reuse were disabled.
+All 48 stationary callbacks drew 42 commands. The second
+workload cycled ten hue angles separated by 360° through the
+eight-entry cache. Separate diagnostics counted 1,880 shared
+hits for the cached workload and 1,880 misses under cache
+pressure between the first and last callbacks. The control
+recorded zero shared hits and misses. All 12 RGBA document
+captures matched with SHA-256
+`3ced3e0cbf8a1c69816bf9923aa9b44afb0ac9016375e600490262e68f1b4e19`.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 22.028 / 1.201 | 23.552 / 1.242 | 23.970 / 1.273 | 3 / 3 |
+| Cached 2 | 19.861 / 1.097 | 21.614 / 1.153 | 21.864 / 1.178 | 3 / 3 |
+| Cache pressure 1 | 19.166 / 4.462 | 20.484 / 4.542 | 20.791 / 4.554 | 3 / 3 |
+| Cache pressure 2 | 20.389 / 4.409 | 21.635 / 4.512 | 22.079 / 4.518 | 3 / 3 |
+
+The cached and cache-pressure fixture hashes were
+`9a0e2a856f10b89367c79d035e96b647e5b5a509fc6828e6612fcf72e8a40a38`
+and
+`3ad474d6b401716ee4414c675d3b434c47b742ddbd8594c159a190da6798939e`.
+The published single-C `-prod` control had SHA-256
+`c4a8468c151de7e25ec8949497d8d2e9fad7a228a92350ef8231827fbbcd3224`.
+The private single-C `-prod -no-prod-options` candidate with a
+Clang `-O0` override had SHA-256
+`a9b895f28f606a3fd3361b337df911d734f7099449c54706e1b1e0acb7bdbd91`.
+Inputs stayed fixed, including the native library and adblock
+worker. Browsers and guards exited zero. Different compiler
+flags and one-minute load of 37.55–52.13 on 18 logical CPUs
+limit the timings to diagnostic replay. Windows runtime and
+display timing remain unverified.
+
+### Color-space changes inside shared SVG tiles
+
+In `f66fce146`, a shared SourceGraphic chain can switch between sRGB and linearRGB
+across up to four matrix or component-transfer stages. The rasterizer
+converts straight RGB at the requested boundaries in the same bitmap
+scan and quantizes the premultiplied result when it writes the tile.
+Color-space conversions preserve alpha. Transfer stages round their
+lookup indices. Chains whose stages all use
+one space can use the specialized matrix and table scans.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#propdef-color-interpolation-filters)
+
+The fixture uses an sRGB matrix, a linearRGB matrix, and another
+sRGB matrix. It checks a fill, a translated stroke, and an alpha
+mask. The live edit clears alpha in the first matrix and restores
+coverage in the last, inside an explicit filter region. The
+published macOS painter restores gray in the interior and
+extends it outside the edited stroke and mask crops. The
+shared clips match Brave's static reference states.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-color-matrix-spaces.html)
+
+macOS passed at 1× and 2×. Linux Xvfb passed with and without
+caching, with and without row bands, and with GG SVG enabled.
+At 1×, the 384 × 108 RGB crops matched between macOS, Linux,
+and Brave in both states. The initial crop matched the published
+macOS painter with SHA-256
+`b02fa5a2c2345aeec9d4decca4bac0a67fef32e4dd7d1f2758aa4ff8a9b5a2a6`.
+The edited crop SHA-256 was
+`d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83`.
+The published control differed in 9,840 edited pixels across
+the translated stroke and alpha mask.
+
+The aarch64 Linux executable SHA-256 was
+`62ed2da61f927fc534bfe40bfab3187c2940e7f20306a0df5f232b2686c3a4ca`.
+The diagnostic Clang `-O0` link retained the generated LibJS
+function-pointer diagnostic allowance. The first Linux capture
+job overlapped the fixture's explicit-region edit and failed
+input verification. The final replay pinned the updated fixture
+throughout. Focused raster and painting suites, 23 smoke-driver
+tests, and both Windows source checks passed.
+
+Each of three macOS workloads drew 20 fills and 20 strokes
+in two alternating pairs. Fresh processes used private profiles
+and caches, a 1024 × 600 viewport at 1×, and a one-second settle.
+JavaScript and whole-frame raster reuse were disabled. Each of
+48 stationary callbacks drew 42 commands. The second workload
+cycled ten mixed-space tiles through the eight-entry cache.
+The third workload used one sRGB matrix to exercise the
+existing shared single-space path.
+
+Separate diagnostics counted 1,880 hits with cached mixed-space
+tiles and 1,880 misses under cache pressure. The published control
+recorded zero shared hits and misses on these two workloads. Both
+builds recorded 1,880 hits on the single-space workload. All 18 RGBA
+document captures matched with SHA-256
+`9c4a99ea7be5b74b74377c3bf94f63bd7bdcbadd534bbea5b3d71eca10f6a979`.
+
+| Workload and pair | Published / candidate median replay, ms | Published / candidate p95, ms | Published / candidate maximum, ms | Published / candidate median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached mixed-space 1 | 16.202 / 0.920 | 16.805 / 0.982 | 16.986 / 0.991 | 3 / 3 |
+| Cached mixed-space 2 | 20.160 / 1.095 | 21.643 / 1.284 | 21.842 / 1.456 | 3 / 3 |
+| Cache pressure 1 | 18.547 / 6.014 | 19.872 / 6.258 | 20.509 / 6.273 | 3 / 3 |
+| Cache pressure 2 | 22.005 / 4.641 | 22.883 / 4.900 | 23.111 / 4.947 | 3 / 3 |
+| Cached single-space 1 | 0.659 / 0.765 | 0.700 / 0.833 | 0.718 / 0.877 | 3 / 3 |
+| Cached single-space 2 | 0.529 / 0.837 | 0.576 / 0.899 | 0.590 / 0.971 | 3 / 3 |
+
+The workload input hashes in order were
+`30f148b12b7bd2b3ddfadd33a8436eea5d7ad7df428c1ac43063c0571e9f4438`,
+`1b1432b2d4d4d75b83b139fce5875c9e65c8fb2cb436fc016b0ec1e260967ebb`,
+and `3289bece34abf898473cdb4ba37ca00d47ff067ceed9c6285babb8258b64f6d1`.
+The published single-C `-prod` executable had SHA-256
+`c4a8468c151de7e25ec8949497d8d2e9fad7a228a92350ef8231827fbbcd3224`.
+The private single-C `-prod -no-prod-options` candidate with
+Clang `-O0` had SHA-256
+`666eb27e00666e9101afc8e51c64fb6a60c05755599c733d4241114562c2871c`.
+Inputs stayed fixed, including the native library and adblock
+worker. Browsers and guards exited zero. One-minute host load
+was 9.77–11.28 on 18 logical CPUs. The single-space diagnostic
+median increased by 0.106 and 0.308 ms. Production timing with
+matching compiler flags remains open, as do Windows runtime
+and display measurements.
+
+### Retaining SVG tile eligibility with the display list
+
+In `22557eb69`, layout records the shared tile summary with
+the immutable operation list. Replay reads the summary before
+looking up the tile. It carries filter eligibility, nested
+operation count and depth, and the presence of visible images.
+Nested fills and strokes are charged for each use. Visible
+bitmaps retain decoded-image identities in the cache key.
+
+Focused tests cover prepared and raw records, unsupported
+filters, image propagation, and the combined operation and
+depth limits. The macOS and aarch64 Linux browser runs passed
+the matrix, transfer, nested stroke, standalone, opacity, and
+delayed nested bitmap fixtures. The macOS captures ran at 1×
+and 2× where the fixture's driver uses both. The Linux
+executable SHA-256 was
+`7fbc49920a9bed2dcb753f42d615e79165348b3fcb9e7767ebd6629ccbfe7955`.
+The diagnostic Clang `-O0` link retained the generated LibJS
+function-pointer diagnostic allowance. Both Windows source
+checks and 23 Python smoke-driver tests passed.
+
+Three macOS workloads drew 20 fills and 20 strokes using
+one cached tile per process. The first tile used one sRGB
+matrix. The second used the same three-stage mixed-space graph
+as the regression. The third repeated its filtered group
+12 times inside the tile. The viewport was 1024 × 600 at 1×
+with a one-second settle. Fresh processes used private profiles
+and caches. JavaScript and whole-frame raster reuse were
+disabled. All 48 stationary callbacks drew 42 commands.
+Separate diagnostics counted 1,880 shared hits per workload
+on each build between the first and last callbacks.
+
+| Workload and pair | Before / after median replay, ms | Before / after p95, ms | Before / after maximum, ms | Before / after median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Single space 1 | 1.1085 / 0.9645 | 1.1720 / 1.0490 | 1.2730 / 1.1650 | 3 / 3 |
+| Single space 2 | 0.9330 / 1.1140 | 0.9870 / 1.1780 | 1.0290 / 1.2090 | 3 / 3 |
+| Mixed spaces 1 | 1.1140 / 0.8275 | 1.1770 / 0.8620 | 1.2000 / 0.8860 | 3 / 3 |
+| Mixed spaces 2 | 0.7925 / 0.8850 | 0.8390 / 1.0130 | 0.8960 / 1.0810 | 3 / 3 |
+| Repeated filter groups 1 | 1.2275 / 0.8460 | 1.3700 / 0.9000 | 1.4360 / 0.9220 | 3 / 3 |
+| Repeated filter groups 2 | 1.2670 / 0.8680 | 1.3630 / 1.0240 | 1.3850 / 1.0880 | 3 / 3 |
+
+Both private builds used the same compiler, single-unit C,
+`-prod -no-prod-options`, prealloc, and a Clang `-O0` override.
+The before and after executable hashes were
+`d31f850f6912c79141c52c051f47c3d5f21bdeddef74a32dd058fa7ddcb54acd`
+and
+`895f210c48e6c7bcb8f125c9305f46cf1a65e018007cf025f8be5a001ff81a65`.
+Checkout source inventories had SHA-256
+`a2e394e50d281444aedb995fc6daff1c86a0779e422bbe6afe96f1fbc3d139e4`
+and
+`682ad01fbdc420c412d92d367b42835e1c542109070b8062cd7be8aee0904417`.
+The source inventory comparison identified the six feature
+files as the only differences. All 18 decoded RGBA documents
+matched with SHA-256
+`9c4a99ea7be5b74b74377c3bf94f63bd7bdcbadd534bbea5b3d71eca10f6a979`.
+The fixture hashes in table order were
+`e4dbc6134d5b0f4b41849a2a509497732463c34668652528fc5fa256347c7f75`,
+`880a7eded1a394045dab20bf465a9e76579719c6c9aa1583b8a1f57f5a3e86a3`,
+and `f56f6cadd46b95ec737125b6de96b8e88959d217ba65c78b9b0532e51ef4391e`.
+Inputs stayed fixed through the trials. Browsers and guards
+exited zero. One-minute load ranged from 10.50 to 11.86 across
+18 logical CPUs. Repeated filter groups improved in both
+pairs. The two smaller workloads had mixed results. This
+cohort measures synthetic replay with matched diagnostic
+builds. Optimized production and Windows runtime timings
+remain open.
+
+### Integral SVG offsets inside shared tiles
+
+In `2739aaed7`, a standalone `feOffset` on SourceGraphic can replay in the
+shared tile rasterizer when its explicit numeric user-space
+filter region and offset align with the tile's pixel grid.
+The shared adapter translates the source paint and clips the
+isolated result to the filter region. The translation requires
+no additional bitmap or pixel copy. Nested filter scopes carry
+the translation into child paints and regions. The shared tile
+key includes the projected region and offset. The native
+fallback key also includes its source bounds.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterRegion)
+
+The fixture applies an offset inside a translated SVG group used
+by a pattern fill, stroke, and alpha mask. A live edit reverses both
+offset components and moves the filter region's left edge. The
+checks include the vacated source position, the clipped edges,
+and a stripe outside the filter scope.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset.html)
+
+The macOS fixtures passed at 1× and 2×. Linux passed with the
+shared GG path, with caching enabled and disabled, and with
+and without row-banded mask rasterization. The shared macOS
+and Linux 384 × 108 RGB captures matched Brave pixel for pixel.
+The initial SHA-256 was
+`997ca262073cd79a55dc67e031a7b031b280f465cc0d5af5b67f7da4c9dd19d2`.
+The edited SHA-256 was
+`0f6ac1110e6e257aba60c67967e9e698859eb3520fd19f94857800288c6eb664`.
+The previously published macOS browser differed by 690 and
+1,590 pixels, respectively, on this fixture.
+
+The fixture and nearby matrix, transfer, and opacity fixtures
+passed on macOS and Linux. The macOS nested stroke checks, the
+focused painting tests, both Windows V source checks, and 23
+Python driver tests passed. Windows runtime validation remains
+open. The Linux executable SHA-256 was
+`0dad87e4cba9ae49f18520ce31f94a05e09d6534b2aa4675f46f79944cdcaa59`.
+The Linux diagnostic Clang `-O0` link kept the generated LibJS
+function-pointer diagnostic allowance.
+
+The first macOS capture had one miss followed by hits for all
+three uses of the tile. A fractional-offset fixture exercised
+the native fallback and matched the published macOS capture,
+with RGB SHA-256
+`0d0ebafd077c36b7232fb31b5505709589a5254228951900893d0e70caad103f`.
+
+The macOS replay diagnostic used 20 fills and 20 strokes. One
+workload reused a single tile. The other cycled through ten
+offsets, exceeding the eight-entry cache. Each trial launched a
+fresh browser with a private profile and cache, a 1024 × 600
+viewport at 1×, and a one-second settle. JavaScript and
+whole-frame raster reuse were disabled. All 48 stationary
+callbacks replayed 42 commands. Separate traces counted
+1,880 hits for the first workload and 1,880 misses for the
+second between the first and last callbacks.
+
+| Workload and pair | Native / shared median replay, ms | Native / shared p95, ms | Native / shared maximum, ms | Native / shared median allocated KiB |
+| --- | ---: | ---: | ---: | ---: |
+| Cached 1 | 55.4975 / 2.0185 | 70.9410 / 2.9600 | 72.7110 / 3.1360 | 3 / 3 |
+| Cached 2 | 55.6505 / 1.9440 | 74.1950 / 5.1350 | 78.4920 / 5.2470 | 3 / 3 |
+| Cache pressure 1 | 55.5990 / 4.8450 | 75.6070 / 7.1060 | 88.7110 / 7.6590 | 3 / 3 |
+| Cache pressure 2 | 39.0520 / 4.3320 | 51.4760 / 5.1390 | 59.4930 / 5.4180 | 3 / 3 |
+
+Native and shared decoded documents matched throughout the
+12 trials. Cached and cache-pressure SHA-256 digests were
+`2739b260dfa7ac02e39b4d1c7460b56b1076a84f7faade6c2068826954c34121`
+and
+`7cf1fe90469507253a9a2bb4c7436c6a24d3e4a486d74a789fad1fd9ccbaf17b`.
+The respective fixture digests were
+`c944acc45eccbd4224c21bf6b99dae1d847347a14519384dd8f41bd631657d06`
+and
+`1aaaa5d2b315c36303789c32b5731d03d6c454c01c32573cd7986350423cb4e2`.
+The published control used single-unit C `-prod`, executable
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102`.
+The shared build used single-unit C `-prod -no-prod-options`
+with a Clang `-O0` override, executable
+`e76a4e3445142bfacd3c1a602397cbe49e9e4cb9b4763c41195691be859d2b7a`.
+Executable, fixture, library, and worker identities stayed
+fixed throughout each comparison. Browser and guard exits
+were zero. One-minute host load ranged from 69.41 to 88.68
+on 18 logical CPUs. Matched optimized production timing
+remains open.
+
+Two earlier diagnostics exposed cache-key bugs. The first
+stopped after the cached trace counted 1,880 misses because
+its key included placement-dependent native source bounds.
+After separating those bounds, the cached trial pairs matched
+pixels and measured 33.4185 / 1.4500 ms and 30.7880 / 1.5000 ms
+median replay. The cache-pressure trace then stopped after
+unexpected reuse collapsed ten offsets to seven keys.
+Byte-wise hashing of projected geometry fixed the cancellation
+between signed projections and the filter graph's own offsets.
+Both diagnostic guards returned 1 after the failed assertions.
+
+### SVG offset regions relative to the source bounds
+
+In `47dc73150`, standalone tile offsets can resolve the default
+`objectBoundingBox` filter region for sources with a single
+linear path contour. The region uses the tight geometry bounds
+before paint transforms and applies the default −10% origin
+and 120% size when the corresponding attributes are omitted.
+Explicit fractions and percentages use the same bounds.
+The offset still uses user-space primitive units. The shared
+renderer takes the existing whole-pixel translation path when
+both the region and offset align with the tile raster.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterRegion)
+
+The fixture paints the same tile as an SVG fill, a stroke, and
+an alpha mask. It starts with the default region. A live edit
+moves the source path, reverses the offsets, and sets the region
+using a mix of fractions and percentages.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-bounds.html)
+
+The 384 × 108 RGB captures matched between macOS, Linux, and
+the static Brave reference for both states. The initial SHA-256
+was `4d0c1336d566c6e79b741a30f2e8f93c762119cbb8d2e460b3a0a209f051cf49`.
+The edited SHA-256 was
+`e2bee04210d760ecdc0fe8dc6cd87b2d14f15b70f637fa819adccf1e18e31867`.
+The previously published macOS control differed by 3,330 and
+6,840 pixels, respectively. The command-line Brave capture
+timed out. A fresh DevTools capture passed for each reference.
+
+Linux passed with GG enabled and row bands, and with group
+caching enabled and disabled. macOS passed at 1× and 2×.
+The existing explicit-region fixture passed on both systems.
+The focused SVG unit tests, 23 Python driver tests and both
+Windows V source checks passed. Windows runtime validation
+remains open. The Linux executable SHA-256 was
+`960e0609e4de709c3d3df006ba00298c4bbb7b897a62c1c698ba81e003706364`.
+The Linux Clang `-O0` build used the existing generated
+LibJS function-pointer diagnostic allowance.
+
+The macOS trace showed one tile miss followed by two hits
+in the initial frame and a new key after the live edit.
+The replay comparison used the same executable with two
+equivalent filter regions, one explicit in user-space
+coordinates and one derived from the default object bounds.
+Each scene drew 20 fills and 20 strokes with private profiles
+and caches, a 1024 × 600 viewport at 1×, and a one-second settle.
+JavaScript and whole-frame raster reuse were disabled. Each run
+replayed 42 commands in all 48 stationary callbacks. Separate
+traces logged 1,880 hits for the same tile key and zero misses
+between the first and last callbacks in both forms.
+
+| Pair | Explicit / object median replay, ms | Explicit / object p95, ms | Explicit / object maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.5815 / 1.6150 | 1.8120 / 1.8260 | 1.8260 / 1.8840 |
+| 2 | 1.6150 / 1.7100 | 1.8270 / 2.2310 | 1.8480 / 2.4690 |
+
+Median allocation was 3 KiB per callback in both forms.
+All six fresh browsers and the guard exited zero. Outputs
+matched with decoded RGBA SHA-256
+`4ad8183110967ed596ec8c31ea6178513c25fd1cb068fe5d9eebdf109a22df67`.
+The explicit and object input HTML hashes were
+`0ae119495253bd7ed6450509cc30986f7802f392dea61f18fee5652daa510111`
+and
+`e3d5088663f4255ecff7d87ec946eed7985239dfc2914aa1ca64124b0797c814`.
+The macOS executable SHA-256 was
+`d68c18c38cee9e2117da8eb35297d3c6c67db14bc949edc85f2fed82a9b587a1`.
+It used single-unit C `-prod -no-prod-options` with Clang
+`-O0`. The executable, fixture, library, and worker inputs
+stayed fixed. The object form's replay median was higher in
+both pairs. One-minute host load was 104.24–115.66 on 18
+logical CPUs. The synthetic replay results leave optimized
+production timing unresolved.
+
+### SVG tile offsets in object bounding box primitive units
+
+In `6806a43aa`, the shared SVG tile renderer resolves a standalone `feOffset`
+with `primitiveUnits="objectBoundingBox"` by scaling `dx`
+and `dy` by the source's tight geometry width and height.
+The filter region and the offset use their own coordinate
+systems. The existing whole-pixel replay applies once both
+project onto the tile's pixel grid. Object-relative offsets
+use the single-linear-contour geometry supported by the
+bounding-box region resolver.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#feOffsetElement)
+
+The fixture sets a fixed user-space filter region and uses
+one pattern as a fill, stroke, and alpha mask. A live edit
+changes the source from 20 × 10 to 30 × 20. The same two
+`.4` values resolve first to (8, 4) and then to (12, 8).
+The fixture samples both offset axes, the clipped edge, and
+the stripe after the isolated layer.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-primitive-units.html)
+
+The 384 × 108 RGB captures from macOS and Linux matched
+the static Brave reference for both states. Initial and edited
+SHA-256 digests were
+`528012f60e70bdbfc901f7b8551b3d6dba6599f34699f6c738422ef3ff3a5259`
+and
+`9c46f1f8965533bcb8d0ed87abfdb3ca836d90f4e07aaf282abec9399cb0b088`.
+The previously published macOS executable
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102`
+differed by 4,410 and 10,980 pixels, respectively.
+
+All three offset fixtures passed on macOS at 1× and 2× and
+on Linux with group caching enabled and disabled. The Linux
+GG run used row bands. The macOS trace showed one key shared
+by the fill, stroke, and mask, and a new key after resizing.
+The focused SVG unit tests, 23 Python driver tests, and both
+Windows V source checks passed. Windows runtime validation
+remains open. The aarch64 Linux executable SHA-256 was
+`afee0184531438ad05bfeb2033f22c1a142a02618d68c34cfa4869b53ab05a4f`.
+Its Clang `-O0` build used the existing generated LibJS
+function-pointer diagnostic allowance.
+
+The macOS replay diagnostic compares user-space offsets (8, 4)
+with the equivalent object-relative pair (.4, .4) on the
+same executable. Both scenes drew 20 fills and 20 strokes.
+Fresh processes used private profiles and caches, a 1024 × 600
+viewport at 1×, and a one-second settle. JavaScript and
+whole-frame raster reuse were disabled. Each of 48 stationary
+callbacks replayed 42 commands. In separate diagnostics, both
+forms recorded 1,880 hits on a single tile key and zero misses
+between the first and last callbacks.
+
+| Pair | User-space / object median replay, ms | User-space / object p95, ms | User-space / object maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 0.7370 / 0.7235 | 0.7890 / 0.7870 | 0.7940 / 0.8130 |
+| 2 | 0.7340 / 0.7355 | 0.9090 / 0.7830 | 0.9160 / 0.8400 |
+
+The median allocated amount was 3 KiB per callback in all
+runs. The six decoded RGBA captures matched with SHA-256
+`cb4c0ff01ae7a7f1d29d8dd80ef8243f25274e441c68975b4778ad67f3c9394f`.
+The input HTML hashes in user-space and object order were
+`e4afca5d18c3c5028dcb7e8dbf8fc74c65551b120739021254c2c7c122d743bb`
+and
+`57b9301d7e195624b7b8c70a47f4067e4529c8acd4a6f9a49b79ed12adf136a2`.
+The macOS executable SHA-256 was
+`21951d491c60e60bf89e28bcd32e07b43256e0fdc0b4751dbf16a6e7b331afbd`.
+It used single-unit C `-prod -no-prod-options` with Clang `-O0`.
+Executable, library, worker, and fixture hashes stayed fixed.
+One-minute host load was 16.39–17.75 on 18 logical CPUs.
+All browser and guard exits were zero. This measures
+stationary replay after layout. Optimized production timing
+remains open.
+
+### Viewport-relative SVG offset filter regions
+
+In `d025f665a`, a standalone tile `feOffset` can use percentage coordinates
+in its `filterUnits="userSpaceOnUse"` region. Horizontal
+and vertical attributes resolve against the source SVG
+viewport's width and height. The resolver follows the original
+source element because pattern resource layout is attached to
+the paint target. It uses the author's viewBox dimensions
+when present and the used viewport dimensions otherwise.
+Numeric regions still resolve without a viewport walk. The
+projected offset and crop use the existing whole-pixel replay.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterRegion)
+[SVG viewport units](https://svgwg.org/svg2-draft/coords.html#Units)
+
+The fixture defines the pattern and filter in an SVG with
+a 400 × 100 viewBox and a 600 × 150 CSS size. Another SVG with
+an 800 × 200 viewBox uses the pattern for a fill, stroke, and
+alpha mask. It scales its drawing by two. A live edit shrinks
+the percentage region while keeping the offset and source
+geometry fixed.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-viewport.html)
+
+The 768 × 208 RGB captures from macOS and Linux matched
+the static Brave reference in both states. The initial and
+edited SHA-256 digests were
+`87ee3d3a514008a586c96b56122531174f6a527f19227f876227587cb14cf292`
+and
+`017259321c6b777d5bc10587d28050e17c6a56801254794a970aa8648210e656`.
+The previously published macOS executable
+`6a541ab7cc0463cbc93bdb76e769b62b1dc131df5256e7275163af3ae2678102`
+differed by 7,800 and 9,600 pixels, respectively. A source
+viewport with equivalent laid-out dimensions and no viewBox
+produced the same pixels on both systems and reused the
+same macOS tile identities.
+
+All four offset fixtures passed on macOS at 1× and 2× and
+on Linux with group caching enabled and disabled. The Linux
+GG run used row bands. The combined C build exhausted guest
+memory. Deferred linking with V's captured compiler arguments
+passed under the guard. The aarch64 Linux Clang `-O0` executable
+SHA-256 was `cfbfd83a228d7c058d495b42a34e52e0c7f311b74cad38720964cae4514b756a`.
+
+The focused SVG unit tests, 23 Python driver tests, and both
+Windows V source checks passed. Windows runtime validation
+remains open.
+
+The macOS diagnostic compares the percentage filter region
+with the equivalent numeric rectangle (8, 8, 24, 20) on the
+same executable. Fresh processes drew 20 fills and 20 strokes
+with private profiles and caches, a 1024 × 600 viewport at 1×,
+and a one-second settle. JavaScript and whole-frame raster
+reuse were disabled. All 48 stationary callbacks replayed 42
+commands. Separate traces recorded 1,880 hits for the same
+tile key and zero misses between the first and last callbacks.
+
+| Pair | Numeric / percentage median replay, ms | Numeric / percentage p95, ms | Numeric / percentage maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.0895 / 1.2120 | 1.1130 / 1.2780 | 1.1820 / 1.4520 |
+| 2 | 1.2195 / 1.3065 | 1.5910 / 1.5300 | 1.5990 / 1.6050 |
+
+Median allocation was 3 KiB per callback in all runs.
+The six decoded RGBA captures matched with SHA-256
+`34dfd54485552cb56008b99848ae75e05f31ac51a7b8bbefd5e7ed2d27375690`.
+The input HTML hashes in numeric and percentage order were
+`c953869783f208f545f0e7ab58d824c79e1de958b95334395768e2dd6dc37694`
+and
+`e2da6d8542d157d74b064b90cd9bdc6455acd3fca5f86fbc4a3be59eff9796d6`.
+The macOS executable SHA-256 was
+`f347f2f0a41ad307fe806871a15c64866456d0a11f32f0a84e7755be0b5713ec`.
+It used single-unit C `-prod -no-prod-options` with Clang `-O0`.
+Executable, library, worker, and fixture hashes stayed fixed.
+One-minute load was 13.84–14.57 on 18 logical CPUs, and all
+browser and guard exits were zero. Percentage replay had
+a higher median in both pairs. The diagnostic measures
+stationary replay after layout, and optimized production
+timing remains open.
+
+### SVG offset primitive subregions in shared tiles
+
+In `b8a8cd485`, a standalone `feOffset` on SourceGraphic can specify an
+output subregion. Explicit numbers and percentages resolve
+in the primitive's units. Omitted coordinates inherit the
+corresponding filter-region values. The shared tile clips the
+translated paint to the intersection of the two rectangles
+when the result aligns with the tile raster. An empty clip
+skips the isolated source and its nested filters during
+lowering.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitiveSubRegion)
+
+The fixture uses one tile as a fill, stroke, and alpha mask.
+It starts with a numeric subregion. A live edit sets two
+percentage coordinates and removes the other two attributes.
+The source path and offset stay fixed.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-subregion.html)
+
+The 384 × 108 RGB crops matched static Brave captures on
+macOS and Linux in both states. The initial and edited
+SHA-256 digests were
+`fe72d91abf373fb3878fd4f054504462ba303f1c226f62012c1fadef00b534d7`
+and
+`632453836a90bc6e580e5fcb1160b65a276c6c88147050e4fcb1752d1aa922c2`.
+The published macOS executable
+`1a716874d467a366ff3eeeab46e48954c0f93e97bd4245e37a01af9db8e840da`
+differed by 4,140 and 5,760 pixels, respectively.
+
+An equivalent object-bounding-box subregion matched the
+initial pixels. A zero-width subregion around a nested
+opacity filter hid the source and preserved the following
+stripe in all three uses. Its crop also matched Brave on
+both systems, with SHA-256
+`209a8d1e36beae7287ac310d0531ce6747adbfb37c752d9ccca92bd0219376ce`.
+macOS traces showed tile reuse in each case and a new cache
+key after the live edit.
+
+All five offset fixtures passed on macOS at 1× and 2× and
+on Linux with group caching enabled and disabled. The Linux
+GG probe used row bands. The deferred Clang `-O0` link used
+V's captured arguments and the existing LibJS
+function-pointer diagnostic allowance. The aarch64 Linux
+executable SHA-256 was
+`8e40aac2d4ecadca2a5e60cccee025a1dfb6b5e031b3d1e69595677169fcd7d5`.
+SVG and painting unit checks, 23 Python driver tests, and
+both Windows V source checks passed. Windows runtime
+validation remains open.
+
+The macOS replay diagnostic uses equivalent clips, one
+specified by the filter region and one by the primitive
+subregion. Fresh processes drew 20 fills and 20 strokes on
+the same executable, with private profiles and caches, a
+1024 × 600 viewport at 1×, and a one-second settle. JavaScript
+and whole-frame raster reuse were disabled. All 48 stationary
+callbacks replayed 42 commands. Separate traces measured
+1,880 hits for the same tile key with zero misses between
+the first and last callbacks in both forms.
+
+| Pair | Region / subregion median replay, ms | Region / subregion p95, ms | Region / subregion maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.4185 / 1.4185 | 1.5780 / 1.6470 | 1.6180 / 1.7050 |
+| 2 | 1.4195 / 1.4100 | 1.6020 / 1.6670 | 1.6390 / 1.7580 |
+
+Median allocation was 3 KiB per callback in all six runs.
+All decoded RGBA captures matched with SHA-256
+`03bbe2e3cba6e8fde89dc598a89f2d51d8d85ee593f03429be539c6f57bcbcb1`.
+The input HTML hashes in region and subregion order were
+`5d3c193a073cf768c97e3c3b7327461ba51ed1c551f2d1988cb613d9e32ee7d5`
+and
+`91be4ac663e1190cfdd354115407340998ec9b7e07047a45eca0dc4f6686672d`.
+The executable SHA-256 was
+`43cfe009190950d8f40d6095f042ec3a5a3d9c25ecb94db64417f27156dd1f72`.
+It used single-unit C `-prod -no-prod-options` with Clang
+`-O0`. Executable, library, worker, and fixture inputs
+stayed fixed. One-minute host load was 37.61–46.08 on 18
+logical CPUs. All browser and guard exits were zero.
+Subregion replay had a comparable median and higher p95
+in both pairs. Optimized production timing remains open.
+
+### Curved source geometry for SVG tile offsets
+
+In `84c185f5b`, a standalone SVG `feOffset` in a pattern tile
+can resolve object-bounding-box coordinates from paths with
+Bézier curves, elliptical arcs, and multiple drawn contours.
+The bounds query considers segment endpoints and analytic
+extrema. The existing layout call still uses the control-point
+bounds it needs. Tile replay keeps the existing whole-pixel
+translation and clip eligibility rules.
+[SVG 2 bounding boxes](https://svgwg.org/svg2-draft/coords.html#BoundingBoxes)
+
+The regression fixture uses the same pattern as a fill, stroke,
+and alpha mask. A live edit replaces the quadratic path with a
+cubic path and changes the resolved offset and clip. macOS
+traces recorded a new tile cache key after the edit and hits
+for both keys. The Linux GG captures used the portable group
+raster with row bands.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-curves.html)
+
+The 384 × 108 RGB crops matched across macOS, Linux, and
+static Brave 158.1.100.58 captures. The initial, equivalent
+arc, and two-contour variants shared SHA-256
+`e040a713427adfd46b33fdc1a14a2baa7a266a2ef46553b9dfc95b3eed1e794b`.
+The edited crop had SHA-256
+`f2d708b58d063db5c542ea20c5cb92dae03719d64575c3f78b91f3fa7b95eb2b`.
+The published macOS baseline
+`70d03ef7a4fe9572c2397421b6922cf7b1a6bddf2b01fb5b84c4e43e9fa76bc9`
+differed by 7,560 initial and 21,600 edited pixels. Adding an
+isolated trailing moveto left the Vox crops unchanged and
+changed 720 pixels in Brave, where the filtered red source
+disappeared.
+
+All six focused offset fixtures passed on macOS at 1× and 2×
+and on Linux with the group cache enabled and disabled. The
+Bézier and filter-region unit checks, 23 Python driver tests,
+and the Windows D3D11 and OpenGL V source checks passed. The
+existing layout geometry test reached the 12 GiB memory
+guard in both normal and preallocated runs. Windows runtime
+validation remains open.
+
+The macOS diagnostic replays equivalent offsets expressed
+in numeric user-space and object-bounding-box units on one
+single-unit C build with Clang `-O0`. Each freshly launched
+process draws 20 fills and 20 strokes, with private profiles
+and caches, a 1024 × 600 document crop at 1×, and a one-second
+settle. JavaScript and whole-frame raster reuse are disabled.
+Each run has 48 stationary draw callbacks with 42 commands
+and median allocation of 3 KiB per callback. Separate traces
+each counted 1,880 tile hits and zero misses between the
+first and last callbacks. All six decoded document crops
+shared SHA-256
+`1e4df7cd380cdd1f95eae491d2167f2eed36bf5fd652cef0fb83e8f41914a99f`.
+
+| Pair | Numeric / object median replay, ms | Numeric / object p95, ms | Numeric / object maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 1.0720 / 1.0790 | 1.1080 / 1.1030 | 1.1180 / 1.1130 |
+| 2 | 1.0670 / 1.1075 | 1.1000 / 1.1420 | 1.1060 / 1.1470 |
+
+One-minute load was 12.74–12.86 across 18 logical CPUs. The
+object-bounding-box form had a higher median in both pairs.
+The measurement covers stationary replay after layout.
+Optimized production performance remains unverified.
+
+The macOS and aarch64 Linux executable SHA-256 values were
+`673707b0698975402c9b86cdf7ec2bddcdca9df3e9ce834056829eb2b8aab60f`
+and
+`80437a552a1b7418c46bb5d7e5a33f8f85fc8a5a002e0c74788c3a0e5d835ef6`.
+Linux used the deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance. Numeric and object-bounding-box replay fixture
+SHA-256 values were
+`95aa784d5adcde3e1dc628d3e2583c6533437d21cba4437782e6563e5207e7a8`
+and
+`46cfd24bd79188abb071bbdc200c2ffbc6585252b1a5b3cfe1727989a0070d69`.
+The executable, library, and fixture identities stayed fixed
+during each check. Final browser and replay guard exits were
+zero.
+
+### SVG offsets clipped to the pattern tile
+
+In `571b4f0ab`, the shared raster intersects the projected
+`feOffset` output clip with the tile before checking pixel
+alignment. Fractional edges beyond the tile can use the
+whole-pixel path. A disjoint clip skips the isolated source
+and its nested operations, even if the offset is fractional.
+Fractional edges inside the tile still use the existing
+fallback. [SVG 2 pattern clipping](https://svgwg.org/svg2-draft/pservers.html#PatternNotes)
+
+The new fixture uses the tile as a fill, stroke, and alpha
+mask. It starts with a fractional edge left of the tile.
+A live edit moves the clip entirely to the right and changes
+the offset to a fractional value. Both states matched Brave
+158.1.100.58 in 384 × 108 RGB crops from macOS and Linux.
+The published macOS control
+`c6d3e9378bd21e04c6c6efe334c0b01d15d59302bb2c2d0558b308a8333e4b82`
+differed by 3,240 and 5,940 pixels, respectively.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-tile-clip.html)
+
+The initial and equivalent integer-clip crops shared SHA-256
+`e9242fc42c36973da1047f59a0d493215263b6a109dd42597ffe462fb8dd8284`.
+The edited crop had SHA-256
+`209a8d1e36beae7287ac310d0531ce6747adbfb37c752d9ccca92bd0219376ce`.
+macOS recorded cache hits for the initial and edited tile keys.
+A control with a fractional interior edge retained the old
+macOS fallback pixels, which differed from Brave.
+
+All seven offset fixtures passed on macOS at 1× and 2× and on
+Linux with group caching enabled and disabled. The painting
+offset unit test, 23 Python driver tests, and Windows D3D11
+and OpenGL V source checks passed. Windows runtime remains
+unverified.
+
+The macOS timing diagnostic compared the equivalent integer
+and exterior-fractional clips on one single-unit Clang `-O0`
+build. Each fresh process drew 20 fills and 20 strokes with
+private profile and cache state, a 1024 × 600 document crop
+at 1×, and a one-second settle. JavaScript and whole-frame
+raster reuse were disabled. Each run completed 48 stationary
+callbacks with 42 commands and allocated a median 3 KiB per
+callback. Each separate trace recorded 1,880 tile hits and
+zero misses between the first and last callbacks.
+
+| Pair | Integer / exterior median replay, ms | Integer / exterior p95, ms | Integer / exterior maximum, ms |
+| --- | ---: | ---: | ---: |
+| 1 | 0.9980 / 1.0010 | 1.0340 / 1.1020 | 1.0390 / 1.1320 |
+| 2 | 1.0615 / 0.9185 | 1.0890 / 0.9420 | 1.1070 / 0.9480 |
+
+One-minute load ranged from 15.83 to 16.80 on 18 logical CPUs.
+Timings varied by pair. This measures cached replay after
+layout. Optimized production timing remains open.
+All decoded replay crops shared SHA-256
+`dddac438136d256918e0d4894033ee490d58611f2cf12d694f9cc592b5c9da99`.
+The integer and exterior fixture digests were
+`d448249aeae8623cb0827cf4f9ec12a141549dc6fa2dba89e27b8cc983f80414`
+and `577200b14c5d891d2c922bac919cb2117f2d627f243a687b09a4c9a56380490a`.
+
+The macOS and aarch64 Linux executables had SHA-256
+`1b13138c0a265249027e753c7c7bf62543f67f5d7b645f9fdf57b47263fa81f8`
+and `cffdc185d334d4b965ce5b43e1c51c34f2787eb7e4b12f6e65870812bdae58a8`.
+Linux used V's captured arguments for a deferred Clang `-O0`
+link with the existing LibJS function-pointer diagnostic
+allowance. Executables, libraries, and fixture inputs stayed
+fixed throughout each run. Final browser and replay guard
+exits were zero.
+
+### Fractional clip edges for SVG tile offsets
+
+In `eca29c38a`, the shared renderer encloses the visible
+`feOffset` output clip in device pixels. The fractional
+edges are rounded after projection and intersection with
+the tile. Pixels partly or fully inside the clip are
+kept, and the renderer translates the isolated source
+directly for whole-pixel offsets.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#FilterPrimitiveSubRegion)
+
+The new fixture uses a tile as a fill, stroke, and alpha
+mask. A live edit moves three fractional clip edges.
+The initial and edited states matched Brave 158.1.100.58
+on macOS at 1× and 2× and on Linux at 1×. The 384 × 108
+RGB crops had SHA-256 values
+`8d3e4f72a7ed1a6cfb85613709ba6636a8af6b19f0573d69e02c1f713d5b58ff`
+and `fb879da459b24fb50ee61205b6e0d21bf4559750b74d62aebc43b0b3cdb86ba9`.
+At 2× the digests were
+`56a58550230409ec8f696d62a320a176fd237480ba19d2fee1ebe4af9e3d95eb`
+and `b482c49ffdd2029bff945f7d58c305a65e6f9ec4c1fe4183523e27d359db28be`.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-fractional-clip.html)
+
+The published macOS control
+`bb57244d382fd5e339b5c288c48089bce0ed0bef2b2fc999f1cf05131dc150a4`
+differed by 5,049 and 5,994 pixels at 1× and by 16,974 and
+18,504 pixels at 2×. The candidate reused each tile in
+both states, with a new cache key after the edit. A
+fractional-translation control retained the fallback
+pixels and emitted zero shared tile events.
+
+All eight offset fixtures passed on macOS at both
+scales and on Linux with group caching enabled and
+disabled. The painting offset unit test, 23 driver tests,
+and Windows D3D11 and OpenGL V source checks passed.
+Windows runtime remains unverified.
+
+The macOS timing diagnostic compared pixel-identical
+integer and fractional clips in one single-unit Clang
+`-O0` build. Fresh processes drew 20 fills and 20
+strokes with private profiles and caches, a 1024 × 600
+document crop at 1×, and a one-second settle. JavaScript
+and whole-frame raster reuse were disabled. Each trial
+processed 48 stationary callbacks and 42 commands per
+callback, with median allocation of 3 KiB. Separate
+traces each counted 1,880 tile hits and zero misses
+between the first and last callbacks.
+
+| Pair | Integer / fractional median replay, µs | Integer / fractional p95, µs | Integer / fractional maximum, µs |
+| --- | ---: | ---: | ---: |
+| 1 | 827 / 833 | 871 / 861 | 881 / 894 |
+| 2 | 765 / 762.5 | 798 / 794 | 802 / 804 |
+
+One-minute load ranged from 10.69 to 11.91 on 18 logical
+CPUs. The replay crops shared SHA-256
+`49142e1c7792eff5460a276929335231370d167fb26d8813905e655d39acf0cf`.
+The corresponding fixture hashes were
+`4520c332b7630f4dd9b4f9faed51094999d98535c5c693f4017bdcef503f99c6`
+and `d6a9e0edbfd5eaeb8cd89952236eeac308177b7becbd7c71fe896837cdc047a5`.
+These timings cover steady cached replay after layout.
+Optimized production timing remains open.
+
+The macOS and aarch64 Linux executable SHA-256 values were
+`995a16ae85cfc2ffd7ec30819712d86597d9951ce4ead10729ec9fe697d0a30b`
+and `eea4f10a479442c7bc3f2c6ef9e106d0877af59802a1e348748be537c5cf021e`.
+Linux used the deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance. Executable, library, and fixture hashes stayed
+fixed through each check. Browser and replay guard exits
+were zero.
+
+### SourceAlpha offsets in shared SVG tiles
+
+In `58540bc67`, a standalone `feOffset` with `in="SourceAlpha"`
+can replay in the shared tile renderer. It translates and clips
+the isolated source on the same whole-pixel path as SourceGraphic.
+The renderer clears the retained RGB inside the clip whenever a
+consumer reads color. Alpha-only consumers keep the coverage
+without the RGB pass. The retained key distinguishes the two inputs.
+[Filter Effects Level 1](https://www.w3.org/TR/filter-effects-1/#attr-valuedef-in-sourcealpha)
+
+The fixture offsets a half-opaque red source used as a fill,
+stroke, alpha mask, and luminance mask. A live edit reverses
+the horizontal offset. The alpha mask preserves the translated
+coverage. The black result contributes zero to the luminance
+mask, which still shows the following white stripe.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-offset-source-alpha.html)
+
+macOS and Linux matched Brave 158.1.100.58 pixel for pixel at
+1×, and macOS also matched at 2×. The 512 × 108 RGB crop
+SHA-256 values before and after the edit were
+`217c157070a103bc57587f7ba32d0af4315ea1f0483a61ecd0216b2b683b6b33`
+and `a1dac1cce78cb1eaa5f5ba5489a0d08d8b5ca665b43afcca2eacab0770389ecf`.
+At 2× they were
+`a151c92af05ee1f9aaae788f71d564416cca304738d40d32c148bdfd92db1588`
+and `53ec7c9abd07e79d40c24e651619c1768a73f24065845af8af8253d930cc2e1f`.
+A black SourceGraphic control matched the initial crop at 1×.
+macOS reused both SourceAlpha tile keys during the live edit.
+
+The published macOS control
+`8ee1c59c5a8645dda761db1ee3286584e3eaca38d706e7c720ebfa5cff7824ee`
+differed by 3,888 and 4,104 pixels at 1× and by 12,528 and
+14,256 pixels at 2×. All nine focused offset fixtures passed
+on macOS and on Linux with group caching enabled and disabled.
+The projection and key tests, 23 Python driver tests, and both
+Windows V source checks passed. Windows runtime validation
+remains open.
+
+The macOS diagnostic compared SourceAlpha with pixel-identical
+black SourceGraphic. Fresh processes used private profiles and
+caches, a one-second settle, and a 1024 × 600 document crop
+at 1×. Each case drew 20 fills and 20 strokes with JavaScript
+and whole-frame raster reuse disabled. Both workloads had
+48 stationary callbacks, 42 commands per callback, and median
+allocation of 3 KiB per callback. Separate traces between the
+first and last callbacks showed 1,880 hits with one tile and
+1,880 misses with ten tiles competing for eight entries.
+
+| Workload and pair | Black / SourceAlpha median replay, µs | Black / SourceAlpha p95, µs | Black / SourceAlpha maximum, µs |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 763.5 / 749.5 | 795 / 788 | 856 / 970 |
+| Cached 2 | 728.5 / 754 | 765 / 808 | 777 / 818 |
+| Cache pressure 1 | 2445.5 / 2473 | 2561 / 2615 | 2609 / 2696 |
+| Cache pressure 2 | 2410 / 2516 | 2561 / 2670 | 2565 / 2690 |
+
+Under cache pressure, SourceAlpha had median replay times
+27.5 and 106 µs higher than the black control. Cached replay
+timings varied by pair. One-minute load was 5.80–6.04 across
+18 logical CPUs. These trials measured stationary replay
+using single-unit Clang `-O0`. Optimized production timing
+remains open.
+
+The cached and cache-pressure replay crop digests were
+`10be2ab1c4bc61073b8b0f63784823a30626e57c2f360f0228b4006cc56bfdde`
+and `0cb3c0fd06ec71114c67eaafb55707dc90b623889d63b4956ea72ea818dfc039`.
+The fixture digests in black and SourceAlpha order were
+`660e13e32ddba0dfde23d4f3282e4c2e688a81e65cf18e88369308ce644f0c82`
+and `b9fd1b7892c8357dbc37dc415691a0dc04b44d79bc8d4240835d7b106c623b05`
+for one tile, and
+`335ba29f4c74df826ac1f818ce4b946eeac6bbada216a0de72ac85479f78f41e`
+and `aa6c6f451f5c44604e2f49b145e3bb44bee9d03c1e439778756090e6b8765f92`
+for ten tiles.
+
+The macOS and aarch64 Linux executables had SHA-256
+`5bad6b395d32f7a3afd50f40b3dcc0d329de6582f655f9b021cb51f62a2d5fe9`
+and `6b4668d5a88a2e663e4cf63864fd134634540a7d41f3fd214c3f60326f9d08fe`.
+Linux used a deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance. Executable, library, and fixture hashes stayed
+fixed throughout each check. Browser and replay guard exits
+were zero.
+
+A separate Brave probe measured fractional translations.
+At 1× a red rectangle shifted by `(2.25, 1.5)` had coverage
+191 at the left interior edge and 128 across its first row,
+including the corner. A separable bilinear sample over a
+transparent border would produce corner coverage 96. Those
+edge semantics remain open for shared fractional translation.
+
+### Blending SourceAlpha directly into the tile clip
+
+In `62ee845ab`, the shared renderer blends black directly into
+the clipped region when restoring a SourceAlpha offset layer.
+The restore worker reads each source alpha byte and uses the
+existing full-opacity source-over blend. It intersects the filter
+clip with the actual row band, so it skips both writes to the
+source and blending outside the visible rectangle.
+
+The focused canvas layer tests passed on macOS and Linux. They
+compare against a separately cropped black layer with different
+source and destination strides, a nonzero row origin, partially
+outside and empty clips, and enough pixels to use raster workers.
+Aliased and truncated buffers are rejected before any write.
+All nine offset fixtures passed on macOS and on Linux with group
+caching enabled and disabled. The SourceAlpha crops with row
+bands enabled matched the existing Brave digests in both states
+at 1× on Linux and at 1× and 2× on macOS. All 23 Python driver
+tests and both Windows source checks passed. Windows runtime
+validation remains open.
+
+The macOS diagnostic used the same SourceAlpha fixtures as the
+preceding measurement. Both single-unit Clang `-O0` builds ran
+fresh processes with private profiles and caches, a one-second
+settle, and a 1024 × 600 document crop at 1×. JavaScript and
+whole-frame raster reuse were disabled. Each trial completed
+48 stationary callbacks with 42 commands and a median of 3 KiB
+allocated per callback. Separate traces recorded 1,880 hits
+with one tile and 1,880 misses with ten tiles. The decoded
+replay crops and fixture hashes matched the prior SourceAlpha
+cohort. [SourceAlpha validation](#sourcealpha-offsets-in-shared-svg-tiles)
+
+| Workload and pair | Control / candidate median replay, µs | Control / candidate p95, µs | Control / candidate maximum, µs |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 818.5 / 784.5 | 864 / 836 | 1227 / 1076 |
+| Cached 2 | 773 / 791.5 | 899 / 846 | 1082 / 858 |
+| Cache pressure 1 | 2447 / 1619.5 | 2706 / 1810 | 2926 / 2005 |
+| Cache pressure 2 | 2491 / 1631 | 2644 / 1788 | 2762 / 2292 |
+
+Ten-tile medians fell 33.8% and 34.5%. Cached medians
+varied by pair. One-minute load ranged from 7.30 to 8.02
+on 18 logical CPUs. The candidate also includes CoreText
+face flag change `0cf538911`, which landed between builds.
+These browser timings measure synthetic replay after layout.
+Optimized production timing remains open.
+
+A separate same-executable Clang `-O2` diagnostic isolated the
+restore operation. It compared clearing the crop and RGB before
+the ordinary restore with the new clipped alpha blend. Both
+rendered identical buffers after one restore and after every
+60,000-restore trial of a 40 × 23 band with a 13 × 8 clip.
+The alternating mean times were 2,961 / 216 ns and
+3,016 / 193 ns per restore.
+
+The macOS control and candidate executable SHA-256 values were
+`24bdc7a6a0e1b6e90c13ad490290af1700d0c4ced229c6db7c957da8b721de2d`
+and `6ccbe4304ca27f1f8a44fbe337b61f79d1bb65616d59f910c62b255aee6e7eea`.
+The aarch64 Linux candidate was
+`7ed3b8cadd46d1f9936df8d63ea81416fc5c50d092e24e2e0a3c6e71b7759b32`
+using the deferred Clang `-O0` link and the existing LibJS
+function-pointer diagnostic allowance. The isolated probe
+executable SHA-256 was
+`590fc3052b1f4484535ad9f1729a4632975b8be07b157dab0d1bec3028cfc02e`.
+Executable and fixture hashes stayed fixed during the runs.
+Browser, probe, and corresponding guard exits were zero.
+
+### Restoring SourceGraphic inside the tile clip
+
+In `ea299f918`, SourceGraphic and SourceAlpha offsets use the
+same clipped restore. The SourceGraphic worker blends the
+premultiplied RGBA inside the visible band with the existing
+full-opacity sprite blend. SourceAlpha selects the alpha-byte
+worker once per restore. Both leave the source buffer intact.
+
+The canvas layer tests compared both inputs with a separately
+cleared band. They cover colored translucent pixels, padded
+source and destination strides, a nonzero row origin, partially
+outside and empty clips, raster workers, and invalid buffers.
+They passed on macOS and Linux. All nine offset fixtures, eight
+color-matrix fixtures, two component-transfer fixtures, and the
+opacity-filter fixture also passed on both systems. The 23 Python
+driver tests and both Windows source checks passed. Windows
+runtime remains unverified.
+
+With row bands enabled, both live states of the fractional-clip
+and SourceAlpha fixtures matched their existing Brave crop
+digests at 1× on Linux and 1× and 2× on macOS. The macOS traces
+showed reuse before and after each edit.
+[SourceGraphic validation](#fractional-clip-edges-for-svg-tile-offsets)
+[SourceAlpha validation](#sourcealpha-offsets-in-shared-svg-tiles)
+
+A same-executable Clang `-O2` diagnostic compared clearing
+outside the clip and restoring the whole band with the new
+clipped restore. Both operated on the same 40 × 23 band and
+produced identical buffers after the first restore and after
+each 60,000-restore trial. The readings are means in
+nanoseconds per restore.
+
+| Clip size | Pair | Control / candidate |
+| --- | ---: | ---: |
+| 13 × 8 | 1 | 2894 / 230 |
+| 13 × 8 | 2 | 2974 / 235 |
+| 40 × 23 | 1 | 3622 / 1981 |
+| 40 × 23 | 2 | 3586 / 1953 |
+
+One-minute load was 5.28 on 18 logical CPUs. These timings
+cover the restore operation. Production frame timing remains
+open.
+
+The macOS and aarch64 Linux executable SHA-256 values were
+`db6e71e7005dcad2b24e81f82e08118af45472175ca3b468b970baed59b2000d`
+and `9ffd8b9cf4cb9591f97b2baa6de91717de3364cbc67ce6593fcf3b703d3dee8a`.
+Both browser builds used Clang `-O0`. Linux used the deferred
+link and the existing LibJS function-pointer diagnostic allowance.
+The restore probe executable SHA-256 was
+`fdd2fba45baf248b736a91fbb9fde250ae44304196d8b17b0f5a2c8082492126`.
+The input identities stayed fixed and the browser, probe, and
+runtime guard exits were zero.
+
+### Filtering SVG tile colors inside the restore clip
+
+In `fdcda9290`, matrices, component-transfer tables, and
+mixed color chains run on the intersection of the filter
+clip and the retained row band. The raster workers use the
+band pitch to walk the visible pixels. The restore blends
+the same rectangle into the parent. An alpha bias can
+still create coverage inside the clip from transparent
+input.
+
+The four focused raster suites passed on macOS, and the
+strided color-filter suite also passed on Linux. The new
+case compares packed and padded rows for matrices, tables,
+and a mixed chain, including transparent input and invalid
+pitch. All 20 Linux offset, opacity, matrix, and transfer
+fixtures passed with cache parity. The 23 Python driver
+tests and the macOS and both Windows V source checks passed.
+The host volume ran out of space during validation. The
+macOS candidate still needs a browser runtime check. Windows
+runtime validation remains open.
+
+Linux candidate captures with row bands enabled matched
+the installed macOS control in the 384 × 108 RGB crops
+before and after script edits.
+
+| Fixture | Initial SHA-256 | Edited SHA-256 |
+| --- | --- | --- |
+| Matrix bias | `e5e95c337e703821f7106a54a2ac691ea78e38c3dbadf6c7b011255a3b4d6b69` | `c6fb1f939060e72464b0d0025499ad4240189914eb1ef35bd6c42dde95628320` |
+| Matrix chain | `b7f3a6d3b33826cb2966ca0eb206184db01c17dd67f409cfb8a362fb6d82128e` | `d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83` |
+| Component-transfer chain | `111b21bebf2e41124579b4374af21268569982ebfd3713f0dd93721ea17002e4` | `d409ce269093f7eed9065140515c0ac5d5f4d535663ac34b1017db58a425ee83` |
+
+The macOS control was from `9717e8165`, with executable
+SHA-256
+`90bbd3acf2fa7f917058f45ee2de73e3e4a924e46e18d88ee4e058504c04734c`.
+The aarch64 Linux candidate SHA-256 was
+`0285f04a996562c963319c1dc768673a4094f79b8d243d03c3809b8d874f8651`.
+Linux used a deferred Clang `-O0` link with V's captured
+arguments and the existing LibJS function-pointer diagnostic
+allowance.
+
+A same-executable Clang `-O2` diagnostic compared applying
+an alpha-bias matrix to a 40 × 40 band, clearing outside
+the clip, and restoring the band with the clipped filter
+and restore. It reset the source pixels in both forms.
+The buffers matched after one iteration and after all
+12,000-iteration trials. Timings are means per iteration.
+
+| Clip | Pair | Full-band / clipped, µs |
+| --- | ---: | ---: |
+| 13 × 8 | 1 | 21.619 / 1.353 |
+| 13 × 8 | 2 | 21.423 / 1.351 |
+| 40 × 40 | 1 | 23.346 / 19.950 |
+| 40 × 40 | 2 | 23.064 / 19.627 |
+
+One-minute load was 7.09 on 18 logical CPUs. The diagnostic
+executable SHA-256 was
+`9a42ccb52f2042a4805f0346b2d05df3d72e3a269da62598722f4d8b4325666f`.
+Executable and fixture identities stayed fixed. Browser,
+probe, and runtime guard exits were zero. Production frame
+timing remains open.
+
+### Trimming isolated SVG tile rows to the filter clip
+
+In `4c4a17a64`, the shared tile rasterizer resolves the filter clip
+before allocating the layer and passes the clipped bottom edge to
+nested layers. It keeps the existing rules for leading rows, including
+the origin used by bitmap and pattern paints. Filters that create
+coverage from transparent input retain the rows they need within the
+clip. The restore reuses the resolved clip.
+
+The [offset row crop fixture](../Tests/Browser/Native/svg-pattern-tile-offset-cropped-rows.html)
+uses nested opacity over a tall source and edits an offset subregion
+while the tile is used in a fill, a stroke and an alpha mask. In the
+40 × 80 tile, diagnostics showed these row counts per isolated layer
+at both nesting depths.
+
+| 1× capture | Initial rows | Edited rows |
+| --- | ---: | ---: |
+| macOS control, leading-row crop enabled | 73 | 73 |
+| Linux candidate, default | 14 | 19 |
+| Linux candidate, leading-row crop enabled | 7 | 12 |
+
+The two layer buffers used 23,360 bytes in the control and 4,480 or
+6,080 bytes on the default candidate path, excluding the root tile.
+Both candidate settings and the macOS control matched Brave
+158.1.100.58 in these 384 × 108 RGB crops.
+
+| State | SHA-256 |
+| --- | --- |
+| Initial | `350629d45f0b6d3c9bf1c1afc4eca5a2f938f0d745fbfe84758e7f9aee74630d` |
+| Edited | `a2bd7a9bf4e30b70de93f8e36bda42b513f385c154b492734396db219cff362c` |
+
+The 22 Linux offset, color-matrix, component-transfer, opacity and
+nested-bitmap fixtures passed their cache-parity checks. The 23 Python
+driver tests, macOS canvas layer tests, and macOS and both Windows
+source checks passed. The browser and runtime guard exits were zero.
+
+The aarch64 Linux candidate used the deferred Clang `-O0` link and
+the existing LibJS function-pointer diagnostic allowance. Its
+executable SHA-256 was
+`bf79dc9238b6f72cbf406f0a63fade589ed635cf8cd3dcca67db2e5f568ba9aa`.
+The macOS control was `9717e8165`, with executable SHA-256
+`90bbd3acf2fa7f917058f45ee2de73e3e4a924e46e18d88ee4e058504c04734c`.
+The production build volume ran out of space while writing generated
+C. macOS candidate runtime, Windows runtime and production frame
+timing remain open.
+
+### Trimming leading rows in aligned SVG filter tiles
+
+In `7603e4279`, the shared rasterizer can start an isolated layer at
+the top of the filter clip when the scope contains pixel-aligned fills and the
+leading rows account for at least a quarter of the band. Pattern
+shaders keep their absolute sample coordinates while the legacy and
+pipeline blitters address the shortened buffer. Skewed geometry
+keeps the existing origin because changing its analytic clip can
+change edge rounding.
+
+The [nested pattern fixture](../Tests/Browser/Native/svg-pattern-tile-offset-cropped-pattern.html)
+checks the repeated stripe phase through a live clip mutation in a
+fill, stroke and alpha mask. At both isolation depths, the Linux
+candidate logged 6 rows starting at 8 initially and 9 starting at 10
+after the edit. The preceding Linux diagnostics used 14 and 19 rows
+per layer for the solid fixture. Its before and after pixels still
+matched the recorded hashes above.
+
+The 384 × 108 RGB crop of the nested pattern matched the macOS
+control and Brave 158.1.100.58 in both 1× states.
+
+| State | SHA-256 |
+| --- | --- |
+| Initial | `86108aad4292fc64d597ab8700a4ab9503492af697906100d8c08d3cbb73e2b7` |
+| Edited | `ef80c06355be80ebcbb2dc8b3b8d77a17f472e180aa088d8a75d5de70ebcfc2f` |
+
+The 23 Linux browser fixtures passed, including cache parity for
+offsets, matrices, component transfer, opacity and a delayed nested
+bitmap. Mask-band raster tests passed on macOS and Linux. They
+compare nearest and bilinear pattern sampling against a cropped full
+surface with padded strides and both blend implementations. The
+macOS raster suite also passed with ASan and UBSan. The 23 Python
+driver tests, macOS source check, and Windows D3D11 and OpenGL source
+checks passed.
+
+A same-executable macOS Clang `-O2` diagnostic timed clearing two
+40-pixel-wide layers, pattern fill and both restores. The narrower
+variant included the packed rectangle check. The root buffers matched
+after one replay and after every 12,000-replay trial.
+
+| Original / trimmed band heights | Pair 1, µs | Pair 2, µs |
+| --- | ---: | ---: |
+| 14 / 6 rows | 6.263 / 5.644 | 6.341 / 5.403 |
+| 19 / 9 rows | 9.628 / 7.463 | 9.789 / 7.352 |
+
+The one-minute load was 4.29 on 18 logical CPUs. The probe SHA-256
+was `05e62c95ab9327fd18dd43c2299e1a75169c4d00924e05492ebeb080eb71f753`.
+The Linux browser used single-unit Clang `-O0` with the existing
+LibJS function-pointer diagnostic allowance and executable SHA-256
+`65536545d2460dc02618feeac4fdc7c53b0470853313b11753b08af9810fd5cd`.
+The macOS control identity was the same as the previous comparison.
+Browser, probe and corresponding runtime guard exits were zero.
+These are raster component timings. Production frame timing and
+candidate browser runtime on macOS and Windows remain open.
+
+### Reusing an SVG tile for fill and stroke
+
+In `390d6a8dc`, layout shares one resolved pattern style when a path references
+the same URL for fill and stroke. The portable rasterizer can reuse
+its last completed vector tile within the replay. It checks the
+style identity, dimensions, luminance and device stroke metric at
+the same nesting depth. A hit pays the original subtree pixel
+budget, and tiles with image resources retain their existing
+raster path.
+
+The [fill and stroke fixture](../Tests/Browser/Native/svg-pattern-tile-shared-fill-stroke.html)
+uses one pattern for both paints in an outer path and in the
+nested tile. It then switches the nested stroke to a different
+resource. The initial Linux replay reduced two 48 × 32 rasters and
+four 8 × 8 rasters to one of each, from 3,328 to 1,600 raster
+pixels. After the edit the outer tile still reused its raster
+and the two inner patterns produced separate rasters.
+
+On Linux both modes matched exactly in the 160 × 104 RGB crop and
+passed the whole-document cache comparison. The published macOS
+control also passed the driver at 1× and 2×. Brave 158.1.100.58
+matched the macOS control at 1×. Linux differed by one channel
+level on 24 pixels along the translucent stroke edge in each state.
+
+| State | Linux RGB crop SHA-256 |
+| --- | --- |
+| Initial | `35de7a3cd3786d069cb521aad95ee3155112f731706a1297907e014029bb9ceb` |
+| Edited | `a6c707bd52b3b97441edee04986bc7ac37f23c9b72afa2f161e782e38ac5b015` |
+
+The focused layout test confirmed shared style identity at both
+levels. The 29 Linux SVG fixtures and the 23 Python driver tests
+passed, as did macOS source and Windows D3D11 and OpenGL source checks.
+The aarch64 Linux executable used a deferred single-unit Clang
+`-O0` link with the existing LibJS diagnostic allowance. Its SHA-256
+was `163027325b24ae27042893855688940bc6fbe0d20fb7a1c3f52866f7e214edcf`.
+The macOS control retained the preceding executable identity.
+Inputs stayed fixed and browser and runtime guard exits were zero.
+The production build volume ran out of space during compilation.
+Candidate browser runtime on macOS and Windows and frame timings
+remain open.
+
+### Reusing SVG pattern tiles after bitmap delivery
+
+In `15e481fb2`, the shared rasterizer can reuse a completed bitmap
+tile within the same replay. A pending image in the tile or any
+descendant keeps it out of the cache. The rasterizer still charges
+the original pixel budget on a hit.
+
+The [delayed bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-shared-bitmap.html)
+uses the same pattern for fill and stroke at two nesting depths.
+The Linux traces showed both tiles incomplete while the response
+was pending. The first complete replay with reuse rasterized one
+40 × 40 tile and one 16 × 16 tile. With reuse disabled it rasterized
+two outer and four inner tiles. That reduced work in those tile
+surfaces from 4,224 to 1,856 pixels. Both Linux modes produced an
+identical document.
+
+Fresh macOS launches matched the published control at 1× and 2×
+and confirmed the nested tile hit after the response arrived.
+The 1× Linux and macOS crops differed by one channel level on
+eight pixels at the translucent stroke edges.
+
+| Capture | RGB crop SHA-256 |
+| --- | --- |
+| Linux 1× | `d3564dd4fc30f31e9a30b3b2d5b28af065639fb7d1ae8ee2c3eff485ed43b926` |
+| macOS 1× | `52795750957250ca7eb35edb2a04b310a780c823845204983bcc5d7cde25e332` |
+| macOS 2× | `150fb00f8c03ae2b8415e175e7dee6583821bbba2fdaeed84eb768ec1c8f2927` |
+
+All 30 Linux and 16 macOS fixtures passed, including the earlier
+offset and standalone cases. The 23 Python driver tests and the
+macOS, Windows D3D11 and Windows OpenGL source checks passed.
+The Windows nested bitmap runner also includes the delayed reuse
+fixture.
+
+Both candidate builds used single-unit Clang `-O0`. Linux used a
+deferred link and the existing LibJS function-pointer diagnostic
+allowance. Its executable SHA-256 was
+`767ddc09f6ab3ea34dc298424044c5be67e168944d5bda2a380a1eb3028d8f08`.
+The private macOS build used the prepared prealloc compiler and
+checkout adblock assets. Its executable SHA-256 was
+`dc04484c3c8465886f896f398e87ff01e879c6415d3f4e6bd2202fad3b58751a`.
+The published macOS control was `9717e8165`. Inputs stayed fixed and
+browser and runtime guard exits were zero.
+
+The guarded Windows amd64 D3D11 console build started from
+`a0de1675b` with concurrent edits elsewhere in the checkout. It used
+V `4478fc4`, MinGW GCC 16.2.0, and single-unit C
+`-prod -no-prod-options`. Its executable SHA-256 was
+`935aec3a810e645eff5084fc3f32a21f5cf6b30f25852f5dd3bcc9661c1d27bc`.
+The build and its 12 GiB guard exited zero at a sampled process-tree
+RSS peak of 9,909,534,720 bytes. All 23 driver unit tests passed.
+The first Windows guest attempt reached its 25-minute host timeout
+during setup. The retry used multithreaded QEMU TCG and pre-extracted
+inputs on a virtual USB disk. The Windows 11 desktop ran the same
+`--nested` runner with CPython 3.12.10. [Python release](https://www.python.org/downloads/release/python-31210/)
+
+| Windows D3D11 fixture | Cache | Browser PID | Peak job committed bytes |
+| --- | --- | ---: | ---: |
+| Nested image and stroke | Enabled | 820 | 599,527,424 |
+| Nested image and stroke | Disabled | 2548 | 579,547,136 |
+| Shared delayed bitmap | Enabled | 2264 | 581,050,368 |
+| Shared delayed bitmap | Disabled | 604 | 578,461,696 |
+
+All four browser and 3 GiB guard exits were zero. Each fixture's
+800 × 516 document RGBA was identical with and without caching.
+The nested document and the shared fixture's 1× RGB crop matched
+their Linux references. The shared document SHA-256 was
+`068ee5dd2afeb5ae3f40162bfe2eeb5bca31cef031e9d9e593ebfb92ff78fd0b`.
+Windows traces showed the same 4,224 to 1,856 tile-pixel reduction
+in the first complete replay. The executable, DLLs, guard, fixtures,
+and runners retained their pinned identities. [Nested bitmap capture](#bitmap-content-in-nested-svg-pattern-tiles)
+
+The retry VM shut down normally under the 12 GiB host guard with a
+sampled peak RSS of 9,355,296,768 bytes. The installed Windows disk
+and UEFI variables retained their original hashes. These captures
+verify D3D11 rendering in the emulated guest. Hardware frame timings
+remain open.
+
+### Reusing macOS SVG tiles with invisible image layers
+
+In `2192c8808`, the macOS tile cache skips image dependencies inside
+explicit opacity groups whose opacity byte is zero. The shared
+rasterizer already discards these groups. The tile cache still
+waits when a delayed image can contribute a pixel.
+
+The fixture uses a missing bitmap inside an opacity `.003` group
+and a delayed bitmap at `.004`. The published `9717e8165` executable
+failed the cache assertion and rasterized the hidden-image tile
+four times per capture. The candidate rasterized it once and logged
+three hits at each density. The visible-image tile became cacheable
+after delivery. The 1× and 2× document RGBA matched the control
+exactly, with hashes
+`3a6b6e6713e1c74ca7bca65d6650774dcec642748ad70678c035c7d305ff5679`
+and `f6d85ca058cba49076236074a2c80adb7a80f11ad32fe86e6939aafb6b5e9006`.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-image.html)
+
+The private macOS candidate used V `4478fc4` with prealloc,
+single-unit Clang `-O0`, and checkout adblock assets. Its SHA-256
+was `1e5a2dcdd73be2541729b19e60cfbc271bb059e0c71f5605b47da5510bb38eec`.
+The 12 GiB build guard recorded a sampled peak of 11,585,667,072
+bytes. The nested and shared delayed bitmap fixtures, the opacity
+filter with a live edit, and 21 Python driver tests passed.
+The browser and candidate runtime guards exited zero and pinned
+inputs stayed fixed. The production worker ran out of disk space
+while freezing compiler inputs. Hardware frame timings remain open.
+
+### Reusing macOS SVG tiles under zero-opacity filters
+
+In `ec4b3a913`, the macOS cache uses the same combined opacity
+and byte cutoff as shared tile lowering for CSS opacity filters.
+A zero-opacity scope can contain nested filters and opacity groups.
+A sibling image under a nonzero filter still contributes its
+decoded slot to the cache key.
+
+The fixture combines two opacity filters below the cutoff and
+places a delayed image above the cutoff after a hidden sibling.
+The `9717e8165` control rasterized both tiles four times at each
+density. The candidate rasterized the fully cacheable tile once
+and the other tile three times, including its first complete
+raster after the image arrived. Whole-document RGBA matched the
+control at 1× and 2× with the same hashes as the explicit opacity
+fixture. [Filtered bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-filter-image.html)
+
+The private candidate used V `4478fc4` with prealloc and
+single-unit Clang `-O0`. Its executable SHA-256 was
+`fd45605ac033461279d6b828c4c1f2c3e2eb7cbf04ee2149192bb4f5513e752d`.
+The 12 GiB build guard recorded 11,589,173,248 bytes peak sampled
+process-tree RSS. The delayed bitmap suite, live opacity-filter
+edit and 21 driver tests passed. Browser and guard exits were
+zero and pinned inputs stayed fixed. The latest production build
+attempt ran out of space generating its object file.
+
+### Skipping invisible pattern paints in macOS SVG tile keys
+
+In `b0b3b6c9f`, the tile cache follows the shared replay's fill
+and stroke checks before visiting a nested pattern. A missing
+bitmap under a zero-opacity fill, a zero-opacity stroke, or a
+zero-width stroke no longer keeps the outer tile uncacheable.
+
+The `9717e8165` control rasterized each fixture tile four times.
+At both densities, the candidate rasterized the tile with only
+hidden patterns once and reused it three times. The other tile
+still waited for its visible bitmap and reused the first complete
+raster. Total tile rasters fell from eight to four per capture.
+Decoded document RGBA matched pixel for pixel, with 1× SHA-256
+`34a707f63786d68eab2740808f4beb5e178104adaac9889e9712e5b74332c5c6`
+and 2× SHA-256
+`303db1259c8bd9b4ddf8daf7d759765af3466969c200dd31aecffb5e3a41e4ea`.
+[Regression fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-pattern-paint.html)
+
+The private macOS build used V `4478fc4` with prealloc and
+single-unit Clang `-O0`. The executable SHA-256 was
+`3d47833b3697c99b8b9a80215b695a520931e391552eca7aae29310eb2c68aa6`.
+Peak sampled build RSS was 11,608,276,992 bytes under the 12 GiB
+guard. The delayed bitmap suite, live opacity-filter edit and
+21 driver unit tests passed. Browser and guard exits were zero
+and pinned inputs stayed fixed. The overlapping production
+build stopped when the source inputs changed before preprocessing.
+
+### Sharing macOS SVG image lookups between fill and stroke
+
+In `be8fcfc5b`, a visible fill and stroke sharing an immutable
+pattern display list contribute that list's image slots once.
+A different list or a stroke without a visible fill still
+contributes its own slots. Pending images still leave the tile
+uncacheable.
+
+The same delayed bitmap fixture ran on two private macOS builds
+using V `4478fc4`, prealloc, and single-unit Clang `-O0`. The
+control included the lookup diagnostics. Both completed probes
+at each scale dropped from two image lookups to one. The two
+pending probes each performed one lookup on both builds.
+The 1× and 2× captures were pixel-identical, with decoded RGBA
+SHA-256 values
+`5648a45e86ff8a781a4d7b6934e4f42558729e03fb4bd373416776c4d62786de`
+and `3265dafb8ef710591cfad0848e380967c81ca76a0fb46a1245ef32e19a1c9e64`.
+[Shared bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-shared-bitmap.html)
+
+The control and candidate executable SHA-256 values were
+`45a301d976bcbf54d76ed4a3cbe2c91459f7d6ccbb7099e755dc71b4d9990cde`
+and `726a596f9e9c292394487a8bc6ec24d2bf0c2e9f3b1a5a42de9493f750d57603`.
+The delayed bitmap suite, live opacity-filter edit and 21 driver
+tests passed. Browser and guard exits were zero and pinned
+inputs stayed fixed. Frame timing remains unmeasured.
+
+The published `8eb318d25` macOS build, executable SHA-256
+`4e0274f71a79bd5b3f63de6b9dc5dee5a0abba41dcd772f66e33b4c0d836599e`,
+also passed fresh 1× and 2× checks for hidden images under
+explicit opacity groups and opacity filters. All four captures
+matched the earlier diagnostic pixels and the executable and
+adjacent AVIF library stayed fixed.
+
+### Reusing consecutive bitmap lookups in macOS SVG tiles
+
+In `37c4805d7`, each macOS tile cache probe keeps the last resolved
+bitmap ID. When a later paint in the same probe uses the same URL,
+it reuses that ID. Every occurrence still contributes its ID in
+display-list order. The probe waits for pending images and
+resolves a new URL when the image changes.
+
+| Fixture | Completed lookups before / after | 1× decoded RGBA SHA-256 | 2× decoded RGBA SHA-256 |
+| --- | ---: | --- | --- |
+| Separate nested fill and stroke patterns | 2 / 1 | `3a6902ae5d1994b8d67a13b0dcfeaeed1803dfb7880c28bcbeab4ad402f9adc8` | `c1dc78954b6501cb145c8112e1b097082b934899f4daacec1b9d44cdd311e727` |
+| Repeated bitmap URLs | 4 / 3 | `ac1c7f44b56559ca0d5b2212827d80cc532fcaf29272cb74d4c748f4b198d31d` | `867f77c86b405a0538548d16896d4a0aa23bca8a3c52b3ee33123b8861f349f4` |
+
+Each pending probe made one lookup. The before and after
+captures matched pixel for pixel, including the different
+bitmap between repeated URLs. [Repeated bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-repeated-bitmap.html)
+
+Both private macOS builds used V `4478fc4`, prealloc, and
+single-unit Clang `-O0`. The control and candidate executable
+SHA-256 values were
+`6135c7e1b98a23577c12c0dcdc6ee872dc3c85e72598b255fd5bae4b497fdc85`
+and `97b2b9a61c185198bdafa3e307b3f3ab52eb575e46f4201ddd4de318ff8d3c2a`.
+The delayed bitmap suite, live opacity-filter checks, and
+21 driver unit tests passed. Browser and guard exits were zero
+and pinned inputs stayed fixed. The previous production attempt
+ran out of disk space compiling the browser object. Frame
+timing remains unmeasured.
+
+### Reusing interleaved bitmap lookups in macOS SVG tiles
+
+In `abea7e9b6`, the tile cache probe retains its two most recently used
+bitmap URLs and decoded image IDs in fixed slots. Reusing an older
+slot promotes it. Each occurrence still contributes its ID to the
+key in display-list order.
+
+The repeated bitmap fixture's A, A, B, A sequence took two
+lookups per completed probe, down from three in the preceding
+private build, whose results are recorded above. The nested
+fill and stroke fixture took one lookup. Pending probes made
+one lookup in each fixture. All four decoded document RGBA
+hashes matched the earlier 1× and 2× captures.
+[Repeated bitmap fixture](../Tests/Browser/Native/svg-pattern-tile-repeated-bitmap.html)
+
+An additional runtime check added a third bitmap and replayed
+A, A, B, A, C, B. Resolving C evicted B. The final B resolved
+again, for four lookups and correct color samples at both
+densities.
+
+The private macOS candidate used V `4478fc4`, prealloc, and
+single-unit Clang `-O0`. Its executable SHA-256 was
+`bce5e476d8617c42aaa5c5378ad5ba7a808fb98e9d45bd3339a352e06b3b3efc`.
+Peak sampled build RSS was 11,614,568,448 bytes under the
+12 GiB guard. The bitmap suite, live opacity-filter checks,
+and 21 driver tests passed. The browser and guards exited
+zero, and pinned inputs stayed fixed. Frame timing remains
+unmeasured. The production attempt ran out of disk space
+while freezing a native compiler input.
+
+Two subsequent attempts ran out of disk space while linking and
+rewriting bundle install names, respectively. APFS compression of
+the previous receipt's generated C and preprocessed input reclaimed
+339 MiB while preserving both recorded SHA-256 digests. Clang used
+a private RAM disk for temporary objects. The completed single-unit
+C `-prod` build at `b07ede8da` published from receipt
+`20261123-102620-fae82fc9` and passed the headless smoke check.
+Its executable and AVIF library SHA-256 values were
+`63be0756a7c60ea2146a53f692a1d80955b34e5a2baa79e64338e5dfdbcab083`
+and `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+
+Twelve fresh production captures matched the preceding decoded RGBA
+references for the nested, shared, repeated and three hidden bitmap
+fixtures at 1× and 2×. Completed probes used one lookup for nested or
+shared images and two for A, A, B, A. Pending probes used one lookup.
+Four more launches passed the opacity-filter edit check. Browser and
+guard exits were zero and the executable, library, drivers and fixtures
+kept their hashes. These checks measured pixels and lookup counts.
+
+### Skipping invisible SVG scopes during shared mask eligibility
+
+`1a7d171cc` applies the raster player's opacity-byte rule during
+eligibility. A scope that rounds to zero skips to its matching close.
+The four-layer limit still applies to visible scopes and the
+operation count bounds the whole stream.
+
+The regression puts a missing bitmap five levels deep under opacity
+`.003`. The `b07ede8da` production control drew the document but missed
+the assertion for shared tile reuse. The candidate rasterized that
+tile once and reused it three times at both 1× and 2×. The document
+RGBA hashes match the [earlier captures](#reusing-macos-svg-tiles-with-invisible-image-layers).
+The sibling at `.004` still waited for its bitmap and reused the
+completed tile. The nested, shared, repeated and hidden bitmap tests
+and the live opacity-filter edit check passed. [Fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-image.html)
+
+The single-unit C `-prod` receipt `20261123-104227-6f6015f1` began
+at `64746c6ce` with the fix in the working tree. The build input
+hash stayed the same after the fix was committed. The published
+executable SHA-256 was
+`58a0973c31a8777187fc0e29c7ab46de3eb818ffd7273b385b96ee101aebc773`.
+The startup smoke check, sixteen fresh browser launches and their
+guards exited zero. The macOS, Linux and Windows D3D11 production-mode
+V type checks passed. These tests cover pixel output and tile reuse.
+
+### Skipping filters inside invisible shared SVG pattern scopes
+
+`4b09fdefe` uses the same scope boundary in the tile summary, tile
+lowering and macOS image dependency probe. A group opacity or pure
+opacity filter that quantizes to zero skips its balanced subtree before
+filter eligibility or image lookup. The unit tests preserve fallback at
+one byte of opacity and reject crossed or unclosed scope boundaries.
+
+The two delayed-bitmap fixtures place a blur and red path under `.003`
+group opacity or the product of `.006` and `.5` opacity filters. The
+previous executable `58a0973c31a8777187fc0e29c7ab46de3eb818ffd7273b385b96ee101aebc773`
+drew the visible sibling but fell back on both hidden tiles. The new
+production executable rasterized each hidden tile once and reused it
+three times at both 1× and 2×. All four decoded RGBA hashes matched the
+[earlier captures](#reusing-macos-svg-tiles-with-invisible-image-layers).
+The visible sibling still waited for its bitmap, and the live
+opacity-filter edit passed.
+
+The single-unit C `-prod` build published from receipt
+`20261123-111219-18f80b74` with executable SHA-256
+`b283127124529df60eb5d14bda6c5110d269802487292d36092cfc6d132920ec`.
+Earlier attempts hit disk limits writing Clang objects. The successful
+run put compiler and linker temporaries on RAM and compressed the two
+large retained compiler inputs with their SHA-256 digests preserved.
+The startup smoke check, sixteen browser launches and guards exited
+zero. The pattern unit tests and production-mode type checks for
+macOS, Linux ARM64 and Windows D3D11 passed. Frame timing remains open.
+
+### Ignoring unused pattern paints in shared SVG tile eligibility
+
+`2cd5809f1` counts nested pattern operations and checks their filters
+only for paints that replay will visit. The regression references a
+blurred red tile from a zero-width stroke and from zero-opacity fill
+and stroke paints. Unit tests also check that positive-opacity paints
+still use the nested tile's eligibility and resource accounting.
+
+The previous production executable
+`b283127124529df60eb5d14bda6c5110d269802487292d36092cfc6d132920ec`
+drew the visible sibling and declined shared replay for the hidden
+tile. The new candidate rasterized that tile once and reused it three
+times at both 1× and 2×. Both decoded RGBA hashes matched the
+[earlier captures](#skipping-invisible-pattern-paints-in-macos-svg-tile-keys).
+The visible sibling still waited for its bitmap. The full delayed
+bitmap checks and the opacity-filter edit passed.
+[Fixture](../Tests/Browser/Native/svg-pattern-tile-hidden-pattern-paint.html)
+
+Managed receipt `20261123-112724-f1833af6` failed writing generated C
+as the Data volume ran out of space. The private single-unit C `-prod`
+build sealed the same input fingerprint on RAM. Its executable SHA-256
+was `f0d940c047bd0a33f0fdf6435d058029f37323a3c7e8f2fe1159998054f39070`.
+The startup smoke check, sixteen fresh browser launches and their
+guards exited zero. The pattern unit tests and macOS, Linux ARM64 and
+Windows D3D11 production-mode type checks passed.
+
+The managed C `-prod` build `761d6fb6b` published from receipt
+`20261123-114927-3877d761` with executable SHA-256
+`dc65068e1b26716e9b4a610d93f00ad6ce931d12b86fc6e78af65daac590ae80`.
+The compact build stored 409,436,913 logical source bytes in 53,514,240
+allocated bytes for `Vox.c` and `0-Vox.c.i`. Both files kept their declared
+SHA-256 identities at the canonical receipt paths. The startup smoke
+check and sixteen fresh browser launches passed. The unused-pattern tile
+rasterized once and was reused three times at each density, with the same
+decoded RGBA hashes as the private build.
+
+### Linux runtime verification of hidden SVG patterns
+
+The Linux smoke suite and Windows `--nested` driver now check three
+fixtures with invisible pattern paints or scopes. Each checks exact
+pixels with the tile cache enabled and disabled. The 32 × 32 tile with
+hidden content is complete on its first replay, while the 24 × 24
+sibling must wait for its visible bitmap. The cached Linux runs each
+rasterized the two completed tiles once and reused both. Later frames
+reused the GG textures.
+
+The aarch64 Linux diagnostic build used the canonical working tree
+at `994d0ab74`, V `5a39a4d`, UI2 `f18e784`, single-unit Clang
+`-O0`, and Boehm. Its executable SHA-256 was
+`9a1d62221f296aacacabb42213fa950210f2dee4d348581bd23da1ea153cd7d8`.
+The five delayed-bitmap cases passed in ten fresh 800 × 600 Xvfb captures
+with Mesa software OpenGL. Cached and uncached document pixels matched
+in every case. The 136 × 72 fixture crop for hidden pattern paints
+matched the published macOS executable above byte for byte at 1×,
+with decoded RGBA SHA-256
+`1bd5d5c57ce8a0c35c222da1121b53c0c2a7756bd5dabd956eed54c6d78d4c1b`.
+The builds and focused runtime guards exited zero. The full Linux smoke
+run passed 60 checks through the X11 screenshot, then exited 1 after
+timing out on Ctrl+L navigation. A fresh, isolated lifecycle run on the
+same executable passed keyboard navigation, resize, process-tab
+switching and retirement, and native shutdown with exit 0. Both runs
+kept the executable and fixture hashes fixed.
+
+These checks cover pixels and reuse counts. The two Windows guard-driver
+unit tests passed. Windows runtime still requires the VM's 5 GiB host
+disk reserve.
+
+### Native scroll publication with hidden SVG patterns
+
+The published single-unit C `-prod` executable `dc65068e…` above ran a
+scrollable version of the hidden-pattern fixture. Its SVG expands to
+1024 × 2304 CSS pixels. The two outer paths repeat in 32 rows of six
+columns, translated by 160 CSS pixels per column and 72 per row. The
+delayed tile uses the same two-pixel PNG inline. The generated HTML
+SHA-256 was `4b6e59b38874fe1b206721c831fd24eb98b62eb00545530fd387b6c082cda80e`.
+The first 136 × 72 CSS pixels matched the original fixture at 1× and
+2×, with 2× decoded RGBA SHA-256
+`7e9bfa6175a7599443e206e192c62179eb0adfc51192cd58e9bf35c0802be3f7`.
+
+`tools/measure_precise_scroll.py` used `--allow-fixture-navigation`,
+`--width 1024 --height 600 --inputs 120 --input-hz 60 --delta 4
+--reverse-every 60 --settle-seconds 2 --script-policy disabled` and
+required the fixture title. Each fresh launch used a private profile,
+an empty disk cache, the local file URL, and 2× backing scale. OS caches
+were retained. With `VOX_GG_SVG_DIAGNOSTICS=1` in a separate launch,
+the browser recorded two tile misses before input, then 2,904 tile hits
+and zero misses between input start and completion.
+
+| Trial PID | Input Hz | Scroll publications/s | Median / p95 / max interval, ms | Over 16.67 ms | Input / total publications / scroll changes | Leading / trailing gap, ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 85065 | 59.941 | 59.438 | 16.644 / 17.692 / 20.730 | 57/118 | 120 / 123 / 118 | 20.052 / 16.280 |
+| 85279 | 59.971 | 59.467 | 16.660 / 17.739 / 23.923 | 59/118 | 120 / 123 / 118 | 19.742 / 15.755 |
+
+The timed trials ran with diagnostics off. Scroll position covered
+0–510 CSS pixels. Throughput uses the entire first-to-last input window
+and counts changes at completed native frame installation after the
+outer view paint. This is a same-build cadence baseline. Browser,
+pixel-check, driver and guard exits were zero. The 3 GiB timing guard
+sampled 412,712,960 bytes peak RSS. One-minute load before the two
+timed trials was 8.04 and 8.12 on 18 logical CPUs. The executable,
+library and fixture hashes stayed fixed.
+
+### Reusing a raster across equivalent vector pattern paints
+
+`69858bdea` extends the portable raster's last-tile reuse to separate
+styles that resolve the same image-free pattern. It compares the retained
+resource and visual keys, dimensions, depth, luminance and stroke metric,
+and charges the original subtree pixel cost on a hit. Bitmap patterns
+retain the style-identity check. The fixture paints two stripes from the
+same resource, then an equally sized blue pattern. Complete child rasters
+fell from three to two, with one reuse and identical decoded document
+RGBA `26bc958ffd8acb7c2718c06ec7496e3b9f145ef20aecb1f560c646d70473d5fd`.
+[Fixture](../Tests/Browser/Native/svg-pattern-tile-equivalent-paints.html)
+
+The aarch64 Linux builds used V `5a39a4d`, UI2 `f18e784`, Boehm and
+single-unit Clang `-O0`. Control and candidate executable SHA-256 values were
+`432096ce1d997afeb9bccffd666b18dd29856172b277dab89c09541722a9ee99` and
+`62080d4cfb312a556efe0c3d0fe66b167fc6577fc7ee7d9873d2f9b7c6145c35`.
+Twenty Linux browser cases passed for nested tiles, delayed bitmaps and
+filter offsets. Production-mode source checks passed on macOS and
+Windows D3D11. The Windows VM still requires its host disk reserve.
+
+For the synthetic benchmark, the two inner pattern cells were expanded
+to 64 × 64 and the outer path repeated in a 1024 × 2880 SVG with 40 rows
+of six columns at 160 × 72 spacing. The HTML SHA-256 was
+`d1c3c190940d43f4bbd021edda2dfe0465f3ff13a3d71175c73db0bdc0adc058`.
+The initial capture was rejected for including window chrome. After
+cropping the 1024 × 684 window at rows 60–659, both builds matched
+document RGBA at 0 and 42 CSS pixels of scroll, with SHA-256 values
+`e610dbcdd25c3ea283364563ef6dcda532e7a90bf1fe5f49338f10f32d74a6fc` and
+`c18bb335598457eb8c097d076c09885f165c544848d80f7f4288725a7611c737`.
+A separate diagnostic counted 576 nested tile hits and 1,152 completed
+misses between its first and last callback completions.
+
+Two control/candidate pairs used `tools/measure_browser_scroll.py`
+with 48 self-paced 42-pixel steps per trial, a one-second settle,
+Mesa software OpenGL and a 1024 × 600 document viewport in Xvfb. Each
+trial started with a fresh process, profile and cache on the local
+script-free page. Diagnostics were off during timing. Scroll positions
+and command counts matched and all inputs kept their hashes. Each
+browser, driver and the 3 GiB guard exited zero. Guest one-minute load
+was 0.52–0.73 on four vCPUs.
+
+| Pair | Median replay, ms | p95 / max replay, ms | Median allocated KiB |
+| ---: | ---: | ---: | ---: |
+| 1 control / candidate | 184.982 / 156.209 | 225.613, 234.036 / 195.456, 209.615 | 7972.5 / 6802 |
+| 2 control / candidate | 156.192 / 147.277 | 199.306, 205.192 / 158.025, 160.835 | 7976.5 / 6805 |
+
+The candidate allocated about 1,171 KiB less per callback. Replay medians
+fell 5.7–15.6% within the pairs, with substantial variation between the
+two controls. These results cover synthetic software-rendered replay.
+
+#### macOS verification of equivalent pattern reuse
+
+`1c27a5923` adds the fixture to the macOS nested-pattern suite and the
+Windows job-guard driver. The published macOS control `dc65068e…`
+rendered the expected pixels and rasterized all three child tiles at
+each scale. The new regression rejected that raster sequence.
+
+Compact receipt `20261123-124219-99b5a85b` completed single-unit C
+`-prod` compilation. Staging the executable on the Data volume hit
+its space limit. A private RAM-backed bundle replayed the 124 sealed
+inputs with the same compiler flags and verified the staged runtime
+assets against the receipt hashes. Its executable SHA-256 was
+`37076e9ae7bc9003a76b916315c8158d3b58ace7d940257f58af41c2066c8752`.
+
+The candidate rasterized two child tiles and reused one at each scale.
+Full 1024 × 600 CSS-pixel document captures matched the macOS control
+at 1× and 2×. Their decoded RGBA SHA-256 values were
+`ff76fa5e1ae32f63dea0ba76792a3c60924bcf4d4b55c1c840055b2cba01e366` and
+`f45e5dd68b4487a27a316f0e0bf81fa8043755d0ec360b191820e65a88a345ce`.
+The 800 × 516 crop at 1× matched the Linux reference above. Headless
+startup and 26 fresh browser captures passed across the nested-pattern,
+delayed-bitmap and live opacity-filter suites. Compilation and runtime
+guards exited zero. The pinned CPU raster differential suite also passed
+with count 20,000 and seed `20261106`. Windows runner unit checks passed.
+The Windows VM still requires its host disk reserve.
+
+### Reusing interleaved vector pattern tiles
+
+`e78f33b69` retains the two most recently used completed tiles inside a
+shared raster replay. A hit updates the order and still charges the
+original subtree pixel budget. The fixture paints A, B, A, C, B, C, A.
+The published macOS control `bfdf3dd1…` rasterized all seven child tiles.
+The candidate rasterized five and reused two, with the last A testing
+eviction. [Fixture](../Tests/Browser/Native/svg-pattern-tile-interleaved-paints.html)
+
+The shared build reached the host disk limit while writing its freeze
+receipt. A private RAM-backed single-unit C `-prod` build verified all
+124 sealed inputs. Its executable SHA-256 was
+`ae9076877988a26821cf3d38651a9aabb0ead25ec59ecf6b9be7740339b35794`.
+Headless startup and 28 fresh macOS window captures passed. The full
+1024 × 600 CSS-pixel document matched the control at 1× and 2×, with
+decoded RGBA SHA-256 values
+`2d02d9fd587f5eb88c925ea21094b12cbae009f0f08e12c30b8513610b6ffac5` and
+`4d9602d8bf3719e57100b41e50137f2ae40a41dafa9930a2a716199a0d995e0e`.
+
+The Linux aarch64 build used V `5a39a4d`, Boehm, and single-unit
+Clang `-O0`. V generation and Clang ran sequentially to fit guest
+memory. The executable SHA-256 was
+`13190e89ec122ecdf456eed1634c87eb83397e0dd930dadc1605fc16be231ea0`.
+The nested, delayed-bitmap, and opacity-filter suites passed 22 Xvfb
+captures. The interleaved case had the same five rasters and two hits.
+Its 800 × 516 decoded RGBA matched with caching disabled and matched
+the corresponding 1× macOS region. The SHA-256 was
+`b9d71b4a51ff22c230c180ce71673a4f959280960bd4d2db1dc2193de2ef4520`.
+
+The final Linux and private macOS compile and runtime guards exited zero.
+Windows D3D11 and OpenGL source checks passed. Native Windows verification
+still requires the VM's host disk reserve. These checks cover pixel parity
+and the number of tile rasters per replay.
+
+#### Linux replay timing for the two-tile cache
+
+The control and candidate used the same canonical checkout, with only
+`paint/portable_svg_mask_pattern.v` supplied from `64185198e` and `e78f33b69`,
+respectively. Both used V `5a39a4d` with the match-scope adapter, aarch64
+Boehm, and single-unit Clang 18.1.3 at `-O0`. The executable SHA-256 values were
+`07df9610bfff43fee267b16b908475b6309598c5ff190c0a4ef229b3faf1a8e5` and
+`4c38dd0e1ee0bf2a55c7079f6e46cc943c6f7a0b97dacb60d11592b214d8a090`.
+Their identical C flags had SHA-256
+`c7898f2d0d69fb088a2d0f30ddefa81bac3e5c0761a738edeae20662ebd15659`.
+
+The benchmark expanded the three child cells to 64 × 64 and repeated
+the 144 × 108 outer path in 36 rows of six columns at 160 × 128 spacing.
+The interleaved fixture used A, B, A, C, B, C, A. The consecutive
+fixture used A, A, A, B, B, C, C. Their HTML SHA-256 values were
+`8ba1482a20c50504f11b74560d1dd0da51a18b1172acd534889b774a25e1e1c7` and
+`7c333677b9a817a8781316029e90d58773fed7ce6fb664bf2501b2479d0e2c9f`.
+Before timing, both builds matched the decoded 1024 × 600 document
+RGBA at 0 and 42 CSS pixels of scroll. Captures excluded the window chrome.
+
+| Fixture | RGBA SHA-256 at 0 px | RGBA SHA-256 at 42 px |
+| --- | --- | --- |
+| Interleaved | `68e0f2c8d3ddac6ffb45aa7222a76d6577abbd4b7d959ac34952d6dea87ee922` | `bb70c5ff5be531a6d5fd36059f22a6f4ac34d44013df294bb75156ce73c85022` |
+| Consecutive | `02bda1f4cd8747b4d19deeebdf4f401a38d4a81d6db48c291f53075442ef1f22` | `2a70d4c91df96910d0c742922e72a18dee64fbcb246ae669da9896c385dd03fc` |
+
+Separate diagnostics counted child rasters between the first and last
+callback completions. The interleaved control had 10,332 misses. The
+candidate had 7,380 misses and 2,952 hits. The consecutive fixture
+had 4,428 misses and 5,904 hits on both builds. Startup counts were
+recorded separately and excluded from these totals.
+
+Two alternating pairs per fixture used `tools/measure_browser_scroll.py`
+with `--frames 48 --width 1024 --height 600 --settle-seconds 1`. Each
+fresh process had a private profile and empty browser cache, with a local
+script-free document, Xvfb, Mesa 25.2.8 llvmpipe with one worker, and
+`VOX_GG_SVG=0` to exercise the shared CPU path. OS caches remained
+available. All 48 callbacks moved the document in 42 CSS-pixel steps,
+covering 0–1,260 CSS pixels. Scroll positions and paint-command counts
+matched. The compiler, browser, driver and guards exited zero. All 269
+pinned inputs retained their hashes. Timing ran from 10:50:38 to 10:52:57
+UTC on November 23, 2026. The four-vCPU guest's one-minute load was
+0.99–1.44 before launches. Samples on the 18-logical-CPU host ranged
+from 5.61 to 7.47 around the timing window, with concurrent compilation.
+
+| Fixture and pair | Median replay, ms | p95 / maximum replay, ms | Median allocated KiB |
+| --- | ---: | ---: | ---: |
+| Interleaved 1 control / candidate | 188.993 / 194.659 | 209.682, 233.364 / 351.944, 402.145 | 8964 / 7731 |
+| Interleaved 2 control / candidate | 332.470 / 206.496 | 397.734, 473.290 / 237.263, 270.823 | 8961.5 / 7731.5 |
+| Consecutive 1 control / candidate | 205.848 / 160.997 | 218.999, 245.320 / 193.159, 208.440 | 6498.5 / 6504.5 |
+| Consecutive 2 control / candidate | 168.439 / 177.168 | 191.152, 205.391 / 189.807, 203.328 | 6502 / 6503 |
+
+Median allocation fell by 1,230–1,233 KiB per callback on the
+interleaved fixture. Consecutive allocation changed by 1–6 KiB. Median
+replay time moved in opposite directions across the pairs for both
+fixtures, with substantial variation between controls. These synthetic
+callback timings leave the wall-time effect unresolved.
+
+## Sharing the portable SVG fallback with Windows
+
+The standard Windows D3D11 window now uses the same CPU raster and GG texture
+cache as Linux for supported SVG path fills and strokes. The OpenGL variant
+tries GG Canvas first when enabled and uses the same CPU fallback on a
+decline. Non-scaling strokes get the same viewport culling allowance on both
+platforms.
+
+The Windows browser smoke driver samples the presented pixels of an SVG
+gradient with an even-odd hole and a dashed, non-scaling stroke. Its fixture
+also ran through an aarch64 Linux build with `vox_gg_svg` omitted. All six
+SVG pixel assertions matched, and diagnostics showed a raster miss followed
+by texture hits for both paint operations. The V `5a39a4d` single-unit
+Clang `-O0` executable SHA-256 was
+`74c8ee0b9fa0fe90a97663d8b91c05d49498db6f77c17851f61dca2a01d86902`.
+The full Linux browser smoke suite passed on its second run. The first
+run passed the rendering checks and exited 139 during keyboard navigation.
+A separate lifecycle retry also passed with the same binary.
+
+The guarded Windows amd64 D3D11 cross-build produced a PE32+ executable
+with SHA-256
+`21f77d647e14e0d051f45d7458c6d4a5850c8369ec139297a83a4d7759e08725`.
+The PE calls the shared fill and raster stroke routines. The smoke driver
+cross-compiled with warnings treated as errors, and the Windows OpenGL
+source check passed. The host had about 1.6 GiB free against the
+Windows VM's 5 GiB disk reserve, so runtime validation was deferred.
+
+### D3D11 SVG pattern runtime verification
+
+The Windows build initially failed because MinGW's `struct stat` lacks
+the POSIX nanosecond timestamp fields. Commit `e41f390e6` compiles that
+helper only on non-Windows targets. The Windows V path already skips
+the file identity shortcut. A focused check passed on macOS and the
+same header compiled with MinGW and warnings treated as errors.
+
+The guarded x86-64 D3D11 console build passed using V `d79ca45`, MinGW
+GCC 16.2.0 and single-unit C `-prod -no-prod-options`. The executable
+SHA-256 was
+`2ffa52cfa1b4aa39d921123f2ca81e3ab668552acdaa4c9bd42f43d151463a1b`.
+Its symbol table includes the portable SVG group rasterizer, pattern
+painter, and stroke rasterizer. The build and guard exited zero, with
+a sampled peak of 9,865,609,216 bytes under the 12 GiB limit. The
+canonical checkout also contained concurrent edits outside this change.
+
+The build ran in the Windows 11 x86-64 QEMU desktop. The first task
+stalled in its PowerShell launcher before reaching Vox. A batch
+launcher then ran the same binary twice with fresh private profiles
+and caches, using the shared non-scaling SVG pattern fixture. The
+capture waited for JavaScriptCore to apply the live vector-effect
+edit. Both runs exercised the alpha and luminance mask paths.
+
+| Mode | Browser PID | Browser and guard exit | Peak job committed bytes | SVG group cache hits |
+| --- | ---: | ---: | ---: | ---: |
+| Cached | 3552 | 0 | 482,746,368 | 78 |
+| Uncached | 5028 | 0 | 493,244,416 | 0 |
+
+The 3 GiB guest guards and the host pixel verifier passed. Each
+800 × 600 capture matched all 21 expected color samples within one
+channel level. The document marker was at row 60, and the 800 × 516
+document regions matched pixel for pixel. Their decoded RGBA SHA-256
+was `2605d2fb7a85e569161f02409ea0bd7913da3834a89cff3d4472602710829184`.
+The RGB SHA-256 matched the earlier Linux captures of the same fixture
+(`ffc01f015a05c64070946775265276eb0e852daab9e53a8212dc2db2908ecef2`).
+
+Guest file hashes before and after the runs matched the host
+executable, test guard, fixture, and JavaScriptCore DLL. The DLL
+SHA-256 was `1a0a0428b724cf2c2e15982a1199f37186cdcfad90f89892620737a181c9b7fe`.
+These results cover D3D11 rendering and cache behavior in the guest.
+The separate OpenGL build also passed the Canvas gradient-fill checks.
+Hardware frame timings remain unverified.
+[OpenGL verification](#windows-opengl-gradient-fill-verification)
+
+## Replaying packed SVG circles and ellipses
+
+Browser layout can encode an authored SVG circle or ellipse as one
+packed oval. GG Canvas already decodes that record. In `f823b98e5`,
+the shared CPU decoder builds the same clockwise oval from four
+conics, which also gives the GG fill path valid bounds before it
+allocates a surface. Invalid rectangles are skipped.
+
+The Linux control rendered white at all four interior samples on the
+new oval fixture. The revised build drew the solid ellipse, stroked
+circle, and gradient ellipse. GG Canvas and both CPU routes matched
+the sampled interior colors, and the two CPU captures matched exactly.
+Diagnostics confirmed fill texture hits with GG enabled, disabled, and
+under the OpenGL 4.2 fallback. The fixture SHA-256 was
+`413d20cf5fcdd1d3216d987c8474b06920b3238c77778d873d04d7ec9e71f142`.
+
+A separate unchanged-path fixture checked replay overhead. Two
+alternating pairs per route used V `5a39a4d`, identical single-unit
+Clang `-O0` flags, a fresh process and private profile and cache per
+trial, and a software OpenGL Xvfb window with one Mesa worker. Each
+trial recorded 32 synthetic callbacks after one second of settling,
+with JavaScript disabled. The executable SHA-256 values were
+`811788f6028eb0ba550703055592d685679dd0a4fcedb6746a0190978301175e`
+and `6293cfbcea1307d96f56d8dbda8b83a61dfebc1b6493520a840bc8fb979cf859`.
+Executable, linked library, and fixture hashes stayed fixed. The fixture
+SHA-256 was `144999f58083ca32572ec19db85343044bb1985dbcefc581ec466b6458ef1bb6`.
+The 800 × 628 document capture, command counts, and scroll offsets
+matched. One-minute guest load ranged from 0.78 to 1.17 on four vCPUs.
+The browser and memory guard exits were zero. An initial control run
+had a document marker that scrolled out of view. Fixing the marker
+restored capture identity before collecting the pairs below.
+
+| Route and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| CPU 1 | 0.554 / 0.687 | 1.271, 2.508 / 0.922, 2.476 | 123 / 124 |
+| CPU 2 | 0.583 / 0.646 | 0.667, 1.966 / 0.872, 2.213 | 123.5 / 124 |
+| GG Canvas 1 | 0.613 / 0.594 | 1.163, 2.029 / 1.166, 2.641 | 125 / 125.5 |
+| GG Canvas 2 | 0.574 / 0.590 | 1.364, 2.023 / 1.165, 4.006 | 127 / 124.5 |
+
+CPU replay medians rose by 0.06–0.13 ms. GG Canvas medians varied
+by 0.02 ms, with higher maxima in both pairs. Hardware GPU timing
+remains unverified. The packed path unit test passed with `-gc none`
+on macOS. The pinned CPU raster differential suite, all 18 Linux GG
+SVG window checks, and macOS and both Windows source checks passed.
+The regular Linux suite passed all 25 checks on retry. The first run
+exited 139 during X11 keyboard navigation after passing the rendering
+checks.
+
+The Windows OpenGL build used V `2655544` and MinGW GCC 16.2.0.
+The resulting PE32+ executable SHA-256 was
+`6d83cfc81e29618aaac2db5b7a3e5f86cf67811b061ae7eddd6eaa69696da331`.
+Its build guard exited zero at a sampled peak RSS of 9,405,661,184 bytes.
+The test guest reached the Windows sign-in screen, but the interactive
+test account could not sign in. The guest shut down normally with
+guard exit zero. Windows runtime pixels remain unverified.
+
+## Reusing SVG bounds after a GG Canvas fallback
+
+With `VOX_GG_SVG=1`, `f4f0998ba` sends subsequent solid fills to
+the CPU cache after GG Canvas initialization fails. Cache hits
+reuse the path bounds. Fills and strokes share the availability
+check, and frame cleanup skips the GPU cache when there is no canvas.
+
+The Linux regression confirms that the renderer reports its OpenGL
+4.2 capability failure once and reuses bounds on subsequent CPU
+fill texture hits. The previous build still decoded the geometry
+on those hits. The candidate's CPU fallback pixels matched the
+capture with GG Canvas disabled.
+
+The timing fixture kept 12 solid paths with 61 packed segments each
+fixed in view. Both builds used V `5a39a4d` and identical single-unit
+Clang `-O0` flags. The control and candidate executable SHA-256 values
+were `1f0c47326168f238a6c29cbfe0689354859614f13b01227da66a0da4956d9ad1`
+and `26931145833d98a23649b79ec6d30abf74127388678c26132092c639858dcf1c`.
+The fixture SHA-256 was
+`37bf7b0cb9cbaeedd89962b94076b7a4fd9d848afc2cef80ce5a0027c156d9d9`.
+Executable, fixture, and linked library hashes stayed fixed. Each
+trial used a fresh process and private browser state, an 800 × 712
+Xvfb window, one Mesa software rendering worker, and 48 synthetic
+callbacks after one second of settling. JavaScript was disabled.
+Command counts, scroll offsets through the final 504 CSS pixels,
+and 800 × 628 document captures matched within each route.
+
+In separate diagnostics, both OpenGL 4.2 builds recorded 564 CPU
+texture hits. Cached bounds accounted for zero hits in the control
+and all 564 in the candidate. The candidate matched the captures
+and cache counts with GG Canvas disabled. Both builds recorded 564
+GPU texture hits on shader-storage-capable OpenGL.
+
+Two alternating pairs ran per route with diagnostics disabled.
+One-minute guest load ranged from 1.18 to 1.58 on four vCPUs. Browser
+and memory guard exits were zero. Concurrent compiler runs exhausted
+guest memory in two build attempts. Temporary swap allowed the
+candidate build to finish and was removed before browser testing.
+
+| Route and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| OpenGL 4.2 fallback 1 | 0.751 / 0.684 | 2.636, 2.716 / 0.933, 2.572 | 165.5 / 126 |
+| OpenGL 4.2 fallback 2 | 0.753 / 0.736 | 1.047, 2.880 / 2.597, 2.900 | 165 / 127 |
+| GG Canvas 1 | 0.641 / 0.669 | 0.814, 2.391 / 0.820, 2.623 | 132.5 / 132 |
+| GG Canvas 2 | 0.740 / 0.635 | 0.890, 2.268 / 0.705, 2.375 | 131 / 131 |
+
+Fallback allocation fell by 38–39.5 KiB per callback. Fallback
+medians fell in both pairs, with mixed p95 and maximum results.
+GG Canvas medians were mixed. The document pixel SHA-256 values
+were `5f8cdb7b7f303627171a124fd648ed328da2a8631264859b9a702d0f612c6a88`
+on the fallback and `53d3f5d520e7bface67bee9c83500a7f1645ff3bc0095d45f8f447f18e7ed90f`
+with GG Canvas. The timings cover software replay callbacks. All 18
+Linux GG SVG window checks passed, as did the macOS, Windows D3D11,
+and Windows OpenGL source checks. Windows runtime and native GPU
+timing remain unverified.
+
+## Sharing CSS gradient text masks with Windows
+
+Windows D3D11 and OpenGL now replay `background-clip: text` through the
+same FreeType glyph mask and GG texture upload as Linux. The FreeType
+adapter streams font files through wide Windows paths, including CSS
+fonts downloaded into a Unicode profile path.
+
+The Linux browser smoke test passed on retry. The initial run passed
+the rendering checks and timed out during keyboard navigation. An
+isolated lifecycle retry passed before the complete rerun. The
+gradient ramp and full-raster modes produced identical document rows.
+On the Windows driver's `0.5` fixture under Linux Xvfb, the pixel check
+accepted the clipped glyphs and rejected the full gradient rectangle.
+The V `5a39a4d` single-unit Clang `-O0` executable SHA-256 was
+`2fc5115814fe7360e76b964401f9da3a000a83adef0aab26dd4297e215174a54`.
+The focused FreeType pixel and outline tests also passed on Linux.
+
+The macOS and both Windows source checks passed. The Windows smoke
+driver and Unicode-path glyph test cross-linked with MinGW GCC 16.2.0.
+The first D3D11 production build ran out of space staging generated C.
+A diagnostic build and a production retry linked to `d3d11.dll` and
+`libfreetype-6.dll`. The V `178232d` single-unit
+`-prod -no-prod-options` executable SHA-256 was
+`67b9c9edf7fac983e83cb4c14348751acf24b35207434239910b7fbe077cf0a2`.
+The retry and its 12 GiB guard exited zero at a sampled peak
+RSS of 8,536,981,504 bytes.
+The Windows VM could not meet its 5 GiB host disk reserve. Windows
+runtime pixels and timings remain unverified.
+
+## Shared replay for retained web-font text
+
+Linux now clips horizontal `@font-face` glyph runs to the viewport
+before allocating the raster, using the document's retained glyph IDs
+and positions. Windows can use the same FreeType and GG texture path
+with `VOX_PORTABLE_WEB_FONTS=1`, pending native testing of the
+`-gc none` working set.
+The layout regression compared every pixel with the corresponding
+crop of the full bitmap at device scales 1 and 2. The browser fixture
+checked the author's glyph stems and gaps in a fully visible run and
+one clipped at the left edge. The decoded document pixels matched the
+control exactly.
+
+Two alternating synthetic replay pairs for each fixture used V
+`5a39a4d` and single-unit Clang `-O0` on the four-vCPU AArch64 Linux
+guest. Each trial used Mesa software rendering, a fresh process and
+private profile and cache, a 1024 × 712 window, a one-second settle, and
+48 synthetic scrolling callbacks. JavaScript was disabled and OS caches
+remained available. All trials had matching command counts, scroll
+offsets, and final document pixels, with stable input hashes and
+zero browser and guard exits. One-minute guest load ranged from 0.48
+to 1.34. The replay times cover draw callbacks.
+
+| Workload and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| System font 1 | 32.943 / 39.687 | 40.331, 41.022 / 44.622, 50.920 | 3450 / 3448.5 |
+| System font 2 | 39.232 / 38.859 | 41.276, 41.652 / 41.510, 41.985 | 3447 / 3448 |
+| Web font 1 | 61.542 / 59.847 | 62.848, 66.066 / 61.769, 62.913 | 5493 / 5285 |
+| Web font 2 | 67.200 / 62.196 | 73.841, 76.770 / 67.109, 69.448 | 5492 / 5287 |
+| Long clipped web font 1 | 451.907 / 100.673 | 480.093, 498.030 / 107.877, 113.180 | 43009.5 / 8766.5 |
+| Long clipped web font 2 | 357.769 / 93.186 | 366.851, 382.198 / 96.910, 107.932 | 43008 / 8767 |
+
+The Linux control and measured candidate executable SHA-256 values were
+`4f6317cec4b8bfe4b14b73414b4308a0beeb6a6cc1e2e38c0dfaab244113da63`
+and `9261af318a04509b77dcd906a4aeeff1bb618b33d10abaf220abea7173ab0df4`.
+The long fixture placed 300 glyphs per line 1500 pixels left of the
+viewport. The system-font results were mixed.
+
+The final Linux build
+`4dc94f461906804b82e0eec4b35d1401b6980f80ee1101da6ed06b2ae6586748`
+passed the browser smoke suite and matched the measured candidate's
+fixture pixels. The macOS and Windows
+OpenGL source checks passed. The D3D11 diagnostic cross-build linked
+to `d3d11.dll` and `libfreetype-6.dll`. Its SHA-256 was
+`1e0306aba08371663600d61bd965589230d2c275eaaa26fb86ee7419200435aa`.
+The Windows VM requires 5 GiB of free host storage. Windows native
+pixels, memory, timings, and precise scrolling remain unverified.
+
+## Reusing retained web-font textures
+
+The portable web-font painter reuses a texture when the adopted root
+paint command, recording generation, viewport, and backing scale match.
+The cache uses the first 16 existing GG streaming slots. A replacement
+upload or slot removal clears the corresponding entry. The live-edit
+regression observed hits before and after changing the glyph sequence
+and color. The edited capture matched the uncached document exactly.
+
+Two alternating pairs per workload used the same Linux AArch64
+single-unit Clang `-O0` executable with V `5a39a4d` and SHA-256
+`cd08b8eb79ba82c6a95fb87e02a5e587aeeae2eb7c6fc6808be7a555065dee1d`.
+The fixture contains 31 lines of 36 author-font glyphs at 32 px.
+Its SHA-256 was `f8080532a860d12b4cae56e9e5e2ff3f6711a143f7e0e2df101135cefd34569e`.
+The font SHA-256 was `9438128eaeb21796c5adc70376734aaa1c47d3b955009985ab6b8c448a8afa63`.
+Each trial used 48 synthetic draw callbacks, a fresh process and
+private profile and cache, a 1024 × 712 Xvfb window, Mesa software
+OpenGL, and one second of settling. JavaScript was disabled and OS
+caches stayed available. Command counts, scroll offsets, and final
+document pixels matched within each workload. All input hashes stayed
+fixed and the browsers and memory guard exited zero. One-minute guest
+load ranged from 1.19 to 1.84 on four vCPUs in the timed runs.
+
+| Workload and pair | Replay median uncached / cached, ms | Replay p95 and maximum uncached / cached, ms | Median allocated KiB uncached / cached |
+| --- | ---: | ---: | ---: |
+| Stationary 1 | 64.609 / 0.702 | 88.652, 99.372 / 0.920, 2.628 | 5058 / 114 |
+| Stationary 2 | 64.739 / 0.721 | 66.872, 67.946 / 1.890, 2.379 | 5059 / 113 |
+| Scrolling 1 | 65.211 / 65.083 | 69.299, 70.526 / 69.685, 74.257 | 5241.5 / 5237 |
+| Scrolling 2 | 63.626 / 64.077 | 67.002, 69.953 / 69.896, 73.557 | 5246 / 5237 |
+
+Separate diagnostic runs counted 658 hits and zero misses during
+stationary callbacks 1–47, and 108 hits and 560 misses during the
+same interval with synthetic scrolling. The scrolling replay medians
+were within 1%, and both cached scrolling trials had higher p95 and
+maximum times. These are draw-callback measurements. The Linux browser
+smoke suite and the macOS, Windows D3D11, and Windows OpenGL source checks
+passed. Windows native memory and timing checks still await a VM with
+enough host storage.
+
+## Reusing web-font textures across scroll recordings
+
+`VOX_WEB_FONT_SCROLL_REUSE=1` allows a fully visible horizontal web-font
+run to reuse a texture after viewport scrolling records a new paint
+list. The renderer compares the document content revision, font path
+and face, exact glyph IDs and positions, color, opacity, backing scale,
+and raster-local transform and dimensions. Whole-pixel translation can
+therefore reuse pixels. A clipped run, a non-translation transform, or
+a changed subpixel phase takes the existing raster path. The lookup can
+move a matching texture from a later unused web-font slot within the
+same 16-slot budget. Each entry stores at most 128 glyphs and 512
+font-path bytes. The tab releases the metadata when it closes.
+
+The first diagnostic rejected the scroll translation and recorded no
+hits. The raster-local comparison then recorded 265 cross-recording
+hits and 294 raster misses during synthetic callbacks 1–47. The window
+regression checked exact pixels across scrolling, a live color edit,
+clipped and fractional text, and an SVG sharing the streaming slots.
+
+Two alternating pairs compared the flag off and on with the existing
+stationary cache enabled in both. The Linux AArch64 executable used
+V `5a39a4d` and single-unit Clang `-O0`. Its SHA-256 was
+`fb31f3f8d3ba9101614150ab324220d2cca91f81895aee423ddd104b7d2965a1`.
+The fixture used 31 alternating-color lines of 36 author-font glyphs
+at 32 px and had SHA-256
+`1bdc2d1ef877068d0b788a9ef431f6eaab8bbf1d5c0d541176bd559557df550c`.
+The trials used fresh processes with private profiles and caches,
+Mesa software OpenGL in a 1024 × 712 Xvfb window, one second of settling,
+and 48 synthetic scrolling callbacks with JavaScript disabled. OS caches
+stayed available. One-minute load ranged from 1.13 to 1.44 on four
+guest vCPUs. Input hashes, scroll offsets, command counts, and final
+document pixels matched. Browser and guard exits were zero.
+
+| Pair | Replay median off / on, ms | Replay p95 and maximum off / on, ms | Median allocated KiB off / on |
+| --- | ---: | ---: | ---: |
+| 1 | 58.504 / 6.313 | 61.632, 64.134 / 59.651, 60.818 | 5220.5 / 799 |
+| 2 | 57.827 / 7.783 | 59.622, 59.823 / 59.216, 59.765 | 5217 / 805.5 |
+
+The final document pixel SHA-256 was
+`9aadcb12b8d0ddc547c8c7509fbcc9f70feb793acf5f1e7f4ae11911f9d68622`.
+The results measure synthetic draw callbacks. The Linux browser smoke
+suite passed. The cleanup build
+`01c30c5fd3c7ec15ac4994313f8b635df694e9ccb2c34921ee2899b4ce52fefa`
+passed the focused pixel checks and exited cleanly when its X11 window
+closed with a populated cache. A separate X11 wheel probe re-recorded
+the document and timed out waiting for a cross-recording hit. macOS,
+Windows D3D11, and Windows OpenGL source checks passed. Native scrolling
+performance and Windows memory and timing remain unverified.
+
+## Preserving web-font textures on upward scroll
+
+With `VOX_WEB_FONT_SCROLL_REUSE=1`, an entering top row can move a
+displaced texture to an unused trailing slot before uploading its
+own pixels. The following rows can look up the displaced texture
+within the same 16-slot limit. Frame retirement releases unused
+slots. The focused regression requires hits on the first upward
+frame. The control reported zero hits on that frame.
+
+A separate X11 diagnostic explained the earlier single-wheel miss.
+At window width 800, the first 42-pixel tick advanced the paint
+content revision from 183 to 184, and the next downward tick reused
+10 textures. At width 1024 the same diagnostic kept revision 183
+and reused 10 on both downward ticks. In both widths the first
+upward tick missed every texture even with a stable revision.
+
+The pixel comparison used Xvfb, Mesa software OpenGL, fresh profiles,
+and one `xdotool` wheel event per step in a 1024 × 712 window. A
+document marker confirmed the offsets. The captures matched exactly
+between the two executables at each step. Both browsers closed with
+exit zero.
+
+| X11 scroll offset before → after | Textures reused before / after |
+| --- | ---: |
+| 0 → 42 | 0 / 0 |
+| 42 → 84 | 12 / 12 |
+| 84 → 42 | 0 / 12 |
+| 42 → 0 | 12 / 12 |
+
+Two alternating synthetic replay pairs used AArch64 Linux, V
+`5a39a4d`, and identical single-unit Clang `-O0` flags. The control
+and candidate executable SHA-256 values were
+`2ef8bf880b4cbd50e1405cef40489f943c59aa272581aafc183f05463874fa1b`
+and `53bd06a9a6db07fe61e45b99ea2933ffd5ceebbc4ba5305203bd0ae6fa5f3312`.
+The input fixture SHA-256 was
+`5efa7465a7fb43d67ab24c5bb3428beb3b2b8aa05296b1f87e25b898969a7f59`.
+Trials used the same window dimensions and software backend as the
+wheel check, fresh processes and private profiles and caches, one
+second of settling, and JavaScript disabled. OS caches were retained.
+Each trial recorded 48 callbacks, with 21 moving down and 18 moving
+up. All command counts, offsets, and final document pixels matched.
+One-minute guest load ranged from 1.32 to 1.69 on four vCPUs. Browser
+and guard exits were zero.
+
+| Callbacks and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Up 1 | 62.014 / 5.932 | 64.837, 64.837 / 13.291, 13.291 | 5336.5 / 707 |
+| Up 2 | 62.637 / 5.526 | 64.904, 64.904 / 11.507, 11.507 | 5339 / 708 |
+| Down 1 | 6.381 / 6.656 | 8.847, 14.470 / 11.657, 14.048 | 688 / 703 |
+| Down 2 | 6.642 / 4.633 | 11.202, 13.211 / 8.421, 16.829 | 704 / 688 |
+| All 1 | 6.647 / 5.879 | 64.354, 64.837 / 11.659, 14.048 | 794 / 679 |
+| All 2 | 7.815 / 5.007 | 64.541, 64.904 / 8.421, 16.829 | 785 / 678.5 |
+
+The final synthetic document pixel SHA-256 was
+`a2fc0d02980fb56aa1f04a1d831dec058a2c8c73a988c007ca4c1f19a90f7064`.
+Downward timings were mixed. The X11 wheel check establishes pixel
+and cache behavior. Native frame timing and Windows runtime remain
+unverified. The Linux browser smoke suite and macOS, Windows D3D11,
+and Windows OpenGL source checks passed.
+
+## Reusing horizontally clipped web-font textures
+
+With `VOX_WEB_FONT_SCROLL_REUSE=1`, `24e450729` lets a vertically
+scrolling line reuse its texture when the horizontal viewport crop
+produces the same raster dimensions and origin-relative transform. Rows
+cut by the top or bottom edge use the existing raster path. An initial
+version cached those rows and recorded zero hits on the ordinary
+fixture's first upward frame.
+
+The revised build reproduced all document pixels with the cache enabled
+and disabled, including after a live color edit. On the wide-line fixture
+the previous build logged 3 cross-recording hits, including 1 on the first
+upward frame. The revised build logged 222 hits, including 11 on that
+frame. The ordinary fixture also logged 222 and 11 hits.
+
+Two alternating pairs per fixture used AArch64 Linux, V `5a39a4d`, and
+matching single-unit Clang `-O0` flags. The control and revised executable
+SHA-256 values were
+`ce33fc3fbf0140fbc8e49f7c8bc48226aedbd5689a1e91c18d81a338c6499c24`
+and `f47551b9a0284675b2fabdd767bba2a142a976bb2c3f774cdd0dba1a6d46749e`.
+The ordinary and wide fixture SHA-256 values were
+`668b4e3f6a02611e4ee864d2834ab7e64bccfa855cf759a1f7e9a8421ce3c08b`
+and `041eee702ad8788936a4ed6d014064c989ed04c1112463f1d0439850edfff641`.
+Executable, linked library, font, and input hashes stayed fixed. Trials
+used fresh processes and private profiles and caches, a 1024 × 712 Xvfb
+window with Mesa software OpenGL, a one-second settle period, and JavaScript
+disabled. OS filesystem caches were retained. Each trial recorded 48
+synthetic callbacks including 21 downward and 18 upward movements.
+Offsets, paint command counts, and final 1024 × 628 document pixels matched.
+Guest one-minute load ranged from 0.96 to 1.31 on four vCPUs. Browser and
+guard exits were zero.
+
+| Fixture and pair | Replay median before / after, ms | Replay p95 and maximum before / after, ms | Median allocated KiB before / after |
+| --- | ---: | ---: | ---: |
+| Ordinary 1 | 5.838 / 6.287 | 11.601, 13.738 / 11.652, 12.248 | 677.5 / 682.5 |
+| Ordinary 2 | 6.042 / 6.459 | 12.644, 14.450 / 13.159, 14.187 | 672.5 / 674.5 |
+| Wide 1 | 87.966 / 9.162 | 93.298, 94.520 / 16.127, 18.017 | 8106 / 941.5 |
+| Wide 2 | 91.118 / 8.805 | 98.408, 100.573 / 16.565, 21.946 | 8094.5 / 940 |
+
+The ordinary and wide document pixel SHA-256 values were
+`9aadcb12b8d0ddc547c8c7509fbcc9f70feb793acf5f1e7f4ae11911f9d68622`
+and `35d2f8f5f8a1e5fec7d37b964ad7cce39d943caacbe24b8594eb40cef79079bb`.
+Separate diagnostics logged 481 hits in both ordinary builds and 0 versus
+481 for the wide fixture. Ordinary medians rose by 0.42–0.45 ms while
+wide replay allocated about 88% less per callback. Reuse remains opt-in.
+
+A live X11 check used four `xdotool` wheel events on the wide fixture
+with a scroll position marker. The marker confirmed offsets of 0, 42,
+84, 42, and 0 CSS pixels. At each offset the document pixels matched
+outside the rightmost eight columns occupied by the fading scrollbar.
+The revised build reused 12 textures on each event and the control
+reused zero. Both browser processes and the memory guard exited zero.
+The marked fixture SHA-256 was
+`e745172fc5a79858ae9cb78b84a321648bdbdc6aaa0ab97d500d98af86a2016b`.
+
+The timing measurements cover synthetic replay. Native GPU timing and
+Windows runtime remain unverified. All 25 Linux browser checks passed.
+The stationary-cache test now allows the capture-ready attribute to
+re-record unchanged pixels and still requires two generations with both
+an upload and a hit. macOS, Windows D3D11, and Windows OpenGL source
+checks passed.
+
+## Converting CPU SVG upload pixels faster
+
+The shared CPU raster readback copies opaque RGB bytes directly and writes zero
+RGB for transparent pixels. It converts partial alpha with the original f32
+operations and rounds the saturated byte to nearest even. The scan uses the
+source and destination bounds checked by `read_pixels` before it starts,
+including for overlapping views.
+
+The focused readback test passed on macOS and Linux, covering every channel
+and alpha byte pair, padded rows, and overlapping views. The pinned Skia
+oracle matched 76 exhaustive and 20,000 randomized readback cases on macOS,
+including in the `-prod -gc none` run that reached the 12 GiB guard in
+subsequent raster tests. The full pinned suite completed with the default GC.
+All 16 Linux GG SVG window checks and the Windows amd64 OpenGL source check
+passed.
+
+A Linux Clang `-O3` readback-only benchmark measured the 200 × 112 tile with
+warm, preallocated buffers. Median times for opaque, mixed, and translucent
+tiles went from 0.322 / 0.338 / 0.337 ms to 0.020 / 0.056 / 0.119 ms. At
+1051 × 533, where the row workers participate, medians went from
+2.166 / 2.301 / 2.332 ms to 0.251 / 1.611 / 1.616 ms. Each value is the
+median of four 61-call medians from two runs per build. Output hashes matched
+for each input, both executable hashes held, and the benchmark and guard
+exited zero.
+
+The Linux browser cohort used V `5a39a4d`, single-unit Clang `-O0`, and
+software OpenGL with `LP_NUM_THREADS=1` under Xvfb. The control and candidate
+executable SHA-256 values were
+`a8a5c6bb84d78a7993f8a4dfcc99656474652fa7b4b10452a45b46ac3921ec58`
+and `ec8ccd43ce7e5d2127c027b861fb58f452859382c62947b85f08cb4567b749ae`.
+The generated C differed in the readback functions, build timestamps, and
+a compiler-generated closure name. Both builds used identical C flags.
+Each trial ran a fresh process with private browser state and an 800 × 712
+window. The fixture and wheel schedule were the same as the
+[gradient clip reuse cohort](#retaining-exact-cpu-svg-gradient-clips).
+Viewport reuse was enabled on both builds. The scroll fixture SHA-256 was
+`4642727427b15f988ef7108628726a153dad2abaa0d6e1a9acaa4929fa0ac3d0`.
+Guest one-minute load ranged from 1.52 to 2.00 across the eight timed trials
+on four vCPUs.
+
+| Renderer and pair | First moving callback, control / candidate, ms | Revisit median, control / candidate, ms |
+| --- | ---: | ---: |
+| CPU fallback 1 | 13.975 / 10.067 | 1.075 / 1.227 |
+| CPU fallback 2 | 16.601 / 10.744 | 1.254 / 1.216 |
+| GG 1 | 8.159 / 7.844 | 2.883 / 1.143 |
+| GG 2 | 7.641 / 7.021 | 1.229 / 1.131 |
+
+Both CPU builds rasterized the first clipped extent and reused the
+alternate texture on 15 later fills. Full and clipped document captures
+were pixel-exact between builds on each renderer. All measured browser
+processes and the runtime guard exited zero. The first CPU clip callback
+took 28% and 35% less time in the two pairs. Revisit medians moved in both
+directions. These synthetic callback timings leave native scroll
+publication, hardware GPU performance, and Windows runtime unverified.
+
+## Retaining exact CPU SVG gradient clips
+
+`VOX_GG_SVG_VIEWPORT_REUSE=1` can retain the previous CPU gradient fill
+texture when the same path and paint need a differently sized viewport
+clip. Reuse requires an exact match for the path, fill rule, resolved
+gradient, local raster transform, and image dimensions. Each streaming
+slot can hold one alternate of up to 65,536 pixels, for at most one
+megatexel of additional retained texture area. A paint change, unrelated
+upload, or retired streaming slot discards the alternate. First visits
+still rasterize at the requested extent, preserving its sampling origin.
+
+The viewport fixture visited full and clipped linear and radial fills,
+returned to both extents, and changed a gradient stop before returning
+to a previously cached clip. The edited fill rasterized again. Output
+matched pixel for pixel with viewport reuse disabled on each renderer.
+All 16 Linux GG SVG window checks passed, as did the Windows amd64
+OpenGL source check with `-gc none`.
+
+For timings, `Tests/Browser/Native/svg-gg-gradient-viewport.html` used a
+642-pixel minimum body height. This left 42 pixels of overflow in the
+600-pixel document viewport with the bookmark bar visible. V `5a39a4d`
+and single-unit Clang `-O0` used identical flags for the control and
+candidate from the shared checkout with other work in progress. The
+executable SHA-256 values were
+`696fe12821023008f539dae5ea4507201411c08ce5c57ce9f38343f1d875168e`
+and `80a33098539e12aff4d47f259253ca49a96b80197b2b18de867e573cad59c8e9`.
+The page and shader directory SHA-256 values were
+`4642727427b15f988ef7108628726a153dad2abaa0d6e1a9acaa4929fa0ac3d0`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb with `LP_NUM_THREADS=1`,
+a fresh process and private browser state, an 800 × 712 window, and a
+one-second settle. The synthetic driver sent 180 self-paced wheel
+events and reversed every 30 callbacks. Six steps moved the document
+between 0 and 42 CSS pixels. The first was a new clip, and the other
+five revisited a previously painted extent. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 0.71
+to 1.46 on four virtual CPUs. The timing driver and memory guard
+exited zero. Each renderer's clipped captures matched exactly between
+builds and with viewport reuse disabled.
+
+| Renderer and pair | Revisit median control / candidate, ms | All moving median, ms | All moving p95 and maximum, ms |
+| --- | ---: | ---: | ---: |
+| CPU fallback 1 | 14.436 / 1.175 | 14.283 / 1.1905 | 15.989 / 16.242 |
+| CPU fallback 2 | 13.971 / 1.135 | 13.958 / 1.1445 | 14.816 / 13.084 |
+| GG 1 | 1.071 / 1.017 | 3.431 / 3.2515 | 7.849 / 6.185 |
+| GG 2 | 1.104 / 1.113 | 3.368 / 3.393 | 6.337 / 6.184 |
+
+Diagnostics counted 15 exact alternate hits in the candidate CPU run
+after the first moving callback. The control rasterized those 15 draws.
+Each GG run hit all 537 subsequent gradient draws. The two CPU revisit
+medians fell by about 92%. The candidate's first visit still spent
+13.084 and 16.242 ms. These timings cover synthetic replay on software
+OpenGL. Native GPU performance and Windows runtime remain unverified.
+
+## Cropping cached CPU SVG fills at viewport edges
+
+`VOX_GG_SVG_VIEWPORT_REUSE=1` also enables crops of cached CPU solid
+fills made of closed, pixel-aligned rectangles, including even-odd
+holes. The cached and visible rectangles must share the same linear
+transform and differ by a whole-texel offset, with all visible texels
+present in the cached texture. Replay samples that subrectangle with
+nearest filtering. The original texture remains available when its
+larger extent comes back into view. Fills with curved edges, gradients,
+fractional coverage, or newly exposed pixels use the raster path for a
+changed clip.
+
+The Linux window fixture exercised top and left clipping, an even-odd
+hole, a quarter-pixel transform, a growing visible rectangle, and a
+translucent rotated path. The CPU reused the aligned crops and
+rasterized the fractional, growing, and curved cases. Each renderer's
+cropped and rerasterized document captures matched exactly. All 16
+Linux GG SVG window checks passed, as did the Windows amd64 OpenGL
+source check with `-gc none`.
+
+The timing page had three 560-pixel-high solid fills, two with
+rectangular holes and one with partial opacity. The scroll tests used
+the same V `5a39a4d` and single-unit Clang `-O0` flags for both Linux
+builds from the shared checkout with other work in progress. The control
+and candidate executable SHA-256 values were
+`11f3796f2c951c090fef51c15410378ad806192057c0ebd82d81c0822f3fbfa8`
+and `b18e1b19afe875f10e19994d9b90af11e154b608f0942aa3a901afa9c542b83a`.
+The page and shader directory SHA-256 values were
+`56423df16f9085ff7546277dc85b15c78f2137cea0d95ec889d081bfffd9affd`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb with `LP_NUM_THREADS=1`,
+a fresh process and private browser state, an 800 × 628 document
+viewport, a one-second settle, and 32 self-paced 42-pixel scroll steps.
+The clipped subset contains 13 steps, ending at 546 CSS pixels. Scroll
+positions and paint-command counts matched. One-minute guest load
+ranged from 1.05 to 1.31 on four virtual CPUs. The timing driver and
+memory guard exited zero. Captures at 168 CSS pixels matched exactly
+for each renderer between builds and with viewport reuse disabled.
+
+| Renderer and pair | Clipped median control / candidate, ms | Full median, ms | Full p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: | ---: |
+| CPU fallback 1 | 16.356 / 1.021 | 1.1985 / 1.010 | 27.881 / 2.481 | 30.192 / 2.514 |
+| CPU fallback 2 | 15.965 / 1.002 | 1.135 / 1.009 | 27.623 / 1.284 | 28.957 / 2.573 |
+| GG 1 | 0.994 / 1.048 | 0.9945 / 1.020 | 1.171 / 1.366 | 2.728 / 2.855 |
+| GG 2 | 1.027 / 1.023 | 1.0025 / 0.9985 | 2.522 / 2.547 | 2.557 / 2.579 |
+
+After the first measured callback, the diagnostic counted 36 crops in
+the candidate CPU run and 36 rasterizations in the control CPU run.
+Both GG runs recorded 36 crops. The clipped CPU median fell by about
+94%. Whole-run GG medians were within 2.6%, with higher p95 in both
+pairs. These timings cover synthetic callbacks on software OpenGL.
+Native GPU performance and Windows runtime remain unverified.
+
+## Retaining CPU SVG fill textures
+
+Portable SVG fills use the same streaming texture cache as strokes.
+The fill rule is part of the key alongside path bytes, transform,
+clipped dimensions, and resolved solid or gradient paint. A matching
+texture can be drawn at a new integer position without decoding the
+path, rasterizing it, or uploading its pixels. The cache keeps its
+16-slot bound, and every pixel upload invalidates the old entry for
+that streaming slot.
+
+The Linux window checks changed a solid fill from the nonzero rule to
+even-odd, replaced a stroke's slot with a same-sized fill, and checked
+live edits to gradient stops, local transform, opacity, and focal radius.
+Cached, forced-uncached, and OpenGL 4.2 fallback captures matched exactly
+after the edits and the clipped scroll. All 16 Linux GG SVG window checks
+and the Windows amd64 OpenGL source check with `-gc none` passed.
+
+The timing fixture was `Tests/Browser/Native/svg-gg-gradient-fill.html`.
+Both Linux builds used V `5a39a4d`, one Clang translation unit, and identical
+`-O0` flags from the shared checkout with other work in progress. V C
+generation and Clang linking ran separately after the guest exhausted
+memory in the first combined control build. The control and candidate
+executable SHA-256 values were
+`cc929b35e08a08021b95285603ddbe688a4ce4988721f7d709f476fbae3fbf15`
+and `79382eb0cc425c45580d4ffcfa5fb7178c26566b7021e626f6f3d20ba9cfcd34`.
+The fixture and shader directory SHA-256 values were
+`1612e79253b84585b6e9052a16466b6d65eb6ff8b60929ec1f34b974cb9e1cad`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb with `LP_NUM_THREADS=1`,
+a fresh process and private browser state, an 800 × 628 document viewport,
+a one-second settle, and 32 self-paced 42-pixel scroll steps. Scroll
+positions and paint-command counts matched. One-minute guest load ranged
+from 1.22 to 1.84 on four virtual CPUs. The timing driver and its memory
+guard exited zero. Static captures matched exactly between builds on
+each renderer and with caching forced off on the candidate.
+
+| Renderer and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| CPU fallback 1 | 4.2135 / 1.245 | 6.080 / 3.211 | 22.983 / 21.362 |
+| CPU fallback 2 | 4.220 / 1.276 | 6.042 / 4.327 | 23.950 / 21.576 |
+| GG 1 | 1.071 / 1.025 | 5.905 / 5.747 | 22.915 / 22.745 |
+| GG 2 | 1.045 / 1.0455 | 5.787 / 5.739 | 23.354 / 23.266 |
+
+Separate diagnostics counted 155 stationary CPU fill texture hits with
+caching and 155 rerasterizations with caching disabled, plus one clipped
+fill in each run. The GG diagnostic counted 155 stationary GG texture
+hits and one clipped fill, with zero CPU gradient fills. Median CPU
+fallback times fell by 69.8–70.5%. GG medians were within 4.3%.
+The maximum in every run occurred during replay of the scroll step from
+42 to 84 CSS pixels. These trials measure synthetic callback times on
+software OpenGL. Native GPU performance and Windows runtime behavior
+remain unverified.
+
+## Retaining CPU SVG gradient stroke textures
+
+The CPU stroke texture cache also handles linear and radial gradients.
+It compares the resolved gradient geometry, local transform, spread,
+opacity, and exact stop values alongside the stroke key. Each slot owns
+a bounded copy of up to 16 stops. Larger gradients still rasterize on
+every draw. The cache uses the same streaming textures as solid strokes.
+
+The Linux window fixture checked live changes to stop color, opacity,
+radial radius, spread, and the local gradient transform of a non-scaling
+stroke. The cache rasterized each changed stroke and reused it on later
+frames. CPU captures with caching enabled, caching forced off, and
+OpenGL 4.2 matched exactly. All 16 Linux GG SVG window checks and the
+Windows amd64 OpenGL source check passed.
+
+The timing fixtures were `svg-gg-gradient-stroke.html` and
+`svg-gg-stroke.html` in `Tests/Browser/Native/`. Document pixels matched
+exactly between builds on each tested route, including when caching
+was forced off on the candidate. Both builds used V `5a39a4d`,
+single-unit Clang, and `-O0`, from the shared checkout with other changes
+in progress. The control and candidate executable SHA-256 values were
+`7c42a28b6ef8fbc2503e25fd78f4396bea49c2f15e9eee2228125343a94c77d6`
+and `6cd5127d7fdcfcc2f1a1e14ed0a53a1c42434ce18b3574d2a035f21df22f57a3`.
+The gradient fixture, solid fixture, and shader directory SHA-256 values were
+`0aa4184832b9e3a900f0f8484933ed48e9104d5cd60bb4609aea082d1be41f4e`,
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`,
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb, a fresh process and
+private browser state, an 800 × 628 document viewport, a one-second
+settle, and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.14
+to 2.17 on four virtual CPUs. Timing drivers and memory guards exited
+zero.
+
+| Renderer and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Gradient CPU 1 | 3.6175 / 3.515 | 7.402 / 5.033 | 7.442 / 5.716 |
+| Gradient CPU 2 | 3.616 / 3.521 | 6.518 / 4.208 | 7.732 / 6.837 |
+| Gradient GG 1 | 1.173 / 3.304 | 1.352 / 3.872 | 2.995 / 5.199 |
+| Gradient GG 2 | 1.243 / 1.204 | 1.439 / 3.027 | 3.474 / 3.337 |
+| Solid CPU 1 | 2.717 / 2.6725 | 3.105 / 4.857 | 6.516 / 5.625 |
+| Solid CPU 2 | 2.798 / 2.8175 | 3.087 / 5.972 | 3.142 / 6.070 |
+| Gradient GG follow-up 1 | 2.100 / 2.1075 | 2.882 / 2.486 | 6.022 / 5.986 |
+| Gradient GG follow-up 2 | 2.1015 / 2.154 | 2.617 / 3.054 | 5.727 / 5.654 |
+| Gradient GG one Mesa worker 1 | 1.098 / 1.293 | 1.398 / 1.787 | 3.079 / 3.275 |
+| Gradient GG one Mesa worker 2 | 1.0965 / 1.0985 | 2.795 / 1.282 | 3.372 / 1.492 |
+
+Diagnostics counted 155 gradient CPU texture hits with caching and
+155 rerasterizations with caching forced off. The solid CPU trace
+recorded 186 hits. The instrumented GG runs recorded 155 GG gradient
+stroke hits and zero CPU gradient stroke draws in each worker mode.
+The exceptional first GG pair spent 1.0775 vs 3.183 ms in median
+replay, with one collection in each run. Two further pairs at the
+default Mesa setting and two with `LP_NUM_THREADS=1` did not reproduce
+that gap. The results leave its cause unresolved.
+
+Median gradient CPU callback time fell by 2.6–2.8%, and p95 fell by
+32.0–35.4%. Solid CPU medians were within 1.7%, with higher p95 in
+both pairs. GG timing varied across the runs. These synthetic trials
+cover software OpenGL. Native GPU timing and Windows runtime remain
+unverified.
+
+## Retaining CPU SVG stroke textures
+
+The portable CPU stroker can reuse the contents of a GG streaming image
+for a solid stroke. It compares the copied path and dash data, effective
+color and stroke style, clipped image dimensions, and the transform
+relative to the image. An integer translation can reuse the image at a
+new destination. An upload for any other draw invalidates the saved
+stroke in that slot. The browser keeps bounded metadata for 16 of its
+existing slots. `VOX_DISABLE_GG_SVG_CACHE=1` also disables this reuse.
+
+The Linux window fixture replaced a blue stroke with a red fill of the
+same image dimensions, then restored the stroke. Diagnostics recorded
+two stroke rasterizations, one before the fill and one after it, with
+reuse on subsequent frames. The cached and uncached final captures
+matched exactly. All 16 Linux GG SVG window checks and the Windows
+amd64 OpenGL source check passed.
+
+The timing fixture was `Tests/Browser/Native/svg-gg-stroke.html`. Its
+document pixels matched between the control and candidate on each
+renderer, including with caching forced off on the candidate. Both
+builds used V `5a39a4d`, single-unit Clang, and `-O0` from the shared
+checkout with other changes in progress. The control and candidate
+executable SHA-256 values were
+`fee8af70e44e2c439fff8de7e8b4e97f2cdc59546fc98ca5b1a3da5faf700901`
+and `e5b20619fa57dbf5e721c1fc445b41a2ef22d3a087a286fe31c3a3192c7e6a9a`.
+The fixture and shader directory SHA-256 values were
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb, a fresh process and
+private browser state, an 800 × 628 document viewport, a one-second
+settle, and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.45
+to 2.78 on four virtual CPUs. The timing driver and memory guard exited
+zero.
+
+| Renderer and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| CPU fallback 1 | 5.223 / 2.567 | 6.523 / 5.448 | 7.145 / 5.563 |
+| CPU fallback 2 | 5.100 / 2.706 | 6.954 / 5.799 | 6.961 / 5.882 |
+| GG 1 | 5.158 / 4.9975 | 7.451 / 6.346 | 7.636 / 9.529 |
+| GG 2 | 4.952 / 4.9245 | 7.119 / 5.572 | 8.961 / 9.496 |
+
+Separate diagnostics counted 186 CPU stroke texture hits with caching
+and 186 CPU rasterizations with caching forced off. The GG diagnostic
+counted 186 GG stroke texture hits and zero CPU fallback draws. Median
+CPU fallback times fell by 46.9–50.9%. GG medians and p95 were lower in
+both pairs, while maximum callback times were higher. These synthetic
+trials cover software OpenGL. Native GPU timing and Windows runtime
+behavior remain unverified.
+
+## CPU fallback for solid SVG strokes
+
+On Linux and in opted-in Windows OpenGL builds, a solid SVG stroke that
+GG declines uses the same CPU Canvas stroker as gradient strokes. It
+resolves the retained stroke color and opacity, rasterizes every contour,
+and preserves caps, joins, dash intervals, phase, non-scaling widths, and
+SVG paint order. The viewport cull includes the visible fringe of a
+non-scaling stroke on Linux even when GG is disabled.
+
+The previous Linux build missed the exterior of a round cap with GG
+disabled. Three focused window checks covered live changes to caps,
+dash patterns, dash phase, and `vector-effect`, as well as a second
+contour, transformed curves, joins, opacity, paint order, zero-length
+round dashes, and visible ink at the scrolled viewport edge. The
+candidate's GG-disabled and Mesa OpenGL 4.2 captures matched exactly in
+each check, as did its cached and uncached GG captures. The Windows
+amd64 OpenGL source check and all 15 Linux GG SVG window checks passed.
+
+The timing fixture was `Tests/Browser/Native/svg-gg-stroke.html`. Its
+document pixels matched exactly between builds with GG active. Both
+builds used V `5a39a4d`, single-unit Clang, and `-O0` from the shared
+checkout with other changes in progress. The control and candidate
+executable SHA-256 values were
+`0f4c995b77a9462718da4a86dca492a04bb600dd4a1a823e67a78850dd7876ca`
+and `65fdd0937bbc22feb0d0884470e1573ab3d7835c5a5b093c22298c79aa18bb60`.
+The fixture and shader directory SHA-256 values were
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each trial used Mesa software OpenGL under Xvfb, a fresh process and
+private browser state, an 800 × 628 document viewport, a one-second
+settle, and 32 self-paced 42-pixel scroll steps. Both builds recorded
+the same scroll positions and command counts. Separate candidate
+diagnostics recorded 186 GG stroke texture hits with caching and 186
+GG stroke rasterizations with caching disabled. One-minute guest load
+ranged from 0.85 to 1.74 on four virtual CPUs. The timing driver and
+memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached GG 1 | 5.0615 / 5.211 | 5.998 / 8.291 | 8.292 / 8.794 |
+| Cached GG 2 | 4.979 / 4.425 | 6.882 / 7.895 | 8.011 / 9.756 |
+| Rerasterized GG 1 | 5.4755 / 5.447 | 6.401 / 7.198 | 6.437 / 8.713 |
+| Rerasterized GG 2 | 5.4375 / 5.347 | 7.420 / 6.734 | 9.975 / 6.862 |
+| GG disabled 1 | 2.5955 / 3.650 | 3.117 / 5.626 | 3.846 / 5.809 |
+| GG disabled 2 | 2.780 / 3.904 | 5.623 / 6.445 | 5.788 / 7.059 |
+
+GG medians ranged from 11.1% faster to 3.0% slower and p95 rose in three
+pairs. With GG disabled, the candidate took 1.05–1.12 ms more per
+median callback while rendering geometry the control omitted. These are
+synthetic callback timings on software OpenGL. Native GPU performance
+and Windows runtime behavior remain unverified.
+
+## CPU fallback for SVG gradient strokes
+
+Portable SVG replay tries GG first for gradient strokes, then uses the CPU
+Canvas stroker when GG declines a supported sRGB gradient on Linux or in
+opted-in Windows builds. The CPU route shares the fill gradient descriptors,
+clips the stroke bounds to the viewport, and preserves paint order, opacity,
+caps, joins, miter limits, and dashes. For non-scaling strokes it transforms
+the centerline and the gradient into surface space while keeping the requested
+stroke width in device pixels.
+
+The Linux fixture covered both paint orders, a repeating dashed stroke with
+edited opacity, a transformed non-scaling stroke, live gradient-stop edits,
+and text outlines. The control showed the underlying blue fill at the first
+stroke sample with GG disabled. The candidate passed the color samples in all
+four modes. Its GG cached and uncached captures matched each other exactly,
+as did its GG-disabled and Mesa OpenGL 4.2 captures. The Windows amd64 OpenGL
+source check and the full Linux GG SVG window suite passed.
+
+The Linux comparison used the static stroke fixture and a second fixture
+with six previously supported radial fills. Document pixels matched exactly
+between builds on both fixtures. Both builds used V `5a39a4d`, single-unit
+Clang and `-O0`. The control and candidate executable SHA-256 values were
+`d70bc5e8a1142e782139fbf44a956e93b79b3570083c6f2def03ef72c8beeb73`
+and `d49cbafa734689d8580b7548d5df9774901b03395ffb1ead2ea00867058a3cf5`.
+The stroke fixture, fill fixture and shader directory SHA-256 values were
+`0aa4184832b9e3a900f0f8484933ed48e9104d5cd60bb4609aea082d1be41f4e`,
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh process
+and private browser state, an 800 × 628 document viewport, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. The comparison used builds from a shared
+checkout with other changes in progress.
+
+| Workload and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached strokes 1 | 2.119 / 2.1285 | 2.588 / 2.528 | 5.234 / 5.756 |
+| Cached strokes 2 | 1.963 / 2.111 | 2.557 / 5.764 | 6.290 / 7.457 |
+| Rerasterized strokes 1 | 5.8305 / 5.9695 | 7.519 / 7.798 | 8.503 / 8.424 |
+| Rerasterized strokes 2 | 5.859 / 5.6065 | 7.828 / 6.786 | 8.405 / 7.417 |
+| Cached fills 1 | 5.081 / 5.1815 | 6.607 / 6.764 | 8.688 / 7.544 |
+| Cached fills 2 | 5.514 / 5.145 | 7.064 / 6.024 | 9.148 / 6.173 |
+| Rerasterized fills 1 | 5.9935 / 5.8015 | 8.141 / 7.203 | 8.431 / 8.634 |
+| Rerasterized fills 2 | 5.519 / 5.541 | 6.890 / 6.838 | 10.117 / 7.347 |
+
+Median changes ranged from 6.7% faster to 7.5% slower. Both of the slowest
+callbacks in the second cached candidate stroke trial included a garbage
+collection. Its paired control and both trials in the first cached pair
+recorded one collection apiece. Diagnostics counted 155 gradient stroke
+texture hits and 186 gradient fill hits, with the same counts of GG
+rasterizations when caching was disabled. One-minute guest load ranged
+from 0.94 to 2.08 on four virtual CPUs. Both timing drivers and memory guards
+exited zero. These trials measure the existing GG route on software OpenGL.
+CPU fallback timing, hardware performance, and Windows runtime remain
+unverified.
+
+## CPU fallback for SVG repeat and reflect fills
+
+The portable CPU fallback handles sRGB `repeat` and `reflect` fills for
+linear gradients and expanding radial gradients with a contained focal
+circle. The high-precision shader wraps or mirrors the gradient position
+before sampling the stops. Tiled ramps use the interior colors at hard
+stops on their endpoints. A repeating point focus on the outer circle
+uses the weighted premultiplied stop color beyond the tangent.
+[SVG 2 gradient spread and focal circles](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The Linux fixture checked negative gradient positions, linear endpoint
+hard stops, concentric and tangent radial gradients, and the weighted
+color beyond a repeating point focus. The control left the first fill
+white with GG disabled. The candidate's disabled and Mesa OpenGL 4.2
+captures matched exactly. GG and both CPU runs matched the expected
+color samples. Existing SVG gradient mask pixels matched the previous
+build. Focused CPU gradient and span tests, the full Linux GG SVG window
+suite, and the Windows amd64 OpenGL source check passed. The pinned CPU
+raster suite matched 20,000 Canvas2D gradient draws against Skia,
+including 6,607 strokes, in both default and `-prod -gc none` builds with
+seed `20261106`.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`2e7839d81825892e44b2592ce955aec163ac6269110866985bbec137a75ce353`
+and `d70bc5e8a1142e782139fbf44a956e93b79b3570083c6f2def03ef72c8beeb73`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.13 to
+1.61 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.0885 / 5.1245 | 7.397 / 6.123 | 9.381 / 6.163 |
+| Cached 2 | 5.093 / 4.966 | 6.120 / 6.851 | 7.672 / 8.203 |
+| Rerasterized 1 | 5.4855 / 5.858 | 7.847 / 7.844 | 9.258 / 8.858 |
+| Rerasterized 2 | 5.541 / 5.9015 | 6.666 / 7.761 | 7.754 / 8.575 |
+
+Cached medians were within 2.5%. Both rerasterized medians increased by
+6.5–6.8%. Separate diagnostics counted 186 steady-state GG texture hits
+with caching and 186 GG rasterizations with caching disabled. This
+workload uses the GG route throughout, and the timing comparison leaves
+CPU fallback performance, hardware performance and Windows runtime
+unverified.
+
+## CPU fallback for SVG pad fills
+
+The portable painter uses the CPU Canvas rasterizer for sRGB SVG pad
+fills when GG declines a gradient. The CPU path accepts linear and
+expanding radial gradients with a contained focal circle. It uses the
+same gradient descriptors as the SVG mask rasterizer and uploads the
+viewport-clipped fill through the existing portable raster path. The
+primary GG route handles eligible fills before CPU fallback is needed.
+
+The focused Linux window fixture checked an even-odd hole, a translated
+linear ramp with translucent stops, and a translated radial fill with
+half opacity. With GG disabled, the control left the first fill white.
+The candidate's disabled and OpenGL 4.2 captures matched exactly and
+the GPU, CPU and OpenGL 4.2 samples matched the expected colors. The
+uncached image-budget fixture now paints the gradient beyond the GPU
+budget. The gradient mask and both linear mask strip captures remained
+pixel-exact against the previous build. Windows amd64 OpenGL source
+checking and the full Linux GG SVG window suite passed.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`59ce22808305d99ec7b6511ca77a94eee055b47e1d2b76496619ef2058b75d8d`
+and `2e7839d81825892e44b2592ce955aec163ac6269110866985bbec137a75ce353`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.08 to
+1.30 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.1385 / 5.1965 | 6.926 / 7.618 | 8.219 / 8.150 |
+| Cached 2 | 4.9855 / 4.9725 | 6.447 / 6.342 | 8.273 / 8.299 |
+| Rerasterized 1 | 5.5465 / 5.735 | 8.462 / 6.859 | 8.503 / 11.410 |
+| Rerasterized 2 | 5.662 / 5.468 | 6.555 / 8.533 | 6.598 / 9.014 |
+
+Median differences were within 3.5% across the four pairs, with mixed
+p95 results. Separate diagnostics counted 186 steady-state GG texture
+hits with caching and 186 GG rasterizations with caching disabled.
+This timing workload uses the GG route. Hardware performance and
+Windows runtime remain unverified.
+
+## Charging each SVG image once per frame
+
+Portable OpenGL SVG replay accounts for the area of each image when a
+frame first references it. Later placements and crops of that image can
+draw without spending more of the one-megapixel budget. A cropped draw
+charges the full backing image on first use. New and transient images
+are admitted against the same budget, before rasterization and queueing.
+
+The Linux window fixture first uses eight distinct 400 × 320 gradient
+images. With 24,576 pixels left, both builds decline a ninth distinct
+image. The candidate queues two further placements of the first image
+and paints the rightmost sample blue. The control leaves it white. A
+100 × 200 solid uses another 20,000 pixels. The candidate then reuses
+that image for its 30 × 200 viewport crop with 4,576 pixels left. The
+uncached candidate draws the same eight large gradients per frame, and
+the solid's crop uses the portable fallback. The full Linux GG SVG
+window suite and Windows amd64 OpenGL source check passed.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`a6406b15ec784be11dced330e5d0e6e83da2db673d56ecaccdc17b432b32a91a`
+and `59ce22808305d99ec7b6511ca77a94eee055b47e1d2b76496619ef2058b75d8d`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.33 to
+1.67 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.193 / 5.199 | 6.640 / 6.741 | 7.594 / 9.698 |
+| Cached 2 | 4.7685 / 5.226 | 5.980 / 6.585 | 7.292 / 8.846 |
+| Rerasterized 1 | 5.981 / 5.655 | 8.686 / 6.389 | 8.863 / 8.167 |
+| Rerasterized 2 | 5.3215 / 5.3615 | 7.588 / 7.339 | 9.686 / 8.034 |
+
+The cached median was nearly equal in the first pair and 9.6% higher in
+the second. The rerasterized medians moved in opposite directions.
+Separate diagnostic runs counted 186 steady-state texture hits with
+caching and 186 rasterizations with caching disabled. Working-tree
+differences and trial variability limit attribution. Hardware performance
+and Windows runtime remain unverified.
+
+## Portable SVG draws beyond the texture cache
+
+Portable OpenGL SVG replay admits draws under its pixel and image budgets.
+Its 16 retained texture slots serve matching draws, including repeated
+placements of one raster. New rasters can use up to 64 transient image
+handles when the retained slots are occupied. These images are retired
+after GG submits the frame. Both kinds of draw share a one-megapixel
+per-frame budget and a 1024-pixel limit on either surface axis. The
+transient handle cap leaves space in the Sokol image pool for other painters.
+
+The Linux window fixture contains 20 distinct gradients, 44 translated
+repeats and a translucent overlay. The control rendered eight gradients
+and left the ninth sample white. The candidate rendered all 65 draws
+through GG, with identical cached and uncached document pixels. Warm
+cached frames had 60 texture hits and submitted five transient images.
+Uncached frames submitted 49 transient images. The test sampled each
+gradient and the overlay to verify paint order and image lifetime.
+The full Linux GG SVG window suite and Windows amd64 OpenGL source check
+passed.
+
+The Linux timing comparison used six previously supported radial
+gradients, including two tangent pad gradients. Document pixels matched
+exactly. Both builds used V `5a39a4d`, single-unit Clang and `-O0`. The
+control and candidate executable SHA-256 values were
+`9103707a0fece84803f9b575da2fb4b1ac5886547cd4b08cd5bedc56ff39423d`
+and `a6406b15ec784be11dced330e5d0e6e83da2db673d56ecaccdc17b432b32a91a`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.41 to
+2.68 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 4.243 / 4.410 | 5.630 / 5.107 | 7.125 / 7.428 |
+| Cached 2 | 4.4425 / 4.3845 | 6.209 / 7.511 | 7.604 / 7.985 |
+| Rerasterized 1 | 5.3585 / 5.1485 | 7.279 / 7.493 | 8.856 / 7.777 |
+| Rerasterized 2 | 5.3605 / 5.2515 | 8.333 / 8.360 | 8.598 / 8.424 |
+
+The four median differences were within 4%, and p95 varied in both
+directions. Separate diagnostic runs counted 186 steady-state texture
+hits with caching and 186 rasterizations with caching disabled. The
+builds can include unrelated working-tree changes. Hardware performance
+and Windows runtime remain unverified.
+
+## Repeating SVG point focuses on the outer circle
+
+For an sRGB `repeat` gradient whose point focus lies on the outer circle,
+the shared Canvas shader paints the repeating ramp on the side containing
+the circles and the weighted stop color across the tangent. Paint
+preparation averages the premultiplied stop colors over their normalized
+offsets, including implicit endpoints. The same paint opacity applies to
+both regions. The tangent shader stores the average in the gradient
+paint's spare RGB channels and final padding word. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+Metal and Mesa OpenGL pixel tests covered clipping, unequal stop
+spacing, implicit endpoints, hard stops and translucent colors. The
+Linux window fixture verified both sides of the tangent after a live
+stop-color edit. The texture was rebuilt with the retained path bounds,
+and cached and uncached captures matched exactly. The first fixture
+attempt placed this case after eight other SVG draws, which exhausted
+the portable renderer's per-frame draw limit. The new fixture exercises
+the case independently. The full Linux GG SVG window suite and Windows
+amd64 OpenGL source check passed.
+
+The Linux comparison used a fixed page of six previously supported
+radial gradients, including a tangent circle and point in pad mode.
+Document pixels matched exactly. Both builds used V `5a39a4d`,
+single-unit Clang and `-O0`. The control and candidate executable
+SHA-256 values were
+`5b1241a7ccbcc403609354ec767a336800cffa21d9078d0511e8b0f571016b31`
+and `9103707a0fece84803f9b575da2fb4b1ac5886547cd4b08cd5bedc56ff39423d`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.43 to
+2.59 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 6.2215 / 5.389 | 7.397 / 7.590 | 10.970 / 8.922 |
+| Cached 2 | 4.8905 / 4.762 | 6.049 / 7.632 | 6.337 / 7.982 |
+| Rerasterized 1 | 5.633 / 5.024 | 8.442 / 7.583 | 9.444 / 9.055 |
+| Rerasterized 2 | 5.2775 / 6.9095 | 6.609 / 9.577 | 7.697 / 10.696 |
+
+Separate diagnostic runs confirmed 186 steady-state texture hits with
+caching and 186 rasterizations with caching disabled. The cached
+medians were lower but both p95 values increased. The rerasterized
+pairs moved in opposite directions. These builds also contain different
+working-tree changes, so the comparison does not isolate the shader's
+effect. Hardware performance and Windows runtime remain unverified.
+
+## Spreading internally tangent SVG gradients
+
+The tangent shader now also handles reflection and positive-radius
+repetition. The existing four- and eight-stop variants apply spread
+after solving for the gradient position and preserve the transparent
+region beyond the tangent. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+Focused Metal and Mesa OpenGL pixel tests verified tiling at negative
+gradient positions and the transparent region beyond tangency. The Linux
+window fixture changed `spreadMethod` from `pad` to `repeat` on a tangent
+circle and checked the repeated ramp, a diagonal reflected point at half
+opacity and texture invalidation with path bounds reuse. Cached and
+uncached document captures matched exactly. The full Linux GG SVG window
+suite and Windows amd64 OpenGL source check passed.
+
+The established-workload fixture contains six radial gradients,
+including a tangent circle and point in pad mode. Its document pixels
+matched exactly between Linux builds made with V `5a39a4d`, single-unit
+Clang and `-O0`. Control and candidate executable SHA-256 values were
+`d61e60572f01765c86f8078fd5597a0a488c9f9c06e03dcfa3c43861209943fd`
+and `5b1241a7ccbcc403609354ec767a336800cffa21d9078d0511e8b0f571016b31`.
+The fixture and shader directory SHA-256 values were
+`31fa083ecdeb687010ac4d67fd9d1aca933bee20f0d77c21b97ea640e7b31e26`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 1.01 to
+1.75 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.3895 / 5.6655 | 8.047 / 6.297 | 8.905 / 6.480 |
+| Cached 2 | 5.641 / 5.0925 | 7.402 / 8.814 | 8.607 / 10.173 |
+| Rerasterized 1 | 7.2865 / 6.2165 | 11.375 / 7.330 | 12.817 / 9.393 |
+| Rerasterized 2 | 11.523 / 6.7815 | 17.935 / 10.125 | 20.539 / 10.901 |
+
+Separate diagnostic runs confirmed 186 steady-state texture hits with
+caching and 186 rasterizations with caching disabled. The cached pairs
+had mixed results and the rerasterized control medians varied by over
+4 ms. The executables also contain different working-tree changes, so
+these results do not isolate this change's effect. Hardware performance
+and Windows runtime remain unverified.
+
+## Internally tangent SVG focal circles
+
+The shared Canvas path handles an expanding pad gradient whose focal
+circle touches the outer circle, including a point focus. When the
+quadratic term vanishes, the gradient uses the linear solution and
+leaves the half-plane beyond the common tangent transparent. Dedicated
+four- and eight-stop shader variants are compiled on demand.
+[SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The shared pixel test passed on Metal and Mesa OpenGL for a tangent
+circle at full and half opacity. The Linux window fixture also covers a
+diagonal point focus and an `fx` edit that moves a strictly nested circle
+into tangency. Cached and uncached document captures matched exactly.
+The full Linux GG SVG window suite and Windows amd64 OpenGL source check
+passed.
+
+Existing radial gradients matched pixel for pixel against the previous
+Linux executable. Both builds used V `5a39a4d` and single-unit Clang
+`-O0`. The control and candidate executable SHA-256 values were
+`45ddfffaac3740494f141417f07a83639ecc97df5b2fd60c04bec3745883061d`
+and `d61e60572f01765c86f8078fd5597a0a488c9f9c06e03dcfa3c43861209943fd`.
+The fixture and shared shader directory SHA-256 values were
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`
+and `970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+
+Each synthetic trial used Mesa software OpenGL under Xvfb, a fresh
+process and private browser state, an 800 × 712 window, a one-second
+settle and 32 self-paced 42-pixel scroll steps. Scroll positions and
+paint-command counts matched. One-minute guest load ranged from 0.93 to
+2.19 on four virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median control / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 5.5675 / 4.083 | 7.660 / 7.126 | 9.444 / 7.522 |
+| Cached 2 | 5.019 / 4.3205 | 6.100 / 5.334 | 7.636 / 7.006 |
+| Rerasterized 1 | 5.250 / 4.077 | 7.944 / 6.689 | 9.116 / 7.023 |
+| Rerasterized 2 | 5.296 / 5.0175 | 8.521 / 6.422 | 8.625 / 7.676 |
+
+Separate diagnostic runs confirmed 62 steady-state cache hits with
+caching and 62 rasterizations with caching disabled. The executables
+also contain different working-tree changes, so the timing comparison
+does not isolate the tangent shader's effect. Hardware performance and
+Windows runtime remain unverified.
+
+## Off-center SVG focal circles
+
+The shared Canvas path now draws a radial gradient whose focal circle
+is strictly contained in its outer circle, including a zero-radius focal
+point. The gradient transform aligns the coordinate system with the line
+between the centers. The radial shader uses the larger root of the
+two-circle equation before applying the spread method. The geometry
+parameters fit into existing uniform padding and texture cache hits
+reuse the rendered pixels. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The shared path pixel test passed on Metal and Mesa OpenGL, including
+samples along and across the axis and declines for crossing circles and
+circles that round to tangency at shader precision.
+The Linux window fixture checked a shifted focal circle and a diagonal
+zero-radius focal point with reflection. Pixel samples matched the
+expected ramps. Cached and uncached document captures were identical
+after an `fx` edit that rebuilt the texture and reused the path bounds.
+The full Linux GG SVG window suite and Windows amd64 OpenGL source check
+passed.
+
+The first comparison was invalid because the prior non-production binary
+read the changed shader snippet from the shared module directory. Its
+fragment shader could not compile. The renderer generates the new
+formula from the compiled shader generator and preserves the shared
+snippet used by the baseline. The comparison pins the shader directory
+along with the executable and fixture hashes.
+
+The corrected comparison used V `5a39a4d`, single-unit Clang `-O0`, and
+baseline and candidate executable SHA-256 values
+`05def48a1bead78677995b824dc0d0b4830e6de0f41a47e981996f404db0d767` and
+`45ddfffaac3740494f141417f07a83639ecc97df5b2fd60c04bec3745883061d`.
+The zero-focal fixture SHA-256 was
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`.
+The staged shader directory hash was
+`970ce36acbf7ea10b948d0a063d6315d587aadf8a8d84784d644b17ab6ffc48e`.
+The captures for existing gradients matched pixel for pixel. These runs
+preceded the tangent precision guard, which the focused path tests cover.
+
+The comparison used Mesa software OpenGL under Xvfb, fresh processes and
+private browser state, an 800 × 712 window, a one-second settle and 32
+synthetic 42-pixel scroll steps. Scroll positions and paint-command
+counts matched. The one-minute guest load ranged from 1.03 to 1.82 on four
+virtual CPUs. The benchmark and memory guard exited zero.
+
+| Mode and pair | Median baseline / candidate, ms | p95, ms | Maximum, ms |
+| --- | ---: | ---: | ---: |
+| Cached 1 | 4.4945 / 4.469 | 6.308 / 5.327 | 7.947 / 8.459 |
+| Cached 2 | 4.386 / 4.8495 | 5.670 / 6.343 | 7.466 / 8.463 |
+| Rerasterized 1 | 4.2595 / 4.219 | 8.080 / 4.998 | 9.174 / 6.681 |
+| Rerasterized 2 | 4.2735 / 5.040 | 5.736 / 5.963 | 6.674 / 6.349 |
+
+Diagnostic runs confirmed 62 steady-state texture hits with caching and
+62 rasterizations without it. Timing varied in both modes. Hardware
+performance remains unverified.
+
+## Reusing the SVG geometry lookup for exact textures
+
+The OpenGL SVG bounds lookup now returns the matching cache slot. If that
+slot also matches the draw's transform, extent, paint and dash pattern,
+the renderer uses its texture immediately. The full search still handles
+paths that share geometry but use different paints or clipped extents.
+
+The zero-focal-radial fixture produced identical document pixels before
+and after the change. In a separate diagnostic, all 62 gradient draws
+after the first callback reused the bounds slot and skipped the texture
+search. The Linux GG SVG window suite verified that a linear and radial
+fill sharing geometry still select separate textures. The Windows amd64
+OpenGL source check passed.
+
+Both Linux executables used V `5a39a4d` and single-unit Clang `-O0`.
+Baseline and candidate executable SHA-256 values were
+`577804eeb49b809f51da18c546080ee3f0001583b96ae3e9ee4b81d4e10cf5f4` and
+`d2501c77a1daa3da6b158756406ff4c8ea6dfee4e5d3d38d633997e585fb8bd3`.
+The fixture SHA-256 was
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`.
+Three alternating pairs used cached SVG textures, Mesa software OpenGL
+under Xvfb, an 800 × 712 window, a one-second settle and 32 synthetic
+42-pixel scroll steps. Each run had a fresh process and private browser
+state. Scroll positions and paint-command counts matched. One-minute
+guest load ranged from 1.28 to 1.58 on four virtual CPUs. The benchmark,
+browser and memory guard exited zero.
+
+| Pair | Median callback baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.658 / 4.8475 | 6.163 / 5.836 | 7.932 / 8.452 |
+| 2 | 4.714 / 4.437 | 7.737 / 7.006 | 7.938 / 8.314 |
+| 3 | 4.8445 / 4.871 | 8.130 / 6.089 | 8.912 / 7.695 |
+
+The first window suite exposed a diagnostic suffix used by the dashed
+stroke test. The final build moved the new marker earlier on the line.
+Its executable SHA-256 was
+`05def48a1bead78677995b824dc0d0b4830e6de0f41a47e981996f404db0d767`.
+It repeated the same workload and reproduced the exact document pixels
+and the 62 direct texture hits. One-minute guest load ranged from 1.10
+to 1.25. The benchmark, browser and memory guard exited zero.
+
+| Final pair | Median callback baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.7345 / 4.3795 | 7.722 / 5.056 | 7.892 / 6.339 |
+| 2 | 4.6845 / 4.566 | 5.425 / 5.107 | 7.144 / 5.117 |
+| 3 | 4.8195 / 4.876 | 6.050 / 6.111 | 7.880 / 7.403 |
+
+Across the six pairs, the p95 fell five times. Median callback times
+varied. These synthetic callbacks leave hardware performance open.
+
+## Repeating and reflected SVG focal circles
+
+The shared Canvas gradient constructor accepts expanding concentric radial
+gradients with a nonzero `fr` and `repeat` or `reflect` spread. It maps the
+distance from the center to `(distance - fr) / (r - fr)` before tiling. The
+focal and outer circles define one period. The offset occupies existing
+uniform padding and uses the same radial shader variants. This handles
+expanding circles with a shared center. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The shared path pixel test passed on Metal and Mesa OpenGL. It sampled
+points inside the focal circle and exercised both the four-stop shader and
+the eight-stop alpha variant. The Linux window fixture's cached and
+uncached document pixels matched exactly, including after a live `fr`
+edit that reused geometry bounds. The full Linux GG SVG window suite and
+the Windows amd64 source check passed.
+
+Existing gradients with `fr="0"` produced identical document pixels in
+the previous and updated Linux builds. The executables used V `5a39a4d`
+and single-unit Clang `-O0`. Their SHA-256 values were
+`6fd17e6319c21f92f6049eca3e57d9df8a414323c20c45d374f78caa201afa9b` and
+`577804eeb49b809f51da18c546080ee3f0001583b96ae3e9ee4b81d4e10cf5f4`.
+The zero-focal fixture SHA-256 was
+`c5d880e712d0a6eb9bd203e4c58cbbcd0939ade054911cc6cd893ed49e01fef2`.
+Six alternating runs used Mesa software OpenGL under Xvfb, fresh
+processes and browser profiles, an 800 × 712 window, a one-second settle
+and 32 synthetic 42-pixel scroll steps. Scroll traces and paint-command
+counts matched. One-minute guest load ranged from 0.90 to 1.37 on four
+virtual CPUs. The benchmark, browser and memory guard exited zero.
+
+| Pair with rerasterization | Median baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.261 / 5.0275 | 8.679 / 5.605 | 8.997 / 8.432 |
+| 2 | 4.406 / 4.9025 | 5.862 / 6.976 | 7.209 / 7.374 |
+| 3 | 4.4585 / 5.275 | 6.644 / 6.893 | 9.593 / 8.181 |
+
+A separate diagnostic confirmed 62 radial rerasterizations after the
+first callback. Median callback time fell in one pair and rose in two.
+
+Three more pairs used the same inputs with the SVG texture cache enabled.
+One-minute guest load ranged from 1.46 to 1.68. A separate diagnostic
+confirmed texture and bounds cache hits for all 62 radial draws after the
+first callback. The benchmark and memory guard exited zero.
+
+| Pair with caching | Median baseline / candidate, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.6855 / 4.8055 | 8.908 / 6.582 | 9.325 / 7.114 |
+| 2 | 4.7045 / 4.713 | 6.375 / 7.292 | 7.331 / 8.416 |
+| 3 | 3.852 / 4.324 | 5.329 / 6.185 | 6.536 / 6.493 |
+
+Median callback time rose by 0.2–12.3% with caching, and p95 varied.
+The callback timings include the full browser replay, with the radial
+shader skipped on cache hits. Hardware performance remains unverified.
+
+## Sharing OpenGL gradient shaders across viewport clips
+
+When the rectangular hole in an SVG gradient rectangle moves out of view,
+the opt-in OpenGL path keeps the same shader and blend state. The
+ordinary rectangle and viewport-filling draws use full coverage when the
+clip is absent. The viewport fixture now ends with the holes offscreen.
+Baseline and candidate document pixels matched exactly. The full Linux GG
+SVG window suite and the Windows amd64 source check passed.
+
+A cold OpenGL trace found two program links and two roughly 84 ms first
+draws when the holes moved out of view. An initial fix covered the
+rectangle draw, leaving the viewport-filling draw to select a separate
+shader. Its three candidate times for that callback were 243, 308 and
+208 ms. The final diagnostic submitted eight shader sources before the
+first measured callback completed in both builds. It submitted four sources
+during the third callback in the baseline and zero with the fix. The next
+29 callbacks recorded 232 exact gradient cache hits in each build.
+
+Both builds used V `5a39a4d` and single-unit Clang `-O0`. The baseline
+SHA-256 was `f00fee78c624da1f24e9fd480718063667b22d491d5727e44da9d68b366957db`
+and the candidate SHA-256 was
+`6fd17e6319c21f92f6049eca3e57d9df8a414323c20c45d374f78caa201afa9b`.
+The 12-row fixture SHA-256 was
+`a9fe42f2a7f42265436ffea8a2af7eb03675aab90c076beda33508f28a336d02`.
+Three alternating pairs used Mesa software OpenGL under Xvfb with an
+800 × 712 window, a one-second settle, 32 synthetic 42-pixel scroll
+steps, and fresh processes, profiles, browser caches and shader caches.
+Scroll traces and paint-command counts matched. The one-minute guest
+load ranged from 1.20 to 1.34 on four virtual CPUs. The benchmark,
+browser and memory guard exited zero.
+
+| Pair | Third callback baseline / candidate, ms | Median, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 199.210 / 6.477 | 2.2165 / 2.343 | 6.405 / 6.807 | 199.210 / 7.519 |
+| 2 | 200.487 / 5.075 | 2.1375 / 2.351 | 7.086 / 6.120 | 200.487 / 7.998 |
+| 3 | 204.138 / 3.158 | 1.8045 / 2.4275 | 6.381 / 6.706 | 204.138 / 7.544 |
+
+The cold clip transition became shorter in each pair. Median callback
+time increased by 6–35%, and the p95 rose in two pairs.
+
+Three more pairs retained each build's Mesa shader cache from its first
+cold trial and used fresh browser state. One-minute guest load ranged
+from 1.15 to 2.02. The benchmark, browser and memory guard exited zero.
+
+| Pair | Third callback baseline / candidate, ms | Median, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 33.254 / 3.701 | 1.6895 / 2.3865 | 8.694 / 6.165 | 33.254 / 7.734 |
+| 2 | 36.471 / 5.623 | 1.611 / 2.270 | 6.745 / 6.394 | 36.471 / 8.155 |
+| 3 | 26.026 / 3.963 | 2.2555 / 2.114 | 7.461 / 7.533 | 26.026 / 12.044 |
+
+The warm clip transition also became shorter in each pair. The median
+increased in two pairs and fell in one. These timings cover synthetic
+draw callbacks. Hardware performance remains unverified.
+
+## Retaining exact SVG gradient textures at viewport edges
+
+With `VOX_GG_SVG=1` and `VOX_GG_SVG_VIEWPORT_REUSE=1`, OpenGL keeps unused
+gradient textures within the existing one-megapixel retained budget.
+Revisiting a viewport clip can reuse an exact match for the raster extent,
+transform, path and paint. When all 16 slots are occupied, the renderer can
+evict an older texture that the current frame has yet to use. The most
+recent frame's textures stay available during matching.
+
+An initial experiment sampled a larger texture at the same 8×8 dither
+phase. Two document pixels differed by one channel level against a
+freshly rasterized clip. A new gradient extent still rasterizes on first
+use, with subsequent reuse limited to identical inputs.
+
+The Linux viewport check moved three paths across the top edge, restored
+them, and revisited the first clip. The cached run rendered each clipped
+extent once and reproduced the baseline's document pixels exactly. The full
+Linux GG SVG window suite and Windows amd64 OpenGL source check passed.
+
+The Linux executable used V `5a39a4d` and single-unit Clang `-O0`, with
+SHA-256 `bde18d2a431c82edc9fcf76a87600348c19a91a5f570dce7df95cf6e43af0499`.
+The timing fixture repeated the three paths in 12 SVG rows spaced at 168
+CSS pixels, with SHA-256
+`a9fe42f2a7f42265436ffea8a2af7eb03675aab90c076beda33508f28a336d02`.
+Three alternating pairs used Mesa software OpenGL under Xvfb, fresh
+processes and private profiles and caches, an 800 × 712 window, a
+one-second settle and 32 synthetic 42-pixel scroll steps. System caches
+remained available. One-minute guest load ranged from 1.05 to 1.26 on
+four virtual CPUs. Executable and fixture hashes, scroll positions and
+paint-command counts matched. The benchmark and memory guard exited zero.
+
+| Pair | Median callback baseline / retained, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 3.5535 / 2.486 | 7.645 / 7.539 | 206.909 / 203.608 |
+| 2 | 4.004 / 2.100 | 9.219 / 8.884 | 284.325 / 209.542 |
+| 3 | 4.230 / 1.686 | 7.293 / 7.541 | 281.776 / 257.525 |
+
+Median callback time fell by 30–60%. Separate diagnostic runs recorded 248
+gradient draws in each mode after the first callback and reduced fresh
+rasterizations from 69 to 6. Every run reached its maximum callback at
+the third step, when the 27- and 28-pixel-high clips were first rasterized.
+These synthetic runs measure callback time. First-time clip latency and
+hardware performance remain open.
+
+## Concentric SVG focal circles
+
+The shared GG path renderer handles an expanding concentric radial gradient
+with `spreadMethod="pad"` and a nonzero `fr`. On a texture miss it maps the
+stops into the ordinary radial shader's coordinate range. The implicit first
+stop extends the first color inside the focal circle. The shader and cached
+texture replay are shared with ordinary radial gradients. The shader's
+effective eight-stop limit still applies, including the implicit stop.
+Offset centers, contracting radii, and repeat or reflect with a nonzero `fr`
+remain outside this slice. [SVG 2 radial gradients](https://www.w3.org/TR/SVG2/pservers.html#RadialGradients)
+
+The focused path tests passed on Metal and Linux OpenGL for transformed fills
+and strokes. The Windows amd64 OpenGL source check passed. The full Linux GG
+SVG window suite (`tools/test_linux_browser.py --gg-svg`) verified that
+separate live edits to `gradientTransform` and `fr` each rerasterized the
+texture and hit the geometry cache. Its cached and uncached document pixels
+were identical.
+
+The Linux window and timing runs used V `5a39a4d`, single-unit Clang
+`-O0`, and executable SHA-256
+`6781cbd687d9bfda3e9a0b4991b09c11c7d2effdf57dd1049b86dd825e9da116`.
+The fixture SHA-256 was
+`1612e79253b84585b6e9052a16466b6d65eb6ff8b60929ec1f34b974cb9e1cad`.
+`tools/measure_browser_scroll.py` ran with Mesa software OpenGL under
+Xvfb, an 800 × 712 window, a one-second settle, 32 synthetic 42-pixel
+steps, and fresh processes, profiles and browser caches. System caches
+remained available. Scroll positions and paint-command counts matched.
+The one-minute load observed on the four guest CPUs ranged from 0.52 to
+1.12. Browser, test and memory guard exits were zero for these runs.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.4625 / 2.067 | 8.377 / 4.636 | 22.223 / 21.518 |
+| 2 | 5.3505 / 1.9955 | 8.057 / 6.510 | 22.784 / 25.772 |
+
+Caching reduced median callback time by 62–63%. Separate diagnostics
+showed that all 31 focal-circle draws after the first measured callback
+hit both the texture and geometry caches.
+
+A second check compared the cached focal-circle fixture with an ordinary
+radial gradient that repeats the first color at offset `8/24`. The
+ordinary fixture SHA-256 was
+`137dfb8953be3986f6f4904ad0455ca5d0f2dd9038f5e4debad0c5a9118cb9b9`.
+Their document pixels and scroll traces matched exactly.
+
+| Pair | Median callback ordinary / focal circle, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 1.713 / 2.033 | 5.176 / 7.058 | 30.576 / 31.865 |
+| 2 | 1.932 / 1.590 | 5.138 / 5.632 | 34.402 / 35.385 |
+
+Median timings varied between pairs and the focal-circle fixture had
+a higher p95 in both. Every timing run had its longest callback at the
+second step, when the moving gradient crossed the viewport edge. These
+callback timings leave end-to-end performance parity open.
+
+## SVG gradient strokes on OpenGL
+
+The opt-in OpenGL renderer uses the same sRGB linear and concentric
+radial gradient descriptors for fills and strokes. The texture cache keys
+on the gradient, stroke style and dash pattern. A gradient-only paint
+stays in document paint order when the stroke has an empty solid-color
+field. Gradient-stroked text retains the glyph outline. A zero-width
+gradient stroke still permits the solid-fill glyph path.
+
+The non-scaling draw maps the gradient into the same texture coordinates
+as the transformed outline. This preserves the gradient's placement on
+the shape while computing the stroke width in device space. [SVG 2 vector effects](https://www.w3.org/TR/SVG2/painting.html#VectorEffects)
+
+The Windows OpenGL source check and the Metal shared-path and
+non-scaling regression tests passed. A focused Metal descriptor check
+sampled the transformed gradient and its six-pixel stroke width. The
+combined macOS layout test reached its aggregate memory limit. The
+gradient-stroke assertions passed in a focused driver after separating
+compilation and execution. They kept the outline at positive width and
+used glyphs at zero width.
+
+The first Linux attempt stopped on host disk writes, and an in-guest
+compiler was killed while another compiler was resident. After recovery,
+the full Linux GG SVG window suite passed. Cached and uncached document
+captures matched exactly. The gradient stroke fixture covered both
+paint orders, dashes, non-scaling width, text outlines and live stop and
+opacity edits.
+
+The current Windows OpenGL browser also linked with V `178232d`, MinGW
+GCC 16.2.0 and single-unit C `-prod -no-prod-options`. Its executable
+SHA-256 was
+`3defcf4daeef62d3994adaae06b9b6998b08d3cd69f4a05b108d99247d719483`.
+The 12 GiB guard exited zero at a sampled peak of 10,086,531,072 bytes.
+The legacy Python builder initially failed because its staged GG layer
+lacked the repeat-filter and translation fields. It now calls the same
+Canvas staging helper as the V builder. A focused driver check verified
+the fields and the OpenGL build flag using the prepared module tree.
+
+The Windows 11 x86-64 QEMU guest matched the executable and live-edit
+fixture hashes before launch. The cached run requested Mesa llvmpipe
+and reached its five-minute deadline with exit 124 and 237,436,928 bytes
+of peak committed memory under the 3 GiB job guard. It produced no
+capture or renderer diagnostics. The harness skipped the uncached run.
+
+The [focused graphics smoke](WINDOWS.md#focused-native-checks) opens a
+Sokol window without the browser or JavaScriptCore. Its OpenGL variant
+checks a shared Canvas gradient stroke before capturing window pixels.
+On Linux with Mesa under Xvfb, the stroke and the projection, color and
+text pixel checks passed. Both Windows variants linked with V `178232d`
+and MinGW GCC 16.2.0 using the dynamic pthread import library.
+
+The Windows 11 QEMU OpenGL probe timed out before its window startup
+marker. The D3D11 control also timed out without output or a capture.
+Both reached the four-minute limit and exited 124 under 3 GiB guards.
+Peak committed memory was 2,150,400 bytes for OpenGL and 2,297,856 for
+D3D11. All transfer input hashes matched after the tests.
+
+A fresh Windows OpenGL browser built with the same compiler and C mode
+had SHA-256
+`fdf6715ed791993d844e89260457faded012d06babbb0b2b509f5b8c492b8aa9`.
+Its headless run in the guest's SSH session executed JavaScript and
+passed DOM mutation, click and wheel handling. The 3 GiB guard reported
+exit zero and 442,695,680 bytes of peak committed memory.
+The same executable's interactive run reached the shared Canvas
+renderer and logged linear, radial, dashed and non-scaling strokes.
+It reached its first paint replay checkpoint before the five-minute
+guard timed out with exit 124 and 543,813,632 bytes of peak committed
+memory. The harness skipped the uncached run.
+
+A ten-minute retry with warm system caches captured both cache modes.
+The document rows matched pixel for pixel, and the shape and live-edit
+checks passed. Both captures lacked the gradient on the text outline.
+The deployed Windows executable could not resolve the checkout-based
+fallback font. Windows now resolves installed Arial when the configured
+and bundled paths yield no font, using the installed bold face where
+available. The font path uses the existing per-family and weight cache.
+
+The Windows tests found the regular and bold fallbacks and decoded a
+glyph outline from installed Arial. The macOS configured-font override
+test also passed. The rebuilt Windows executable had SHA-256
+`cbff4ec24dd0bd918cb51fdb3f4ee5c37698b67fce9c300fd128741cb49ee313`.
+Its fresh cached and uncached processes captured the same 800 × 600
+window fixture with Mesa software OpenGL. Both passed the stroke order,
+dash, non-scaling, text and live-edit assertions. Document pixels matched
+exactly. Both 3 GiB guards exited zero and reported peak committed memory
+of 564,645,888 and 569,634,816 bytes, respectively.
+
+The Linux executable SHA-256 was
+`1e91375a68de0d8d906ed22a6c1021901b570acb45a6300386cffa0739da5b46`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`0aa4184832b9e3a900f0f8484933ed48e9104d5cd60bb4609aea082d1be41f4e`.
+The benchmark used Mesa software OpenGL under Xvfb with fresh processes,
+private profiles and caches, an 800 × 712 window, one second of settling,
+and 32 synthetic 42-pixel scroll steps. System caches remained available.
+Input hashes, scroll positions and paint-command counts matched.
+One-minute guest load ranged from 0.23 to 1.14 on four virtual CPUs.
+Linux window checks, replay benchmarks and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.959 / 2.160 | 7.407 / 2.631 | 9.095 / 5.751 |
+| 2 | 5.790 / 2.155 | 7.303 / 2.728 | 9.086 / 6.266 |
+
+Caching reduced median callback time by 63.7% and 62.8%. Separate
+diagnostics recorded 155 fixed gradient stroke draws over 31 moving
+callbacks. All 155 reused their textures and bounds with caching enabled.
+These measurements cover synthetic software OpenGL replay.
+
+## SVG gradient fills on OpenGL
+
+The opt-in OpenGL renderer sends sRGB linear and concentric radial SVG
+fills to the shared `gg.canvas` descriptor renderer. It uses the retained
+gradient coordinates and transform, pad/repeat/reflect spread, exact
+stop colors and positions, and the combined fill opacity. It preserves
+even-odd holes and the author-specified order of fill and stroke. The
+shader still requires supported geometry and at most eight effective
+stops after stop normalization.
+
+The texture cache owns the gradient parameters and compares stops
+before reusing pixels. The geometry-bounds cache is independent of
+paint changes. Gradients rerasterize when they cross a viewport edge,
+where a cropped texture can have a different dither phase.
+
+Linux window checks exercised linear and radial fills, repeat and
+reflect, a single translucent stop, an even-odd hole, and stroke-first
+painting. Live edits to stop color, gradient transform, and fill
+opacity each rerasterized the affected gradient while reusing its
+geometry bounds. Cached and uncached document pixels matched, including
+the clipped gradient at scroll offset 65.
+
+The Linux executable SHA-256 was
+`79e37d4ac9924f5cbb379da3c51573a09445c724816589926fab6c4a49a77f6f`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`35365473bf7d60f093c34051576f417a906c1fa8ecedad1564950b44b43d687b`.
+The benchmark used Mesa software OpenGL under Xvfb with fresh processes,
+private profiles and caches, an 800 × 712 window, one second of settling,
+and 32 synthetic 42-pixel scroll steps. System caches remained available.
+Input hashes, scroll positions and paint-command counts matched.
+One-minute guest load ranged from 0.49 to 0.81 on four virtual CPUs.
+The browser tests, benchmark and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.616 / 1.662 | 7.603 / 4.493 | 29.502 / 32.193 |
+| 2 | 4.427 / 1.647 | 6.652 / 6.312 | 31.991 / 31.241 |
+
+Caching reduced the medians by 64.0% and 62.8%. Separate diagnostics
+recorded all 150 fixed gradient draws as texture and bounds hits over
+the final 30 moving callbacks. With caching disabled all 150 gradients
+rasterized again. Every timed run had its longest callback at the
+second scroll step, while the scrolling gradient crossed the viewport
+edge. These measurements cover synthetic software OpenGL replay.
+
+### Windows OpenGL gradient fill verification
+
+A fresh x86-64 Windows build used `build_windows_browser --opengl
+--console`, V `d79ca45`, MinGW GCC 16.2.0, and single-unit C
+`-prod -no-prod-options`. The canonical checkout contained concurrent
+edits elsewhere. The executable SHA-256 was
+`99b155ff03bf0467e9e732372910843ed56d39323ff55e35cbbe487868955bf4`.
+The build and its 12 GiB guard exited zero at a sampled peak of
+9,123,659,776 bytes.
+
+Two fresh processes in the Windows 11 QEMU guest's SSH session opened
+Sokol OpenGL windows with Mesa 26.2.6 llvmpipe. Both requested one
+software worker, used private profiles and caches, and set
+`VOX_GG_SVG=1`. The SVG fixture with the appended live-edit script
+had SHA-256
+`975ad2b7e07e6a0ceac934898aa7681ce4be7978ae75710ada96c275a4d496ff`.
+After the readiness marker and 65 CSS pixels of scrolling in 13-pixel
+steps, each process captured its 800 × 600 window backbuffer.
+[Linux smoke driver](../tools/test_linux_browser.py)
+
+| Mode | Browser PID | Browser and guard exit | Peak job committed bytes | Canvas gradient draws | Cache hits |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Cached | 4524 | 0 | 552,660,992 | 174 | 160 |
+| Uncached | 880 | 0 | 557,895,680 | 168 | 0 |
+
+Both 3 GiB guest guards and the host verifier passed. All 14 color
+samples matched within two channel levels. Diagnostics confirmed
+Canvas linear and radial replay, bounds reuse after paint edits, and
+rerasterization when the scrolling gradient crossed the viewport edge.
+The 800 × 516 document regions matched pixel for pixel. The decoded
+RGBA SHA-256 was
+`281a190b33cb0f7ac6068e29a20bbad99af66af946007d1a2ffdd7ab44120e69`.
+The executable, guard, fixture, JavaScriptCore, and four Mesa DLL
+hashes matched the host inputs and stayed fixed through both runs.
+Physical presentation and hardware frame timings remain unmeasured.
+
+## Dashed SVG strokes on OpenGL
+
+The opt-in OpenGL renderer splits a solid-color dashed stroke with the
+existing CPU dash effect, then rasterizes the resulting contours with
+`gg.canvas`. Scaling strokes split in SVG user space. Non-scaling strokes
+split after transforming the path into device space. The texture cache
+owns the interval list and keys on the dash offset, so an unchanged draw
+reuses its texture without splitting the path again. Bounds reuse depends
+on geometry alone.
+
+The path uses the existing texture budgets. Dashed draws accept up to
+32 intervals and 128 source segments and decline when the dash-count
+estimate exceeds 2,048. These declines use legacy replay.
+
+Linux window checks covered lines, quadratic curves, arcs, round dots,
+closed contours, `pathLength`, paint order, and non-scaling dashes. Live
+changes to the intervals and offset each rebuilt the texture and reused
+the geometry bounds. The cached and uncached document captures were
+pixel-exact. The CPU dash and path-hit regression tests, the new dash budget
+test, the Metal shared-path and non-scaling regression tests, and the
+Windows OpenGL source check passed. Windows runtime verification remains
+pending.
+
+The Linux executable SHA-256 was
+`937e2a27992b266598894ff742dca3b3721ab80f031785d29c335e4fcec35017`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`f6dc5669fe10c1f4c17c179264066dc446b538fd222d8dcdd2719f73c0817fbc`.
+The benchmark used Mesa software OpenGL under Xvfb, fresh processes
+with private profiles and caches, an 800 × 712 window, one second of
+settling, and 32 synthetic 42-pixel scroll steps. System caches remained
+available. Input hashes, scroll positions and paint-command counts
+matched. One-minute guest load ranged from 0.52 to 1.44 over four virtual
+CPUs. The browser tests, benchmark, and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.290 / 3.248 | 7.724 / 5.199 | 7.777 / 5.442 |
+| 2 | 4.784 / 1.311 | 6.219 / 1.874 | 6.867 / 3.461 |
+
+Separate diagnostics counted 217 dashed-stroke texture and bounds hits
+over the final 31 moving callbacks. With caching disabled all 217
+strokes rasterized again. The measured medians improved by 38.6% and
+72.6%. The cached runs varied by more than 2×. These timings cover
+synthetic software OpenGL replay. The first Linux link launch hit a
+shared-filesystem log write error, and the first Windows check stopped
+before emitting a report. Both passed on retry.
+
+## Non-scaling SVG strokes on OpenGL
+
+The opt-in OpenGL path now uses the existing `gg.canvas` non-scaling
+stroke implementation. It transforms the path first and applies its
+stroke width in device space, matching the standalone macOS path's
+width convention. The viewport cull and texture bounds include the
+device-space outset for caps, joins and antialiasing. The retained
+geometry bounds are shared, and the texture key includes the vector
+effect.
+
+The Linux fixture covers enlargement, reduction, skew, a stroke whose
+centerline scrolls above the viewport, and a live switch from a scaling
+stroke. The switch reused local bounds and rasterized a new texture even
+though the old scaled texture covered its rectangle. The clipped stroke
+reused its texture at scroll offset 65. The document comparison excludes
+the live status bar and is pixel-exact. The first two test runs exposed
+an incorrect expected texture width and a comparison that included the
+live RAM readout. The complete Linux GG window suite then passed.
+
+The Linux executable SHA-256 was
+`587aaa1acdf1a8f94d88476ac8a6622c6afa33835ad08626c267263dd3a4e749`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`fd1760541fc6c51b3c1848e24c863aff3fd43ddf98305f9841a5135087085a25`.
+The benchmark used Mesa software OpenGL under Xvfb, a fresh process
+with private profile and cache for each run, an 800 × 712 window, one
+second of settling, and 32 synthetic 42-pixel wheel steps. OS caches
+remained available. Input hashes, scroll positions and paint-command
+counts matched. One-minute load ranged from 0.36 to 0.46 on four virtual
+CPUs. The final window suite, benchmark, and their memory guards exited zero.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 3.680 / 1.704 | 5.545 / 5.736 | 6.391 / 7.670 |
+| 2 | 3.863 / 1.579 | 6.200 / 3.682 | 6.604 / 3.775 |
+
+Texture reuse reduced the medians by 53.7% and 59.1%. The first pair's
+p95 and maximum rose. Separate diagnostics recorded 93 texture and
+bounds hits over the final 31 moving callbacks and 93 rasterizations
+with caching disabled. These timings cover synthetic software OpenGL
+replay. The Windows OpenGL source check passed. Windows window and pixel
+verification remains pending.
+
+## Solid SVG strokes on OpenGL
+
+The opt-in `VOX_GG_SVG=1` renderer passes solid, undashed SVG strokes
+to `gg.canvas` in document paint order. It preserves curve segments,
+multiple contours, transforms, caps, joins, and stroke opacity. A stroke
+shares cached local geometry bounds with its fill and has a separate
+texture key containing its width, cap, join, and miter limit. It uses the
+existing frame limits of eight draws and one megapixel. This first slice
+left dashed, non-scaling, gradient and pattern strokes on legacy replay.
+
+The Linux window tests passed the existing fill, mutation, cropping and
+GL 4.2 fallback checks. A six-stroke fixture verified cap and join
+geometry, transformed curves, multiple contours, translucent blending,
+and both fill/stroke orders. Changing a round cap to a butt cap rebuilt
+the texture while reusing the geometry bounds. Cached and uncached
+document rows matched before and after the edit, and at scroll offset 126.
+The first window run paused when the host ran out of disk space, then
+failed a test sample on the round join's antialiased fringe. The passing
+run used RAM-backed scratch and checked a pixel farther outside the join.
+
+The Linux executable SHA-256 was
+`e0bf9f472f80ef3d8c190ebb938917500afaf9273de00ce7ed2bb58fd2f9a072`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The fixture SHA-256 was
+`d760304658f81f4e28f0665645566626ed28b5dcce7d86f195bad583d12c1f5b`.
+Mesa software OpenGL ran under Xvfb in an 800 × 712 window. Fresh
+processes used private profiles and caches, with OS caches available,
+one second of settling, and 32 synthetic 42-pixel scroll steps. The
+scroll positions and paint-command counts matched. One-minute guest load
+ranged from 0.65 to 0.80 on four virtual CPUs.
+
+| Pair | Median callback uncached / cached, ms | p95, ms | Maximum, ms |
+| ---: | ---: | ---: | ---: |
+| 1 | 4.290 / 3.288 | 6.015 / 5.166 | 6.108 / 5.214 |
+| 2 | 3.871 / 3.369 | 5.967 / 4.242 | 6.008 / 5.546 |
+
+The median fell by 23.4% and 13.0% with caching. Separate diagnostics
+confirmed 186 stroke texture and bounds hits over the final 31 moving
+callbacks, compared with 186 rasterizations when caching was disabled.
+The final browser tests, benchmark, capture checks, and memory guards exited
+zero. These measurements cover synthetic replay on software OpenGL.
+The Windows OpenGL source check passed with V `eae4fce`. Windows window
+and pixel validation still need a runnable build.
+
+## Reusing SVG textures at viewport edges
+
+`VOX_GG_SVG=1 VOX_GG_SVG_VIEWPORT_REUSE=1` lets the OpenGL SVG renderer
+sample part of a cached texture as a fill crosses the viewport edge. The
+geometry, paint, linear transform and subpixel phase must agree, and the
+texture must cover every visible texel. The draw keeps its clipped
+destination rectangle and uses nearest sampling. Exact matches take
+priority. A covering match charges the full texture to the one-megapixel
+frame budget. New or expanding areas use normal rasterization when the
+cache lacks the needed texels.
+
+The Linux window test warms the SVG textures, scrolls through the top
+edge, then moves a fixed SVG across the left edge. Captures compare the
+reused and rerasterized pixels, including a rotated translucent path.
+The scrolling fixture has 42 SVG rows at 84 CSS pixels each, with
+60-pixel-high even-odd fills. Its SHA-256 is
+`2185a43add049d63b05bf254cc747d06ceae7fab15b788a1f502cde0a59e25e9`.
+
+An initial build computed texture coordinates for every draw. Its
+executable SHA-256 was
+`0e1930fdbea1f79e91ea5f79ed65c15692145a4871b4a8e41b09ca357a293bb8`.
+The first two matched pairs and four repeat pairs gave these results.
+Values within each cell are rerasterized / reused, in milliseconds.
+
+| Cohort | Pair | Median callback | p95 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| Initial | 1 | 5.384 / 5.349 | 7.020 / 9.006 | 8.770 / 9.172 |
+| Initial | 2 | 3.116 / 5.243 | 4.892 / 8.076 | 5.735 / 8.716 |
+| Repeat | 1 | 3.370 / 3.295 | 5.723 / 5.245 | 5.882 / 5.392 |
+| Repeat | 2 | 3.324 / 3.479 | 3.537 / 5.875 | 3.946 / 6.214 |
+| Repeat | 3 | 3.394 / 5.452 | 5.592 / 6.856 | 6.004 / 9.008 |
+| Repeat | 4 | 5.175 / 5.095 | 8.690 / 8.656 | 9.277 / 9.450 |
+
+The timings varied substantially across both modes. Viewport reuse has
+its own opt-in and computes adjusted texture coordinates on crop hits.
+
+The final executable SHA-256 was
+`9a4a688dc58ee18496490acb7492d0f8c510e41f7ba929d00925aba0491061f7`.
+Both Linux executables used V `5a39a4d` and single-unit Clang `-O0`.
+After a shared-volume link ran out of space, the Linux link and test
+executables used the guest filesystem. The final window tests matched
+the portable reference and GL 4.2 fallback, and the top- and left-edge
+captures matched the rerasterized reference. The row fixture also matched
+at scroll offset 126.
+
+The measured runs used Mesa software OpenGL under Xvfb, fresh
+processes with private profiles and caches, an 800 × 712 window, one
+second of settling, and 32 synthetic 42-pixel scroll steps. OS caches
+remained available. Scroll traces, command counts and input hashes
+matched. Separate diagnostics measured 232 draws over the final 31
+moving frames. Rasterizations fell from 46 to 31, with 15 crop hits.
+The benchmark and 3 GiB guards exited zero. Final one-minute guest load
+ranged from 1.44 to 1.69 on four virtual CPUs.
+
+| Final pair | Median callback | p95 | Maximum |
+| ---: | ---: | ---: | ---: |
+| 1 | 5.419 / 4.979 | 7.704 / 8.225 | 9.828 / 8.507 |
+| 2 | 3.030 / 5.501 | 6.250 / 6.528 | 7.574 / 8.543 |
+
+The final pairs still gave mixed callback timing, so the separate opt-in
+remains. The Windows OpenGL source check passed with V `eeee53a`. Available
+scratch space limited Windows validation to that check.
+
+## Reusing SVG path bounds
+
+The OpenGL SVG texture cache stores the local bounds computed by the
+portable path decoder. A byte-for-byte geometry match can reuse those
+bounds through color changes, transforms, and integer scrolling. Replay
+maps the bounds to the current device and intersects them with the current
+viewport. A geometry miss decodes the path. A portable raster fallback
+decodes it when the GPU lookup supplied only its bounds.
+
+The Linux window tests matched the portable reference, including the
+GL 4.2 fallback, and matched cached and uncached captures after live edits.
+The diagnostics confirmed that an edited path missed the bounds cache
+and that a paint-only edit reused the bounds while rebuilding its texture.
+`VOX_DISABLE_GG_SVG_CACHE=bounds` forces a fresh bounds decode with texture
+reuse enabled.
+
+The Linux executable SHA-256 was
+`a371fa1a4deecc8dcf4cac1bd845b5b4efa67edf5a950edefeb029ecc4e46812`.
+It used V `5a39a4d`, with C emission and single-unit Clang `-O0`
+run separately. The software OpenGL runs used Xvfb, fresh processes,
+private profiles and caches, and a one-second settle in an 800 × 712
+window. Each measured run delivered 32 synthetic 42-pixel wheel steps.
+OS caches remained available, and one-minute guest load ranged from
+0.48 to 1.68 on four virtual CPUs. Both variants used the texture cache.
+
+The simple fixture was the three fixed SVG paths used in the earlier
+cache test, SHA-256
+`e975fd4989c2d95e18b9c2a3336b3940335b7057d770a2a3cf9a7ece0a71f13c`.
+The arc fixture drew six fixed paths with 64–69 elliptical arcs each,
+SHA-256
+`e7a6a1e50c466843b6be7214cabd25bc4b0663281701ea3b2d0d2372f142b1b0`.
+The two modes produced identical document rows on each fixture.
+Separate diagnostics counted 93 and 186 texture and bounds hits during
+the final 31 moving frames. Scroll traces, paint-command counts and input
+hashes matched. The browser tests, benchmarks and 3 GiB guard exited zero.
+
+| Fixture | Trial | Bounds | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Simple | 1 | Decoded | 1.4795 | 1.662 | 3.591 |
+| Simple | 2 | Retained | 1.4405 | 1.825 | 3.874 |
+| Simple | 3 | Retained | 1.2485 | 3.149 | 3.470 |
+| Simple | 4 | Decoded | 1.3555 | 1.614 | 3.541 |
+| Arcs | 1 | Decoded | 1.4335 | 3.278 | 3.574 |
+| Arcs | 2 | Retained | 1.3060 | 3.143 | 3.222 |
+| Arcs | 3 | Retained | 1.3375 | 3.218 | 3.398 |
+| Arcs | 4 | Decoded | 1.7555 | 1.931 | 4.385 |
+
+Median callback time fell by 2.6–7.9% for the simple fixture and
+8.9–23.8% for the arc fixture. Median allocated memory on the arc
+fixture fell from 674–678 KiB to 614–615 KiB per callback. The p95
+rose in three pairs. These timings cover synthetic software OpenGL
+callbacks. The renderer remains opt-in.
+
+The Windows OpenGL V check passed with `-os windows -arch amd64 -check`
+and V `eeee53a`. Local disk space limited this change's Windows
+validation to source checking.
+
+## Reusing SVG textures when paint order changes
+
+The OpenGL SVG cache matches textures by raster inputs across the whole
+frame. A fill can change position in paint order or share a texture with an
+identical fill. GG submits each draw in document order. The cache holds up
+to eight images from the previous frame while recording up to eight current
+draws. Each frame has a one-megapixel budget. Unused and transient images
+retire after submission.
+
+The Linux window test passed with cached and uncached GG, the portable
+painter, and the GL 4.2 fallback. A live SVG edit changed geometry and
+color, moved paths in paint order, and duplicated a translated path.
+The cached capture matched the uncached capture exactly. The translated
+path needed one rasterization across the edit and duplication.
+
+The Linux executable SHA-256 was
+`4ffae25b325e988786ab35392fad64ea7bb7e548818376c19abf12337081cbcc`.
+It used V `5a39a4d` and single-unit Clang `-O0`. The first build was
+killed with V and Clang resident together in the 6 GiB guest. Emitting
+C and its flags first and running Clang separately succeeded.
+
+The scrolling fixture had 42 SVG rows at 84 CSS pixels each, with
+20-pixel-high even-odd fills of distinct widths and colors. Its SHA-256 was
+`635d9d9aad04cda211d47d4d9ee113f65eb8e3cf000048ea900eb13df4e25d8b`.
+Document rows captured at scroll offset 126 matched exactly across the
+three modes. The separate diagnostic counted 195 cache hits in 210 draws
+over 30 consecutive frame transitions. Of those hits, 90 had different
+dimensions at the same draw position in the previous frame. Matching by
+draw position could therefore have hit at most 105 times on that trace.
+
+Two triplets used fresh processes, private profiles and caches, an 800 × 712
+window, a one-second settle and 32 synthetic 42-pixel scroll steps under
+Xvfb with Mesa software OpenGL. OS caches remained available. The scroll
+positions, paint-command counts, fixture hash and executable hash agreed.
+One-minute guest load was 1.28–1.51 on four virtual CPUs. The browser runs
+and the 3 GiB guard exited zero.
+
+| Trial | Renderer | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Portable | 2.823 | 5.373 | 5.450 |
+| 2 | Uncached GG | 3.187 | 5.402 | 5.451 |
+| 3 | Cached GG | 2.533 | 3.237 | 4.884 |
+| 4 | Cached GG | 2.739 | 5.034 | 5.142 |
+| 5 | Uncached GG | 3.385 | 5.579 | 6.575 |
+| 6 | Portable | 2.695 | 4.742 | 5.566 |
+
+Caching lowered median callback time by 19–21% versus uncached GG. Against
+the portable painter, it was 10.3% faster in the first triplet and 1.6%
+slower in the second. The renderer remains opt-in.
+
+The Windows `--opengl --console` build linked an x86-64 PE executable with
+V `eeee53a` and MinGW GCC 16.2.0 using `-pipe`. The build and 12 GiB
+guard exited zero. The executable SHA-256 was
+`983e0ce2477fefb3c29183cb6206906726a9346310a34b55ead2d1600efa949a`.
+Windows rendering still needs runtime verification.
+
+## Retaining windowed SVG textures
+
+The first OpenGL SVG cache kept up to eight resolved textures from the
+previous frame, with the existing one-megapixel per-frame budget. A slot
+followed replay order and owned a copy of up to 128 path segments. Reuse checks
+the exact path bytes, fill rule, RGBA paint, texture dimensions
+and the matrix relative to the texture. Integer movement can reuse the
+texture. A changed key replaces the image, and unused slots retire after
+frame submission. Set `VOX_DISABLE_GG_SVG_CACHE=1` for uncached replay.
+
+The [Linux window test](../tools/test_linux_browser.py) found identical
+document pixels with cached GG, uncached GG, the portable painter and the
+GL 4.2 fallback. It also moved an even-odd hole, changed a translucent fill
+color and translated a path during live replay. Cached and uncached captures
+both showed the updated pixels. All six browser runs and the 3 GiB guard
+exited zero.
+
+The Linux executable SHA-256 was
+`04ef205528bf2072647984010dc53069de04a0670d33d35fac45d6325496e381`.
+The build used single-unit Clang `-O0` and V revision `5a39a4d`.
+Three rotating triplets used that executable and the same fixed-SVG fixture
+recorded below. Fresh browser processes used private profiles and caches,
+Mesa software OpenGL under Xvfb, an 800 × 712 window, one second of settling,
+and 32 synthetic 42-pixel wheel steps. The fixture and executable hashes,
+scroll positions and paint-command counts matched throughout. OS caches
+remained available. A separate diagnostic run recorded all three texture
+hits throughout the measured scroll window. All ten browser runs and the
+3 GiB guard exited zero. One-minute guest load ranged from 0.79 to 2.97 on
+four virtual CPUs.
+
+| Trial | Renderer | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Portable | 4.802 | 41.371 | 70.535 |
+| 2 | Uncached GG | 6.292 | 13.618 | 14.407 |
+| 3 | Cached GG | 2.261 | 5.223 | 5.372 |
+| 4 | Uncached GG | 6.439 | 9.801 | 11.341 |
+| 5 | Cached GG | 2.321 | 10.482 | 26.782 |
+| 6 | Portable | 4.503 | 10.472 | 12.735 |
+| 7 | Cached GG | 2.249 | 5.376 | 8.396 |
+| 8 | Portable | 4.705 | 7.825 | 8.112 |
+| 9 | Uncached GG | 6.840 | 16.508 | 16.849 |
+
+In matched triplets, the cache lowered median callback time by 64–67%
+versus uncached GG and by 48–53% versus the portable painter. Trial 5 showed
+a 26.8 ms maximum and a higher p95 than the two controls in its triplet.
+The measurements cover a warmed, software-rendered fixture. The OpenGL
+renderer remains opt-in pending hardware and production measurements.
+
+The Windows `--opengl --console` build linked an x86-64 PE executable
+with V `eeee53a` and MinGW GCC 16.2.0. It used `-pipe` on the retry
+after the assembly scratch file exhausted local disk space. The 12 GiB
+guard exited zero with a peak RSS of 10,462,429,184 bytes. The executable
+SHA-256 was
+`f4dba55bcee427c5487a30fac7d3211c09594717193e368420d2e93d6fb5e92e`.
+Windows rendering still needs runtime verification.
+
+## Windowed SVG replay on OpenGL
+
+`VOX_GG_SVG=1` sends eligible solid SVG fills through `gg.canvas` on Linux
+and in a Windows `--opengl` build. Canvas borrows the window's Sokol context.
+GG samples the resolved texture in document paint order with premultiplied
+alpha. The initial renderer retired each texture after submission. Linux
+uses the portable painter when the current context lacks OpenGL 4.3 or
+shader storage buffers. The launch switch is opt-in.
+
+On ARM64 Linux with Mesa software OpenGL under Xvfb,
+`python3 tools/test_linux_browser.py BINARY --gg-svg` verified the three
+fills on the [SVG fixture](../Tests/Browser/Native/svg-gg-path-fill.html).
+Its document pixels matched the portable path exactly, including the
+even-odd hole, translucent overlap, orientation, and translated fill.
+Forcing GL 4.2 exercised the portable fallback and reproduced the same pixels.
+An earlier build requested GL 4.3 at window creation and failed on GL 4.2.
+The final Linux build checks capabilities after the normal window opens.
+The macOS shared path and non-scaling stroke suites also passed.
+
+The Windows `--opengl --console` build compiled and linked an x86-64 PE
+executable with MinGW GCC 16.2.0 and V revision `eeee53a`.
+Its SHA-256 was
+`07b50265fcd123855187eb5e688402aeceb90f71c9d751844d0021fa32aa6dad`.
+The 12 GiB build guard exited zero with a peak sampled RSS of
+9,838,542,848 bytes. Windows window and pixel checks await a runnable VM.
+
+The Linux executable SHA-256 was
+`4a684ddae49945472fc8e5128b21a8afb44238acf03d98202d110bfab03ac0bb`.
+It used single-unit Clang `-O0` and V revision `5a39a4d`. Two alternating
+pairs used the same executable, fresh profiles and caches, and 32 synthetic
+42-pixel wheel steps in an 800 × 712 window after one second of settling.
+The local fixture added `body{min-height:4096px}` and
+`svg{position:fixed;top:32px}` so the same paths were visible throughout.
+Its SHA-256 was
+`e975fd4989c2d95e18b9c2a3336b3940335b7057d770a2a3cf9a7ece0a71f13c`.
+OS caches remained available. A separate diagnostic recorded all three
+GPU paths throughout scrolling. All browser exits and the 3 GiB guard
+exit were zero. Scroll positions and paint-command counts matched in both
+pairs. One-minute load was 0.53–0.97 on four guest CPUs.
+
+| Trial | Renderer | Median callback (ms) | p95 (ms) | Maximum (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Portable | 4.142 | 7.437 | 7.555 |
+| 2 | GG | 6.625 | 19.221 | 20.588 |
+| 3 | Portable | 4.336 | 8.038 | 9.723 |
+| 4 | GG | 6.551 | 16.751 | 21.796 |
+
+Median callback time rose by 51–60% on this software-rendered workload.
+These are synthetic callback timings. Hardware GPU and production scroll
+performance remain unverified.
+
+## Shared GPU SVG path replay
+
+`ggshape` uses one SVG descriptor decoder and `gg.canvas` draw implementation
+on Metal and OpenGL. A caller can supply a GPU context and rasterize one path
+into premultiplied BGRA8. The macOS browser still uses its persistent,
+precompiled Metal context and the same surface, backdrop upload, draw, and
+readback sequence. Its batched SVG images use the shared descriptor replay
+inside the existing macOS batch wrapper. Linux browser pages still use the
+portable raster and Sokol presentation path.
+
+The same [SVG pixel test](../ggshape/path_canvas_test.v) passed against
+Apple Silicon Metal and ARM64 Linux offscreen EGL with Mesa software OpenGL.
+It checks the entire translated solid fill, the even-odd hole, BGRA order and
+row padding, then samples a multisampled backdrop and a linear gradient. The
+test also checks that an unsupported gradient leaves the destination intact.
+The macOS non-scaling stroke, SVG batch, mask path, and SVG shadow pixel
+references passed unchanged. These checks ran with the C backend and
+`-gc none` under 3 GiB memory guards, with compiler revisions `eeee53a`
+on macOS and `5a39a4d` on Linux. Browser-level timing remains to be measured.
+
+The Windows graphics smoke test also exposes its stroke probe as an offscreen
+check on macOS and Linux. It verifies the same gradient samples, transparent
+background, and BGRA row padding in all three modes. Both the full SVG path
+pixel suite and the stroke probe passed on Apple Silicon Metal and ARM64 Linux
+Mesa software OpenGL. Current Windows x64 D3D11 and OpenGL smoke binaries
+cross-compiled successfully. Native Windows execution remains pending.
+[Smoke commands](WINDOWS.md#focused-native-checks)
+
+## Shared CSS background replay
+
+The portable painter and the macOS gradient fallback use the same V raster
+replay. The native macOS gradient path runs first for its supported draws.
+For an axis-aligned linear gradient with full rectangular coverage, the
+portable painter samples one row or column and presents it with a nearest-filtered
+Sokol texture. Text masks, non-axis-aligned gradients and tiled gradients use
+the full raster when the ramp cannot represent their coverage.
+
+On Linux ARM64, the X11 regression exercised both ramp directions and compared
+all fixture content pixel for pixel with `VOX_DISABLE_PORTABLE_GRADIENT_RAMP=1`.
+The pixels matched. The Linux browser smoke suite and live vlang.io capture
+passed. The macOS and Windows V type checks also passed using their build flags.
+
+Two alternating pairs used [the scrolling gradient fixture](../Tests/Browser/Native/scroll-gradient-ramps.html)
+with software OpenGL in a four-vCPU VM. Each fresh launch delivered 80
+synthetic integer scroll steps at a requested 1024 × 600 document viewport.
+The executable SHA-256 was
+`e381e9ec1de2f89ec57205c36cd2f9485467a7d531c38b6b9a5aa9524ed49bca`.
+This was a single-unit Clang `-O0` diagnostic build. The initial `-O1` compiler
+process was killed in the 6 GiB VM. Replay times below end at callback completion.
+
+| Trial | Replay variant | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full raster | 233.936 | 382.445 | 394.999 |
+| 2 | Ramp | 2.422 | 4.962 | 5.500 |
+| 3 | Full raster | 246.396 | 341.972 | 344.777 |
+| 4 | Ramp | 1.876 | 4.005 | 4.161 |
+
+Scroll positions and command counts agreed across all four trials. The guest
+one-minute load averages were 1.15, 1.36, 1.49 and 1.57. The benchmark and
+3 GiB guard exited zero with a peak sampled RSS of 509,161,472 bytes.
+
+The `-O1` retry in the 10 GiB VM completed with a peak sampled process-tree
+RSS of 9,984,811,008 bytes under the 12 GiB build guard. The executable
+SHA-256 was `0a7603ca435b9ad5fcb0e16b3e99a046d34f9195854511e868633f9338d0ac41`.
+The browser suite again passed its exact ramp checks. The same fixture and
+four-trial protocol produced the following synthetic callback replay results.
+
+| Trial | Replay variant | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full raster | 68.384 | 75.983 | 96.934 |
+| 2 | Ramp | 0.741 | 0.963 | 2.652 |
+| 3 | Full raster | 61.133 | 65.499 | 84.492 |
+| 4 | Ramp | 0.710 | 2.127 | 2.351 |
+
+The scroll traces agreed. The guest one-minute load averages were 1.11, 1.02,
+1.02 and 1.02. The build, browser suite, cohort and their guards exited zero.
+The cohort guard sampled a peak of 496,852,992 bytes.
+
+The subsequent macOS single-unit `-prod` bundle with verified source HEAD
+`3d7b08948920d7f685be88f8ad70f783b256821d` was tested in fresh PIDs 8217 and
+8340. Its executable SHA-256 was
+`23ba3183f6c6446597823e434ba9016fc6949940758a6bcbcba91991b782b3bb` and its
+AVIF library was `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+Both trials used the local scrolling gradient fixture with scripting disabled,
+fresh profiles and caches, a 1 second settle, and a 1024 × 600 viewport at
+backing scale 2. The native probe delivered 120 precise wheel inputs at 60 Hz
+with a 4-pixel delta and a reversal after 60 inputs. These are changed frame
+installations after the outer view paint, with nested revisions coalesced.
+The fixture SHA-256 was
+`d3a835484b1c637d5b1cd34b757e3feba4463b59dff370140a92667f2eb257c5`.
+
+| Trial | Scroll fps | Median interval (ms) | p95 (ms) | Max (ms) | Over 16.67 ms | Input / scroll changes | First / last gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 59.47 | 16.658 | 17.817 | 29.058 | 47.5% | 120 / 118 | 24.378 / 14.904 |
+| 2 | 59.49 | 16.693 | 18.199 | 30.633 | 54.2% | 120 / 118 | 25.331 / 13.984 |
+
+Both browser processes and the guard exited zero. The 18-CPU host one-minute
+load averages before these trials were 5.75 and 5.69. The earlier unpublished
+bundle controls ran under different host load, so these results describe the
+published bundle's cadence on this fixture. The document screenshots at 800 × 600
+matched the gradient-text and radial-gradient references exactly. The gradient
+backdrop comparison differed by one blue-channel level at one pixel.
+
+## Solid SVG opacity groups
+
+The portable GG painter rasterizes a run of solid SVG fills inside one normal
+opacity scope into a bounded premultiplied surface. It uploads the resolved
+color once and applies group alpha during the GG image draw. This preserves
+source-over ordering, fill opacity, and the path's even-odd or winding rule.
+The native Chromium SVG adapter uses the same eligibility check for a normal
+opacity scope and retains its accelerated replay. The portable group pass
+accepts up to 128 paths with a common rectangular clip and a surface of up
+to 4,194,304 pixels. A sparse scope can also fall back when its bounding image
+would add more than 16,384 pixels beyond its individual path textures.
+Nested effects, non-solid paints, strokes, and complex clips use the existing replay.
+
+The Linux browser smoke suite checks that the grouped path ran and verifies
+overlap, a path hole, fill opacity, and the sparse fallback on the
+[SVG fixture](../Tests/Browser/Native/svg-opacity-groups.html). A four-trial
+Linux ARM64 software OpenGL cohort compared the default group pass with
+`VOX_DISABLE_PORTABLE_SVG_OPACITY=1` on the same executable. Each trial used a
+fresh browser process and 80 synthetic 42-pixel scroll steps at a requested
+1024 × 600 viewport, with a 1 second settle. Scroll positions and retained
+command counts agreed. The switch changes overlap pixels to the earlier
+flattened-alpha result. The timings measure replay through synthetic callback
+completion.
+
+The single-unit `-O0` diagnostic executable SHA-256 was
+`7cf42f0fb16ae4ab55afb27984fb184646117490aaeb722a904c74e1b03983f1`.
+This first cohort used the fixture before addition of the sparse-path check
+(`4da62c1472359a4f179deb11fbd2e8330b0903b5e0dbb4e9927f434ee247d89e`).
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 25.069 | 27.360 | 27.803 |
+| 2 | Grouped | 12.853 | 14.855 | 15.392 |
+| 3 | Per path | 25.372 | 27.433 | 28.650 |
+| 4 | Grouped | 13.718 | 15.596 | 17.296 |
+
+The four-vCPU guest one-minute load averages were 1.44, 1.32, 1.22 and 1.12.
+The build, suite and cohort exited zero under their guards. The cohort guard
+sampled a peak of 462,340,096 bytes.
+
+The final single-unit `-O1` executable SHA-256 was
+`fe2d72410446d85e866ef0256fee9f5ab3ade5132b5d4d9a6334a837c14a1cb5`.
+The fixture SHA-256 was
+`bf84c48d0a59c14477967fcea87e577442b563c6e10a80aec541e4777d8de6d9`.
+Each trial had a fresh profile and cache. The four guest one-minute load
+averages were 1.51, 1.39, 1.28 and 1.18.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 4.789 | 6.644 | 7.540 |
+| 2 | Grouped | 2.842 | 4.522 | 5.349 |
+| 3 | Per path | 5.004 | 6.875 | 7.283 |
+| 4 | Grouped | 2.918 | 4.798 | 5.076 |
+
+The 80-frame scroll and retained command traces matched across all four trials.
+The build, Linux browser suite, and benchmark exited zero with sampled process
+tree peaks of 9,959,768,064, 867,598,336 and 452,648,960 bytes, respectively.
+The macOS production-mode V check and Windows D3D11 V check also passed.
+The final Linux executable also loaded live vlang.io in a fresh 1280 × 800
+X11 window. The header, gradient version text, icons, and compilation card
+rendered. The compilation video needs the Linux media implementation.
+The published macOS single-unit `-prod` executable
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301` carried
+the verified `eaca5f62c` opacity replay source. Its native renderer passed
+the opacity color, overlap, hole and fill-opacity pixel samples in fresh PID
+96263. Portable macOS runtime validation and the full compositor remain open.
+
+## Solid SVG clip groups
+
+The portable GG painter applies SVG `<clipPath>` geometry to complete groups
+of solid fills. The clip and opacity passes share the bounded V raster replay.
+An integer-aligned rectangular clip limits the raster bounds directly.
+Fractional rectangles and curved or compound geometry produce a coverage
+mask. The painter resolves the source paths in order, applies the coverage
+once, and uploads one texture. The existing limits for path count, surface
+size, and sparse ink apply. Clips may have up to 64 components. SVG `<mask>`
+content and complex group contents still use their existing replay paths.
+
+The [browser fixture](../Tests/Browser/Native/svg-clip-groups.html) checks
+visible overlap, rectangular cropping, curved coverage, disjoint components,
+even-odd holes, a fractional edge, and a following unclipped sibling. It pins
+the rectangular crop and coverage paths with `VOX_PORTABLE_SVG_CLIP_DIAGNOSTICS=1`.
+The initial Linux `-O0` capture and the published macOS native renderer agreed
+at all ten sampled solid pixels. The fractional sample was `(127, 212, 127)`
+on Linux and `(128, 213, 128)` on macOS.
+
+The macOS baseline used the published single-unit `-prod` executable
+`23ba3183f6c6446597823e434ba9016fc6949940758a6bcbcba91991b782b3bb`, with AVIF
+library `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The local fixture ran in fresh PIDs 68794 and 68952 at 1024 × 600, 2× backing
+scale, fresh profiles and caches, scripting disabled, and one second settle.
+Each run used 120 precise wheel inputs at a requested 60 Hz, moving four
+pixels per input and reversing after 60. The endpoint was changed Cocoa
+frame installations after outer view paint.
+
+| Trial | Scroll fps | Median interval (ms) | p95 (ms) | Max (ms) | Over 16.67 ms | Input / scroll changes | First / last gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 40.35 | 23.851 | 28.495 | 30.624 | 100% | 120 / 92 | 56.107 / 18.643 |
+| 2 | 40.99 | 23.527 | 27.927 | 30.002 | 100% | 120 / 90 | 54.493 / 18.367 |
+
+Both browser exits and the guard exit were zero. The 18-CPU host's starting
+one-minute load averages were 9.93 and 9.70 while other builds were running.
+These are baseline measurements from the existing Cocoa compositor.
+
+The optimized Linux ARM64 single-unit `-O1` executable SHA-256 was
+`4b93e4c7848a396db38ead5022aaae012ddbe2fce8235ab4a3606e2970396020`.
+The local fixture SHA-256 was
+`1d8db436b21f32f96dc5496db99be7867e73508823d056f5dc8939ace2c06a31`.
+A separate diagnostic showed both the rectangular crop and coverage pass
+executing during scroll. The cohort alternated the default with
+`VOX_DISABLE_PORTABLE_SVG_CLIP=1`, which restores the earlier bounding-box
+clip. Each trial used software OpenGL, a fresh process, profile and cache,
+and 80 synthetic 42-pixel scroll callbacks at a requested 1024 × 600 viewport
+after a one-second settle. Scroll positions and retained command counts
+matched. Timings end at callback replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Bounds only | 20.720 | 21.490 | 22.023 |
+| 2 | Clip geometry | 2.258 | 4.793 | 5.500 |
+| 3 | Bounds only | 21.253 | 23.460 | 26.127 |
+| 4 | Clip geometry | 2.313 | 4.836 | 5.229 |
+
+The four-vCPU guest's starting one-minute load averages were 1.31, 1.20,
+1.43 and 1.31. The build, Linux browser suite and cohort exited zero under
+the memory guards, with respective peaks of 9,644,331,008, 939,761,664 and
+483,737,600 bytes. The suite included the existing opacity and gradient
+pixel checks. A disabled-path capture reproduced the curved leak and filled
+hole. Live vlang.io rendered its header, gradient version text, icons and
+compilation card in the optimized Linux build. The Linux media path still
+needs support for its compilation video. The macOS production-mode and
+Windows D3D11 V type checks also passed. The shared macOS runtime build and
+full compositor cutover remain open.
+
+The next published macOS bundle, pinned above, passed the native clip samples
+in PID 96347. Its two precise-wheel trials used the same clip fixture and
+schedule as the baseline, with an unchanged AVIF library. This bundle includes
+the earlier opacity replay and intervening changes. The portable clip path
+had yet to reach the production bundle.
+
+| PID | Scroll fps | Median interval (ms) | p95 (ms) | Max (ms) | Over 16.67 ms | Input / scroll changes | First / last gap (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 99887 | 38.51 | 24.590 | 29.010 | 29.721 | 100% | 120 / 81 | 53.475 / 20.027 |
+| 104 | 39.26 | 24.372 | 28.805 | 52.494 | 100% | 120 / 84 | 52.767 / 18.454 |
+
+Both browser exits and the guard exit were zero. These two runs began at
+one-minute host load averages of 7.38 and 7.67. The earlier cohort used a
+different build and host load, so the two sets describe observed native
+cadence. The fixture remains below 60 scroll-changing installations per second.
+
+## Nested SVG image replay
+
+Replaced SVG images and CSS SVG backgrounds now use the portable clip and
+opacity passes for eligible solid-fill groups. The player projects one
+validated scope at a time and intersects its raster bounds with the embedding
+viewport. Ordinary leaves replay individually and intersect their own
+scissor with the same viewport when they carry a clip. Group replay applies
+to fully opaque embeddings. Translucent embeddings use ordinary replay.
+
+The [nested fixture](../Tests/Browser/Native/nested-svg-groups.html) checks
+clip interiors, group overlap, pixels outside each embedding rectangle, and
+a translated and scaled image. It loads a separate SVG resource through both
+an image element and a CSS background. The published native macOS capture
+in PID 96408 matched the previous bundle exactly over all 614,400 document
+pixels. Linux and macOS agreed at the sampled solid pixels and differed by
+one level in red and green at the two sampled 50% blue overlap pixels.
+
+The Linux ARM64 optimized single-unit `-O1` executable was
+`2111fdcd31e701b8c90884550bd1634d8d185fde66dfe837d0f0612daa518233`.
+The HTML and SVG input SHA-256 values were
+`ae9a94a4a14acbf5f27378a6730541cf16b37cf2f8ca4f2e9b5a2b4f763c384f` and
+`e447d42766910bc2ceef13fa92a672e9ccff8e9e6392372da16a7e56d84e645e`.
+A separate diagnostic observed both passes after scrolling began. The cohort
+alternated the default with `VOX_DISABLE_PORTABLE_SVG_CLIP=1` and
+`VOX_DISABLE_PORTABLE_SVG_OPACITY=1` on the same executable. Each software
+OpenGL trial used a fresh profile, cache and process, a one-second settle,
+and 80 synthetic 42-pixel scroll callbacks at a requested 1024 × 600 viewport.
+Timings end at callback replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 37.160 | 40.162 | 41.285 |
+| 2 | Grouped | 2.159 | 4.598 | 5.247 |
+| 3 | Per path | 36.474 | 38.963 | 41.417 |
+| 4 | Grouped | 2.166 | 4.609 | 4.832 |
+
+Scroll positions and retained command counts matched across the cohort.
+The four-vCPU guest's starting one-minute load averages were 0.91, 0.84,
+1.65 and 1.55. The guarded build, suite and benchmark exited zero with
+process-tree peaks of 10,023,243,776, 865,431,552 and 474,693,632 bytes.
+The disabled-path capture reproduced leaking clip corners and incorrect
+overlap alpha on both embeddings. Live vlang.io rendered its header,
+version gradient, icons and compilation card in the optimized Linux build.
+The compilation video still requires a Linux media path. macOS production-mode
+and Windows D3D11 V type checks passed. The next shared macOS build is queued.
+Running the portable replay on macOS remains open.
+
+## SVG alpha and luminance masks
+
+The portable GG player applies SVG content masks to eligible groups of
+solid fills, including in nested SVG images. It resolves the solid mask
+operations in paint order and uses the resulting alpha or premultiplied
+luminance as coverage for a single group texture. The mask region bounds
+both rasters, and fractional region edges contribute coverage once. This
+pass takes up to 64 solid mask fills in an axis-aligned rectangular region.
+Complex mask resources retain their existing replay.
+
+The [mask fixture](../Tests/Browser/Native/svg-content-masks.html) checks
+the coverage from black in alpha and luminance modes, even-odd holes,
+partial opacity, overlapping color fills, and the mask region. It also
+checks a fractional translated mask in an embedded SVG. Thirteen sampled
+pixels matched the native macOS capture from executable
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301` in fresh
+PID 40042. The translated edge sample was `(127, 127, 255)` on Linux at
+1× backing scale and `(191, 191, 255)` in the logical-pixel macOS capture.
+
+The optimized Linux ARM64 single-unit `-O1` executable SHA-256 was
+`3c969cb83555495aca50dfc7c520a1a0481881fa6b83e7b277a151342f0445c1`.
+The fixture SHA-256 was
+`6dc176903d66f637659b97484bc34a89ee0357c828c182ff9fefca52b8f3f966`.
+A separate diagnostic recorded 40 applications of each mask mode during
+scroll replay after the first callback. The cohort alternated the default
+with `VOX_DISABLE_PORTABLE_SVG_MASK=1`. Each software OpenGL trial ran a
+fresh process with a fresh profile and cache, one second of settle, and 80
+synthetic 42-pixel scroll callbacks at a requested 1024 × 600 viewport.
+Timings end at callback replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 15.577 | 16.736 | 19.508 |
+| 2 | Masked group | 3.141 | 5.659 | 5.759 |
+| 3 | Per path | 14.572 | 15.073 | 15.780 |
+| 4 | Masked group | 3.005 | 5.497 | 5.892 |
+
+Scroll positions and retained command counts matched across all four trials.
+The guest one-minute load averages were 0.73, 0.73, 0.91 and 1.88. The
+guarded build, Linux browser suite and benchmark exited zero with sampled
+process-tree peaks of 10,053,210,112, 869,707,776 and 473,800,704 bytes.
+A disabled-path capture reproduced the filled alpha hole and visible black
+luminance region. The optimized Linux browser also rendered the header,
+version gradient, icons and compilation card on live vlang.io. The macOS
+production-mode and Windows D3D11 type checks passed. The shared runtime
+build and macOS portable renderer cutover remain open.
+
+## SVG mask opacity groups
+
+The portable GG replay now handles up to four nested opacity groups inside
+an eligible alpha or luminance mask. Each group renders into a bounded
+premultiplied surface. The existing CPU image compositor applies the
+group's opacity once when restoring it over its parent. Sibling groups
+reuse a cleared surface at the same depth.
+
+The [browser fixture](../Tests/Browser/Native/svg-mask-opacity.html) checks
+path overlap, nested half-opacity groups, surface reuse across siblings,
+and luminance after compositing over an opaque mask background. Ten sampled
+pixels agreed within one level per channel with the native macOS capture
+from executable `9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`
+in fresh PID 73912. For example, the 50% blue overlap was `(128, 128, 255)`
+on Linux and `(127, 127, 255)` on macOS.
+
+The Linux ARM64 single-unit `-O1` executable SHA-256 was
+`d9f0f93b94d00d8c28effb665bd89fc0206d35da7275caba738d565fad1445cd`.
+The fixture SHA-256 was
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51`.
+A separate diagnostic recorded 41 applications of each grouped mask mode
+after the first scroll callback. Each trial used software OpenGL, a fresh
+profile, cache and process, one second of settle, and 80 synthetic 42-pixel
+scroll callbacks at a requested 1024 × 600 viewport. The cohort alternated
+the default with `VOX_DISABLE_PORTABLE_SVG_MASK=1`. Timings end at callback
+replay completion.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Per path | 16.352 | 17.944 | 18.870 |
+| 2 | Masked group | 7.077 | 10.196 | 10.343 |
+| 3 | Per path | 14.554 | 17.398 | 18.491 |
+| 4 | Masked group | 7.299 | 9.959 | 10.917 |
+
+Scroll positions and retained command counts matched across all four
+trials. The guest one-minute load averages were 0.93, 1.10, 1.01 and 1.01.
+The 6 GiB guest used temporary swap for the build. The guarded build,
+Linux browser suite and cohort exited zero with sampled process-tree RSS
+peaks of 5,988,016,128, 877,191,168 and 470,147,072 bytes. Prior clip,
+opacity and flat-mask fixtures passed in the suite. Disabling mask replay
+reproduced fully opaque coverage in the half-opacity and nested scopes.
+The macOS production-mode and Windows D3D11 type checks also passed.
+
+## SVG gradient masks
+
+Portable GG replay uses the CPU gradient shader for padded linear and
+radial fills in SVG content masks. The gradient transform maps shader
+coordinates into the path's local space while the path keeps its existing
+geometry. Alpha masks use stop alpha and fill opacity. Luminance masks
+resolve the sRGB colors in a premultiplied surface before applying the
+luminance weights. Other spread modes, unsupported radial geometry and
+luminance gradients in linear RGB use the existing replay.
+
+The [gradient mask fixture](../Tests/Browser/Native/svg-gradient-masks.html)
+checks a translated and scaled alpha ramp, an elliptical luminance mask,
+and an object-bounding-box gradient inside an embedded SVG. Thirteen
+samples from the optimized Linux capture agreed with the macOS native
+capture within one level per channel. Eleven matched exactly. The native
+comparison used fresh PID 13320 from single-unit `-prod` receipt
+`20261118-035602-2025fd74`, with executable SHA-256
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`
+and AVIF SHA-256
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+That bundle also passed the nested SVG and solid-mask samples in fresh PIDs
+18048 and 18123. The macOS comparison uses Cocoa rendering.
+
+The Linux ARM64 single-unit Clang `-O1` executable SHA-256 was
+`cc506b86027f251a4191e852de3cd05e183cbbb2be1f974a8af8818547309506`.
+The fixture SHA-256 was
+`358aaffab9b6a968c0c450a8466d13761813fff26d3bf507791f59d7ac200d4c`.
+A separate diagnostic confirmed both gradient mask modes during scroll
+replay. The four trials alternated `VOX_DISABLE_PORTABLE_SVG_MASK=1`
+with the enabled path on the same binary. Each used software OpenGL
+and a fresh process, profile and cache, one second of settle, and 80
+synthetic 42-pixel steps at a requested 1024 × 600 viewport. The scroll
+and command traces matched. The disabled path painted four sampled
+points fully blue where the masks should make them transparent.
+Timings measure replay within the synthetic callbacks.
+
+| Trial | Replay | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Disabled | 21.783 | 23.402 | 24.774 |
+| 2 | Gradient mask | 5.856 | 9.597 | 10.075 |
+| 3 | Disabled | 19.603 | 22.658 | 23.706 |
+| 4 | Gradient mask | 4.301 | 6.999 | 7.068 |
+
+Starting one-minute load averages in the four-vCPU guest were 2.37, 2.26,
+2.08 and 2.07. The build, full Linux browser suite and cohort exited zero
+under their guards, with sampled process-tree RSS peaks of 5,974,519,808,
+899,305,472 and 477,368,320 bytes. The CPU gradient unit tests and the
+macOS production-mode and Windows D3D11 V checks passed. The pinned CPU
+raster differential suite passed with 10,000 exact gradient draws.
+
+### Shared gradient mask raster on macOS
+
+`VOX_SHARED_SVG_MASK_RASTER=1` uses the V mask rasterizer on macOS for
+eligible gradient fills. The rasterizer writes only the aligned mask
+rectangle in the bitmap that enters the existing native cache. It uses
+the bitmap's row stride and leaves the transparent padding intact. Native
+composition continues to use the cached alpha or luminance image. Other
+resources and fractional mask rectangles use the existing Quartz replay.
+
+The macOS pixel check compares both settings in new browser processes
+and verifies that the shared path ran for both alpha and luminance.
+Across the 1024 × 600 document, the largest difference against Quartz
+was two channel levels. The Linux browser suite, Windows D3D11 type
+check, native SVG mask conversion and layer checks all passed.
+
+The same macOS single-C executable, compiled with V `-prod` and Clang
+`-O1`, ran both paths. Its SHA-256 was
+`06fa95ced9400bbc889a099c3e9643d14d1aff8ee81250dfa18e94a627d52f8b`
+and the AVIF library SHA-256 was
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`.
+The build, captures and focus checks used the same fixture digest as the
+Linux trials above. The build peaked at 12,438,732,800 bytes under the
+12 GiB process-tree guard. The two pixel capture PIDs were 94900 and 94917.
+
+The initial private builds exited 139 before scroll input in the STB
+bookmark icon decoder. The non-`-prod` build reproduced that exit in both
+mask modes. With the same private `-prod` timing build, a fresh profile
+with an empty hidden bookmark bar allowed the precise-wheel runs to start.
+All trials used that profile seed, a fresh cache, disabled scripts,
+no external resources and a one-second settle after the fixture title
+appeared. The observed viewport was 1024 × 600 at 2× backing scale.
+A separate diagnostic recorded 267 alpha and 257 luminance shared
+mask rasterizations during the input window.
+
+The trial used 120 precise wheel inputs at a requested 60 Hz, with a
+four-pixel delta and one reversal after 60 inputs. The endpoint was
+changed native frame installation after the outer view paint. Both
+variants exceeded the 16.67 ms deadline on every measured scroll interval.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 95630 | Quartz | 41.76 | 22.764 | 26.339 | 47.476 | 54.02 | 120 / 92 | 52.645 / 20.213 |
+| 95741 | Shared | 27.89 | 34.473 | 38.127 | 68.844 | 55.32 | 120 / 60 | 78.019 / 0.088 |
+| 95891 | Quartz | 42.89 | 22.282 | 26.031 | 27.966 | 54.29 | 120 / 94 | 54.111 / 17.040 |
+| 95985 | Shared | 27.66 | 34.271 | 38.500 | 69.497 | 54.86 | 120 / 60 | 75.839 / 17.467 |
+
+The 18-CPU host's starting one-minute loads were 6.83, 6.84, 6.45 and
+6.42. All browser and guard exits were zero and the cohort peaked at
+402,685,952 sampled RSS bytes. The shared path remains opt-in because
+of the measured scroll regression.
+
+### Reusing translated gradient masks
+
+The shared macOS raster path retains up to sixteen finished mask images
+of at most 512 KiB each. An integer device-pixel translation can reuse
+the image at its new placement. The key includes the retained mask
+resource, backing scale, bitmap dimensions, clipped area and each path's
+matrix relative to the mask bitmap. The placement cache retains the same
+image object. `VOX_DISABLE_SHARED_SVG_MASK_CACHE=1` isolates the earlier
+shared replay for comparisons.
+
+Four fresh captures ran the macOS pixel check. The cached and uncached
+document images after a 96-pixel scroll were byte-for-byte equal after
+decoding, and the capture observed reuse in both mask modes. At the top
+of the fixture, the shared raster still agreed with Quartz to two levels
+per channel over the full document. The Linux browser suite and Windows
+D3D11 type check passed. Standalone layout test compilation reached the
+12 GiB guard.
+
+Both passes through the timing cohort used the same single-C V `-prod`,
+Clang `-O1` build, SHA-256
+`4f3c80fb7fa4fd31cbec44e78a04de057e95c4400ac87fab293dda998a4807a1`.
+The fixture and AVIF digests were unchanged from the prior cohort. The
+probe repeated the 120-input precise-wheel schedule at 1024 × 600 and
+2× scale. Each launch used a fresh cache and the same private profile
+seed with a hidden bookmark bar, no external resources, disabled scripts,
+and one second of settle after the title appeared. The endpoint was
+changed native frame installation after the outer view paint.
+A separate diagnostic counted 574 reused images and 231 rasterizations
+during the input window.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 24894 | Quartz | 43.89 | 21.634 | 26.385 | 27.662 | 56.16 | 120 / 93 | 54.243 / 17.280 |
+| 24970 | Shared, uncached | 35.77 | 26.565 | 31.054 | 53.245 | 59.11 | 120 / 72 | 60.695 / 17.628 |
+| 25064 | Shared, cached | 42.92 | 22.249 | 26.507 | 29.159 | 55.52 | 120 / 92 | 52.185 / 19.879 |
+| 25172 | Quartz | 39.15 | 24.789 | 29.103 | 29.957 | 54.80 | 120 / 85 | 53.806 / 17.360 |
+| 25459 | Shared, uncached | 34.09 | 28.304 | 32.572 | 56.677 | 58.80 | 120 / 69 | 65.182 / 0.107 |
+| 25645 | Shared, cached | 44.45 | 21.696 | 25.936 | 27.384 | 54.53 | 120 / 97 | 52.580 / 17.302 |
+
+The six trials exceeded 16.67 ms on every measured scroll interval.
+Starting one-minute loads on the 18-CPU host were 8.29, 7.78, 7.80, 7.50,
+7.38 and 7.35. All browser and guard exits were zero. Sampled process
+tree RSS peaked at 8,038,252,544 bytes during the macOS build and
+407,552,000 bytes in the scroll cohort. Caching improved both shared
+raster trials. The comparison with Quartz was mixed, and the shared
+path remains opt-in.
+
+### Allocating the mask bitmap after cache lookup
+
+The macOS shared path determines the device bounds and checks the
+translated-mask cache before it opens a Quartz bitmap. A cache hit
+publishes the retained image directly for the new placement. A miss
+opens a bitmap for the V rasterizer. Masks that decline shared replay
+use the existing Quartz clip and draw operations. The benchmark switch
+`VOX_EAGER_SHARED_SVG_MASK_BITMAP=1` opens and clips the bitmap before
+lookup.
+
+Five fresh macOS captures compared Quartz, shared raster without
+reuse, and both allocation orders. After a 96-pixel scroll, the two
+cached variants matched the uncached document pixels exactly. The
+largest channel difference against the Quartz capture at the top of
+the fixture was two levels. The full Linux browser suite, Windows
+D3D11 type check, and native SVG mask conversion and layer tests passed.
+
+The timing used a single-C V `-prod`, Clang `-O1` executable, SHA-256
+`3746585bae7afa0a93f5e2fb6ac602160763f8b52839922b8a624944aab9560e`.
+It used the previous fixture and AVIF digests. The five capture PIDs
+were 52618, 52635, 52641, 52668 and 52681. In separate precise-wheel
+diagnostics, 643 translated-mask hits in PID 52738 allocated a bitmap
+before lookup. None of the 668 hits in PID 52833 allocated one after
+moving allocation. Both diagnostics exercised alpha and luminance.
+
+Three timing groups rotated the allocation orders and Quartz. Each
+ran the same local 120-input precise wheel schedule at a 1024 × 600
+document viewport and 2× backing scale. Each launch used a fresh cache
+and private profile with a hidden bookmark bar, disabled scripts, and
+a one-second settle after the title matched. The endpoint was changed
+native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 52947 | Quartz | 42.87 | 22.514 | 25.906 | 26.772 | 54.86 | 120 / 93 | 57.652 / 17.496 |
+| 53048 | Shared, before lookup | 45.22 | 21.337 | 25.043 | 26.647 | 54.91 | 120 / 98 | 56.723 / 17.158 |
+| 53147 | Shared, after lookup | 44.87 | 21.507 | 25.927 | 27.060 | 55.62 | 120 / 96 | 51.838 / 16.888 |
+| 53249 | Shared, before lookup | 44.34 | 21.661 | 25.710 | 27.033 | 54.96 | 120 / 96 | 51.870 / 17.284 |
+| 53354 | Shared, after lookup | 44.97 | 21.445 | 24.969 | 27.397 | 57.54 | 120 / 93 | 51.518 / 16.539 |
+| 53455 | Quartz | 43.00 | 22.342 | 26.097 | 26.664 | 55.02 | 120 / 93 | 54.038 / 17.052 |
+| 53550 | Shared, after lookup | 44.13 | 21.467 | 25.779 | 27.932 | 56.47 | 120 / 93 | 51.643 / 20.577 |
+| 53680 | Quartz | 41.26 | 23.625 | 26.843 | 29.801 | 55.79 | 120 / 88 | 56.376 / 18.882 |
+| 53798 | Shared, before lookup | 44.10 | 21.522 | 25.935 | 45.029 | 58.96 | 120 / 89 | 52.505 / 0.079 |
+
+All measured scroll intervals exceeded 16.67 ms. Starting one-minute
+loads on the 18-CPU host were 7.16, 6.83, 6.84, 6.69, 6.64, 6.51, 6.35,
+6.40 and 6.45. The macOS build and timed cohort passed their memory
+guards with sampled RSS peaks of 11,692,883,968 and 411,107,328 bytes.
+All browser exits were zero. The two allocation orders gave similar
+scroll publication rates. The shared raster remained opt-in.
+
+### Publishing the shared mask bitmap directly
+
+After V rasterizes an eligible mask, Vox converts that bitmap in place
+to premultiplied white RGB with alpha or luminance coverage. The same
+bitmap context supplies the final Core Graphics image. The benchmark
+switch `VOX_COPY_SHARED_SVG_MASK_BITMAP=1` uses a second bitmap for the
+conversion.
+
+The C conversion tests on macOS and Linux covered all RGB triples,
+every alpha value, row padding, and unaligned starts. The Core Graphics
+test compared the sRGB and DeviceRGB images through destination-in and
+clip-to-mask operations at fractional bounds. Both operations produced
+identical pixels. Six fresh macOS browser captures passed, with exact
+document pixels between the copied and in-place masks after a 96-pixel
+scroll. The largest difference against Quartz at the top of the
+fixture was two channel levels.
+
+The timing build used single-C V `-prod` with Clang `-O1`, SHA-256
+`57d50c29e332d4d97d5760728426ce6b1ea04dcc843bcf8a9c69f9f0ca8253c1`.
+The fixture and AVIF digests matched the previous cohort. The diagnostic
+in PID 81887 produced 232 masks in the second bitmap during the input
+window. PID 82049 published all 246 freshly rasterized masks from the
+original bitmap. Both diagnostics exercised alpha and luminance.
+
+Each run used a fresh process, cache and private profile with a hidden
+bookmark bar. The local fixture used disabled scripts, a one-second settle
+after the title matched, a 1024 × 600 document viewport at 2× backing scale,
+and 120 precise wheel inputs at a requested 60 Hz. The wheel delta was
+four pixels with a reversal after 60 inputs. The endpoint was changed
+native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 82187 | Quartz | 42.95 | 22.417 | 25.985 | 27.339 | 53.24 | 120 / 96 | 51.382 / 17.548 |
+| 82282 | Copy | 45.20 | 21.433 | 25.128 | 26.427 | 55.45 | 120 / 97 | 51.402 / 18.280 |
+| 82427 | In place | 45.13 | 21.293 | 25.748 | 27.315 | 54.80 | 120 / 98 | 52.153 / 19.167 |
+| 82530 | Copy | 42.49 | 22.504 | 26.742 | 46.180 | 53.79 | 120 / 94 | 55.638 / 17.586 |
+| 82652 | In place | 42.32 | 23.181 | 26.500 | 48.483 | 56.59 | 120 / 89 | 53.007 / 0.109 |
+| 82810 | Quartz | 42.55 | 22.639 | 26.063 | 28.437 | 53.86 | 120 / 94 | 56.068 / 20.066 |
+| 82964 | Copy, translated cache off | 37.85 | 25.232 | 29.649 | 31.393 | 57.75 | 120 / 78 | 61.572 / 17.276 |
+| 83058 | In place, translated cache off | 37.39 | 25.794 | 29.164 | 31.488 | 57.79 | 120 / 77 | 62.478 / 16.717 |
+| 83151 | Copy, translated cache off | 37.10 | 25.644 | 30.125 | 32.050 | 59.67 | 120 / 74 | 61.490 / 16.935 |
+| 83263 | In place, translated cache off | 38.42 | 25.317 | 28.810 | 29.486 | 57.87 | 120 / 79 | 58.469 / 0.103 |
+
+Every measured scroll interval exceeded 16.67 ms. Starting one-minute
+loads on the 18-CPU host were 6.92, 6.44, 6.33, 7.39, 7.28, 6.94, 6.70,
+6.49, 6.37 and 6.42. The browser and guard exits were zero. Sampled
+RSS peaked at 11,339,235,328 bytes for the build and 407,846,912 bytes
+for the scroll cohort. Publication rates were similar for both
+conversion methods. The shared renderer remains opt-in.
+
+### Reusing masks across viewport edges
+
+The macOS shared renderer can retain a complete aligned mask within the
+512 KiB per-image cache limit, even when the viewport clips part of it.
+Vox uses a cropped Core Graphics image for the current placement and
+keeps the complete raster available for later scroll positions. The
+placement retains the existing clipped bounds used by both mask
+compositing operations. `VOX_CLIP_SHARED_SVG_MASK_RASTER=1` restores
+rasterization into the clipped bounds for comparisons.
+
+The native tests matched cropped and directly rasterized images through
+both clip-to-mask and destination-in. Ten fresh browser captures passed.
+At a 42-pixel scroll offset, both paths matched pixel for pixel at
+1024 × 600 and 2048 × 1200. The full-raster path recorded viewport-edge
+cache hits in both alpha and luminance mode.
+
+The single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`6adc1975a6fc82923205e87baccdf527a69c253b402e38bc87f82a8751315f63`.
+The fixture and AVIF digests matched the previous cohort. In separate
+precise-wheel diagnostics, PID 91817 rasterized 249 masks with the
+viewport-clipped strategy and recorded 660 translated cache hits. PID
+91888 rasterized six masks and recorded 942 translated cache hits,
+248 of them for partially visible masks. These counts cover the input
+window and include alpha and luminance.
+
+Three timing groups ran the same 120 precise wheel inputs at a requested
+60 Hz, with four-pixel steps and a reversal after 60 inputs. Each used a
+1024 × 600 document viewport at 2× backing scale, a fresh cache and private
+profile with a hidden bookmark bar, and one second of settle after the
+local fixture title matched. Scripts were disabled. The endpoint was
+changed native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 91970 | Quartz | 43.46 | 22.094 | 25.487 | 26.927 | 56.83 | 120 / 91 | 54.253 / 17.352 |
+| 92019 | Viewport-clipped | 41.89 | 22.980 | 26.921 | 27.921 | 56.64 | 120 / 88 | 53.585 / 18.806 |
+| 92213 | Full mask | 45.88 | 21.028 | 25.991 | 27.746 | 55.14 | 120 / 99 | 49.545 / 0.098 |
+| 92331 | Viewport-clipped | 44.36 | 21.950 | 25.962 | 26.431 | 56.16 | 120 / 94 | 54.532 / 0.101 |
+| 92464 | Full mask | 47.02 | 20.561 | 24.863 | 26.529 | 52.79 | 120 / 106 | 48.050 / 0.107 |
+| 92567 | Quartz | 41.20 | 23.560 | 27.170 | 28.022 | 55.72 | 120 / 88 | 53.146 / 0.105 |
+| 92685 | Full mask | 45.69 | 21.015 | 25.671 | 26.686 | 57.85 | 120 / 94 | 48.630 / 0.111 |
+| 92785 | Quartz | 40.24 | 23.832 | 28.463 | 30.009 | 54.41 | 120 / 88 | 52.915 / 18.589 |
+| 92901 | Viewport-clipped | 44.75 | 21.882 | 25.509 | 26.090 | 54.90 | 120 / 97 | 52.645 / 0.085 |
+
+Starting one-minute loads on the 18-CPU host were 4.60, 4.87, 4.96,
+4.96, 5.21, 5.27, 5.25, 5.07 and 5.14. All sampled scroll intervals
+exceeded 16.67 ms. The browser and guard exits were zero. Sampled RSS
+peaked at 11,696,046,080 bytes for the build and 407,158,784 bytes for
+the timed cohort. Full-mask caching improved scroll publication rates
+in all three groups on this fixture. The shared renderer remains opt-in.
+
+### Backing scale and live mask changes
+
+The macOS placement cache includes backing scale alongside the resource
+key and canvas coordinates. Clip and content masks use that identity
+when preparing an image and when compositing it. The native key check
+verified that 1× uses a distinct key from both 1.5× and 2× for both mask
+types.
+
+The [live mutation fixture](../Tests/Browser/Native/svg-gradient-mask-mutation.html)
+changes linear stop opacity and radial stop color after the first
+render. A published Quartz capture in PID 29997 changed the sample
+pixels to blue and red, as expected. The candidate shared renderer
+recorded the original and updated resource keys for each mask in PID
+33812. Its final document matched the uncached capture in PID 33819
+pixel for pixel. The first static suite run reported an eager-cache
+screenshot mismatch. A fresh focused pair and two full 13-capture
+repeats passed using the same comparisons. Native mask conversion,
+cropping and layer checks also passed.
+
+The single-C V `-prod`, Clang `-O1` timing executable SHA-256 was
+`e158e06331a5d55155620e49143ecf17cb5d9c1446857bf6c1ba5de8f4de6bd8`.
+The two alternating pairs used the previous scrolling fixture and AVIF
+digests, a fresh cache and private profile with a hidden bookmark bar,
+disabled scripts, and a one-second settle after the title matched. Each
+ran 120 precise four-pixel wheel inputs at a requested 60 Hz, with one
+reversal after 60 inputs. The document viewport was 1024 × 600 at 2×.
+The endpoint was changed native frame installation after outer view paint.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 33874 | Quartz | 40.26 | 24.098 | 27.151 | 29.930 | 55.07 | 120 / 87 | 54.279 / 19.342 |
+| 34105 | Shared | 45.74 | 20.992 | 25.327 | 27.439 | 52.84 | 120 / 103 | 55.262 / 0.123 |
+| 34363 | Quartz | 38.26 | 24.577 | 29.323 | 52.284 | 54.85 | 120 / 83 | 56.003 / 20.481 |
+| 34476 | Shared | 47.81 | 20.368 | 24.087 | 25.441 | 56.90 | 120 / 100 | 49.640 / 0.123 |
+
+Starting one-minute loads on the 18-CPU host were 4.13, 4.04, 4.19
+and 4.18. All measured scroll intervals exceeded 16.67 ms. The browser
+and guard exits for the cohort were zero. Sampled process-tree RSS
+peaked at 11,481,743,360 bytes during the build and 403,701,760 bytes
+during timing. The shared renderer remains opt-in.
+
+### Reusing rows in horizontal SVG alpha masks
+
+The shared raster shades one row for an alpha mask formed by a single
+horizontal linear gradient in a device-aligned rectangle. It copies that
+row within the covered part of the cleared bitmap, using the existing
+shader's sampling and rounding. macOS selects this path by default for
+eligible masks with at most 128 Ki pixels including bitmap padding.
+`VOX_SHARED_SVG_MASK_RASTER=1` enables the broader shared gradient path
+and `=0` selects Quartz. `VOX_DISABLE_SVG_MASK_RAMP=1` disables row reuse.
+
+The [15-capture macOS check](../tools/test_macos_svg_gradient_mask.py)
+confirmed automatic selection for the horizontal alpha fixture and
+Quartz selection for the radial luminance fixture. The automatic
+document remained within two channel values of Quartz. The scrolled
+document matched the full shared shader pixel for pixel. Cache,
+viewport-edge and live mutation checks also passed. The Linux browser
+suite passed all 17 checks, including the gradient-mask capture, which
+logged 324 row replays. The Windows D3D11 browser passed the V type check.
+
+The private timing build used V `-b c -prod` in one C unit with Clang
+`-O1`. Its SHA-256 was
+`87391a09626cd363ea2b3239ec15836fe3ed86c11c41b9a39aa63e482f1edcbb`.
+The AVIF library and [local fixture](../Tests/Browser/Native/svg-gradient-masks.html)
+digests were `ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+and `358aaffab9b6a968c0c450a8466d13761813fff26d3bf507791f59d7ac200d4c`,
+respectively. A separate diagnostic in PID 59286 with caching disabled
+logged 448 row rasters and zero shared luminance rasters during input.
+
+The two alternating pairs for each control used
+`tools/measure_precise_scroll.py` with a 1024 × 600 document viewport
+at 2×, one second of settle after the title matched, and 120 precise
+four-pixel wheel inputs at a requested 60 Hz with reversal after 60.
+Each process started with a fresh cache and private profile seeded
+for file navigation and an empty hidden bookmark bar. The local
+fixture had no external resources and scripts were disabled. The
+endpoint was completed native frame installation after outer view
+paint. The rates divide scroll changes by the first-to-last input
+duration. Only the forced-shader and forced-row trials disabled the
+mask cache. All timing trials disabled diagnostic logging.
+
+| PID | Raster | Scroll fps | Median (ms) | p95 (ms) | Max (ms) | Input Hz | Inputs / scroll changes | First / last gap (ms) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 59398 | Quartz | 42.88 | 22.309 | 26.219 | 26.971 | 54.87 | 120 / 93 | 52.923 / 17.435 |
+| 59513 | Automatic | 43.82 | 22.308 | 25.022 | 26.995 | 56.07 | 120 / 93 | 51.683 / 18.977 |
+| 59614 | Quartz | 41.87 | 22.789 | 26.415 | 46.579 | 55.99 | 120 / 89 | 51.785 / 17.979 |
+| 59719 | Automatic | 42.89 | 22.349 | 26.657 | 29.469 | 53.73 | 120 / 95 | 52.778 / 18.667 |
+| 59873 | Forced shader | 38.22 | 25.305 | 29.537 | 30.902 | 58.31 | 120 / 78 | 60.225 / 0.089 |
+| 59998 | Forced row | 41.16 | 23.404 | 26.686 | 28.159 | 55.03 | 120 / 89 | 53.836 / 18.386 |
+| 60118 | Forced shader | 37.92 | 25.464 | 29.687 | 32.123 | 56.40 | 120 / 80 | 59.338 / 16.222 |
+| 60227 | Forced row | 40.10 | 24.073 | 27.379 | 27.741 | 55.49 | 120 / 86 | 53.179 / 19.358 |
+
+The cohort ran from 03:02:07 to 03:02:51 UTC on November 18, 2026.
+Starting one-minute loads on the 18-CPU host were 4.01, 4.09, 4.65,
+4.75, 5.01, 4.85, 4.78 and 4.48. The automatic trials recorded about
+one more scroll-changing publication per second than Quartz, with
+mixed p95 intervals. Forced row reuse improved both rate and p95 in
+the uncached pairs. All measured intervals exceeded 16.67 ms. The
+browser and guard exits were zero. Sampled process-tree RSS peaked at
+11,248,877,568 bytes in the build and 406,306,816 bytes in the combined
+diagnostic and timing job.
+
+### Retaining radial SVG masks on macOS
+
+Automatic selection includes supported single rectangular radial masks
+when the aligned bitmap and its padding fit the 128 Ki pixel limit.
+The shared raster keeps the complete image available across viewport
+edges. When all cache slots were used in the current or previous frame,
+new radial masks use Quartz. This keeps active rasters available and
+avoids repeatedly paying for a full gradient draw during scroll.
+
+The mixed workload used the [existing fixture](../Tests/Browser/Native/svg-gradient-masks.html)
+with the digest above. The radial-only workload removed the horizontal
+alpha group and the embedded SVG. Its SHA-256 was
+`b66ebedef633eecae19f55e42854cc83038737e72f2dfb50a45631e8eb4856d6`.
+The pressure workload used 75 individually positioned 136 × 90 masks,
+five per row with different radial gradients and 120 px row spacing.
+Its SHA-256 was
+`a4a1afea97b530b617586b294767619ce251e7791414932defc760c210029017`.
+Each run used the same precise wheel schedule, window, 2× backing
+scale, readiness checks and private profile as the row-reuse cohort.
+Automatic selection and Quartz alternated on the same executable for
+each pair. The endpoint was completed native frame installation.
+
+#### Initial radial selection
+
+The single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`c23f508609599e4574c0b1fec6d980ca9fd21032bcfb754e5dcc1b0fbb571afe`.
+The AVIF digest matched the row-reuse cohort. The first pressure
+diagnostic counted 1,560 luminance rasters and zero hits inside the
+input window. In the unprofiled pairs, throughput fell to 23.51
+scroll-changing publications per second in both pressure trials.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Over 16.67 ms | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 89695 | Mixed | Quartz | 41.06 | 23.588 / 26.454 / 28.675 | 54.28 | 120 / 90 | 55.192 / 18.292 | 100% | 7.24 |
+| 89792 | Mixed | Automatic | 44.29 | 21.696 / 25.687 / 27.660 | 57.29 | 120 / 92 | 49.202 / 17.050 | 100% | 7.14 |
+| 89896 | Mixed | Quartz | 40.75 | 24.020 / 27.174 / 30.170 | 51.05 | 120 / 95 | 57.474 / 17.738 | 100% | 7.53 |
+| 90008 | Mixed | Automatic | 45.37 | 20.942 / 25.501 / 25.995 | 57.43 | 120 / 94 | 48.617 / 16.626 | 100% | 7.25 |
+| 90115 | Radial only | Quartz | 51.45 | 18.798 / 22.319 / 23.386 | 54.67 | 120 / 112 | 45.566 / 0.114 | 96% | 7.15 |
+| 90185 | Radial only | Automatic | 50.06 | 19.368 / 25.035 / 26.411 | 55.67 | 120 / 107 | 44.198 / 0.117 | 96% | 6.81 |
+| 90481 | Radial only | Quartz | 51.41 | 18.729 / 23.286 / 25.239 | 56.12 | 120 / 109 | 44.277 / 0.110 | 95% | 6.75 |
+| 90549 | Radial only | Automatic | 54.91 | 17.565 / 21.356 / 32.489 | 55.38 | 120 / 118 | 40.731 / 0.128 | 70% | 6.45 |
+| 90720 | Pressure | Quartz | 33.71 | 28.701 / 32.544 / 32.964 | 59.88 | 120 / 67 | 64.470 / 0.262 | 100% | 6.11 |
+| 90805 | Pressure | Automatic | 23.51 | 41.507 / 45.575 / 47.180 | 57.11 | 120 / 49 | 86.267 / 17.668 | 100% | 5.94 |
+| 90925 | Pressure | Quartz | 34.10 | 28.418 / 32.368 / 34.054 | 58.80 | 120 / 69 | 65.204 / 0.105 | 100% | 5.70 |
+| 91010 | Pressure | Automatic | 23.51 | 40.739 / 44.407 / 48.358 | 55.96 | 120 / 50 | 87.978 / 36.418 | 100% | 5.57 |
+
+The trials ran from 03:14:34 to 03:15:54 UTC on November 18, 2026.
+Load is the starting one-minute average on the 18-CPU host. All
+browser and guard exits were zero.
+
+#### Radial selection with cache protection
+
+The final single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`4c25938bbb11f6a6fa7e665ffc6163b28d9999ab6e3e3f922fc973ff06c29209`.
+The AVIF digest matched the initial candidate. During input, separate
+diagnostics recorded 418 radial hits, including 110 cropped
+placements, and three rasters in the mixed workload (PID 18123).
+The pressure workload recorded 1,120 radial hits, 16 rasters and 1,174
+Quartz fallbacks (PID 17452).
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Over 16.67 ms | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 17572 | Pressure | Quartz | 32.60 | 29.271 / 34.036 / 35.715 | 59.69 | 120 / 65 | 65.289 / 16.742 | 100% | 8.42 |
+| 17686 | Pressure | Automatic | 35.66 | 26.931 / 31.454 / 33.339 | 59.77 | 120 / 71 | 56.277 / 16.892 | 100% | 8.30 |
+| 17793 | Pressure | Quartz | 32.22 | 29.344 / 33.515 / 63.052 | 59.91 | 120 / 64 | 65.200 / 18.718 | 100% | 8.12 |
+| 17897 | Pressure | Automatic | 34.43 | 27.847 / 32.699 / 36.707 | 59.39 | 120 / 69 | 62.598 / 17.343 | 100% | 7.95 |
+| 18290 | Mixed | Quartz | 37.34 | 25.457 / 30.492 / 50.336 | 54.86 | 120 / 81 | 59.302 / 20.051 | 100% | 7.86 |
+| 18437 | Mixed | Automatic | 42.32 | 22.547 / 27.363 / 28.755 | 52.47 | 120 / 96 | 48.450 / 16.756 | 100% | 7.71 |
+| 18599 | Mixed | Quartz | 38.58 | 24.728 / 29.268 / 31.015 | 54.65 | 120 / 84 | 54.919 / 19.384 | 100% | 7.73 |
+| 18745 | Mixed | Automatic | 42.08 | 22.665 / 27.050 / 47.592 | 54.43 | 120 / 92 | 55.006 / 18.164 | 100% | 7.67 |
+| 18937 | Radial only | Quartz | 41.94 | 23.026 / 26.617 / 44.260 | 53.66 | 120 / 93 | 64.275 / 16.491 | 100% | 7.38 |
+| 19346 | Radial only | Automatic | 52.00 | 18.701 / 22.936 / 24.895 | 53.81 | 120 / 115 | 44.649 / 0.128 | 90% | 7.75 |
+| 19522 | Radial only | Quartz | 49.44 | 19.366 / 24.698 / 25.876 | 56.03 | 120 / 105 | 47.950 / 0.095 | 100% | 7.47 |
+| 19660 | Radial only | Automatic | 53.64 | 17.877 / 22.210 / 33.538 | 55.03 | 120 / 116 | 45.430 / 0.118 | 80% | 7.27 |
+
+The final cohort ran from 03:22:41 to 03:23:54 UTC. All browser and
+guard exits were zero. Automatic throughput and p95 improved in both
+pressure pairs. The mixed and radial-only pairs also improved, with
+substantial variation between the radial-only Quartz controls.
+Sampled process-tree RSS peaked at 11,683,315,712 bytes for the build,
+396,869,632 bytes for the pressure job and 413,171,712 bytes for the
+mixed and radial-only job.
+
+The [macOS pixel suite](../tools/test_macos_svg_gradient_mask.py)
+pins backing scale and uses the same AppKit capture path throughout.
+The initial unpinned comparisons varied even on an unmasked orange
+marker. With fixed backing scale, both automatic and forced sampling
+were within two channel levels of Quartz at 2×. At 1×, the horizontal
+alpha mask differed by three levels in two columns. The suite checks
+the two-level bound at 2×, the analytic samples at 1×,
+and exact comparisons for row reuse, viewport edges and mutations.
+The 2× automatic scroll capture matched forced shared rasterization
+pixel for pixel. The capacity capture verified cache hits and Quartz
+fallbacks in the same document. Native pixel and layer checks and
+the Windows D3D11 V type check passed.
+
+### Reusing columns in vertical SVG alpha masks
+
+For a single vertical alpha gradient in a device-aligned rectangle,
+the shared raster shades one column with the existing CPU shader and
+copies each packed pixel across its covered row. This keeps the
+gradient's original vertical coordinates and leaves uncovered pixels
+clear. The existing aligned-mask default and bitmap size limit on
+macOS also apply to these masks.
+
+The [vertical mask fixture](../Tests/Browser/Native/svg-vertical-alpha-masks.html)
+covers both gradient directions, a gradient transform, partial fill
+opacity, and a mask path clipped horizontally by its region. Its
+SHA-256 was `c19ec971f0e234926c0c7aae97081d19c53d249cd2391d18507c0bb2ad4ffeff`.
+At 1× and 2×, scrolled macOS captures matched the full shared shader
+pixel for pixel. The largest 2× difference from Quartz was two channel
+levels. The X11 document capture also matched the full shader exactly.
+All 18 Linux browser checks and the Windows D3D11 V type check passed.
+
+The Linux ARM64 Clang `-O0` smoke build SHA-256 was
+`070b385041a9188b5b20e6f574f68150ba3e0c00fc23d139f498e48aa447d868`.
+Two alternating pairs used software OpenGL under Xvfb, fresh profiles
+and caches, an empty hidden bookmark bar and a one-second settle.
+The fixture had no scripts or external resources. The driver requested
+a 1024 × 600 document viewport and advanced 80 synthetic 42-pixel
+steps per trial. Command and scroll traces matched. The table measures
+replay inside those callbacks.
+
+| Trial | Raster | Median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full shader | 23.611 | 26.726 | 41.903 |
+| 2 | Column reuse | 13.027 | 15.625 | 31.355 |
+| 3 | Full shader | 24.652 | 27.680 | 44.341 |
+| 4 | Column reuse | 13.203 | 15.932 | 32.296 |
+
+The four-vCPU guest started the trials at one-minute loads of
+0.46, 0.50, 0.54 and 0.58 while the host compiled the macOS binary.
+The Linux build, browser checks, and replay cohort exited zero.
+
+The private macOS single-C V `-prod`, Clang `-O1` executable SHA-256
+was `00add4e3c4fa45cdd9afbd2fa439abddcc0cab10da28755ee3f9398967eb0128`.
+The AVIF library matched the horizontal-mask cohort. A separate
+diagnostic in PID 53713 recorded 692 vertical strip rasters during
+the input window with the cache disabled.
+
+The macOS trials used the same private profile, 1024 × 600 viewport
+at 2× and native wheel protocol as the preceding cohorts. Each
+process settled for one second after the fixture title matched.
+The script-free local fixture required no external resources. Each
+pair ran 120 four-pixel inputs at a requested 60 Hz with reversal
+after 60 inputs. The endpoint was completed native frame installation
+after outer view paint, measured over the first-to-last input window.
+Uncached trials disabled the shared mask cache. The full shader and
+column trials both forced shared selection to isolate the shading
+change. Diagnostics were disabled during timing.
+
+| PID | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 53764 | Quartz | 33.44 | 28.662 / 34.424 / 37.263 | 56.84 | 120 / 70 | 61.865 / 16.837 | 6.89 |
+| 53893 | Automatic | 38.49 | 25.013 / 31.096 / 32.511 | 56.54 | 120 / 81 | 57.531 / 19.251 | 6.74 |
+| 54084 | Quartz | 35.75 | 26.943 / 31.995 / 33.457 | 57.48 | 120 / 74 | 61.315 / 0.103 | 6.68 |
+| 54162 | Automatic | 39.78 | 24.168 / 28.635 / 29.979 | 55.70 | 120 / 85 | 54.831 / 19.322 | 6.23 |
+| 54228 | Full shader, uncached | 28.40 | 34.393 / 38.965 / 39.765 | 55.41 | 120 / 61 | 69.271 / 18.959 | 5.97 |
+| 54348 | Column, uncached | 35.95 | 26.768 / 32.737 / 52.525 | 54.85 | 120 / 78 | 57.597 / 18.082 | 6.13 |
+| 54444 | Full shader, uncached | 31.29 | 31.416 / 35.909 / 37.197 | 58.18 | 120 / 64 | 65.895 / 0.089 | 6.63 |
+| 54550 | Column, uncached | 36.56 | 26.540 / 30.940 / 31.460 | 56.50 | 120 / 77 | 60.663 / 17.941 | 6.82 |
+| 55235 | Quartz, uncached | 35.85 | 26.965 / 31.205 / 50.105 | 56.14 | 120 / 76 | 61.021 / 18.240 | 7.14 |
+| 55288 | Automatic, uncached | 38.66 | 25.285 / 29.721 / 31.037 | 58.98 | 120 / 78 | 54.758 / 17.177 | 6.89 |
+| 55342 | Quartz, uncached | 35.26 | 27.234 / 32.654 / 33.395 | 58.28 | 120 / 72 | 61.307 / 16.636 | 6.50 |
+| 55432 | Automatic, uncached | 35.99 | 26.454 / 33.102 / 34.078 | 54.90 | 120 / 78 | 58.707 / 18.101 | 6.30 |
+
+The cohorts ran from 03:36:01 to 03:37:18 UTC on November 18, 2026.
+Load is the starting one-minute average on the 18-CPU host. All
+measured intervals exceeded 16.67 ms. Automatic selection improved
+throughput in all four Quartz pairs. The uncached Quartz pairs had
+mixed p95 results. Column reuse improved throughput and p95 in both
+full shader pairs. All browser and guard exits were zero. Sampled
+process-tree RSS peaked at 11,019,010,048 bytes during the build,
+397,901,824 bytes in the first timing job and 392,527,872 bytes
+in the uncached Quartz comparison.
+
+### Reusing strips in linear SVG luminance masks
+
+The shared raster also uses one shaded row or column for aligned
+rectangular luminance masks with a single sRGB linear gradient.
+The strip retains premultiplied RGB, including stop alpha and fill
+opacity. The luminance conversion uses the same integer channel
+weights as the full shader. macOS uses the existing automatic
+selection and the 128 Ki pixel limit.
+
+The [luminance fixture](../Tests/Browser/Native/svg-linear-luminance-masks.html)
+uses an opaque red–green–blue horizontal gradient and a transformed
+vertical gradient with changing stop alpha and partial fill opacity.
+The fixture SHA-256 was
+`263051a227a5964cd27fe855f4e2d00a8e2c6a262958706aaa774b2b4f614f27`.
+The published binary at `e720fb9a8`, SHA-256
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`,
+confirmed the earlier full shared shader and Quartz were within
+two channel levels across both masks at 1× and 2×. All four fresh
+captures exited zero with the pinned fixture and library.
+
+The Linux X11 captures matched the full shader pixel for pixel.
+All 19 browser checks and the Windows D3D11 V type check passed.
+The Linux ARM64 Clang `-O0` executable SHA-256 was
+`dafeb83d9ca4314ecf40514c6760c0d7671a6bedae8d2f5339892b603338ffca`.
+The synthetic Linux cohort used the same Xvfb software OpenGL
+protocol as the vertical-alpha test. Each process used a fresh cache
+and profile, disabled scripts, and requested a 1024 × 600 viewport.
+Two pairs alternated the full shader and strip reuse, with matching
+traces for all 80 synthetic 42-pixel steps. A separate diagnostic
+exercised both strip directions.
+
+| Trial | Raster | Replay median (ms) | p95 (ms) | Max (ms) |
+| --- | --- | ---: | ---: | ---: |
+| 1 | Full shader | 31.800 | 36.355 | 50.191 |
+| 2 | Strip reuse | 20.183 | 22.935 | 37.913 |
+| 3 | Full shader | 34.515 | 39.111 | 48.450 |
+| 4 | Strip reuse | 21.008 | 24.531 | 38.599 |
+
+Starting one-minute guest loads were 0.58, 0.61, 0.56 and 0.52 on
+four vCPUs, while the host compiled the macOS candidate. The Linux
+build, browser suite and synthetic replay guards exited zero.
+
+The 30-capture macOS suite compared the automatic strip path with
+the full shader at 1× and 2×. Both matched exactly. The 2× Quartz
+comparison differed by at most two channel levels. With
+`color-interpolation="linearRGB"`, the automatic path selected Quartz
+and matched the explicit Quartz control pixel for pixel.
+
+The private macOS single-C V `-prod`, Clang `-O1` executable SHA-256
+was `1cb9eb53debe18625616ee7946bb087953c191c58620c50bdde376719fb00500`.
+It used the same AVIF library as the published comparison. In a
+separate uncached diagnostic, PID 79286 recorded 348 horizontal
+strips and 345 vertical strips for 693 luminance rasters within
+the input window.
+
+The macOS trials used the same profile, viewport, settle and
+precise wheel settings as the vertical-alpha cohort. The endpoint
+was completed native frame installation after outer view paint.
+The uncached pairs disabled the shared mask cache. The strip and
+full shader pairs also forced shared selection to isolate the
+raster change. The timing launches disabled diagnostics and
+preserved binary, library, fixture and driver hashes.
+
+| PID | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 79374 | Quartz | 34.08 | 28.212 / 32.786 / 35.701 | 57.94 | 120 / 70 | 65.415 / 16.433 | 6.02 |
+| 79499 | Automatic | 38.17 | 25.514 / 30.205 / 33.120 | 57.50 | 120 / 79 | 57.620 / 17.498 | 5.86 |
+| 79599 | Quartz | 32.16 | 29.864 / 35.548 / 40.242 | 57.98 | 120 / 66 | 66.084 / 16.907 | 5.79 |
+| 79757 | Automatic | 35.64 | 27.440 / 32.488 / 33.535 | 54.37 | 120 / 78 | 60.210 / 17.548 | 5.89 |
+| 79929 | Full shader, uncached | 29.56 | 32.854 / 36.736 / 37.402 | 57.66 | 120 / 61 | 71.646 / 20.434 | 6.28 |
+| 80138 | Strip, uncached | 36.54 | 26.721 / 31.683 / 32.400 | 55.74 | 120 / 78 | 59.857 / 0.101 | 6.18 |
+| 80298 | Full shader, uncached | 29.37 | 32.324 / 37.568 / 67.637 | 57.29 | 120 / 61 | 71.324 / 0.115 | 6.16 |
+| 80446 | Strip, uncached | 35.21 | 27.331 / 32.653 / 33.486 | 57.39 | 120 / 73 | 61.038 / 16.520 | 6.39 |
+| 80589 | Quartz, uncached | 32.31 | 29.376 / 34.623 / 36.072 | 53.40 | 120 / 72 | 65.242 / 16.428 | 6.68 |
+| 80744 | Automatic, uncached | 36.81 | 26.305 / 32.499 / 33.518 | 56.16 | 120 / 78 | 60.793 / 16.905 | 6.70 |
+| 80938 | Quartz, uncached | 35.65 | 27.321 / 32.134 / 32.957 | 58.93 | 120 / 72 | 64.319 / 0.089 | 6.89 |
+| 81101 | Automatic, uncached | 37.25 | 25.664 / 31.289 / 47.322 | 56.82 | 120 / 78 | 60.479 / 17.333 | 6.82 |
+
+The timed cohort ran from 03:45:57 to 03:47:02 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+All intervals exceeded 16.67 ms. Scroll publication throughput and
+p95 improved in all six pairs on this fixture. The second uncached
+automatic trial had a longer maximum interval than its Quartz
+control. All browser and guard exits were zero. Sampled process-tree
+RSS peaked at 11,709,595,648 bytes for the build and 400,637,952
+bytes for the diagnostic and timing job.
+
+### Caching diagonal SVG gradient masks on macOS
+
+Automatic selection uses the shared linear shader for a single
+diagonal gradient in a device-aligned rectangle when the complete
+bitmap fits the existing cache limit. It reuses the raster across
+scroll positions, including at viewport edges. Admission protects
+rasters used by the current or preceding frame. An unavailable cache
+slot or a disabled shared cache sends the mask through Quartz.
+The strip rasterizer still handles axis-aligned fades.
+
+The [diagonal fixture](../Tests/Browser/Native/svg-diagonal-gradient-masks.html)
+has a diagonal alpha mask and a transformed sRGB luminance mask.
+Its SHA-256 was
+`3f798c17a0915cd23fe0a16bf8c24742b52689247667227b2c22f96ae11da7c5`.
+The published binary at `e720fb9a8` and AVIF library digests
+matched the luminance cohort. Fresh 1× and 2× captures in PIDs
+89882, 89902, 89923 and 89961 compared Quartz with the forced full
+shader. Each mask stayed within two channel levels of Quartz and
+all launches exited zero.
+
+The candidate suite initially checked a 42-pixel offset, which
+did not exercise cropped cache hits for both masks. At a 132-pixel
+offset both masks recorded cropped hits. The automatic captures
+matched uncached shared shader output pixel for pixel at 1× and
+2×. Disabling the shared cache in automatic mode produced the
+same pixels as Quartz. The 2× Quartz comparison differed from the
+cached path by at most two channel levels. All 37 candidate macOS
+captures, all 19 Linux browser checks and the Windows D3D11 type
+check passed.
+
+The pressure fixture generated 75 different diagonal gradients,
+with five 136 × 90 mask regions per row and 120 px row spacing.
+Its SHA-256 was
+`3017bbb7c1cbeb4f9ddb4adec577dad7d168fd1667d94c6ac08dfd7b7ea9a6c9`.
+The macOS timing cohorts used the preceding wheel protocol with
+a 1024 × 600 document viewport at 2×. Each process used a fresh
+cache and profile with an empty hidden bookmark bar. The script-free
+local files required no external resources. Timing began after one
+second of settle after the title matched. Each trial used 120
+four-pixel wheel inputs at a requested 60 Hz with one reversal,
+and counted scroll-changing native frame installations after outer
+view paint over the input window. The private single-C V `-prod`,
+Clang `-O1` executable SHA-256 was
+`fb5330bfacd52e673ad0a41e7d942231482d5344ebfcced76b2f5da1dc7358f0`.
+Its AVIF library matched the published comparison.
+
+Separate diagnostics counted 740 hits, 199 cropped placements
+and six rasters in the diagonal fixture (PID 11204). The
+pressure fixture recorded 1,216 hits, 203 cropped placements,
+16 rasters and 1,263 Quartz fallbacks (PID 11577).
+The timing launches disabled diagnostics and alternated Quartz
+with automatic selection on the same binary for each fixture.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 11329 | Diagonal | Quartz | 36.48 | 26.220 / 31.648 / 32.890 | 57.89 | 120 / 75 | 63.448 / 0.081 | 5.56 |
+| 11385 | Diagonal | Automatic | 39.78 | 24.051 / 28.161 / 32.137 | 57.04 | 120 / 83 | 54.639 / 19.523 | 5.44 |
+| 11453 | Diagonal | Quartz | 36.39 | 26.354 / 32.048 / 32.769 | 56.24 | 120 / 77 | 59.011 / 18.430 | 5.40 |
+| 11506 | Diagonal | Automatic | 40.56 | 23.816 / 28.299 / 29.360 | 56.78 | 120 / 85 | 54.640 / 19.252 | 5.61 |
+| 11676 | Pressure | Quartz | 34.21 | 28.481 / 31.848 / 37.230 | 59.87 | 120 / 68 | 65.978 / 0.199 | 5.52 |
+| 11799 | Pressure | Automatic | 36.78 | 26.267 / 29.599 / 32.453 | 59.96 | 120 / 73 | 64.408 / 0.235 | 6.36 |
+| 11869 | Pressure | Quartz | 33.14 | 28.372 / 32.845 / 62.509 | 59.76 | 120 / 66 | 72.754 / 17.042 | 7.13 |
+| 11984 | Pressure | Automatic | 36.68 | 26.062 / 31.140 / 56.864 | 59.79 | 120 / 73 | 59.824 / 0.241 | 6.96 |
+
+The timed cohort ran from 03:57:37 to 03:58:25 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput, median and p95 improved in all four pairs. All measured
+intervals exceeded 16.67 ms. The timing browser and guard exits were
+zero. Sampled process-tree RSS peaked at 11,682,955,264 bytes
+for the build and 398,196,736 bytes for the diagnostic and timing job.
+
+### Caching SVG gradient masks with group opacity on macOS
+
+Automatic selection can render an isolated opacity group with one
+or two pixel-aligned rectangular fills, including a supported
+gradient, in the shared rasterizer. It composites the fills before
+applying the group opacity and retains the complete raster within
+the existing 128 Ki pixel limit. Cache admission protects rasters
+used by the current or preceding frame. Nested groups and masks
+without an available cache slot use Quartz.
+
+The [group opacity fixture](../Tests/Browser/Native/svg-gradient-mask-opacity.html)
+combines an alpha gradient with an overlapping solid fill and
+an sRGB luminance gradient with a red overlay. Its SHA-256 was
+`c4768659c273d4ecaa356425dd16ee6070fd102805a8951d54de60cabfd2572d`.
+The published binary at `e720fb9a8` and AVIF library digests
+matched the diagonal cohort. Fresh PIDs 22784, 22842, 22859
+and 23125 compared forced shared rasterization with Quartz.
+The document differed by at most two channel levels at 1×
+and one at 2×. Native mask conversion and layer tests passed.
+
+The pressure fixture generated 75 single-fill groups with
+different diagonal gradients in 136 × 90 mask regions.
+Its SHA-256 was
+`b30caf8f441c3385143cbbc9e04e1978b4006ca08d5ae499c5d54d571f84f385`.
+The macOS timing cohorts used the preceding precise wheel
+protocol with the 1024 × 600 document viewport at 2×, a fresh
+cache and private profile per process, and one second of settle
+after document-title readiness. Each script-free local fixture
+received 120 four-pixel inputs at a requested 60 Hz, reversing
+after 60. The endpoint was completed native frame installation
+after outer view paint, measured over the first-to-last input.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256
+was `27b94e043e8abf7c13e0f1cf71de2386f48c6a977fc79e35d5ede7607c89df48`.
+Its AVIF library matched the published comparison. All 46
+macOS captures passed. At the 132-pixel offset the candidate
+used cropped cache hits and matched the uncached shared shader
+exactly at 1× and 2×. On the half-opacity mask, both individual
+fills and their overlap produced `(128, 128, 255)`. The 2× Quartz
+comparison differed by at most one channel level. Disabling the
+shared cache and adding a nested opacity group both matched the
+explicit Quartz control pixel for pixel.
+
+The separate grouped diagnostic in PID 38200 recorded 608 cache
+hits, including 161 cropped placements, and six rasters during
+input. With cache pressure, PID 39029 recorded 1,104 hits,
+188 cropped placements, 16 rasters and 1,165 Quartz fallbacks.
+The timing launches disabled diagnostics and alternated Quartz
+with automatic selection on the same pinned binary.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 38366 | Two fills | Quartz | 27.60 | 35.279 / 39.689 / 40.510 | 55.67 | 120 / 59 | 76.625 / 17.717 | 7.75 |
+| 38531 | Two fills | Automatic | 35.42 | 27.355 / 33.101 / 35.895 | 56.95 | 120 / 74 | 60.525 / 0.100 | 7.93 |
+| 38689 | Two fills | Quartz | 26.88 | 36.130 / 41.650 / 42.520 | 57.12 | 120 / 56 | 76.629 / 0.259 | 7.54 |
+| 38880 | Two fills | Automatic | 31.75 | 29.763 / 35.617 / 61.855 | 56.39 | 120 / 67 | 67.398 / 19.015 | 7.44 |
+| 39198 | Pressure | Quartz | 30.72 | 31.588 / 35.081 / 35.995 | 58.97 | 120 / 62 | 69.623 / 0.106 | 7.27 |
+| 39314 | Pressure | Automatic | 35.46 | 27.302 / 31.447 / 32.747 | 59.44 | 120 / 71 | 65.485 / 0.195 | 6.93 |
+| 39412 | Pressure | Quartz | 29.81 | 31.671 / 36.749 / 67.294 | 59.13 | 120 / 60 | 73.174 / 16.602 | 6.78 |
+| 39511 | Pressure | Automatic | 34.32 | 28.050 / 33.047 / 34.950 | 59.19 | 120 / 69 | 62.772 / 0.098 | 6.71 |
+
+The timed cohort ran from 04:06:29 to 04:07:17 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput, median and p95 improved in all four pairs. The second
+two-fill automatic trial had a longer maximum interval than its
+Quartz control. All measured intervals exceeded 16.67 ms. Browser
+and guard exits were zero. Sampled process-tree RSS peaked at
+11,680,628,736 bytes for the build and 402,440,192 bytes for
+the diagnostic and timing job.
+
+### Caching solid SVG rectangle masks on macOS
+
+Automatic selection can reuse the shared raster of a single solid
+fill in a pixel-aligned rectangular path. It uses the same alpha
+and luminance conversion as the portable renderer. The complete
+bitmap must fit the existing 128 Ki pixel limit, and admission
+protects rasters used in the current or preceding frame. Quartz
+handles masks with fractional edges or no available cache slot.
+
+The [solid rectangle fixture](../Tests/Browser/Native/svg-solid-rectangle-masks.html)
+checks a black half-opacity alpha mask and a red three-quarter-opacity
+luminance mask. Its SHA-256 was
+`07b57389db3bc434b3c6899b28a1213630aba27a330399b034cef0bc89d2975d`.
+The published binary at `e720fb9a8` and its AVIF library matched
+the grouped-mask cohort. Fresh Quartz captures in PIDs 42703
+and 42746 produced `(127, 127, 255)` and `(255, 215, 215)`
+on the two fills at both 1× and 2×.
+
+The cache-pressure fixture used 75 partially opaque solid masks
+with distinct colors in 136 × 90 regions. Its SHA-256 was
+`57792682cba8436d07bc79bbe02ee038fcf179d62541b72136af4f299ee3ffdc`.
+The local fixtures had no scripts or external resources. The
+macOS timing cohorts used the preceding precise wheel protocol
+with a 1024 × 600 document viewport at 2×. Each run started with
+a fresh cache and private profile and settled for one second
+after the document title matched. The 120 four-pixel inputs
+reversed halfway at a requested 60 Hz. The endpoint was completed
+native frame installation after outer view paint, measured over
+the first-to-last input window.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`ae117f01b28cda83bc6e623e4b38b80c68deba924c9a2412ff4cab5cbb0b4253`.
+Its AVIF library matched the published comparison. The 55-capture
+macOS suite recorded cropped cache hits in both mask modes
+and matched the uncached shared result exactly at 1× and 2×.
+The 2× solid rectangle capture matched Quartz pixel for pixel.
+Tests with fractional path edges and with the shared cache
+disabled verified the Quartz fallback. The native mask conversion
+and layer checks passed.
+
+The separate diagnostic in PID 62073 recorded 682 cache hits,
+including 183 cropped placements, and six rasters during
+input. Under pressure, PID 62421 recorded 752 hits, 124 cropped
+placements, 16 rasters and 797 Quartz fallbacks. The timing
+launches disabled diagnostics and alternated Quartz with automatic
+selection on the same pinned binary.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 62146 | Solid | Quartz | 30.05 | 31.864 / 37.685 / 63.915 | 56.76 | 120 / 63 | 69.414 / 16.595 | 6.64 |
+| 62210 | Solid | Automatic | 36.80 | 26.092 / 31.405 / 48.858 | 58.40 | 120 / 75 | 59.545 / 0.095 | 6.35 |
+| 62264 | Solid | Quartz | 31.73 | 30.847 / 35.175 / 37.414 | 55.53 | 120 / 68 | 71.998 / 0.093 | 6.24 |
+| 62364 | Solid | Automatic | 36.42 | 26.659 / 31.426 / 32.843 | 57.79 | 120 / 75 | 61.418 / 16.565 | 6.14 |
+| 62536 | Pressure | Quartz | 20.39 | 46.346 / 50.915 / 52.348 | 57.77 | 120 / 42 | 101.321 / 32.979 | 5.96 |
+| 62646 | Pressure | Automatic | 23.11 | 41.368 / 45.778 / 47.003 | 59.78 | 120 / 46 | 89.129 / 32.843 | 5.89 |
+| 62807 | Pressure | Quartz | 21.29 | 44.564 / 47.993 / 49.653 | 58.91 | 120 / 43 | 103.292 / 33.146 | 5.90 |
+| 62907 | Pressure | Automatic | 23.27 | 40.421 / 44.452 / 89.715 | 57.68 | 120 / 48 | 88.067 / 16.351 | 5.74 |
+
+The timed cohort ran from 04:15:01 to 04:15:49 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput, median and p95 improved in all four pairs. The second
+pressure trial had a longer maximum interval with automatic
+selection. All measured intervals exceeded 16.67 ms. Browser and
+guard exits were zero. Sampled process-tree RSS peaked at
+11,680,612,352 bytes for the build and 397,950,976 bytes for
+the diagnostic and timing job.
+
+### Caching overlapping solid SVG mask fills on macOS
+
+The bounded solid-mask path also accepts two pixel-aligned
+rectangular fills. The shared raster composites them in paint
+order before converting the premultiplied result to alpha or
+luminance. Both paths must be aligned, and the complete bitmap
+uses the existing cache limit and admission policy.
+
+The [overlap fixture](../Tests/Browser/Native/svg-overlapping-solid-mask-fills.html)
+has two half-opacity alpha fills and overlapping red and green
+luminance fills. Its SHA-256 was
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b`.
+The pinned published binary and AVIF library matched the preceding
+solid-rectangle cohort. The Quartz captures in PIDs 82279 and
+82353 at 1× and 2× gave `(127, 127, 255)` on the individual
+alpha fills and `(63, 63, 255)` in their overlap. The red-backed
+luminance overlap was `(255, 150, 150)`.
+
+The pressure fixture placed two overlapping translucent solid
+fills in each of 75 136 × 90 mask regions, with different colors
+across masks. Its SHA-256 was
+`85d29b8571a0779f730498d19b291a40fce26b08378e6fced5b7bd4a2aa8e239`.
+The macOS comparisons used the preceding precise wheel protocol
+with a 1024 × 600 document viewport at 2×, a fresh cache and
+private profile for each process, and one second of settle
+after the document title matched. Each local fixture ran without
+scripts or external resources. The 120 four-pixel wheel inputs
+reversed after 60 inputs at a requested 60 Hz. The counted endpoint
+was completed native frame installation over the first-to-last
+input window.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256
+was `992e30d529904cc486c03ed75ab152ad25f1079c9f708b765663bdc2a85f18a1`.
+Its AVIF library matched the published comparison. The 66-capture
+macOS suite verified cropped cache hits and exact matches with the
+forced uncached shared path at 1× and 2×. The 2× overlap fixture
+matched Quartz pixel for pixel. A fractional translation of the
+second fill and a disabled shared cache both selected Quartz.
+Reordering the live luminance fills produced a new raster key and
+the same `(255, 183, 183)` overlap as the uncached render and
+published Quartz control. Native mask conversion and layer tests
+also passed.
+
+The separate overlap diagnostic in PID 90124 recorded 609 cache
+hits, including 164 cropped placements, and six rasters during
+input. The pressure diagnostic in PID 90642 recorded 608 hits,
+99 cropped placements, 16 rasters and 651 Quartz fallbacks.
+Timing launches disabled diagnostics and alternated Quartz with
+automatic selection on the same pinned binary.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 90223 | Overlap | Quartz | 25.07 | 38.119 / 42.680 / 74.868 | 57.38 | 120 / 52 | 83.235 / 18.563 | 4.57 |
+| 90327 | Overlap | Automatic | 32.67 | 29.232 / 34.519 / 54.838 | 58.90 | 120 / 66 | 67.248 / 16.557 | 4.55 |
+| 90430 | Overlap | Quartz | 26.19 | 37.101 / 42.006 / 42.848 | 55.66 | 120 / 56 | 85.793 / 0.093 | 4.35 |
+| 90543 | Overlap | Automatic | 33.22 | 28.769 / 34.333 / 35.487 | 59.00 | 120 / 67 | 70.608 / 18.312 | 4.32 |
+| 90744 | Pressure | Quartz | 14.81 | 63.941 / 68.395 / 69.529 | 58.76 | 120 / 30 | 141.998 / 16.956 | 4.28 |
+| 90848 | Pressure | Automatic | 18.36 | 52.160 / 57.135 / 58.095 | 56.03 | 120 / 39 | 119.605 / 0.087 | 4.17 |
+| 90952 | Pressure | Quartz | 13.84 | 70.365 / 76.187 / 77.499 | 58.82 | 120 / 28 | 140.011 / 17.234 | 4.00 |
+| 91152 | Pressure | Automatic | 16.72 | 56.453 / 59.734 / 61.026 | 58.51 | 120 / 34 | 117.386 / 50.691 | 3.92 |
+
+The timed cohort ran from 04:24:25 to 04:25:13 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput and all three interval statistics improved in all four
+pairs. All measured intervals exceeded 16.67 ms. Browser and guard
+exits were zero. Sampled process-tree RSS peaked at 11,681,857,536
+bytes for the build and 398,295,040 bytes for the diagnostic and
+timing job.
+
+### Caching nested opacity in SVG gradient masks on macOS
+
+Automatic selection accepts a stack of up to four opacity
+groups enclosing the same one or two pixel-aligned rectangular
+fills, including a supported gradient. The shared raster
+composites the fills, then restores each group from the inside
+out. The complete raster fits the existing 128 Ki pixel limit
+and uses the same admission policy as the single opacity group.
+
+The test generates two- and four-layer variants of the
+[group opacity fixture](../Tests/Browser/Native/svg-gradient-mask-opacity.html).
+Their SHA-256 digests were
+`e079f8edabba482e455ea5aebb5d380b850464e871d15147c96d5fae3ddeca62`
+and `acf9d5a545bc8a7ebc682f6a1daea81ed4ba4725beb1c2a082d675f1b621e924`.
+The published `e720fb9a8` executable and AVIF library matched the
+preceding cohort. Eight fresh captures compared the forced shared
+path with Quartz at 1× and 2×. Both variants stayed within two
+channel levels of Quartz. The overlap and individual alpha fills
+produced `(160, 160, 255)` with two layers and `(202, 202, 255)`
+with four layers in the shared captures.
+
+The pressure fixture used 75 different gradients, each enclosed
+by four opacity groups in a 136 × 90 mask region. Its SHA-256 was
+`0492aa6de8ed826f5fc3c61732707c66a9e32cf2399b15c3e30bf1ff4ca324aa`.
+The local fixtures had no scripts or external resources. The
+macOS trials used the preceding precise wheel protocol at a
+1024 × 600 viewport and 2× backing scale, with fresh processes,
+caches and private profiles and one second of settle after the
+document title matched. Each launch received 120 four-pixel
+inputs at a requested 60 Hz, reversing after 60. The endpoint
+was completed native frame installation after outer view paint
+over the first-to-last input window.
+
+The private single-C V `-prod`, Clang `-O1` executable SHA-256 was
+`e282cf6668c096955ca53a4f7a5d4990087e7720dbecde43739a949f36bbcb1c`.
+All 80 macOS captures passed. The two- and four-layer fixtures
+matched the forced uncached shared render pixel for pixel at
+1× and 2×, with cropped cache hits in both mask modes.
+The four-layer pressure capture stayed within two channel levels
+of Quartz while using both cached rasters and Quartz fallbacks.
+Five nested groups and disabling the shared cache both matched
+the explicit Quartz control exactly. Native conversion and
+layer checks passed.
+
+The first diagnostic, PID 14148, exited zero. A production publish
+replaced AVIF and adblock helper files during that run. Both digests
+stayed the same and both file identities changed. The driver
+rejected the run and the guard exited 1. The subsequent cohort
+used the new published file identities with the same private
+browser executable.
+
+The valid nested diagnostic in PID 15556 recorded 659 cache hits,
+including 177 cropped placements, and six rasters during input.
+With four-layer masks under pressure, PID 16092 recorded 928
+hits, 150 cropped placements, 16 rasters and 971 Quartz fallbacks.
+The timing launches disabled diagnostics and alternated Quartz
+with automatic selection on the same pinned browser.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 15697 | Two layers | Quartz | 26.13 | 36.325 / 42.588 / 71.553 | 57.59 | 120 / 54 | 80.781 / 0.129 | 5.08 |
+| 15791 | Two layers | Automatic | 33.24 | 28.518 / 34.321 / 52.908 | 57.34 | 120 / 69 | 63.529 / 17.554 | 5.23 |
+| 15899 | Two layers | Quartz | 26.59 | 36.569 / 42.306 / 43.270 | 56.51 | 120 / 56 | 76.603 / 0.122 | 5.04 |
+| 15996 | Two layers | Automatic | 34.89 | 27.586 / 32.057 / 32.750 | 58.48 | 120 / 71 | 59.650 / 16.387 | 5.04 |
+| 16219 | Four layers, pressure | Quartz | 21.34 | 44.835 / 49.635 / 53.384 | 59.06 | 120 / 43 | 95.851 / 17.103 | 5.11 |
+| 16346 | Four layers, pressure | Automatic | 27.07 | 35.329 / 42.285 / 48.696 | 56.51 | 120 / 57 | 74.343 / 16.512 | 5.02 |
+| 16439 | Four layers, pressure | Quartz | 22.99 | 40.896 / 44.888 / 86.509 | 58.21 | 120 / 47 | 93.940 / 17.885 | 5.02 |
+| 16556 | Four layers, pressure | Automatic | 29.11 | 32.569 / 37.489 / 71.423 | 57.74 | 120 / 60 | 68.845 / 18.128 | 4.94 |
+
+The accepted cohort ran from 04:34:10 to 04:34:59 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host.
+Throughput and all three interval statistics improved in all four
+pairs. All measured intervals exceeded 16.67 ms. Browser and guard
+exits in this cohort were zero. Sampled process-tree RSS peaked at
+11,685,937,152 bytes for the build and 405,733,376 bytes for the
+accepted diagnostic and timing job.
+
+### Caching solid SVG opacity groups on macOS
+
+Automatic shared rasterization accepts nested and sibling opacity groups
+with up to six pixel-aligned solid rectangle fills and 12 paint operations.
+Fills outside the groups participate in the same ordered replay. The existing
+four-layer and 128 Ki-pixel limits apply. Cache pressure, fractional edges and
+operation counts beyond the limit can select Quartz.
+
+The published executable `4ac49eb9690c121587fd4efd8f859f2cf0e2762013861238f07bb91a05547540`
+used Quartz for both masks in the [opacity fixture](../Tests/Browser/Native/svg-mask-opacity.html)
+in fresh PID 36794. Its source SHA-256 was
+`2ca5b13ae5723502fa64a1661cb1ea2b3eb129e2508c048cd6fa1cf6e429ea51`.
+The private single-unit V `-prod`, Clang `-O1` executable was
+`a64f3f3c0250ca1863b62a2a78a8c863de4a0bb94f2e54807a6f37c58fc6f77d`.
+All 92 macOS captures passed on that executable. The grouped alpha and
+luminance masks matched uncached shared replay exactly at 1× and 2×, including
+cropped viewport hits. The largest difference from Quartz at 2× was one
+channel level. A mixed cache and Quartz capture with 30 masks stayed within
+two channel levels. Fractional fills, excessive operation counts and disabled
+caching matched the explicit Quartz control exactly. Native pixel conversion
+and layer tests passed.
+
+Three local, script-free fixtures ran at 1024 × 600 and 2× after a one-second
+title-matched settle. Each fresh process used a private cache and profile.
+`tools/measure_precise_scroll.py` sent 120 four-pixel precise inputs at a
+requested 60 Hz, reversing after 60. Each pair used the same executable and
+changed `VOX_SHARED_SVG_MASK_RASTER` from `0` to automatic. The throughput
+endpoint was completed native frame installation after outer view paint over
+the first-to-last input window.
+
+The 30-mask pressure fixture reached its 240 CSS-pixel scroll limit before
+the input reversed. The 75-mask fixture used the same mask geometry with more
+rows. Its four timed runs reached 495–503.5 CSS pixels, below the 1320 CSS-pixel
+scroll limit. The short and tall pressure fixture SHA-256 values were
+`157c3c6e8973e910b18a2a7dad820b5e8bf0f9f9069ea7f470566a8d5b45a679` and
+`5cc0a84a101caee62df2bd8f68ddce774e73e6cd7017a8eef3ef7065b0a8e0bf`.
+
+Separate instrumented launches counted cache hits, cropped hits, fresh rasters
+and Quartz fallbacks during input. The regular fixture, PID 45276, logged
+562 / 130 / 6 / 0. The short pressure fixture, PID 46589, logged
+406 / 40 / 21 / 337. The tall pressure fixture, PID 56008, logged
+400 / 57 / 16 / 464. All three browser exits were zero. The first diagnostic's
+wrapper misread the start record and returned one after the probe had passed.
+The corrected wrapper read that receipt and the timings used diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 46798 | Regular | Quartz | 20.13 | 47.695 / 52.029 / 53.216 | 58.43 | 120 / 41 | 103.926 / 0.281 | 4.74 |
+| 46989 | Regular | Automatic | 29.61 | 32.397 / 36.453 / 62.776 | 55.07 | 120 / 64 | 73.265 / 17.677 | 4.76 |
+| 47178 | Regular | Quartz | 20.07 | 48.161 / 52.312 / 53.115 | 56.87 | 120 / 42 | 108.167 / 0.131 | 4.94 |
+| 47364 | Regular | Automatic | 30.55 | 31.699 / 36.051 / 38.416 | 58.63 | 120 / 62 | 72.363 / 0.137 | 5.03 |
+| 47551 | Short pressure | Quartz | 7.93 | 64.960 / 550.287 / 550.287 | 59.00 | 120 / 16 | 141.221 / 427.100 | 5.26 |
+| 47736 | Short pressure | Automatic | 11.61 | 44.792 / 50.063 / 516.180 | 57.54 | 120 / 24 | 98.124 / 470.272 | 5.56 |
+| 47866 | Short pressure | Quartz | 8.36 | 64.633 / 499.224 / 499.224 | 58.52 | 120 / 17 | 138.815 / 419.979 | 5.28 |
+| 48048 | Short pressure | Automatic | 11.51 | 44.866 / 50.015 / 546.007 | 57.07 | 120 / 24 | 96.273 / 469.368 | 5.50 |
+| 56176 | Tall pressure | Quartz | 9.35 | 102.302 / 112.865 / 112.865 | 58.53 | 120 / 19 | 200.446 / 0.188 | 7.38 |
+| 59924 | Tall pressure | Automatic | 12.32 | 75.733 / 82.055 / 83.359 | 58.64 | 120 / 25 | 161.172 / 49.293 | 7.27 |
+| 62413 | Tall pressure | Quartz | 9.89 | 95.246 / 103.443 / 106.110 | 58.83 | 120 / 20 | 200.657 / 0.107 | 7.57 |
+| 62494 | Tall pressure | Automatic | 13.00 | 72.524 / 79.231 / 79.877 | 59.51 | 120 / 26 | 150.543 / 17.084 | 7.44 |
+
+The cohorts ran 04:46:07–04:46:50 and 04:47:37–04:47:57 UTC on November 18,
+2026. Load is the starting one-minute average on the 18-CPU host. Both
+fixtures without a scroll clamp improved throughput, median and p95 in both
+pairs. The maximum interval increased in one regular pair and in one short
+pressure pair. All measured intervals exceeded 16.67 ms. All timed browser
+and guard exits were zero. The C generation and compile jobs peaked at
+8,184,463,360 and 7,241,416,704 bytes of sampled process-tree RSS. The
+first compile command failed when it passed framework flags as single
+arguments. The corrected command used the same generated C. The screenshot
+guard peaked at 541,966,336 bytes. The timing jobs peaked at 683,769,856 and
+600,162,304 bytes.
+
+### Caching linear gradient fills in SVG opacity groups on macOS
+
+The automatic cache accepts up to two supported linear gradients among
+the six aligned rectangle fills in a nested or sibling opacity sequence.
+The full bitmap still uses the 128 Ki-pixel limit and the existing cache
+admission rules. Radial gradients retain the previous eligibility. A new
+radial sibling in the initial fixture differed from Quartz by three channel
+levels in the forced shared renderer at 1×, so the new route keeps that
+sequence on Quartz.
+
+The published single-unit executable
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`
+used Quartz for the automatic path on both linear fixtures. Three matched
+screenshot sets compared automatic, Quartz and forced shared replay in fresh
+processes. The largest channel difference from Quartz was two for the regular
+fixture at both scales and for the 30-mask pressure fixture at 2×. All nine
+browser exits and the guard exit were zero.
+
+The private single-unit V `-prod`, Clang `-O1` executable SHA-256 was
+`5a109f23a1350184a1eacf9f1632cdada3272c161b3a462213dc42ace6312d07`.
+All 104 macOS captures passed. The mixed alpha and luminance masks matched
+uncached shared rendering pixel for pixel at 1× and 2×, including cropped
+viewport hits. The largest 2× channel difference from Quartz was two.
+Radial siblings, groups with three gradients and uncached automatic mode
+matched explicit Quartz. The native pixel and layer tests passed.
+
+The regular and 75-mask pressure fixtures had SHA-256 digests
+`526cd8171ae580d1be70ac5c9d4b00b1837243253e2648a2c67724591bf014e6` and
+`b748a2e7db06461df5b1dadf2c0e71882011474419ea1f84b3165bab8cc7d9f5`.
+They ran as local files with scripts disabled at 1024 × 600 and 2×, with
+fresh processes, caches and private profiles and a one-second title-matched
+settle. `tools/measure_precise_scroll.py` delivered 120 four-pixel inputs at a
+requested 60 Hz and reversed at 60 inputs. Maximum scroll positions were
+487.5–510 CSS pixels, below the bottom of either document. The endpoint was
+completed native frame installation after outer view paint over the first-to-last
+input window. Each timed pair changed only `VOX_SHARED_SVG_MASK_RASTER` from
+`0` to automatic.
+
+Instrumented PID 93723 recorded 638 regular-fixture cache hits, 152 cropped
+hits and six fresh rasters during input. Pressure PID 93875 recorded 496 hits,
+78 cropped hits, 16 fresh rasters and 568 Quartz fallbacks. The timed launches
+used diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 94153 | Regular | Quartz | 23.21 | 41.255 / 45.279 / 45.806 | 57.54 | 120 / 48 | 90.816 / 33.224 | 6.10 |
+| 94467 | Regular | Automatic | 33.66 | 28.153 / 33.776 / 57.366 | 56.42 | 120 / 71 | 65.166 / 16.837 | 6.42 |
+| 94674 | Regular | Quartz | 22.87 | 41.086 / 44.859 / 83.005 | 56.71 | 120 / 48 | 92.047 / 34.203 | 6.22 |
+| 94821 | Regular | Automatic | 34.77 | 27.329 / 32.074 / 34.730 | 59.11 | 120 / 70 | 61.583 / 17.198 | 6.77 |
+| 94967 | Pressure | Quartz | 11.91 | 77.080 / 84.254 / 84.847 | 56.67 | 120 / 25 | 161.522 / 66.693 | 6.62 |
+| 95158 | Pressure | Automatic | 14.79 | 64.248 / 69.711 / 71.944 | 58.66 | 120 / 30 | 130.891 / 33.739 | 6.57 |
+| 95300 | Pressure | Quartz | 10.86 | 85.513 / 93.632 / 98.935 | 58.77 | 120 / 22 | 169.677 / 51.263 | 6.29 |
+| 95648 | Pressure | Automatic | 13.65 | 68.947 / 77.796 / 77.894 | 57.99 | 120 / 28 | 135.218 / 48.846 | 6.26 |
+
+The timed cohort ran 04:59:33–05:00:15 UTC on November 18, 2026. Load is
+the one-minute average on the 18-CPU host at launch. Throughput, median and
+p95 improved in all four pairs. The maximum interval rose in one regular
+pair. All measured intervals exceeded 16.67 ms. The timed and instrumented
+browsers and their guard exited zero. Peak sampled RSS was 8,142,831,616
+bytes for the final build, 479,019,008 for the screenshots and 604,979,200
+for the scroll cohort.
+
+### Caching standalone rectangular SVG mask fills on macOS
+
+Automatic selection accepts ordered sequences of up to six pixel-aligned
+rectangular fills, including up to two supported linear gradients. Standalone
+fills and opacity groups share the same eligibility scan. Single gradients use
+their established strip, diagonal and radial paths. The retained bitmap uses
+the existing 128 Ki-pixel limit and cache admission rules.
+
+The published single-unit executable
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`
+used Quartz automatically on the mixed-fill fixtures. Forced shared replay
+stayed within two channel levels of Quartz at 1× and 2× on the regular
+fixture and at 2× with 30 different masks. A later published executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+also used Quartz for the three-solid-fill fixture. All 11 baseline browser
+exits and both baseline guard exits were zero.
+
+The private single-C-unit V `-prod`, Clang `-O1` executable SHA-256 was
+`70a777d3b455065f6ebaefcf72327e8af22edc47c9d4c831f50f167fa54eedb4`.
+All 120 macOS captures passed. For both mask modes, cached stand-alone fills
+matched uncached shared replay pixel for pixel at 1× and 2×, including viewport
+crops. At 2× the solid fixture matched Quartz exactly, and the mixed fixture
+and 30-mask pressure capture stayed within two channel levels. The seven-fill
+fixture and cache-disabled automatic captures matched Quartz exactly. Native
+mask conversion and layer tests passed.
+
+The solid, mixed and 75-mask pressure fixture SHA-256 digests were
+`3fd1361bfdef91654571f8d66e90094a400ac5471dca1c55f141583baca4508f`,
+`0b632cf00614060ee065220778d3fa2391eeb6f15c3e87a8049c309e43f002a8` and
+`7dc1e0579a3f556eaaab306258e2c87047bba6b0a2bf098b045d2b12e2dabcf5`.
+These local pages ran with scripts disabled, fresh profiles and caches,
+a 1024 × 600 viewport at 2× and a one-second title-matched settle. Each
+launch received 120 four-pixel precise inputs at a requested 60 Hz and
+reversed at 60 inputs. The endpoint was completed native frame installation
+after outer view paint over the first-to-last input window. Each timed pair
+changed only `VOX_SHARED_SVG_MASK_RASTER` between `0` and automatic.
+
+Instrumented launches counted cache hits, cropped hits, fresh rasters and
+admission fallbacks during input. The solid fixture, PID 25137, recorded
+607 / 150 / 6 / 0. The regular mixed fixture, PID 25316, recorded
+685 / 173 / 6 / 0. The pressure fixture, PID 25496, recorded
+576 / 88 / 16 / 648. Timed launches used diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 25632 | Solid | Quartz | 22.39 | 42.397 / 47.605 / 49.920 | 57.92 | 120 / 46 | 90.501 / 33.129 | 6.35 |
+| 25732 | Solid | Automatic | 30.98 | 31.534 / 35.683 / 36.187 | 53.42 | 120 / 69 | 73.088 / 16.863 | 6.32 |
+| 25842 | Solid | Quartz | 23.39 | 41.704 / 45.189 / 45.823 | 57.99 | 120 / 48 | 92.122 / 0.096 | 6.05 |
+| 25997 | Solid | Automatic | 30.88 | 31.260 / 36.327 / 38.918 | 57.42 | 120 / 64 | 74.880 / 16.743 | 6.21 |
+| 26152 | Mixed | Quartz | 28.17 | 34.189 / 38.856 / 40.445 | 55.87 | 120 / 60 | 78.217 / 0.112 | 6.27 |
+| 26251 | Mixed | Automatic | 35.22 | 26.589 / 32.778 / 51.333 | 58.22 | 120 / 72 | 63.650 / 16.358 | 6.97 |
+| 26350 | Mixed | Quartz | 27.03 | 35.000 / 41.163 / 73.463 | 56.43 | 120 / 57 | 79.633 / 16.706 | 6.57 |
+| 26454 | Mixed | Automatic | 35.97 | 26.800 / 31.366 / 52.145 | 57.85 | 120 / 74 | 65.195 / 0.099 | 6.10 |
+| 26626 | Pressure | Quartz | 13.84 | 67.026 / 72.523 / 73.432 | 58.83 | 120 / 28 | 147.282 / 49.524 | 5.93 |
+| 26732 | Pressure | Automatic | 16.30 | 57.756 / 66.250 / 66.666 | 58.79 | 120 / 33 | 122.977 / 33.169 | 5.85 |
+| 26865 | Pressure | Quartz | 14.45 | 66.615 / 69.147 / 69.643 | 59.31 | 120 / 29 | 143.195 / 0.099 | 5.94 |
+| 26922 | Pressure | Automatic | 17.64 | 53.816 / 59.282 / 64.738 | 56.74 | 120 / 37 | 121.487 / 16.537 | 5.71 |
+
+The timed cohort ran 05:08:41–05:09:43 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. The timed scroll
+positions peaked at 493–510 CSS pixels, below the document limits.
+Throughput, median and p95 improved in all six pairs. The maximum interval
+rose in one mixed pair. All intervals exceeded 16.67 ms. All diagnostic and
+timed browser exits and their guard exit were zero. Sampled process-tree RSS
+peaked at 8,147,353,600 bytes during the build, 493,568,000 for the screenshot
+suite and 605,487,104 for the scroll job.
+
+### Caching reflected rectangular SVG mask fills on macOS
+
+Axis-aligned reflections qualify when the transformed fill edges land on
+whole device pixels. The rectangle check orders the mapped endpoints and
+passes the signed transform to shading and the cache key. Horizontal,
+vertical and two-axis reflections use the existing bitmap and paint-operation
+limits. Fractional reflections use Quartz in automatic mode.
+
+The published single-unit executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+used Quartz automatically. Its reflected solid fixture matched the
+unreflected Quartz control exactly. Forced shared replay of the mixed
+fixture differed from Quartz by at most two channel levels at 1× and
+2×. The 30-mask pressure capture had the same maximum at 2×. The
+11 baseline browser exits and the guard exit were zero.
+
+The private single-C-unit V `-prod`, Clang `-O1` executable SHA-256 was
+`cccf135b96deecd493908fc028340cf935885bcb7216869b8a0070fc88e48f6f`.
+All 136 macOS captures passed. Cached reflected masks matched uncached
+shared replay at 1× and 2×, including cropped cache hits. At 2× the solid
+fixture matched Quartz exactly and the mixed and pressure fixtures stayed
+within two channel levels. Fractional reflections and the cache-disabled
+automatic captures matched Quartz exactly. Native mask pixel conversion and
+layer tests passed.
+
+The solid, mixed and 75-mask pressure fixture SHA-256 digests were
+`f4885e50c7c8d623db57fb1024a72ff28a122fa1b0328124de6ebb143300faba`,
+`2e01c984f21f88594b872b344cd8a369167161e067470f7d25ce983d4461ad85` and
+`3c8573f99abbf6062ef507f668efacdda401c4902b2a905475d756944c3b6792`.
+The local pages ran with scripts disabled, fresh profiles and caches,
+a 1024 × 600 viewport at 2× and a one-second title-matched settle.
+`tools/measure_precise_scroll.py` delivered 120 four-pixel inputs at a
+requested 60 Hz, with a reversal at 60 inputs. The endpoint was completed
+native frame installation after outer view paint over the first-to-last
+input window. Each timed pair changed only `VOX_SHARED_SVG_MASK_RASTER`
+between `0` and automatic.
+
+Separate diagnostics counted cache hits, cropped hits, fresh rasters and
+admission fallbacks during wheel input. Solid PID 54913 logged
+587 / 144 / 6 / 0. Mixed PID 54994 logged 671 / 171 / 6 / 0.
+Pressure PID 55056 logged 592 / 88 / 16 / 662. Timed launches used
+diagnostics off.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 55105 | Solid | Quartz | 22.79 | 41.850 / 45.947 / 46.964 | 57.71 | 120 / 47 | 91.070 / 34.330 | 5.51 |
+| 55200 | Solid | Automatic | 29.73 | 32.031 / 38.925 / 61.697 | 58.97 | 120 / 60 | 74.900 / 0.261 | 5.31 |
+| 55307 | Solid | Quartz | 22.97 | 41.218 / 46.211 / 48.767 | 58.17 | 120 / 47 | 93.071 / 17.217 | 5.45 |
+| 55374 | Solid | Automatic | 31.66 | 30.534 / 35.166 / 56.209 | 58.86 | 120 / 64 | 77.085 / 0.098 | 5.25 |
+| 55441 | Mixed | Quartz | 27.82 | 34.839 / 39.489 / 40.218 | 57.07 | 120 / 58 | 78.661 / 0.101 | 5.31 |
+| 55554 | Mixed | Automatic | 35.36 | 27.185 / 32.223 / 52.838 | 59.26 | 120 / 71 | 61.591 / 16.915 | 5.05 |
+| 55612 | Mixed | Quartz | 27.64 | 35.126 / 39.530 / 42.387 | 56.70 | 120 / 58 | 78.855 / 0.121 | 5.12 |
+| 55685 | Mixed | Automatic | 35.33 | 27.472 / 32.094 / 52.216 | 58.39 | 120 / 72 | 66.159 / 0.102 | 5.19 |
+| 55911 | Pressure | Quartz | 13.69 | 68.525 / 71.770 / 73.463 | 56.16 | 120 / 29 | 143.291 / 49.291 | 5.34 |
+| 56100 | Pressure | Automatic | 16.46 | 57.439 / 64.262 / 66.558 | 57.60 | 120 / 34 | 121.001 / 33.299 | 5.31 |
+| 56196 | Pressure | Quartz | 13.01 | 70.492 / 76.669 / 149.711 | 57.35 | 120 / 27 | 139.029 / 17.270 | 5.20 |
+| 56295 | Pressure | Automatic | 16.65 | 57.282 / 62.571 / 63.758 | 58.29 | 120 / 34 | 112.730 / 18.360 | 5.11 |
+
+The timed cohort ran 05:18:30–05:19:33 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 486–509.5 CSS pixels, below the document limits. Throughput, median
+and p95 improved in all six pairs. The solid and mixed automatic trials had
+longer maximum scroll-changing intervals at the reversal. Each published
+after input 61 at the same scroll position as after input 59, then moved
+again after input 62. Maximum gaps across all publications decreased in
+every pair, from 46.964–48.767 to 37.011–39.845 ms on the solid fixture,
+40.218–42.387 to 33.376–33.457 ms on the mixed fixture and 73.463–76.881
+to 63.758–66.558 ms under pressure. Every scroll-changing interval exceeded
+16.67 ms. All diagnostic and timed browser exits and their guard exit were
+zero. Sampled process-tree RSS peaked at 8,146,255,872 bytes for the build,
+497,483,776 for the captures and 599,769,088 for the scroll job.
+
+### Shading strips for reflected SVG gradient masks
+
+The shared rasterizer shades one row or column for pixel-aligned reflected
+rectangles. It keeps the signed transform for shade direction. On macOS,
+automatic reflection replay uses the strip for luminance masks and for alpha
+masks at backing scales of at least 2. Lower-scale reflected alpha uses Quartz.
+
+The published single-unit executable
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+used Quartz automatically on the reflected alpha fixture at 1×. Forced full
+shared shading differed by up to three channel levels on the alpha ramp with
+a scaled gradient transform. An eight-capture comparison on the same binary
+confirmed the three-level difference at 1× and found at most two levels at
+2× and on the luminance fixture at both scales. The first guard exited one
+when it reached the three-level result. All comparison browser exits and
+the second guard exit were zero.
+
+The reflected alpha and luminance fixture SHA-256 digests were
+`1fa08445c0ee140c80ea47836ebe7f0d361b3a818f533d70abbf366efe0d0533` and
+`5bd7a0fbe3629603977396e80769157720e14b4fde21ae2e3def12b91552c853`.
+In the arm64 Linux guest, a single-C-unit Clang `-O0` executable
+(`9aeba8065fc8937380fa4f89f1d3fa116075b896213754d3689402e4a90a9788`)
+matched full shading pixel for pixel on both reflected fixtures at X11
+backing scale, using software OpenGL. Separate processes with fresh
+profiles exercised the strip and full-shader controls under Xvfb. The
+19-check Linux browser smoke suite passed. The Linux build and test guards
+exited zero at 6,007,660,544 and 1,132,670,976 bytes peak sampled RSS.
+
+The macOS candidate was single-C-unit V `-prod`, Clang `-O1`, SHA-256
+`9f84db1ea3f5f113762d165e34edf1a69e225583ef7732539de3e1a2fe06c433`.
+All 155 captures passed. Reflected strips matched full shading pixel for
+pixel at 1× and 2×. Automatic reflected luminance and 2× alpha captures
+matched their cached controls exactly, including viewport clipping. They
+stayed within two channel levels of Quartz. The automatic 1× reflected
+alpha and fractional reflections matched explicit Quartz exactly. Native
+mask conversion and layer tests passed.
+
+The macOS scroll trials used local files, no script execution, fresh
+profiles and caches, a 1024 × 600 viewport at 2× and a one-second title-matched
+settle. `tools/measure_precise_scroll.py` sent 120 four-pixel inputs at a
+requested 60 Hz, reversing at 60 inputs. The endpoint was completed native
+frame installation after outer view paint over the first-to-last input window.
+Quartz and automatic pairs kept caching enabled and changed only
+`VOX_SHARED_SVG_MASK_RASTER`. The forced shared luminance pairs left caching
+off and changed only `VOX_DISABLE_SVG_MASK_RAMP`.
+
+Separate diagnostics counted shaded strips, cache hits and cropped hits
+during input. Alpha PID 11900 recorded 6 / 595 / 147. Luminance PID 12105
+recorded 6 / 583 / 138. The uncached luminance diagnostic, PID 12334,
+recorded 468 strips and zero hits. Timing launches disabled diagnostics.
+
+| PID | Fixture | Raster | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 12571 | Alpha | Quartz | 25.47 | 37.699 / 44.728 / 48.027 | 56.13 | 120 / 54 | 77.657 / 33.251 | 10.78 |
+| 12718 | Alpha | Automatic | 33.05 | 28.938 / 35.894 / 57.849 | 56.19 | 120 / 70 | 67.023 / 0.134 | 10.80 |
+| 12878 | Alpha | Quartz | 27.83 | 34.060 / 41.454 / 69.976 | 55.19 | 120 / 60 | 72.634 / 0.147 | 10.49 |
+| 13030 | Alpha | Automatic | 32.02 | 29.493 / 37.119 / 38.742 | 58.62 | 120 / 65 | 66.853 / 16.815 | 10.61 |
+| 13188 | Luminance | Quartz | 27.96 | 34.020 / 40.974 / 69.352 | 55.45 | 120 / 60 | 76.216 / 0.129 | 10.44 |
+| 13334 | Luminance | Automatic | 33.48 | 29.065 / 34.403 / 36.007 | 56.91 | 120 / 70 | 67.719 / 0.152 | 10.88 |
+| 13499 | Luminance | Quartz | 27.93 | 34.439 / 40.752 / 65.574 | 54.49 | 120 / 61 | 73.024 / 0.124 | 10.73 |
+| 13669 | Luminance | Automatic | 32.25 | 29.367 / 36.041 / 55.967 | 58.15 | 120 / 66 | 67.315 / 16.762 | 10.51 |
+| 13834 | Luminance | Full shader | 22.46 | 42.815 / 48.239 / 48.843 | 54.55 | 120 / 49 | 89.757 / 34.915 | 10.63 |
+| 13995 | Luminance | Strip | 29.68 | 31.994 / 38.642 / 59.656 | 56.97 | 120 / 62 | 66.941 / 19.695 | 10.58 |
+| 14144 | Luminance | Full shader | 19.57 | 48.459 / 57.859 / 58.161 | 55.46 | 120 / 42 | 103.631 / 36.203 | 10.21 |
+| 14381 | Luminance | Strip | 26.30 | 36.628 / 43.288 / 46.759 | 54.91 | 120 / 57 | 78.780 / 19.602 | 10.12 |
+
+The timed cohort ran 05:35:57–05:37:02 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 501–510 CSS pixels. Throughput, median and p95 improved in all six
+pairs. The first automatic alpha and first uncached strip trials published
+at the same scroll position after inputs 59 and 61 before moving after input
+62. Both had a longer maximum gap between position changes. The longest gap
+between any two native publications decreased in every pair. Every measured
+scroll-changing interval exceeded 16.67 ms. All timed and instrumented
+browsers and their guard exited zero. Peak sampled RSS was 8,155,660,288
+bytes for the final build, 497,958,912 for the captures and 608,698,368 for
+the scroll job.
+
+### Fixed-size SVG rectangle checks
+
+SVG rectangle recognition stores its four corners in a fixed array. An
+optional line back to the first corner is checked directly. Shared mask
+rectangle alignment and the macOS mask-region check iterate fixed arrays of
+four edges. Generated C for the previous published build used a dynamic
+point array and two dynamic edge arrays on this path. The candidate emitted
+no array allocation or append calls in the three checks.
+
+The single-C-unit V `-prod`, Clang `-O1` comparison harness used both sets
+of geometry checks with the production geometry field types and packed
+segment stride. It checked all 64 input records for identical eligibility
+and returned bounds before timing. Each of seven pairs used fresh processes,
+alternating which variant ran first. Each process ran two workloads of
+2,000,000 checks with prepared inputs. Timers covered geometry checks and
+result checksumming, with process launch and input preparation outside.
+The executable SHA-256 was
+`2d57fd42e83795c47a5bbd2109a5efa6a8e9ef92da76c67a2331d08ca34866fa`.
+
+| Workload | Accepted checks | Median before / fixed (ms) | Before range (ms) | Fixed range (ms) | Checksum |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Aligned rectangles | 2,000,000 | 125.535 / 95.728 | 120.173–127.843 | 94.031–97.336 | 4546511169908150597 |
+| Mixed eligibility | 250,000 | 57.933 / 42.653 | 55.063–58.865 | 41.846–45.804 | 7602596038793500197 |
+
+The checksums matched across all runs. Both workloads improved in every
+pair. The cohort ran 05:45:36–05:45:38 UTC on November 18, 2026, with a
+one-minute host load of 13.42 on 18 CPUs and other compiler jobs active.
+The 14 processes and the 3 GiB guard exited zero. Peak sampled process-tree
+RSS was 651,755,520 bytes.
+
+The focused `chromium/rounded_svg_background_test.v` file passed, including
+an explicit line back to the first corner and rejection checks for a curved
+closing segment and a misplaced endpoint. The test guard exited zero.
+
+All 155 macOS mask captures passed on the single-unit V `-prod`, Clang `-O1`
+candidate (`6ff6ea6a7421011989894c17a7a9cce1616bf81b275d10c791ed4ae738a49e27`).
+Twelve additional fresh captures compared the candidate with the published
+executable (`19554c666e7ef07de44937357e3a2f37df63bc26d8347bd4830a133c38be1766`).
+The rounded SVG background, transformed rectangular clip and overlapping
+solid mask fixtures matched pixel for pixel at 1× and 2×. These local
+captures used a 1024 × 600 viewport, private profiles and scripts disabled.
+Their fixture SHA-256 digests were
+`52f45dc0717159947ba655db78000f2e702a96b1f9c3ff457fc747d207b124b7`,
+`8454f39d3d14e943da9983cf5a46c61e9d6ec09103e8015b3bc35147967f817f` and
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b`.
+The browser build, captures and comparison guards exited zero. Their sampled
+RSS peaks were 8,152,825,856, 498,024,448 and 325,074,944 bytes.
+
+The first arm64 Linux build was killed with exit 137 while the V frontend
+and Clang overlapped. The split build emitted C, then linked a single unit
+with Clang `-O0`. The flags dump omitted the STB image object, so the final
+link compiled the matching `stbi.c` from the guest V toolchain. Its executable
+SHA-256 was `b16fb498da7f666edb010f7036d74a3db459ff4e0e8496a35797e339eadb7832`.
+All 19 Linux browser smoke checks passed under Xvfb with software OpenGL.
+The final link and test guards exited zero, with sampled RSS peaks of
+1,823,965,184 and 1,103,851,520 bytes.
+
+### Reusing SVG mask geometry validation on macOS cache hits
+
+The shared raster lookup precedes rectangle recognition for retained radial,
+diagonal, grouped and solid-fill rasters. The cache key identifies the mask's
+path data, device matrices and raster bounds. A miss runs geometry
+recognition. Mask eligibility and single-gradient strip selection run before
+lookup.
+
+The geometry mutation fixture first draws two cacheable masks. JavaScript
+replaces one rectangle with a triangle of the same bounds and translates the
+other by a quarter CSS pixel. The resulting screenshot must match Quartz,
+including at the translated edge. The published executable
+`ea5cc7a3d626c8fdef30c81044f1e9a78976d20c1c5726245d8a335b1950bb74`
+passed the fixture in three fresh launches.
+
+All 158 macOS captures passed on the single-C-unit V `-prod`, Clang `-O1`
+candidate (`c5b85a1fb95dc2c3ca4398ac3e5eb5c463ac66e3a720b3e0cb10c8c779059d16`).
+The native mask pixel-conversion and layer tests passed. The timing control
+(`de640550ee459c0fd59c4264bfd806d6bdd4905d2a0130dff33445586d499a09`)
+used the same generated C and Clang flags with the rectangle validation
+block moved immediately before the lookup. The original generated C digest
+was `1b3714a48cd2d404d036d49193822a8555f79c2524b62275ec0729a22861656f`.
+
+Six fresh 2× captures at a 132 CSS-pixel scroll offset matched before and
+after pixel for pixel on the overlap, pressure and fractional fixtures.
+The fixture SHA-256 digests were
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b`,
+`b748a2e7db06461df5b1dadf2c0e71882011474419ea1f84b3165bab8cc7d9f5` and
+`1843231e99f39e4b1bd32e187855b56acb62879025c0a951367af0a5b1bb55f8`.
+The pressure fixture had 75 masks with three paths each under sibling
+opacity groups. The fractional fixture used the overlap page with one
+fill in each mask translated by a quarter CSS pixel to exercise rejection.
+
+`tools/measure_precise_scroll.py` delivered 120 four-pixel inputs at a
+requested 60 Hz and reversed at 60 inputs. The tests used local files,
+scripts disabled, fresh profiles and caches, a 1024 × 600 viewport at 2×
+and a one-second title-matched settle. The endpoint was completed native
+frame installation after outer view paint over the first-to-last input
+window.
+
+Separate instrumented launches checked the paths during wheel input. On the
+overlap fixture, PID 85677 logged 642 hits, 162 cropped hits and six new
+rasters. Two fills per hit account for 1,284 skipped rectangle checks. On
+the pressure fixture, PID 85791 logged 528 hits, 78 cropped hits, 16 new
+rasters and 601 admission fallbacks. Three fills per hit account for 1,584
+skipped checks. The fractional fixture, PID 85898, logged neither a shared
+raster nor a cache hit. The paired timing runs disabled diagnostics.
+
+| PID | Fixture | Order | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 86000 | Overlap | Before | 33.71 | 28.579 / 33.315 / 35.547 | 58.99 | 120 / 68 | 66.871 / 16.739 | 6.19 |
+| 86103 | Overlap | After | 33.95 | 29.001 / 33.309 / 34.347 | 57.71 | 120 / 70 | 65.727 / 16.594 | 6.01 |
+| 86252 | Overlap | Before | 32.96 | 29.240 / 34.844 / 53.430 | 58.54 | 120 / 67 | 66.034 / 17.081 | 6.01 |
+| 86350 | Overlap | After | 34.20 | 27.764 / 32.653 / 51.983 | 58.98 | 120 / 69 | 65.786 / 16.741 | 5.77 |
+| 86448 | Pressure | Before | 15.33 | 61.305 / 69.768 / 73.784 | 58.85 | 120 / 31 | 125.879 / 16.776 | 5.95 |
+| 86655 | Pressure | After | 15.27 | 61.332 / 68.879 / 69.624 | 58.62 | 120 / 31 | 127.089 / 50.172 | 5.79 |
+| 86903 | Pressure | Before | 16.26 | 58.676 / 63.772 / 65.198 | 58.63 | 120 / 33 | 123.414 / 16.746 | 5.89 |
+| 87034 | Pressure | After | 16.11 | 59.697 / 65.844 / 66.690 | 59.90 | 120 / 32 | 124.324 / 0.118 | 5.83 |
+| 87144 | Fractional | Before | 25.52 | 37.630 / 43.690 / 45.961 | 56.24 | 120 / 54 | 87.411 / 18.101 | 5.76 |
+| 87257 | Fractional | After | 25.78 | 37.366 / 42.501 / 45.293 | 56.82 | 120 / 54 | 82.201 / 0.133 | 5.78 |
+| 87363 | Fractional | Before | 25.18 | 38.408 / 42.931 / 45.472 | 57.63 | 120 / 52 | 86.024 / 18.551 | 5.64 |
+| 87459 | Fractional | After | 24.83 | 37.884 / 43.687 / 48.117 | 59.09 | 120 / 50 | 80.301 / 35.411 | 5.58 |
+
+The timed cohort ran 06:04:23–06:05:25 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Scroll positions
+peaked at 493.5–510 CSS pixels. Overlap throughput rose in both pairs,
+pressure throughput fell by 0.4% and 0.9%, and the fractional pair changes
+were +1.0% and −1.4%. The largest interval grew in the second pressure
+and fractional pairs. All measured intervals exceeded 16.67 ms. All
+capture, instrumented and timed browser exits and their guards were zero.
+Peak sampled RSS was 8,205,336,576 bytes for the candidate build,
+6,611,386,368 for the control build, 495,616,000 for the screenshot suite
+and 637,452,288 for the scroll job.
+
+### Checking SVG mask cache capacity before rectangle recognition
+
+For shared rasters that require a cache entry, a lookup miss checks admission
+before recognizing the fill rectangles. The admission query reads the native
+cache. A capacity fallback can therefore return to Quartz without walking
+path geometry.
+
+The grouped-gradient pressure fixture adds a fractional solid mask after the
+grouped fills in paint order. Its diagnostic label identifies a capacity
+fallback separately from the grouped masks. On the published executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`, the
+fractional fill rejected geometry before admission. Its visible pixels matched
+Quartz exactly. Both fresh comparison captures exited zero.
+
+The private candidate used single-unit V `-prod`, Clang `-O1`, with
+executable SHA-256
+`c94058e958d1e4774a0bd9a405054797a3043db1e432ef0ac2e66128ca9cd091`.
+The timing control moved the geometry block before admission in the same
+generated C and used the same Clang flags. Its executable SHA-256 was
+`d6909dd960be6655ec7977adbb200148deb1c619388721b643cb1f3f9c74887a`.
+The original generated C SHA-256 was
+`b4081dc68f7067ee0c8faabded4a5a269f9de902a1457089d8b6aee3715bf3f6`.
+
+All 158 macOS mask captures passed. The fractional fill's 2× pixels matched
+Quartz exactly, and the new capacity diagnostic appeared for that fill. The
+native conversion and layer tests passed. The fixture SHA-256 values for the
+75-mask pressure page, overlapping solid masks, and the pressure page with
+the fractional fill were
+`b748a2e7db06461df5b1dadf2c0e71882011474419ea1f84b3165bab8cc7d9f5`,
+`014ff8fe50e532a757b267173b04d324f1cd8ea1f242ae5d7a9f5e5901bc9e4b` and
+`90452e2ac51bba709111edcc8f2481093a4c86eb5d197ec33f664284788e4bf6`.
+
+The timing protocol used fresh processes, profiles and caches, local pages
+with JavaScript disabled, and a 1024 × 600 viewport at 2×. After a one-second
+title-matched settle, `tools/measure_precise_scroll.py` delivered 120
+four-pixel inputs at a requested 60 Hz and reversed at 60 inputs. The endpoint
+was completed native frame installation after outer view paint over the
+first-to-last input window.
+
+Six captures matched the before and after builds pixel for pixel. The
+pressure and overlap fixtures used a 132 CSS-pixel scroll offset, and the
+fractional test used 42 CSS pixels. An instrumented pressure launch,
+PID 18095, recorded 528 retained hits, 88 cropped hits, 16 new rasters and
+601 admission fallbacks during input. Each denied mask had three paths, so
+the new order skipped 1,803 rectangle checks. The overlap launch, PID 18206,
+recorded 651 hits, 163 cropped hits, six new rasters and zero admission
+fallbacks. Timing launches disabled diagnostics.
+
+| PID | Fixture | Order | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 18303 | Pressure | Before | 15.46 | 58.154 / 66.235 / 122.933 | 59.34 | 120 / 31 | 121.760 / 51.989 | 6.08 |
+| 18402 | Pressure | After | 16.33 | 57.260 / 61.656 / 65.297 | 58.90 | 120 / 33 | 127.642 / 51.613 | 5.92 |
+| 18525 | Pressure | Before | 16.68 | 57.214 / 63.855 / 64.785 | 58.40 | 120 / 34 | 124.750 / 0.267 | 6.00 |
+| 18626 | Pressure | After | 15.36 | 60.934 / 67.445 / 67.525 | 58.96 | 120 / 31 | 127.039 / 49.743 | 5.77 |
+| 18931 | Pressure | Before | 16.03 | 59.179 / 66.611 / 66.885 | 59.61 | 120 / 32 | 126.275 / 17.957 | 5.71 |
+| 19079 | Pressure | After | 15.68 | 59.115 / 71.092 / 121.518 | 56.54 | 120 / 33 | 123.225 / 0.262 | 6.22 |
+| 19215 | Overlap | Before | 33.47 | 28.637 / 33.234 / 36.270 | 57.73 | 120 / 69 | 70.546 / 16.464 | 6.04 |
+| 19322 | Overlap | After | 33.27 | 28.945 / 34.060 / 35.674 | 59.09 | 120 / 67 | 66.874 / 16.699 | 5.87 |
+| 19417 | Overlap | Before | 32.87 | 28.829 / 34.733 / 37.077 | 58.38 | 120 / 67 | 68.265 / 16.767 | 5.96 |
+| 19519 | Overlap | After | 33.74 | 28.501 / 33.430 / 34.102 | 57.36 | 120 / 70 | 66.502 / 16.425 | 5.81 |
+
+The timed cohort ran 06:16:35–06:17:27 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–510 CSS pixels. Pressure throughput rose in one pair and fell
+in two. Overlap throughput rose in one pair and fell in the other. Both
+long pressure gaps above 120 ms straddled the reversal, with a publication
+at the same scroll position after inputs 58 and 62. All measured intervals
+exceeded 16.67 ms. The capture, diagnostic and timed browsers and guards
+exited zero. The candidate build, control build, screenshot suite and scroll
+job peaked at 7,369,539,584, 7,105,593,344, 488,194,048 and 641,040,384 bytes
+of sampled process-tree RSS.
+
+### Reusing the SVG mask cache replacement slot
+
+The macOS raster cache normally keeps its selected replacement slot across
+admission checks. A store or a hit that can change the selection invalidates
+it. Admission still reads the slot's current age on each call. The existing
+capacity, frame protection and tie-breaking order apply.
+
+The native test compared 4,096 mixed queries with the original scan. It also
+checked empty slots, tied timestamps, clock wrap and protection across frame
+wrap. The layer and pixel conversion tests passed. A separate Clang `-O1`
+microbenchmark made eight million consecutive denied queries per arm with a
+full cache and alternating current and preceding frame ages. Across seven
+alternating pairs, median query time was 5.409 ns with the scan and 0.759 ns
+with the cached slot. The microbenchmark isolates the admission call.
+
+The first private build was discarded for comparison after a concurrent
+native header edit. The paired builds reused one generated C unit from V
+`-prod`, compiled with Clang `-O1 -fno-lto`. The control used the native
+bridge from `267914943`. The preprocessed bytes outside the native bridge
+and new cache header matched before compilation.
+
+The generated C SHA-256 was
+`f049b80cc97480230e37567b1d59e2b1c5849473c4ca3b3a1db1d0f998741554`.
+The paired executable SHA-256 values were
+`18b9a6e480b2d4c8e290fde05303bd2f7a8e4239899ab989618ecc002bbe7b68` for the
+control and `cec9e1601df71910d767ec0427a363fe82d98b181e6ebd77bc6aa1ee82042fc4`
+for the candidate. All 158 macOS mask captures passed on the candidate.
+At a 132 CSS-pixel scroll offset the paired 2× captures matched pixel for
+pixel. The browser logs agreed on all 385 pressure and 106 overlap mask
+decisions across those captures.
+
+The wheel trials used the same 75-mask pressure and overlapping solid-mask
+fixtures as the preceding section. The driver used fresh processes, profiles
+and browser caches, local files, JavaScript disabled and a 1024 × 600
+viewport at 2×. Host caches were retained. After a one-second title-matched
+settle, it sent 120 four-pixel inputs at a requested 60 Hz, reversing after
+60 inputs. Throughput counts scroll-changing native frame installations
+after outer view paint over the first-to-last input window.
+
+From `SCROLL_START` through the final publication, a separate diagnostic
+pressure launch (PID 62552) logged 592 capacity denials, 512 hits including
+78 crops, and 16 new rasters. Overlap (PID 62644) logged zero denials, 648
+hits including 159 crops, and six new rasters. The timed launches ran with
+the mask diagnostics disabled.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 62749 | Pressure | Before | 16.72 | 56.403 / 61.950 / 65.487 | 58.50 | 120 / 34 | 119.612 / 33.171 | 4.83 |
+| 62816 | Pressure | After | 16.62 | 57.194 / 63.832 / 66.152 | 59.93 | 120 / 33 | 121.435 / 16.994 | 4.79 |
+| 62869 | Pressure | After | 16.90 | 56.570 / 62.890 / 64.675 | 59.14 | 120 / 34 | 123.592 / 16.985 | 4.81 |
+| 62924 | Pressure | Before | 16.06 | 56.609 / 63.814 / 116.701 | 57.90 | 120 / 33 | 119.491 / 50.865 | 4.98 |
+| 63002 | Pressure | Before | 16.10 | 57.514 / 63.827 / 116.412 | 58.06 | 120 / 33 | 123.824 / 17.589 | 4.90 |
+| 63085 | Pressure | After | 14.61 | 61.836 / 71.366 / 131.861 | 57.95 | 120 / 30 | 126.876 / 48.997 | 4.99 |
+| 63256 | Overlap | Before | 33.34 | 29.011 / 34.082 / 36.429 | 58.35 | 120 / 68 | 67.225 / 16.497 | 4.99 |
+| 63318 | Overlap | After | 34.46 | 27.872 / 32.792 / 35.942 | 57.76 | 120 / 71 | 63.979 / 16.601 | 4.99 |
+| 63387 | Overlap | After | 34.21 | 27.796 / 33.043 / 51.223 | 58.15 | 120 / 70 | 69.507 / 16.412 | 4.91 |
+| 63447 | Overlap | Before | 34.04 | 28.532 / 33.890 / 34.806 | 58.71 | 120 / 69 | 63.866 / 16.841 | 4.76 |
+| 63555 | Overlap | Before | 34.49 | 27.830 / 33.745 / 35.437 | 59.48 | 120 / 69 | 67.101 / 0.255 | 4.70 |
+| 63611 | Overlap | After | 33.59 | 28.303 / 33.610 / 53.167 | 56.29 | 120 / 71 | 66.539 / 16.377 | 4.48 |
+
+The cohort ran 06:33:36–06:34:39 UTC on November 18, 2026. Load is the
+one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–510 CSS pixels. Throughput varied across pairs for both fixtures.
+All measured intervals exceeded 16.67 ms. The three pressure gaps above
+100 ms and the two overlap gaps above 50 ms straddled the input reversal.
+All browsers and guards in the sealed cohort exited zero. The sealed build,
+screenshot and comparison jobs peaked at 6,721,585,152, 459,997,184 and
+638,713,856 bytes of sampled process-tree RSS.
+
+### Publishing Quartz color masks in place
+
+The Quartz fallback converts its premultiplied RGBA bitmap to coverage in
+place and takes a Core Graphics snapshot. The shared raster uses the same
+publisher. The copy path expands alpha-only clip bitmaps into RGBA and
+handles snapshot failures. It can retry a failed snapshot because the
+premultiplied white pixels have equal luminance and alpha.
+
+The native tests passed 16 exact publication comparisons across alpha and
+luminance, clipping and destination-in, sRGB and Display P3 destinations,
+and direct and cropped placements. The layer, cache and exhaustive pixel
+conversion checks also passed.
+
+A Clang `-O1` harness timed snapshot or copy publication through release of
+the source context. It created and drew the source before timing and
+verified the composited pixel hash afterward. Seven alternating pairs used
+fresh processes for each size and mode. Each small process published 51
+masks and each large process published 17. Warm times use the medians after
+the first sample of each process. All 56 processes matched their fixture's
+control pixel hash and exited zero. One-minute load ranged
+from 8.26 to 8.67 on 18 logical CPUs.
+
+| Mask | First before / after (µs) | Warm before / after (µs) | Faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 276 × 184 alpha | 747.958 / 697.709 | 55.270 / 40.500 | 5/7 / 7/7 |
+| 276 × 184 luminance | 717.709 / 660.500 | 61.167 / 41.792 | 5/7 / 7/7 |
+| 1902 × 1284 alpha | 1856.500 / 1511.375 | 1020.250 / 584.646 | 7/7 / 7/7 |
+| 1902 × 1284 luminance | 1929.416 / 1393.916 | 1069.333 / 601.229 | 7/7 / 7/7 |
+
+The harness SHA-256 was
+`68f6cbfcbb28d365951e9b5cae1456ec72ae90871b678165eac520db4fb69c18`.
+
+A second harness included the destination-in draw, image release and
+destination flush. It timed publication and drawing around the excluded
+destination allocation and fill. Every output matched its control hash.
+Across seven alternating pairs per row, the candidate improved every warm
+pair. Host load ranged from 6.16 to 6.94. The harness SHA-256 was
+`0cab4251b88f2573072996d065ae107b886aff132dc5bc5759cc90ae1401d181`.
+
+| Destination | Mask | First before / after (µs) | Warm before / after (µs) | Faster pairs, first / warm |
+| --- | --- | ---: | ---: | ---: |
+| sRGB | 276 × 184 alpha | 600.458 / 572.958 | 59.520 / 48.417 | 5/7 / 7/7 |
+| sRGB | 276 × 184 luminance | 569.042 / 555.583 | 60.584 / 48.813 | 6/7 / 7/7 |
+| sRGB | 1902 × 1284 alpha | 2242.501 / 1945.958 | 1423.062 / 1203.624 | 6/7 / 7/7 |
+| sRGB | 1902 × 1284 luminance | 2267.792 / 2053.292 | 1483.374 / 1200.792 | 6/7 / 7/7 |
+| Display P3 | 276 × 184 alpha | 834.001 / 832.208 | 211.145 / 196.417 | 4/7 / 7/7 |
+| Display P3 | 276 × 184 luminance | 799.459 / 785.833 | 214.104 / 199.645 | 4/7 / 7/7 |
+| Display P3 | 1902 × 1284 alpha | 8162.792 / 8163.292 | 7618.209 / 7177.709 | 3/7 / 7/7 |
+| Display P3 | 1902 × 1284 luminance | 8262.041 / 7670.209 | 7706.688 / 7312.146 | 6/7 / 7/7 |
+
+The private browsers shared one generated C unit from V `-prod` and used
+single-unit Clang `-O1 -fno-lto`. An unrelated Retina PNG metadata change
+landed during compilation. The first wheel cohort used a control without
+that change and was excluded. Its three pressure pairs measured
+15.25 → 13.81, 13.44 → 14.60 and 13.25 → 13.86 scroll fps. Its overlap
+pairs measured 27.82 → 28.71, 27.42 → 27.10 and 30.08 → 28.99 scroll fps.
+The matched control incorporated the same metadata statement into the
+sealed unit. The compiler inputs matched outside the mask publication
+functions and header.
+
+The generated C SHA-256 was
+`b4aaa0545a33da6b7db94fed8a3e66adda0cb60fb422f1425b975628f3485f61`.
+The executable hashes were
+`530f4bd2d2d6db0c34ed7ca331e568db8653af1bd60e18556f8566a62d7ffc95` for the
+matched control and
+`03c77bc5c67c800bd74cb54c19d04cf02e0bbc645240a3a0c91f3790009c726d` for the
+candidate. The candidate passed all 158 macOS SVG mask captures. In the
+matched comparison, four 2× capture pairs agreed on every pixel. Those
+included the default pressure and overlap workloads, plus the pressure
+and nested gradient-opacity fixtures with Quartz forced. The default
+pressure and overlap logs agreed on 385 and 116 shared-mask decisions.
+
+The wheel trials used the same 75-mask pressure and overlap files as the
+preceding section. Each run used a fresh process, profile and browser
+cache, a local file, JavaScript disabled and a 1024 × 600 viewport at 2×.
+Host caches were retained. A one-second title-matched settle preceded 120
+four-pixel wheel inputs at a requested 60 Hz, reversing after input 60.
+Throughput counts scroll-changing native frame installations after outer
+view paint over the first-to-last input window.
+
+A separate diagnostic launch on pressure (PID 5136) reported 568 Quartz
+fallbacks for denied cache admission, 496 hits including 73 crops, and 16
+new rasters between the start marker and final publication. The overlap
+launch (PID 5390) reported zero capacity denials, 622 hits including 155
+crops, and six new rasters. Timed launches disabled mask diagnostics.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 5606 | Pressure | Before | 17.11 | 56.241 / 61.336 / 63.305 | 59.89 | 120 / 34 | 120.840 / 16.591 | 6.68 |
+| 5740 | Pressure | After | 16.86 | 56.985 / 63.537 / 64.871 | 59.00 | 120 / 34 | 119.766 / 0.092 | 6.38 |
+| 5852 | Pressure | After | 16.41 | 57.350 / 62.063 / 63.258 | 59.19 | 120 / 33 | 120.173 / 49.721 | 6.35 |
+| 5949 | Pressure | Before | 16.36 | 57.569 / 65.419 / 70.213 | 59.00 | 120 / 33 | 119.741 / 18.733 | 6.40 |
+| 6035 | Pressure | Before | 17.19 | 56.032 / 60.202 / 62.356 | 58.43 | 120 / 35 | 122.216 / 0.248 | 6.21 |
+| 6091 | Pressure | After | 15.94 | 57.562 / 64.483 / 116.434 | 57.47 | 120 / 33 | 123.732 / 48.983 | 6.03 |
+| 6149 | Overlap | Before | 33.56 | 28.368 / 33.951 / 53.576 | 58.72 | 120 / 68 | 66.902 / 16.635 | 5.71 |
+| 6216 | Overlap | After | 32.91 | 28.722 / 34.275 / 53.099 | 56.75 | 120 / 69 | 66.191 / 16.474 | 5.73 |
+| 6384 | Overlap | After | 33.67 | 28.789 / 33.924 / 35.278 | 58.07 | 120 / 69 | 66.673 / 16.601 | 6.14 |
+| 6849 | Overlap | Before | 29.33 | 32.694 / 42.703 / 54.551 | 57.21 | 120 / 61 | 73.437 / 16.921 | 5.88 |
+| 8075 | Overlap | Before | 32.16 | 30.118 / 34.767 / 37.762 | 57.12 | 120 / 67 | 74.589 / 0.132 | 7.09 |
+| 8327 | Overlap | After | 31.56 | 29.993 / 35.793 / 54.474 | 56.90 | 120 / 66 | 70.144 / 17.085 | 7.17 |
+
+The matched cohort ran 06:50:44–06:51:48 UTC on November 18, 2026.
+Load is the one-minute average at launch on the 18-CPU host. Peak scroll
+positions were 484.5–510 CSS pixels. Median pressure throughput fell from
+17.11 to 16.41 fps, and median overlap throughput rose from 32.16 to 32.91
+fps. Both fixtures slowed in two of three pairs. All measured intervals
+exceeded 16.67 ms. All browser, native test and guard exits were zero.
+Peak sampled process-tree RSS was 8,212,135,936 bytes for the original
+build job, 6,528,106,496 for the matched control rebuild, 471,252,992 for
+the screenshot suite, and 638,976,000 for the matched comparison.
+
+### Bounding rectangular GG SVG mask fills on macOS
+
+The Quartz mask bridge stages an uncomposited GG path image before applying
+the current clip and opacity. A contained rectangular fill with exactly
+integral device edges now stages its ink bounds and a one-pixel fringe.
+The bridge rebases the GG transform to that bitmap and restores the image
+placement in the original Quartz context. Strokes, fractional edges,
+skew, and rectangles that cross the bitmap boundary use full staging.
+
+Six native placement checks compared cropped and full staging over a
+partially clipped backdrop. They covered ordinary and reflected fills,
+scaling, fractional translation, skew and out-of-bounds geometry. The
+16 native layer scenes, 16 mask publications, cache checks and exhaustive
+conversion checks passed.
+
+The browser pair shared one V `-prod` generated C unit and used single-unit
+Clang `-O1 -fno-lto`. The preprocessed inputs matched outside the mask-path
+header and its native call. The generated C SHA-256 was
+`122be60004c69f19247efa757e6b495f28db6641440707b64bf3e8227b121430`.
+The control and candidate executable SHA-256 values were
+`818fd1de212606da201f2f3da0bda432957d0dbd0ba51c083e406a320a0ec9ed` and
+`42b82dd61860f73d7d4e5990d11d30a9acdcf805c5e6b0d9c7b9daebe2f0528d`.
+
+The candidate passed all 158 macOS mask captures. Four paired 2× captures
+matched every decoded pixel. They used the default pressure and overlap
+fixtures, the same pressure fixture with the shared raster disabled, and
+a Quartz fixture with reflected, fractional and rotated rectangles. The
+default builds logged the same 385 pressure and 106 overlap mask decisions.
+
+An LLDB trace of the Quartz rectangle fixture measured the arguments at
+`draw_document_path_pixels` entry on the two pinned executables. The
+control (PID 70034) used four 280 × 188 readbacks. The candidate (PID 70087)
+used 58 × 130 and 94 × 182 for the two integral fills and 280 × 188 for the
+fractional and rotated fills. Total staged pixels fell from 210,560 to
+129,928, a 38.3% reduction. The traced PNGs matched every decoded pixel.
+Both browsers and the guard exited zero. The first diagnostic attempt
+stopped at the allocator's startup `exec`. The recorded trace let LLDB
+continue across it. The trace is separate from the wheel timing.
+
+The precise wheel trials used fresh processes, profiles and browser caches
+with the same local pressure and overlap fixtures as the preceding section.
+They used a 1024 × 600 viewport at 2×, disabled JavaScript and retained host
+caches. After a one-second title-matched settle the driver sent 120
+four-pixel inputs at a requested 60 Hz, reversing after 60 inputs. The
+endpoint counts scroll-changing native frame installations after outer
+view paint over the first-to-last input window.
+
+The separate pressure diagnostic (PID 67099) recorded 615 capacity denials,
+544 shared hits including 83 crops, and 16 new shared rasters through the
+final publication. Overlap (PID 67233) recorded zero capacity denials,
+632 hits including 154 crops, and six new rasters. Timing used the default
+renderer configuration with mask diagnostics disabled.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 67363 | Pressure | Before | 16.93 | 54.531 / 62.704 / 109.816 | 55.96 | 120 / 36 | 120.133 / 32.940 | 6.19 |
+| 67509 | Pressure | After | 17.68 | 54.078 / 58.831 / 61.910 | 58.43 | 120 / 36 | 118.410 / 0.269 | 5.94 |
+| 67639 | Pressure | After | 16.48 | 55.849 / 65.568 / 115.645 | 57.69 | 120 / 34 | 119.459 / 34.972 | 5.78 |
+| 67741 | Pressure | Before | 16.30 | 56.981 / 63.121 / 117.252 | 57.06 | 120 / 34 | 125.273 / 17.015 | 5.56 |
+| 67854 | Pressure | Before | 15.60 | 60.015 / 63.895 / 65.483 | 59.89 | 120 / 31 | 123.741 / 49.735 | 5.27 |
+| 67982 | Pressure | After | 15.09 | 63.100 / 68.403 / 69.168 | 57.91 | 120 / 31 | 128.069 / 34.147 | 5.01 |
+| 68149 | Overlap | Before | 33.81 | 28.355 / 33.355 / 51.391 | 55.88 | 120 / 72 | 66.262 / 16.498 | 5.09 |
+| 68264 | Overlap | After | 34.48 | 27.441 / 33.486 / 51.981 | 56.21 | 120 / 73 | 64.789 / 0.109 | 5.15 |
+| 68364 | Overlap | After | 34.32 | 28.027 / 33.437 / 34.817 | 58.34 | 120 / 70 | 67.484 / 16.492 | 5.38 |
+| 68485 | Overlap | Before | 32.96 | 29.094 / 35.333 / 54.344 | 56.84 | 120 / 69 | 70.545 / 0.110 | 5.19 |
+| 68585 | Overlap | Before | 32.79 | 30.145 / 35.359 / 37.128 | 56.56 | 120 / 69 | 66.801 / 0.137 | 5.25 |
+| 68728 | Overlap | After | 33.15 | 28.868 / 33.966 / 52.105 | 58.88 | 120 / 67 | 67.256 / 16.532 | 5.23 |
+
+The timed cohort ran 07:11:55–07:12:59 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–510 CSS pixels. Pressure throughput improved in two of three
+pairs and its median rose from 16.30 to 16.48 fps. Overlap throughput
+improved in all three pairs and its median rose from 32.96 to 34.32 fps.
+Variation in the overlap control and input delivery limits attribution of
+the timing differences. Every measured interval exceeded 16.67 ms.
+The build, screenshot and comparison guard exits were zero and sampled
+process-tree RSS peaked at 7,466,958,848, 491,520,000 and 635,076,608 bytes.
+
+### Skipping the input channel swap for transparent SVG mask paths
+
+The GG path callback now swaps incoming red and blue channels only when
+it uploads a backdrop. A transparent draw clears the GG surface and
+replaces the staging pixels at readback. The output swap continues to
+publish RGBA to Quartz.
+
+An initial experiment used a BGRA staging bitmap and removed both swaps.
+It produced identical pixels and increased warm staging and compositing
+time on all three sizes below. The final change keeps RGBA staging and
+removes the input pass on transparent draws.
+
+The Apple Clang `-O1` harnesses used the three staging sizes from the
+rectangle fixture above. Each measurement included staging allocation,
+the serial red/blue loops, a CPU copy simulating readback, image creation,
+the Quartz draw and the destination flush. Source generation, destination
+allocation and filling, and output hashing were outside the timed interval.
+Each size and configuration used seven alternating pairs of fresh processes,
+with 101 samples per process. All outputs for each size matched the old
+composite hash. Warm times use each process's median after its first sample.
+
+| Bitmap | Experimental warm RGBA / BGRA (µs) | Final first before / after (µs) | Final warm before / after (µs) | Final faster pairs, first / warm |
+| --- | ---: | ---: | ---: | ---: |
+| 58 × 130 | 82.812 / 111.271 | 845.708 / 846.875 | 62.125 / 60.146 | 4/7 / 5/7 |
+| 94 × 182 | 179.646 / 231.728 | 908.792 / 949.500 | 137.646 / 130.083 | 3/7 / 7/7 |
+| 280 × 188 | 505.708 / 547.938 | 1191.125 / 1114.625 | 353.812 / 333.854 | 5/7 / 6/7 |
+
+The two harness SHA-256 values were
+`f6ebec6ee406bb29b534713d75fda83771b1bcff73e405e0e19d0f8991406f92` and
+`3b965939a4d5e9ce65a76ada86215ffd61371ab60cad1f707b77fe8c34083ce0`.
+One-minute host load was 15.68 for the BGRA experiment and 9.10 for the
+final harness on 18 logical CPUs.
+
+The matched browsers used one V `-prod` generated C unit and single-unit
+Clang `-O1 -fno-lto`. The RGBA control restored the two channel swaps in
+the sealed code. The paired candidate added the backdrop guard to that
+same sealed unit. The control executable SHA-256 was
+`1c1b37a3a10aa48c0192ac5e22b69733fb5de8b369a6a63e4271250be2b1089a`
+and the candidate executable SHA-256 was
+`fc4dc6c4f5409a824ad0a4a4fe6c8b0d4d16a9c5e9e2f06987682bde4e77793a`.
+Disassembly confirmed a branch around the input swap for a zero backdrop
+and an unconditional output swap. A separate `-prod` C generation from the
+canonical V source confirmed the callback shape. Its generated C SHA-256
+was `d21b5afb66d1efa712eff24dec250a723f8f4a31f34db71b4418c3c26210d1b0`.
+The native mask layer and exhaustive conversion checks also passed.
+
+All 158 macOS SVG mask captures passed on the candidate. Four paired 2×
+captures matched every decoded pixel. They covered the default pressure
+and overlap fixtures, pressure with Quartz forced, and a Quartz luminance
+mask with translucent red, blue, reflected and transformed paths. The
+colored fixture's SHA-256 was
+`9829156b10f124098b59a589cf1a348c5bc24e3fcbeab72abd36ffeef07da657`.
+Both colored captures logged five successful GG path draws. The default
+captures agreed on 385 pressure and 106 overlap mask decisions.
+
+The wheel trials used the same local pressure and overlap fixtures as above,
+fresh processes and browser caches, JavaScript disabled, and a 1024 × 600
+viewport at 2×. Host caches were retained. After a one-second title-matched
+settle, the driver sent 120 four-pixel inputs at a requested 60 Hz, reversing
+after input 60. Throughput counts scroll-changing native frame installations
+after outer view paint over the first-to-last input window.
+
+A separate pressure diagnostic (PID 12277) logged 620 cache capacity
+denials, 544 hits including 88 crops, and 16 new shared rasters between the
+start marker and the final publication. The overlap diagnostic (PID 12378)
+logged zero denials, 621 hits including 155 crops, and six new shared
+rasters. The timed trials disabled mask diagnostics.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 12495 | Pressure | Before | 16.17 | 57.833 / 61.887 / 65.180 | 58.30 | 120 / 33 | 124.521 / 48.960 | 8.07 |
+| 12596 | Pressure | After | 16.12 | 58.638 / 62.906 / 63.957 | 58.15 | 120 / 33 | 123.770 / 33.187 | 7.82 |
+| 12696 | Pressure | After | 15.49 | 58.176 / 66.456 / 117.650 | 59.46 | 120 / 31 | 121.754 / 49.166 | 7.44 |
+| 12814 | Pressure | Before | 15.78 | 60.158 / 65.103 / 65.464 | 58.68 | 120 / 32 | 125.818 / 32.691 | 7.22 |
+| 12986 | Pressure | Before | 15.68 | 58.294 / 65.154 / 123.535 | 58.31 | 120 / 32 | 121.245 / 18.398 | 7.28 |
+| 13092 | Pressure | After | 15.59 | 59.198 / 66.239 / 120.105 | 59.86 | 120 / 31 | 122.111 / 32.685 | 6.94 |
+| 13190 | Overlap | Before | 29.76 | 32.972 / 38.867 / 41.172 | 56.22 | 120 / 63 | 73.249 / 0.331 | 7.10 |
+| 13355 | Overlap | After | 31.39 | 30.822 / 37.181 / 38.093 | 58.36 | 120 / 64 | 70.175 / 0.120 | 7.17 |
+| 13502 | Overlap | After | 31.35 | 31.231 / 36.049 / 38.984 | 55.67 | 120 / 67 | 70.792 / 0.095 | 7.16 |
+| 13656 | Overlap | Before | 29.44 | 32.161 / 37.610 / 39.680 | 54.74 | 120 / 64 | 70.800 / 33.733 | 7.71 |
+| 13845 | Overlap | Before | 27.64 | 33.561 / 44.765 / 72.432 | 55.76 | 120 / 59 | 71.539 / 0.134 | 7.81 |
+| 14058 | Overlap | After | 26.86 | 36.495 / 41.575 / 43.860 | 54.18 | 120 / 59 | 87.482 / 0.124 | 7.67 |
+
+The timed cohort ran 07:32:08–07:33:12 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 485–510 CSS pixels. Pressure throughput decreased by less than 2% in
+each pair, and its median fell from 15.78 to 15.59 fps. The overlap median
+rose from 29.44 to 31.35 fps, with one pair slower. Every scroll interval
+exceeded 16.67 ms. All browsers and final validation guards exited zero.
+Sampled process-tree RSS peaked at 7,541,555,200 bytes for the matched
+candidate build, 7,737,901,056 for canonical C generation, 487,751,680 for
+the screenshot suite, and 670,285,824 for the scroll comparison.
+
+### Publishing small SVG alpha masks from their existing coverage
+
+The macOS snapshot publisher can reuse the alpha in an RGBA mask of up to
+131,072 pixels. It flushes the bitmap and creates the image without
+rewriting the color channels. Luminance masks derive coverage from RGB.
+Larger alpha masks go through the premultiplied-white conversion before
+publication.
+
+The native checks compare colored alpha and luminance masks through both
+Quartz clipping and destination-in compositing, at fractional placements
+and on sRGB and Display P3 destinations. The small-alpha cases verify
+that publication preserved the source color bytes. A 512 × 257 alpha
+mask verifies the conversion just above the cutoff. The layer, cache,
+placement and exhaustive pixel conversion checks passed.
+
+An exploratory Clang `-O1` harness tried the direct snapshot without an
+area limit. On a 1902 × 1284 mask, median warm publication and layer
+compositing fell from 1725.833 to 1208.583 µs. Publication and clipping
+rose from 9426.333 to 9996.646 µs, with the direct snapshot faster in two
+of seven pairs. All composite pixel hashes matched. The harness hash was
+`55da644046980dd161b0d6be6629e8878ef71c96b4a3edace73d278e90468ac5`.
+
+The bounded candidate was measured through source release and then
+through mask application, image release and destination flush. The
+timings exclude source generation, destination allocation and setup,
+and output hashing. Each mode used seven alternating pairs of fresh
+processes and 41 samples per process. Warm values are medians of each
+process's post-first-sample median. All composite hashes matched. Host
+load was 7.23–7.42 on 18 logical CPUs. The harness SHA-256 was
+`fb78bb1688b21b311a9566eba596ec44a32ce0cc203b539960040bf8e61a0b07`.
+
+| Alpha bitmap | Application | Warm publication before / after (µs) | Warm publication and application before / after (µs) |
+| --- | --- | ---: | ---: |
+| 276 × 184 | Destination-in | 35.250 / 9.667 | 52.417 / 26.895 |
+| 276 × 184 | Clip | 34.584 / 10.437 | 212.730 / 193.083 |
+| 512 × 256 | Destination-in | 76.021 / 12.104 | 115.397 / 53.688 |
+| 512 × 256 | Clip | 78.270 / 12.062 | 497.646 / 457.625 |
+
+The candidate had a lower warm time in all seven pairs for each endpoint
+and row.
+
+Repeating the bounded benchmarks with a Display P3 destination produced
+identical composite hashes within each pair. With 21 samples per process,
+including the first sample, warm publication and application improved in
+all seven pairs per row. Host load was 6.17. The harness SHA-256 was
+`3e7b898c09af7c9e41c07a78d033d006f687aba29013766fca5e31ceea5c26ee`.
+
+| Alpha bitmap | Display P3 application | Warm publication and application before / after (µs) |
+| --- | --- | ---: |
+| 276 × 184 | Destination-in | 230.584 / 206.062 |
+| 276 × 184 | Clip | 240.000 / 214.416 |
+| 512 × 256 | Destination-in | 530.271 / 450.354 |
+| 512 × 256 | Clip | 548.083 / 489.896 |
+
+The matched browsers used one V `-prod` generated C unit and single-unit
+Clang `-O1 -fno-lto`. The bounded candidate substituted the preprocessed
+publisher from the final header into the sealed control. The generated
+C SHA-256 was
+`a18adf92f5369baf4a87109f3d48c42461d247ddc37534ae23710227fe423351`.
+The executable SHA-256 values were
+`b95160bb3798ccf6b4d4188bb3e09f1a387853f3672c65145144b0e490e9884e` for
+the control and `d67ea514ce10c96c02319d861a5d851571e8550bfd35c93a187b6035e75979a6`
+for the candidate.
+
+All 158 macOS mask captures passed. Four paired 2× captures matched every
+decoded pixel. They covered the default alpha and luminance pressure pages,
+the alpha page with Quartz forced, and the overlapping solid-mask fixture.
+The alpha fixture changes the mask type and gradient stops on the existing
+75-mask pressure page. Its SHA-256 was
+`a9edaf4677215287c6f68c8b9e98b2571e98e87e60fd43b695037a74ecdf7c2f`.
+Both default pressure captures matched 385 mask decisions per pair. The
+overlap candidate matched all 106 control decisions and then repeated the
+last ten cache hits in one additional paint. The diagnostic log comparison
+resumed with those same captures and accepted the repeated pass.
+
+The wheel trials used the two local pressure fixtures, fresh processes,
+profiles and browser caches, JavaScript disabled, and a 1024 × 600
+viewport at 2×. Host caches were retained. After a one-second title-matched
+settle, the driver sent 120 four-pixel inputs at a requested 60 Hz, reversing
+after input 60. Throughput counts scroll-changing native frame installations
+after outer view paint over the first-to-last input window.
+
+The alpha diagnostic (PID 54094) logged 568 cache-capacity denials, 496
+shared hits including 78 crops, and 16 new shared rasters between the start
+marker and final publication. The luminance diagnostic (PID 54239) logged
+639 denials, 560 hits including 84 crops, and 16 new shared rasters. Both
+fixture types were confirmed by the published mask diagnostics. Timing ran
+with those diagnostics disabled.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 54412 | Alpha | Before | 15.61 | 58.303 / 65.478 / 123.438 | 59.90 | 120 / 31 | 127.345 / 33.445 | 5.85 |
+| 54555 | Alpha | After | 15.46 | 61.314 / 70.591 / 72.743 | 59.36 | 120 / 31 | 127.910 / 0.117 | 5.94 |
+| 54792 | Alpha | After | 15.44 | 59.676 / 66.238 / 123.095 | 59.29 | 120 / 31 | 130.345 / 16.857 | 6.27 |
+| 54954 | Alpha | Before | 15.45 | 59.468 / 68.659 / 127.084 | 59.29 | 120 / 31 | 128.758 / 17.693 | 6.17 |
+| 55110 | Alpha | Before | 15.46 | 60.600 / 67.899 / 69.380 | 59.34 | 120 / 31 | 122.755 / 49.923 | 6.31 |
+| 55253 | Alpha | After | 15.35 | 60.770 / 67.256 / 68.854 | 58.91 | 120 / 31 | 123.686 / 50.465 | 6.21 |
+| 55403 | Luminance | Before | 15.66 | 59.196 / 65.521 / 67.415 | 58.25 | 120 / 32 | 124.968 / 49.789 | 6.03 |
+| 55551 | Luminance | After | 16.26 | 58.215 / 64.755 / 65.977 | 58.62 | 120 / 33 | 122.333 / 16.760 | 5.95 |
+| 55700 | Luminance | After | 15.93 | 58.834 / 63.092 / 66.286 | 57.44 | 120 / 33 | 123.415 / 49.489 | 6.11 |
+| 55852 | Luminance | Before | 12.76 | 72.225 / 81.623 / 83.215 | 58.41 | 120 / 26 | 150.889 / 50.623 | 6.02 |
+| 56165 | Luminance | Before | 13.86 | 67.700 / 77.461 / 93.169 | 56.87 | 120 / 29 | 138.978 / 18.111 | 5.94 |
+| 56323 | Luminance | After | 13.70 | 68.640 / 77.744 / 78.466 | 58.22 | 120 / 28 | 141.128 / 17.203 | 6.10 |
+
+The wheel cohort ran 07:49:54–07:50:58 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 485–503 CSS pixels. Alpha throughput fell by less than 1% per pair,
+with a median of 15.46 → 15.44 fps and 31 scroll changes in each arm.
+Luminance throughput varied more, with a median of 13.86 → 15.93 fps.
+Every measured scroll interval exceeded 16.67 ms. The final checks,
+benchmarks and guards exited zero. Peak sampled process-tree RSS was
+7,180,599,296 bytes for the bounded build, 481,345,536 for the screenshot
+suite, and 670,171,136 for the paired wheel comparison.
+
+### Vectorizing SVG mask coverage conversion on Apple Silicon
+
+RGBA luminance conversion uses an unsigned ARM dot product for four pixels
+at a time. It applies the same 54, 183 and 19 weights and truncates after
+shifting by eight. RGBA alpha expansion uses a byte shuffle. Forward
+overlaps keep the per-pixel order because stores can affect later reads.
+The common RGBA converter accepts aliasing, including in-place bitmaps.
+The separate alpha-only clip expansion retains its disjoint-buffer contract.
+
+The native checks passed all 16,777,216 RGB combinations and every alpha
+value, including padding, unaligned buffers, in-place conversion, and
+overlap both across and within rows. They also passed with workers disabled,
+with ARM dot-product support undefined, and under AddressSanitizer and
+UndefinedBehaviorSanitizer. The native layer and mask publication checks
+passed. The scalar test also compiled for x86-64. Disassembly of the
+candidate harness confirmed `udot`.
+
+The Apple Clang `-O2` harnesses timed conversion through return, including
+worker dispatch where the bitmap was large enough. Source preparation,
+in-place resets and comparison against a scalar reference were outside the
+timed interval. Seven alternating pairs used fresh processes per row with
+81 samples for small masks and 31 for large masks. Warm times are medians
+of the post-first-sample median in each process. All outputs matched,
+including padding. One-minute host load was 14.09–14.71 on 18 logical CPUs.
+
+| Bitmap and mode | First before / after (µs) | Warm before / after (µs) | Faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 276 × 184 luminance copy | 5.459 / 4.250 | 5.375 / 3.958 | 6/7 / 7/7 |
+| 276 × 184 luminance in place | 5.584 / 4.417 | 5.375 / 4.083 | 7/7 / 7/7 |
+| 512 × 256 luminance in place | 14.167 / 10.916 | 13.917 / 10.792 | 6/7 / 7/7 |
+| 1902 × 1284 luminance copy | 180.917 / 165.917 | 100.833 / 93.416 | 6/7 / 5/7 |
+| 1902 × 1284 luminance in place | 189.750 / 166.250 | 141.812 / 124.459 | 5/7 / 5/7 |
+| 512 × 257 RGBA alpha in place | 11.333 / 11.625 | 11.041 / 11.416 | 1/7 / 0/7 |
+| 276 × 184 alpha-only expansion | 3.917 / 3.917 | 3.917 / 3.917 | 4/7 / 3/7 |
+| 1902 × 1284 alpha-only expansion | 242.709 / 245.917 | 106.876 / 105.688 | 3/7 / 4/7 |
+
+The RGBA harness executable SHA-256 values were
+`5260742a84c2cfd484404ed071d73a13ed13457eeb52100c391e765507bfa1f6` and
+`25d0a463a09dae28a494131e6031b625f540c40cfd846c8e68b88e1125e1e61c`.
+The alpha-only harness hashes were
+`ef739b19d25749f70a2a55ae02132adc9d3ea54475fe2df5ce00bdf5259fa093` and
+`3337431490feaf37df69aea882740d53e1aca936616d038e16dda4b9069e0214`.
+
+The initial widening-multiply version brought the warm 512 × 257 RGBA
+alpha control from 10.375 to 38.709 µs after removing the shared alias
+restriction. The packed alpha loop recovered most of that cost. Its
+earlier paired run measured 16.500 → 15.250 µs at load 12.31. The final
+paired run measured 11.041 → 11.416 µs at load 14.09. The alpha-only
+copy loop's disjoint-buffer annotation recovered its small-mask median
+after an earlier run measured 5.125 → 6.208 µs at load 22.15–22.77.
+
+The matched browsers used one V `-prod` generated C unit and single-unit
+Clang `-O1 -fno-lto`. The preprocessed inputs matched outside the conversion
+header. The generated C SHA-256 was
+`c8a532663d98846ace1c7e7f114dc5dc2b181d494a123ab55a7fe2ac20073d04`.
+The control and candidate executable SHA-256 values were
+`cca02f60d3e0c3df331e927efe6959496caf4501584d56be7882fc1738d402d4` and
+`e46e135ecc9f1511c8345a533ce406d51c1db01eb241758f2190b63278cc89fe`,
+respectively.
+
+The candidate passed all 158 macOS mask captures. Four paired 2× captures
+matched every decoded pixel. They covered the default luminance and alpha
+pressure fixtures, luminance with Quartz forced, and overlapping masks.
+The pressure captures agreed on 385 mask decisions per pair, and the
+overlap captures agreed on 106. The luminance diagnostics confirmed new
+rasters and Quartz fallback on the same fixture. The candidate browser's
+row converter contained the ARM `udot` instruction.
+
+The wheel trials reused the two local 75-mask pressure fixtures at 1024 × 600
+and 2× with JavaScript disabled, fresh processes, profiles and browser caches,
+and retained host caches. The title-matched settle lasted one second. The
+driver sent 120 four-pixel inputs at a requested 60 Hz, reversing after input
+60. Throughput counts scroll-changing native frame installations after outer
+view paint over the first-to-last input window.
+
+A separate luminance diagnostic (PID 39862) recorded 662 capacity denials,
+592 hits including 89 crops, and 16 new shared rasters through the final
+publication. The alpha diagnostic (PID 40015) recorded 634 denials, 560
+hits including 88 crops, and 16 new rasters. The timed cohort disabled
+mask diagnostics.
+
+| PID | Fixture | Build | Scroll fps | Median / p95 / max (ms) | Input Hz | Inputs / changes | First / last scroll gap (ms) | Load |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 40171 | Luminance | Before | 15.11 | 61.849 / 68.561 / 69.628 | 59.94 | 120 / 30 | 135.227 / 49.964 | 5.26 |
+| 40317 | Luminance | After | 16.64 | 56.602 / 63.819 / 65.985 | 58.23 | 120 / 34 | 118.641 / 32.717 | 5.00 |
+| 40464 | Luminance | After | 16.55 | 58.387 / 61.891 / 63.410 | 59.70 | 120 / 33 | 119.828 / 16.802 | 4.84 |
+| 40609 | Luminance | Before | 16.51 | 57.136 / 65.788 / 66.312 | 57.77 | 120 / 34 | 123.534 / 32.855 | 4.77 |
+| 40861 | Luminance | Before | 16.37 | 56.302 / 63.189 / 115.969 | 59.02 | 120 / 33 | 121.365 / 18.034 | 4.71 |
+| 41074 | Luminance | After | 16.38 | 57.412 / 62.671 / 68.044 | 59.05 | 120 / 33 | 119.594 / 50.003 | 4.89 |
+| 41220 | Alpha | Before | 16.11 | 57.913 / 63.991 / 66.736 | 58.11 | 120 / 33 | 121.014 / 49.221 | 4.82 |
+| 41376 | Alpha | After | 15.80 | 57.343 / 67.148 / 119.362 | 58.77 | 120 / 32 | 120.078 / 33.262 | 5.08 |
+| 41511 | Alpha | After | 16.99 | 57.101 / 61.790 / 62.353 | 59.46 | 120 / 34 | 120.044 / 0.112 | 4.99 |
+| 41625 | Alpha | Before | 15.89 | 58.937 / 66.673 / 127.244 | 59.11 | 120 / 32 | 116.589 / 18.629 | 5.07 |
+| 41832 | Alpha | Before | 15.90 | 59.798 / 65.415 / 65.972 | 59.12 | 120 / 32 | 122.414 / 16.765 | 4.99 |
+| 41969 | Alpha | After | 15.56 | 61.738 / 66.922 / 67.553 | 59.75 | 120 / 31 | 129.117 / 0.122 | 5.15 |
+
+The timed cohort ran 08:16:08–08:17:12 UTC on November 18, 2026. Load is
+the one-minute average at launch on the 18-CPU host. Peak scroll positions
+were 484.5–502 CSS pixels. The luminance median rose from 16.37 to 16.55
+fps. The alpha median moved from 15.90 to 15.80 fps with mixed pairs.
+Every measured scroll interval exceeded 16.67 ms. All browsers and final
+guards exited zero. Sampled process-tree RSS peaked at 7,509,360,640 bytes
+for the paired build, 484,048,896 for the screenshot suite, and 671,760,384
+for the paired wheel comparison.
+
+## Original migration plan
+
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
 `libLadybirdVSkiaText.dylib`; the `skia/` module was removed on 2026-11-10) and the pinned Chromium
 Skia Graphite builds (`libVoxGraphite.dylib` on Metal and
@@ -2986,3 +13745,3529 @@ improves 341 to 284 pixels, correcting 57 with zero new differences. The
 preceding counts. CNN and the earlier tall-shadow repeat failure remain open;
 production validation is pending the managed rebuild. See the
 [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#shape-and-glyph-samples-in-one-pass-2026-11-14).
+
+
+### Plane-scaled circular JPEG avatars, 2026-11-15
+
+`e63689e7a` resizes JPEG planes before RGB conversion for supported small circular
+minified avatars, then reuses the existing sampled-image GPU painter. Unsupported
+profiles, orientation, geometry and sampling modes retain replay. Five C-backend
+YUV test files pass, including five new scaling/EXIF cases. Vlang.io improves
+284 to 111 pixels, correcting 173 with zero new differences. The 30-workload
+diagnostic cohort preserves the four exact archives, the unscaled JPEG control
+and preceding counts. Production confirmation is pending; CNN and historical
+repeatability failures remain open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#scaled-jpeg-avatar-planes-2026-11-15).
+
+
+### Fractional scaled JPEG texture colors, 2026-11-15
+
+`f0b7f4a68` carries opaque JPEG components through RGBA32F base-texture sampling
+using the V canvas adapter. Byte mips, geometry, clip and shader are preserved.
+Five YUV test files and two GPU cases pass. Vlang.io improves 111 to 28 pixels:
+92 corrected, **nine new one-level differences**, net 83 fewer. The JPEG remains
+inexact. A stable 30-workload cohort preserves all other counts and repeats
+exactly; the earlier input-drift cohort and historical failures are retained.
+Production confirmation remains pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#fractional-jpeg-texture-colors-partial-improvement-2026-11-15).
+
+
+### Production confirmation of the 28-pixel cohort, 2026-11-15
+
+Production `05e6ace1` (C backend, literal `-prod`, single C unit) matches all 61
+selected compiled rendering-source witnesses. Thirty workloads captured twice
+confirm vlang.io at 28 pixels and four exact archived sites; every preceding
+reference count matches diagnostics. All 60 native guards and driver/outer exits
+are zero. CNN repeats differ at 1,558 pixels; historical failures remain open.
+The nine introduced JPEG differences remain within vlang.io's residual. Two
+newer layout edits are not in this bundle. No renderer change was applied by
+this confirmation. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-the-28-pixel-result-2026-11-15).
+
+
+### Text gradients in local picture coordinates, 2026-11-15
+
+`4e3445943` localizes supported line-only text-gradient paths and their clips in
+V before GPU drawing. This removes the final heading pixel: vlang.io improves
+28 to 27, one corrected and none introduced. Two new GPU cases and seven existing
+root cases pass with arena poisoning; 33 workloads captured twice preserve every
+other reference count. Four archived sites remain exact. Retina PNGs stay
+identical to production. Existing references, shader and dither are unchanged.
+The JPEG's 23 and scene's four pixels remain, alongside CNN/Reddit and historical
+repeat failures. Production is still at 28; the 27 result awaits the managed
+build. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#text-gradient-coordinates-inside-recorded-layers-2026-11-15).
+
+
+### Production confirmation of the local-coordinate fix, 2026-11-15
+
+Production `01436d0a` (C, literal `-prod`, single unit) matches all 62 selected
+compiled rendering witnesses. Thirty-three workloads captured twice confirm
+vlang.io at 27 and four exact archived sites; every diagnostic reference count
+matches. All 66 capture guards and driver/outer exits are zero, with 69 stable
+input witnesses. Vlang.io's production PNG matches diagnostics exactly. CNN's
+repeat pair differs at 1,540 pixels; its rendering/source failures and the
+remaining vlang/Reddit/historical repeat issues stay open. This supersedes the
+preceding pending-production status. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#production-confirmation-of-the-27-pixel-result-2026-11-15).
+
+
+### Opaque lossless WebP sampling and source coverage, 2026-11-15
+
+`c242016bb` restores sampled uploads for downscaled opaque VP8L images. Two
+unchanged Brave mip references improve from 32,399/57,599 differing pixels to
+zero, twice. Eligibility/cache ownership tests and both GPU references at 1×/4×
+pass with arena poisoning. A 44-workload diagnostic cohort retains every other
+reference count; CNN and vlang.io remain open. Production confirmation is pending.
+
+`e0fec36b2` adds package-wide compiled V witnesses (23 Python tests). The restored
+production baseline passes 122 rendering witnesses including all 64 consumed GG
+V sources; the experimental shader bundle is explicitly rejected. Embedded
+shader/library identity remains a separate check. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-lossless-webp-sampling-2026-11-15).
+
+
+### Limited-range WebP plane sampling, 2026-11-15
+
+`df3fea85d` preserves fractional limited-range RGB for native-size and half-size
+opaque VP8 images. Unchanged Brave controls improve from 9,981/3,288 differing
+pixels to zero, twice. Six YUV test files, cache/ownership and historical-policy
+checks, and both GPU references at 1×/4× pass. A 44-workload diagnostic cohort
+retains every other reference count. General rescaling probes remain rejected;
+no new native sampler is shipped. Production validation of this fix is pending.
+
+The earlier `c242016bb` lossless controls are now exact twice in production
+`5171fc6f`, with final helper/caller and all 64 GG V witnesses matching. That
+preview contains older lossy helpers and cannot validate the final new slice.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-size-and-half-size-lossy-webp-sampling-2026-11-15).
+
+
+### Alpha WebP magnification and production confirmation, 2026-11-15
+
+`59d71dca9` borrows premultiplied VP8L rows for native-size/magnified sampling
+without changing resize history. Three untagged alpha images become exact;
+the combined control improves 10,274→2,658 pixels with zero new differences.
+The profiled image remains unresolved. Three browser tests and six GPU draws
+at 1×/4× pass. No new native painter or shader is shipped.
+
+The final lossy fix `df3fea85d` is confirmed in production `7f651f2d` across
+44 workloads. Production `36f72f4a` additionally confirms the alpha correction:
+44 workloads/88 captures, all guards/exits zero, 133 compiled witnesses and
+160 stable input pins. Other stable PNGs match diagnostics exactly; CNN still
+fails repeatability. This supersedes the lossy fix's pending status. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#magnified-alpha-webp-sampling-2026-11-15).
+
+
+### Numerical sRGB WebP profiles, 2026-11-15
+
+`a5b29f604` interprets ICC RGB/XYZ matrix profiles and parametric curves before
+canonicalizing a conservative numerical sRGB subset. Original straight decode
+rows then use the existing alpha multiplication and magnified image sampler;
+other profiles and alpha minification retain their prior paths. No new native
+painter, shader or browser dependency is introduced.
+
+The alpha control becomes exact twice (2,658 corrected, zero introduced).
+Three profile tests, seven browser checks and eight GPU draws pass. The
+44-workload/88-capture diagnostic retains every other reference count and all
+42 stable non-alpha/non-CNN PNGs; CNN still fails repeatability. All 89 native
+guards and enclosing exits are zero, with 100 compiled V witnesses and 166
+stable pins. Production confirmation is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#numerical-srgb-profiles-in-lossless-webp-2026-11-15).
+
+
+Production `a542533f` (receipt `20261115-122533-7861f9dc`, C/literal V `-prod`,
+one C unit) now confirms `a5b29f604`: all four alpha images exact twice,
+44 workloads/88 captures, 134 compiled V witnesses, 164 stable pins and all
+native/driver/outer guards zero. All 43 non-CNN PNGs match diagnostics exactly;
+CNN retains its repeat failure. This supersedes the pending-production status.
+
+### Sampled sRGB WebP curves and RGB minification, 2026-11-15
+
+`1e1ffdd4e` recognizes dense numerical sRGB ICC curves and retains full RGB
+WebP rows for the existing GPU mip sampler. Tagged VP8 stays outside the YUV
+upload path. Six parser tests, the browser decode/eligibility test and six GPU
+draws at sample counts 1 and 4 pass; no shader or native painter changes ship.
+
+The new frozen control improves 5,059→588 pixels (4,471 corrected, zero
+introduced). Its native-size and small images are exact; its clipped bottom
+image remains open despite the isolated sampler being exact. The C/O0 browser
+cohort covers 45 workloads/90 captures, 101 compiled V witnesses, 171 stable
+pins and 91 successful native guards. CNN improves 175,866→165,579 and repeats
+exactly; all 45 pairs repeat exactly and the other 43 existing PNGs match the
+previous production captures. Production confirmation is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-srgb-profiles-and-rgb-webp-minification-2026-11-15).
+
+Production `73cc5a36` (receipt `20261115-140919-8b8a4fe0`, C/literal V `-prod`,
+one unit) now confirms `1e1ffdd4e`: 45 workloads/90 captures, 135 compiled
+witnesses, 167 stable pins, all native/driver/outer exits zero. All reference
+counts are retained and all native pairs repeat exactly within that cohort.
+The 44 non-CNN PNGs match diagnostics; CNN has a retained 1,558-pixel cross-build
+gap. This supersedes that slice's pending-production status.
+
+### Sampled-image compositor fringes, 2026-11-15
+
+`78f1fcf3b` uses the existing two-pixel geometry-fringe rule for image readbacks
+and selects samples from their intersection with the owning compositor grid.
+Mixed tile selections, larger overhangs and empty intersections retain replay.
+Three regression functions fail before the fix and pass afterward, including
+the actual WebP callback at sample counts 1 and 4. No native or shader change
+ships. The full browser control becomes exact twice: 588 corrected, zero
+introduced; its original 5,059 differences are now resolved in diagnostics.
+
+The 45-workload/90-capture recheck has 161 compiled V witnesses, 209 stable
+pins and 91 successful native guards. The other 43 existing non-CNN PNGs are
+unchanged. CNN retains 165,579 reference differences but its native repeat
+fails at 1,558 pixels, in the historical bottom photograph region. The failed
+repeat is retained; equal counts do not establish stability. Production
+confirmation of this fringe correction is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-image-compositor-readback-fringes-2026-11-15).
+
+Production `2e089712` (receipt `20261115-142738-638a0adf`, C/literal V `-prod`,
+one unit) confirms `78f1fcf3b`: the complete WebP control is exact twice and
+all 44 non-CNN PNGs match diagnostics. The 45-workload/90-capture cohort has
+136 per-capture selected source witnesses, 160 consumed package V witnesses,
+209 stable pins and all native/driver/outer exits zero. CNN retains 165,579
+reference differences and fails its repeat at 1,484 pixels. An earlier
+interrupted production attempt is retained without acceptance. This supersedes
+the fringe correction's pending-production status; all-site equality remains open.
+
+### Native media routing in frozen CNN replay, 2026-11-15
+
+`de138d5e5` fixes native playback bypassing browser proxy routing. The unstable
+104×15 region is a video command; the neighbouring train image has stable
+pixels and uses the verified sampler. The archive contains no MP4 responses.
+Two Brave diagnostic processes report paused videos with zero time/metadata,
+while Vox's old player loaded remote URLs outside browser transport and
+published changing frames.
+
+When proxy policy may apply, progressive native media now uses the browser
+transport and an owned local file retained until the player closes. Redirects,
+explicit direct overrides and global bypasses retain their proxy policy.
+Errors preserve their allocation lifetime and cannot trigger direct fallback.
+Unproxied/local playback and the existing WebM adapter retain their paths.
+Proxied progressive media buffers before decoding; proxied playlists explicitly
+require future streaming-loader support.
+
+Proxy-policy and real native MP4 integration checks pass, including redirects,
+file lifetime/cleanup, missing media, failed proxy and error-message ownership
+under arena poisoning. The C/O0 browser's 45-workload/90-capture cohort has
+177 compiled V witnesses, 311 stable pins and 91 successful native guards.
+CNN improves 165,579→164,021 (1,558 corrected, zero introduced); all 45 pairs
+repeat exactly. All 44 non-CNN PNGs are unchanged. Eight missing MP4 requests
+reach the replay proxy and return 404. Production confirmation remains pending.
+No raster, reference, tolerance, scripting or performance acceptance changes
+are claimed. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-media-routing-in-frozen-cnn-replay-2026-11-15).
+
+### Opaque compositor continuation, 2026-11-15
+
+`58846cb2e` reconnects the V compositor's proved opaque continuation to the native
+painter. CNN's archived header is exact (24 corrected pixels, zero introduced),
+and the existing mask-gap ellipse control improves 7→0. All 46 other prior PNGs
+are unchanged in 48 workloads/96 stable captures. Native scope ownership and all
+15 existing mask/opacity continuation proof tests pass under arena poisoning.
+Production `c19672ae` confirms both this fix and the preceding SVG tile sample
+count correction across 48 workloads/96 fresh captures. Every PNG matches the
+accepted diagnostic; the CNN header and both focused controls are exact.
+Startup smoke passes. CNN's image/source differences, Vlang and missing Reddit
+evidence remain open; see the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#opaque-compositor-continuation-in-the-native-painter-2026-11-15).
+
+### Filtering minified WebP planes before RGB, 2026-11-15
+
+`d1799617e` adds a bounded YUV444 upload and post-filter RGB conversion through
+the existing V/GG image backend. Exact power-of-two plane reductions requiring
+only the final bilinear sample are supported; other cases keep their renderer.
+Both preparation tools stage the same uniform/shader change. Lazy shared shader
+bytes load in the persistent arena; an explicit old-initialization control
+traps under poisoning, while the regression survives reclaimed paint scopes.
+
+The C/O0 diagnostic improves CNN 163,830→88,752: 75,105 corrected and 27
+introduced one-level differences. All changes are inside two image rectangles.
+All 47 other PNGs are unchanged across 48 workloads/96 stable captures. CPU,
+GPU, native preparation and Python preparation checks pass. No original
+reference or tolerance changes. Production `44f9e0ff` confirms every diagnostic
+PNG in 48 workloads/96 fresh captures; catalog parity remains open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#bounded-minified-webp-plane-filtering-2026-11-15).
+
+
+### Sampled YUV across mixed MSAA tiles, 2026-11-15
+
+`59c259a55` keeps packed YUV filtering when an image readback crosses tiles with
+different sample counts. It rasterizes each tile with its own gutter and sample
+count, publishes only owned pixels, preserves the outside fringe and padded
+rows, and leaves the destination untouched on failure. Existing non-YUV mixed
+sample paths retain their fallback.
+
+The C/O0 diagnostic improves CNN 88,752→71,925: 16,841 corrected and 14
+introduced one-level differences, all inside one image. All 47 other PNGs are
+unchanged in 48 workloads/96 repeatable captures. Two focused V checks exercise
+both seam directions, sample selection, native channel conversion, fringe,
+row padding and rejection under arena poisoning. No original reference or
+tolerance changes. Production confirmation remains pending the managed build;
+CNN and catalog-wide parity remain open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#sampled-yuv-images-across-mixed-msaa-tiles-2026-11-15).
+
+
+### Additional mip filtering before YUV conversion, 2026-11-15
+
+`262c477c1` keeps supported scaled WebP uploads as packed planes through GPU mip
+generation and the existing canvas sampler, then converts the final sample to
+RGB. It retains the single-level path, original scale/source restrictions,
+non-YUV paths, tile sample counts and existing shader/sampler policy. The native
+callback carries the mip flag through uniform and mixed-sample regions.
+
+CNN improves 71,925→58,062 in diagnostics: 14,488 corrected and 625 introduced
+pixels, each new error at most two channel levels. Every change lies inside
+Sullivan's image; its interior maximum error improves 88→2. All 47 other PNGs
+are unchanged across 48 workloads/96 repeatable captures. Five focused test
+functions pass under arena poisoning, including clipped YUV mip arithmetic,
+native callback routing across seams and the existing reclaimed-scope checks.
+Production confirmation remains pending the managed build; full equality is
+open. No original reference or tolerance changes. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#additional-yuv-mip-filtering-2026-11-15).
+
+
+### Production confirmation of sampled YUV tiles and mips, 2026-11-16
+
+Production `523e30dd` (C/literal V `-prod`/single unit) confirms `59c259a55` and
+`262c477c1` through matching consumed implementation hashes and 48 workloads/96
+fresh captures. Every pair repeats and every PNG matches the accepted mip
+diagnostic. CNN remains at 58,062, Vlang at 27 and the four exact archived sites
+at zero. Startup smoke and all guards pass. The driver's 195 source checks stay
+active. This closes both production holds above; full equality remains open.
+
+### Native chroma grid for near-half WebP, 2026-11-16
+
+`5995502f5` packs full-size Y and edge-extended half-size U/V into separate
+channels of one texture. The shader samples chroma at half coordinates before
+limited-range RGB conversion. Selection is bounded to even full-source opaque
+VP8 images drawn strictly between half and native size on both axes. Existing
+bindings, the 112-byte uniform, sampler policy and scaled-upload paths remain;
+the new flag uses a reserved uniform component. Both preparers stage the same
+flag, capability check and shader branch, including partial-staging repair.
+
+CNN improves 58,062→54,627 in diagnostics: 3,508 corrected and 73 introduced
+one-level differences. All introduced pixels are in the peptides image; its
+interior improves 4,106→1,048 with maximum error 26→1. Three other existing
+one-level photo pixels also become exact. All 47 other PNGs are unchanged in
+48 workloads/96 repeatable captures. Ten focused V test functions and a Python
+preparer check pass, including odd chroma dimensions, clamping, reclaimed paint
+scopes, tile seams and source/shader restoration after production validation.
+Production `419ad8d7` now confirms this slice across 48 workloads/96 fresh
+captures: every PNG matches the accepted diagnostic, with CNN at 54,627 and
+all pairs repeating. Startup smoke and all guards pass. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#native-chroma-sampling-for-near-half-webp-2026-11-16).
+
+### Full YUV planes through aligned mip filtering, 2026-11-16
+
+`69e1fce6c` extends the atlas path to aligned stronger minification: natural
+dimensions divisible by four, both destination dimensions strictly between
+quarter and half size, and the reduced upload requiring another mip. It keeps
+the original planes through GPU filtering and preserves the earlier near-half
+and promoted paths. Generated UV mip padding repeats that mip's averaged edge;
+luma and alpha bytes remain unchanged. The existing shader and sampler suffice.
+
+CNN improves 54,627→33,409 in diagnostics: 21,724 corrected and 506 introduced
+one-level differences, all inside Sullivan's image. Its interior improves
+22,366→2,698, maximum error 2→1. All 47 other PNGs are unchanged across 48
+workloads/96 repeatable captures. Ten focused V test functions pass with arena
+poisoning and 3 GiB runtime guards. An independent chroma-texture comparison
+fails before the mip-edge correction and passes exactly afterward in both
+sample modes. Production `99957e17` confirms the final correction across all 48
+workloads/96 fresh captures: every PNG matches its accepted diagnostic and all
+pairs repeat. Startup smoke and all guards pass; full equality remains open.
+No original reference or tolerance changes.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#full-plane-aligned-yuv-mips-2026-11-16).
+
+### Profiled RGB WebP half uploads, 2026-11-16
+
+`5a2157173` retains CPU mip averages when a canonical sRGB VP8
+image requests an exact half-size upload. Larger uploads already used in the
+same resource/navigation/raster scope keep their existing GPU mip samples;
+stronger and rounded reductions retain their previous path. Cached pixels
+outlive temporary paint memory. No shader or native application UI changes.
+
+CNN improves 33,409→6,091 in diagnostics: 27,321 corrected and three introduced
+one-level differences, all inside the ice-cap image (27,345→27). All 47 other
+prior PNGs are unchanged across 50 workloads/100 repeatable captures. Four
+focused V functions pass with arena poisoning and 3 GiB runtime guards.
+Both new direct GG controls match independent Brave references exactly at
+sample counts one and four; their browser captures retain 18/24 one-level
+differences. Production `d0fa860e` confirms every diagnostic PNG across 50
+workloads/100 fresh captures, with all pairs repeating. Startup and all guards
+pass. No original reference or tolerance changes; catalog parity remains open.
+See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#profiled-rgb-webp-half-uploads-2026-11-16).
+
+### Normalized highp R8 plane resampling, 2026-11-16
+
+`f09630164` uses the existing raster-pipeline arithmetic for single-channel
+plane resizing: normalized bytes, four fused bilinear contributions and the
+UNORM8 store. It replaces interpolation in byte space followed by half-up
+rounding. CPU mip construction and supported browser upload ranges remain.
+
+The independent Skia oracle now agrees on all 24,480 real scaled-plane bytes
+(previously ten differed) and 9,493 bytes across ten additional dimension cases.
+Ten focused V functions pass with arena poisoning and 3 GiB runtime guards.
+All 50 existing PNGs remain unchanged in 100 repeatable diagnostic captures.
+This establishes a resampler correction, with no site-level pixel gain.
+Production `c23c0d0a` confirms all 50 workloads/100 fresh captures with all
+196 source checks active; startup and all guards pass. The three primitive
+checks also pass with literal V `-prod` and C `-O2`. The unsupported
+rounded-upload experiment is reverted; original references and tolerances
+remain unchanged.
+See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#normalized-r8-plane-resampling-2026-11-16).
+
+### Full-range JPEG planes through final sampling, 2026-11-16
+
+`8c2e79555` retains scaled JPEG Y/U/V bytes through CPU mip construction and
+texture filtering. The full-range matrix and RGB clipping now follow the final
+sample. The V tile bridge keeps each compositor tile's sample count; both
+preparers install the uniform, capability check and shader together, including
+repair of partially staged atlas/JPEG inputs.
+
+Vlang improves **27→5 pixels**, with **22 corrected and zero introduced**;
+its remaining JPEG pixel and four scene pixels are unchanged. All 49 other
+PNGs are unchanged in 50 workloads/100 repeatable diagnostic captures.
+Eighteen focused V functions and the Python staging check pass with 3 GiB
+runtime guards; V checks use arena poisoning. The staging repair leaves all
+93 staged canvas inputs byte-identical to the accepted capture inputs.
+Production `aa91e7cc` now confirms this five-pixel result across 50 workloads/
+100 fresh captures, with all 196 feature checks active and every PNG matching.
+No reference/tolerance changes or live-site/performance claim. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#full-range-jpeg-plane-sampling-2026-11-16).
+
+### Gray8 CPU-plane stores, 2026-11-16
+
+`293c8abed` uses Gray8 storage for resized CPU YUV planes, matching
+`SkYUVAPixmapInfo`. The existing highp interpolation feeds the existing BT.709
+luma stage before byte storage. The R8 API preserves its previous arithmetic.
+
+Vlang improves **5→4 pixels**: its JPEG becomes exact, with one corrected pixel
+and zero introduced differences. All 49 other PNGs are unchanged across 50
+workloads/100 repeatable diagnostic captures. Fifteen permanent focused V
+functions pass; the four Gray8 functions also pass with literal V `-prod` and
+C `-O2`, under arena poisoning and 3 GiB guards. Independent Skia references
+cover 393,216 midpoint bytes, 9,493 additional Gray8 bytes and 24,480 real plane
+bytes, with exact agreement. Production confirmation of this correction remains
+pending. No reference, tolerance, shader or mip-kernel change. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#gray8-cpu-plane-stores-2026-11-16).
+
+### Opaque planar-image draw semantics, 2026-11-16
+
+`6448185cc` carries the YUV shader's guaranteed opaque alpha into GG's image
+paint classification, enabling native draw ordering and analytic interior fills.
+RGB uploads and restored layers keep their existing conservative metadata.
+Both preparers stage the same change and repair either affected file independently.
+
+CNN improves **4,788→1,414** in diagnostics: 3,450 corrected and 76 introduced
+one-level pixels. All 51 pairs repeat, with 50 other PNGs unchanged. Ten focused
+V functions and two Python checks pass; native YUV sampling and rounded coverage
+also pass with literal V `-prod`. The new complete 64×64 native R8-plane coverage
+oracle is exact. Production `036bf130` confirms the preceding 4,788 CNN result
+and exact Vlang, GitHub, Hacker News, Lobsters and Wikipedia across twelve fresh
+captures; it lacks this new flag. Its managed rebuild is pending. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-opaque-planar-image-draws-2026-11-16).
+
+### Planar fragment-coordinate normalization, 2026-11-16
+
+`3d3b3c6d2` normalizes limited-range YUV coordinates after interpolation, matching
+the native plane sampler. Both staging paths repair each operation independently.
+CNN improves **1,414→1,311** in diagnostics: 105 corrected and two introduced
+one-level differences. All 51 pairs repeat; 50 other PNGs stay unchanged.
+Native full-frame viewport/tile residuals improve 194/190→0/0; the new regression
+fails with the control shader. Eleven focused V functions and two Python checks
+pass; the coordinate and native sampling functions also pass with literal V
+`-prod`. Production confirmation remains pending through the managed hook.
+References/tolerances are unchanged. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#planar-fragment-coordinate-normalization-2026-11-16).
+
+### Uniform planar draws in tile coordinates, 2026-11-16
+
+`a56efe4fd` uses each owning tile's raster space for uniform planar draws as well
+as mixed-sample draws. It retains direct fallback without usable document geometry.
+CNN improves **1,311→1,197** in diagnostics: 115 corrected and one introduced
+one-level difference. Sullivan's interior becomes exact. All 51 pairs repeat;
+50 other PNGs stay unchanged. Four callback functions pass with arena poisoning
+and a 3 GiB guard, including native-tile crop equality, no-grid fallback, mixed
+sampling, JPEG, backdrop margins and rejection. The new crop regression fails
+with the control implementation. Production confirmation remains pending.
+References and tolerances stay fixed. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-planar-draws-in-tile-coordinates-2026-11-16).
+
+### CPU byte mips for native-size planar atlases, 2026-11-16
+
+`9331c0681` carries CPU byte mips through native-size near-half YUV atlas uploads,
+including owning tiles and direct fallback. Stronger atlas minification keeps
+GPU mip construction. CNN improves **1,197→94** in diagnostics: **1,103 corrected,
+zero introduced**. Sullivan, Netanyahu and peptides are entirely exact.
+All 51 pairs repeat; 50 other PNGs stay unchanged. Fifteen focused V functions
+pass under arena poisoning and 3 GiB guards; the new complete native CPU-frame
+regression also passes with literal V `-prod`. GPU-control assertions fail as
+expected. Original references and tolerances stay fixed.
+
+Production `2ba33ee7` confirms the preceding opacity/fragment-coordinate result
+across 51 workloads/102 fresh captures, all matching accepted diagnostics:
+CNN 1,311 twice, and five other archived sites exact. Its compiled source and
+embedded shader predate tile routing and CPU atlas mips; those await the managed
+rebuild. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#cpu-byte-mips-for-native-size-near-half-atlases-2026-11-16).
+
+### One recorded SVG background image, 2026-11-16
+
+`a6edd14de` preserves fractional SVG layout when CSS permits repetition but one
+rounded recording covers the snapped clip. Playback and recording/MSAA planning
+share the selection. Mismatched recording/destination sizes keep the sampler
+fallback. CNN improves **94→73**: **21 corrected, zero introduced**. All five
+complete untagged image rectangles are now exact. All 53 pairs repeat; 50 existing
+non-CNN PNGs stay unchanged. Fourteen focused V functions pass under arena
+poisoning and 3 GiB guards. Independently repeated/pinned Brave references add
+an exact flat control and a nonuniform control improving 755→265 with no
+introduced pixels; that control retains an explicit fallback limitation.
+
+Production default captures on `7515422c` confirm the preceding CPU-mip result:
+CNN 94 twice, five other archived sites exact, all twelve PNGs matching accepted
+diagnostics. That shared build contains an inactive capture probe, removed from
+the checkout before this commit. The clean managed rebuild and new SVG production
+validation remain pending. Original references/tolerances are unchanged. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#single-visible-svg-background-pictures-2026-11-16).
+
+### Rounded RGBA owning-tile coordinates, 2026-11-16
+
+`fb71abe2d` shares the existing planar tile renderer with rounded RGBA uploads.
+A cropped target changed interpolation even with uniform sample counts. Rendering
+in the owning tile makes CNN's ice image exact: **73→46** overall, **27 corrected,
+zero introduced**. All 53 workloads/106 fresh captures repeat; 52 other PNGs are
+unchanged. Eleven focused V functions pass under arena poisoning and 3 GiB runtime
+guards, including an independently sourced Brave crop hash. The old callback
+fails the new regression. Unrounded and mixed-sample RGBA fallback is preserved;
+an earlier broader prototype regressed an unrounded control and is rejected.
+Existing references/tolerances are unchanged. Managed production confirmation
+and catalog parity remain open. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#rounded-rgba-draws-in-owning-tile-coordinates-2026-11-16).
+
+### Decoded frame for CPU-resized planar uploads, 2026-11-16
+
+`9b326517b` folds CPU-resized YUV444 into the decoded image frame before building
+the GPU matrix. A 480×270 source reduced to 120×68 previously kept an unnecessary
+natural-image scale; its rounding left CNN's final 46 one-level differences.
+Independent native R8-plane rendering agrees exactly in three complete frames
+with the decoded-frame path. The actual callback crop pins their stitched output
+across a 4x MSAA seam and rejects invalid natural metadata. The old implementation
+fails the new regression; seven focused functions pass under arena poisoning and
+3 GiB guards. Shader, decoder and mip construction stay unchanged.
+
+CNN becomes **46→0**, with **46 corrected, zero introduced**. All 53 workloads/
+106 fresh captures repeat, and 52 other PNGs are unchanged. Six available archived
+catalog workloads are exact. Production confirmation, Reddit's unavailable
+workload and CNN's historical source/replay verification remain open. A fresh
+anonymous Old Reddit probe reaches a blocked login page with no posts. References
+and tolerances are unchanged. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).
+
+### Filled list-marker coverage, 2026-11-16
+
+`57c86c2f7` routes filled ellipses through the document shape rasterizer instead
+of CoreGraphics. Two focused functions pass, including exact independent Brave
+pixels at the actual raster callback and invalid-geometry fallbacks. The public
+marker fixture improves 92→0 pixels twice. A recovered older Reddit page improves
+18→6; only its rounded subscribe-button pixels remain. All 54 workloads/108 fresh
+captures repeat, and all 53 prior PNGs are unchanged. New public marker references
+agree in two fresh Brave processes; existing references and tolerances stay.
+Production confirmation and the newer missing Reddit workload remain open.
+See the [recovery audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#recovered-reddit-html-and-filled-marker-coverage-2026-11-16).
+
+### Repeated background and border composition, 2026-11-16
+
+`5b52ceaab` lets repeated straight-RGBA backgrounds share a rounded clip, opaque
+background and adjacent opaque border in one owning-tile pass. The image shader
+keeps repeat filtering and derives local coordinates after the analytic
+geometry's antialiasing outset. This correction is selected only for repeated
+backgrounds; a broader experiment changed five prior controls and is rejected.
+Unsupported transforms, scales and effect scopes keep their existing fallback.
+
+The recovered older Reddit page improves **6→0 pixels** twice against two fresh
+full-uBO Brave captures. The unchanged public multisample reference and a new
+independently repeated single-sample reference are exact. All **56 workloads/
+112 captures** repeat, with all 54 prior PNGs unchanged. Ten focused V functions
+pass, including native callbacks across tile gutters and an invalid-stride
+fallback. Production confirmation, the newer missing Reddit fixture, Lobsters'
+fresh-Brave repeatability and CNN's historical source/replay gate remain open.
+See the [sprite audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).
+
+### Published production and Lobsters sample history, 2026-11-16
+
+Published single-C-unit V `-prod` executable `bbd47035` reproduces all 56 accepted
+diagnostic outputs in 112 fresh captures, including exact CNN and both repeated
+sprite controls. The recovered older Reddit page is exact against two fresh
+full-uBO Brave references. This qualifies the sealed artifact and recorded fixes;
+a separate current-checkout source guard stops on concurrent image-sampling
+edits, later committed as `12fc9e48b`. That newer code is not validated here. All 187 selected rendering-package V buffers and 23 feature/native/shader
+inputs agree with the accepted diagnostic; embedded shader bytes are extracted
+from receipt-bound generated C.
+
+Eight alternating default/full-raster Brave pairs reproduce five default
+101-pixel failures and no full-raster failures. All failing frames become exact
+after paint instrumentation, so their preserved original PNGs remain essential.
+Standalone GPU predictions reproduce all 54 tag pixels and 47 avatar pixels:
+one sample matches the failures, four samples match the historical reference.
+This is predictive coverage evidence, not a measured Brave GPU sample-count flag.
+The post-capture paint tool passes 57 related JavaScript tests and never replaces
+the saved reference. Default Brave repeatability, the missing newer Reddit
+fixture and CNN's historical source/replay audit remain open. See the
+[audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
+
+
+### Elliptical image geometry and PNG decode history, 2026-11-16
+
+Full elliptical image clips in single-sample tiles use destination geometry
+instead of a nonuniformly transformed natural image rectangle. Larger PNG
+requests retain separate decoded uploads so later small draws keep their first
+usable frame. The own-clip tile-planning hunk is already in `8641a3868`; object-fit,
+SVG and ancestor-clip cases retain conservative multisampling.
+
+The independently repeated `uniform-scaled-png` control improves **1,412→0
+pixels twice**, with no reference or tolerance change. All 30 focused V functions
+pass, including actual GPU execution and small/large/small cache reuse. The final
+57 workloads/114 captures repeat; all 56 prior PNGs are unchanged. The six
+available catalog archives remain exact, as does the recovered older Reddit
+page in two separate captures with all 25 post identities. Existing inexact
+controls retain their recorded counts. Production confirmation of `40d8c41ed`
+is pending. See the
+[PNG audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
+
+
+### Odd-height WebP chroma planes, 2026-11-16
+
+`4924a3389` retains ceiling-sized 4:2:0 chroma planes for odd luma dimensions.
+The newly supported near-half atlas range preserves edge texels and keeps
+stronger, unverified odd-plane minification on its existing fallback. An exact
+full-image rectangular clip is redundant for this path; omitting its inverse
+transform avoids two remaining one-level sampling errors while retaining the
+tile's MSAA trigger.
+
+The independent public control improves **17,320→0 pixels** twice. The complete
+BBC frozen viewport improves **32,482→23,822**, correcting 8,660 pixels with none
+introduced. Ten focused CPU/GPU functions pass. All **59 workloads/118 captures**
+repeat, and all 58 prior PNGs remain unchanged. BBC's cropped photo, Guardian and
+Verge rendering gaps remain open. Production `93adced1` separately confirms the
+earlier PNG scaling/cache fix in 58 workloads/116 captures; production validation
+of this newer WebP change is pending. See the [audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#odd-height-webp-planes-in-bbc-photos-2026-11-16).
+
+
+### Local SVG drop-shadow layers, 2026-11-16
+
+`0dd8f7f65` replays one opaque black SVG path in local filter space before its
+quarter-turn CSS transform. The reduced-resolution blur is sampled and colored
+into an RGBA layer, merged with the source, then rotated in the owning root
+tiles. Linear offset sampling retains its extra input border. Source geometry,
+clips, effect nesting and 1× readbacks have conservative eligibility checks;
+overflowing ink keeps native clipping. Cached GG preparation refreshes the
+canonical layer helper in both preparers.
+
+The isolated logo improves **31,489→14 pixels twice**; the complete frozen
+Verge viewport improves **32,035→14,916 twice**, with maximum channel error two.
+It remains inexact. BBC and Guardian remain **zero twice** each. All **72
+workloads/144 captures** repeat; all 69 preceding PNGs outside the logo are
+byte-identical. Fifteen focused V functions and five Python staging tests pass,
+including actual GPU execution and typed scope/clip checks. Executable,
+native-library, fixture/reference and 24 runtime shader hashes stay pinned.
+New production `0cae86c8` separately repeats the 14-pixel logo and 14,916-pixel
+Verge baseline, but contains the earlier implementation without the final
+geometry-enclosure guard. Production confirmation of that guard and live/catalog
+acceptance remain open. See the
+[SVG filter audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16).
+
+
+### Analytic rectangular box shadows, 2026-11-17
+
+`da4e91d4f` constructs the Gaussian integral profile and device geometry in V,
+samples float coverage through a bounded Metal pass, and blends it with the paint
+through a floating-point GG mask. The full frozen Verge capture improves
+**14,916→8 pixels twice**, with maximum channel error one; BBC and Guardian
+remain exact. The isolated card improves **18,935→1**. Small and narrow controls
+are exact; a fractional scaled rectangle remains open. All **74 workloads/148
+captures** repeat, with all 72 previous PNGs byte-identical. Fourteen focused V
+functions and both Python staging tests pass. Production validation and exact
+Verge equality remain open. See the
+[rectangular shadow audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#analytic-rectangular-shadows-on-verge-2026-11-17).
+
+
+### SVG filter merge allocation and transparent borders, 2026-11-17
+
+`b2f198209` uses GG's approximate save-layer backing allocation for the SVG
+filter merge, with a one-pixel transparent boundary and matching origin/crop.
+The complete frozen Verge viewport improves **8→0 pixels twice**; the isolated
+logo and rectangle improve **14/12→0**. BBC and Guardian remain exact. All **74
+workloads/148 captures** repeat; all 72 other previous PNGs are byte-identical.
+Fourteen focused V functions and both Python staging tests pass, including an
+exact full-reference SVG test with one and four destination samples. Production
+and live-site confirmation remain open. See the
+[merge audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-svg-merge-allocation-and-transparent-borders-2026-11-17).
+
+### Containing rectangle clips in document rasterization, 2026-11-17
+
+`60880e94e` moves eligible ordinary containing clips into GG before a plain
+antialiased fill, avoiding a second Quartz clip that removed the GPU's correct
+fringe pixel. Native fallback restores the authored clip. Guarded original-page
+compiled-LibJS captures improve 25 to 24 pixels (maximum 15 to 10) with one
+resolved pixel and no regressions; the off control is exact to the prior
+image. The 3,760-source production build parses zero tests. Regression sources
+are committed but remain uncompiled/unrun by request; defaults and the original
+zero-tolerance Brave reference remain unchanged. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#rectangle-clip-ownership-24-differing-pixels-2026-11-17).
+
+
+### Fractional fills and all containing ancestors, 2026-11-17
+
+`b2ce3a8e5` retains fractional thin-fill geometry in GPU paint space; `968d162f9`
+intersects every eligible containing rectangle there. This avoids both Quartz
+shared-edge conditioning and a remaining outer publication clip discarding the
+correct tab fringe. Guarded original-page compiled-LibJS captures improve
+24→22→21 differing pixels with no newly wrong pixels, maximum error 10. The
+21-pixel build consumes 3,761 production sources and zero tests; all captures
+have exact content and zero native misses/compiler calls. Defaults and the
+zero-tolerance original reference are unchanged. Regression sources are committed
+but uncompiled/unrun under the requested hold. Full parity remains open. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#fractional-fills-and-nested-clip-ownership-21-differing-pixels-2026-11-17).
+
+
+### Raster runtime opt-ins without custom defines, 2026-11-17
+
+`05c41f8bf` makes the existing document/image P3, thin-fill and PNG density/mipmap
+experiments available through runtime environment options in ordinary production
+builds. The sealed 3,761-source/zero-test build repeats the 21-pixel compiled-LibJS
+GitHub image exactly; options off repeat the preceding shared bundle's off-path
+image. The profile-bridge regression source remains uncompiled/unrun under the
+requested hold. No mesh/depth counterfactual improves the complete reference;
+full parity is still open. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#runtime-raster-opt-ins-in-ordinary-production-builds-2026-11-17).
+
+
+### Repeated fractional rectangle clips, 2026-11-17
+
+`26b30df0b` coalesces identical finite ordinary rectangular clips before native
+publication in the explicit diagnostic mode. A traced half-pixel file-name
+clip had been applied twice, reducing coverage to a quarter. The complete
+compiled-LibJS GitHub comparison improves 21→20 pixels with one exact correction
+and no regressions; off repeats 21 exactly. Source, native-cache, full-content,
+PID-adoption and exit gates pass. Regression sources remain uncompiled/unrun by
+request, and the original zero-tolerance reference is unchanged. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#identical-rectangular-clips-20-differing-pixels-2026-11-17).
+
+
+### Fractional glyph clip boundaries, 2026-11-17
+
+`86324739d` intersects ordinary axis-aligned text clips and blends their boundary
+coverage through GG's A8 glyph mask. Fully covered pixels retain the existing
+blitter; complex clips remain native and fallback restores deferred rectangles.
+The opt-in compiled-LibJS GitHub capture improves 20→15 pixels with five resolved,
+zero regressed/new pixels; off repeats 20. The sealed production build consumes
+3,765 V sources and zero tests. CPU-clip and full-GG attempts remain rejected in
+the receipts. Focused geometry/merge and one/four-sample mask test sources are
+committed but uncompiled/unrun by request. Reference and zero tolerance are fixed;
+full parity remains open. See the
+[GitHub runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#fractional-glyph-clip-edges-15-differing-pixels-2026-11-17).
+
+
+### Retained Chromium glyph-shadow masks, 2026-11-17
+
+`12924db35` retains fractional author color, separates filtered linear-coverage
+strikes, applies the existing fixed-point mask filter per glyph, then blends
+float paint color once through GG. Eligibility is bounded to translated black
+shadows with blur ≤3 at document scale one and an opaque backdrop; other cases
+keep native replay. No shader changes. All 17 focused V functions execute,
+including the existing retained-glyph, shadow and Skia blur golden hashes.
+The unchanged twelve-case public shadow control improves 4,083→zero twice;
+archived Slashdot improves 390→12 twice. All 76 workloads/152 captures repeat,
+with the other 75 PNGs unchanged. BBC, Guardian and Verge remain zero twice,
+also confirmed on production `8dbf43a2`; that production build contains an older
+shadow prototype and cannot validate the final glyph filter. Remaining Slashdot
+edge pixels, final production and live/catalog acceptance stay open. See the
+[glyph-mask audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-per-glyph-shadow-masks-2026-11-17).
+
+
+### SVG background image viewport clips, 2026-11-17
+
+`2d65e5d97` retains the viewport in each supported fill's GPU clip stack, before
+coverage, instead of clipping the resolved pixels again in Quartz. Authored
+clips and local viewBox precision remain; analytic ovals keep their existing
+sampling policy. All 34 focused V functions execute. Frozen Slashdot improves
+12→10 pixels twice; BBC, Guardian and Verge remain zero twice. All 77 workloads/
+154 captures repeat with the 76 prior PNGs unchanged. The new logo region is
+exact and 9,720 outside-viewport samples pass; its complete compound control
+retains 18 unchanged interior edge differences. A rejected 16-pixel circle
+regression and complete earlier cohort remain in the evidence. Production
+`ad081765` confirms the previous shadow fix at 12 Slashdot pixels and the three
+news pages at zero; it lacks this viewport fix. Final production, remaining
+pixels and live/catalog acceptance stay open. See the
+[viewport audit](OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-svg-background-viewport-clipping-2026-11-17).
+
+### Extended P3 glyph ink, 17 November 2026
+
+`2624eace7` adds an opt-in CPU A8 blend that preserves transformed RGB outside
+[0,1] until the destination store, with GG retaining fractional clip edges.
+The compiled-LibJS frozen GitHub page improves 15→13 pixels, exactly two resolved
+and none new; same-binary off remains 15. Native compiler calls/misses are zero.
+The full-GG alternative regresses Sign in and is rejected. New regression sources
+remain unrun under the requested test hold. See the
+[source-color audit](LIBJS_GITHUB_RUNTIME_20261115.md#extended-p3-glyph-source-13-differing-pixels-2026-11-17).
+
+### Extended P3 shape ink, 17 November 2026
+
+`2c77167fb` keeps finite opaque shape/underlay colors extended through GPU
+coverage and blending when `VOX_DIAGNOSTIC_EXTENDED_SHAPE_COLOR=1` is selected.
+The frozen compiled-LibJS GitHub comparison improves 13→12 pixels, exactly one
+header edge resolved and none new. Same-binary off reproduces 13; native cache
+misses/compiler calls are zero. Defaults and translucent conversions keep their
+existing behavior. Focused regression sources remain unrun under the test hold.
+See the [shape-color audit](LIBJS_GITHUB_RUNTIME_20261115.md#extended-p3-shape-source-12-differing-pixels-2026-11-17).
+
+### Root capture pixel width, 17 November 2026
+
+`77db37b0e` adds an opt-in capture-width projection for a single root raster
+column when layout density exceeds capture density. Actual Brave rectangle
+buffers replay identically with Dawn and GG shaders; changing only attachment
+width isolates five separator errors. The final frozen compiled-LibJS GitHub
+capture improves 12→7 pixels, five resolved and none new; same-binary off repeats
+12. Both fresh processes have 4,245 native hits and zero misses/compiler calls
+in the new 812a ABI partition. Sealed production inputs include zero tests;
+focused regression sources remain unrun under the test hold. Broad shader-width
+and compiler-language probes are rejected. Six button corners and an avatar
+edge remain; live parity and matched performance are open. See the
+[capture-width audit](LIBJS_GITHUB_RUNTIME_20261115.md#captured-rectangle-replay-and-root-capture-width-7-pixels-2026-11-17).
+
+The latest completed shared production bundle now independently repeats seven
+pixels with 4,246 native LibJS hits and zero compiler calls. Captured Dawn shaders
+and GG both reproduce the same six changes when splitting the rectangle batch;
+an auxiliary target preserves both control tiles while tracing primitive coverage.
+`91252e0cf` adds a hash-pinned native replay CLI for exported rectangle draws;
+three real captured draws match their complete raw-tile controls. Its rejection
+regression sources remain unrun by request. No further production raster change
+is accepted. See the [shared-bundle and replay audit](LIBJS_GITHUB_RUNTIME_20261115.md#shared-production-confirmation-and-captured-shader-grouping-2026-11-17).
+
+### Disjoint rounded decoration batches, 17 November 2026
+
+`753c3b684` adds an opt-in root batch across conservatively disjoint text/vector
+gaps. Retained A8 ink refines broad bold/varied-font bounds only for this proof;
+declines and truncated masks keep the conservative fallback. Effects/resources,
+foreign owners, custom corners and unsupported opacity retain ordinary replay.
+The compiled-LibJS frozen GitHub page improves 7→3 pixels: four Star corners
+resolve with none new or regressed; same-binary off repeats seven. Both processes
+have 4,245 native hits and zero misses/compiler calls. The sealed production
+build consumes zero test sources; focused classification/mask regression sources
+remain unrun under the test hold. Four ineligible candidates remain in the
+receipts. Notifications corners, an avatar edge, live parity and matched speed
+remain open. See the [three-pixel audit](LIBJS_GITHUB_RUNTIME_20261115.md#disjoint-rounded-decorations-3-differing-pixels-2026-11-17).
+
+
+### Shadowed PNG and overlapping text samples, 17 November 2026
+
+`289da9c02` adds an opt-in shared pass for an adjacent supported A8 text run
+whose ink overlaps a shadowed PNG. The image, shadow and glyph keep their
+multisample values until one resolve; each tile receives the rebased mask,
+and the image's clip ends before the text draw. Unsupported text clips,
+effects, ownership and native destinations keep ordinary replay. Frozen GitHub
+improves **3→2** pixels, fixing the avatar/text edge without regressions.
+Same-binary compiler-disabled on/off runs each use 4,245 native hits, zero
+misses/compiler calls and complete content. The new actual ABI is prepared
+normally before those checks. Focused selection, clip and transactional-failure
+regression sources are committed but unrun under the test hold. The two
+Notifications corners, live parity and matched speed remain open. See the
+[two-pixel audit](LIBJS_GITHUB_RUNTIME_20261115.md#shared-image-and-overlapping-text-samples-2-differing-pixels-2026-11-17).
+
+
+### Per-sample rectangle diagnostics, 17 November 2026
+
+`796583540` adds optional per-sample primitive/coverage/fragment-position output
+to `tools/replay_metal_rectangle.m`. Four retained-draw diagnostics reproduce
+all complete control tile hashes, including normal replay. The split draw
+changes triangle ownership at equal fragment-reported depth. The diagnostic
+explicitly does not read the hardware depth-test result. Regression sources
+for preserving sample evidence and rejecting conflicting outputs remain unrun.
+
+A bounded late-fill batching candidate selects the Code underline but leaves
+both Notifications corner errors unchanged in on/off/full-page trace captures.
+It is reverted. These cache-disabled diagnostics provide no compiled-cache or
+performance credit; the accepted frozen native-cache result stays at two pixels.
+See [the runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#per-sample-rectangle-replay-two-pixels-remain-2026-11-17).
+
+
+### Stored-depth and coverage-mask replay, 17 November 2026
+
+`2dc3bb649` adds depth, raster-coverage and post-depth-coverage sample modes to
+the canonical Metal rectangle replay. All 13 retained-draw diagnostics preserve
+their complete BGRA controls; component labels and untouched values verify.
+Mode-validation regression sources remain unrun. Final depth samples agree at
+the disputed corners, while coverage masks vary with grouping. The flat-varying
+mapping probe changes its control image and is rejected for attribution.
+
+Explicitly returning the input coverage mask fixes the two Notifications pixels
+but introduces 18 new full-page differences, so it is rejected. Both on/off
+processes execute the pinned native cache with 4,245 hits and zero compiler
+calls. The retained result stays at two pixels; no renderer change is kept.
+See [the runtime report](LIBJS_GITHUB_RUNTIME_20261115.md#stored-depth-and-coverage-masks-rejected-whole-page-identity-2026-11-17).
+
+
+### Constant-varying controls and live navigation, 17 November 2026
+
+Fifteen selected-draw diagnostics preserve all ordinary control hashes but show
+that flat constant color/radius/stroke varyings reproduce the rejected coverage
+mask result, with 3/9/5 changed pixels across the three draw groupings. No
+renderer change is retained; the frozen comparison stays at two pixels.
+The latest shared production control at launch reproduces that exact image
+with the native cache disabled. A separate direct-live reopen executes native
+LibJS but fails the zero-miss gate after its module URLs change. These checks
+supply no performance acceptance, and automated tests remain paused. See the
+[live navigation audit](LIBJS_GITHUB_RUNTIME_20261115.md#direct-live-navigation-and-partial-native-cache-reopen-2026-11-17).
+
+
+### Newer shared runtime rendering control, 17 November 2026
+
+The shared `d166b53e…` production executable reproduces the accepted frozen
+GitHub image exactly, with the same two remaining Notifications pixels. The
+native cache is explicitly disabled; this establishes interpreter/rendering
+behavior for that newer runtime. Its live GitHub capture evaluates all 76
+modules and retains full content without reported errors. Separately, archived
+and live Hacker News compiler-disabled reopens pass the new strict native-reuse
+check; an identical-image empty-cache control correctly fails it. No renderer
+change or performance acceptance is claimed. Tests remain paused. See the
+[runtime audit](LIBJS_GITHUB_RUNTIME_20261115.md#strict-native-reuse-diagnostics-and-newer-runtime-checks-2026-11-17).
+
+
+### Instanced-draw boundaries, 17 November 2026
+
+Seventeen retained-draw diagnostics preserve instance/index order and all
+resources while changing only instance chunk sizes. Full nine/eight controls
+and the nine-instance split control reproduce their known complete hashes;
+intermediate chunks change corner coverage. This supplies no whole-page fix,
+and no renderer change is retained. The frozen two-pixel image and original
+Brave reference stay unchanged. The pinned live native-cache cohort still
+fails its zero-miss gate as module URLs change. See the
+[cohort report](LIBJS_GITHUB_RUNTIME_20261115.md#fixed-bundle-live-cohort-changing-module-graphs-2026-11-17).
+
+### Parallel CPU blur
+
+Large Canvas2D image-filter blurs and box-filtered shadow masks split their
+horizontal and vertical scans across up to four CPU threads. Each participant
+needs at least 128 Ki pixels of work. The caller waits for each pass before
+starting the next one or publishing the pixels. Every participant owns its
+scratch state, and the vertical pass reads and writes only its assigned columns.
+`VOX_SERIAL_CPU_RASTER=1` runs these passes serially for diagnostic comparisons.
+
+The focused serial/parallel comparisons pass byte for byte on macOS and Linux,
+including single-axis and in-place RGBA passes and a padded alpha mask. The
+existing macOS blur fixtures pass with production preallocation. ThreadSanitizer
+passes the focused tests, and a native macOS probe observes four distinct
+threads covering all rows at the caller's rounding mode.
+The pinned raster differential suite passes with its default count and seed,
+including 10,000 pixel-exact blurred Canvas2D shadow draws.
+
+### Parallel retained text glyph masks on macOS
+
+The focused test matches serial subpixel masks and overlapping glyph pixels
+with production preallocation. The existing retained-glyph reference tests
+and the focused ThreadSanitizer run passed. The pinned glyph differential
+check returned 2,459 exact comparisons and 41 declines in 2,500 draws.
+Both the glyph check and its 3 GiB guard exited zero. The broad 20,000-input
+no-GC run exceeded the 12 GiB guard and exited 137. The Boehm retry was
+stopped with exit 143 after the input snapshot changed. The workload and
+full timing observations are in the [Hacker News report](LOAD_PARALLELISM.md#parallel-glyph-masks-on-hacker-news).
+
+The follow-up measures bounds and packs alpha masks on the raster workers.
+The padded in-place conversion, retained-text reference and ThreadSanitizer
+tests passed. The pinned 2,500-draw glyph check again completed with 2,459 exact
+draws and 41 declines. The 3 GiB guard exited zero. [Replay timings](LOAD_PARALLELISM.md#glyph-bounds-and-alpha-conversion-on-raster-workers)
+
+Retained text also blends large batches of A8 masks across disjoint pixel
+stripes. The focused checks compared overlapping, clipped masks on padded
+targets in both stripe directions and in low and high precision.
+ThreadSanitizer and the pinned 2,500-draw glyph check passed. The archived
+Hacker News replay confirmed worker activity and byte-for-byte output.
+[Striped blend measurements](LOAD_PARALLELISM.md#retained-glyph-blending-across-pixel-stripes)
+
+Short retained runs can use the striped blend based on clipped pixel
+work. The focused checks exercised overlapping antialiased glyphs,
+fractional paint and a padded target under ThreadSanitizer. The pinned
+glyph differential returned 1,963 exact cases and 37 declines.
+[Hacker News measurements](LOAD_PARALLELISM.md#schedule-short-retained-text-runs-by-clipped-pixel-workload)
+
+Eligible glyph blends explicitly submit background stripes and draw one
+stripe on the caller before joining. The focused checks verified distinct
+thread identities and exact ordered blending. ThreadSanitizer and the
+pinned 2,000-case glyph differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#dispatch-retained-glyph-stripes-explicitly)
+
+Retained macOS text dispatches short batches of two or three cold A8
+masks across the caller and a raster worker. Focused and ThreadSanitizer
+checks matched the serial masks. The pinned 2,000-case glyph
+differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#draw-short-cold-glyph-mask-batches-on-workers)
+
+Ordinary cold-mask batches explicitly submit the background ranges.
+The focused four-mask test verified caller and worker identities and
+compared all four masks with the serial CoreText path. The focused
+tests, ThreadSanitizer and pinned glyph differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#submit-larger-cold-glyph-mask-ranges-explicitly)
+
+Uneven cold-mask batches give the caller the shorter range. The
+focused checks covered even and uneven batches, caller and worker
+ownership, and exact serial masks. ThreadSanitizer and the pinned
+glyph differential passed.
+[Hacker News measurements](LOAD_PARALLELISM.md#give-the-browser-thread-the-shorter-range-in-uneven-mask-batches)
+
+Cold frame prefetch also prepares CoreText strikes on a worker. Arena-poisoned
+tests matched serial glyphs and preserved masks added before the join. The
+pinned V `-prod` glyph differential check returned 1,962 exact draws and 38
+declines in 2,000 cases. The check and its 3 GiB guard exited zero.
+[Hacker News measurements](LOAD_PARALLELISM.md#prepare-cold-frame-glyph-strikes-on-a-worker)
+
+Early frame prefetch folds retained f64 glyph positions on a worker.
+The arena-poisoned and ThreadSanitizer checks matched prepared-position
+keys and masks. The pinned V `-prod` glyph differential returned 1,962
+exact draws and 38 declines in 2,000 cases under the 3 GiB guard.
+[Hacker News measurements](LOAD_PARALLELISM.md#overlap-glyph-mask-prefetch-with-native-frame-setup)
+
+Retained text now schedules parallel mask batches for later cache
+misses in a run. The arena-poisoned and ThreadSanitizer tests matched
+the serial pixels. The pinned V `-prod` glyph differential returned
+1,962 exact draws and 38 declines in 2,000 cases under the 3 GiB guard.
+[Hacker News measurements](LOAD_PARALLELISM.md#batch-later-glyph-mask-misses-during-retained-text-replay)
+
+### Parallel SVG background multisampling bounds
+
+Raster workers compute path bounds from resource-owned SVG scenes in
+disjoint slots. The browser thread prepares the scenes and assembles
+triggers in display-list order. The 23 focused multisampling tests and
+shared raster scan worker tests passed. The archived Hacker News phase
+produced 57 identical triggers, with 54 jobs across three lanes.
+[Hacker News timings](LOAD_PARALLELISM.md#svg-background-multisampling-bounds)
+
+On macOS the browser now submits the first 32 retained path jobs during
+command collection. All 32 jobs in the production Hacker News diagnostic
+finished off the browser thread before the join. Layer grids and reference
+pixels matched exactly. The focused checks passed under ThreadSanitizer.
+[Overlap measurements](LOAD_PARALLELISM.md#overlap-svg-path-bounds-with-command-collection)
+
+### Parallel CPU image scaling
+
+Large RGBA, R8 and Gray8 bilinear resizes and RGBA mipmap levels use up to
+four raster participants. Each participant reads the shared source and writes
+its own output rows. Canvas2D and the browser's premultiplied image uploads use
+the same mipmap kernel, including its odd-dimension weighting. Each level
+finishes before the next level or upload starts. `VOX_SERIAL_CPU_RASTER=1`
+selects the serial path.
+
+Seven alternating fresh-process pairs used a single optimized macOS C build
+with preallocation. The synthetic images were 2047×1795 and the destination
+was 1003×857. The RGBA span includes premultiplication, mip reduction and
+the final resize. The Gray8 span covers the resampler. Input generation and
+output hashing sit outside both spans. Host one-minute load was 7.35 on
+18 logical CPUs.
+
+| CPU image operation | Serial median | Parallel median | Faster pairs |
+| --- | ---: | ---: | ---: |
+| Prepare a premultiplied RGBA image | 39.969 ms | 15.327 ms | 7/7 |
+| Resize a Gray8 plane | 3.822 ms | 1.385 ms | 7/7 |
+
+All output hashes matched and all timed processes exited zero. The focused
+large-image tests pass on macOS with preallocation and Linux with Boehm,
+including uneven scan ranges, mixed scaling, padded mipmap input and source
+ownership. ThreadSanitizer passed on macOS. The pinned Skia differential
+check matched all 2,500 mipmap cases. The macOS PNG and odd WebP upload
+fixtures passed with staged GG and the production allocator, and with the
+ordinary `-gc none` allocator. The initial unstaged run lacked the GG upload
+APIs. Staging GG alone let it compile, but the unstaged preallocator crashed
+inside the PNG decoder before resizing. Staging the production allocator
+resolved that failure.
+
+### Parallel JPEG and WebP plane mipmaps
+
+Large byte-plane mip reductions share the RGBA integer mipmap kernel and
+divide their output rows across up to four CPU participants. The JPEG and
+WebP upload paths borrow the decoded source while filtering and retain the
+new output directly at each level. Identity uploads still copy borrowed
+pixels before appending chroma. Odd-dimension weights and the subsequent
+Gray8 interpolation retain their existing rounding.
+
+Seven alternating fresh-process pairs used macOS single-C `-prod` builds
+with preallocation. The timed spans begin with deterministic decoded planes
+and end with packed upload pixels. Host one-minute load was 6.51 on 18 logical
+CPUs. Every output hash matched and every process and memory guard exited zero.
+
+| CPU upload preparation | Dimensions | Before median | After median | Faster pairs |
+| --- | --- | ---: | ---: | ---: |
+| JPEG 4:4:4 | 2047×1795 to 1003×857 | 13.168 ms | 8.552 ms | 7/7 |
+| WebP 4:2:0 | 2048×1840 to 1024×920 | 3.407 ms | 2.380 ms | 7/7 |
+
+Focused serial and parallel pixel checks passed on macOS and Linux. The
+production-allocator JPEG and odd/even WebP native fixtures, macOS
+ThreadSanitizer check, and 2,500 existing Skia mipmap comparisons passed.
+
+### Parallel CPU pixel readback
+
+Large reads from premultiplied RGBA buffers now use up to four raster workers
+when the touched source and destination ranges are disjoint. This conversion
+serves Canvas2D pixel reads and some portable SVG and shadow uploads.
+Overlapping views retain their original serial row order. The focused tests
+cover padded and zero source strides, clipped rows, untouched destination
+bytes and overlapping views, and pass on macOS with preallocation and Linux
+with Boehm. The macOS ThreadSanitizer check and pinned CPU raster suite passed,
+including 76 exhaustive and 2,000 random pixel-read comparisons against Skia.
+
+On an Apple M5 Max with 18 logical CPUs and one-minute load of 6.04, seven
+alternating fresh-process pairs used matching macOS single-C `-prod` builds
+with preallocation. The timed call reads a 1920×1080 source into a 1927×1073
+destination at (-7, 3), with padded rows on both sides. Input generation and
+output hashing are outside the timed span. Median CPU readback latency
+fell from 8.683 ms to 3.496 ms, with the candidate faster in all seven pairs.
+A separate instrumented run observed four distinct threads. Every timed run
+produced the same destination SHA-256
+(`01deabb3dae311e16d18730a6e7f69d7fd5eae346b594f71d604782546a23e8b`).
+All processes and guards exited zero. These timings cover the CPU conversion
+call and its dispatch.
+
+### Parallel WebGL bitmap export
+
+Large bitmap conversions for WebGL texture uploads divide destination rows
+among up to four CPU participants. Workers share the prepared source and
+column mapping and join before the texture upload. The same code handles
+flipped and scaled exports, including the platform's nearest sampler, packed
+formats and Display P3 conversion. Small conversions and the raw RGB888
+export use the caller.
+
+Seven alternating fresh-process pairs per format used matching macOS
+single-C `-prod` builds with preallocation on an Apple M5 Max. A 2047×1153
+source with padded rows was flipped and scaled to 1920×1080. The timed span
+includes output allocation, setup, sampling, conversion and worker completion.
+It excludes source generation, output hashing and the GPU upload. One-minute
+host load ranged from 7.38 to 7.42 on 18 logical CPUs.
+
+| Output | Before median | After median | Faster pairs |
+| --- | ---: | ---: | ---: |
+| RGB565 | 5.019 ms | 3.086 ms | 7/7 |
+| Premultiplied sRGB RGBA8888 | 5.809 ms | 2.906 ms | 7/7 |
+| Straight RGBA8888 from Display P3 | 150.697 ms | 49.269 ms | 7/7 |
+
+Every output matched its baseline byte for byte and all timed processes and
+guards exited zero. A separate probe observed four distinct CPU threads in
+each conversion. Focused macOS and Linux comparisons covered sampling across
+tile boundaries, padded input, flipping and color conversion. ThreadSanitizer
+passed on macOS. The pinned Skia suite matched 448 exhaustive and 2,016
+random bitmap exports. The native WebGL test read back all pixels of a
+1031×521 flipped upload successfully in serial and parallel modes.
+
+### Parallel CPU erosion and dilation
+
+Canvas2D SVG-reference `feMorphology` uses a sliding per-channel minimum for
+erosion and maximum for dilation over the existing separable passes. Each sample enters
+and leaves the queue at most once. The same 256-pixel radius cap and
+transparent-black border apply. Large surfaces split the horizontal pass by
+rows and the vertical pass by columns, with a join between passes. An axis
+with no radius reuses its input.
+
+Seven alternating fresh-process groups used macOS single-C `-prod` builds
+with preallocation on an Apple M5 Max. Each group compared the previous
+implementation, the new implementation with `VOX_SERIAL_CPU_RASTER=1`, and
+the default worker policy. The timed span is a Canvas2D path draw with one
+SVG morphology node and includes mask creation, filtering, cropping and the
+final composite. Input construction and output hashing are outside the span.
+One-minute load ranged from 5.16 to 5.17 on 18 logical CPUs.
+
+| Operation and canvas size | Before median | New serial median | New default median |
+| --- | ---: | ---: | ---: |
+| Radius-16 dilation, 1103×577 | 110.632 ms | 15.729 ms | 7.980 ms |
+| Radius-2 erosion, 1600×900 | 48.682 ms | 29.950 ms | 13.433 ms |
+| Radius-1 dilation, 176×128 | 0.597 ms | 0.496 ms | 0.466 ms |
+
+All 63 draws matched their baseline pixels and exited zero under the memory
+guard. A separate macOS probe observed four distinct threads on both passes
+of both large workloads. The small workload stayed serial under both settings.
+The macOS and Linux focused checks matched a direct rectangular reference,
+including one-pixel axes, unequal radii, radius capping, ring wrap, and the
+decal border. The serial and parallel large results matched byte for byte.
+The SVG graph regression tests, macOS ThreadSanitizer run, and pinned CPU
+raster differential suite also passed.
+
+### Parallel CPU filter offsets
+
+The CPU fallback for SVG-reference `feOffset` and fractional drop-shadow
+translations shares bilinear column samples across rows. Each of up to
+four raster workers calculates its row samples and writes separate output
+rows. The filter keeps its per-channel interpolation and transparent-black
+samples outside the layer. Integral offsets use the row copy. Fully
+off-layer offsets produce a transparent surface.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span is a
+Canvas2D path draw with one fractional SVG offset node, including layer
+creation, filtering, cropping and the composite. Path construction and
+hashing are outside the span. One-minute load was 6.20 on 18 logical CPUs.
+
+| Canvas size and offset | Before median | New serial median | New default median |
+| --- | ---: | ---: | ---: |
+| 1031×527 at (13.16843, −9.625) | 9.604 ms | 6.989 ms | 3.981 ms |
+| 1920×1080 at (−0.00014648, 1) | 35.726 ms | 25.799 ms | 15.169 ms |
+| 176×128 at (0.5, −0.5) | 0.407 ms | 0.324 ms | 0.323 ms |
+
+Every output matched its baseline bytes and all 63 timed processes and
+the memory guard exited zero. A separate probe observed four distinct
+threads in each large workload. The small workload runs serially under
+both worker settings. Focused tests on macOS and Linux checked bilinear
+edges, integer translations, large off-layer shifts and matching serial
+and parallel results. The SVG filter graph tests, ThreadSanitizer and
+the pinned CPU raster differential suite also passed.
+
+#### Archived browser eligibility
+
+The published single-C receipt `20261118-030853-ecf3924d`, executable SHA-256
+`9c165f7ab3dc15fd6fcc7a0d89336aefde735c3a9f983c15248727de89918301`,
+predates this change. A separate injected diagnostic pinned that executable
+and its helpers and counted calls to the raster dispatch callback at Mach-O
+offset `0x1170254`. A large Canvas2D blur on the same executable executed
+two four-thread batches, confirming the callback and JavaScript path.
+
+Each site used a fresh process and private profile/cache through sealed
+original-origin replay at 1024×768 and 2×, with one second of settling.
+The audit checked URL, title, complete readiness, JavaScriptCore
+initialization and distinct content IDs. All browsers and guards exited
+zero. An initial pilot used a 796-pixel document height and was repeated
+with the corrected 768-pixel height.
+
+| Archive | Content IDs | CPU raster batches | Diagnostic launch to capture exit |
+| --- | ---: | ---: | ---: |
+| Hacker News | 30 | 0 | 1,539.620 ms |
+| GitHub `vlang/v` | 33 | 0 | 3,639.429 ms |
+| Old Reddit `r/programming` | 25 | 0 | 1,756.248 ms |
+
+The Hacker News and Old Reddit decoded pixels matched the retained
+[frame-clear references](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+The GitHub replay used the retained November 12 archive
+`b9e3e33910c5df77c2f723532cc9f5e791341c8cc44ce4bfbabd5fb40cc3b7db`
+and produced decoded RGBA SHA-256
+`69ab76c878a122501f91053ef8ae07b2ca073da35bafc92c065dbce55920a0bc`.
+These single observations establish dispatch eligibility for the published
+browser at capture time. A before-and-after site comparison of the new
+offset code awaits the newer production executable.
+
+### Parallel CPU filter compositing
+
+The software `feMerge` and fallback drop-shadow merge composite disjoint
+output row bands on up to four raster workers. Each band processes the
+inputs in drawing order, including repeated inputs. Work sizing uses the
+number of source pixels across all inputs. Premultiplied source-over,
+transparent-pixel skipping and integer rounding use the existing arithmetic.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span was a
+Canvas2D path draw with the source and translated copies merged through
+one SVG-reference filter. It included filter-layer creation, integer offsets,
+the merge, cropping and final composition. The one-minute load was 10.56
+on 18 logical CPUs while the shared production build ran.
+
+| Canvas size and inputs | Before median | New serial median | New default median | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1031×527, two inputs | 5.123 ms | 5.191 ms | 4.038 ms | 7/7 |
+| 1920×1080, five inputs | 35.386 ms | 35.059 ms | 21.875 ms | 7/7 |
+| 176×128, two inputs | 0.279 ms | 0.282 ms | 0.274 ms | 4/7 |
+
+All 63 draws produced byte-identical output for their workload and every
+timed process and memory guard exited zero. A separate probe confirmed
+four distinct threads for both large workloads. The smallest workload
+stayed serial. Focused macOS and Linux tests covered order, repeated
+inputs, opacity, saturation and unchanged sources. SVG filter graph tests,
+ThreadSanitizer and the pinned CPU raster differential suite passed.
+
+### Parallel CPU color matrices
+
+The software color-matrix layer used by Canvas2D `feColorMatrix` and
+matrix filters that require an intermediate surface now divides large
+buffers into disjoint row ranges for up to four CPU participants. A matrix
+evaluates transparent black once for the layer because unpremultiplication
+maps every zero-alpha source pixel to that input. The result can remain
+transparent or introduce color and opacity. Workers borrow the validated
+matrix and source pixels and use the existing channel clamping and rounding.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span covered
+a Canvas2D path draw using one SVG color-matrix node, including layer drawing,
+matrix evaluation, cropping and final composition. Path construction and
+output hashing were outside the span. One-minute load was 5.49 on 18 logical
+CPUs.
+
+| Canvas size and transparent-pixel behavior | Before median | New serial median | New default median |
+| --- | ---: | ---: | ---: |
+| 1920×1080, preserves transparency | 27.842 ms | 21.940 ms | 15.779 ms |
+| 1920×1080, adds color and opacity | 29.153 ms | 25.230 ms | 17.296 ms |
+| 176×128, preserves transparency | 0.338 ms | 0.284 ms | 0.283 ms |
+
+All 63 draws matched their baseline pixels byte for byte and every timed
+process and the memory guard exited zero. A separate probe observed four
+distinct threads in both large workloads. The small canvas stayed serial
+in both worker modes. Focused tests passed on macOS and Linux, including
+zero alpha with nonzero stored RGB, alpha bias and invalid matrices.
+The SVG filter graph tests, macOS ThreadSanitizer and pinned CPU raster
+differential suite passed.
+
+### Parallel CPU SVG color-space conversion
+
+The Canvas2D SVG filter evaluator divides large sRGB and linear RGB
+conversions across up to four CPU workers. Each worker writes a separate
+range of rows and shares the gamma table built for the pass. Integer
+unpremultiplication computes the same clamped lookup index as the former
+floating-point calculation for every byte channel and nonzero byte alpha.
+The conversion preserves alpha and writes transparent black at zero alpha.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span was
+a Canvas2D path draw with one or two SVG color conversion nodes, including
+layer drawing, conversion, cropping and final composition. Path construction
+and output hashing were outside the span. One-minute load ranged from 6.07
+to 6.14 on 18 logical CPUs.
+
+| Canvas size and conversion | Before median | New serial median | New default median | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1920×1080, sRGB to linear RGB and back | 30.442 ms | 21.991 ms | 16.834 ms | 7/7 |
+| 1051×527, sRGB to linear RGB | 5.596 ms | 4.829 ms | 4.135 ms | 7/7 |
+| 176×128, sRGB to linear RGB and back | 0.382 ms | 0.282 ms | 0.289 ms | 6/7 |
+
+All 63 draws produced byte-identical pixels against their respective
+baselines and all timed processes and the memory guard exited zero.
+A separate probe observed four distinct threads per conversion on both
+large canvases. The small canvas stayed serial. Focused macOS and Linux
+tests passed, covering all 65,280 nonzero-alpha lookup combinations,
+both gamma directions and unchanged source buffers. The general SVG
+filter tests, macOS ThreadSanitizer and pinned CPU raster differential
+suite passed.
+
+### Parallel CPU opacity filtering
+
+The Canvas2D CPU fallback for Chromium-style `opacity()` distributes
+large premultiplied layers across up to four raster workers. Each worker
+uses the same 8-bit alpha table and writes separate rows. Transparent
+source pixels and pixels reduced to zero alpha leave the output clear.
+Other pixels use the existing premultiplication and rounding.
+
+Seven alternating fresh-process groups used matching macOS single-C
+`-prod` builds with preallocation on an Apple M5 Max. The timed span was
+a Canvas2D image draw with an opacity filter, including the layer draw,
+opacity pass and final composition. Source generation and output hashing
+were outside the span. One-minute load was 7.65 on 18 logical CPUs.
+
+| Canvas size and opacity | Before median | New serial median | New default median | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1920×1080, 48% | 27.830 ms | 26.566 ms | 20.565 ms | 7/7 |
+| 1051×527, 25% | 7.310 ms | 7.134 ms | 5.802 ms | 7/7 |
+| 176×128, 48% | 0.302 ms | 0.292 ms | 0.289 ms | 6/7 |
+
+All 63 draws matched their baseline pixels byte for byte and all timed
+processes and the memory guard exited zero. Focused macOS and Linux tests
+covered the byte alpha table, transparent input and output, serial equivalence
+and unchanged input. The general filter tests, ThreadSanitizer and pinned
+CPU raster differential suite passed.
+A separate probe observed four distinct threads on each large workload.
+The small workload stayed serial.
+
+### Archived sites with CPU raster workers enabled and disabled
+
+Seven alternating fresh-process pairs on the published single-C
+`-prod` receipt `20261118-035602-2025fd74` compared
+`VOX_SERIAL_CPU_RASTER=1` with the default. Its sealed filter source
+includes the parallel merge implementation `9df5b6d37`. The new opacity
+implementation was measured separately in the Canvas2D benchmark above.
+The timed site span was executable launch through document PNG capture,
+audit, and successful process exit. Fresh private profiles and HTTP
+caches used sealed original-origin replay at 1024×768 and 2× with a
+one-second settle period. System caches remained in place.
+
+| Archived page | Workers disabled | Default | Default faster pairs | Raster batches in separate probe |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 1576.322 ms | 1567.403 ms | 3/7 | 0 |
+| GitHub `vlang/v` | 4057.344 ms | 4088.959 ms | 1/7 | 0 |
+| Old Reddit `r/programming` | 1897.367 ms | 1875.483 ms | 5/7 | 0 |
+
+The medians vary from a 1.2% decrease to a 0.8% increase. The sites
+dispatched no CPU raster batches in the eligibility runs, so the
+launch-to-capture differences cannot be attributed to those workers.
+A large Canvas2D blur on the same executable dispatched two batches
+through the Mach-O callback at offset `0x11733d8`.
+
+All 42 captures matched their independent serial references byte for
+byte. They preserved 30/33/25 distinct content IDs and 6/61/18 served
+response identities respectively, with complete readiness, JavaScriptCore
+initialized, and zero reported script or replay errors. Every browser and
+the memory guard exited zero. The sampled peak process-tree RSS was
+1,658,454,016 bytes, with one-minute load ranging from 6.23 to 11.44 on
+18 logical CPUs.
+
+The pinned executable SHA-256 was
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`.
+The archives and decoded pixels matched the
+[earlier eligibility runs](#archived-browser-eligibility), including the
+November 12 GitHub archive. The AVIF and adblock helper hashes matched the
+[frame-clear input identities](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+
+The samples below are launch-to-exit milliseconds, rounded to three decimal
+places and ordered by pair. Odd pairs ran the disabled setting first.
+
+| Page | Workers disabled, ms | Default, ms |
+| --- | --- | --- |
+| Hacker News | 1533.567, 1547.174, 1576.322, 1744.063, 1597.556, 1567.270, 1587.807 | 1564.719, 1567.366, 1587.198, 1598.561, 1567.403, 1583.624, 1555.268 |
+| GitHub | 3853.822, 3950.398, 4105.820, 4075.114, 4057.344, 3971.380, 4060.107 | 4933.405, 3977.557, 4124.217, 4159.841, 4056.026, 3978.884, 4088.959 |
+| Old Reddit | 1927.751, 1863.949, 1870.874, 1862.046, 1903.934, 1902.416, 1897.367 | 1901.780, 1874.911, 1842.151, 1887.112, 1877.571, 1875.483, 1853.312 |
+
+### Parallel macOS screenshot opacity checks
+
+The native screenshot path checks whether an RGBA region is fully opaque.
+On large macOS bitmaps the caller checks the first row, then up to four
+threads scan disjoint row ranges using the existing vector and scalar
+kernels. The immutable region stays borrowed until all workers join.
+Early translucency in the first row skips dispatch. Small regions, scalar
+diagnostics and `VOX_SERIAL_CPU_RASTER=1` use the serial scan.
+
+On published receipt `20261118-035602-2025fd74`, an interposed probe
+validated the caller at Mach-O offset `0x1164d68`. It observed one scan and
+one successful presented-frame capture per archived site. All three
+captures had the same decoded RGBA hashes and content counts as the
+[worker-setting cohort](#archived-sites-with-cpu-raster-workers-enabled-and-disabled).
+Each capture used a fresh process, sealed replay, a 1024×768 document
+viewport at 2×, and a one-second settle period. Browser and guard exits
+were zero.
+
+Matching Clang `-O2` builds benchmarked just the scan on each captured
+2048×1536 RGBA image after reading it into memory. Each group used seven
+alternating fresh-process pairs. The first cohort ran under one-minute
+load of 13.33–27.01 on 18 logical CPUs and improved four of seven pairs
+per opaque input. A follow-up at load 8.46 had lower medians for every
+opaque input. The warm comparison used the same candidate binary in
+both modes and took the median of 17 scans after six warm-ups per process,
+at load 10.65. All seven warm pairs improved on every opaque input.
+
+| Image | Contended before → after, µs | Follow-up before → after, µs | Warm serial → parallel, µs |
+| --- | ---: | ---: | ---: |
+| Hacker News | 420.417 → 413.833 | 259.375 → 187.750 | 125.709 → 59.500 |
+| GitHub | 404.709 → 350.750 | 267.709 → 195.708 | 125.959 → 48.125 |
+| Old Reddit | 411.375 → 384.417 | 277.125 → 187.458 | 129.041 → 61.208 |
+| Hacker News with translucent first pixel | 0.708 → 0.834 | 0.417 → 1.667 | — |
+
+Both builds returned the same opacity verdict in every trial. All
+benchmark processes and guards exited zero. A separate probe observed
+four distinct worker threads and confirmed direct serial execution when
+forced and when the first pixel was translucent. Tests covered unaligned
+and padded rows, all small alpha positions, and large worker boundaries.
+The native snapshot fixtures matched decoded pixels, profile and other
+PNG metadata in ARC, non-ARC, ASan/UBSan and ThreadSanitizer builds.
+The published browser supplied the workload and eligibility evidence.
+The timing spans exclude painting, PNG encoding and browser startup.
+
+### Parallel CPU scroll-tile publication copies
+
+The opt-in macOS CPU tile compositor and CPU bootstrap for GPU tiles
+now batch changed tile uploads. The caller reserves and locks the
+IOSurfaces, then up to four workers copy disjoint destinations. The caller
+joins the workers before unlocking and publishing. Clean tiles keep their
+image references. A failed reservation leaves the previous tile frame
+available. One-tile uploads and `VOX_SERIAL_SCROLL_TILE_COPY=1` stay serial.
+
+A standalone Apple Clang 21 `-O2 -fobjc-arc` harness timed
+`native_scroll_tiles_commit` from entry through image adoption. It checked
+every visible pixel after the measurement, with a new process for each
+trial. The control used the previous header. The serial and parallel
+arms used the same candidate binary. Each case had seven alternating
+groups and zero process or guard failures. Full-refresh cases ran at a
+one-minute load of 7.78 on an 18-logical-CPU Mac17,6. The sparse cases ran
+at load 26.41 and showed greater spread.
+
+| Document pixels and tile updates | Before, µs | Candidate serial, µs | Candidate default, µs | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 2048×1536, six tiles, cold | 4045.125 | 3810.125 | 3420.209 | 7/7 |
+| 2048×1536, six tiles, warm | 440.125 | 407.916 | 232.583 | 7/7 |
+| 2051×1043, five padded tiles, warm | 389.917 | 393.333 | 143.959 | 7/7 |
+| 641×229, one tile, warm | 16.584 | 16.833 | 16.375 | 3/7 |
+| 2048×1536, one changed tile, warm | 49.583 | 56.542 | 54.916 | 5/7 |
+| 2048×1536, two changed tiles, warm | 180.083 | 177.250 | 91.084 | 6/7 |
+
+Warm runs had two prior commits. The sparse runs primed all six tiles
+and then replaced one or two while retaining the rest. A separate probe
+resolved the tile callback at Mach-O offset `0x18b4` and observed four
+distinct threads on each full-size dispatch. The one-tile case and
+forced-serial case did not dispatch. The native tests passed in ARC,
+non-ARC and ASan/UBSan builds, including pixel equality for packed and
+padded surfaces, retained image identity, and partial reservation
+failure. ThreadSanitizer passed both large copy workloads.
+
+The published single-C-unit receipt `20261118-035602-2025fd74`
+(`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`)
+supplied browser eligibility evidence. Fresh sealed-archive captures of
+Hacker News, GitHub and Old Reddit matched the existing decoded RGBA and
+content references at 1024×768 CSS pixels and 2× backing scale. Screenshot
+capture produced zero tile publications on all three sites.
+
+A separate windowed diagnostic on that same bundle enabled
+`VOX_SCROLL_TILE_COMPOSITOR=1` and tile logging. Each archived site used a
+fresh profile and cache, two seconds of title-matched settling, and
+48 native wheel events at nominal 60 Hz with a reversal halfway through.
+Hacker News committed six changed tiles once before input. During input
+it reported 46 one-tile updates, two two-tile updates, and one publication
+with zero tiles changed. Old Reddit scrolled with zero tile publications.
+GitHub loaded the archived document and received all 48 events, but its
+scroll offset stayed fixed. The measurement driver exited 1 for GitHub and
+0 for the other two. All browser processes and the memory guard exited 0.
+These runs establish eligibility on the older bundle. The before/after
+timings cover the native upload and adoption only. Whole-browser timing
+for the new code awaits a published build containing it.
+
+### Parallel native SVG turbulence
+
+The macOS SVG filter graph builds its deterministic gradient table once.
+The CPU raster workers then fill disjoint row bands of the turbulence
+bitmap. Core Image receives the complete bitmap after all workers join.
+Small images and `VOX_SERIAL_CPU_RASTER=1` use a single range. Both
+`turbulence` and `fractalNoise` retain their pixel arithmetic.
+
+Matching Apple Clang 21 `-O2` harnesses measured gradient-table setup and
+RGBA generation through completion. Seven alternating fresh-process
+groups used the previous function, the candidate with forced serial
+execution, and the candidate with default workers. Warm cases generated
+one untimed image first. The 18-logical-CPU host's one-minute load was
+8.70–12.41. All processes and the memory guard exited zero. Output hashes
+matched across all arms.
+
+| Bitmap and filter | Before, ms | Candidate serial, ms | Candidate default, ms | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 64×65, one octave, turbulence, warm | 0.055 | 0.056 | 0.056 | 2/7 |
+| 257×193, three octaves, fractal noise, cold | 1.084 | 1.256 | 0.439 | 7/7 |
+| 641×393, three octaves, turbulence, warm | 7.527 | 6.609 | 1.868 | 7/7 |
+| 1281×785, four octaves, fractal noise, warm | 34.097 | 34.252 | 9.165 | 7/7 |
+
+An earlier callback implementation at load 5.50 had before/default
+medians of 0.043/0.047, 0.919/0.301, 4.542/1.283 and 23.652/6.856 ms.
+A separate diagnostic resolved the final worker entry at Mach-O offset
+`0xe10` and observed four distinct threads in each large dispatch. The
+small and forced-serial cases did not dispatch. ASan/UBSan and
+ThreadSanitizer passed both large raster cases. The native CSS filter
+suite compared exact serial/parallel bytes, rounding modes, translated
+Core Image output and repeated-frame ownership.
+
+The published single-C-unit build
+`296096c89d6b92677139a110f2004bfe8df20d6ebc70db759960be3046c4e829`
+supplied eligibility observations. Sealed Hacker News, GitHub and Old
+Reddit captures retained their prior content and decoded RGBA references
+at 1024×768 CSS pixels and 2× backing scale with a one-second settle.
+None called the turbulence rasterizer. A local `feTurbulence` control
+activated the probe at executable offset `0x2ed0c` with a 1282×786
+noise image. All browser processes and the memory guard exited zero.
+The before/after timings cover only the native filter. A published
+browser with the new worker code is pending.
+
+### Published Hacker News scroll-tile check
+
+Receipt `20261118-043956-76e1c1ba`, single C unit with V `-prod`, sealed
+the scroll-tile header from `121617152`. Executable SHA-256 was
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`.
+The archived homepage retained its 30 audited entries and exact decoded
+RGBA reference `a12f1a485f6b1e6f9d87dc1a49e47c3e2b7c2245858332e1209ff15041734642`
+with the CPU tile compositor enabled. The screenshot and guard exited 0.
+
+A separate interposed diagnostic resolved the tile worker at executable
+offset `0x1172328`. It observed four distinct threads on the initial
+six-tile upload and two distinct threads on each of two two-tile uploads
+during input. The diagnostic received all 48 wheel events, produced 48
+native publications, and exited 0 in the browser, driver and guard.
+
+Two alternating pairs used `tools/measure_precise_scroll.py` with
+`VOX_SCROLL_TILE_COMPOSITOR=1`, then contrasted
+`VOX_SERIAL_SCROLL_TILE_COPY=1` with the default worker setting on that
+same build. Each trial used a fresh process, profile and cache, sealed
+original-origin HTTPS replay, JavaScript enabled, a 1024×768 document
+viewport at 2×, and two seconds of title-matched settling. The driver
+sent 48 wheel events at nominal 60 Hz with delta 5 and a reversal after
+24 inputs. Browser, driver and guard exits were all 0. One-minute load
+was 10.28–10.68 on 18 logical CPUs. Each trial completed all 48 inputs,
+49 total native publications and 46 measured scroll changes.
+
+| Pair and worker setting | Actual input Hz | Scroll publications/s | Median / p95 / max interval, ms | Intervals over 16.67 ms | Leading / trailing gap, ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 serial | 59.87 | 58.59 | 16.46 / 20.38 / 26.46 | 22/46 | 18.22 / 14.53 |
+| 1 parallel | 60.00 | 58.72 | 16.73 / 20.79 / 24.74 | 24/46 | 20.24 / 12.90 |
+| 2 parallel | 59.90 | 58.62 | 16.99 / 21.67 / 26.82 | 25/46 | 19.98 / 14.24 |
+| 2 serial | 59.85 | 58.58 | 16.62 / 21.97 / 24.97 | 22/46 | 18.56 / 14.76 |
+
+Throughput uses the entire first-to-last input window and counts changes
+at completed native frame installation after the outer view paint.
+Observed throughput stayed close to 58.6–58.7 publications per second
+across settings. The parallel trials had more intervals over budget.
+The result establishes native worker use on this archive, with no
+measurable scrolling gain under this short input schedule.
+
+### Parallel macOS opacity-group compositing
+
+The macOS CSS opacity and SVG mask groups use the CPU raster workers for
+large blends. The caller flushes Quartz, lends the source and backdrop
+bitmaps, and publishes the result after the worker batch joins. Each
+worker owns complete output rows and uses the existing normal or screen
+pixel kernel. Groups below 131,072 pixels and
+`VOX_SERIAL_CPU_RASTER=1` use a single range.
+
+Matching Apple Clang 21 `-O2` harnesses timed compositing into a completed
+RGBA buffer. Seven alternating fresh-process groups used the previous
+row loop, the new forced-serial path, and the new default. Warm inputs
+had one untimed composite. The 18-logical-CPU host's one-minute load was
+6.13. Every process and the guard exited 0, and output hashes matched
+across all arms.
+
+| Region and blend | Before, µs | Candidate serial, µs | Candidate default, µs | Default faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 84×72, padded normal, warm | 7.042 | 6.833 | 6.792 | 6/7 |
+| 511×385, padded normal, cold | 214.959 | 213.792 | 102.333 | 7/7 |
+| 1480×960, normal, warm | 1245.334 | 1255.375 | 366.542 | 7/7 |
+| 1480×960, screen, warm | 2437.583 | 2372.583 | 667.667 | 7/7 |
+
+A separate dispatch probe resolved the worker entry at executable offset
+`0x2c68` and observed four distinct threads for the large normal and
+screen cases. The small and forced-serial cases stayed on the caller.
+The optimized and ASan/UBSan unit tests passed for both modes, padded
+destinations and changing rounding modes. ThreadSanitizer passed both
+large blend cases. Core Graphics tests compiled the previous and
+current CSS and SVG mask group endings in ARC and non-ARC modes. They
+matched byte for byte on cropped groups with a padded parent bitmap.
+
+The published single-C-unit build
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+supplied browser eligibility observations. Sealed Hacker News, GitHub
+and Old Reddit captures at 1024×768 CSS pixels and 2× backing scale
+matched their prior content and decoded RGBA references after a
+one-second settle. All browser processes and the guard exited 0.
+An allocation probe at executable offset `0x1cd9c` found three CSS
+blend regions on GitHub (84×72, 90×28, 28×32). All fit the serial path.
+Hacker News and Old Reddit made no allocations at that call site.
+A local opacity control exercised the same call site with a 1480×960
+region. The table measures only the native blend, with the large
+control's dimensions. Whole-browser verification of the new worker
+code awaits its production build.
+
+### Parallel macOS screenshot PNG compression
+
+Large opaque sRGB snapshots split their unfiltered PNG rows into up to
+four bands and compress them with system zlib. The caller joins the
+byte-aligned DEFLATE blocks and combines their checksums into one zlib
+stream. PNG dimensions, profile, density and ancillary metadata use the
+existing writer. Small, translucent and other unsupported captures keep
+the existing codec selection. `VOX_SERIAL_SNAPSHOT_PNG=1` bypasses the
+band encoder for matched checks.
+
+The single-C-unit production executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+supplied archived inputs at 1024×768 CSS pixels, 2× backing scale and a
+one-second settle. All three pages used the direct presented capture
+path and matched their prior content and decoded RGBA references.
+A second set of fresh browser processes loaded the band encoder through
+the existing codec extension point. Each screenshot invoked the codec
+once and matched the prior decoded pixels, color profile, density and
+ancillary metadata. All browser processes and guards exited 0.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed
+`native_encode_snapshot_png` from the captured bitmap through complete
+PNG bytes in memory, including checksums and chunk construction. Seven
+alternating fresh-process groups compared the previous ImageIO path,
+the candidate forced to the same ImageIO path, and the candidate using
+four bands. Input loading and writing to disk were outside the timer.
+One-minute load was 4.95–5.12 on 18 logical CPUs. Every trial and guard
+exited 0. Each mode's output was deterministic across trials.
+
+| Archived page | Before, ms | Candidate serial, ms | Candidate parallel, ms | Before → after PNG bytes | Parallel faster than before |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Hacker News | 17.846 | 17.881 | 4.931 | 461,920 → 462,100 | 7/7 |
+| GitHub | 16.734 | 16.822 | 4.911 | 340,530 → 340,293 | 7/7 |
+| Old Reddit | 19.185 | 19.311 | 5.073 | 544,974 → 544,785 | 7/7 |
+
+A separate dispatch probe resolved the band callback at executable
+offset `0x21fc` and observed four distinct threads for every archive.
+Forced serial produced the same PNG bytes as the original path. Native
+ARC and non-ARC tests passed under normal, ASan and UBSan builds. They
+validated two through four bands, padded rows, incompressible input,
+the complete Retina PNG and the optional codec fallback.
+ThreadSanitizer also passed an archived capture. Timing covers encoding
+only. The installed browser supplied the pixels and codec-extension
+verification, so the default production route awaits its rebuild.
+
+### Parallel PNG chunk checksums
+
+The screenshot workers now emit complete PNG image-data chunks and
+calculate their CRCs. Each zlib stream records its Adler-32 as it
+compresses the filtered scanlines. After joining the workers, the
+caller combines the Adler-32 values, finishes the last chunk's CRC and
+appends the chunks in row order. This removes the intermediate joined
+buffer and the caller's CRC scan across the whole compressed image.
+
+The same sealed Hacker News, GitHub and Old Reddit archives produced
+their prior pixel and content references using the published
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+executable. Fresh browser processes captured at 1024×768 CSS pixels,
+2× backing scale and one second of settling. Browser and guard exits
+were zero. The published browser supplied the input pixels.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed the complete
+`native_encode_snapshot_png` call before and after this change. The
+control was the previous four-worker encoder in `d46e64920`. Seven
+alternating fresh-process pairs ran per case. Warm trials performed one
+untimed encode. Input loading, decoding for validation and disk writes
+were outside the measurement. One-minute load was 3.91–4.16 on 18
+logical CPUs. All processes and the guard exited zero.
+
+| Archive | Cold before → after, ms | Cold pairs faster | Warm before → after, ms | Warm pairs faster |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 4.440 → 4.337 | 6/7 | 4.229 → 4.171 | 7/7 |
+| GitHub | 4.102 → 3.971 | 5/7 | 3.879 → 3.843 | 4/7 |
+| Old Reddit | 4.656 → 4.520 | 6/7 | 4.514 → 4.475 | 5/7 |
+
+The concatenated image-data payload was byte-identical in each
+comparison. Three extra chunk headers and CRCs add 36 bytes per file
+with four bands. Each output matched the archived pixels, profiles,
+density and ancillary metadata. An independent zlib decoder validated
+two through four chunks with padded rows and incompressible input,
+and checked each chunk's CRC. Retina metadata and fallback checks passed
+in ARC, non-ARC and ASan/UBSan builds. A separate probe identified the
+worker at offset `0x23cc` and observed four threads on every archive.
+Forced serial matched the earlier ImageIO output. The software CRC
+and ThreadSanitizer runs matched the new Hacker News PNG.
+
+### Parallel stationary-frame bitmap copies
+
+The macOS stationary-frame cache uses up to four raster workers when it
+must copy a large bitmap. Byte-backed cache stores and restores, and
+restores from a copied Core Graphics provider, share the same pitched
+row copy. Workers join before the caller returns or publishes any
+pixels. Copies smaller than 4 MiB and `VOX_SERIAL_CPU_RASTER=1` execute
+on the caller.
+
+Published executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+at 2× rendered the same sealed Hacker News, GitHub and Old Reddit
+archives at a 1024×768 CSS-pixel viewport. The default reused an
+immutable frame and made no instrumented cache copies. With
+`VOX_COPY_STATIONARY_RASTER_PIXELS=1` the full 2048×1704 frame copied
+13,959,168 bytes per operation. The site diagnostics observed two
+stores each and four, sixteen and six restores respectively. An initial
+probe that resolved symbols for every copy stalled on GitHub. The
+completed diagnostic resolved the executable base once and matched
+only the three stationary-copy call sites. A separate interposition
+run executed the new copy helper at those call sites with the
+compatibility switch. All completed captures matched their previously
+audited content and decoded RGBA references and exited zero.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed the native cache
+store or restore call. Seven alternating fresh-process groups compared
+the previous implementation, the new forced-serial path and the new
+default. Cold cases allocated the copied-to storage before timing and
+left its pages untouched. Full-frame inputs extended the archived
+document bytes to the observed copy size. Warm cases made one prior
+copy. One-minute load was 6.81–7.14 on 18 logical CPUs. Every byte,
+including row padding, matched and all trial and guard exits were zero.
+
+| Input and operation | Before, µs | Candidate serial, µs | Candidate parallel, µs | Faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News cold store | 900.375 | 916.666 | 691.208 | 7/7 |
+| GitHub cold store | 840.208 | 938.000 | 847.500 | 5/7 |
+| Old Reddit cold store | 825.958 | 878.750 | 663.584 | 6/7 |
+| Hacker News cold restore | 1017.208 | 959.041 | 716.792 | 6/7 |
+| GitHub cold restore | 839.084 | 940.583 | 693.583 | 4/7 |
+| Old Reddit cold restore | 909.375 | 973.834 | 593.167 | 6/7 |
+| Padded 2054×1514 warm store | 174.792 | 227.709 | 125.459 | 7/7 |
+| Padded 2054×1514 warm byte restore | 165.584 | 180.042 | 103.083 | 6/7 |
+| Padded 2054×1514 warm image restore | 174.125 | 175.791 | 122.500 | 7/7 |
+| Padded 321×241 warm byte restore | 3.833 | 3.917 | 3.875 | 2/7 |
+
+A dispatch probe resolved the worker callback at executable offset
+`0x1b04` and observed four distinct threads for all three large copy
+entry points in the completed run. Small and forced-serial copies
+stayed on the caller. Native ARC, non-ARC, ASan/UBSan and ThreadSanitizer
+checks passed, including fallback after a failed snapshot allocation.
+The timings cover the compatibility copy calls. Production verification
+of the new code awaits the shared rebuild.
+
+### Parallel transparent clears for large pooled frames
+
+The macOS frame pool uses the existing row workers to clear reused
+transparent buffers of at least 33,177,600 bytes, the packed size of a
+3840×2160 RGBA frame. A slot and its optional IOSurface stay reserved
+until all rows have been cleared, including padding. Smaller buffers
+keep the single clear. `VOX_SERIAL_FRAME_CLEAR=1` also forces a single
+clear. Opaque callbacks can still defer initialization.
+
+The published single-C-unit executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+supplied archive diagnostics. A probe resolved the pool clear at
+executable offset `0x116a240`. Default captures of Hacker News, GitHub
+and Old Reddit made zero clears there. Forcing
+`VOX_CLEAR_OPAQUE_FRAME_BUFFERS=1` produced 5, 20 and 9 clears respectively,
+all 13,959,168 bytes. Fresh processes used the sealed archives, a
+1024×768 CSS-pixel viewport at 2×, and one second of settling. All
+browser and guard exits were zero and the document content and decoded
+pixels matched the prior references in both settings.
+
+Matching Apple Clang 21 `-O2 -fobjc-arc` harnesses timed reacquisition
+of a seeded pool slot through completion of its transparent clear.
+This includes reservation and the shared buffer's lock. An eviction
+case wrote a separate 64 MiB buffer before timing. Each case used
+seven alternating fresh-process groups on 18 logical CPUs. The
+one-minute load was 4.04–4.19 in the final cohort, with zero process or
+guard failures. All tests checked every byte.
+
+An initial candidate used workers for the 13–14 MiB frames. Its
+before/default medians were 58.959/57.750 µs for the shared archive
+size, 66.750/87.042 µs with eviction, 57.917/71.667 µs for padded
+shared storage, and 53.792/69.750 µs for mapped storage. Those sizes
+retain the single clear after an exploratory 4K and 5K cohort showed
+consistent gains.
+
+| Frame and storage | Before, µs | Candidate serial, µs | Candidate default, µs | Faster than before |
+| --- | ---: | ---: | ---: | ---: |
+| 1024×852 shared | 15.458 | 15.583 | 15.667 | 2/7 |
+| 2048×1704 shared | 73.500 | 84.250 | 99.000 | 1/7 |
+| 2048×1704 shared, evicted | 249.625 | 207.875 | 211.667 | 3/7 |
+| 2051×1703 padded shared | 85.917 | 86.250 | 95.541 | 5/7 |
+| 2051×1703 mapped | 62.416 | 72.375 | 75.292 | 4/7 |
+| 3840×2160 shared | 295.958 | 345.583 | 194.167 | 6/7 |
+| 4096×2160 shared, evicted | 521.041 | 539.458 | 232.458 | 6/7 |
+| 5120×2880 shared | 625.625 | 742.416 | 356.750 | 7/7 |
+| 5120×2880 shared, evicted | 814.792 | 832.542 | 470.666 | 7/7 |
+| 5123×2879 mapped | 696.792 | 763.083 | 404.833 | 7/7 |
+
+The smaller rows used the single-clear path in both builds and showed
+trial variation. A separate probe resolved the worker at offset
+`0x18b4` and saw four distinct threads on the large shared and mapped
+buffers. It saw no dispatch for the archive size or forced serial.
+The ARC and non-ARC pool suites, 288 white-clear compatibility
+comparisons, and the focused ASan/UBSan and ThreadSanitizer runs passed.
+Production validation of the new path awaits the shared rebuild.
+
+### Parallel premultiplication of sampled PNG and WebP uploads
+
+Sampled RGBA uploads now write a premultiplied copy in a single pass.
+The existing CPU raster workers divide source rows at 262,144 pixels
+and can use up to four lanes. The conversion keeps the original
+`(channel * alpha + 127) / 255` rounding, preserves the source buffer,
+and finishes before mip selection and filtering. There is no worker
+dispatch below the threshold or with `VOX_SERIAL_CPU_RASTER=1`.
+
+The archived page diagnostics used the published single-C-unit bundle
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`.
+The probe counted source clones from the RGBA decode entry point at
+return offset `0x1f4fc4`. It detected the 2,107,404-byte source in a
+separate 1027×513 transparent PNG scaled to 200×100 CSS pixels. At
+1024×768 CSS pixels and 2× capture scale with one second of settling,
+the three sealed replays matched their content counts and existing
+decoded PNG references. Fresh captures used private profiles and
+caches, with JavaScriptCore context initialization and zero reported
+JavaScript errors. The browser and guard exits were zero.
+
+| Archive | Audited entries | RGBA premultiplication at capture | Frozen capture RGBA SHA-256 |
+| --- | ---: | --- | --- |
+| Hacker News | 30 | None | `a12f1a485f6b1e6f9d87dc1a49e47c3e2b7c2245858332e1209ff15041734642` |
+| GitHub | 33 | 60×60 and 40×40, both serial | `69ab76c878a122501f91053ef8ae07b2ca073da35bafc92c065dbce55920a0bc` |
+| Old Reddit | 25 | None | `d31ea76663720b84aa5e78a722e3cb21eb41cb345742572d2e6e66fc1070bc1a` |
+
+A matching uninstrumented, single-C-unit `-prod -prealloc -gc none`
+harness timed output allocation and premultiplication through return.
+It compared the original clone and scalar loop, the new pass forced
+serial, and the new pass with default scheduling. The timed scope ends
+before mip generation or painting. Inputs were the two archived GitHub
+avatars, the decoded PNG control, and synthetic packed RGBA with mixed
+alpha. Seven alternating, fresh-process groups ran on 18 logical CPUs
+at one-minute loads of 4.59–4.62. All 126 processes and the guard exited
+zero, and each input produced identical output across the three modes.
+
+| Source | First call before / serial / default, µs | Warm before / serial / default, µs |
+| --- | ---: | ---: |
+| GitHub 40×40 | 3.583 / 2.500 / 2.500 | 2.542 / 1.542 / 1.542 |
+| GitHub 60×60 | 6.583 / 4.416 / 4.416 | 6.334 / 4.125 / 4.125 |
+| 512×512 | 455.584 / 298.791 / 200.791 | 456.917 / 289.688 / 183.605 |
+| PNG 1027×513 | 926.542 / 574.959 / 327.541 | 917.833 / 592.896 / 266.042 |
+| 1025×1023 | 1849.625 / 1176.500 / 501.333 | 1855.417 / 1190.750 / 485.854 |
+| 2049×2047 | 7818.292 / 4957.875 / 2166.542 | 7496.396 / 4954.813 / 1934.063 |
+
+A separate dispatch diagnostic observed two threads at the threshold
+and four at 1027×513. It recorded no dispatch at 60×60 or when forced
+serial. The image suites passed with the Clang C backend in default
+and production allocator configurations. The FastC attempt stopped
+at an SDK-header compilation error before tests ran. The three
+archives provide path eligibility and baseline pixel checks.
+A candidate whole-page timing comparison requires the shared
+production rebuild.
+
+### Parallel RGBA and BGRA channel swaps
+
+The macOS document raster callbacks and GPU image color readbacks
+share an in-place red and blue channel swap. It runs serially below
+524,288 pixels and can use up to four raster workers at or above
+that size. Each lane owns complete rows and all lanes finish before
+painting or publishing the buffer. The swap preserves alpha, green,
+and any row padding. `VOX_SERIAL_CPU_RASTER=1` forces serial execution.
+
+A single-C-unit V `-prod -prealloc -gc none` harness timed one in-place
+swap of an initialized buffer through completion. It compared the
+original macOS loop, the shared loop forced serial, and the shared
+loop with default scheduling. Seven alternating fresh-process
+groups ran on 18 logical CPUs at a one-minute load of 4.83. All
+147 processes and the guard exited zero and their buffer hashes
+matched across modes. The initial threshold trial at 512×512 had
+first-call medians of 65.458 µs before and 65.000 µs with workers.
+It was faster in four of seven groups, so that size stays serial.
+
+| Surface | First call before / serial / default, µs | Warm before / serial / default, µs | First call faster |
+| --- | ---: | ---: | ---: |
+| 48×34 | 0.625 / 0.500 / 0.583 | 0.375 / 0.375 / 0.375 | 5/7 |
+| 256×258 | 17.375 / 16.792 / 16.875 | 16.792 / 16.958 / 16.666 | 6/7 |
+| 512×512 | 68.417 / 66.083 / 67.292 | 68.125 / 67.000 / 66.146 | 4/7 |
+| 1024×512 | 136.000 / 132.042 / 79.417 | 136.063 / 131.084 / 60.396 | 6/7 |
+| 1031×513, unaligned and padded | 137.958 / 138.458 / 123.791 | 141.771 / 138.188 / 56.063 | 7/7 |
+| 2048×1536 | 826.459 / 803.125 / 319.334 | 832.167 / 819.500 / 223.021 | 7/7 |
+| 3840×2160, padded | 2188.583 / 2184.125 / 626.834 | 2186.437 / 2143.542 / 583.542 | 7/7 |
+
+A dispatch probe verified four threads at 1024×512 and at the
+unaligned, padded size. It recorded zero dispatch at 1023×512 or
+with the serial override. The focused CPU and GPU image color tests
+passed with the prepared production allocator and the browser's GG
+overlay. The CPU test checks every byte of a padded, unaligned
+surface and verifies that two swaps restore the full original buffer.
+It also passed with forced serial scheduling and with ASan and UBSan.
+
+The published single-C-unit executable
+`66f97ef08d4c9ff9ae1195cd80c9817add78ab82c27960580f1444a44101e77d`
+replayed Hacker News, GitHub, and Old Reddit at 1024×768 CSS pixels
+and 2× capture scale. Each used a fresh process, private profile and
+cache, and one second of settling. All three content audits
+(30, 33, and 25 entries) and decoded PNG hashes matched their frozen
+references. A breakpoint at `0x183ca0` recorded two 408×66 swaps
+in a text-shadow control and no hits on the three archives. The
+compiler inlines other call sites, so those counts cover only the
+out-of-line entry. A first debugger run exceeded the focused 3 GiB
+guard while capturing GitHub. The full diagnostic used the default
+12 GiB guard and all three browser, debugger, and guard exits were
+zero. Candidate whole-page timings still require the shared rebuild.
+
+### Parallel premultiplication of Canvas2D destinations
+
+Canvas2D draws use the same row workers as sampled-image uploads to
+prepare straight-alpha destinations in place. As before, conversion
+starts when a supported draw is ready to use the surface. The workers
+finish before drawing. They round each RGB channel with
+`(channel * alpha + 127) / 255` and leave alpha and row padding intact.
+The caller still owns the transition to a premultiplied surface.
+The shared scheduler can split surfaces of at least 262,144 pixels
+across two to four workers. `VOX_SERIAL_CPU_RASTER=1` forces one range.
+
+A prepared single-C-unit `-prod -prealloc -gc none` harness timed one
+transparent source-over draw. The old control ran the original
+Canvas loop and drew into the resulting premultiplied surface. The
+candidate prepared a straight-alpha surface through the normal draw
+entry. Each iteration restored the same input outside the timed
+span. Seven rotating fresh-process groups per size compared the
+original loop, the candidate forced serial, and the candidate with the
+default scheduler. All 105 processes and the memory guard exited
+zero and their full-buffer hashes matched across the three modes.
+Warm values are the median of the within-process medians after the
+first draw.
+The one-minute host load was 13.25–15.84 on 18 logical CPUs.
+
+| Canvas | First draw before / serial / default, µs | Warm before / serial / default, µs | Default faster than serial |
+| --- | ---: | ---: | ---: |
+| 300×150 | 105.792 / 44.541 / 54.042 | 99.188 / 40.688 / 42.375 | 3/7 |
+| 512×512 | 490.292 / 290.417 / 214.500 | 499.646 / 264.062 / 173.333 | 5/7 |
+| 1031×513, padded | 1066.958 / 516.125 / 252.875 | 1149.958 / 533.646 / 195.521 | 7/7 |
+| 1920×1080 | 4407.500 / 2242.333 / 775.750 | 4390.980 / 2163.562 / 689.562 | 7/7 |
+| 3840×2160 | 19590.333 / 8618.083 / 2578.000 | 16429.980 / 8707.416 / 2671.813 | 7/7 |
+
+The exploratory timing overlapped the browser cohort at a one-minute
+load of 22.65–23.58. Its first-draw before/default medians in table
+order were 97.000/52.292, 712.083/224.917, 1211.291/373.708, 5241.291/867.792, 20287.625/3094.333 µs.
+
+A separate probe observed two threads at 512×512 and four on the
+padded 1031×513 surface. It saw no dispatch below the threshold or
+in forced serial mode. The prepared allocator passed the focused
+Canvas, glyph, filter-layer, and image raster tests. The Canvas
+and sampled-image byte comparisons also passed in forced serial
+mode and with ASan and UBSan.
+
+Seven alternating fresh-process pairs per site used the published
+single-C-unit receipt `20261118-055438-888e0b4d`, executable SHA-256
+`9568a08eccc0567b56fa837e6d487bd57a63ec69d31c10b9760c9b5a6b5df757`.
+This executable contains the sampled-image premultiplication change
+and predates the Canvas change. The timings compare the existing
+raster scheduler enabled and disabled from launch through PNG capture,
+document audit and successful exit. All 42 captures used sealed
+original-origin replay, fresh private profiles and HTTP caches, a
+1024×768 CSS-pixel viewport at 2×, and one second of settling.
+System caches remained in place.
+
+| Archive | Workers disabled, ms | Default, ms | Default faster | Worker batches in separate probe |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 1556.732 | 1540.750 | 3/7 | 0 |
+| GitHub | 3779.487 | 3789.892 | 4/7 | 0 |
+| Old Reddit | 1787.573 | 1807.386 | 2/7 | 0 |
+
+All captures matched their frozen pixel references and preserved the
+same audited content and served response identities across both modes
+(30/33/25 entries and 6/61/18 responses by site). The replay returned
+the same 404s for the Hacker News and GitHub favicons and the two
+unarchived Vinix screenshot URLs on GitHub in both modes. Those
+known fixture misses were confirmed after two preflight attempts.
+JavaScriptCore initialized, with no reported script errors, and
+the audit found no canvas elements on these pages. The separately
+validated worker probe observed a four-thread batch on a 1200×900
+Canvas readback. It observed zero batches on each archive. The
+measured site differences therefore provide no speedup attribution.
+The one-minute site load was 5.08–24.59, with overlapping
+benchmark work near the end of the cohort. All browser and guard
+exits were zero. Whole-page checks of the Canvas change await the
+shared rebuild.
+
+The samples below are launch-to-exit milliseconds, ordered by pair.
+Odd pairs ran the workers-disabled setting first.
+
+| Archive | Workers disabled, ms | Default, ms |
+| --- | --- | --- |
+| Hacker News | 1793.020, 1556.732, 1530.002, 1531.847, 1521.110, 1618.192, 1628.853 | 1514.265, 1528.653, 1540.750, 1540.249, 1551.347, 1670.876, 1616.710 |
+| GitHub | 3689.112, 3779.487, 3764.194, 3684.892, 3887.710, 4131.023, 4108.306 | 3639.933, 3789.892, 3748.792, 3724.459, 4339.400, 4051.171, 4049.266 |
+| Old Reddit | 1758.637, 1768.435, 1787.573, 1735.655, 2354.995, 1886.693, 1857.683 | 1760.005, 1774.321, 1807.386, 1752.116, 2183.433, 1892.087, 1839.270 |
+
+### Parallel truncating premultiplication for WebP paint pixels
+
+The macOS WebP RGB paint path now fills the premultiplied copy directly
+from the straight decoder bytes. It shares the raster premultiplication
+loop with Canvas2D and sampled-image uploads, using a zero rounding
+bias for WebP and 127 for the rounded conversions. The worker ranges
+cover complete 1024-pixel batches. A final short range uses the same
+conversion, and any partial-pixel bytes are copied unchanged. WebP
+decoding policy and the straight bitmap used by Canvas stay intact.
+
+A prepared single-C-unit `-prod -prealloc -gc none` harness timed output
+allocation and premultiplication through return. The original control
+cloned the straight buffer and truncated each color channel in a
+scalar loop. Seven rotating fresh-process groups measured each input
+with that loop, the new pass forced serial, and the new pass with
+default scheduling. The input from the WebP control was decoded before
+timing and the others used synthetic mixed alpha. The one-minute load
+was 8.05–8.28 on 18 logical CPUs. All 105 timed processes and the guard
+exited zero, and the full output hashes matched across modes for every
+input. An initial 4×2 timing attempt reached the timer's resolution,
+so that size is covered by the exact pixel tests.
+
+| Source | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before |
+| --- | ---: | ---: | ---: |
+| 128×128 | 26.166 / 9.250 / 8.916 | 26.083 / 9.000 / 9.042 | 6/7 |
+| 512×512 | 423.750 / 145.750 / 129.500 | 424.605 / 148.250 / 110.896 | 7/7 |
+| WebP 1031×513 | 876.583 / 315.042 / 194.084 | 858.000 / 299.625 / 175.396 | 7/7 |
+| 1027×513, three trailing bytes | 876.500 / 297.417 / 194.167 | 870.146 / 296.583 / 179.459 | 7/7 |
+| 2049×2047 | 6849.208 / 2497.042 / 1308.042 | 6892.959 / 2326.834 / 1256.251 | 7/7 |
+
+A dispatch probe observed two threads at 512×512 and four at 1031×513.
+There was no dispatch one pixel below the threshold or with
+`VOX_SERIAL_CPU_RASTER=1`. The prepared allocator, forced serial, and
+ASan/UBSan runs passed. The focused tests compare all bytes across
+worker boundaries, check the last complete pixel and trailing bytes,
+and verify that the source is preserved. The browser's focused WebP
+tests passed through both local and fetched image entry points. Their
+first combined invocation reached the 3 GiB guard during compilation.
+Building that test under the default compile guard and then running
+it under the focused 3 GiB guard succeeded.
+
+The published single-C-unit bundle
+`9568a08eccc0567b56fa837e6d487bd57a63ec69d31c10b9760c9b5a6b5df757`
+provided archive eligibility and pixel checks. A probe at return
+offset `0x125b98` detected the 2,115,612-byte RGBA source of a separate
+1031×513 transparent WebP control. At 1024×768 CSS pixels and 2× capture
+scale, Hacker News, GitHub and Old Reddit matched their frozen
+references with 30, 33 and 25 audited entries. No archive called
+the WebP paint conversion. Each capture used a fresh process,
+private profile and cache, and one second of settling. Browser and
+guard exits were zero. The component timings measure the WebP paint
+conversion, and the candidate production capture awaits the rebuild.
+
+### Parallel straight-alpha conversion for portable Canvas uploads
+
+Linux and Windows Canvas uploads now use the shared CPU raster workers
+to build the straight RGBA copy from the premultiplied surface. The
+caller waits for every range before uploading it. The shared scheduler
+keeps inputs below 262,144 pixels serial and can use up to four lanes.
+The conversion uses a 256-entry read-only reciprocal table and preserves
+the exact integer division and saturation for every color/alpha pair.
+The source remains available for Canvas readback.
+
+Seven rotating fresh-process groups timed allocation and conversion
+through return for each surface. The three modes were the original
+clone and scalar loop, the new implementation with
+`VOX_SERIAL_CPU_RASTER=1`, and the new implementation with default
+scheduling. Input generation and hashing were outside the timed span.
+Warm values are medians of within-process medians after the first
+conversion. The Linux run used four virtual CPUs in an AArch64 Lima
+guest, V 0.5.2, and single-C-unit Clang `-prod -gc none`. The macOS
+component run used the prepared single-C-unit Clang
+`-prod -prealloc -gc none` compiler on 18 logical CPUs.
+The one-minute load was 0.20–0.33 in the guest and 6.42–6.67 on macOS.
+
+| Surface | Linux first before / serial / default, µs | Linux warm before / serial / default, µs | macOS first before / serial / default, µs | macOS warm before / serial / default, µs |
+| --- | ---: | ---: | ---: | ---: |
+| 300×150 mixed | 372.283 / 88.206 / 87.414 | 369.137 / 86.915 / 86.623 | 93.500 / 59.792 / 58.209 | 91.542 / 57.542 / 57.188 |
+| 512×512 mixed | 2152.114 / 517.071 / 340.575 | 2170.238 / 508.050 / 305.014 | 541.917 / 335.625 / 240.458 | 531.750 / 337.854 / 222.250 |
+| 1027×513 mixed | 4369.183 / 1014.142 / 373.616 | 4360.996 / 1013.016 / 328.762 | 1071.417 / 681.625 / 365.792 | 1068.000 / 687.270 / 292.479 |
+| 1920×1080 mixed | 17091.994 / 4062.066 / 1218.928 | 17251.363 / 3988.068 / 1155.179 | 4258.750 / 2745.417 / 1098.708 | 4211.583 / 2718.375 / 1156.167 |
+| 1920×1080 opaque | 4777.423 / 2191.779 / 955.310 | 4774.757 / 2152.572 / 722.232 | 1279.083 / 1438.250 / 745.875 | 1218.729 / 1434.375 / 683.375 |
+| 1920×1080 transparent | 6598.254 / 868.604 / 364.866 | 6056.995 / 489.300 / 165.559 | 3879.375 / 900.208 / 563.458 | 3919.062 / 911.416 / 553.980 |
+| 3840×2160 mixed | 68299.986 / 15967.145 / 4485.597 | 68174.463 / 15778.318 / 4353.475 | 16817.125 / 11019.041 / 4277.208 | 16976.916 / 10872.812 / 4306.333 |
+
+Default scheduling was faster than the original in all seven pairs for
+every input on both platforms. The forced-serial opaque case on macOS
+was slower than the original. All 147 timed processes per platform and
+both guards exited zero, and each input's full-buffer hash matched
+across modes and platforms.
+
+The Linux probe saw one new worker at 512×512 and three at 1027×513,
+in addition to the calling thread. It observed no workers at 511×513
+or with forced serial scheduling. Linux focused tests passed in both
+modes, including the WebP copy that shares the packed batch scheduler.
+The guest compiler could not bootstrap the V memory guard, so the
+Linux commands used the repository's Python memory guard. The macOS
+production-allocator tests and ASan/UBSan checks passed.
+
+The [archived site cohort](#parallel-premultiplication-of-canvas2d-destinations)
+found no canvas elements on Hacker News, GitHub, or Old Reddit. The
+measurements here cover the portable upload conversion. Full browser
+validation of the new upload path and Windows execution remain unverified.
+
+### Parallel channel swaps during Quartz bitmap handoff
+
+An owned RGBA bitmap handed to a compatible BGRA destination now
+swaps channels in place across disjoint row bands. The existing
+NEON and scalar loops handle each band, with one lane below 4 MiB
+of pixel data and at most four lanes overall.
+`VOX_SERIAL_BITMAP_SWIZZLE=1` keeps the original serial schedule.
+The source context is flushed before the swap. Workers finish before
+the completed bitmap is handed to the image provider. Row padding,
+green, alpha, format metadata and provider ownership are preserved.
+
+Seven rotating fresh-process groups used a matching Apple Clang
+`-O2 -flto` harness with the original and candidate implementations.
+The timed span includes the destination format checks and the swap
+through return. Buffer setup, pixel verification and Quartz image
+creation are outside the span. Warm times are medians of per-process
+medians after the first call. Every process verified its full buffer.
+All 147 final processes and their memory guard exited zero.
+The final one-minute load was 9.10 on 18 logical CPUs.
+
+| Surface | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before |
+| --- | ---: | ---: | ---: |
+| 67×43, padded | 0.750 / 0.750 / 0.750 | 0.250 / 0.250 / 0.250 | 3/7 |
+| 512×512 | 20.000 / 19.333 / 20.250 | 18.229 / 18.021 / 18.042 | 5/7 |
+| 1024×1024 | 144.041 / 146.250 / 119.042 | 73.438 / 73.166 / 52.646 | 5/7 |
+| 2048×1536 | 290.000 / 285.875 / 152.625 | 209.292 / 206.125 / 102.605 | 7/7 |
+| 2051×1537, padded | 248.917 / 344.583 / 169.416 | 224.792 / 225.125 / 99.395 | 7/7 |
+| 3840×2160 | 572.208 / 571.292 / 273.500 | 555.812 / 554.625 / 235.688 | 7/7 |
+| 5123×2881, padded | 1042.916 / 1046.542 / 540.417 | 1018.708 / 1029.875 / 383.084 | 7/7 |
+
+An earlier candidate sent the serial path through the band callback.
+It took 21.833 µs at 512×512 against 19.542 µs before. The final
+version invokes the row loop directly for serial work. That earlier
+trial's first-call before/default medians at 1024×1024, 2048×1536,
+2051×1537, 3840×2160 and 5123×2881 were 80.375/73.375,
+256.459/127.250, 238.500/150.625, 597.625/299.292 and
+1163.667/504.833 µs. Its one-minute load was 7.69–8.20.
+
+A separate dispatch probe observed two threads at 1024×1024 and four
+at 2051×1537, with no dispatch below the threshold or when forced
+serial. The bitmap suite passed 13,824 exact draw comparisons and
+216 opacity cases, plus a new padded 3851×2161 provider-byte and
+metadata check. It passed with default scheduling, forced serial
+scheduling, and ASan/UBSan.
+
+The published single-C-unit executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+provided archive diagnostics. Fresh Hacker News, GitHub and Old
+Reddit captures used sealed original-origin replay at 1024×768 CSS
+pixels and 2×, private profiles and caches, and one second of settling.
+They matched the frozen pixel references and preserved 30, 33 and
+25 audited entries, with zero browser and guard exits. A probe of the
+out-of-line destination-format check at return offset `0x1175548`
+observed no matches on these captures. The same probe detected the
+format conversion in a padded standalone control. Whole-page
+measurements of the candidate await the shared production rebuild.
+
+### Parallel capture of retained scroll tiles
+
+On-demand capture of a retained scroll-tile frame now initializes the
+output bitmap and overlays the tile slices across disjoint row bands.
+The caller checks the existing frame fences and reads each provider.
+Workers borrow those immutable bytes and join before the result is
+published. The image provider takes ownership of the finished
+allocation, removing the final full-bitmap copy. Wrapped slices, the
+right and bottom overlay edges, and padding are preserved. Captures
+below 4 MiB stay serial, and `VOX_SERIAL_SCROLL_TILE_CAPTURE=1` forces
+serial execution on larger frames.
+
+A single-C-unit Apple Clang `-O2 -flto -fobjc-arc` harness used the
+same wrapped ring, base image and tile providers in each mode. Its
+timed span starts at the flatten call and ends with image creation.
+Fixture setup and full provider-byte verification are outside that
+span. The three modes were the original implementation, the new
+implementation forced serial, and the new implementation with its
+default scheduler. Seven rotating fresh-process groups timed each
+surface. All 105 processes and the memory guard exited zero and every
+capture matched the independently assembled expected bytes.
+The one-minute load was 10.36 on 18 logical CPUs.
+
+| Frame | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before | Default faster than new serial |
+| --- | ---: | ---: | ---: | ---: |
+| 1024×768, overlays | 501.958 / 268.125 / 281.375 | 280.687 / 111.562 / 107.375 | 7/7 | 3/7 |
+| 2048×1536, overlays | 2127.542 / 1158.833 / 1046.709 | 1299.022 / 472.667 / 225.375 | 7/7 | 7/7 |
+| 2048×1536, no overlays | 2111.958 / 1153.834 / 1115.042 | 1186.500 / 381.354 / 205.292 | 7/7 | 4/7 |
+| 2051×1537, padded | 2167.459 / 1160.833 / 1014.708 | 1285.542 / 465.979 / 221.230 | 7/7 | 7/7 |
+| 3840×2160, overlays | 6181.541 / 3749.792 / 2572.792 | 3828.709 / 1418.521 / 603.250 | 7/7 | 7/7 |
+
+Warm numbers are medians of within-process medians after the first
+capture. Median process peak RSS sampled immediately after the first
+4K call was 173,817,856 bytes before and 140,623,872 bytes with the
+candidate default, including the unchanged harness inputs. At
+2048×1536 with overlays those figures were 70,975,488 and 58,376,192
+bytes.
+
+A separate probe verified two threads at 1024×1024 and four threads
+at the padded size. It observed no dispatch at 1024×768 or with
+forced serial scheduling. The ARC, non-ARC, ASan/UBSan, and forced
+serial retained-tile tests passed, including the 2051×1539 fixture
+with padded, wrapped slices and a retained image after frame release.
+
+Published executable SHA-256
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+provided the archive diagnostics. Six captures of sealed Hacker News,
+GitHub and Old Reddit used fresh profiles and caches, 1024×768 CSS
+pixels at 2× and one second of settling. Default and explicitly
+enabled CPU tile settings both matched the frozen document pixels
+and their 30, 33 and 25 audited entries. The flatten probe at return
+offset `0x116c4ac` found zero calls on these document captures. A
+standalone original-path control validated the probe with a
+12,582,912-byte base image. The browser and guard exits were zero.
+
+Active-window snapshots were a separate diagnostic with a 1024×740
+document viewport. At a three-second observation delay Hacker News
+published two tiled frames when enabled, with zero flatten calls.
+Its full-window captures differed in 3,669 of 13,959,168 RGBA bytes.
+The first GitHub observation was still interactive. At a 6.5-second
+delay GitHub and Old Reddit both completed with zero tile publications
+and zero flatten calls. The GitHub windows matched exactly and the
+Old Reddit windows differed in 5,091 RGBA bytes. These observations
+do not establish a complete-page performance gain. A candidate
+production capture still requires the shared rebuild.
+
+### Parallel copies of scroll damage and linear fallback rows
+
+Damage-rectangle transfers and the linear scroll-cache fallback now use
+the existing row-copy workers. Each job describes the source origin,
+viewport rows and horizontal byte range. The caller marks dirty tiles
+before dispatch. Workers write separate rows with the same packed or
+padded stride as the original copy. The linear fallback still leaves
+the newly exposed strip for painting. Copies below 4 MiB or spanning
+fewer than 16 rows stay serial. The existing
+`VOX_SERIAL_SCROLL_RASTER_COPY=1` override applies to these transfers.
+
+The Apple Clang single-C-unit `-O2 -flto -fobjc-arc` harness compared
+the original loops with the new implementation, both forced serial
+and with default scheduling. It timed each copy through return, with
+fixture setup and comparison outside the span. The full-row control
+already used workers before the change. Each of 147 fresh processes
+verified both complete buffers and the dirty-tile flags. Seven
+rotating groups produced the medians below. Warm values are medians
+of each process's post-first-call median. Browser and timing probes
+ran separately from the timed harness.
+One-minute load was 7.89–7.98 on 18 logical CPUs. All timed process and guard exits were zero.
+
+| Transfer | First call before / serial / default, µs | Warm before / serial / default, µs | Default faster than before |
+| --- | ---: | ---: | ---: |
+| 1024×768 damage restore | 55.375 / 55.833 / 56.042 | 54.291 / 54.834 / 54.542 | 1/7 |
+| 2048×1536 damage restore | 254.166 / 263.167 / 216.917 | 246.980 / 245.812 / 111.959 | 6/7 |
+| 2051×1537 padded damage store | 302.667 / 335.541 / 236.667 | 269.604 / 276.458 / 116.999 | 7/7 |
+| 3840×2160 padded damage restore | 1013.916 / 1009.167 / 515.083 | 909.438 / 871.583 / 297.166 | 7/7 |
+| 2048×1536 linear restore | 185.125 / 189.500 / 180.375 | 180.792 / 182.978 / 112.062 | 6/7 |
+| 3840×2160 padded linear restore | 1011.875 / 1023.292 / 507.333 | 876.375 / 827.812 / 297.188 | 7/7 |
+| 2048×1536 full-row control | 187.250 / 190.625 / 181.958 | 113.103 / 183.625 / 106.062 | 5/7 |
+
+The 1× case remained serial and its first-call median rose 0.667 µs.
+A separate worker probe saw four distinct threads for the large
+rectangular restore, padded store and shifted restore. It saw no
+dispatch for the 1× case or with the serial override.
+The row-union, scroll raster and retained-tile tests passed in their
+normal and sanitizer configurations. Forced serial, forced parallel,
+ARC and non-ARC checks also passed. Focused tests covered a large
+wrapped, padded rectangle and a Retina fallback with a scroll
+reversal.
+
+The published single-C-unit executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+still predates this change. Separate fresh document captures matched
+the frozen Hacker News, GitHub and Old Reddit pixel references
+with 30, 33 and 25 audited entries at 1024×768 CSS pixels and 2×.
+Each used sealed replay, a private cold cache and profile, and a
+one-second settle.
+
+The baseline-only wheel diagnostics used sealed replay in fresh
+processes, a 1024×768 CSS-pixel document viewport, JavaScript enabled,
+and the CPU tile compositor explicitly enabled. The interposer
+identified the original rectangle-loop return offsets
+`0x117739c` and `0x11773e4`. Its standalone original-path control
+counted all 698 expected row copies. During title-matched wheel
+input it counted the following native row copies and publications.
+These are observations of the instrumented published build.
+
+| Archive | Completed inputs | Completed native publications | Tile publications | Restored rows / bytes during input | Stored rows / bytes during input |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Hacker News | 24 | 25 | 27 | 810 / 6,056,592 | 0 / 0 |
+| GitHub | 120 | 9 | 0 | 0 / 0 | 0 / 0 |
+| Old Reddit | 24 | 14 | 0 | 0 / 0 | 0 / 0 |
+
+Hacker News and Old Reddit used 24 nominal 60 Hz wheel events of
+delta five, reversed after 12 events and with a two-second settle.
+The first GitHub run completed all 24 inputs but produced only
+three publications in total, too few inside the input window. The
+driver and its enclosing guard returned one. A longer GitHub trial
+used a three-second settle, 120 events and a reversal after 60.
+The successful browsers and the longer GitHub driver and guard all
+exited zero. These row totals do not establish an individual copy's
+parallel eligibility or a page-level speedup. Candidate page
+measurements await the shared production rebuild.
+
+### Parallel BT.601 video conversion
+
+The FFmpeg playback path converts limited-range I420 and YUVA420
+frames in disjoint output-row ranges. It shares the CPU raster worker
+dispatch, which starts at 262,144 pixels and uses up to four threads.
+The conversion joins before publishing the frame. Small frames,
+overlapping buffers and the `VOX_SERIAL_CPU_RASTER=1` override
+preserve serial row order. Odd dimensions, signed source pitches,
+straight alpha and destination padding retain their original bytes.
+
+A single-C-unit V `-prod -prealloc -gc none` harness compared the
+original scalar loop, the new code forced serial, and default
+scheduling. Timers cover conversion through its return, with fixture
+setup and RGBA hashing outside the span. Each of seven rotating
+groups launched a fresh process per size and mode. All 105 process
+exits and the guard exit were zero, and the complete padded RGBA
+hashes matched. Warm values are medians of each process's median
+after its first call. The benchmark executable SHA-256 was
+`a63ba5757d10eb408684189672a620f69a83634ad572dfc93778787eddd347c2`.
+One-minute host load ranged from 4.90 to 5.16 on 18 logical CPUs.
+
+| Frame | First conversion before / forced serial / default, µs | Warm before / forced serial / default, µs | Default warm wins |
+| --- | ---: | ---: | ---: |
+| 320×240 opaque | 96.750 / 96.959 / 98.916 | 96.000 / 96.042 / 96.313 | 2/7 |
+| 512×512 opaque | 333.708 / 326.750 / 208.125 | 330.271 / 324.208 / 179.938 | 7/7 |
+| 1031×513 alpha, reversed Y rows | 677.500 / 686.209 / 338.333 | 677.355 / 685.709 / 260.250 | 7/7 |
+| 1920×1080 opaque | 2726.166 / 2785.375 / 1127.500 | 2715.208 / 2747.229 / 830.605 | 7/7 |
+| 3840×2160 opaque | 11063.250 / 11341.333 / 3402.167 | 10829.396 / 10932.500 / 3378.209 | 7/7 |
+
+The small-frame warm median rose 0.313 µs. A separate dispatch probe
+saw zero dispatches for 511×513 and forced serial, two distinct
+threads at 512×512, and four distinct threads for the larger
+probed frames. The actual native FFmpeg playback helper decoded a
+1031×513 limited BT.601 VP9 alpha frame and called the exported V
+bridge. It dispatched four distinct threads by default and zero
+with the override. Both modes returned all 2,115,612 identical RGBA
+bytes with SHA-256
+`55e17f8d0e3755b2853aa0b86daa86118c410cd9a96aad91127c78e406e40db4`.
+Both decode runs and the final diagnostic guard exited zero. An
+ASan-instrumented decoder did not expose dispatch to the interposer.
+The final worker diagnostic used a separate, unsanitized decoder.
+The nine YUV test files, focused ASan/UBSan and forced-serial tests,
+native bridge checks, and the focused arm64 Linux test passed.
+
+Fresh captures with the published single-C-unit Vox executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+matched the frozen Hacker News, GitHub and Old Reddit pixels. The
+sealed replays used JavaScript, private cold profiles and caches,
+a 1024×768 CSS-pixel document viewport, 2× capture and a one-second
+settle. They audited 30, 33 and 25 entries respectively and zero
+video elements on each page. Each browser and the guard exited zero.
+The timings above cover CPU conversion of video frames. The shared
+production build used for the archive checks predates this change.
+
+### More PNG compression bands for Retina captures
+
+The macOS opaque PNG encoder can dispatch up to eight independent
+DEFLATE bands. It still assigns about 2 MiB per band, so a full
+2048×1536 capture uses six on a machine with enough CPUs. The
+previous four-band cap remains on hosts with four or fewer online
+CPUs. The serial override and ImageIO fallback still apply.
+
+The published single-C-unit Vox executable
+`5d72f61417d4e5c75c4bd333550ce43baf8a65fcbd00bf89c1e1dafd8f641660`
+supplied screenshots with four threads observed at callback offset
+`0x11706c4`. Fresh sealed replays used JavaScript, private cold
+profiles and caches, a 1024×768 CSS-pixel viewport, 2× capture and a
+one-second settle. Captures audited 30 Hacker News stories, 33
+GitHub directory rows and 25 Old Reddit posts. All three matched
+the earlier [archived browser pixel references](#archived-browser-eligibility).
+All browser exits and the replay guard exit were zero.
+
+Matching single-unit Apple Clang `-O2 -flto -fobjc-arc` harnesses
+timed the complete native PNG encoder through PNG bytes in memory.
+Input setup, process launch, page rendering and disk writes were
+outside that span. The old harness reproduced the published PNGs
+byte for byte. Seven alternating fresh-process pairs ran per case.
+Each process timed eight encodes. Warm times are medians of each
+process's post-first-call median. All 56 process exits and the
+cohort guard exit were zero. One-minute load was 4.88 on 18 logical
+CPUs.
+
+| Capture | First before → after, ms | Warm before → after, ms | Faster pairs, first / warm | PNG bytes before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News | 4.428 → 3.416 | 4.082 → 2.972 | 7/7 / 7/7 | 462,136 → 462,479 |
+| GitHub | 3.976 → 3.155 | 3.852 → 2.797 | 7/7 / 7/7 | 340,329 → 340,198 |
+| Old Reddit | 4.629 → 3.582 | 4.531 → 3.310 | 7/7 / 7/7 | 544,821 → 545,118 |
+| Hacker News, cropped to 2048×1024 | 3.047 → 2.913 | 2.647 → 2.660 | 5/7 / 2/7 | 299,207 → 299,207 |
+
+The cropped control fit four bands in both builds and its PNGs
+were identical. Its warm median rose by 0.012 ms. Every output
+passed PNG chunk CRC and zlib stream validation, and the decoded
+RGBA, ancillary metadata, density and profile matched. The two
+harness executable hashes were
+`20ddb5d632ef068763994fcc0ae28d1852c939becf0f671c490ec9388ea9b960`
+and `61a6e69f3e7ab91a4a90e4d4cd3ea50337a9f2da4a3153356f7262f345b81f50`.
+An earlier uncapped-by-CPU candidate measured warm medians of
+4.110 → 2.945 ms, 3.841 → 2.745 ms and 4.366 → 3.179 ms on the
+same three captures. Its four-band control measured
+2.737 → 2.728 ms. It ran at one-minute load 3.97–4.37 with zero
+process and guard exits.
+
+A separate probe resolved the candidate callback at offset
+`0x29ec` and observed six distinct threads for each full capture.
+An emulated four-CPU host used four threads and reproduced the
+old byte-identical PNG. The serial override dispatched zero bands.
+Native ARC and non-ARC tests passed with normal and ASan/UBSan
+builds. The padded and incompressible input checks covered the
+eight-band cap. ThreadSanitizer reproduced the new Hacker News
+PNG with zero reported races. The installed browser supplied the
+capture input and baseline. Candidate production capture awaits
+the shared rebuild.
+
+### Parallel Quartz SVG mask conversion
+
+Quartz SVG mask publication flushes the bitmap before converting it
+in disjoint row ranges. Large alpha-only, RGBA alpha and RGBA
+luminance masks use two to four of the existing CPU raster workers.
+Conversion stays serial below 1,048,576 pixels, for partial source
+and destination overlap, and with `VOX_SERIAL_CPU_RASTER=1`. Exact
+in-place RGBA conversion remains eligible. The workers join before
+Quartz receives the premultiplied-white mask, and padding is preserved.
+
+Two matched single-unit Apple Clang `-O2 -flto` harnesses timed the
+original and new conversion calls through return. Timing excludes
+source generation, the in-place reset, output comparison and
+Quartz image creation. Seven rotating groups used a fresh process
+per mode and checked each complete output against a scalar
+reference. All 168 process exits and the guard exit were zero.
+Warm times are medians of each process's post-first-call median.
+One-minute host load ranged from 7.11 to 7.34 on 18 logical CPUs.
+
+| Mask | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 67×43 luminance | 0.458 / 0.458 / 0.417 | 0.333 / 0.292 / 0.292 | 4/7 / 3/7 |
+| 1023×1024 luminance | 116.625 / 109.000 / 120.583 | 106.771 / 106.479 / 111.167 | 2/7 / 1/7 |
+| 1024×1024 luminance | 113.875 / 122.917 / 121.084 | 107.000 / 109.896 / 86.187 | 3/7 / 7/7 |
+| 2051×1537 RGBA luminance | 365.166 / 376.000 / 269.333 | 324.000 / 328.563 / 130.750 | 5/7 / 7/7 |
+| 2051×1537 RGBA alpha | 418.167 / 438.459 / 260.083 | 379.334 / 384.459 / 141.938 | 7/7 / 7/7 |
+| 2051×1537 alpha-only | 326.833 / 321.333 / 248.583 | 305.688 / 316.375 / 124.646 | 7/7 / 7/7 |
+| 2051×1537 in-place luminance | 329.375 / 333.375 / 222.792 | 329.917 / 327.833 / 124.230 | 6/7 / 7/7 |
+| 2051×1537 in-place alpha | 1300.500 / 245.208 / 192.125 | 1290.708 / 246.687 / 94.771 | 7/7 / 7/7 |
+
+The large in-place alpha case also benefited from the compiler's
+code generation for the reorganized serial loop. A lower threshold
+was considered in a full earlier cohort. The 1024×512 first call
+rose from 64.708 to 82.291 µs and lost all seven pairs, while its
+warm median fell from 62.104 to 41.917 µs. The final threshold
+keeps that size serial. The final harnesses had SHA-256
+`6ca3c6bc11c7ac902e1950baeacee99846d1aa266c7d072d8b2e3e3df96a4c28` and
+`85fa3d61c4752f9063320d61337df523559a68db7f890ff55513343bdf113ee2`.
+
+The worker probe observed zero dispatch below the final threshold
+and with the serial override, two distinct threads at the threshold,
+and four on the large masks. The native Objective-C capture adapter
+also compiled in an ARC harness and published three 1902×1284 masks
+through its ordinary PNG-independent image provider path. Both copy
+modes and in-place conversion each used four distinct threads and
+matched their forced-serial images. The combined visible RGBA
+SHA-256 was
+`da3caca70233117a20b1337aea3f1ff84c0da54c2015b69754b4fcc5a54170eb`.
+Focused macOS, arm64 Linux, ASan/UBSan, ThreadSanitizer and 16 native
+mask layer scenes passed. The focused tests include all 16,777,216
+RGB triples, exact overlap order, padding and uneven row ranges.
+
+The published single-C-unit browser
+`4ac49eb9690c121587fd4efd8f859f2cf0e2762013861238f07bb91a05547540`
+predates this change. A separate probe identified the two original
+conversion entries at offsets `0x2ed34` and `0x2f1fc`. A synthetic
+large SVG reached the conversion in both native mask modes. Sealed
+Hacker News, GitHub and Old Reddit replays audited 30, 33 and 25
+entries and matched the frozen pixel references. Each used private
+profiles and caches, JavaScript, a 1024×768 CSS-pixel viewport, 2×
+capture and one second of settling. The probe observed no conversion
+calls on the three archived pages. Browser and guard exits were
+zero. Candidate validation inside the browser awaits its production
+rebuild.
+
+### Parallel CPU shadow tinting
+
+The fallback filter pipeline's constant SrcIn tint now computes the
+RGBA result once per possible input alpha. Starting at 1024 pixels,
+it applies the lookup table directly to the existing buffer. The
+existing CPU raster scheduler distributes complete pixel ranges at
+262,144 pixels and can use up to four threads. Smaller masks retain
+scalar tint calculation below 1024 pixels and serial lookup below
+the dispatch cutoff. Both kernels keep the original coverage and
+rounding. An incomplete final pixel remains untouched.
+
+Matched V single-unit C `-prod -prealloc -gc none` harnesses timed the
+tint call through return. The source reset and output hashing were
+outside the timer. Each of seven rotating groups ran a fresh process
+per mode. All 147 processes and the memory guard exited zero.
+Within each case the complete output SHA-256 matched across modes
+and groups. Warm values are medians of each process's post-first-call
+median. One-minute load was 5.08–5.17 on 18 logical CPUs.
+
+| Layer | First before / forced serial / default, µs | Warm before / forced serial / default, µs |
+| --- | ---: | ---: |
+| 24×17, explicit coverage | 0.833 / 0.458 / 0.459 | 0.709 / 0.250 / 0.250 |
+| 64×64 | 7.542 / 2.250 / 2.291 | 7.167 / 1.875 / 1.875 |
+| 511×513 | 477.959 / 97.417 / 95.208 | 476.938 / 96.938 / 95.792 |
+| 512×512 | 478.084 / 95.000 / 85.083 | 477.000 / 93.771 / 64.730 |
+| 1031×513, explicit coverage | 934.666 / 203.625 / 139.000 | 941.250 / 196.708 / 90.917 |
+| 1920×1080 | 3834.000 / 825.958 / 401.708 | 3732.167 / 772.938 / 276.605 |
+| 3840×2160, explicit coverage | 14960.750 / 3086.500 / 1186.500 | 15344.167 / 3128.626 / 1090.375 |
+
+The default candidate won all seven first-call and warm pairs per
+case. The final harness executable hashes were
+`5d83281daab1b00979dff8112ae0877d3c855431a7e777e336398b35db7f1653`
+and `375fe950d188303f5375e93e1c0d27e838d9e7dd1e50a56e9a360a2aa79a2c51`.
+An earlier candidate built the table only at the dispatch threshold.
+Its new scalar loop was slower at 64×64 (7.125 → 9.583 µs warm)
+and 511×513 (457.021 → 613.750 µs warm). Both sizes improved in the
+final cohort.
+
+The separate probe resolved the tint callback and saw zero batches
+below 262,144 pixels and under `VOX_SERIAL_CPU_RASTER=1`, two threads
+at the cutoff and four above it. The public Canvas2D fallback drew
+a 1441×927 drop-shadow scene with four threads in the tint batch.
+Its complete surface SHA-256 matched the forced-serial draw
+(`f22810741a34dac44f60279ce3cfefe5fa02d7607ad8e160dc83324dd886770e`).
+All probe processes and the guard exited zero. Focused macOS and
+arm64 Linux tests, forced serial, ASan/UBSan and ThreadSanitizer
+passed. The pinned CPU raster differential suite passed at count
+2000 and seed 20261106.
+
+Sealed Hacker News, GitHub and Old Reddit replays matched their
+frozen document pixels on the published single-C-unit browser
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`.
+They audited 30, 33 and 25 entries and zero Canvas elements, with
+fresh private profiles and caches, JavaScript, a 1024×768 CSS-pixel
+viewport, 2× capture, and a one-second settle. All three browser
+exits and the replay guard exit were zero. The timing above covers
+the isolated tint, and browser validation of the tint awaits the
+shared rebuild. The published captures also verified the earlier
+[PNG scheduling change](#more-png-compression-bands-for-retina-captures).
+Each had six valid IDAT chunks and matched the corresponding
+six-band encoder benchmark PNG byte for byte.
+
+### Parallel CPU filter crop and integer offset copies
+
+The SVG filter fallback resolves the visible pixel rectangle once.
+It uses the existing float pixel-center expression to preserve
+fractional edges and rounding at large device origins. Crops copy
+the retained rectangle into a transparent result. Integer filter
+offsets and placement of blur results use the same pitched copy.
+The scheduler borrows disjoint output rows when the actual copy
+covers at least 4 MiB. Whole rows combine into a contiguous transfer.
+`VOX_SERIAL_CPU_RASTER=1` keeps the copy on the caller.
+
+Matched single-unit V C `-prod -gc none` harnesses timed each
+operation from entry through its return, including output allocation.
+Source construction, output hashing and release were outside the
+timer. Seven rotating groups used fresh processes per mode. All 189
+exits and the guard exit were zero. Complete output hashes matched
+for all modes in each case. Warm values are medians of each process's
+post-first-call median. One-minute load ranged from 6.10 to 6.42 on
+18 logical CPUs.
+
+| Operation | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 67×43 inset crop | 4.083 / 1.416 / 1.417 | 2.625 / 0.167 / 0.167 | 7/7 / 7/7 |
+| 67×43 integer offset | 1.666 / 1.417 / 1.292 | 0.333 / 0.208 / 0.208 | 7/7 / 7/7 |
+| 1024×768 inset crop | 517.250 / 237.833 / 234.917 | 374.521 / 76.146 / 76.188 | 7/7 / 7/7 |
+| 2051×1537 inset crop | 2255.791 / 1003.709 / 626.208 | 1422.917 / 363.855 / 182.708 | 7/7 / 7/7 |
+| 2051×1537 narrow crop | 3559.292 / 766.500 / 767.834 | 2886.500 / 104.417 / 108.854 | 7/7 / 7/7 |
+| 2051×1537 empty crop | 3849.083 / 4.667 / 5.042 | 3048.313 / 49.521 / 50.563 | 7/7 / 7/7 |
+| 3840×2160 full crop | 5497.417 / 2251.750 / 2269.292 | 3653.187 / 652.417 / 455.646 | 7/7 / 7/7 |
+| 1920×1080 integer offset | 606.458 / 610.459 / 617.958 | 214.313 / 203.688 / 118.542 | 5/7 / 7/7 |
+| 3840×2160 integer offset | 2478.541 / 2407.208 / 2325.166 | 869.813 / 913.834 / 459.208 | 5/7 / 7/7 |
+
+Integer offsets were −7 pixels horizontally and +13 vertically.
+The 1080p offset's first-call median rose by 11.500 µs. The narrow
+crop's warm improvement came from avoiding the full pixel scan.
+The harness executable hashes were
+`01654b088d88e8f1dc37d13d3ead52c02a665b3048b4b0a90ec63f1df0e832bc`
+and `61e1eb151abcc9e73c87f12975f051bb945ff19d98e2a2334721399f2aaabf23`.
+
+A separate probe saw four distinct threads on a large inset crop,
+a full crop and a large offset. A 1024×768 inset crop, the large
+narrow crop and forced serial dispatched zero batches. The
+2051×1537 public Canvas2D fallback applied an integral SVG offset
+and crop in two four-thread copy batches. Its entire surface
+matched the forced-serial draw byte for byte with SHA-256
+`5a755be8b85e9bd964beea785f65d7fb6f8847c2ef9adaa92cd4c9e8fa12edda`.
+Both final draw processes and their guard exited zero. Focused
+macOS, arm64 Linux, forced serial, ASan/UBSan and ThreadSanitizer
+tests passed. The pinned CPU raster differential suite passed with
+count 2000 and seed 20261106.
+
+The published single-C-unit executable
+`870e280a166afa2249e1f90dcd8fb7cee701e0614f25414dd12004c9f4472077`
+matched the frozen document pixels for Hacker News, GitHub and
+Old Reddit. Fresh sealed replays used private profiles and caches,
+JavaScript, a 1024×768 CSS-pixel viewport, 2× capture and a one-second
+settle. They audited 30, 33 and 25 entries and zero Canvas or SVG
+filter elements. The browser and guard exits were zero. Timings
+cover the filter operations in isolation. Candidate browser
+validation awaits its shared rebuild.
+
+### Parallel CPU filter image subset copies
+
+Packed blur subsets and nearly integer Canvas image resolves now use
+the filter row-copy scheduler. It considers only the visible bytes
+when applying the 4 MiB cutoff. Packed outputs keep independent
+storage, and padded Canvas sources keep their original straight-alpha
+or premultiplied bytes. Workers write disjoint output rows and join
+before the filter borrows the packed result.
+
+Matched single-unit V C `-prod -gc none` harnesses measured each
+subset operation through return, including allocation. Source setup,
+hashing and release were outside the timer. Each of seven rotating
+groups ran a fresh process per mode. All 147 processes and the guard
+exited zero. Compacted output hashes matched across all modes and
+groups. Warm medians use each process's post-first-call median.
+One-minute host load was 9.17–9.18 on 18 logical CPUs.
+
+| Copied rectangle | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 67×43 packed inset | 1.708 / 1.583 / 1.834 | 0.417 / 0.250 / 0.250 | 2/7 / 7/7 |
+| 67×43 padded source | 2.000 / 1.708 / 1.917 | 0.417 / 0.250 / 0.250 | 2/7 / 7/7 |
+| 1024×768 packed inset | 253.458 / 246.125 / 272.625 | 90.104 / 85.000 / 87.542 | 3/7 / 5/7 |
+| 2051×1537 packed inset | 1200.042 / 1042.167 / 996.792 | 368.771 / 369.896 / 187.605 | 5/7 / 7/7 |
+| 2051×1537 padded source | 1125.166 / 1009.875 / 984.125 | 364.688 / 374.188 / 190.375 | 7/7 / 7/7 |
+| 3840×2160 full packed image | 2988.834 / 3068.250 / 2403.916 | 909.209 / 666.834 / 419.125 | 7/7 / 7/7 |
+| 3840×2160 padded source | 2806.125 / 2734.250 / 2327.417 | 962.500 / 1027.834 / 513.334 | 7/7 / 7/7 |
+
+The 1024×768 first-call median rose 19.167 µs. Padded cases used
+29 padding bytes per source row. Harness SHA-256 values were
+`298a5fe19c553b84dcd0e030ab464bb5cf9ec43270539232eaafa786e5f8ba02`
+and `8251202df3df4052ed17a7bfdbaa3fb718ae53b5600bb620f8652c73e1928756`.
+The worker probe saw four distinct threads for large packed and
+padded subsets and zero dispatch below 4 MiB or under forced serial.
+The public blur call with a 2051×1537 source dispatched two four-thread
+copies and matched the serial result
+(`369724e5553efb81cc8e2cc195bded46e8fa9671b274c21f3636df5fd8419f7d`).
+Probe processes and the guard exited zero. Focused macOS, arm64 Linux,
+forced serial, ASan/UBSan and ThreadSanitizer tests passed. The
+pinned CPU raster differential suite passed with count 2000 and
+seed 20261106.
+
+The published single-C-unit executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+matched the frozen Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
+They audited 30, 33 and 25 entries and zero Canvas or SVG filter
+elements. Browser and guard exits were zero. The measurements above
+cover isolated subset operations. Candidate browser validation
+awaits the shared rebuild.
+
+The same published executable also validated the earlier
+[Quartz SVG mask conversion](#parallel-quartz-svg-mask-conversion).
+The large luminance fixture
+`76b0f2b69a872ef93ce60088bf1cbd23f3cf5ed47478ce5213213fe90db90832`
+used four distinct threads in its 1284-row copy and zero under
+the serial override. Both fresh browsers and the replay guard
+exited zero. The captured RGBA matched between settings
+(`2c2688c954e2901c44e62b32b5acc956bed15da23c129cf16c288172c0b169c9`).
+
+### Parallel direct Gaussian mask blur
+
+For sigma below 2, each output row now completes the vertical pass
+into a private temporary row and immediately applies the horizontal
+pass. This removes the full vertical write and read of the output
+bitmap. The original fixed-point products, rounding and transparent
+edges apply to both passes. Workers borrow a validated source slice,
+including its pitch and offset, and write disjoint destination rows.
+The existing scheduler uses up to four threads starting at 262,144
+source-width times destination-height samples. Sources wider than
+8191 pixels use dynamically sized scratch and stay serial.
+
+Matched V single-unit C `-prod -gc none` harnesses timed from the blur
+call through its return, including destination and scratch setup.
+The source had a nonzero origin, an eleven-byte base offset and
+thirteen bytes of row padding. Source setup, hashing and release
+were outside the timer. Seven rotating groups launched fresh
+processes per mode. All 147 process exits and the guard exit were
+zero. The complete mask SHA-256 matched across groups and modes.
+Warm values are medians of each process's median after its first
+call. One-minute host load was 6.84–7.02 on 18 logical CPUs.
+
+| Padded mask and sigma | First before / forced serial / default, µs | Warm before / forced serial / default, µs |
+| --- | ---: | ---: |
+| 23×19, 1.5 | 9.292 / 8.000 / 8.000 | 7.167 / 5.875 / 5.958 |
+| 481×480, 1.5 | 2616.459 / 1946.500 / 2021.333 | 2500.313 / 2006.063 / 1940.272 |
+| 512×512, 1.5 | 2867.417 / 2248.750 / 1631.958 | 2989.458 / 2310.896 / 1283.771 |
+| 1031×517, 1.5 | 6030.167 / 4486.583 / 1855.917 | 5931.938 / 4619.063 / 1663.396 |
+| 1920×1080, 0.45 | 13061.375 / 8646.625 / 3124.666 | 12848.479 / 8918.917 / 3064.729 |
+| 2051×1537, 1.9 | 47090.083 / 33906.333 / 11997.875 | 45727.313 / 34514.167 / 11582.229 |
+| 8205×45, 1.5 | 4603.584 / 3517.583 / 3465.334 | 4467.146 / 3507.021 / 3455.250 |
+
+The default candidate won every matching first and warm pair in
+the final cohort. Harness SHA-256 values were
+`82af195be34ae9fbd1725b49c086616645eef3d5405187ad1192615bdee36c29`
+and `ec4543d40af5cbd58bec528fb7e5ab84ca200522de3cc0fee032dde0e27cbd33`.
+An earlier candidate before the checked source slice measured
+46.908 → 12.253 ms warm for the 2051×1537 case. It also matched
+all pixels, with load 5.70–5.99 and zero process and guard exits.
+
+Generated C kept the 8191-byte worker scratch on the stack. A probe
+saw two distinct threads for 512×512 and four at 1031×517, with no
+dispatch below the size cutoff, above the scratch width or under
+the serial override. A 1441×927 Canvas path draw used four distinct
+threads in its Gaussian mask batch and matched the forced-serial
+surface (`c9ccb9e79eea8c7d1e6e71cdffe0cb9a3445102d7478629c62a399ac90a1ff8e`).
+Probe processes and the guard exited zero. Focused macOS and arm64
+Linux tests, forced serial, ASan/UBSan and ThreadSanitizer passed.
+The pinned raster differential suite passed with count 2000 and
+seed 20261106.
+
+The published single-C-unit executable
+`896b2d35d455afdbb5ec57c6dd5d5759a42e1a15d5f71961ae39fc0d146365cb`
+matched the archived pixels on Hacker News, GitHub and Old Reddit.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
+They audited 30, 33 and 25 entries and zero Canvas elements.
+Browser and replay guard exits were zero. Timings cover the isolated
+blur operation. Candidate browser validation awaits the shared rebuild.
+
+### Parallel analytic rectangular shadow masks
+
+The portable rectangular blur still derives its horizontal and
+vertical profiles on the caller. It now multiplies the profiles
+over disjoint mask rows with the existing CPU raster scheduler.
+The original integer rounding, mask bounds and nine-patch
+placement are preserved. Dispatch starts at 262,144 mask pixels
+and uses up to four threads.
+
+Matched V single-unit C `-prod -gc none` harnesses measured
+`filter_rects_to_nine` through return, including profile creation
+and mask allocation. Output hashing and release were outside the
+timer. Seven rotating groups ran fresh processes per mode. All
+147 process exits and the guard exit were zero. The complete A8
+hash and dimensions matched across all groups and modes. Warm
+values are medians of the per-process median after the first call.
+One-minute host load was 5.19–5.34 on 18 logical CPUs.
+
+| Sigma / working mask | First before / forced serial / default, µs | Warm before / forced serial / default, µs | Default faster pairs, first / warm |
+| --- | ---: | ---: | ---: |
+| 1.5 / 17×17 | 1.667 / 1.542 / 1.666 | 0.292 / 0.209 / 0.209 | 2/7 / 7/7 |
+| 6 / 73×73 | 4.334 / 3.167 / 3.125 | 3.250 / 2.230 / 2.250 | 7/7 / 7/7 |
+| 25 / 301×301 | 55.792 / 38.708 / 40.125 | 50.062 / 32.063 / 32.583 | 7/7 / 7/7 |
+| 70 / 841×841 | 412.750 / 290.125 / 113.666 | 366.583 / 237.083 / 77.146 | 7/7 / 7/7 |
+| 92 / 1105×1105 | 690.125 / 471.583 / 167.375 | 627.250 / 409.687 / 122.916 | 7/7 / 7/7 |
+| 112 / 1345×1345 | 1026.125 / 715.959 / 232.916 | 923.084 / 603.959 / 175.208 | 7/7 / 7/7 |
+| 128 / 1537×1537 | 1333.291 / 908.792 / 286.375 | 1203.417 / 788.896 / 228.083 | 7/7 / 7/7 |
+
+The sigma 1.5 and 6 source rects were 128×92, sigma 25 used
+512×384, and the larger cases used 1930×1345. All were positioned
+at (31.25, 17.75). The harness SHA-256 values were
+`76241d326d63784995584e0fd6bd498061d303aa5e8210bbbb76ef637d05f264`
+and `fe43277d92747c902557a0f8b8dddbf13c5273b25a921bd48ac62e3e79e5e36d`.
+
+A separate worker probe saw no dispatch for 505×505 or with
+`VOX_SERIAL_CPU_RASTER=1`, two distinct threads for 517×517,
+and four for 1537×1537. A 2173×1553 Canvas path draw through
+the normal rectangular-shadow route used four distinct mask
+threads and matched its forced-serial RGBA surface
+(`3198e11e5f8ca4b1bf1b968851deda060dbdec04b15ae941c0ca09666d5ff23e`).
+All probe processes and the guard exited zero. Focused macOS,
+arm64 Linux, forced-serial, ASan/UBSan and ThreadSanitizer
+checks passed. The pinned CPU raster differential suite passed
+with count 2000 and seed 20261106.
+
+The published single-C-unit browser
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+matched the frozen Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used JavaScript, private caches and profiles,
+a 1024×768 CSS-pixel viewport, 2× capture and a one-second settle.
+They audited 30, 33 and 25 entries and zero Canvas elements.
+Browser and replay guard exits were zero. Timings cover analytic
+mask generation. Candidate browser validation awaits the shared
+rebuild.
+
+### Parallel solid-color mask compositing
+
+The premultiplied RGBA solid blitter validates the clipped source
+and destination spans once. Independent rows then share the
+existing raster scheduler, with up to four threads at 262,144
+pixels and above. A zero mask pitch identifies an immutable
+repeated row. Overlapping storage, overlapping output rows
+and other layouts outside this path use the original checked
+serial loop. Black, opaque and translucent colors retain their
+existing integer blend formulas.
+
+Matched V single-unit C `-prod -gc none` harnesses measured the
+`blit_mask` call through return. Destination reset and output
+hashing were outside the timer. The case buffers had padded
+destination rows and clipped origins. Ordinary masks used an
+eleven-byte row pad and a seven-byte base offset. A repeated
+mask used one row. All 189 processes across seven rotating
+fresh-process groups and the guard exited zero. Complete
+destination hashes matched in every group and mode. Warm values
+are medians of per-process medians after the first call.
+One-minute load was 9.43–10.07 on 18 logical CPUs.
+
+| Mask | First before / forced serial / default, µs | Warm before / forced serial / default, µs |
+| --- | ---: | ---: |
+| 9×9 translucent | 0.417 / 0.417 / 0.583 | 0.209 / 0.125 / 0.125 |
+| 67×43 translucent | 7.167 / 4.792 / 4.666 | 6.917 / 4.375 / 4.375 |
+| 511×513 translucent | 610.125 / 392.416 / 391.667 | 610.438 / 386.896 / 394.063 |
+| 512×512 translucent | 612.458 / 387.625 / 232.334 | 661.375 / 392.021 / 212.521 |
+| 1031×517 translucent | 1215.834 / 774.750 / 409.750 | 1220.208 / 775.875 / 301.125 |
+| 2051×1537 black | 6958.542 / 3310.667 / 1312.000 | 6808.771 / 3428.916 / 1142.292 |
+| 2051×1537 opaque | 8080.042 / 5047.459 / 1780.834 | 7532.292 / 4822.250 / 1668.750 |
+| 2051×1537 repeated translucent row | 7868.584 / 4863.208 / 1752.375 | 7632.958 / 4824.084 / 1691.833 |
+| 3840×2160 translucent | 20742.916 / 13423.000 / 4518.625 | 20094.271 / 13064.084 / 4499.667 |
+
+The 9×9 first-call median rose by 0.166 µs. All other sizes won all
+seven pairs on both metrics. The harness SHA-256 values were
+`d09c476224fe2bd088dfc2fbf91605c0f9363e31e5c91ec10448a68a36493a15`
+and `0cec83a4b596886147266ad3a5ed2c7bec72ebff1897d9407bb3a7785a2f5d02`.
+An earlier candidate selected the validated loop only for
+parallel-sized masks. Its 67×43 warm result rose from 7.500
+to 7.958 µs. The final version applies the validated loop to
+small disjoint masks too.
+
+A separate probe observed two distinct threads at 512×512,
+four on larger packed and repeated masks, and zero below the
+cutoff or under `VOX_SERIAL_CPU_RASTER=1`. A normal 1441×927
+Canvas path shadow used four distinct threads in the mask
+compositor. Its complete RGBA surface matched forced serial
+(`c9ccb9e79eea8c7d1e6e71cdffe0cb9a3445102d7478629c62a399ac90a1ff8e`).
+Focused tests covered clipped origins, padding, repeated rows
+and genuinely overlapping storage. macOS, arm64 Linux, forced
+serial, ASan/UBSan and ThreadSanitizer checks passed. The pinned
+raster differential suite passed with count 2000 and seed
+20261106. Probe and guard exits were zero.
+
+The published single-C-unit executable
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+matched the frozen Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used private profiles and caches, JavaScript,
+a 1024×768 CSS-pixel viewport, 2× capture and one second of settling.
+The audits recorded 30, 33 and 25 entries respectively and zero
+Canvas elements. All browser and guard exits were zero. The timings
+above cover mask compositing in isolation. Candidate browser
+validation awaits the shared rebuild.
+
+### Parallel pipeline mask compositing
+
+The A8 pipeline blitter sends independent rows of large constant
+and gradient masks to up to four raster threads. They share read-only
+paint inputs and preserve absolute shader coordinates. The solid and
+pipeline blitters share the clipped span and overlap check. Image
+shaders and masks whose writes could change later reads use ordered
+composition. Masks smaller than 262,144 pixels use the pipeline's
+existing serial loop.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured blit_mask through return. The pitched and clipped fixtures
+used padded target rows, an eleven-byte source row pad and a
+seven-byte mask offset. Buffer reset and SHA-256 ran outside the
+timer. Seven rotating groups ran on Mac17,6 with 18 logical CPUs
+on 2026-11-18 at 08:34 local time. One-minute load varied from
+12.14 to 12.56. All 21 fresh processes and the guard exited zero.
+Times below are medians in microseconds. Warm results use the
+median of each process's eight calls after its first.
+
+| Mask and blend | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 solid multiply | 28.125 / 29.500 / 24.875 | 25.625 / 28.542 / 24.084 |
+| 67×43 gradient soft-light | 79.791 / 78.416 / 73.000 | 74.604 / 72.333 / 63.459 |
+| 511×513 solid multiply | 2611.250 / 2560.041 / 2275.083 | 2351.729 / 2503.625 / 2135.833 |
+| 511×513 gradient soft-light | 6659.083 / 6755.791 / 5853.625 | 6383.688 / 6708.688 / 5867.395 |
+| 512×512 solid multiply | 2300.708 / 2560.166 / 1453.667 | 2396.521 / 2321.416 / 1348.917 |
+| 512×512 gradient soft-light | 6451.875 / 6496.916 / 3315.041 | 6390.771 / 6242.105 / 3271.812 |
+| 1031×517 solid multiply | 4939.583 / 5190.958 / 1531.750 | 4831.354 / 5037.771 / 1413.521 |
+| 1031×517 gradient soft-light | 12952.250 / 12993.625 / 3472.375 | 12880.417 / 12699.041 / 3387.771 |
+| 2051×1537 solid multiply | 27817.458 / 30177.042 / 8318.500 | 26254.312 / 28671.312 / 8236.833 |
+| 2051×1537 gradient soft-light | 70390.875 / 74224.833 / 19958.417 | 69886.479 / 73261.625 / 20356.854 |
+
+Every complete destination hash matched. Default execution won all
+first and warm pairs for parallel-sized masks. Below the cutoff,
+both modes used ordered composition and individual pairs varied.
+The largest forced-serial warm medians increased by 9.2% for
+multiply and 4.8% for soft-light. Harness hashes were
+`d80da5933c3fc52391499a544abfbd918e424c316f7c27f517e1fa791f72f40e`
+before and
+`095244f6d8379593c2f3daabf71917772d5496cb643c20a86a10ca1fc15adb02`
+after.
+
+A separate dispatch probe observed two distinct threads at 512×512,
+four at larger sizes, and zero below the cutoff or with workers
+disabled. A 1441×927 Canvas multiply path shadow reached the
+pipeline compositor with 848 rows and four threads. Full surface
+pixels matched forced serial
+(`986dd190507d2d3359861a2f922bab0210495be66cef99f296e0854c5b8a0039`).
+All four probe processes and the guard exited zero. Focused checks
+covered clipped and repeated coverage, low and high precision
+blending and genuine backing overlap. macOS, arm64 Linux,
+forced-serial, ASan/UBSan and ThreadSanitizer checks passed. The
+pinned CPU raster differential suite passed with count 2000 and
+seed 20261106.
+
+The published single-C-unit browser
+`604f51df0b16e909d556320a196324d6fb5af2f4b425127326d6c9899a6c46b4`
+with native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched frozen Hacker News, GitHub and Old Reddit pixel references.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× captures and a one-second settle.
+The audits found 30, 33 and 25 entries respectively and zero Canvas
+elements. An initial setup attempt exited 1 before launching any
+browser. All three browser exits and the completed replay guard
+exit were zero. Timings above cover the mask compositor. Candidate
+browser measurements await the shared production rebuild.
+
+### Parallel Canvas sprite blits
+
+Large integer-translated Canvas image rectangles on the native N32
+sprite path use independent rows. Blends dispatch at 262,144 pixels
+and retain the distinct rounding of the unpaired first pixel in
+odd-width rows. Copies use the shared bulk-copy kernel and dispatch
+at 4 MiB. Disjoint draws skip temporary row allocation. A draw with overlapping input and output retains its
+original row order and blending snapshot.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the clipped SpriteBlitter rectangle through return. Each
+input had padded source and target rows. The source contained
+transparent, opaque and intermediate premultiplied pixels. Destination
+reset and SHA-256 ran outside the timer. Seven rotating groups ran
+on Mac17,6 with 18 logical CPUs on 2026-11-18 at 08:42 local time.
+One-minute load varied from 8.04 to 8.59. All 21 fresh processes and
+the guard exited zero. Warm results use the median of the six calls
+after the first in each process. Times are medians in microseconds.
+
+| Size and operation | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 copy | 9.250 / 0.375 / 0.542 | 8.646 / 0.208 / 0.167 |
+| 67×43 source-over (alpha 255) | 11.833 / 11.209 / 9.500 | 9.209 / 9.875 / 8.312 |
+| 67×43 source-over (alpha 141) | 10.875 / 10.667 / 9.084 | 8.917 / 10.250 / 8.500 |
+| 511×513 copy | 709.750 / 24.792 / 24.209 | 621.167 / 24.541 / 23.917 |
+| 511×513 source-over (alpha 255) | 974.959 / 947.958 / 781.167 | 927.605 / 977.833 / 827.229 |
+| 511×513 source-over (alpha 141) | 736.875 / 935.583 / 765.167 | 934.896 / 990.708 / 799.208 |
+| 512×512 copy | 572.583 / 23.833 / 24.166 | 566.083 / 23.584 / 24.584 |
+| 512×512 source-over (alpha 255) | 857.125 / 641.917 / 441.041 | 795.688 / 610.458 / 372.542 |
+| 512×512 source-over (alpha 141) | 729.667 / 517.375 / 287.750 | 705.854 / 442.104 / 306.416 |
+| 1031×517 copy | 1372.750 / 58.167 / 49.917 | 1139.125 / 48.999 / 47.250 |
+| 1031×517 source-over (alpha 255) | 1829.292 / 1127.042 / 570.333 | 1820.833 / 1096.729 / 394.604 |
+| 1031×517 source-over (alpha 141) | 1564.916 / 1167.250 / 422.083 | 1535.958 / 913.521 / 329.375 |
+| 2051×1537 copy | 7324.375 / 414.042 / 193.459 | 8147.895 / 354.334 / 145.938 |
+| 2051×1537 source-over (alpha 255) | 9584.541 / 7269.416 / 2181.542 | 10679.354 / 6744.458 / 2116.312 |
+| 2051×1537 source-over (alpha 141) | 10275.250 / 5244.500 / 1791.834 | 9056.729 / 5918.374 / 1776.001 |
+| 3840×2160 copy | 21041.000 / 1258.000 / 491.458 | 20430.541 / 1104.146 / 421.104 |
+| 3840×2160 source-over (alpha 255) | 29685.583 / 18165.625 / 5753.333 | 29168.729 / 18799.541 / 5405.000 |
+| 3840×2160 source-over (alpha 141) | 27732.958 / 14556.917 / 4723.542 | 25978.916 / 14695.938 / 4556.583 |
+
+All complete destination hashes matched. Default execution won all
+seven first and warm pairs for cases that dispatched workers. The
+511×513 alpha-141 blend used the original ordered path and its
+first-call median rose from 736.875 to 765.167 µs, while paired
+warm results varied. The 4K copy took 1.10 ms with the new bulk loop
+forced serial and 0.42 ms with workers. Harness hashes were
+`a6bf00097e3586ab7427c560f45a5939b0a0b95abfe04f24712f79705810800c`
+before and
+`b22454d3aec85029418d5fd7cbc559d9baa97a174f1955ee8e714b8b43890ef7`
+after.
+
+A separate dispatch probe observed two distinct threads for 512×512
+blends, four for larger parallel batches, and zero below each cutoff
+or with workers disabled. Public macOS Canvas image draws used four
+threads for a 2051×1537 copy and a blend. Their full surfaces matched
+forced serial with hashes
+`294f3fe95d765597daf302c34ded190788f09e7369cf0b55b32f752b4b3aa4b0`
+and `7ef455c31b68d5738a485b6923a57366a77395f5528ac2787d0ed7ec62eebf95`.
+The first probe setup used a target stride the public Canvas API
+declined. Both valid public draws and the probe guard exited zero.
+Focused macOS and arm64 Linux checks covered odd and even clipped
+rows, padding and shared source and destination storage. Forced
+serial, ASan/UBSan and ThreadSanitizer passed. The pinned CPU raster
+differential suite passed with count 2000 and seed 20261106.
+
+The published single-C-unit executable
+`19554c666e7ef07de44937357e3a2f37df63bc26d8347bd4830a133c38be1766`
+and native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched frozen Hacker News, GitHub and Old Reddit pixel references.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS-pixel viewport, 2× captures and a one-second settle.
+The audits found 30, 33 and 25 entries and zero Canvas elements.
+All three browsers and the replay guard exited zero. This published
+build predates the sprite change. Timings above cover the sprite
+blitter, and candidate site timings await a production build.
+
+### Parallel shaded rectangle blits
+
+Large pipeline rectangles use the existing raster scheduler for
+disjoint destination rows. Image draws also check the backing of
+both sampled mipmap levels. An overlap keeps the original ordered
+draw, as do small rectangles and constant-color stores. The workers
+share the blitter header and paint inputs and write only their
+assigned rows.
+
+Fixed bilinear tap offsets remove three dynamic V arrays per
+high-precision sample. The gradient span borrows its shader directly,
+and rectangle and A8 mask callbacks borrow the blitter header.
+Generated production C showed no allocation calls in the 83 and
+78 raster functions reached from the two callbacks, respectively.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the clipped pipeline rectangle through return. The image
+cases used padded rows, an approximately 2× bilinear scale, and paint
+alpha 0.83. Buffer reset and SHA-256 ran outside the timer. Seven
+rotating groups on Mac17,6 with 18 logical CPUs started at 08:59
+local time on 2026-11-18. One-minute load varied from 7.87 to 8.74.
+The initial baseline attempt reached a 3 GiB guard and exited 137.
+The full cohort used the repository's default 12 GiB guard, peaked
+at 4.12 GiB sampled RSS, and completed with all 21 processes and
+the guard exiting zero. Times are medians in microseconds. Warm
+results use each process's median of six calls after the first.
+
+| Size and paint | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 linear gradient | 21.083 / 17.417 / 17.792 | 18.979 / 16.604 / 16.500 |
+| 67×43 image source-over | 64.083 / 64.750 / 67.084 | 62.938 / 63.896 / 64.083 |
+| 67×43 image soft-light | 190.375 / 150.208 / 156.458 | 178.396 / 142.625 / 145.563 |
+| 511×513 linear gradient | 1557.209 / 1436.292 / 1446.416 | 1498.458 / 1440.729 / 1430.604 |
+| 511×513 image source-over | 5547.417 / 5712.709 / 5889.750 | 5654.312 / 5855.333 / 5846.792 |
+| 511×513 image soft-light | 16875.500 / 13038.542 / 13255.833 | 16175.001 / 12995.438 / 13151.083 |
+| 512×512 linear gradient | 1452.167 / 1415.709 / 962.125 | 1488.042 / 1456.626 / 778.146 |
+| 512×512 image source-over | 5684.500 / 5659.750 / 3030.250 | 5697.042 / 5742.562 / 3071.146 |
+| 512×512 image soft-light | 16344.541 / 12795.542 / 6772.958 | 15930.334 / 13002.750 / 6816.167 |
+| 1031×517 linear gradient | 3137.334 / 3000.125 / 1149.625 | 3152.396 / 2920.479 / 990.708 |
+| 1031×517 image source-over | 11584.667 / 11541.208 / 3563.958 | 11413.062 / 11755.291 / 3820.291 |
+| 1031×517 image soft-light | 32943.250 / 26637.625 / 7685.500 | 32460.250 / 26742.229 / 7663.542 |
+| 2051×1537 linear gradient | 19744.292 / 17869.917 / 5494.125 | 18293.750 / 17780.208 / 5822.042 |
+| 2051×1537 image source-over | 67562.709 / 69443.459 / 22492.500 | 67081.146 / 68185.792 / 20657.354 |
+| 2051×1537 image soft-light | 193470.750 / 157997.208 / 42812.041 | 193213.750 / 158015.709 / 43713.520 |
+
+All full destination hashes matched. The default configuration won
+all first and warm pairs at and above the dispatch threshold. The
+511×513 source-over case stayed serial and its first and warm
+medians rose 6.2% and 3.4% respectively. The largest soft-light case
+ran in 158.02 ms forced serial and 43.71 ms with workers. Harness
+hashes were
+`1ad420cd299b856d01fe8625af43ae8cd656f1fa7f9a3d4d3c09e5af83afd07c`
+before and
+`05c3e9695fe39386c3ca3e9f4549d7bfe5a30def843e0b8caebbce25209a386a`
+after.
+
+A separate probe observed two distinct threads at 512×512, four
+on larger batches, and zero below the cutoff or with workers
+disabled. Public macOS Canvas image draws in multiply and soft-light
+modes both dispatched four threads for a 2051×1537 destination.
+Their full surface hashes matched forced serial
+(`dd5cee2f3728877c3dd8f3d78401faf7f71bbefebca6f27967d057ce144d6db2`
+and `1768b517455d7fcd00f7fd59d1d155e79c40abfd7148572fddb4ffa1be60807b`).
+All four probe processes and the guard exited zero. Focused macOS
+and arm64 Linux tests covered clipped gradient and image rectangles,
+low and high precision, and both disjoint and aliased mipmap levels.
+Forced serial, ASan/UBSan, ThreadSanitizer, and the pinned CPU raster
+differential suite (count 2000, seed 20261106) passed.
+
+The published single-C-unit executable
+`ea5cc7a3d626c8fdef30c81044f1e9a78976d20c1c5726245d8a335b1950bb74`
+and native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched the frozen Hacker News, GitHub and Old Reddit references.
+The parsed source receipt pins the sprite implementation from
+`461e46094`. Fresh sealed replays used JavaScript, private profiles
+and caches, a 1024×768 CSS-pixel viewport, 2× captures and a
+one-second settle. The audits found 30, 33 and 25 entries and zero
+Canvas elements. The three browser processes and guard exited
+zero. Timings above cover the isolated rectangle path. Site timings
+for the rectangle change await its production build.
+
+### Parallel legacy bitmap shader rectangles
+
+Large N32 source-over image rectangles with disjoint source and
+destination storage use up to four workers at 262,144 pixels. Each
+worker owns a stack-backed scratch row and uses the existing sampler
+and blend routines on complete rows. This preserves chunk origins
+and fixed-point rounding for scaled and repeated images. Small
+rectangles and overlapping storage use the original ordered
+shading and blending with one scratch size check per rectangle.
+The generated C showed no allocation calls in the 33 raster
+functions reachable from the worker callback.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the clipped blit through return. Both surfaces had padded
+rows. The source included opaque, transparent and partially
+transparent premultiplied pixels. The fixtures used nearest scaling
+at full paint alpha, bilinear scaling at alpha 211, and bilinear
+affine repeat at alpha 211. Buffer resets and SHA-256 ran outside
+the timer. Seven rotating groups ran on Mac17,6 with 18 logical
+CPUs starting at 09:10 local time on 2026-11-18. One-minute load
+was 10.20–10.75. All 21 processes and the guard exited zero.
+Times are medians in microseconds. Warm results take each
+process's median of six calls after the first.
+
+| Size and sampling | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 nearest scale | 7.584 / 7.833 / 7.500 | 8.042 / 7.250 / 6.896 |
+| 67×43 bilinear scale | 15.500 / 13.333 / 13.542 | 14.688 / 12.917 / 12.563 |
+| 67×43 bilinear affine repeat | 23.709 / 21.000 / 20.084 | 23.312 / 20.687 / 19.709 |
+| 511×513 nearest scale | 632.417 / 754.000 / 782.792 | 706.292 / 645.833 / 601.438 |
+| 511×513 bilinear scale | 1106.791 / 1084.417 / 1078.000 | 1098.062 / 1171.833 / 1061.167 |
+| 511×513 bilinear affine repeat | 2030.833 / 2246.875 / 1960.958 | 2103.313 / 2299.751 / 1939.500 |
+| 512×512 nearest scale | 692.125 / 668.292 / 539.917 | 668.917 / 657.042 / 457.667 |
+| 512×512 bilinear scale | 1156.542 / 1152.542 / 720.084 | 1134.062 / 1150.708 / 707.770 |
+| 512×512 bilinear affine repeat | 1913.458 / 1879.583 / 1288.667 | 1930.979 / 1980.792 / 1279.396 |
+| 1031×517 nearest scale | 1254.375 / 1357.625 / 553.583 | 1233.625 / 1333.500 / 492.896 |
+| 1031×517 bilinear scale | 2092.417 / 2204.542 / 802.541 | 2168.126 / 2151.813 / 780.145 |
+| 1031×517 bilinear affine repeat | 4159.125 / 4211.375 / 1437.750 | 4253.605 / 4016.979 / 1409.208 |
+| 2051×1537 nearest scale | 7764.625 / 8409.667 / 2878.750 | 8387.916 / 8769.125 / 2672.166 |
+| 2051×1537 bilinear scale | 14030.458 / 12961.750 / 4428.125 | 14004.750 / 13104.188 / 4413.458 |
+| 2051×1537 bilinear affine repeat | 22688.625 / 24241.917 / 8375.208 | 23800.250 / 23612.292 / 7999.229 |
+| 3840×2160 nearest scale | 21427.917 / 20403.875 / 7456.084 | 21654.709 / 20936.688 / 7269.521 |
+| 3840×2160 bilinear scale | 33720.167 / 35336.083 / 11337.708 | 34250.500 / 34800.063 / 11285.792 |
+| 3840×2160 bilinear affine repeat | 64875.542 / 62727.459 / 20333.459 | 65847.855 / 59959.084 / 20428.312 |
+
+Default scheduling won all seven pairs at and above the cutoff on
+both metrics. Below it, the 511×513 nearest first-call median rose
+from 632.417 to 782.792 µs, and its warm median fell from 706.292 to
+601.438 µs. Individual pairs varied below the cutoff. An earlier
+cohort kept the scratch capacity check inside the serial row loop
+and showed a 511×513 nearest warm regression of 501.771 to 545.730 µs.
+That cohort ran at load 4.84–5.26 and measured 4K warm default times
+of 4.236, 7.164 and 12.668 ms for the three modes. Host load and
+control medians differed between the two cohorts. All destination
+hashes matched in both cohorts. Harness SHA-256 values were
+`4192d16ae370065a0bfe9ef590b3b45f02505e10beab071d407191a2aa1f63ea`
+before and
+`c38a5dc99551a822b2231d495759e6e55ef392a479bd115da4b4da482175b321`
+after.
+
+A separate probe observed two threads at 512×512 and four on
+larger worker batches. It observed zero batches below the cutoff
+or with workers disabled. Two public macOS Canvas source-over
+draws scaled to 2051×1537 with and without smoothing. Both used
+four threads and matched forced serial pixel for pixel
+(`a7aef68e149aa66ce13d303a453a3096da41020d6aa1ade7a5861178bbcdcda8`
+and `e136bd70ab871634186ab3ee9989b13913117a3305cf69fa8ac2c3133e382152`).
+All probe processes and the guard exited zero. Focused macOS and
+arm64 Linux checks covered clipped and padded sources, nearest
+and bilinear sampling, affine repeat, and shared storage.
+Forced serial, ASan/UBSan, ThreadSanitizer, and the pinned CPU
+raster differential suite (count 2000, seed 20261106) passed.
+
+The published single-C-unit executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`
+and native library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched archived Hacker News, GitHub and Old Reddit pixels.
+The parsed-source manifest pins the preceding shaded rectangle
+implementation from `23091d029`. Fresh sealed replays used
+JavaScript, private profiles and caches, a 1024×768 CSS viewport,
+2× capture and a one-second settle. The audits found 30, 33 and
+25 entries and zero Canvas elements. All browser and guard exits
+were zero. The timings above cover legacy bitmap shader rectangles.
+Candidate site measurements await the shared production rebuild.
+
+### Parallel AVFoundation frame conversion
+
+The macOS playback bridge copies BGRA frames into packed RGBA by
+assigning disjoint rows to the raster workers. The CoreVideo buffer
+remains locked and the RGBA buffer remains private until the workers
+join. The ARM64 loop converts sixteen pixels at a time, with vector
+and scalar tails for odd widths. Dispatch starts at 1,048,576 pixels,
+with up to four threads. `VOX_SERIAL_CPU_RASTER=1` forces serial
+conversion.
+
+Matched native Clang `-O3 -g` harnesses measured conversion through
+return for deterministic BGRA frames with 44 bytes of source row
+padding. Allocation, source initialization and output hashing were
+outside the timer. The first measurement for each size included
+accessing the new output buffer. Seven rotating groups on Mac17,6
+with 18 logical CPUs started at 09:20 local time on 2026-11-18.
+The one-minute load was 4.08. All 21 processes and the guard exited
+zero. Times are medians in microseconds. Warm values take each
+process's median of the 16 calls after its first.
+
+| Frame | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 320×240 | 20.750 / 25.167 / 20.500 | 4.875 / 4.834 / 4.875 |
+| 1023×1025 | 324.875 / 312.292 / 306.917 | 79.979 / 92.562 / 91.709 |
+| 1024×1024 | 79.416 / 71.459 / 77.625 | 78.187 / 70.438 / 39.459 |
+| 1426×1080 | 486.125 / 510.166 / 353.084 | 112.417 / 145.083 / 82.605 |
+| 1921×1081 | 707.458 / 665.125 / 431.750 | 150.854 / 194.145 / 77.188 |
+| 3840×2160 | 2957.375 / 2878.875 / 1590.500 | 583.395 / 543.292 / 317.396 |
+
+Default scheduling won all seven warm pairs for every dispatched
+size. First-call wins for those sizes were 4, 6, 7 and 7. The
+1023×1025 warm median rose by 11.730 µs below the cutoff. An
+earlier four-pixel loop took 6.917 µs for warm 320×240 and
+311.750 µs for 4K. A sixteen-pixel interleaved load/store trial
+took 4.917 and 314.271 µs respectively. Hashes matched across all
+three cohorts. Final harness hashes were
+`eb43d0937dd0a0c3a47c2511f43cca8076731eed5d35450f904b903d0731bbc7`
+before and
+`8746566284cb567e9070deb90ca07577fe888504ca9aea710abd36ed042f4ea1`
+after.
+
+A separate native probe saw two threads at 1024×1024 and 1426×1080,
+three at 1921×1081 and four at 4K. It saw zero batches below the
+cutoff and under forced serial. AVFoundation decoded a local
+1920×1080 MP4 fixture
+(`b7f44d034cb48490132861748ecbbf46db3c63cb935be9c1e7a9e43d046f6cae`)
+through the playback bridge and used three distinct conversion
+threads. Its RGBA output matched forced serial
+(`1fe0091d81bbd335aac0a789928b6f172f51c6c3ccc42362a23347c6d80071b4`).
+All four probe processes and the guard exited zero. The native MP4
+and loopback HLS playback suite passed in both modes, including
+pause, seek, end and cancellation. Byte and canary checks covered
+unaligned output, odd widths, padding and both sides of the cutoff.
+ASan/UBSan and ThreadSanitizer passed the conversion fixtures.
+
+The published single-C-unit executable
+`eb9c83cc14fe48f533dcf68e7dbc3e4c871426aa6aa110d3e65a570d961f22a1`
+with library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched archived Hacker News, GitHub and Old Reddit pixels.
+The sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS viewport, 2× capture and a one-second settle. They
+audited 30, 33 and 25 entries and zero video elements. All browser
+and guard exits were zero. The shared bundle predates the change.
+The benchmark measures CPU frame conversion, and the archived
+pages provide pixel regression coverage.
+
+### Parallel rounded shadow patch expansion
+
+The macOS rounded-shadow adapter maps horizontal coordinates once
+for the full mask. Workers sample the same nearest-neighbor patch
+into disjoint destination rows before the adapter submits the
+completed mask to the GPU. Dispatch starts at 262,144 pixels and
+uses up to four threads. The smaller masks also reuse the column map.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured patch expansion through return, including output
+allocation and column map preparation. Patch generation and output
+hashing were outside the timer. The synthetic 205×205 patch and
+fractional sample origins were identical across modes. Seven
+rotating fresh-process groups on Mac17,6 with 18 logical CPUs
+started at 09:34 local time on 2026-11-18. The one-minute load was
+4.99. All 21 processes and the guard exited zero. Warm values
+use the medians of each process's four calls after its first.
+Times are medians in microseconds.
+
+| Mask | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 67×43 | 7.917 / 2.250 / 2.250 | 7.271 / 1.875 / 1.855 |
+| 511×513 | 672.250 / 147.667 / 146.209 | 620.146 / 147.230 / 147.875 |
+| 512×512 | 621.750 / 149.500 / 124.167 | 638.792 / 148.417 / 96.958 |
+| 1600×400 | 1520.833 / 364.833 / 165.000 | 1526.083 / 358.354 / 196.270 |
+| 1921×1081 | 4895.917 / 1156.542 / 552.167 | 5063.875 / 1154.583 / 572.854 |
+| 3840×2160 | 19865.625 / 4663.291 / 1802.042 | 19833.250 / 4674.730 / 1880.792 |
+
+All full output hashes matched. The default configuration beat
+the original in all seven first and warm pairs, including the
+serial-sized masks. The benchmark executable SHA-256 values were
+`41804e5f247e4e84437963145c0e4d0a436cdfe37e4972429e6ad1ac7ed36e3c`
+before and
+`ff337dafc0469304497bf1bb501bc1f3e34ba3d87e80788b623a095b1d1874ec`
+after.
+
+A separate dispatch probe observed two threads at 512×512, four
+on larger batches and zero below the cutoff or with workers
+disabled. Six full 1600×400 shadow draws through the public
+gg.canvas adapter each used four threads. They all matched the
+existing Graphite golden hashes in both modes. The initial probe
+executable lacked the callback symbol. The final driver exercised
+the public draw entry point with explicit runtime checks. All
+four final probe processes and the guard exited zero. Focused
+scalar-reference, forced-serial, ASan/UBSan and ThreadSanitizer
+checks passed.
+
+The published single-C-unit executable
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`
+with library
+`ebde1494c5aebaa69ebe6edab9f4e3333020cb4b2949d96fa1fbb35f19d6a202`
+matched archived Hacker News, GitHub and Old Reddit pixels.
+Fresh sealed replays used JavaScript, private profiles and caches,
+a 1024×768 CSS viewport, 2× capture and a one-second settle.
+The audits verified 30, 33 and 25 entries and all browser and
+guard exits were zero. The published build predates this shadow
+change. Timings above cover mask expansion in isolation.
+
+### Parallel alpha extraction after GPU readback
+
+Rounded image clips, blurred shadows and SVG shadows share an A8
+extraction kernel. It copies the fourth byte of each complete
+pixel. The source and output allocations are disjoint. The raster
+scheduler joins its packed batches before the caller uses the mask.
+Inputs smaller than 2 MiB use the optimized serial scan. Larger
+inputs use up to four threads and finish any partial batch on the
+caller.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured extraction through return, including mask allocation.
+Input generation and output hashing ran outside the timer. Seven
+rotating fresh-process groups ran on Mac17,6 with 18 logical CPUs
+starting at 09:42 local time on 2026-11-18. One-minute load varied
+from 4.70 to 9.06. All 21 processes and the guard exited zero.
+Warm medians use each process's eight calls after its first.
+Times are in microseconds.
+
+| Mask | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 32×32 | 0.792 / 0.292 / 0.375 | 0.709 / 0.125 / 0.125 |
+| 511×513 | 195.709 / 48.125 / 46.083 | 175.750 / 52.479 / 52.438 |
+| 512×512 | 175.166 / 54.084 / 49.375 | 173.458 / 42.312 / 52.917 |
+| 1600×400 | 432.583 / 116.584 / 129.833 | 383.021 / 106.729 / 95.188 |
+| 1024×1024 | 704.292 / 206.416 / 169.625 | 795.105 / 196.813 / 161.687 |
+| 1921×1081 | 1581.750 / 368.667 / 304.167 | 1571.354 / 353.021 / 282.354 |
+| 3840×2160 | 6251.666 / 1369.875 / 909.708 | 6625.355 / 1634.729 / 1145.896 |
+
+All output hashes matched. The default configuration won every
+pair against the original, including the below-cutoff fixtures.
+The initial candidate dispatched at 512×512 and took 43.479 µs
+warm versus 38.750 µs forced serial in that group. The retained
+cutoff keeps that size serial. The final 1600×400 first-call
+median rose against forced serial by 13.249 µs, while the warm
+median fell by 11.541 µs. The initial cohort had load 4.21–4.27
+and 4K warm medians of 4509.688 / 1255.521 / 809.667 µs.
+Final harness SHA-256 values were
+`55912cc28f98c816950bdcd46e490698104bf4f1cdbc6e420c3a1efd4b6e5eb4`
+before and
+`bc52aff736e98566226d4375bf50aa03d0504115a6741f92220c7b4a6297a10d`
+after.
+
+A separate probe saw four threads for a public 1024×1024 rounded
+image clip and a 1600×900 shadow draw with uneven corner radii.
+Their complete outputs matched forced serial
+(`85a6f0fa911e7242a01fab31f1d5f3ad34916e5ab04fae0cd998c5d5b1c477fa`
+and `6cab9c3c836d7bc1ab9fcc2bc4ec703cecba29deb7893dbfd3dd3333d52a48b3`).
+The 1600×400 harness assigned four ranges and used two to four
+distinct threads. Larger cases used four. There were zero worker
+batches below the cutoff and with forced serial. Probe processes
+and guard exited zero. The rounded-image clip, cookie-shadow, SVG
+shadow and tall-shadow GPU fixtures passed. macOS, arm64 Linux,
+forced serial, ASan/UBSan, ThreadSanitizer and the pinned CPU raster
+differential suite (count 2000, seed 20261106) passed.
+
+The available completed browser was still
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`,
+which matched the archived Hacker News, GitHub and Old Reddit
+references in the [preceding check](#parallel-rounded-shadow-patch-expansion).
+The timings above cover alpha extraction. Candidate site timings
+await the shared rebuild.
+
+### Parallel SVG shadow border crops
+
+The macOS SVG drop-shadow adapter removes the one-pixel border
+from the resolved GPU readback with the shared raster rectangle
+copy. The packed BGRA result is uploaded after the copy joins.
+The copy borrows the destination slice explicitly, avoiding a
+compiler-inserted clone, and copies only the visible bytes in each
+row. Copies of at least 4 MiB use up to four workers.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured the crop including allocation of the packed result.
+Source setup and output hashing ran outside the timer. Seven
+rotating fresh-process groups ran on Mac17,6 with 18 logical CPUs
+starting at 09:50 local time on 2026-11-18. One-minute load varied
+from 6.68 to 7.05. All 21 processes and the guard exited zero.
+Times are medians in microseconds. Warm results take each
+process's median of eight calls after its first.
+
+| Packed output | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 32×32 | 0.334 / 0.333 / 0.291 | 0.250 / 0.167 / 0.167 |
+| 511×513 | 77.666 / 87.250 / 76.417 | 84.188 / 85.396 / 82.729 |
+| 1023×1025 | 313.250 / 330.042 / 336.167 | 334.167 / 342.583 / 343.334 |
+| 1024×1024 | 323.583 / 330.250 / 311.708 | 326.521 / 355.334 / 312.604 |
+| 1921×1081 | 678.000 / 655.083 / 598.958 | 667.708 / 669.230 / 595.042 |
+| 2048×2048 | 1286.625 / 1364.250 / 1128.166 | 1305.458 / 1351.938 / 1169.938 |
+
+Every full output hash matched. The two largest cases won all
+seven warm pairs. The 1023×1025 case stayed serial and its warm
+median rose by 9.167 µs. Harness SHA-256 values were
+`58ef6e5a3c6f1c9b24650785c278bcd81803e748b35a7dc19077bb744eff4b3c`
+before and
+`10180243c93a8352aa05bb3f9cdcc083b550577d2dc9b407e4d1a999b5eff998`
+after.
+
+The dispatch probe observed four distinct threads at and above
+the cutoff and zero below it or with workers disabled. The
+1600×900 public SVG shadow draw used four threads for the
+900×1600 crop with one and four destination samples. All four
+complete surfaces, including the forced-serial draws, had SHA-256
+`e39949b272bf555938ebe79711085deadf9881609cecd6bc5c44f64b5ac3a9e3`.
+The four probe processes and guard exited zero. Existing SVG
+shadow fixtures matched the unchanged Brave references. The
+padded copy checks, macOS and arm64 Linux tests, ASan/UBSan,
+ThreadSanitizer and the pinned CPU raster differential suite
+(count 2000, seed 20261106) passed.
+
+The available completed browser was still
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`.
+Its archived Hacker News, GitHub and Old Reddit pixel checks are
+recorded in the [preceding replay](#parallel-rounded-shadow-patch-expansion).
+The timings here cover the isolated crop. Candidate browser
+timings await the shared rebuild.
+
+### Parallel preparation of repeated background textures
+
+The macOS rounded-background compositor prepares its repeated
+texture with the shared raster premultiplication kernel. It writes
+premultiplied RGBA directly into the upload buffer, preserving the
+source bytes and the original `(channel * alpha + 127) / 255`
+rounding. At and above 262,144 pixels, raster workers join before
+the GPU upload. Smaller textures, including the archived Old
+Reddit sprite, use the fused serial loop.
+
+Matched single-C-unit V `-prod -g -prealloc -gc none` harnesses
+measured allocation and premultiplication through return. PNG
+decoding, input setup and output hashing ran outside the timer.
+The Old Reddit case used the original 140×1751 RGBA sprite
+(`3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527`).
+Other inputs were synthetic. Seven rotating fresh-process groups
+ran on Mac17,6 with 18 logical CPUs starting at 09:56 local time
+on 2026-11-18. One-minute load varied from 4.98 to 5.14. All 21
+processes and the guard exited zero. Warm results take each
+process's median of its eight calls after the first. Times are
+medians in microseconds.
+
+| Texture | First before / forced serial / default | Warm before / forced serial / default |
+| --- | ---: | ---: |
+| 32×32 | 1.542 / 0.667 / 0.666 | 1.417 / 0.458 / 0.438 |
+| 140×1751 Old Reddit | 391.208 / 135.792 / 141.667 | 399.938 / 144.042 / 142.270 |
+| 512×512 | 431.500 / 156.250 / 143.000 | 423.646 / 156.645 / 130.667 |
+| 1031×517 | 837.209 / 310.666 / 234.958 | 857.354 / 320.937 / 229.355 |
+| 1921×1081 | 3346.042 / 1267.500 / 863.334 | 3354.562 / 1242.375 / 801.938 |
+| 2048×2048 | 6970.792 / 2617.625 / 1409.708 | 6851.792 / 2507.791 / 1530.312 |
+
+Every output hash matched. Default scheduling won every first and
+warm pair against the original. The harness SHA-256 values were
+`2b122e1bd45fe28f43894bff915193155079d25ffa9eb30f013a8daf42dbcc8d`
+before and
+`f6ed15b925b82597e68204ca3edc0af4fb4a6f84416cd847fce11f4e3bca2d44`
+after.
+
+The dispatch probe observed two distinct threads at 512×512, four
+on larger synthetic cases, and zero below the cutoff or with
+workers disabled. A 140×3502 texture formed from two copies of the
+Old Reddit sprite reached the public repeated-background path and
+used three threads. All draws with the single and doubled sprites,
+including forced serial, produced the complete surface SHA-256
+`4a8b97797c29a8342798c573db35afc529341f3d96028b5ce6ff6abb203bd79d`.
+All four probe processes and the guard exited zero. The unchanged
+single-sample and multisample Brave references passed, including
+the double-height upload regression check. The first GPU test
+setup failed compilation before running because the fixture
+reassigned a mutable array alias. The final fixtures passed in
+both scheduling modes. Focused macOS and arm64 Linux tests,
+ASan/UBSan, and ThreadSanitizer passed.
+
+The latest completed browser was still
+`abc313c877690171f669481414f33c967376bd88d45f1128596e79e76f749f4a`.
+The same build matched archived Hacker News, GitHub and Old Reddit
+references in the [preceding replay](#parallel-rounded-shadow-patch-expansion).
+The timings here cover texture preparation through return.
+Candidate page timings await the shared production rebuild.
+
+### Parallel CPU copies for Metal texture transfers
+
+Joined Metal uploads and readbacks now split CPU staging copies of
+at least 8 MiB across up to four raster workers. Packed buffers use
+one `memcpy` per band. Padded buffers copy each row's active bytes.
+The upload joins before GPU encoding, and readback joins after
+Metal completes and before the buffer is released. Smaller copies
+and `VOX_SERIAL_CPU_RASTER=1` use a single thread.
+
+The first cutoff trial dispatched at 2 MiB. At 2048×768, warm
+copies improved but the first upload rose from 118.917 to 135.750 µs
+and the first readback from 98.042 to 124.208 µs. The final cutoff
+keeps that size serial.
+
+The final cohort used seven rotating fresh-process groups on
+Mac17,6 with 18 logical CPUs and one-minute load of 7.55–8.32.
+A single Apple Clang `-O2 -flto` harness called either the original
+row loop or the production copy helper on actual shared Metal
+buffers and client memory. Times cover the CPU copy through return,
+including worker dispatch and join. Buffer allocation, fill, byte
+verification and GPU work are outside the timed span. Warm times
+use the median of each process's ten copies after its first call.
+All 378 processes and the guard exited zero and checked every byte.
+
+| Surface and direction | First before / serial / default, µs | Warm before / serial / default, µs | Warm default faster pairs |
+| --- | ---: | ---: | ---: |
+| 512×512 upload | 17.375 / 15.917 / 16.500 | 17.521 / 17.292 / 17.375 | 4/7 |
+| 512×512 readback | 16.750 / 17.375 / 17.875 | 17.625 / 17.333 / 16.646 | 5/7 |
+| 2048×768 upload | 328.917 / 129.833 / 183.667 | 96.063 / 97.375 / 100.250 | 1/7 |
+| 2048×768 readback | 182.500 / 115.667 / 144.125 | 102.938 / 99.021 / 103.750 | 2/7 |
+| 2048×1024 upload | 252.625 / 261.125 / 160.375 | 133.667 / 134.459 / 108.584 | 7/7 |
+| 2048×1024 readback | 314.958 / 164.042 / 192.375 | 135.000 / 135.521 / 99.938 | 7/7 |
+| 2051×1537 padded upload | 541.583 / 647.292 / 199.875 | 407.750 / 439.208 / 199.855 | 7/7 |
+| 2051×1537 padded readback | 617.000 / 510.792 / 253.542 | 438.208 / 422.125 / 210.021 | 7/7 |
+| 2048×1536 upload | 204.083 / 278.667 / 194.167 | 219.792 / 221.438 / 157.771 | 7/7 |
+| 2048×1536 readback | 289.875 / 286.208 / 209.917 | 215.375 / 216.834 / 142.438 | 7/7 |
+| 3840×2160 padded upload | 1608.292 / 1413.417 / 552.167 | 613.646 / 589.855 / 355.396 | 7/7 |
+| 3840×2160 padded readback | 1908.458 / 1451.167 / 708.958 | 1184.875 / 1134.355 / 484.959 | 7/7 |
+
+The harness executable SHA-256 was
+`f04d6a30109091622508e9ce0f312a29d46145d7d4a9ecf4b6f3b1e27da3c2cf`.
+A separate dispatch probe recorded four distinct threads at 8 MiB
+and on 2051×1537 padded copies. It recorded no dispatch below
+8 MiB or in forced serial mode. The real Metal test passed its
+existing command ordering, staging ownership and failure checks
+and new large packed and padded round trips under default
+scheduling, forced serial, and ASan/UBSan. ThreadSanitizer passed
+both large padded copy directions. The V and Python staging paths
+produced identical Sokol Metal headers. The broader UI adapter
+staging check stopped at a missing `gg/canvas/vox_path_math.m`
+wrapper, before reaching its Metal assertion.
+
+#### Archived page baseline
+
+The completed single-C `-prod` receipt `20261118-095612-f974a35a`
+sealed the previous repeated-background texture change and the
+original Metal transfer loop. Its executable SHA-256 was
+`c758ea483aa8943ec31cdbdbb282e5271c1335c9a5df3c29b37a32cbedfce3a8`.
+The AVIF and adblock helper hashes match the
+[frame-clear benchmark](NATIVE_FRAME_CLEAR_BENCHMARK.md#input-identities).
+
+Fresh processes used the same archives and decoded pixel hashes
+as the [earlier eligibility runs](#archived-browser-eligibility).
+The 1024×768 viewport was captured at 2× after one second of
+settling. Each process used a private empty profile and cache,
+sealed origin replay and JavaScriptCore. System caches remained
+available. All nine captures matched the frozen references and
+retained 30, 33 and 25 distinct content IDs. JavaScriptCore
+initialized and reported no script diagnostics. The browsers and
+the memory guard exited zero. One-minute load ranged from 14.07
+to 15.68. A pilot capture exited zero but its audit check used the
+wrong runtime field name. The completed cohort uses the actual
+`native_context_initialized` field.
+
+| Archived page | Launch through PNG, audit and process exit, ms | Median, ms |
+| --- | ---: | ---: |
+| Hacker News | 2115.233, 1782.767, 1812.123 | 1812.123 |
+| GitHub | 4974.524, 4307.651, 4552.195 | 4552.195 |
+| Old Reddit | 2029.691, 2041.569, 2028.785 | 2029.691 |
+
+These times establish the page baseline for the original Metal
+copy. A whole-page comparison requires a completed build with the
+final 8 MiB cutoff and confirmation that the sites reach it.

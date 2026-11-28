@@ -8,7 +8,7 @@ import math.big
 fn this_bigint_value(mut vm VM, value Value) !&BigInt {
 	if value.is_bigint() { return value.as_bigint() }
 	if value.is_object() {
-		if wrapper := value.as_object().bigint_object { return wrapper.bigint }
+		if wrapper := value.as_object().slots.bigint_object { return wrapper.bigint }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'BigInt')
 }

@@ -217,6 +217,24 @@ pub fn (mut performance Performance) convert_mark_to_timestamp(mark usertiming.S
 }
 
 pub fn (mut performance Performance) measure(name string, start_or_options ?StartOrMeasureOptions, end_mark ?string) !&usertiming.PerformanceMeasure {
+	timing := performance.resolve_measure_timing(start_or_options, end_mark)!
+	detail := if argument := start_or_options {
+		if argument is usertiming.PerformanceMeasureOptions { argument.detail } else { none }
+	} else { none }
+	entry := usertiming.PerformanceMeasure.new(name, timing.start_time, timing.duration, detail)
+	performance.record_entry(entry.entry)
+	return entry
+}
+
+pub struct PerformanceMeasureTiming {
+pub:
+	start_time f64
+	duration f64
+}
+
+// Resolve native marks and validate options before an actual-value adapter
+// serializes detail. No entry is published if that serialization later throws.
+pub fn (mut performance Performance) resolve_measure_timing(start_or_options ?StartOrMeasureOptions, end_mark ?string) !PerformanceMeasureTiming {
 	mut start_name := ?string(none)
 	mut options := ?usertiming.PerformanceMeasureOptions(none)
 	if argument := start_or_options {
@@ -269,10 +287,7 @@ pub fn (mut performance Performance) measure(name string, start_or_options ?Star
 	} else if start := start_name {
 		start_time = performance.convert_mark_to_timestamp(usertiming.StringOrTimestamp(start))!
 	}
-	detail := if measure_options := options { measure_options.detail } else { none }
-	entry := usertiming.PerformanceMeasure.new(name, start_time, end_time - start_time, detail)
-	performance.record_entry(entry.entry)
-	return entry
+	return PerformanceMeasureTiming{start_time: start_time, duration: end_time - start_time}
 }
 
 pub fn (mut performance Performance) clear_measures(name ?string) {

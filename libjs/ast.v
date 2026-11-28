@@ -187,6 +187,7 @@ mut:
 	local_index               u32
 	is_global                 bool
 	is_inside_scope_with_eval bool
+	is_inside_with            bool
 	declaration_kind          int // 0=none, 1=var, 2=let, 3=const
 }
 
@@ -201,6 +202,7 @@ fn (id &Identifier) is_local() bool {
 	return id.local_type != 0
 }
 
+@[heap]
 struct PrivateIdentifier {
 mut:
 	range SourceRange
@@ -540,7 +542,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			ft.transfer(expr.kind.function_id, mut result)
 		}
 		.class_expr {
-			if cd := expr.kind.class_data {
+			if cd := expr.kind.class_data() {
 				ft.collect_from_class(cd, mut result)
 			}
 		}
@@ -563,7 +565,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.assignment {
-			if assign_lhs := expr.kind.assignment_lhs {
+			if assign_lhs := expr.kind.assignment_lhs() {
 				match assign_lhs {
 					AssignmentLhsExpression {
 						ft.collect_from_expression(assign_lhs.expression, mut result)
@@ -578,18 +580,13 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.conditional {
-			if test := expr.kind.test {
-				ft.collect_from_expression(test, mut result)
-			}
-			if consequent := expr.kind.consequent {
-				ft.collect_from_expression(consequent, mut result)
-			}
-			if alternate := expr.kind.alternate_expr {
-				ft.collect_from_expression(alternate, mut result)
-			}
+			branches := expr.kind.conditional_data or { return }
+			ft.collect_from_expression(&branches.test, mut result)
+			ft.collect_from_expression(&branches.consequent, mut result)
+			ft.collect_from_expression(&branches.alternate, mut result)
 		}
 		.sequence {
-			for e in expr.kind.expressions {
+			for e in expr.kind.expressions() {
 				ft.collect_from_expression(&e, mut result)
 			}
 		}
@@ -602,10 +599,9 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.optional_chain {
-			if base := expr.kind.base {
-				ft.collect_from_expression(base, mut result)
-			}
-			for ref_ in expr.kind.references {
+			chain := expr.kind.optional_chain_data() or { return }
+			ft.collect_from_expression(&chain.base, mut result)
+			for ref_ in chain.references {
 				match ref_ {
 					OptionalChainCall {
 						for arg in ref_.arguments {
@@ -628,7 +624,7 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.super_call {
-			if sd := expr.kind.super_call_data {
+			if sd := expr.kind.super_call_data() {
 				for arg in sd.arguments {
 					ft.collect_from_expression(&arg.value, mut result)
 				}
@@ -640,14 +636,14 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.array_expr {
-			for elem in expr.kind.array_elements {
+			for elem in expr.kind.array_elements() {
 				if e := elem {
 					ft.collect_from_expression(&e, mut result)
 				}
 			}
 		}
 		.object_expr {
-			for prop in expr.kind.object_properties {
+			for prop in expr.kind.object_properties() {
 				ft.collect_from_expression(&prop.key, mut result)
 				if val := prop.value {
 					ft.collect_from_expression(&val, mut result)
@@ -655,17 +651,17 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.template_literal {
-			if td := expr.kind.template_data {
+			if td := expr.kind.template_data() {
 				for e in td.expressions {
 					ft.collect_from_expression(&e, mut result)
 				}
 			}
 		}
 		.tagged_template_literal {
-			if tag := expr.kind.tag_expr {
+			if tag := expr.kind.tag_expr() {
 				ft.collect_from_expression(tag, mut result)
 			}
-			if tl := expr.kind.template_literal_expr {
+			if tl := expr.kind.template_literal_expr() {
 				ft.collect_from_expression(tl, mut result)
 			}
 		}
@@ -675,10 +671,10 @@ fn (mut ft FunctionTable) collect_from_expression(expr &Expression, mut result F
 			}
 		}
 		.import_call {
-			if spec := expr.kind.specifier {
+			if spec := expr.kind.specifier() {
 				ft.collect_from_expression(spec, mut result)
 			}
-			if opts := expr.kind.options {
+			if opts := expr.kind.options() {
 				ft.collect_from_expression(opts, mut result)
 			}
 		}
@@ -946,6 +942,12 @@ mut:
 // Optional chain types
 // =============================================================================
 
+@[heap]
+struct OptionalChainData {
+	base       Expression
+	references []OptionalChainReference
+}
+
 enum OptionalChainMode {
 	optional
 	not_optional
@@ -984,6 +986,7 @@ mut:
 // Template literal types
 // =============================================================================
 
+@[heap]
 struct TemplateLiteralData {
 mut:
 	expressions []Expression
@@ -994,6 +997,7 @@ mut:
 // RegExp literal
 // =============================================================================
 
+@[heap]
 struct RegExpLiteralData {
 mut:
 	pattern Utf16String
@@ -1265,13 +1269,12 @@ mut:
 	tag ExprKindTag
 	// Literal data
 	numeric_value f64
-	string_value  Utf16String
+	// String literal text, out of line: only literal nodes use it, and an
+	// inline Utf16String made every expression node 48 bytes larger.
+	string_value &Utf16String = unsafe { nil }
 	bool_value    bool
-	big_int_value string
-	regexp_data   ?RegExpLiteralData
 	// Identifier data
 	identifier         ?&Identifier
-	private_identifier ?PrivateIdentifier
 	// Operator data
 	binary_op     BinaryOp
 	logical_op    LogicalOp
@@ -1283,40 +1286,125 @@ mut:
 	rhs                   ?&Expression
 	operand               ?&Expression
 	argument              ?&Expression
-	test                  ?&Expression
-	consequent            ?&Expression
-	alternate_expr        ?&Expression
+	conditional_data      ?&ConditionalExpressionData
 	object                ?&Expression
 	property              ?&Expression
-	base                  ?&Expression
-	specifier             ?&Expression
-	options               ?&Expression
-	tag_expr              ?&Expression
-	template_literal_expr ?&Expression
 	// Flags
 	prefixed      bool
 	computed      bool
 	is_yield_from bool
 	// Assignment lhs
-	assignment_lhs       ?AssignmentLhs
 	lhs_is_parenthesized bool
 	// Call data (heap-allocated to break struct cycles)
 	call_data       ?&CallExpressionData
-	super_call_data ?&SuperCallData
 	// Function
 	function_id FunctionId
-	// Class (heap-allocated to break struct cycles)
-	class_data ?&ClassData
 	// Collections
-	expressions       []Expression
-	array_elements    []?Expression
-	object_properties []ObjectProperty
-	// Optional chain
-	references []OptionalChainReference
-	// Template
-	template_data ?TemplateLiteralData
+	// Payloads of less common node kinds; see ExpressionLists.
+	lists ?&ExpressionLists
 	// Meta property
 	meta_property_type MetaPropertyType
+}
+
+// Payloads of less common node kinds: sequences, array and object literals,
+// assignments, BigInt/RegExp literals, private names, dynamic imports, tagged
+// templates, templates, optional chains, super calls and classes. Keeping them
+// out of line shrinks every identifier, call, member and literal node, its
+// copies and the parent records that embed expressions. These heap records
+// also outlive parser and speculative frames.
+@[heap]
+struct ExpressionLists {
+mut:
+	expressions           []Expression
+	array_elements        []?Expression
+	object_properties     []ObjectProperty
+	assignment_lhs        ?AssignmentLhs
+	big_int_value         string
+	regexp_data           ?&RegExpLiteralData
+	private_identifier    ?&PrivateIdentifier
+	specifier             ?&Expression
+	options               ?&Expression
+	tag_expr              ?&Expression
+	template_literal_expr ?&Expression
+	super_call_data       ?&SuperCallData
+	class_data            ?&ClassData
+	optional_chain_data   ?&OptionalChainData
+	template_data         ?&TemplateLiteralData
+}
+
+fn (kind &ExpressionKind) big_int_value() string {
+	if lists := kind.lists { return lists.big_int_value }
+	return ''
+}
+
+fn (kind &ExpressionKind) regexp_data() ?&RegExpLiteralData {
+	if lists := kind.lists { return lists.regexp_data }
+	return none
+}
+
+fn (kind &ExpressionKind) private_identifier() ?&PrivateIdentifier {
+	if lists := kind.lists { return lists.private_identifier }
+	return none
+}
+
+fn (kind &ExpressionKind) specifier() ?&Expression {
+	if lists := kind.lists { return lists.specifier }
+	return none
+}
+
+fn (kind &ExpressionKind) options() ?&Expression {
+	if lists := kind.lists { return lists.options }
+	return none
+}
+
+fn (kind &ExpressionKind) tag_expr() ?&Expression {
+	if lists := kind.lists { return lists.tag_expr }
+	return none
+}
+
+fn (kind &ExpressionKind) template_literal_expr() ?&Expression {
+	if lists := kind.lists { return lists.template_literal_expr }
+	return none
+}
+
+fn (kind &ExpressionKind) super_call_data() ?&SuperCallData {
+	if lists := kind.lists { return lists.super_call_data }
+	return none
+}
+
+fn (kind &ExpressionKind) class_data() ?&ClassData {
+	if lists := kind.lists { return lists.class_data }
+	return none
+}
+
+fn (kind &ExpressionKind) optional_chain_data() ?&OptionalChainData {
+	if lists := kind.lists { return lists.optional_chain_data }
+	return none
+}
+
+fn (kind &ExpressionKind) template_data() ?&TemplateLiteralData {
+	if lists := kind.lists { return lists.template_data }
+	return none
+}
+
+fn (kind &ExpressionKind) expressions() []Expression {
+	if lists := kind.lists { return lists.expressions }
+	return []Expression{}
+}
+
+fn (kind &ExpressionKind) array_elements() []?Expression {
+	if lists := kind.lists { return lists.array_elements }
+	return []?Expression{}
+}
+
+fn (kind &ExpressionKind) object_properties() []ObjectProperty {
+	if lists := kind.lists { return lists.object_properties }
+	return []ObjectProperty{}
+}
+
+fn (kind &ExpressionKind) assignment_lhs() ?AssignmentLhs {
+	if lists := kind.lists { return lists.assignment_lhs }
+	return none
 }
 
 fn ExpressionKind.error() ExpressionKind {
@@ -1417,11 +1505,11 @@ mut:
 	switch_data ?&SwitchStatementData
 	// With
 	object ?&Expression
-	// Labelled
-	label         Utf16String
+	// Labelled (out of line: rare, and inline it cost every statement 48 bytes)
+	label         &Utf16String = unsafe { nil }
 	labelled_item ?&Statement
 	// Break/Continue
-	target_label ?Utf16String
+	target_label ?&Utf16String
 	// Return
 	return_arg ?&Expression
 	// Throw
@@ -1439,10 +1527,9 @@ mut:
 	// Class declaration (heap-allocated to break struct cycles)
 	class_data ?&ClassData
 	// Import/Export
-	import_data ?ImportStatementData
-	export_data ?ExportStatementData
-	// Class field initializer
-	field_name Utf16String
+	// Only import/export statements carry these 352 bytes; keep them out of line.
+	import_data ?&ImportStatementData
+	export_data ?&ExportStatementData
 }
 
 fn StatementKind.empty() StatementKind {
@@ -1481,4 +1568,21 @@ mut:
 	program_type        ProgramType
 	is_strict_mode      bool
 	has_top_level_await bool
+}
+
+// A string literal's text (empty for other nodes).
+fn (kind &ExpressionKind) literal_string() Utf16String {
+	if kind.string_value == unsafe { nil } { return Utf16String{} }
+	return *kind.string_value
+}
+
+// A labelled statement's label (empty for other statements).
+fn (kind &StatementKind) label_text() Utf16String {
+	if kind.label == unsafe { nil } { return Utf16String{} }
+	return *kind.label
+}
+
+// AST text stored out of line.
+fn ast_text(text Utf16String) &Utf16String {
+	return &Utf16String{...text}
 }

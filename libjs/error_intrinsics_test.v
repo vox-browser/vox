@@ -17,7 +17,7 @@ fn test_error_intrinsics_use_native_prototype_and_constructor_chains() {
 		assert constructor.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == kind.name()
 		assert constructor.get(mut vm, PropertyName.from_str('length'))!.number == 1
 		assert prototype.get(mut vm, PropertyName.from_str('name'))!.as_string().str() == kind.name()
-		assert prototype.error_data == none
+		assert prototype.slots.error_data == none
 		assert voidptr(prototype.internal_get_prototype_of()?) == voidptr(if kind == .error {
 			realm.object_prototype_record()
 		} else {

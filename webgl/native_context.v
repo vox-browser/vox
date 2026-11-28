@@ -214,6 +214,13 @@ pub fn (context &OpenGLContext) painting_surface() ?WebGLPaintingSurface {
 	return WebGLPaintingSurface{width:context.width_,height:context.height_,pixels:context.painting_pixels_.clone()}
 }
 
+pub fn (context &OpenGLContext) copy_painting_surface_pixels(mut pixels []u8) bool {
+	if !context.surface_allocated_ || context.painting_pixels_.len == 0
+		|| pixels.len != context.painting_pixels_.len { return false }
+	copy(mut pixels, context.painting_pixels_)
+	return true
+}
+
 pub fn (context &OpenGLContext) needs_to_present() bool {
 	return context.needs_to_present_
 }

@@ -261,7 +261,8 @@ export async function captureEncodedResponseCache(page,directory,expectedURL,{ma
     return {directory,resources:resources.filter(row=>!row.error).length};
 }
 
-export async function captureArchive(page, directory, expectedURL, {mainFrameID,headerCache}={}) {
+export async function captureArchive(page, directory, expectedURL,
+    {mainFrameID,headerCache,imageDecodePreparation='visible-image-decode'}={}) {
     await fs.mkdir(directory, {mode: 0o700}); // Never overwrite a prior workload.
     const cache = path.join(directory, 'cache');
     await fs.mkdir(path.join(cache, 'resources'), {recursive: true});
@@ -282,7 +283,7 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID,
     // visible resources and consecutive-frame stability as frozen replay;
     // otherwise an incomplete or moving source can never qualify its archive.
     const sourcePixels = await capturePixelReference(page, path.join(directory, 'live.png'),
-        {coverage:'page', url:snapshot.url});
+        {coverage:'page', url:snapshot.url},{imageDecodePreparation});
     // A stable pair of PNGs does not prove that the DOM serialized before it
     // was the one painted. Bracket the source capture with the replayable DOM
     // and text identities, retaining both versions when a live page changes.

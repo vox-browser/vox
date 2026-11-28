@@ -22,6 +22,12 @@ pub mut:
 	bindings          []DeclarativeBinding
 	catch_environment bool
 	serial_number     u64
+	// ClassDefinitionEvaluation restores its private environment together with
+	// this lexical scope, including catch unwinding after a computed key throws.
+	restores_private_environment bool
+	outer_private_environment ?&PrivateEnvironment
+mut:
+	binding_lookup_hints ?&BindingLookupHints
 }
 
 pub fn DeclarativeEnvironment.create(outer ?Environment) &DeclarativeEnvironment {
@@ -33,8 +39,65 @@ pub fn DeclarativeEnvironment.create(outer ?Environment) &DeclarativeEnvironment
 }
 
 fn (environment &DeclarativeEnvironment) find_binding_index(name Utf16String) int {
-	for index, binding in environment.bindings {
-		if !binding.deleted && binding.name == name {
+	$if test {
+		if binding_lookup_hints_disabled { return environment.find_binding_index_linear(name) }
+	}
+	if environment.bindings.len >= binding_lookup_hint_minimum {
+		return environment.find_binding_index_with_hints(name)
+	}
+	return environment.find_binding_index_linear(name)
+}
+
+$if test {
+	__global binding_scan_prefilter_disabled bool
+	pub fn set_binding_scan_prefilter_for_testing(enabled bool) { binding_scan_prefilter_disabled = !enabled }
+}
+
+@[direct_array_access]
+fn (environment &DeclarativeEnvironment) find_binding_index_linear(name Utf16String) int {
+	if name.data.len == 1 {
+		// A single UTF-16 unit identifies the whole name, including lone
+		// surrogate units. Check the live slot before reading its unit.
+		unit := name.data[0]
+		for index in 0 .. environment.bindings.len {
+			binding := &environment.bindings[index]
+			if !binding.deleted && binding.name.data.len == 1 && binding.name.data[0] == unit {
+				return index
+			}
+		}
+		return -1
+	}
+	// The loop uses the current array length and compares names without mutating it.
+	$if test {
+		if binding_scan_prefilter_disabled {
+			for index in 0 .. environment.bindings.len {
+				binding := &environment.bindings[index]
+				if !binding.deleted && binding.name == name { return index }
+			}
+			return -1
+		}
+	}
+	// Most bindings differ in length or in their first or last unit; reject them
+	// without a call. Equal candidates compare all code units, as == does.
+	length := name.data.len
+	if length == 0 {
+		for index in 0 .. environment.bindings.len {
+			binding := &environment.bindings[index]
+			if !binding.deleted && binding.name.data.len == 0 { return index }
+		}
+		return -1
+	}
+	first := name.data[0]
+	last := name.data[length - 1]
+	for index in 0 .. environment.bindings.len {
+		binding := &environment.bindings[index]
+		candidate := binding.name.data
+		if candidate.len != length || candidate[0] != first || candidate[length - 1] != last
+			|| binding.deleted {
+			continue
+		}
+		if candidate.data == name.data.data
+			|| unsafe { vmemcmp(candidate.data, name.data.data, length * int(sizeof(u16))) } == 0 {
 			return index
 		}
 	}
@@ -198,7 +261,7 @@ pub fn (mut environment DeclarativeEnvironment) get_binding_value(mut vm VM, nam
 }
 
 pub fn (environment &DeclarativeEnvironment) get_binding_value_direct(mut vm VM, index int) !Value {
-	binding := environment.bindings[index]
+	binding := unsafe { &environment.bindings[index] }
 	// 2. If the binding for N in envRec is an uninitialized binding, throw a ReferenceError exception.
 	if !binding.initialized {
 		return vm.throw_error_type(.reference_error, .binding_not_initialized, binding.name.str())

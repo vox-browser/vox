@@ -3,11 +3,13 @@ module layout
 import dom
 import css
 import os
+import processmetrics
 
 __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	generated_content_text_callback: layout_generated_accessible_text
 	find_matching_text_callback: find_matching_layout_text
 	inline_word_range_callback: layout_inline_word_range
+	first_letter_owner_callback: layout_text_first_letter_owner
 	apply_style_callback: apply_style_to_layout_node
 	apply_animated_style_callback: apply_animated_style_to_layout_node
 	apply_color_style_callback: apply_inherited_color_style_to_layout_node
@@ -17,6 +19,14 @@ __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
 	anchor_size_value_callback: layout_resolved_anchor_size_property
 	view_transition_properties_callback: layout_view_transition_properties
+}
+
+fn layout_text_first_letter_owner(handle voidptr) ?&dom.Element {
+	if handle == unsafe { nil } { return none }
+	text := unsafe { &Node(handle) }.as_text_node() or { return none }
+	first := text.first_letter_ or { return none }
+	wrapper := first.parent() or { return none }
+	return wrapper.pseudo_element_generator()
 }
 
 // Layout owns tree metadata, style and committed geometry. DOM consumes the
@@ -34,15 +44,19 @@ fn attachment_parent_user_select(root &Node) css.UserSelect {
 
 // Attach populated LayoutNode placeholders onto the DOM for the laid-out tree rooted at `root_box`.
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, unsafe { nil })
+	return attach_dom_layout_tree(root_box, none, true, false, unsafe { nil })
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, unsafe { nil })
+	return attach_dom_layout_tree(root_box, state, true, false, unsafe { nil })
+}
+
+fn attach_dom_layout_tree(root &Node, state ?&LayoutState, collect_text_chunks bool,
+	retain_live_nodes bool, provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
+	mut workspace := DOMLayoutAttachmentWorkspace.new(root)
+	defer { workspace.finish() }
+	return attach_layout_node_recursive(root, none, state, attachment_parent_user_select(root),
+		collect_text_chunks, mut workspace, retain_live_nodes, provider)
 }
 
 // Formatting needs the complete DOM/layout association before geometry is
@@ -61,31 +75,48 @@ $if test {
 }
 
 fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	root := attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), false, mut placeholders,
-		mut inline_pieces, true, unsafe { nil })
+	stage := processmetrics.begin_thread_instruction_substage('layout_attach_prepare')
+	defer { stage.finish() }
+	root := attach_dom_layout_tree(root_box, none, false, true, unsafe { nil })
 	return PreparedDOMLayoutAttachment{
 		root: root
 	}
 }
 
 fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared PreparedDOMLayoutAttachment) &dom.LayoutNode {
+	stage := processmetrics.begin_thread_instruction_substage('layout_attach_commit')
+	defer { stage.finish() }
 	assert prepared.root.layout_handle == voidptr(root_box)
-	// One immutable provider per commit retains the geometry context, without
-	// adding a closure or allocation to every text node. It belongs to the same
-	// retained document storage as the state and the projections that use it.
+	// One provider per commit reads its line geometry without adding a
+	// closure or allocation to every text node.
 	provider := if root_box.is_viewport() {
 		dom.LayoutVisualLinesProvider.new(voidptr(state), materialize_dom_text_visual_lines)
 	} else {
 		unsafe { &dom.LayoutVisualLinesProvider(nil) }
 	}
-	// Keep a separate traversal map so continuation and containing-block links
-	// follow the same tree order as a fresh attachment.
-	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
-	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
-		mut inline_pieces, true, provider)
+	// Every box's absolute offset, memoized as projection does; without the
+	// session each box walks its whole containing block chain.
+	coordinates := begin_paint_coordinate_session(state)
+	root := attach_dom_layout_tree(root_box, state, true, true, provider)
+	coordinates.finish()
+	return root
+}
+
+struct VisualLineGeometry {
+	node  &NodeWithStyle
+	lines []LineBox
+}
+
+fn (state &LayoutState) visual_line_geometry(node &NodeWithStyle) ?VisualLineGeometry {
+	if used := state.try_get(node) {
+		if voidptr(used.node_) == voidptr(node) {
+			return VisualLineGeometry{node: node, lines: used.line_boxes}
+		}
+		return none
+	}
+	geometry := state.retired_visual_line_geometry_[node.layout_index()] or { return none }
+	if voidptr(geometry.node) != voidptr(node) { return none }
+	return geometry
 }
 
 fn collect_dom_text_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
@@ -106,8 +137,7 @@ fn materialize_dom_text_visual_lines(layout_handle voidptr, geometry_context voi
 	state := unsafe { &LayoutState(geometry_context) }
 	containing := box.containing_block() or { return []dom.VisualLine{} }
 	styled := unsafe { &Node(containing) }.as_node_with_style() or { return []dom.VisualLine{} }
-	used := state.try_get(styled) or { return []dom.VisualLine{} }
-	if voidptr(used.node_) != voidptr(styled) { return []dom.VisualLine{} }
+	if state.visual_line_geometry(styled) == none { return []dom.VisualLine{} }
 	return collect_dom_text_visual_lines(box, state)
 }
 
@@ -264,7 +294,7 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	containing_styled := containing_node.as_node_with_style() or {
 		return []dom.VisualLine{}
 	}
-	used := state.try_get(containing_styled) or { return []dom.VisualLine{} }
+	geometry := state.visual_line_geometry(containing_styled) or { return []dom.VisualLine{} }
 	text_length := if source_node := box.dom_node() {
 		source_node.length()
 	} else {
@@ -273,7 +303,7 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	mut projections := []VisualLineProjection{}
 	mut can_own_following_empty_line := false
 	mut empty_line_offset := 0
-	for physical_line_index, line in used.line_boxes {
+	for physical_line_index, line in geometry.lines {
 		mut matching_fragments := []LineBoxFragment{}
 		for fragment in line.fragments_ {
 			if !fragment.is_fully_truncated() && !fragment.is_block_ellipsis()
@@ -377,7 +407,9 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders DOMLayoutAttachmentIndex, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool, visual_lines_provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState,
+	parent_user_select css.UserSelect, collect_text_chunks bool, mut workspace DOMLayoutAttachmentWorkspace,
+	retain_live_nodes bool, visual_lines_provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -461,10 +493,10 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 		placeholder.set_rendered_text_chunks(chunks)
 	}
-	placeholders.set(box, placeholder)
+	workspace.set(box, placeholder)
 	if metrics := box.as_node_with_style_and_box_model_metrics() {
 		if previous := metrics.continuation_of_node() {
-			if previous_placeholder := placeholders.get(unsafe { &Node(previous) }) {
+			if previous_placeholder := workspace.get(unsafe { &Node(previous) }) {
 				rare = dom.LayoutNodeRareData{ ...rare, continuation_of_node: previous_placeholder }
 				mut mutable_previous_placeholder := unsafe { &dom.LayoutNode(previous_placeholder) }
 				mutable_previous_placeholder.set_continuation_next(placeholder)
@@ -473,7 +505,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	}
 	placeholder.set_rare_data(rare)
 	if containing_block := box.containing_block() {
-		if containing_block_placeholder := placeholders.get(unsafe { &Node(containing_block) }) {
+		if containing_block_placeholder := workspace.get(unsafe { &Node(containing_block) }) {
 			placeholder.containing_block_ = containing_block_placeholder
 		}
 	}
@@ -486,7 +518,8 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			}
 		}
 		if box.is_inline_node() {
-			if geometry := inline_box_absolute_geometry_cached(box, layout_state, mut inline_pieces) {
+			if geometry := inline_box_absolute_geometry_cached(box, layout_state,
+				mut workspace.inline_pieces, workspace.arena) {
 				placeholder.has_geometry_ = true
 				placeholder.border_box_ = dom.Rect{
 					x: geometry.border_rect.x.to_double()
@@ -558,7 +591,8 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes, visual_lines_provider)
+		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks,
+			mut workspace, retain_live_nodes, visual_lines_provider)
 	}
 	return placeholder
 }

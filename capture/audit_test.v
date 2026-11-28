@@ -12,15 +12,28 @@ import time
 
 fn test_normal_window_observation_does_not_enable_screenshot_document_mode() {
 	path := os.join_path(os.temp_dir(), 'vox-normal-window-observation-${os.getpid()}.json')
+	previous_document_only := os.getenv_opt('VOX_CAPTURE_DOCUMENT_ONLY')
+	previous_screenshot := os.getenv_opt('VOX_NATIVE_OBSERVATION_SCREENSHOT')
 	defer {
 		os.unsetenv('VOX_NATIVE_OBSERVATION_DELAY_MS')
 		os.unsetenv('VOX_CAPTURE_AUDIT_PATH')
+		if previous := previous_document_only {
+			os.setenv('VOX_CAPTURE_DOCUMENT_ONLY', previous, true)
+		} else {
+			os.unsetenv('VOX_CAPTURE_DOCUMENT_ONLY')
+		}
+		if previous := previous_screenshot {
+			os.setenv('VOX_NATIVE_OBSERVATION_SCREENSHOT', previous, true)
+		}
 		os.rm(path) or {}
 	}
 	os.setenv('VOX_CAPTURE_AUDIT_PATH', path, true)
+	os.unsetenv('VOX_NATIVE_OBSERVATION_SCREENSHOT')
 	mut document := html.parse_document('<!doctype html><title>Active observation</title><p>Retained content</p>')
 	defer { document.finalize() }
 	mut app := &BrowserApp{document: document}
+	os.setenv('VOX_CAPTURE_DOCUMENT_ONLY', '1', true)
+	assert !app.schedule_document_screenshot('')
 	assert !app.schedule_native_observation()
 	os.setenv('VOX_NATIVE_OBSERVATION_DELAY_MS', '1', true)
 	assert app.schedule_native_observation()

@@ -42,6 +42,31 @@ fn test_html_canvas_defaults_context_pixels_and_serialization() {
 	assert sha256.sum(encoded_pixels) == sha256.sum(bitmap.data)
 }
 
+fn test_canvas_upload_revision_tracks_writes_and_same_size_replacement() {
+	mut canvas := OffscreenCanvas.create(4, 4) or { panic(err) }
+	mut context := canvas.create_2d_context(none) or { panic(err) }
+	bitmap := canvas.bitmap() or { panic('missing canvas surface') }
+	initial := bitmap.upload_revision()
+	assert initial != 0 && bitmap.upload_revision() == initial
+	context.fill_rect(0, 0, 4, 4)
+	filled := bitmap.upload_revision()
+	assert filled != 0 && filled != initial
+	assert voidptr(canvas.bitmap() or { panic('missing painted surface') }) == voidptr(bitmap)
+	image_data := context.create_image_data(1, 1, none) or { panic(err) }
+	context.put_image_data(image_data, 0, 0)
+	patched := bitmap.upload_revision()
+	assert patched != 0 && patched != filled
+	context.clear_rect(0, 0, 4, 4)
+	cleared := bitmap.upload_revision()
+	assert cleared != 0 && cleared != patched
+	assert bitmap.clone().upload_revision() == 0
+	canvas.set_width(4) or { panic(err) }
+	reset := canvas.bitmap() or { panic('missing reset surface') }
+	assert reset.width == bitmap.width && reset.height == bitmap.height
+	assert reset.upload_revision() != 0 && reset.upload_revision() != cleared
+	assert bitmap.upload_revision() == cleared
+}
+
 fn test_tainted_html_canvas_rejects_serialization() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
@@ -242,13 +267,14 @@ fn test_canvas_drawing_requests_a_repaint_of_the_element() {
 		panic(err)
 	}
 	canvas := unsafe { &dom.HTMLCanvasElement(element) }
-	paintable := &dom.Paintable{}
+	mut paintable := &dom.Paintable{}
 	mut canvas_node := unsafe { &dom.Node(element.as_node()) }
 	canvas_node.set_layout_node(&dom.LayoutNode{
 		paintables_: [paintable]
 	})
 	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
-	assert !paintable.needs_repaint
+	assert paintable.needs_repaint
+	paintable.needs_repaint = false
 
 	context.fill_rect(0, 0, 2, 2)
 	assert paintable.needs_repaint

@@ -84,8 +84,8 @@ fn test_typed_array_buffer_initialization_rejects_alignment_before_lengths_and_c
 		assert thrown_value(err).as_object().error_message()?.str() == 'Typed array byte offset 6 is out of range for buffer with length 5'
 	}
 	for size in [uint(1), 2, 4, 8] {
-		validate_typed_array_length(mut vm, uint(0x7fffffff) / size, size)!
-		if _ := validate_typed_array_length(mut vm, uint(0x7fffffff) / size + 1, size) {
+		validate_typed_array_length(mut vm, u64(0x7fffffff) / u64(size), size)!
+		if _ := validate_typed_array_length(mut vm, u64(0x7fffffff) / u64(size) + 1, size) {
 			assert false
 		} else {
 			assert thrown_value(err).as_object().error_message()?.str() == 'Invalid typed array length'

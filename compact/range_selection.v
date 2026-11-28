@@ -84,7 +84,7 @@ fn (mut binding CompactElementQueryBinding) mutation_refresh(scope &dom.Node) js
 	return json2.Any(refreshed)
 }
 
-fn (mut binding CompactElementQueryBinding) attribute_refresh_entry(element &dom.Element) ?json2.Any {
+fn (binding &CompactElementQueryBinding) attribute_refresh_entry(element &dom.Element) ?json2.Any {
 	key := binding.keys[voidptr(element)] or { return none }
 	records, attributes := browserjs.compact_attribute_state(element)
 	return json2.Any({
@@ -106,6 +106,10 @@ fn (mut binding CompactElementQueryBinding) structure_refresh() json2.Any {
 // The attributes of one changed element.
 fn (mut binding CompactElementQueryBinding) element_attribute_refresh(element &dom.Element) json2.Any {
 	binding.note_node_tree_mutation()
+	return binding.element_attribute_snapshot(element)
+}
+
+fn (binding &CompactElementQueryBinding) element_attribute_snapshot(element &dom.Element) json2.Any {
 	if entry := binding.attribute_refresh_entry(element) { return json2.Any([entry]) }
 	return json2.Any([]json2.Any{})
 }

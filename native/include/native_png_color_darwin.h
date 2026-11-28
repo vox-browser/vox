@@ -140,4 +140,10 @@ static int native_image_color_profile(const void *pixels, int width, int height,
     }
 }
 
+static inline int native_image_has_color_profile(const void *pixels, int width, int height)
+{
+    VoxPngColorProfile profile;
+    return native_image_color_profile(pixels, width, height, &profile);
+}
+
 #endif

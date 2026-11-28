@@ -52,6 +52,12 @@ pub:
 	source_range    SourceCodeRange
 }
 
+pub struct ClassSourceSpan {
+pub:
+	start u32
+	end u32
+}
+
 @[heap]
 pub struct Executable {
 pub mut:
@@ -63,14 +69,34 @@ pub mut:
 	local_index_base           u32
 	// Sorted by start_offset with exclusive end offsets.
 	exception_handlers []ExceptionHandlers
-	// Sorted by bytecode_offset.
+	// Source location changes, sorted by bytecode_offset.
 	source_map      []SourceMapEntry
 	bytecode_length u32
 	source_code     ?&SourceCode
 	instructions    []Instruction
 	global_bindings []GlobalBinding
+	class_source_spans []ClassSourceSpan
+	class_field_initializers []&JsFunctionData
 	parsed_source &ParsedSource = unsafe { nil }
 	starting_line u32 = 1
+	// Stable role inside the owning source, used only by the disk code cache.
+	native_cache_scope string
+mut:
+	validation_snapshot ?&ValidationSnapshot
+	validation_successes u32
+	compiler_validation ?CompilerValidation
+	register_name_index ?&FunctionRegisterNameIndex
+	regexp_literal_programs []RegExpLiteralProgram
+	// Appended last: native code compiled against earlier fields keeps its offsets.
+	call_plan ?&FunctionCallPlan
+	property_hints []u32
+	binding_hints  []u32
+	// PropertyName of each string constant (constant_keys.v).
+	constant_keys []PropertyName
+	// Frame slots of each instruction's operands (operand_slots.v).
+	operand_slots             []OperandSlots
+	operand_slot_instructions voidptr
+	operand_slot_bases        [4]u32
 }
 
 pub fn (executable &Executable) get_identifier(index u32) Utf16String {

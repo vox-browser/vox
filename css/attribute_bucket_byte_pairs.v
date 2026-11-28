@@ -87,6 +87,7 @@ fn style_scope_add_attribute_bucket_rules_to_run(style_computer &StyleComputer, 
 	}
 	mut pairs := AttributeBucketBytePairs{}
 	element_namespace_uri := element.namespace_uri()
+	scope := rule_candidate_scope(style_computer, rule_root, shadow_root, element_shadow_root)
 	for rule in rules {
 		if attribute_bucket_rule_is_impossible(rule, name, value, mut pairs) {
 			if attribute_bucket_pair_diagnostics && !attribute_bucket_pair_reported {
@@ -99,7 +100,7 @@ fn style_scope_add_attribute_bucket_rules_to_run(style_computer &StyleComputer, 
 		// collector, without allocating a one-rule array for each survivor.
 		if (rule.slotted || rule.contains_part_pseudo_element || !rule.contains_pseudo_element)
 			&& style_scope_filter_namespace_rule(element_namespace_uri, rule) {
-			style_scope_add_rule_to_run(style_computer, abstract_element, rule, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			style_scope_add_rule_in_scope(style_computer, rule, &scope, mut rules_to_run)
 		}
 	}
 }

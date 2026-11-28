@@ -1319,6 +1319,7 @@ pub fn (mut invalidator StyleInvalidator) invalidate(mut node Node) {
 	invalidator.perform_pending_style_invalidations(mut node, false)
 	invalidator.pending_invalidations.clear()
 	invalidator.active_descendant_invalidations.clear()
+	invalidator.reset_consumed_plan_storage()
 }
 
 fn (mut invalidator StyleInvalidator) add_pending_invalidation(node &Node, reason StyleInvalidationReason, plan InvalidationPlan) {

@@ -30,6 +30,30 @@ fn retained_flow_raster_image_is_ordinary(node &Node) bool {
 	return image.is_image_available() || (!disable_extended_image_trees && image.is_image_pending())
 }
 
+// Same-binary control: an image showing an SVG document keeps the complete
+// builder in a layout tree rebuild.
+const retain_svg_image_tree_rebuilds = os.getenv('VOX_RETAIN_SVG_IMAGE_TREE_REBUILDS') != ''
+
+// An image box that shows a decoded SVG document is constructed like a raster
+// one; ImageBox.reset_for_relayout() refreshes its document and natural size
+// before every layout, and a changed natural size dirties the box
+// (mark_changed_replaced_sizes). Its boxes can be kept across a tree rebuild
+// while the element still decodes to the document the box was built for, so
+// a transition to or from a raster or broken image still rebuilds it.
+fn retained_svg_image_box_is_current(node &Node) bool {
+	if retain_svg_image_tree_rebuilds || node.has_children() || node.is_fixed_position() { return false }
+	box := node.as_image_box() or { return false }
+	if box.uses_content_replacement() { return false }
+	built := box.svg_image_document() or { return false }
+	owner := node.dom_node() or { return false }
+	if !owner.is_html_image_element() { return false }
+	element := owner.as_element() or { return false }
+	current := available_html_svg_image_document(element) or { return false }
+	if voidptr(current) != voidptr(built) { return false }
+	image := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+	return image.is_image_available()
+}
+
 fn report_retained_flow_image_tree(elements []&dom.Element) {
 	if !retained_flow_image_tree_diagnostics { return }
 	if !retained_flow_image_tree_reported && elements.any(it.as_node().is_html_image_element()) {

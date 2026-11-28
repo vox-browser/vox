@@ -120,6 +120,19 @@ fn another_request(req &Request) ssl.SSLConnectConfig {
         self.assertEqual(expected, patch_response(source))
         self.assertEqual(expected, patch_response(expected))
 
+    def test_streaming_brotli_response_keeps_the_production_sink(self):
+        source = ('module http\nimport compress.brotli\n'
+                  'brotli.decompress_with_callback(decoded, callback, voidptr(&sink)) or {\n'
+                  '\t\t\t\t\tdecode_failed = true\n\t\t\t\t\t0\n\t\t\t\t}')
+        patched = patch_response(source)
+        self.assertIn('import x.compress.brotli', patched)
+        self.assertIn('mut expanded := brotli.decompress(decoded)', patched)
+        self.assertIn('callback(expanded, voidptr(&sink))', patched)
+        self.assertIn('unsafe { expanded.free() }', patched)
+        self.assertEqual(patched, patch_response(patched))
+        with self.assertRaisesRegex(RuntimeError, 'Unsupported streaming Brotli'):
+            patch_response(source.replace('decoded, callback', 'decoded, unknown_callback'))
+
     def test_unknown_or_ambiguous_brotli_imports_fail_before_staging(self):
         for source in ('module http\n',
                        'import compress.brotli\nimport compress.brotli\n',

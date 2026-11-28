@@ -50,11 +50,13 @@ pub mut:
 
 pub struct SVGPatternPaintStyle {
 pub:
-	tile_display_list_id string
-	tile_rect            Rect
-	pattern_transform    ?Affine
-	tile_display_list    ?&SVGPatternDisplayList
-	cache_key            u64
+	tile_display_list_id   string
+	tile_rect              Rect
+	pattern_transform      ?Affine
+	tile_display_list      ?&SVGPatternDisplayList
+	cache_key              u64
+	native_bounds_key      u64 // Source bounds read only by the native filter fallback.
+	has_non_scaling_stroke bool // Includes strokes in descendant tiles.
 }
 
 pub type SVGPaintStyle = SVGLinearGradientPaintStyle

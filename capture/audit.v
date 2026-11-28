@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import browserjs
 import crypto.sha256
 import css
 import dom
@@ -32,6 +33,7 @@ fn (mut app BrowserApp) schedule_native_observation() bool {
 	screenshot := os.getenv('VOX_NATIVE_OBSERVATION_SCREENSHOT')
 	mut timer := platform.Timer.create_single_shot(delay, fn [mut app, screenshot] () {
 		active := app.active_browser_tab()
+		if active.schedule_document_screenshot(screenshot) { return }
 		active.write_capture_audit_if_requested()
 		if screenshot != '' { app.application.schedule_native_screenshot(screenshot) }
 	})
@@ -49,12 +51,14 @@ struct CaptureAuditSelector {
 	limit        int = 100
 	attributes   []string
 	layout_depth int
+	input_state  bool
 }
 
 struct CaptureAuditConfig {
 	selectors               []CaptureAuditSelector
 	describe_native_errors  bool
 	describe_paint_geometry bool
+	describe_text_geometry bool
 }
 
 struct CaptureAuditPaintGeometry {
@@ -107,6 +111,7 @@ struct CaptureAuditElement {
 	image           ?CaptureAuditImage
 	media           ?CaptureAuditMedia
 	layout          []CaptureAuditLayout
+	input           ?CaptureAuditInput
 }
 
 struct CaptureAuditMedia {
@@ -176,13 +181,21 @@ struct CaptureAudit {
 	fully_active           bool
 	viewport_width         int
 	viewport_height        int
+	display_device_pixel_ratio f64
+	rendering_device_pixel_ratio f64
+	layout_coordinate_scale f64
+	font_rendering_policy string
 	font_set_present       bool
 	fonts_status           string
 	font_faces             []CaptureAuditFontFace
 	paint_commands         int
 	paint_geometry         []CaptureAuditPaintGeometry
+	text_geometry          []CaptureAuditTextGeometry
 	active_element         CaptureAuditActiveElement
 	javascript_diagnostics []string
+	compiled_javascript_cache ?browserjs.CompiledJavaScriptCacheAudit
+	configured_javascript_engine string
+	javascript_runtime ?browserjs.RuntimeExecutionAudit
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
 	native_reported_errors      []string
@@ -254,6 +267,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 				image:           app.capture_audit_image(element)
 				media:           app.capture_audit_media(element)
 				layout:          app.capture_audit_layout(element, query.layout_depth)
+				input:           capture_audit_input(element, query.input_state)
 			}
 		}
 		selections << CaptureAuditSelection{query.name, query.selector, list.length(), elements}
@@ -324,13 +338,21 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		fully_active:                app.document.is_fully_active()
 		viewport_width:              app.viewport_width
 		viewport_height:             app.viewport_height
+		display_device_pixel_ratio: app.document.display_device_pixel_ratio()
+		rendering_device_pixel_ratio: app.document.rendering_device_pixel_ratio()
+		layout_coordinate_scale: app.document.layout_coordinate_scale()
+		font_rendering_policy: app.document.font_rendering_policy().str()
 		font_set_present:            font_set_present
 		fonts_status:                fonts_status
 		font_faces:                  font_faces
 		paint_commands:              app.paint_commands.len
 		paint_geometry:              paint_geometry
+		text_geometry:               if config.describe_text_geometry { app.capture_audit_text_geometry() } else { []CaptureAuditTextGeometry{} }
 		active_element:              capture_audit_active_element(app.document)
 		javascript_diagnostics:      app.js_messages.clone()
+		compiled_javascript_cache: if app.js_runtime != unsafe { nil } { ?browserjs.CompiledJavaScriptCacheAudit(app.js_runtime.compiled_code_cache_audit()) } else { none }
+		configured_javascript_engine: app.js_engine.str()
+		javascript_runtime: if app.js_runtime != unsafe { nil } { ?browserjs.RuntimeExecutionAudit(app.js_runtime.execution_audit()) } else { none }
 		native_reported_error_count: native_reported_error_count
 		native_reported_errors:      native_reported_errors
 		native_reported_error_information: native_reported_error_information

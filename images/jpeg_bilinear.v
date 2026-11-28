@@ -15,12 +15,12 @@ fn (mut app BrowserApp) rounded_jpeg_paint_image(image_url string) ?&gg.Image {
 		if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium {
 			return none
 		}
-		bytes := app.background_image_bytes(image_url) or { return none }
+		bytes := app.background_image_decode_bytes(image_url) or { return none }
 		if bytes.len < 4 || bytes[0] != 0xff || bytes[1] != 0xd8 || bytes[2] != 0xff { return none }
 		// Retained bitmap wrappers have no cache ID. Sniff before lookup so a
 		// non-JPEG can never reuse a photographic paint variant. Content identity
 		// also invalidates this variant when a resource changes at the same URL.
-		key := '\x00rounded-jpeg-bilinear:${sha256.hexhash(bytes.bytestr())}'
+		key := '\x00rounded-jpeg-bilinear:${sha256.sum(bytes).hex()}'
 		if id := app.background_image_ids[key] { return app.ctx.get_cached_image_by_idx(id) }
 		mut w, mut h, mut size, mut sampling := 0, 0, 0, 0
 		planes := C.native_decode_jpeg_yuv(bytes.data, uint(bytes.len), &w, &h, &size, &sampling)

@@ -3,12 +3,16 @@ module browserjs
 
 import dom
 import html
+import os
 import platform
 import trustedtypes
 import webidl
 
-pub type TrustedTypesReplay = fn (&Runtime) !
-pub type TrustedTypesAttributeSetter = fn (string, ?string, string, trustedtypes.TrustedTypeOrString, bool, string) !string
+// Publishes the compact facade's pending writes before a native attribute
+// write. `full` is false when the facade reported nothing to publish; the
+// callback then only settles pending custom element reactions.
+pub type TrustedTypesReplay = fn (&Runtime, bool) !
+pub type TrustedTypesAttributeSetter = fn (string, ?string, string, trustedtypes.TrustedTypeOrString, bool, string) !HostFunctionReply
 
 @[heap]
 struct TrustedTypesPolicyBinding {
@@ -23,6 +27,10 @@ mut:
 }
 
 __global trusted_types_policy_bindings_ = map[voidptr]&TrustedTypesPolicyBinding{}
+
+// Same-binary control: replay the facade before every native attribute write.
+const retain_trusted_attribute_replays = os.getenv('VOX_RETAIN_TRUSTED_ATTRIBUTE_REPLAYS') != ''
+
 
 struct TrustedTypesCallbackOption {
 	callback ?trustedtypes.PolicyCallback
@@ -127,7 +135,7 @@ fn (mut runtime Runtime) trusted_attribute_exception(failure IError) voidptr {
 
 fn (binding &TrustedTypesPolicyBinding) set_trusted_attribute(args []voidptr) !voidptr {
 	if binding.closed { return error('InvalidStateError: Trusted Types realm is closed') }
-	if args.len != 7 { return error('TypeError: Invalid trusted attribute arguments') }
+	if args.len != 7 && args.len != 8 { return error('TypeError: Invalid trusted attribute arguments') }
 	runtime := binding.runtime
 	work := platform.begin_thread_scratch('trusted attribute transport')
 	defer { work.finish() }
@@ -145,10 +153,15 @@ fn (binding &TrustedTypesPolicyBinding) set_trusted_attribute(args []voidptr) !v
 		'TrustedScriptURL' { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScriptURL{data: value}) }
 		else { return error('TypeError: Invalid private trusted attribute type') }
 	}
+	// The facade passes whether it has pending writes (or canvases, whose
+	// state every replay carries); without them the replay would publish an
+	// empty snapshot.
+	full := retain_trusted_attribute_replays || args.len < 8 || C.JSValueToBoolean(runtime.context, args[7])
 	work.leave()
-	binding.replay(runtime)!
-	result := binding.set_attribute(key, namespace, name, input, namespaced, state)!
-	return runtime.binding_string(result)
+	binding.replay(runtime, full)!
+	reply := binding.set_attribute(key, namespace, name, input, namespaced, state)!
+	defer { reply.finish() }
+	return runtime.binding_string(reply.value)
 }
 
 fn (binding &TrustedTypesPolicyBinding) create_policy(args []voidptr) !voidptr {
@@ -183,12 +196,12 @@ fn (binding &TrustedTypesPolicyBinding) callback_option(value voidptr) !TrustedT
 		defer { owner.mark_document_state_dirty() }
 		result := binding.invoke_callback(value, arguments) or {
 			failure := err
-			binding.replay(owner) or { return failure }
+			binding.replay(owner, true) or { return failure }
 			return failure
 		}
 		// A policy can mutate the DOM, including detaching the very attribute
 		// being assigned. Publish those writes before its native caller resumes.
-		binding.replay(owner)!
+		binding.replay(owner, true)!
 		return result
 	}
 	return TrustedTypesCallbackOption{callback: callback}

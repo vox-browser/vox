@@ -212,7 +212,8 @@ fn test_reopened_child_stream_waits_for_async_and_rejects_stale_container_comple
 	child_parser_lifecycle_control_fetch(mut host, mut messages)
 	mut frame := parent.get_element_by_id('frame') or { panic('missing frame') }
 	loads := &ChildParserContainerLoads{}
-	frame.as_node().add_event_listener_without_options('load', dom.IDLEventListener.create(&dom.CallbackType{
+	target := unsafe { &dom.EventTarget(frame.as_node()) }
+	target.add_event_listener_without_options('load', dom.IDLEventListener.create(&dom.CallbackType{
 		handle_event: fn [loads] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 			mut observed := unsafe { &ChildParserContainerLoads(loads) }
 			observed.count++

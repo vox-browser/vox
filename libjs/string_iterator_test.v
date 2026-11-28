@@ -68,7 +68,8 @@ fn test_string_iterator_records_collect_through_cached_next_and_respect_replacem
 	create_simple_execution_context(mut vm)
 	parent := Object.create(vm.realm(), none)
 	prototype := StringIteratorPrototype.create(mut vm, vm.realm(), parent, none)
-	iterator := StringIterator.create(vm.realm(), utf16_string('hi'), prototype.object)
+	text := Utf16String.from_slice([u16(`h`), u16(`i`), 0, 0xd83d, 0xde00, 0xd800])
+	iterator := StringIterator.create(vm.realm(), text, prototype.object)
 	mut record := get_iterator_direct(mut vm, iterator.object)!
 	mut object := iterator.object
 	replacement := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype,
@@ -76,12 +77,11 @@ fn test_string_iterator_records_collect_through_cached_next_and_respect_replacem
 		0, PropertyName.from_str('next'), none)
 	object.define_direct_property(PropertyName.from_str('next'), Value.from_object(replacement.object), 7)
 	values := iterator_to_list(mut vm, mut record)!
-	// Current V formats a reference's str() inside map() as `&` plus the value.
-	mut texts := []string{}
-	for value in values {
-		texts << value.as_string().str()
+	expected := [[u16(`h`)], [u16(`i`)], [u16(0)], [u16(0xd83d), 0xde00], [u16(0xd800)]]
+	assert values.len == expected.len
+	for index, value in values {
+		assert value.as_string().utf16.data == expected[index]
 	}
-	assert texts == ['h', 'i']
 	assert record.done && iterator.done
 	mut changed := get_iterator_direct(mut vm, iterator.object)!
 	if _ := iterator_step_value(mut vm, mut changed) { assert false } else {

@@ -6,24 +6,356 @@ fewer instructions measure CPU work, rather than elapsed rendering time.
 Results apply to the frozen page and pinned build in each linked report.
 Provisional entries retain unresolved acceptance checks.
 
-**Pixel recheck, 2026-11-14:** Vox does **not** pass pixel equality across
-this catalog. GitHub, Hacker News, Lobsters and Wikipedia are exact in two
-fresh production captures each. vlang.io now has **810 differing pixels** in
-production, down from the earlier 3,228. The recorded-clip fix reaches 341 in
-diagnostics; shared shape/glyph samples now reach **284**, correcting another
-57 pixels without new differences. Production validation of these fixes is
-pending. The remaining 279 JPEG pixels, one heading pixel and four scene pixels
-still fail equality. CNN retains its
-rendering, source/replay and native-repeat failures. Reddit remains unverified
-(missing historical fixture, earlier live HTTP 403). A separate tall-shadow
-control also has a retained baseline repeat failure. See the [current audit,
-capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
+**Pixel recheck, 2026-11-16:** The six available frozen catalog workloads were
+verified against their archived Brave references in production `93adced1`: **CNN, GitHub, Hacker News,
+Lobsters, Wikipedia and Vlang.io are zero pixels twice each**. Catalog-wide
+acceptance remains open. Old Reddit's 2026-11-04 catalog fixture is missing; a fresh
+anonymous Brave navigation to `/r/programming/` redirects to a blocked login
+page, with no posts. CNN's historical source/replay verification also remains
+open. These frozen checks establish no live-site or performance acceptance.
+
+**Uniform PNG follow-up:** a new independently repeated Brave control is now
+exact with half/double scaling and mixed tile sample counts. Its published
+baseline has 1,412 differences; scale folding, own-clip planning, destination
+geometry and retained decode history together reduce that to **zero twice**.
+All **57 workloads/114 captures** repeat; all 56 prior PNGs are unchanged.
+All 30 focused tests pass. Production `93adced1` now confirms `40d8c41ed`:
+58 workloads/116 captures repeat, preserving all 57 prior diagnostic PNGs. See the
+[PNG follow-up](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#uniform-png-scales-decoded-frame-history-and-elliptical-geometry-2026-11-16).
+
+**Expanded forum/news recheck:** fresh full-uBO Brave references agree for
+BBC, The Guardian and The Verge and match their saved source PNGs. Production
+`93adced1` differs by **32,482**, **425** and **262,012** pixels respectively.
+`4924a3389` reduces BBC to **23,822** in diagnostics by retaining odd-height WebP
+chroma; its public control improves **17,320→0**. All 59 diagnostic workloads/
+118 captures repeat, with all 58 prior PNGs unchanged. Guardian also has a non-repeating diagnostic failure (208,511/205,681 pixels),
+retained separately; its archive has no simple VP8 WebP images. These additional
+sites still need production confirmation. See the [expanded audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-png-fix-and-expanded-forum-coverage-2026-11-16).
+
+**SVG shadow follow-up:** `0dd8f7f65` reduces the isolated Verge logo from
+31,489 to **14 pixels twice** and the complete frozen page from 32,035 to
+**14,916 twice**, with maximum channel error two. BBC and Guardian remain exact
+in both diagnostic captures. All **72 workloads/144 captures** repeat, with all
+69 other prior PNGs unchanged. Newly published production `0cae86c8` repeats
+the 14,916-pixel Verge baseline, but lacks the final geometry-enclosure guard.
+Remaining pixels, that guard's production check and live acceptance stay open.
+See the [local SVG filter audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16).
+
+**Rectangular shadow follow-up:** `da4e91d4f` reduces the complete frozen
+Verge viewport from 14,916 to **eight pixels twice**, with maximum channel error
+one. BBC and Guardian remain exact in both captures. All **74 workloads/148
+captures** repeat, preserving all 72 prior PNGs. The isolated card improves
+18,935→1; a new fractional scaled control remains inexact. Production `0cae86c8`
+lacks this fix; the coalesced rebuild and production checks remain pending.
+Pixel-perfect catalog and live-site acceptance remain open. See the
+[rectangular shadow audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#analytic-rectangular-shadows-on-verge-2026-11-17).
+
+**Verge merge follow-up:** `b2f198209` matches Skia's image-filter backing
+allocation and transparent merge border. The complete frozen Verge viewport is
+now **zero pixels twice**, down from eight; the isolated logo and SVG rectangle
+also reach zero. BBC and Guardian remain exact. All **74 workloads/148 captures**
+repeat, preserving the other 72 PNGs. Production confirmation and live-site
+acceptance remain pending. See the
+[merge audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-svg-merge-allocation-and-transparent-borders-2026-11-17).
+
+**Slashdot invalidation follow-up:** `df849839c` refreshes stale rule plans
+before procedural marker attributes change. Frozen Slashdot improves
+**232,234→41,281 pixels twice**; it remains inexact. BBC, Guardian and Verge
+remain zero twice, and all **74 workloads/148 captures** preserve their previous
+PNGs. Newly completed production `cd9930f9` now confirms the preceding Verge
+fix at zero twice, but lacks the new invalidation fix. Its production check,
+remaining Slashdot layout/image differences and catalog-wide acceptance stay
+open. See the [invalidation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-procedural-filter-invalidation-2026-11-17).
+
+**Slashdot spacing follow-up:** `07adc126d` keeps nonempty zero-height lines
+from collapsing margins. The second story now matches Brave's position, reducing
+**41,281→2,325 pixels twice**. BBC, Guardian and Verge remain zero twice; all
+**74 workloads/148 captures** preserve prior PNGs. Transparent image sampling,
+other isolated pixels and production/live checks remain open. See the
+[zero-height line audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-zero-height-line-margins-2026-11-17).
+
+**Slashdot alpha-image follow-up:** `137b739ef` samples uniform near-native
+lossless WebP alpha images from their retained premultiplied rows. Frozen
+Slashdot improves **2,325→429 pixels twice**. BBC, Guardian and Verge remain zero
+twice, and **75 workloads/150 captures** preserve all 74 prior PNGs. The new image
+control improves 2,440→471 pixels, with maximum channel error one. Remaining text
+shadow/edge differences and production/live checks stay open. See the
+[alpha-image audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-transparent-lossless-webp-sampling-2026-11-17).
+
+**Slashdot shadow-alpha follow-up:** `891fe707b` applies retained glyph-shadow
+opacity once. Frozen Slashdot improves **429→390 pixels twice**. The opacity
+property passes, while the new shadow fixture remains inexact at 4,083 pixels.
+All **76 workloads/152 captures** preserve the 75 prior PNGs; BBC, Guardian and
+Verge remain zero twice. Glyph-mask/blur differences and production/live checks
+stay open. See the [shadow opacity audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-retained-shadow-opacity-2026-11-17).
+
+**Slashdot glyph-shadow follow-up:** `12924db35` matches per-glyph mask filtering,
+coverage and alpha blending. Frozen Slashdot improves **390→12 pixels twice**;
+the twelve-case public shadow control improves **4,083→zero twice**. All
+**76 workloads/152 captures** repeat, preserving the other 75 PNGs. Both request
+streams pass; BBC, Guardian and Verge stay zero twice. Production `8dbf43a2`
+confirms those three news pages at zero and repeats Slashdot's earlier 206-pixel
+prototype; final production, remaining edge pixels and live/catalog acceptance
+stay open. See the [glyph-mask audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-per-glyph-shadow-masks-2026-11-17).
+
+**Slashdot viewport-clip follow-up:** `2d65e5d97` retains SVG background viewport
+clips in GPU replay, reducing frozen Slashdot **12→10 pixels twice**. All
+**77 workloads/154 captures** repeat, preserving all 76 prior PNGs. The logo
+region is exact and 9,720 outside-viewport samples pass; the new whole control
+remains inexact at 18 interior edge pixels. BBC, Guardian and Verge remain zero
+twice in diagnostics and production `ad081765`. That production build now
+confirms the committed shadow fix at 12 Slashdot pixels; the new clipping fix's
+production check, remaining pixels and live/catalog acceptance stay open. See
+the [viewport-clip audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-svg-background-viewport-clipping-2026-11-17).
+
+**Slashdot card-sample follow-up:** `5e0e5d4fe` retains partial-card backgrounds,
+borders, headers and rectangular ancestor clips in one GPU pass, reducing frozen
+Slashdot **ten→three pixels twice**. Both new card controls are exact. All
+**79 workloads/158 captures** repeat; 76 previous PNGs are unchanged and the older
+partial-card control improves seven→three. BBC, Guardian and Verge stay exact
+twice; both request streams pass. Production `9060d078` confirms the prior SVG
+viewport fix at ten Slashdot pixels and those three news pages at zero. This
+new fix's production validation, the final icon/underline pixels and live/catalog
+acceptance remain open. See the [card-sample audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-partial-card-sample-ownership-2026-11-17).
+
+**Remaining forum/news screen, November 17:** the exact Verge fix does not
+finish the catalog. A separate diagnostic screen finds open Slashdot, Stack
+Overflow, TechCrunch and Register differences; Engadget's fresh Brave references
+also vary. Pikabu reaches the harness memory cap, Slate's oracle times out, and
+disk-full errors interrupt the remaining captures. No new all-site pass is
+claimed. See the [screen and failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17).
+
+**Source browser audit:** CNN's retained live PNG was captured with Brave
+156.1.98.60; its replay references use 157.1.99.56/57. `86220ffbe` now records
+both replay versions and rejects source/replay acceptance across versions,
+even when pixels match. Missing version evidence also fails. The original
+107,289 differences remain; this check does not attribute them to the upgrade.
+The earlier production baseline retained the PNG control's 1,412 differences.
+Production `93adced1` now matches that control and all six archived site references
+twice. See the
+[version audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#source-and-replay-browser-version-qualification-2026-11-16).
+
+**Fresh Brave reference audit:** `597984bc6` preserves each archive's recorded
+image-decode preparation. Recent readiness calls to `img.decode()` changed CNN
+by 31,766 pixels; preserving its original load/paint protocol reproduces the
+retained reference exactly in two fresh full-uBO Brave processes. CNN's earlier
+diagnostic Vox PNG matches these references too. Fresh Lobsters references expose
+a **101-pixel cross-process repeat failure**: the first matches the retained PNG,
+the second differs. Their text, geometry and image inventories agree. New full-uBO
+acceptance remains open; no reference or tolerance changes. See the
+[decode-preparation audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#preserve-recorded-image-decode-preparation-2026-11-16).
+
+**Lobsters follow-up:** five of eight new default Brave processes differ by
+101 pixels; all eight alternating full-raster controls match. After paint
+instrumentation starts, the five failing frames become exact. The saved failures
+remain intact. Standalone GPU replay predicts every one of the 101 pixels:
+one-sample coverage matches the failures, four-sample coverage matches the
+reference. The post-capture command logs agree after normalizing process-local
+image IDs; they describe the later frame, not the original partial redraw.
+Default Brave repeatability remains open. See the
+[production and raster audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
+
+**Reddit title wrapping:** `130817464` adds six public cases for titles followed
+by unbroken parenthesized domain labels. Two fresh Brave captures agree, and
+two fresh captures from the available production browser are exact. This does
+not verify the missing November 4 page. A read-only Git object scan found no
+match for either recorded HTML hash among 8,850 blobs sized 50–300 kB. See the
+[wrapping check](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#public-reddit-title-domain-wrapping-2026-11-16).
+
+**Recovered Reddit follow-up:** the older 2026-11-01 HTML and its script-free
+derivative are recovered with their exact documented hashes. With reconstructed
+static assets, fresh full-uBO Brave references agree. Filled-marker coverage
+reduces Vox 18→6 pixels; repeated-image and border composition now makes it
+**6→0 twice**. Both public sprite controls are exact. **56 workloads/112 captures**
+repeat exactly, and all 54 prior workload PNGs remain unchanged. This older page
+does not restore the newer catalog fixture or certify its historical resource
+cache. See the
+[sprite composition audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#repeated-reddit-sprite-backgrounds-and-adjacent-borders-2026-11-16).
+
+The latest fixes make CNN **94→73→46→0**: `a6edd14de` preserves fractional SVG
+background layout, `fb71abe2d` renders rounded RGBA in owning-tile coordinates,
+and `9b326517b` folds CPU-resized YUV into its decoded image frame. The final
+**53 workloads/106 fresh captures** repeat byte for byte, with **all 52 non-CNN
+PNGs unchanged** and **46 corrected, zero introduced** in the last step. Seven
+final tile/callback functions and five unchanged GG functions pass. Existing
+references and tolerances are unchanged. See the [decoded-frame audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#decoded-image-frames-for-cpu-resized-planar-uploads-2026-11-16).
+
+Earlier published production **`bbd47035`**, built with literal V `-prod` in one C unit,
+reproduced all **56 accepted diagnostic PNGs in 112 fresh captures**. CNN,
+GitHub, Hacker News, Lobsters, Wikipedia and Vlang are exact twice; the recovered
+older Reddit page also matches two fresh full-uBO Brave captures. This confirms
+the recorded rendering fixes in the sealed production artifact. The current-checkout
+preflight rejected concurrent image-sampling edits, later committed as
+`12fc9e48b`; those newer changes are not validated by this artifact. Its comparison
+instead pins the receipt and verifies 187 rendering-package source buffers plus
+23 feature/native/shader inputs against the accepted diagnostic build. No manual build
+was queued. See the
+[production audit](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-production-confirmation-and-lobsters-sample-history-2026-11-16).
+
+Separate ICC/rescaling and other diagnostic controls retain known differences,
+including the forced four-sample profiled-image case. A tall-shadow control has
+a retained historical repeat failure. Results apply to the pinned builds and
+frozen page bytes in the linked report.
+
+Production also confirms `1e1ffdd4e`: the sampled sRGB WebP control improves
+5,059→588 pixels. Production then confirms `78f1fcf3b`: the complete control
+is exact twice, including the viewport-clipped image, with zero introduced
+differences. Its 45-workload recheck retains all 43 other non-CNN PNGs.
+CNN stays at 165,579 reference differences and fails its production native
+repeat at 1,484 pixels (1,558 in diagnostics); earlier exact-repeat cohorts do
+not clear this recurring failure. The subsequent `de138d5e5` diagnostic
+identifies its cause as an autoplay video bypassing the replay proxy. Native
+playback now uses browser fetching when proxy policy may apply. CNN improves
+to **164,021 differences**, repeats exactly in both focused and 45-workload
+cohorts, and introduces zero new differences. All 44 non-CNN PNGs are unchanged.
+The archive has no MP4 responses: those requests now receive the same 404s
+that Brave receives. No reference or tolerance changed, and the source/replay
+gate remains open. Production `0d895b01` now confirms this correction in 90 fresh
+captures: all 45 pairs repeat exactly and every PNG matches the accepted
+diagnostic build. CNN retains 164,021 differences; the four exact archived
+sites and Vlang's 27 differences remain unchanged.
+The subsequent `7083f309` recheck retains all 45 outputs in 90 fresh captures.
+Independent Brave decoder checks now pin all fifteen YUV planes of five CNN
+images exactly. Arbitrary-scale painting remains unresolved.
+The subsequent `1d32867a2` mask fix makes CNN's headphone icon exact in
+diagnostic captures: **164,021→163,914 differences**, 107 corrected and zero
+introduced. All 44 other existing workload PNGs are unchanged, and all 46
+pairs (including a new mask control) repeat exactly. Focused GG mask tests
+pass against independent Brave samples. Production `395539f0` now confirms
+this correction across all 46 workloads and 92 fresh captures.
+The subsequent `d8e280439` inheritance fix preserves declared CSS variables
+during ancestor updates and restores CNN's Watch dot. Diagnostic captures
+improve CNN to **163,862 differences**: 52 corrected, zero introduced, with
+eight one-level dot-edge differences remaining. All 45 non-CNN PNGs are
+unchanged and all 46 pairs repeat exactly. Production `a7918541` now confirms
+this inheritance correction across 46 workloads and 92 fresh captures; every
+PNG matches the accepted diagnostic.
+The next SVG leaf fix (`d86c965a2`) retains the owning raster tile's sample count
+and makes the Watch dot exact in diagnostics: **163,862→163,854 differences**, eight
+corrected and zero introduced. All 45 other existing PNGs are unchanged, and
+all 47 pairs repeat exactly, including a new exact eight-case control. Its
+production confirmation now passes on `c19672ae`.
+The subsequent `58846cb2e` native continuation fix makes the archived CNN header
+exact: **163,854→163,830 differences**, 24 corrected and zero introduced. The
+existing opaque mask-gap reftest improves 7→0. All 46 other prior PNGs are
+unchanged and all 48 pairs repeat exactly. Production `c19672ae` confirms both
+the SVG sample-count and native continuation fixes in 96 fresh captures; every
+PNG matches the accepted diagnostic. CNN remains at 163,830 differences and
+Vlang at 27. Startup smoke passes. No original reference or tolerance changed.
+The decoder checks now also pin five complete RGBA images against independent
+Brave Canvas2D readbacks, alongside the fifteen exact YUV planes. These decoder
+checks do not establish arbitrary-scale image or catalog-wide equality.
+The subsequent `d1799617e` planar-filtering correction reduces CNN to **88,752
+differences in diagnostics**, from 163,830: 75,105 corrected and 27 introduced
+one-level differences, all within two image rectangles. It filters supported
+power-of-two YUV uploads before RGB conversion. All 47 other PNGs are unchanged
+in 48 workloads/96 repeatable captures, including the four exact archived sites
+and Vlang's 27 pixels. Unsupported scales retain their existing rendering.
+Production `44f9e0ff` now confirms the correction across 48 workloads/96 fresh
+captures: every PNG matches the accepted diagnostic. CNN and the catalog
+still do not pass equality. No original reference or tolerance changes.
+The subsequent `59c259a55` mixed-tile YUV correction reduces CNN to **71,925
+in diagnostics**, from 88,752: 16,841 corrected and 14 introduced one-level
+differences, all inside the Trump image. Its interior improves 15,507→116
+pixels, with remaining channel errors at most one. The sampler now preserves
+each crossed tile's sample count instead of falling back for the whole image.
+All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures.
+Focused V/native-callback checks pass under arena poisoning. Production
+`523e30dd` now confirms this fix and the following mip fix across 48 workloads
+and 96 fresh captures. No original reference or tolerance changes.
+The subsequent `262c477c1` YUV mip correction reduces CNN to **58,062 in
+diagnostics**, from 71,925: 14,488 corrected and 625 introduced differences,
+each new error at most two channel levels. All changes are inside Sullivan's
+image, whose interior maximum error improves 88→2. Supported scaled uploads
+now retain planes through additional GPU mip filtering and final sampling.
+All 47 other PNGs are unchanged across 48 workloads/96 repeatable captures;
+the four exact sites and Vlang's 27 pixels retain their results. Focused GPU
+and native callback checks pass with arena poisoning. Production `523e30dd`
+confirms both fixes: every PNG matches the accepted diagnostic. CNN retains
+58,062 differences in that production build; no original reference or tolerance
+changed.
+The subsequent `5995502f5` near-half YUV420 correction reduces CNN to **54,627
+in diagnostics**, from 58,062: 3,508 corrected and 73 introduced one-level
+differences. All introduced pixels lie inside the peptides image, whose
+interior improves 4,106→1,048 and maximum error 26→1. Three existing one-level
+pixels in other photos also become exact. Full-resolution luma and native
+half-resolution chroma retain their independent sampling grids in one padded
+texture. All 47 other PNGs are unchanged across 48 workloads/96 repeatable
+captures. Focused packing, GPU, callback and preparer checks pass. Production
+`419ad8d7` confirms this slice in 48 workloads/96 fresh captures: every PNG
+matches its accepted diagnostic and every pair repeats. CNN retains 54,627
+differences, Vlang 27, and the four exact archived sites stay exact.
+The subsequent `69e1fce6c` full-plane mip correction reduces CNN to **33,409
+in diagnostics**, from 54,627: 21,724 corrected and 506 introduced one-level
+differences, all inside Sullivan's image. Its interior improves 22,366→2,698
+and maximum error 2→1. Aligned stronger minification now preserves the original
+YUV planes through GPU filtering; generated chroma mip padding repeats the
+averaged edge. All 47 other PNGs are unchanged in 48 workloads/96 repeatable
+captures. Ten focused V test functions pass under arena poisoning, including
+an independent chroma-texture edge regression. Production `99957e17` confirms
+the final fix across 48 workloads/96 fresh captures: every PNG matches its
+accepted diagnostic and every pair repeats. CNN retains 33,409 differences;
+catalog-wide parity remains open, with unchanged references and tolerances.
+The subsequent `5a2157173` profiled-RGB half-upload correction
+reduces CNN to **6,091 in diagnostics**, from 33,409: 27,321 corrected and
+three introduced one-level differences, all inside the ice-cap photo. That
+photo improves **27,345→27**, with maximum error one. Exact half-size uploads
+retain CPU mip averages; a larger upload already used in the same raster scope
+keeps its prior filtering. Stronger reductions retain their existing path.
+All 47 other prior PNGs are unchanged across 50 workloads/100 repeatable
+captures, including two new independent Brave controls. The direct GG controls
+are exact; their browser captures retain 18/24 one-level differences. Four
+focused V test functions pass under arena poisoning. Production `d0fa860e`
+confirms this slice across 50 workloads/100 fresh captures: every PNG matches
+the accepted diagnostic, with all pairs repeating. Full parity remains open.
+The subsequent `f09630164` single-channel plane-resampling fix matches the
+independent Skia oracle byte for byte. All 50 existing PNGs remain unchanged
+in 100 fresh diagnostic captures: CNN stays at 6,091 and Vlang at 27. This
+fix supplies no site-level pixel or instruction credit. Production `c23c0d0a`
+contains the final sampler and confirms all 50 workloads in 100 fresh captures,
+with every PNG matching the diagnostic. The rounded-upload expansion was
+rejected and reverted after its visual checks failed.
+The subsequent `8c2e79555` full-range JPEG plane upload reduces Vlang **27→5**
+in 100 repeatable diagnostic captures across 50 workloads. All 49 other PNGs
+are unchanged. Eighteen focused V functions and the Python staging check pass.
+Production `aa91e7cc` now confirms that five-pixel result in 100 fresh captures.
+The subsequent `293c8abed` Gray8 CPU-plane store correction reduces Vlang **5→4**,
+with its JPEG now exact and zero new differences. All 49 other PNGs are unchanged
+in another 100 repeatable diagnostic captures. Production `4488b888` contains
+Gray8 and an earlier generic clip-elision variant: two fresh captures each confirm
+Vlang at one scene pixel and its isolated JPEG at zero. `6003e7627` then keeps
+clip elision at the CSS boundary and removes its arena allocations. Final
+C/O0 diagnostics reduce Vlang **4→1**, the orbit underlay **3→0**, the complete
+orbit scene **4→1**, and the rotated-ellipse control **19→5**, with zero new
+differences. All 50 workloads/100 captures repeat; 46 PNGs are unchanged.
+The final scoped implementation's production confirmation remains pending.
+The subsequent `bd6bfd3f7` preserves resolved blur support and its origin before
+rotation. Diagnostics make Vlang **1→0**, the clipped orbit **1→0**, and the
+rotated-ellipse control **5→0**. All 50 pairs repeat, with zero introduced pixels
+and 47 other PNGs unchanged; CNN stays at 6,091. Its production confirmation is
+also pending. `eb35365d2` then corrects rounded WebP upload mip selection:
+CNN improves **6,091→5,160**, with 934 corrected and three introduced one-level
+pixels, while all 49 other PNGs remain unchanged in 100 repeatable captures.
+Its maximum channel error drops **58→9**. New production `3c6be545` confirms
+the final CSS gradient source in six focused baseline captures (Vlang one,
+underlay zero, CNN 6,091); it lacks the shadow and mip changes. References and
+tolerances remain unchanged and catalog parity is open.
+The subsequent `6840391d5` supports rounded profiled RGB uploads and preserves
+native-size upload history across raster scopes. CNN improves **5,160→4,788**:
+372 corrected and zero introduced pixels; the profiled train photo is exact and
+the complete viewport's maximum error is now one. All 51 workloads/102 captures
+repeat, all 49 other prior PNGs are unchanged, and the new clipped-image control
+is exact. The rejected first cohort's 371-pixel native-reuse regression is retained
+and corrected in the final source. Production validation remains pending.
+See the
+[current audit, capture scopes and retained failures](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md).
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS§ | Vox GPU canvas FPS§ | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Hacker News homepage | 2026-11-04 | 7 | Median | 1,918,074,453 | 8,056,201,640 | **76.19%** | — | — | 59.8–59.9 frozen | 59.8–59.9 frozen | — | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-1800-attempt-2026-11-04.json), [scrolling](docs/HACKER_NEWS_SCROLLING.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) (RAM 559.7/639.2 MiB and Brave scroll 59.78–59.79 FPS were measured on earlier builds; Vox FPS after the `d96b871e4` fix, see the HN note below) |
 | Lobsters homepage | 2026-11-02 | 7 | Median | 8,082,180,934 | 27,446,683,211 | **70.55%** | 535.2 | 992.4 | 59.0–59.6 live | 58.7–58.9 live (no canvas frames) | — | [Comparison](docs/LOBSTERS_BRAVE_INSTRUCTIONS.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) |
 | Old Reddit /r/programming/ | 2026-11-04 | 7 | Median | 3,060,307,260 | 9,374,680,561 | **67.36%** | — | — | — | — | — | [Reduction](docs/OLD_REDDIT_PROGRAMMING_REDUCTION.md), [ledger](docs/benchmark-results/old-reddit-programming-reduction-2026-11-04.json), [2026-11-03 recheck](docs/OLD_REDDIT_PROGRAMMING_RECHECK.md) (RAM 607.1/608.3 MiB, scroll 39.2–53.0/59.56–59.78 FPS on its earlier fixture; unmeasurable on 2026-11-05: fixture deleted, live page redirects guests to login) |
+| Old Reddit /r/worldnews/ (frozen, scripted, LibJS) | 2026-11-25 | 7 | Median | 5,675,427,972 | 11,734,841,479 | **51.64%** | — | — | — | — | — | [Comparison](docs/OLD_REDDIT_WORLDNEWS_LIBJS.md#published-comparison-before-the-punctuator-change) |
 | CNN homepage (provisional) | 2026-11-01 | 7 | Median | 21,805,542,771 | 32,665,051,523 | **33.25%** | 1,234.0 | 1,031.5 | 33.1–35.9 live | 29.3–35.5 live (no canvas frames) | — | [Comparison](docs/CNN_INSTRUCTIONS.md), [receipts](docs/benchmark-results/cnn-home-thirty-percent-2026-11-01.json), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) |
 | Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 515.1 | 614.2 | 59.2–59.8 live | 59.5–59.7 live | 59.57–59.79 frozen | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05) (frozen-fixture Vox 3.1–3.6 FPS on 2026-11-01) |
 | vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 709.6 | 668.9 | 52.3–54.5 live | 54.8–55.7 live | 59.49–59.79 frozen | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md), [2026-11-05 FPS](docs/OPTIMIZED_SITES_SCROLL_FPS.md#current-build-2026-11-05), [GPU canvas](docs/VLANG_GPU_PASS.md) (frozen-fixture Vox 0.8–0.9 FPS on 2026-11-01) |
@@ -166,9 +498,12 @@ Neither endpoint measures physical display scanout or establishes smooth 60 FPS.
 Percentages compare the two browser summaries in the same row. Means and
 medians are labeled separately; the vlang.io means are rounded. Instruction
 captures use a 1024×768 CSS-pixel viewport. Hacker News uses native capture scale 2;
-the other workloads use scale 1. Old Reddit, Wikipedia and vlang.io use process-tree counters:
-Vox includes capture and teardown, while Brave ends before shutdown. Both sums
-are observed lower bounds because short-lived unsampled children can be missed.
+the other workloads use scale 1. Old Reddit, Wikipedia and vlang.io use
+process-tree counters. The `/r/programming/`, Wikipedia and vlang.io Vox
+counts include capture and teardown. For `/r/worldnews/`, counting ends at
+the first complete document PNG observed for Vox and first complete CDP
+screenshot response for Brave. Both browsers' process-tree counts are
+observed lower bounds because short-lived unsampled children can be missed.
 Hacker News, CNN and Lobsters use exclusive resource-coalition counters through PNG availability,
 including exited helpers and explicitly allowed coalition-owned system services;
 Vox ends before the PNG file write and Brave includes CDP screenshot delivery.
@@ -438,9 +773,10 @@ document PNG exactly. The current target is 20B instructions; see the
 
 ## Forum/news rendering coverage
 
-All 15 sites from the forum/news session, plus Discord, are in the
-[test catalog](Tests/Browser/Brave/forum-news.json); the 15 are also in the
-bookmark-bar catalog.
+The sixteen registered forum/news sites are in the
+[test catalog](Tests/Browser/Brave/forum-news.json). The table also retains the
+earlier blocked Reddit guest-homepage record; Old Reddit programming and the
+separate ChatGPT instruction workload above keep their own evidence.
 The bar retains Wikipedia, Old Reddit `/r/programming/` and vlang.io too, and
 lists Hacker News once. These entries track rendering work; the instruction
 comparisons above retain their own acceptance requirements and measured pages.
@@ -456,17 +792,18 @@ with live scripting, scrolling and whole-site behavior outside that claim.
 | --- | --- | --- |
 | [Hacker News](https://news.ycombinator.com/) | Strict cold source/replay/native pass, 0 pixels on `0f2d286a…`. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
 | [Reddit](https://www.reddit.com/) | Guest homepage blocked by HTTP 403; distinct from the measured Old Reddit programming page above | [Access record](docs/ADBLOCK_POPULAR_SITES.md) |
+| [ChatGPT](https://chatgpt.com/) | Registered guest fixture unavailable; no new guest capture, HTTP result or pixel pass claimed. The separate frozen instruction workload above is not this archive. | [Archive status](Tests/Browser/Brave/sites/chatgpt/status.json) |
 | [Lobsters](https://lobste.rs/) | Strict cold source/replay/native pass, 0 pixels on `0f2d286a…`. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
-| [Slashdot](https://slashdot.org/) | Archived cold viewport: source, independent Brave replay and native all 0 pixels on `204abd9c…`. Complete-cache native/source 0; independent Brave references vary by one radio-button pixel. | [Header fix](docs/FORUM_NEWS_EXPANSION.md#rounded-slashdot-headers-across-square-borders-2026-11-06), [evidence](docs/evidence/slashdot-rounded-header-20261106.json) |
-| [Stack Overflow](https://stackoverflow.com/questions) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
-| [BBC News](https://www.bbc.com/news) | Strict cold source/replay/native pass, 0 pixels on `0f2d286a…`. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
+| [Slashdot](https://slashdot.org/) | November 17: `5e0e5d4fe` reduces diagnostic differences 232,234→three twice vs agreeing Brave replays; source also matches. Production `9060d078` confirms the preceding SVG viewport fix at ten pixels twice. Final production, remaining icon/underline pixels and source/replay version acceptance remain open. Earlier strict zero-pixel checkpoint retained. | [Header fix](docs/FORUM_NEWS_EXPANSION.md#rounded-slashdot-headers-across-square-borders-2026-11-06), [evidence](docs/evidence/slashdot-rounded-header-20261106.json); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17); [card samples](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#slashdot-partial-card-sample-ownership-2026-11-17) |
+| [Stack Overflow](https://stackoverflow.com/questions) | November 17 diagnostic: 3,297 pixels vs agreeing Brave replays; saved source also matches. Source/replay version qualification and rendering parity remain open. | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
+| [BBC News](https://www.bbc.com/news) | November 16: `93adced1` production 32,482 pixels; WebP fixes give zero diagnostic pixels twice; production `ad081765` confirms zero twice on November 17. Earlier strict 0-pixel checkpoint retained. | [Historical checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json); [November 16 recheck](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-png-fix-and-expanded-forum-coverage-2026-11-16); [cropped WebP fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#cropped-webp-plane-sampling-2026-11-16); [full-image atlas fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#even-webp-atlas-clips-and-bbc-rendering-parity-2026-11-16) |
 | [CNN](https://edition.cnn.com/) | Open: source 107,289; independent Brave replays differ 31,766. Vox matches the second replay exactly; strict gate fails. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
-| [The Guardian](https://www.theguardian.com/international) | Archived guest viewport: source, independent Brave replay and native all 0 pixels with cold and complete caches on `1a600896…`. | [Mask-gap fixes](docs/FORUM_NEWS_EXPANSION.md#guardian-header-pictures-across-offscreen-masks-2026-11-06), [evidence](docs/evidence/guardian-compositor-mask-gaps-20261106.json) |
-| [The Verge](https://www.theverge.com/) | Archived guest viewport: source, independent Brave replay and native all 0 pixels with cold and complete caches on `a1f7b333…`. | [Damage-clip fix](docs/FORUM_NEWS_EXPANSION.md#verge-retained-text-and-disjoint-frame-damage-2026-11-06), [evidence](docs/evidence/verge-glyph-damage-clips-20261106.json) |
-| [Pikabu](https://pikabu.ru/) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
-| [TechCrunch](https://techcrunch.com/) | Strict cold source/replay/native pass, 0 pixels on `0f2d286a…`; earlier complete-cache qualification retained. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
-| [Engadget](https://www.engadget.com/) | Open: source 90,833; independent Brave replays differ 17. Vox matches the second replay exactly; strict gate fails. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
-| [The Register](https://www.theregister.com/) | Strict cold source/replay/native pass, 0 pixels on `0f2d286a…`; earlier complete-cache qualification retained. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
-| [Slate](https://slate.com/) | Open source/replay gate; exact RGBA decoder and reduced mixed-photo controls pass. Registered archive unchanged. | [RGBA controls](docs/FORUM_NEWS_EXPANSION.md#slate-rgba-decoder-and-mixed-photo-controls-2026-11-06), [evidence](docs/evidence/slate-rgba-decoder-controls-20261106.json) |
-| [WIRED](https://www.wired.com/) | Earlier first-frame strict passes retained. New cold first Brave/source/replay gap 5,525; Vox matches saved source and second replay exactly. Reference gate remains open. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |
+| [The Guardian](https://www.theguardian.com/international) | November 16: 425 production pixels on `93adced1`; JPEG XL and border fixes give zero diagnostic pixels twice; production `ad081765` confirms zero twice on November 17. Earlier strict 0-pixel checkpoint retained. | [Mask-gap fixes](docs/FORUM_NEWS_EXPANSION.md#guardian-header-pictures-across-offscreen-masks-2026-11-06), [evidence](docs/evidence/guardian-compositor-mask-gaps-20261106.json); [November 16 recheck](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-png-fix-and-expanded-forum-coverage-2026-11-16); [JPEG XL fixes](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#guardian-jpeg-xl-circles-and-remaining-dropdown-border-2026-11-16); [border fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#guardian-solid-border-sample-ownership-2026-11-16) |
+| [The Verge](https://www.theverge.com/) | November 17: shadow, WebP and SVG merge fixes give zero diagnostic pixels twice on the complete frozen viewport. Production `ad081765` confirms zero twice on November 17; live acceptance remains pending. Earlier checkpoints retained. | [Damage-clip fix](docs/FORUM_NEWS_EXPANSION.md#verge-retained-text-and-disjoint-frame-damage-2026-11-06), [evidence](docs/evidence/verge-glyph-damage-clips-20261106.json); [November 16 recheck](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#published-png-fix-and-expanded-forum-coverage-2026-11-16); [shadow color fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-css-shadow-color-2026-11-16); [enlarged WebP fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-enlarged-webp-crops-and-runtime-shader-pins-2026-11-16); [local SVG filter fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-local-svg-drop-shadows-2026-11-16); [exact merge fix](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#verge-svg-merge-allocation-and-transparent-borders-2026-11-17) |
+| [Pikabu](https://pikabu.ru/) | November 17 native archive capture exceeds the harness 3 GiB RSS guard; no valid completed screenshot or new pixel pass. | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
+| [TechCrunch](https://techcrunch.com/) | November 17 diagnostic: 173,970 pixels vs agreeing Brave replays and saved source. Current rendering and source/replay version gates remain open. Earlier strict checkpoint retained. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
+| [Engadget](https://www.engadget.com/) | November 17 diagnostic: Vox/first Brave 66,383 pixels; Brave references vary by 9,363 and source/first Brave by 100,163. Source/replay browser versions differ. Current reference and rendering gates remain open. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
+| [The Register](https://www.theregister.com/) | November 17 diagnostic: six pixels vs agreeing Brave replays and saved source. Source/replay versions differ; current rendering acceptance open. Earlier strict checkpoint retained. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
+| [Slate](https://slate.com/) | November 17 native capture exists, but its full-uBO oracle times out in CDP; no new acceptance. Earlier source/replay gate and RGBA controls retained. | [RGBA controls](docs/FORUM_NEWS_EXPANSION.md#slate-rgba-decoder-and-mixed-photo-controls-2026-11-06), [evidence](docs/evidence/slate-rgba-decoder-controls-20261106.json); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
+| [WIRED](https://www.wired.com/) | November 17 audit is interrupted by disk-full errors; no new pass. Earlier first-frame checkpoints and source/replay gap retained. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json); [November 17 screen](docs/OPTIMIZED_SITES_PIXELS_2026_11_12.md#remaining-forum-and-news-archive-screen-2026-11-17) |
 | [Discord](https://discord.com/) | Vox/saved source 0 on `0f2d286a…` after image-coordinate fixes. Both agreeing Brave replays differ 598 from that source; strict frozen-replay gate remains open. | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md#local-background-origins-and-catalog-controls-2026-11-06), [evidence](docs/evidence/discord-background-local-origin-20261106.json) |

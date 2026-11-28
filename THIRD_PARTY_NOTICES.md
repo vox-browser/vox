@@ -67,3 +67,8 @@ integration includes GPL-3.0-or-later code and the Apache-2.0-licensed
 fast-text-encoding polyfill. These cannot be combined under GPL version 2 only;
 see the [GNU GPL compatibility guidance](https://www.gnu.org/licenses/gpl-faq.html#AllCompatibility).
 Their original notices and source-distribution obligations still apply.
+
+## skcms scalar color conversion
+
+The document color conversion adapts skcms scalar transfer and matrix routines,
+Copyright (c) 2018 Google Inc., under the [BSD 3-Clause license](chromium/licenses/skcms-BSD.txt).

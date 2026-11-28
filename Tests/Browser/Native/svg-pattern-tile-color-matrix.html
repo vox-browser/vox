@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG color matrix in a reusable pattern tile</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="256" height="100" viewBox="0 0 256 100">
+  <defs>
+    <filter id="swap" color-interpolation-filters="sRGB">
+      <feColorMatrix id="matrix" values="0 0 1 0 0  1 0 0 0 0  0 1 0 0 0  0 0 0 1 0"/>
+    </filter>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             patternTransform="scale(.5)">
+      <g filter="url(#swap)">
+        <path d="M0 4h24v12H0Z" fill="red"/>
+        <path d="M8 20h24v8H8Z" fill="blue" fill-opacity=".4"/>
+      </g>
+      <path d="M0 32h40v8H0Z" fill="lime"/>
+    </pattern>
+  </defs>
+  <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+  <path d="M0 50H120" fill="none" stroke="url(#tile)" stroke-width="100"
+        transform="translate(128)"/>
+</svg>
+<script>
+let frame = 0;
+function editMatrix() {
+    if (++frame === 12)
+        document.getElementById('matrix').setAttribute(
+            'values', '0 1 0 0 0  0 0 1 0 0  1 0 0 0 0  0 0 0 1 0');
+    if (frame === 24)
+        document.body.setAttribute('data-color-matrix-ready', '');
+    else
+        requestAnimationFrame(editMatrix);
+}
+requestAnimationFrame(editMatrix);
+</script>

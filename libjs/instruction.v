@@ -70,7 +70,61 @@ pub enum OpCode {
 	end
 	throw_op
 	catch_op
+	get_object_property_iterator
+	property_name_iterator_next
+	get_sync_iterator
+	sync_iterator_next
+	close_sync_iterator
+	close_sync_iterator_throw
+	sync_iterator_step_value
+	sync_iterator_elide
+	sync_iterator_to_array
+	new_class
+	new_class_method
+	define_class_method
+	get_argument
+	get_rest_arguments
+	enter_function_body
+	get_new_target
+	get_super_constructor
+	super_construct
+	record_empty_class_field
+	initialize_empty_static_fields
+	to_string
+	new_class_field_initializer
+	enter_class_private_environment
+	record_private_class_method
+	get_private
+	put_private
+	has_private
+	copy_data_properties
+	super_construct_with_array
+	await_value
+	resume_async
+	get_template_object
+	call_with_array
+	construct_with_array
+	resolve_super_reference
+	get_super_property
+	put_super_property
+	delete_super_property
+	get_super_this
+	record_class_static_block
+	get_binding_reference
+	put_binding_reference
+	import_call
+	generator_start
+	yield_value
+	get_generator_resume_kind
+	get_generator_resume_value
+	yield_iterator_result
+	generator_delegate_step
+	nop
+	enter_object_scope
+	read_binding_reference
 }
+
+const opcode_count = int(OpCode.read_binding_reference) + 1
 
 pub struct Instruction {
 pub mut:
@@ -82,6 +136,7 @@ pub mut:
 	identifier u32
 	target     u32
 	strict     bool
+	annex_b    bool
 	arguments  []Operand
 }
 
@@ -90,6 +145,7 @@ pub:
 	name        Utf16String
 	is_lexical  bool
 	is_constant bool
+	is_annex_b  bool
 }
 
 fn (instruction Instruction) input_count() int {
@@ -97,25 +153,67 @@ fn (instruction Instruction) input_count() int {
 		.add, .sub, .mul, .div, .mod_, .exp, .strict_equals, .strict_inequals, .loose_equals,
 		.loose_inequals, .less_than, .less_than_equals, .greater_than, .greater_than_equals,
 		.bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
-		.in_op, .instance_of, .call {
+		.in_op, .instance_of, .call, .put_binding_reference, .import_call {
 			2
 		}
-		.get_property, .delete_property, .new_regexp, .set_object_literal_prototype {
+		.get_property, .get_private, .has_private, .delete_property, .get_super_property, .delete_super_property, .record_class_static_block, .new_regexp, .set_object_literal_prototype, .close_sync_iterator_throw, .new_class_method, .copy_data_properties, .super_construct_with_array {
 			2
 		}
-		.put_property, .define_property {
+		.put_property, .put_private, .put_super_property, .record_private_class_method, .define_property, .define_class_method, .new_class, .record_empty_class_field, .call_with_array, .construct_with_array, .generator_delegate_step {
 			3
 		}
-		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric,
+		.mov, .unary_plus, .unary_minus, .bitwise_not, .not_op, .typeof_op, .to_numeric, .to_string,
 		.increment, .decrement, .set_binding, .set_variable, .initialize_binding, .jump_if_true,
 		.require_object_coercible, .to_property_key, .copy_object_excluding_keys,
-		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .new_array, .new_function_with_name {
+		.initialize_empty_static_fields,
+		.new_class_field_initializer,
+		.get_super_this, .resolve_super_reference, .enter_object_scope, .read_binding_reference,
+		.get_object_property_iterator, .property_name_iterator_next,
+		.get_sync_iterator, .sync_iterator_next, .close_sync_iterator,
+		.sync_iterator_step_value, .sync_iterator_elide, .sync_iterator_to_array,
+		.jump_if_false, .jump_if_nullish, .end, .throw_op, .construct, .super_construct, .new_array, .new_function_with_name, .await_value, .yield_value, .yield_iterator_result {
 			1
 		}
 		else {
 			0
 		}
 	}
+}
+
+// input_count() and writes_operand() per opcode, computed once from those
+// definitions: the dispatch loop asks both for every instruction, and each is
+// a long match over the opcode.
+struct OpcodeOperandFacts {
+	input_counts []u8
+	writes       []bool
+}
+
+const opcode_operand_facts = compute_opcode_operand_facts()
+
+fn compute_opcode_operand_facts() OpcodeOperandFacts {
+	mut input_counts := []u8{len: opcode_count}
+	mut writes := []bool{len: opcode_count}
+	for index in 0 .. opcode_count {
+		instruction := Instruction{
+			op: unsafe { OpCode(index) }
+		}
+		input_counts[index] = u8(instruction.input_count())
+		writes[index] = instruction.writes_operand()
+	}
+	return OpcodeOperandFacts{
+		input_counts: input_counts
+		writes:       writes
+	}
+}
+
+@[inline]
+fn (instruction &Instruction) dispatch_input_count() int {
+	return int(unsafe { opcode_operand_facts.input_counts[int(instruction.op)] })
+}
+
+@[inline]
+fn (instruction &Instruction) dispatch_writes_operand() bool {
+	return unsafe { opcode_operand_facts.writes[int(instruction.op)] }
 }
 
 fn (instruction Instruction) input_operand(index int) Operand {
@@ -127,13 +225,18 @@ fn (instruction Instruction) input_operand(index int) Operand {
 }
 
 fn (instruction Instruction) writes_operand() bool {
-	return instruction.op !in [.put_property, .define_property, .set_binding, .set_variable, .initialize_binding,
-		.create_mutable_binding, .create_immutable_binding, .enter_scope, .leave_scope, .jump,
-		.require_object_coercible, .set_object_literal_prototype,
+	return instruction.op !in [.nop, .put_property, .put_super_property, .put_binding_reference, .define_property, .define_class_method, .set_binding, .set_variable, .initialize_binding,
+		.put_private, .record_private_class_method, .enter_class_private_environment,
+		.create_mutable_binding, .create_immutable_binding, .enter_scope, .enter_object_scope, .leave_scope, .enter_function_body, .jump,
+		.require_object_coercible, .set_object_literal_prototype, .copy_data_properties,
+		.record_empty_class_field, .record_class_static_block, .initialize_empty_static_fields,
+		.close_sync_iterator, .close_sync_iterator_throw,
+		.sync_iterator_elide, .await_value, .yield_value, .yield_iterator_result, .generator_start,
 		.jump_if_true, .jump_if_false, .jump_if_nullish, .end, .throw_op]
 }
 
 pub fn (executable &Executable) validate(arguments_count u32) ! {
+	if executable.reuse_validation(arguments_count) { return }
 	if executable.instructions.len == 0
 		|| executable.bytecode_length != u32(executable.instructions.len) {
 		return error('Executable has no valid instruction stream')
@@ -150,6 +253,9 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		return error('Executable has an invalid local layout')
 	}
 	for instruction in executable.instructions {
+		if instruction.op == .new_class_field_initializer && instruction.identifier >= u32(executable.class_field_initializers.len) {
+			return error('Class field initializer index out of range')
+		}
 		for index in 0 .. instruction.input_count() {
 			operand := instruction.input_operand(index)
 			operand.slot(executable, arguments_count, false)!
@@ -158,20 +264,24 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		if instruction.op == .get_callee_and_this {
 			instruction.rhs.slot(executable, arguments_count, true)!
 		}
-		if instruction.op in [.call, .construct, .copy_object_excluding_keys] {
+		if instruction.op in [.call, .construct, .super_construct, .copy_object_excluding_keys, .enter_class_private_environment] {
 			for argument in instruction.arguments {
 				argument.slot(executable, arguments_count, false)!
 			}
 		}
-		if instruction.op in [.new_function, .new_function_with_name] && (executable.parsed_source == unsafe { nil }
+		if instruction.op in [.new_function, .new_function_with_name, .new_class_method] && (executable.parsed_source == unsafe { nil }
 			|| instruction.identifier >= u32(executable.parsed_source.function_table.entries.len)) {
 			return error('Function index out of range')
 		}
-		if instruction.op in [.get_binding, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
+		if instruction.op == .new_class && instruction.identifier >= u32(executable.class_source_spans.len) { return error('Class source index out of range') }
+		if instruction.op == .define_class_method && instruction.identifier > 2 { return error('Invalid class method kind') }
+		if instruction.op == .record_empty_class_field && instruction.identifier > 1 { return error('Invalid class field kind') }
+		if instruction.op == .record_private_class_method && (instruction.identifier > 2 || instruction.target > 1) { return error('Invalid private class method kind') }
+		if instruction.op in [.get_binding, .get_binding_reference, .get_callee_and_this, .typeof_binding, .delete_binding, .set_binding, .set_variable, .initialize_binding, .create_mutable_binding, .create_immutable_binding]
 			&& instruction.identifier >= u32(executable.identifier_table.len) {
 			return error('Identifier out of range')
 		}
-		if instruction.op in [.jump, .jump_if_true, .jump_if_false, .jump_if_nullish]
+		if instruction.op in [.jump, .jump_if_true, .jump_if_false, .jump_if_nullish, .property_name_iterator_next, .sync_iterator_next]
 			&& instruction.target >= executable.bytecode_length {
 			return error('Jump target out of range')
 		}
@@ -185,4 +295,5 @@ pub fn (executable &Executable) validate(arguments_count u32) ! {
 		}
 		previous_end = handler.end_offset
 	}
+	executable.remember_validation(arguments_count)
 }

@@ -93,3 +93,35 @@ fn test_math_sum_precise_expansion_and_invalid_items_close_iterator() {
 	else { assert thrown_value(err).as_object().error_kind()? == .type_error }
 	assert log.closed == 1
 }
+
+fn math_methods_eval(source string) !string {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse(source, vm.realm(), 'math-methods.js', unsafe { nil })!
+	return vm.run_with_limits(mut script, ExecutionLimits{ max_instructions: 200000 })!.as_string().str()
+}
+
+// Each method is its own native function: definition order, lengths, names,
+// special values, NaN propagation and the variadic conversion order.
+fn test_math_methods_keep_order_lengths_and_special_values() {
+	assert math_methods_eval('Object.getOwnPropertyNames(Math).filter(function(k){return typeof Math[k]==="function"}).map(function(k){return k+Math[k].length+(Math[k].name===k?"":"!")}).join()')! == 'abs1,random0,sqrt1,floor1,ceil1,round1,max2,min2,trunc1,sin1,cos1,tan1,pow2,exp1,expm11,sign1,clz321,acos1,acosh1,asin1,asinh1,atan1,atanh1,log1p1,cbrt1,atan22,fround1,f16round1,hypot2,imul2,log1,log21,log101,sinh1,cosh1,tanh1,sumPrecise1'
+	source := 'var fails=[];function check(label,actual,expected){if(!Object.is(actual,expected))fails.push(label+"="+actual)}
+check("abs",Math.abs(-0),0);check("ceil",Math.ceil(-0.5),-0);check("floor",Math.floor(-0),-0);check("floor2",Math.floor(-2.5),-3);
+check("sign",Math.sign(-0),-0);check("sign2",Math.sign(-3),-1);check("trunc",Math.trunc(-0.7),-0);check("round-",Math.round(-0.4),-0);
+check("round2.5",Math.round(2.5),3);check("round-2.5",Math.round(-2.5),-2);check("rounds",Math.round("7"),7);
+check("log0",Math.log(0),-Infinity);check("log2",Math.log2(8),3);check("log10",Math.log10(1),0);check("log10z",Math.log10(-0),-Infinity);check("log-1",Math.log(-1),NaN);
+check("cos",Math.cos(Infinity),NaN);check("cos0",Math.cos(-0),1);check("cosh",Math.cosh(-Infinity),Infinity);check("sqrt-0",Math.sqrt(-0),-0);check("sqrt-1",Math.sqrt(-1),NaN);check("sqrt",Math.sqrt(16),4);
+check("exp",Math.exp(-Infinity),0);check("exp0",Math.exp(-0),1);check("expm1",Math.expm1(-Infinity),-1);check("atanh",Math.atanh(1),Infinity);check("atanh2",Math.atanh(-2),NaN);check("tanh",Math.tanh(-Infinity),-1);
+check("fround",Math.fround(5.05),5.050000190734863);check("clz32",Math.clz32(0),32);check("clz32b",Math.clz32(-1),0);check("sin",Math.sin(-0),-0);check("tan",Math.tan(Infinity),NaN);
+check("asin",Math.asin(2),NaN);check("acos",Math.acos(1),0);check("acosh",Math.acosh(0.5),NaN);check("acosh1",Math.acosh(1),0);check("asinh",Math.asinh(-0),-0);check("atan",Math.atan(-Infinity),-Math.PI/2);
+check("cbrt",Math.cbrt(-Infinity),-Infinity);check("log1p",Math.log1p(-1),-Infinity);check("log1p2",Math.log1p(-2),NaN);check("sinh",Math.sinh(-0),-0);check("f16",Math.f16round(-0),-0);check("f16b",Math.f16round(65520),Infinity);
+check("max0",Math.max(),-Infinity);check("min0",Math.min(),Infinity);check("max",Math.max(1,"5",3),5);check("min",Math.min(4,-0,0),-0);check("hypot0",Math.hypot(),0);check("hypot-0",Math.hypot(-0),0);check("hypot",Math.hypot(-3,4),5);
+check("pow",Math.pow(2,10),1024);check("atan2",Math.atan2(-0,-1),-Math.PI);check("imul",Math.imul(3,-4),-12);check("random",typeof Math.random(),"number");
+["abs","sqrt","floor","ceil","round","trunc","sin","cos","tan","exp","expm1","sign","acos","acosh","asin","asinh","atan","atanh","log1p","cbrt","fround","f16round","log","log2","log10","sinh","cosh","tanh","pow","atan2","max","min","hypot"].forEach(function(k){check(k+"(NaN)",Math[k](NaN),NaN);if(k!=="max"&&k!=="min"&&k!=="hypot")check(k+"()",Math[k](),NaN)});
+var log=[];function v(x){return {valueOf:function(){log.push(x);return x}}}
+check("maxNaN",Math.max(v(1),v(NaN),v(3)),NaN);check("minNaN",Math.min(v(NaN),v(-1)),NaN);check("hypotInf",Math.hypot(v(NaN),v(Infinity),v(2)),Infinity);check("hypotNaN",Math.hypot(v(3),v(NaN),v(4)),NaN);
+check("order",log.join(),"1,NaN,3,NaN,-1,NaN,Infinity,2,3,NaN,4");
+var thrown;try{Math.min(NaN,{valueOf:function(){throw 7}})}catch(e){thrown=e}check("throw",thrown,7);
+fails.join(";")'
+	assert math_methods_eval(source)! == ''
+}

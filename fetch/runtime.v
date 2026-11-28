@@ -683,6 +683,10 @@ pub fn set_sec_fetch_mode_header(mut request Request) {
 }
 
 pub fn set_sec_fetch_site_header(mut request Request) {
+	if request.is_navigation_request() && request.user_agent_initiated {
+		request.header_list.append(http.Header{ name: 'Sec-Fetch-Site', value: 'none' })
+		return
+	}
 	mut value := 'same-origin'
 	for url in request.url_list {
 		origin := request.origin.origin or {
@@ -708,7 +712,7 @@ pub fn set_sec_fetch_user_header(mut request Request) {
 }
 
 pub fn append_fetch_metadata_headers_for_request(mut request Request) {
-	if securecontexts.is_url_potentially_trustworthy(request.url()) != .potentially_trustworthy {
+	if securecontexts.is_url_potentially_trustworthy(request.current_url()) != .potentially_trustworthy {
 		return
 	}
 	set_sec_fetch_dest_header(mut request)
@@ -1622,26 +1626,6 @@ pub fn http_redirect_fetch(params &FetchParams, response &Response, host &FetchH
 		request.referrer_policy = referrercore.to_string(policy)
 	}
 	return main_fetch(params, host)
-}
-
-pub struct IncrementalReadLoopReadRequest {
-pub:
-	body          &Body
-	process_chunk BodyChunkCallback @[required]
-	process_end   BodyEndCallback   @[required]
-	process_error BodyErrorCallback @[required]
-}
-
-pub fn (request &IncrementalReadLoopReadRequest) on_chunk(chunk []u8) {
-	request.process_chunk(chunk.clone())
-}
-
-pub fn (request &IncrementalReadLoopReadRequest) on_close() {
-	request.process_end()
-}
-
-pub fn (request &IncrementalReadLoopReadRequest) on_error(reason string) {
-	request.process_error(reason)
 }
 
 pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost, create_response_body_transfer_lease CreateResponseBodyTransferLease) &FetchController {

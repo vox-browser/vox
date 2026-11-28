@@ -5,6 +5,7 @@
 module loader
 
 import dom
+import platform
 import urlpattern
 import x.json2
 
@@ -137,6 +138,10 @@ pub fn (rule &SiteCompatibilityRule) exposes_experimental_interface(name string)
 }
 
 pub fn (rule &SiteCompatibilityRule) matches(url dom.URL) bool {
+	// Each URLPattern component allocates a regex VM stack and captures.
+	// Header and feature policy lookups keep only the match decision.
+	scratch := platform.begin_thread_scratch('site compatibility match')
+	defer { scratch.finish() }
 	serialized := url.serialize()
 	for pattern in rule.compiled_patterns_ {
 		if pattern.test(serialized, none) or { false } {

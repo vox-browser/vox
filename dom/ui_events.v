@@ -67,6 +67,7 @@ pub enum EventInterface {
 	// members travel with the base Event as CSSEventMembers.
 	transition_event
 	animation_event
+	custom_event
 }
 
 // UIEvents/KeyCode.h: Key_Escape = 0x1B.

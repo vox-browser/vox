@@ -38,7 +38,7 @@ fn selection_direction_from_string(value ?string) SelectionDirection {
 }
 
 fn normalize_form_newlines(value string) string {
-	return value.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
+	return value.replace('\r\n', '\n').replace('\r', '\n')
 }
 
 fn form_element_input_type(element &dom.Element) string {
@@ -110,9 +110,16 @@ fn add_associated_element_to_form(form &dom.HTMLFormElement, element &dom.Elemen
 	mutable_form.associated_elements_ << element
 }
 
+pub interface ConstraintValidationOwner {
+mut:
+	update_validity()
+}
+
 @[heap]
 pub struct FormAssociatedElement {
 	dom.FormAssociatedElement
+mut:
+	constraint_validation_owner_ ?ConstraintValidationOwner
 pub:
 	element &dom.Element
 pub mut:
@@ -196,7 +203,11 @@ pub fn (_ &FormAssociatedElement) form_associated_element_was_moved(_old_parent 
 pub fn (_ &FormAssociatedElement) form_associated_element_attribute_changed(_name string, _old_value ?string, _value ?string, _namespace ?string) {}
 
 pub fn (mut control FormAssociatedElement) set_form(form ?&dom.HTMLFormElement) {
+	if current := control.form_ {
+		if target := form { if voidptr(current) == voidptr(target) { return } }
+	} else if form == none { return }
 	if old_form := control.form_ {
+		if mut model := html_form_element_model_for(old_form) { model.forget_past_names_for_element(control.element) }
 		remove_associated_element_from_form(old_form, control.element)
 	}
 	control.form_ = form
@@ -453,11 +464,17 @@ pub fn (control &FormAssociatedElement) is_candidate_for_constraint_validation()
 	if control.element.local_name() == 'textarea' && control.element.has_attribute('readonly') {
 		return false
 	}
+	if control.custom_element_ && control.element.has_attribute('readonly') { return false }
 	return true
 }
 
+fn (control &FormAssociatedElement) refresh_constraint_validation() {
+	if mut owner := control.constraint_validation_owner_ { owner.update_validity() }
+}
+
 pub fn (control &FormAssociatedElement) satisfies_its_constraints() bool {
-	return !(control.suffering_from_being_missing() || control.suffering_from_a_type_mismatch() || control.suffering_from_a_pattern_mismatch() || control.suffering_from_being_too_long() || control.suffering_from_being_too_short() || control.suffering_from_an_underflow() || control.suffering_from_an_overflow() || control.suffering_from_a_step_mismatch() || control.suffering_from_bad_input() || control.suffering_from_a_custom_error())
+	control.refresh_constraint_validation()
+	return !(control.missing_ || control.type_mismatch_ || control.pattern_mismatch_ || control.too_long_ || control.too_short_ || control.underflow_ || control.overflow_ || control.step_mismatch_ || control.bad_input_ || control.suffering_from_a_custom_error())
 }
 
 pub fn (control &FormAssociatedElement) novalidate_state() bool {
@@ -474,38 +491,47 @@ pub fn (control &FormAssociatedElement) novalidate_state() bool {
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_being_missing() bool {
+	control.refresh_constraint_validation()
 	return control.missing_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_a_type_mismatch() bool {
+	control.refresh_constraint_validation()
 	return control.type_mismatch_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_a_pattern_mismatch() bool {
+	control.refresh_constraint_validation()
 	return control.pattern_mismatch_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_being_too_long() bool {
+	control.refresh_constraint_validation()
 	return control.too_long_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_being_too_short() bool {
+	control.refresh_constraint_validation()
 	return control.too_short_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_an_underflow() bool {
+	control.refresh_constraint_validation()
 	return control.underflow_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_an_overflow() bool {
+	control.refresh_constraint_validation()
 	return control.overflow_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_a_step_mismatch() bool {
+	control.refresh_constraint_validation()
 	return control.step_mismatch_
 }
 
 pub fn (control &FormAssociatedElement) suffering_from_bad_input() bool {
+	control.refresh_constraint_validation()
 	return control.bad_input_
 }
 
@@ -523,6 +549,21 @@ pub fn (control &FormAssociatedElement) is_mutable() bool {
 
 pub fn (mut control FormAssociatedElement) set_custom_validity(message string) {
 	control.custom_validity_error_message = normalize_form_newlines(message)
+	mut node := control.element.as_node()
+	node.invalidate_style(.style_change)
+	// A control also contributes to the validity of its form and fieldsets.
+	if form := control.form() {
+		mut form_node := unsafe { &dom.Element(form) }.as_node()
+		form_node.invalidate_style(.style_change)
+	}
+	mut ancestor := control.element.parent_element()
+	for {
+		element := ancestor or { break }
+		if element.is_html_element() && element.local_name() == 'fieldset' {
+			mut ancestor_node := element.as_node(); ancestor_node.invalidate_style(.style_change)
+		}
+		ancestor = element.parent_element()
+	}
 }
 
 @[heap]
@@ -615,9 +656,19 @@ fn form_utf16_to_string(units []u16) string {
 	return runes.string()
 }
 
+// The C++ base calls these virtual owner operations during range replacement.
+// Traced records preserve that dispatch without an escaping V callback.
+pub interface TextControlValueOwner {
+mut:
+	set_dirty_value_flag(bool)
+	set_relevant_value(string) !
+}
+
 @[heap]
 pub struct FormAssociatedTextControlElement {
 	dom.InputEventsTarget
+mut:
+	value_owner_ ?TextControlValueOwner
 pub:
 	control &FormAssociatedElement
 pub mut:
@@ -836,8 +887,9 @@ fn (text &FormAssociatedTextControlElement) selection_or_range_applies() bool {
 }
 
 pub fn (mut text FormAssociatedTextControlElement) select() {
-	if !text.selection_or_range_applies() {
-		return
+	if text.control.element.local_name() == 'input' {
+		model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(text.control.element) })
+		if !model.select_applies() || !model.has_selectable_text() { return }
 	}
 	text.set_the_selection_range(0, max_u32, .none, .dom)
 }
@@ -922,10 +974,11 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text_with_source(re
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: setRangeText does not apply')
 	}
+	text.dirty_value_flag = true
+	if mut owner := text.value_owner_ { owner.set_dirty_value_flag(true) }
 	if start > end {
 		return error('IndexSizeError: start must be less than or equal to end')
 	}
-	text.dirty_value_flag = true
 	mut value_units := form_string_to_utf16(text.relevant_value_)
 	replacement_units := form_string_to_utf16(replacement)
 	actual_start := if int(start) > value_units.len { value_units.len } else { int(start) }
@@ -935,9 +988,9 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text_with_source(re
 	mut result := value_units[..actual_start].clone()
 	result << replacement_units
 	result << value_units[actual_end..]
-	text.relevant_value_ = form_utf16_to_string(result)
-	mut control := text.control
-	control.value_ = text.relevant_value_
+	value := form_utf16_to_string(result)
+	if mut owner := text.value_owner_ { owner.set_relevant_value(value)! }
+	else { text.set_relevant_value(value) }
 	new_end := actual_start + replacement_units.len
 	mut selection_start := old_selection_start
 	mut selection_end := old_selection_end

@@ -322,3 +322,97 @@ fn test_path_descriptors_draw_like_gg_canvas() {
 	assert draw_path(pixels.data, test_width, test_height, test_width * 4, 1, &path) == 0
 	assert pixels == backdrop()
 }
+
+// Whole-surface shape draws (box shadows) repeat over the same backdrop on
+// every frame of a load: an identical draw copies the stored result, and a
+// changed backdrop byte, descriptor or backdrop flag draws again.
+fn test_identical_whole_shape_draws_reuse_their_result() {
+	context() or {
+		eprintln('skipping: ${err}')
+		return
+	}
+	C.vox_leaf_cache_clear()
+	shape := base_shape()
+	mut hits := C.vox_leaf_cache_counter(0)
+	mut first := backdrop()
+	assert draw(first.data, test_width, test_height, test_width * 4, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits
+	mut second := backdrop()
+	assert draw(second.data, test_width, test_height, test_width * 4, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits + 1
+	assert second == first
+	assert second != backdrop()
+	hits++
+	mut changed := backdrop()
+	changed[test_width * 4 * 7 + 9] ^= 0x10
+	assert draw(changed.data, test_width, test_height, test_width * 4, 1, &shape) == 1
+	mut recolored := base_shape()
+	recolored.red = 200
+	mut recolored_pixels := backdrop()
+	assert draw(recolored_pixels.data, test_width, test_height, test_width * 4, 1, &recolored) == 1
+	assert recolored_pixels != first
+	mut cleared := backdrop()
+	assert draw(cleared.data, test_width, test_height, test_width * 4, 0, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits
+	// A padded pitch reads and stores only the surface's pixels.
+	pitch := test_width * 4 + 16
+	mut padded := []u8{len: pitch * test_height, init: 0x5a}
+	source := backdrop()
+	for y in 0 .. test_height {
+		for x in 0 .. test_width * 4 { padded[y * pitch + x] = source[y * test_width * 4 + x] }
+	}
+	assert draw(padded.data, test_width, test_height, pitch, 1, &shape) == 1
+	assert C.vox_leaf_cache_counter(0) == hits + 1
+	for y in 0 .. test_height {
+		for x in 0 .. test_width * 4 { assert padded[y * pitch + x] == first[y * test_width * 4 + x] }
+		for x in test_width * 4 .. pitch { assert padded[y * pitch + x] == 0x5a }
+	}
+}
+
+// A whole-tile leaf (a filtered shape) holds only the leaf's backdrop rows in
+// an otherwise transparent tile. Its rectangle of the result equals draw() on
+// that tile, and an identical later draw copies it from the leaf raster cache.
+fn test_tile_leaves_match_whole_tile_draws_and_reuse_their_rectangle() {
+	context() or {
+		eprintln('skipping: ${err}')
+		return
+	}
+	C.vox_leaf_cache_clear()
+	shape := base_shape()
+	tile_width, tile_height := 96, 64
+	x, y, width, height := 20, 12, test_width, test_height
+	source := backdrop()
+	mut tile := []u8{len: tile_width * tile_height * 4}
+	for row in 0 .. height {
+		for column in 0 .. width * 4 {
+			tile[((y + row) * tile_width + x) * 4 + column] = source[row * width * 4 + column]
+		}
+	}
+	mut moved := shape
+	moved.matrix[2] += f32(x)
+	moved.matrix[5] += f32(y)
+	assert draw(tile.data, i32(tile_width), i32(tile_height), i32(tile_width * 4), 1, &moved) == 1
+	mut expected := []u8{len: width * height * 4}
+	for row in 0 .. height {
+		for column in 0 .. width * 4 {
+			expected[row * width * 4 + column] = tile[((y + row) * tile_width + x) * 4 + column]
+		}
+	}
+	hits := C.vox_leaf_cache_counter(0)
+	mut first := source.clone()
+	assert draw_tile_leaf(mut first, x, y, width, height, tile_width, tile_height, 1, &moved) == 1
+	assert first == expected
+	assert C.vox_leaf_cache_counter(0) == hits
+	mut second := source.clone()
+	assert draw_tile_leaf(mut second, x, y, width, height, tile_width, tile_height, 1, &moved) == 1
+	assert C.vox_leaf_cache_counter(0) == hits + 1
+	assert second == expected
+	// Another backdrop byte or position is another draw.
+	mut changed := source.clone()
+	changed[100] ^= 0x10
+	assert draw_tile_leaf(mut changed, x, y, width, height, tile_width, tile_height, 1, &moved) == 1
+	mut shifted := source.clone()
+	assert draw_tile_leaf(mut shifted, x + 1, y, width, height, tile_width, tile_height, 1, &moved) == 1
+	assert C.vox_leaf_cache_counter(0) == hits + 1
+	assert draw_tile_leaf(mut shifted, x, y, width, height, width - 1, tile_height, 1, &moved) == 0
+}

@@ -6,6 +6,9 @@ struct ModuleImportBinding {
 	name Utf16String
 	target &SourceTextModule
 	target_name Utf16String
+mut:
+	// The target binding's index in the target module's environment, once read.
+	target_index int = -1
 }
 
 pub fn (environment &ModuleEnvironment) has_binding(mut vm VM, name Utf16String) !(bool, ?int) {
@@ -42,7 +45,7 @@ fn (mut module_record SourceTextModule) initialize_module_imports(mut vm VM,mut 
 					environment.create_immutable_binding(mut vm,entry.local_name,true)!
 					environment.initialize_binding(mut vm,entry.local_name,Value.from_object(actual.get_module_namespace(mut vm)!),.normal)!
 				} else {
-					environment.imports << ModuleImportBinding{entry.local_name,resolution.target,resolution.name}
+					environment.imports << ModuleImportBinding{name: entry.local_name, target: resolution.target, target_name: resolution.name}
 				}
 			} else {
 				environment.create_immutable_binding(mut vm,entry.local_name,true)!

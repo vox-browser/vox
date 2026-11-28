@@ -4,7 +4,17 @@ import browserjs
 import dom
 import html
 import page
+import platform
 import time
+
+fn test_idle_event_loop_turns_do_not_retain_empty_step_one_snapshots() {
+	mut loop := html.EventLoop.create(.worker)
+	loop.process()
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 512 { loop.process() }
+	assert loop.task_generation() == 513
+	$if prealloc { assert platform.thread_arena_usage().used == before }
+}
 
 // Tests deliver actual source rendering opportunities, then drain their source
 // task queue. They never call author callbacks or the Window driver directly.

@@ -22,6 +22,8 @@ def main():
                         help='cross-compilation sysroot containing mingw64/')
     parser.add_argument('--console', action='store_true',
                         help='keep a console entry point for startup diagnostics')
+    parser.add_argument('--opengl', action='store_true',
+                        help='build the Sokol OpenGL window with GG canvas SVG support')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     environment = dict(os.environ, V_MACOS_V3_NO_FALLBACK='1')
@@ -57,8 +59,8 @@ def main():
          args.javascriptcore_dll.resolve()])
     run([sys.executable, repo / 'tools/build_linux_native.py', '--os', 'windows'])
     modules = subprocess.check_output(
-        [sys.executable, str(repo / 'tools/prepare_ui2.py'), compiler],
-        cwd=repo, env=environment, text=True).strip()
+        ['sh', str(repo / 'tools/run_v_tool.sh'), 'prepare_ui2'],
+        cwd=repo, env=dict(environment, V_BIN=compiler), text=True).strip()
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     # Third-party object caches do not fingerprint every transitive header.
@@ -67,12 +69,14 @@ def main():
         environment['VTMP'] = scratch
         # Production embedding is required when the executable leaves this
         # checkout. Keep the C optimization level unchanged for this build path.
-        flags = ['-b', 'c', '-prod', '-no-prod-options']
+        flags = ['-b', 'c', '-prod', '-no-prod-options', '-d', 'vox_gg_svg']
         if args.console:
             flags += ['-subsystem', 'console']
+        if not args.opengl:
+            flags += ['-d', 'sokol_d3d11']
         run([compiler, '-memory-limit', '10G', *flags, '-enable-globals', '-gc', 'none',
              '-os', 'windows', '-arch', 'amd64', '-cc', environment['CC'],
-             '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11',
+             '-d', 'ui2_custom_rendering',
              '-path', f'{repo}|{modules}|@vmodules|@vlib', '-o', output, '.'])
     if output.read_bytes()[:2] != b'MZ':
         raise SystemExit('Compiler did not produce a Windows executable')

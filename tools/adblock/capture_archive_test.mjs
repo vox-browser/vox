@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, captureEncodedResponseCache, freezeDocument, imageAccept, imageResponseDelivery, installCSSOMAuthorRecorder, reuseArchivedResponseHeaders} from './capture_archive.mjs';
 
-const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
+const ready = snapshot => ({ready:'complete',fonts:'loaded',image_decode_preparation:'visible-image-decode',images:[],styles:[],rects:[],...snapshot});
 
 test('image delivery keeps final-response observation order when finish timestamps run earlier',()=>{
     const response={requestId:'image',timestamp:10,type:'Image',
@@ -404,7 +404,8 @@ test('archive replays encoded images and the frozen main body with original resp
                 response:{url:e.url, status:e.status||200, headers:e.headers}}},
             ...(e.id === 'unfinished' ? [] : [{method:'Network.loadingFinished', params:{requestId:e.id}}]),
         ]),
-        async evaluate() { return ready({html, url, base:url, text:'text '.repeat(300),
+        async evaluate(expression) { return ready({html, url, base:url, text:'text '.repeat(300),
+            image_decode_preparation:expression.includes('"load-and-paint"') ? 'load-and-paint' : 'visible-image-decode',
             width:1024, height:768, scale:1, removed_scripts:3}); },
         async send(method, args) {
             if (method === 'Page.captureScreenshot') return {data:encoded.toString('base64')};
@@ -413,10 +414,12 @@ test('archive replays encoded images and the frozen main body with original resp
             return {body:entry.body, base64Encoded:entry.id === 'image'};
         },
     };
-    const result = await captureArchive(page, directory, 'https://example.com/');
+    const result = await captureArchive(page, directory, 'https://example.com/',
+        {imageDecodePreparation:'load-and-paint'});
     assert.equal(result.resources, 2);
     assert.equal(result.failed_body_captures, 0);
     assert.equal(result.source_pixels.stable,true);
+    assert.equal(result.source_pixels.image_decode_preparation,'load-and-paint');
     assert.equal(result.source_pixels.sha256,crypto.createHash('sha256').update(encoded).digest('hex'));
     const sourceState=JSON.parse(await fs.readFile(path.join(directory,'live.png.json'),'utf8'));
     assert.equal(sourceState.stable,true);

@@ -86,3 +86,29 @@ fn test_retained_block_paint_keeps_transforms_filters_and_image_resources_on_ful
 		block_paint_test_compare(document, ['special'])
 	}
 }
+
+fn percentage_flex_line_markup(text string) string {
+	return '<!doctype html><style>body{margin:0;font:16px/20px sans-serif}#row{display:flex;width:300px}#item{flex:none;width:120px;border:1px solid}#item p{margin:4px}#fill{height:50%;background:#ccc}#other{flex:1;min-width:0;border:1px solid}</style><body><div id="row"><div id="item"><p>one</p><p>two words here</p><div id="fill">fill</div></div><div id="other">${text}</div></div></body>'
+}
+
+// A percentage height resolves against a stretched flex item's definite
+// height. When a sibling grows the flex line, the item's block layout stays
+// current while the percentage box gets a new height; its retained paint box
+// must not be rebased from the old size.
+fn test_retained_block_paint_follows_percentage_heights_in_a_growing_flex_line() {
+	mut document := html.parse_document(percentage_flex_line_markup('other'))
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 400)
+	mut other := document.get_element_by_id('other') or { panic('other') }
+	mut text := other.as_node().first_child() or { panic('other text') }
+	for value in ['other changed', 'other changed again, with many more words that wrap onto several further lines',
+		'short'] {
+		text.set_node_value(value) or { panic(err) }
+		document.update_layout(.debugging)
+		mut fresh := html.parse_document(percentage_flex_line_markup(value))
+		_ = layout_document_typed_in_viewport(fresh, 400, 400)
+		expected := (fresh.record_display_list() or { panic('fresh paint') }).dump()
+		fresh.finalize()
+		assert (document.record_display_list() or { panic('paint') }).dump() == expected, value
+	}
+}

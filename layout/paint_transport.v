@@ -709,6 +709,8 @@ pub:
 	path_components []PaintPath
 	mask_operations []PaintMaskOperation
 	cache_key       u64
+	// The mask resource before visual-context and nested viewport projection.
+	mask_raster_key u64
 	scope_id        u64
 	mask_luminance  bool
 	// The accumulated transform at the point where this clip node appears.
@@ -767,10 +769,28 @@ pub enum PaintMaskOperationKind {
 	path
 }
 
+pub struct PaintSVGMaskFilter {
+pub:
+	effect       ?painting.SVGSourceColorFilter
+	bounds       ?painting.Rect
+	source_alpha bool
+}
+
+pub fn (filter &PaintSVGMaskFilter) fills_clear_pixels() bool {
+	effect := filter.effect or { return false }
+	return effect.fills_clear_pixels()
+}
+
+pub fn (filter &PaintSVGMaskFilter) needs_source_color() bool {
+	effect := filter.effect or { return false }
+	return !effect.preserves_alpha()
+}
+
 pub struct PaintMaskOperation {
 pub:
 	kind                   PaintMaskOperationKind
 	opacity                f64 = 1.0
+	filter                 &PaintSVGMaskFilter = unsafe { nil }
 	image_url              string
 	image_rect             LayoutRect
 	image_position_x       string = '50%'
@@ -793,6 +813,9 @@ pub:
 	fill_opacity           f64 = 1.0
 	stroke_opacity         f64 = 1.0
 	stroke_width           f64
+	stroke_dasharray       []f32
+	stroke_dashoffset      f32
+	non_scaling_stroke     bool
 	stroke_linecap         int
 	stroke_linejoin        int
 	stroke_miterlimit      f64 = 4.0
@@ -1208,7 +1231,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				height: shadow.shadow_rect.height
 				color: painting_color_string(shadow.color)
 				srgb_color_data: shadows[shadows.len - 1 - index].srgb_color_data
-				force_dark_role: .foreground
+				force_dark_role: .background
 				force_dark_role_set: true
 				opacity: opacity
 				blur: shadow.blur_radius
@@ -1229,7 +1252,7 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				height: shadow.outer_shadow_rect.height
 				color: painting_color_string(shadow.color)
 				srgb_color_data: shadows[shadows.len - 1 - index].srgb_color_data
-				force_dark_role: .foreground
+				force_dark_role: .background
 				force_dark_role_set: true
 				opacity: opacity
 				blur: shadow.blur_radius
@@ -1260,7 +1283,7 @@ fn append_inset_shadow_commands(mut commands []PaintCommand, shadows []BoxShadow
 			width: width
 			height: height
 			color: shadow.color.serialize()
-			force_dark_role: .foreground
+			force_dark_role: .background
 			force_dark_role_set: true
 			opacity: opacity
 			radius: clamp_radius(radius, width, height)
@@ -2507,8 +2530,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				force_dark_role_set: true
 			}
 		}
-		if bitmap := box.media().canvas_bitmap {
-			if canvas_paintable := box.media().canvas_paintable {
+		if canvas_paintable := box.media().canvas_paintable {
+			bitmap := if canvas_paintable.element != unsafe { nil } {
+				html.html_canvas_element_present_existing_surface(canvas_paintable.element)
+			} else {
+				box.media().canvas_bitmap
+			}
+			if bitmap != none {
 				commands << PaintCommand{
 					kind: 'draw_canvas'
 					x: box.x
@@ -3138,6 +3166,9 @@ fn (b &BlockBox) refresh_selected_paint_phase_command_cache_with_debug(entries [
 	// remain unchanged, while refreshed entries receive exact-sized storage.
 	unpublished := b.record_paint_commands_for_entries(entries, selected, mut recorder)
 	release_paint_commands(unpublished)
+	if paint_phase_refresh_diagnostics {
+		report_paint_phase_refresh(entries, selected, phase_commands)
+	}
 	for index in 0 .. entries.len {
 		if selected[index] {
 			entry_valid[index] = true
@@ -3662,6 +3693,9 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			width: fragment.width
 			height: fragment.height
 			color: layer.color.serialize()
+			srgb_color_data: layer.srgb_color_data
+			force_dark_role: .none_
+			force_dark_role_set: true
 			text: span_text
 			font_size: fragment.font_size
 			bold: fragment.bold
@@ -5498,20 +5532,26 @@ fn resolved_computed_transform_matrix(computed &css.ComputedProperties, border_l
 	}
 	origin := computed.transform_origin()
 	context := computed.length_resolution_context()
-	origin_x := origin.x.to_px(context, css.CSSPixels.nearest_value_for(border_width)).to_double()
-	origin_y := origin.y.to_px(context, css.CSSPixels.nearest_value_for(border_height)).to_double()
+	origin_x := resolved_transform_origin_offset(origin.x, context, border_width, precise_transform_origin_diagnostic)
+	origin_y := resolved_transform_origin_offset(origin.y, context, border_height, precise_transform_origin_diagnostic)
 	return affine_around_origin(matrix, border_left + origin_x, border_top + origin_y)
 }
 
 fn resolved_computed_transform_4x4_matrix(computed &css.ComputedProperties, border_left f64,
 	border_top f64, border_width f64, border_height f64) css.FloatMatrix4x4 {
+	return resolved_computed_transform_with_origin_precision(computed, border_left, border_top,
+		border_width, border_height, precise_transform_origin_diagnostic)
+}
+
+fn resolved_computed_transform_with_origin_precision(computed &css.ComputedProperties, border_left f64,
+	border_top f64, border_width f64, border_height f64, precise bool) css.FloatMatrix4x4 {
 	matrix := css.resolve_computed_transform_4x4_matrix(computed, border_width, border_height) or {
 		return css.FloatMatrix4x4.identity()
 	}
 	origin := computed.transform_origin()
 	context := computed.length_resolution_context()
-	origin_x := border_left + origin.x.to_px(context, css.CSSPixels.nearest_value_for(border_width)).to_double()
-	origin_y := border_top + origin.y.to_px(context, css.CSSPixels.nearest_value_for(border_height)).to_double()
+	origin_x := border_left + resolved_transform_origin_offset(origin.x, context, border_width, precise)
+	origin_y := border_top + resolved_transform_origin_offset(origin.y, context, border_height, precise)
 	return css.translation_matrix_4x4(origin_x, origin_y, 0).multiply(matrix).multiply(css.translation_matrix_4x4(-origin_x, -origin_y, 0))
 }
 

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -26,6 +27,46 @@ from http_h2_wakeup import patch_h2_wakeup, patch_h2_mux_read_chunk
 from http_receive_buffer import patch_receive_buffer
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class VToolLauncherTest(unittest.TestCase):
+    def test_releases_generated_c_before_starting_tool(self):
+        with tempfile.TemporaryDirectory(prefix='vox-v-launcher-test-') as directory:
+            scratch = Path(directory)
+            driver = scratch / 'v'
+            tool = '''#!/usr/bin/env python3
+import json, os, sys
+from pathlib import Path
+
+path = Path(sys.argv[0])
+assert not path.with_suffix('.c').exists()
+assert 'V_MACOS_V3_SOURCE_MANIFEST' not in os.environ
+assert 'V_MACOS_V3_C_ERROR_DIR' not in os.environ
+print(json.dumps({'path': str(path), 'args': sys.argv[1:]}))
+sys.exit(7)
+'''
+            driver.write_text('''#!/usr/bin/env python3
+import os, sys
+from pathlib import Path
+
+assert sys.argv[1:6] == ['-skip-running', '-b', 'c', '-memory-limit', '10G']
+assert os.environ['VFLAGS'] == ''
+assert 'V_MACOS_V3_SOURCE_MANIFEST' not in os.environ
+assert 'V_MACOS_V3_C_ERROR_DIR' not in os.environ
+output = Path(sys.argv[sys.argv.index('-o') + 1])
+output.with_suffix('.c').touch()
+output.write_text(''' + repr(tool) + ''')
+output.chmod(0o755)
+''')
+            driver.chmod(0o755)
+            env = dict(os.environ, V_BIN=str(driver), TMPDIR=str(scratch), VFLAGS='-b js',
+                       V_MACOS_V3_SOURCE_MANIFEST='1', V_MACOS_V3_C_ERROR_DIR=str(scratch/'manifest'))
+            result = subprocess.run(['sh', str(ROOT/'tools/run_v_tool.sh'), 'browser_backend', 'space arg'],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 7, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report['args'], ['space arg'])
+            self.assertFalse(Path(report['path']).parent.exists())
 
 
 class VBuildMigrationTest(unittest.TestCase):
@@ -86,11 +127,46 @@ class VBuildMigrationTest(unittest.TestCase):
         for path in (expected / 'gg/canvas').rglob('*'):
             if path.is_file():
                 self.assertEqual((modules / path.relative_to(expected)).read_bytes(), path.read_bytes(), str(path))
+        self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
+
+    def test_sokol_transfer_staging_preserves_other_adapters(self):
+        modules = Path(self.run_tool('prepare_ui2', self.compiler))
+        header = (self.vlib.parent / 'thirdparty/sokol/sokol_gfx.h').read_text()
         if os.uname().sysname == 'Darwin':
-            actual_header = Path((modules / 'sokol/c/declaration.c.v').resolve().parent / 'sokol_gfx.h')
-            self.assertEqual(actual_header.read_text(), metal.patch_header(
-                (self.vlib.parent / 'thirdparty/sokol/sokol_gfx.h').read_text(),
-                ROOT / 'native/include/native_gg_metal_transfer.h'))
+            header = metal.patch_header(header, ROOT / 'native/include/native_gg_metal_transfer.h')
+            header = metal.patch_shader_compilation(header, ROOT / 'native/include/native_gg_metal_shaders.h')
+            header = metal.patch_pipeline_compilation(header, ROOT / 'native/include/native_gg_metal_pipelines.h')
+        actual_header = (modules / 'sokol/c/declaration.c.v').resolve().with_name('sokol_gfx.h')
+        self.assertEqual(actual_header.read_text(), metal.patch_d3d11_transfers(
+            header, ROOT / 'native/include/native_gg_d3d11_transfer.h'))
+        window_adapter = modules / 'sokol/sapp/sapp.c.v'
+        window_adapter.parent.mkdir(parents=True, exist_ok=True)
+        window_adapter.write_text('separately staged Sokol window code')
+        self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
+        self.assertEqual(window_adapter.read_text(), 'separately staged Sokol window code')
+
+    def test_canvas_gpu_staging_matches_python(self):
+        modules = Path(self.run_tool('prepare_ui2', self.compiler))
+        canvas = modules / 'gg/canvas'
+        expected = self.work / 'python-gpu-canvas'
+        expected.mkdir()
+        patches = json.loads((ROOT / 'tools/buildtools/gg_patches.json').read_text())
+        gpu_groups = ('prepare_gg_windows_canvas', 'prepare_gg_d3d11_canvas',
+                      'prepare_gg_gl_msaa_resolve', 'prepare_gg_gl_image')
+        groups = (*gpu_groups, 'prepare_gg_document_gradient_hole', 'prepare_gg_conical_gradient')
+        for name in {operation['file'] for group in groups for operation in patches[group]}:
+            target = expected / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((self.vlib / 'gg/canvas' / name).read_bytes())
+        ui.stage_document_surface(expected)
+        for group in gpu_groups:
+            for operation in patches[group]:
+                name = operation['file']
+                with self.subTest(group=group, file=name):
+                    self.assertIn(operation['new'], (expected / name).read_text())
+                    self.assertIn(operation['new'], (canvas / name).read_text())
+        for name in ('vox_d3d11_canvas_windows.v', 'vox_d3d11_canvas_rrect_windows.v'):
+            self.assertEqual((canvas / name).read_bytes(), (expected / name).read_bytes())
         self.assertEqual(modules, Path(self.run_tool('prepare_ui2', self.compiler)))
 
     def test_linux_modules_match_existing_adapters(self):
@@ -124,6 +200,35 @@ class VBuildMigrationTest(unittest.TestCase):
         subprocess.run([self.driver, 'v_match_scope_cc', str(source)], env=environment, check=True)
         self.assertEqual(source.read_text(), patch_compiler(original)[0])
         self.assertEqual(receipt.read_text(), 'patched\n')
+
+    def test_match_scope_bootstrap_keeps_prod_optimization_without_lto(self):
+        bootstrap = self.work / 'scope-bootstrap'
+        bootstrap.mkdir()
+        transform = bootstrap / 'vlib/v/transform/transform.v'
+        transform.parent.mkdir(parents=True)
+        transform.write_text('fn (mut t Transformer) lower_remaining_matches_in_used_fns() {\n}\n')
+        compiler = bootstrap / 'v'
+        compiler.write_text('''#!/bin/sh
+set -eu
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        run) dirname "$0"; exit ;;
+        -o) shift; cp "$0" "$1"; printf 'patched\\n' > "$VOX_MATCH_SCOPE_RECEIPT"; exit ;;
+    esac
+    shift
+done
+exit 1
+''')
+        compiler.chmod(0o755)
+        environment = dict(self.environment, XDG_CACHE_HOME=str(bootstrap / 'cache'),
+                           V_BIN=self.compiler)
+        for preparer in ([self.driver, 'prepare_v_match_scope'],
+                         [sys.executable, ROOT / 'tools/prepare_v_match_scope.py']):
+            cached = Path(subprocess.check_output([*preparer, compiler], env=environment, text=True).strip())
+            self.assertNotEqual(cached, compiler)
+            command = json.loads((cached.parent / 'build.log').read_text().splitlines()[-1])['command']
+            start = command.index('-prod')
+            self.assertEqual(command[start:start + 4], ['-prod', '-no-prod-options', '-cflags', '-O2'])
 
     def test_windows_dependency_notices_do_not_pollute_shell_setup_stdout(self):
         import re

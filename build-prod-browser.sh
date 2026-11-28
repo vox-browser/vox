@@ -21,6 +21,7 @@ set -eu
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
+#   VOX_BUILD_INPUT_COMPRESSOR  absolute path to afsctool for compact receipts and staging
 #   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
 #   VOX_V8=1                  experimental: compile with -d vox_v8, which implements the
 #                             JavaScriptCore C API on V8 (see docs/V8_ENGINE.md)
@@ -142,6 +143,17 @@ mkdir -p "$binary_dir" "$resources_dir"
 # Failed compiler jobs can leave Mach-O/object scratch directories beside their
 # output. Keep those outside the app so they cannot invalidate bundle signing.
 compiler_output_root=${VOX_BUILD_SCRATCH_DIR:-$build_dir}
+input_compressor=${VOX_BUILD_INPUT_COMPRESSOR:-}
+if [ -n "$input_compressor" ]; then
+    case "$input_compressor" in
+        /*) ;;
+        *) echo 'VOX_BUILD_INPUT_COMPRESSOR needs an absolute path' >&2; exit 1 ;;
+    esac
+    if [ ! -f "$input_compressor" ] || [ ! -x "$input_compressor" ]; then
+        echo "Compiler input compressor is not executable: $input_compressor" >&2; exit 1
+    fi
+    compiler_output_root=${VOX_BUILD_SCRATCH_DIR:-${TMPDIR:-/tmp}}
+fi
 mkdir -p "$compiler_output_root"
 compile_dir=$(mktemp -d "$compiler_output_root/compiler-output.XXXXXX")
 # Failed builds exit through set -e; remove their scratch as well.
@@ -149,18 +161,20 @@ trap 'rm -rf "$compile_dir"' EXIT
 echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
-# Keep the codec and metadata beside the binary snapshot. Non--prod V embeds
-# otherwise reopen checkout files, which may change after this bundle is built.
+# Both executables use this resource set. Clone unchanged blocks on macOS
+# volumes that support it so staging does not allocate a second snapshot.
 for adblock_asset in engine.snapshot.bin engine.snapshot.json.gz engine.js.gz; do
     adblock_resource="adblock.$adblock_asset"
     if [ "$adblock_asset" = engine.snapshot.bin ]; then
         adblock_resource=adblock.snapshot.bin
     fi
     if ! cmp -s "$repo_dir/adblock/$adblock_asset" "$resources_dir/$adblock_resource"; then
-        adblock_resource_tmp=$(mktemp "$resources_dir/.adblock-resource.XXXXXX")
-        cp "$repo_dir/adblock/$adblock_asset" "$adblock_resource_tmp"
+        adblock_resource_dir=$(mktemp -d "$resources_dir/.adblock-resource.XXXXXX")
+        adblock_resource_tmp="$adblock_resource_dir/$adblock_resource"
+        cp -c "$repo_dir/adblock/$adblock_asset" "$adblock_resource_tmp"
         chmod 644 "$adblock_resource_tmp"
         mv -f "$adblock_resource_tmp" "$resources_dir/$adblock_resource"
+        rmdir "$adblock_resource_dir"
     fi
 done
 
@@ -251,8 +265,13 @@ fi
 # V drivers without manifest defaults need the backend passed explicitly.
 v_backend=${VOX_BUILD_BACKEND:-$(v_tool browser_backend "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
+if [ -n "$input_compressor" ] && { [ "$v_backend" != c ] || [ "$c_mode" != single ]; }; then
+    echo 'Compact compiler inputs require the single-unit C build' >&2
+    exit 1
+fi
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
-    -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
+    -d vox_production -d vox_ui2 -d vox_packaged_adblock_assets \
+    -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
 fi
@@ -329,6 +348,7 @@ fi
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
+    -d vox_packaged_adblock_assets \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then
@@ -356,6 +376,8 @@ v_tool production_source_manifest compile --root "$repo_dir" \
     --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
     --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini"
+# Keep the parsed-source proof and release the temporary worker translation.
+rm -f "${helper_tmp}.c"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$helper_tmp" >/dev/null
@@ -407,6 +429,12 @@ fi
 if [ ! -f "$compile_dir/Vox" ]; then
     generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
     mkdir -p "$generated_dir"
+    generated_source="$generated_dir/Vox.c"
+    if [ -n "$input_compressor" ]; then
+        input_scratch="$compile_dir/frozen-input-work"
+        mkdir "$input_scratch"
+        generated_source="$input_scratch/Vox.c"
+    fi
     export V_MACOS_V3_SOURCE_MANIFEST=1
     export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/browser-sources"
     compile_browser_v() {
@@ -417,14 +445,17 @@ if [ ! -f "$compile_dir/Vox" ]; then
     if [ -n "$extra_ldflags" ]; then
         compile_browser_v "$@" \
             -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_source" "$repo_dir"
     else
         compile_browser_v "$@" \
             -cflags "$extra_cflags" \
-            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+            -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_source" "$repo_dir"
     fi
     set -- --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
         --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" --output "$compile_dir/Vox"
+    if [ -n "$input_compressor" ]; then
+        set -- "$@" --input-scratch "$input_scratch" --input-compressor "$input_compressor"
+    fi
     if [ -f "$VOX_BUILD_RECEIPT_DIR/worker-sources/v_sources" ] || \
        [ -f "$VOX_BUILD_RECEIPT_DIR/browser-sources/v_sources" ]; then
         # A compiler without manifest support retains the whole-tree check.
@@ -441,10 +472,13 @@ if [ ! -f "$compile_dir/Vox" ]; then
     fi
     v_tool freeze_browser_compile "$@"
 fi
-mv -f "$compile_dir/Vox" "$binary_dir/Vox"
-v_tool localize_bundle_rpaths "$binary_dir/Vox" "$build_dir"
-v_tool build_harfbuzz --check-executable "$binary_dir/Vox"
-
+executable="$compile_dir/Vox"
+if [ -z "$input_compressor" ]; then
+    mv -f "$executable" "$binary_dir/Vox"
+    executable="$binary_dir/Vox"
+fi
+v_tool localize_bundle_rpaths "$executable" "$build_dir"
+v_tool build_harfbuzz --check-executable "$executable"
 
 # JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.
 rm -f "$binary_dir/libVoxJPEGXL.dylib"
@@ -477,10 +511,14 @@ else
     rm -f "$binary_dir/libVoxJSCOnV8.dylib"
 fi
 
-if command -v codesign >/dev/null 2>&1; then
-    # Current macOS JavaScriptCore requires this entitlement for its JIT,
-    # including when the embedding app is ad-hoc signed.
-    codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$bundle_dir" >/dev/null
+# Current macOS JavaScriptCore requires this entitlement for its JIT,
+# including when the embedding app is ad-hoc signed.
+entitlements="$repo_dir/packaging/Vox.entitlements.plist"
+if [ -n "$input_compressor" ]; then
+    v_tool stage_compact_browser --input-compressor "$input_compressor" \
+        --executable "$executable" --bundle "$bundle_dir" --entitlements "$entitlements"
+elif command -v codesign >/dev/null 2>&1; then
+    codesign --force --sign - --entitlements "$entitlements" "$bundle_dir" >/dev/null
 fi
 rm -rf "$compile_dir"
 

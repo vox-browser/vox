@@ -6,6 +6,10 @@ import math
 // Rounded opaque backgrounds still need their outer shadows' samples alive
 // until the border has been drawn. Independent leaf resolves round corners.
 fn rounded_outer_group_end(commands []layout.PaintCommand, layers []int, start int) int {
+	return rounded_outer_group_end_with_underlay(commands, layers, start, false)
+}
+
+fn rounded_outer_group_end_with_underlay(commands []layout.PaintCommand, layers []int, start int, allow_underlay bool) int {
 	if start < 0 || start >= commands.len || layers.len != commands.len
 		|| commands[start].kind != 'paint_outer_box_shadow' {
 		return start
@@ -15,7 +19,7 @@ fn rounded_outer_group_end(commands []layout.PaintCommand, layers []int, start i
 		bg++
 	}
 	if bg + 1 >= commands.len || commands[bg].kind !in ['fill_rect', 'fill_rounded_rect']
-		|| commands[bg].underlays_next || commands[bg + 1].kind != 'paint_uniform_border' {
+		|| (commands[bg].underlays_next && !allow_underlay) || commands[bg + 1].kind != 'paint_uniform_border' {
 		return start
 	}
 	if chromium_rounded_background_pair_end(commands, layers, bg) != bg + 2 { return start }
@@ -46,45 +50,7 @@ fn (mut app BrowserApp) draw_rounded_outer_group(start int, page_y f32, window_h
 	if app.paint_colors.color(app.paint_commands[end - 1].color, 1).a != 255 { return start }
 	app.flush_rounded_rect_underlay(0, page_y, window_height)
 	mut shapes := []C.VoxGraphiteShape{}
-	for i in start .. end {
-		c := &app.paint_commands[i]
-		fill := app.paint_colors.color(c.color, 1)
-		precise := chromium_retained_paint_color(*c)
-		mut radii := c.corner_radii
-		if c.kind == 'fill_rect' {
-			radii = layout.BoxRadii{
-				top_left:     layout.CornerRadius{c.radius, c.radius}
-				top_right:    layout.CornerRadius{c.radius, c.radius}
-				bottom_left:  layout.CornerRadius{c.radius, c.radius}
-				bottom_right: layout.CornerRadius{c.radius, c.radius}
-			}
-		}
-		shadow := c.kind == 'paint_outer_box_shadow'
-		mut shape := C.VoxGraphiteShape{
-			rect:            document_shadow_rect(c.x, c.y, c.width, c.height, radii)
-			fill:            if shadow {
-				if c.blur > 0 { 10 } else { 9 }
-			} else if i == end - 1 {
-				0
-			} else {
-				1
-			}
-			thickness:       f32(if shadow { c.blur } else { c.stroke_width })
-			anti_alias:      1
-			force_msaa:      1
-			red:             fill.r
-			green:           fill.g
-			blue:            fill.b
-			alpha:           fill.a
-			has_float_color: i32(precise != none)
-			float_color:     precise or { [f32(0), 0, 0, 0]! }
-		}
-		if shadow {
-			b := c.box_shadow()
-			shape.underlay_rect = document_shadow_rect(b.content_rect.x, b.content_rect.y, b.content_rect.width, b.content_rect.height, b.content_radii)
-		}
-		shapes << shape
-	}
+	for i in start .. end { shapes << app.rounded_outer_shape(i) }
 	m := normalized_paint_transform(app.paint_commands[start].transform)
 	matrix := [f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), page_y + f32(m[5])]!
 	return if C.native_draw_document_shape_group(shapes.data, i32(shapes.len), &matrix[0], f32(app.ctx.width), f32(app.ctx.height), 0, page_y, 0) != 0 {
@@ -92,4 +58,57 @@ fn (mut app BrowserApp) draw_rounded_outer_group(start int, page_y f32, window_h
 	} else {
 		start
 	}
+}
+
+fn (mut app BrowserApp) rounded_outer_shapes(indices []int) ?[]C.VoxGraphiteShape {
+	mut shapes := []C.VoxGraphiteShape{cap: indices.len}
+	for index in indices {
+		shape := app.rounded_outer_shape(index)
+		if app.paint_commands[index].kind != 'paint_outer_box_shadow'
+			&& (shape.alpha != 255 || (shape.has_float_color != 0 && shape.float_color[3] != 1)) {
+			return none
+		}
+		shapes << shape
+	}
+	return shapes
+}
+
+fn (mut app BrowserApp) rounded_outer_shape(index int) C.VoxGraphiteShape {
+	c := &app.paint_commands[index]
+	fill := app.paint_colors.color(c.color, 1)
+	precise := chromium_retained_paint_color(*c)
+	mut radii := c.corner_radii
+	if c.kind == 'fill_rect' {
+		radii = layout.BoxRadii{
+			top_left:     layout.CornerRadius{c.radius, c.radius}
+			top_right:    layout.CornerRadius{c.radius, c.radius}
+			bottom_left:  layout.CornerRadius{c.radius, c.radius}
+			bottom_right: layout.CornerRadius{c.radius, c.radius}
+		}
+	}
+	shadow := c.kind == 'paint_outer_box_shadow'
+	mut shape := C.VoxGraphiteShape{
+		rect:            document_shadow_rect(c.x, c.y, c.width, c.height, radii)
+		fill:            if shadow {
+			if c.blur > 0 { 10 } else { 9 }
+		} else if c.kind == 'paint_uniform_border' {
+			0
+		} else {
+			1
+		}
+		thickness:       f32(if shadow { c.blur } else { c.stroke_width })
+		anti_alias:      1
+		force_msaa:      1
+		red:             fill.r
+		green:           fill.g
+		blue:            fill.b
+		alpha:           fill.a
+		has_float_color: i32(precise != none)
+		float_color:     precise or { [f32(0), 0, 0, 0]! }
+	}
+	if shadow {
+		b := c.box_shadow()
+		shape.underlay_rect = document_shadow_rect(b.content_rect.x, b.content_rect.y, b.content_rect.width, b.content_rect.height, b.content_radii)
+	}
+	return shape
 }

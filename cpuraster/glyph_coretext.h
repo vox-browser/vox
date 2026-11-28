@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 // CoreText services for cpuraster's glyph masks, matching what LibWeb
 // Skia's SkTypeface_Mac and SkScalerContext_Mac ask of CoreText for an
 // unhinted anti-aliased (A8) strike. Everything else about the strike (the
@@ -12,7 +13,22 @@
 #include <string.h>
 #include "glyph_smoothing_probe.h"
 #include <pthread.h>
+#include <sys/stat.h>
 #include "../platform/native_state.h"
+
+// Whether the font has variation axes, from its 'fvar' table header. This
+// is what a non-empty CTFontCopyVariationAxes() result means, but that call
+// also localizes every axis name: about 30M instructions for the system UI
+// font, against a few thousand to copy the table.
+static int cpuraster_ct_has_variation_axes(CTFontRef font) {
+    CFDataRef table = CTFontCopyTable(font, 'fvar', kCTFontTableOptionNoOptions);
+    if (!table)
+        return 0;
+    const UInt8* bytes = CFDataGetBytePtr(table);
+    int count = CFDataGetLength(table) >= 10 ? (bytes[8] << 8 | bytes[9]) : 0;
+    CFRelease(table);
+    return count > 0;
+}
 
 // SkFontMgr_Mac::onMakeFromFile() -> SkTypeface_Mac::MakeFromStream():
 // the file's bytes, CTFontManagerCreateFontDescriptorFromData() and
@@ -54,12 +70,8 @@ static void* cpuraster_ct_font_from_file(const char* path, int* flags) {
         return NULL;
     if (CTFontGetSymbolicTraits(font) & kCTFontColorGlyphsTrait)
         *flags |= 1;
-    CFArrayRef axes = CTFontCopyVariationAxes(font);
-    if (axes) {
-        if (CFArrayGetCount(axes) > 0)
-            *flags |= 2;
-        CFRelease(axes);
-    }
+    if (cpuraster_ct_has_variation_axes(font))
+        *flags |= 2;
     return (void*)font;
 }
 
@@ -107,6 +119,75 @@ static void cpuraster_ct_remember_face_flags(const char* key, CTFontDescriptorRe
     pthread_mutex_unlock(&cpuraster_ct_registry_lock);
 }
 
+// Creating descriptors from a font file parses the whole file: about 60M
+// instructions for the system UI font (/System/Library/Fonts/SFNS.ttf, 369
+// descriptors), whose hidden PostScript names CoreText will not resolve by
+// name. Every weight and optical size of that face registers its own key, so
+// keep the descriptors of recent files, identified by path and file identity.
+// VOX_DISABLE_FONT_FILE_DESCRIPTOR_CACHE=1 parses the file for every key.
+typedef struct {
+    char* path;
+    dev_t device;
+    ino_t inode;
+    off_t size;
+    struct timespec modified;
+    CFArrayRef descriptors;
+} cpuraster_ct_file_descriptors;
+
+#define CPURASTER_CT_FILE_DESCRIPTOR_SLOTS 8
+VOX_NATIVE_STATE cpuraster_ct_file_descriptors cpuraster_ct_file_descriptor_cache[CPURASTER_CT_FILE_DESCRIPTOR_SLOTS];
+VOX_NATIVE_STATE int cpuraster_ct_file_descriptor_next;
+
+static int cpuraster_ct_file_descriptor_cache_disabled(void) {
+    const char* value = getenv("VOX_DISABLE_FONT_FILE_DESCRIPTOR_CACHE");
+    return value && *value;
+}
+
+static int cpuraster_ct_same_file(const cpuraster_ct_file_descriptors* entry, const char* path,
+    const struct stat* info) {
+    return entry->path && strcmp(entry->path, path) == 0 && entry->device == info->st_dev
+        && entry->inode == info->st_ino && entry->size == info->st_size
+        && entry->modified.tv_sec == info->st_mtimespec.tv_sec
+        && entry->modified.tv_nsec == info->st_mtimespec.tv_nsec;
+}
+
+// A retained array of the file's descriptors, or NULL.
+static CFArrayRef cpuraster_ct_copy_file_descriptors(CFURLRef url, const char* path) {
+    struct stat info;
+    int cacheable = !cpuraster_ct_file_descriptor_cache_disabled() && stat(path, &info) == 0;
+    if (cacheable) {
+        CFArrayRef cached = NULL;
+        pthread_mutex_lock(&cpuraster_ct_registry_lock);
+        for (int i = 0; i < CPURASTER_CT_FILE_DESCRIPTOR_SLOTS && !cached; ++i)
+            if (cpuraster_ct_same_file(&cpuraster_ct_file_descriptor_cache[i], path, &info))
+                cached = (CFArrayRef)CFRetain(cpuraster_ct_file_descriptor_cache[i].descriptors);
+        pthread_mutex_unlock(&cpuraster_ct_registry_lock);
+        if (cached)
+            return cached;
+    }
+    CFArrayRef descriptors = CTFontManagerCreateFontDescriptorsFromURL(url);
+    if (!descriptors || !cacheable)
+        return descriptors;
+    char* owned_path = strdup(path);
+    if (!owned_path)
+        return descriptors;
+    pthread_mutex_lock(&cpuraster_ct_registry_lock);
+    cpuraster_ct_file_descriptors* slot = &cpuraster_ct_file_descriptor_cache[cpuraster_ct_file_descriptor_next];
+    cpuraster_ct_file_descriptor_next = (cpuraster_ct_file_descriptor_next + 1) % CPURASTER_CT_FILE_DESCRIPTOR_SLOTS;
+    CFArrayRef evicted = slot->descriptors;
+    free(slot->path);
+    slot->path = owned_path;
+    slot->device = info.st_dev;
+    slot->inode = info.st_ino;
+    slot->size = info.st_size;
+    slot->modified = info.st_mtimespec;
+    slot->descriptors = (CFArrayRef)CFRetain(descriptors);
+    pthread_mutex_unlock(&cpuraster_ct_registry_lock);
+    if (evicted)
+        CFRelease(evicted);
+    return descriptors;
+}
+
 static int cpuraster_ct_postscript_matches(CTFontDescriptorRef descriptor, CFStringRef wanted) {
     CFStringRef name = (CFStringRef)CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute);
     int same = name && CFEqual(name, wanted);
@@ -148,7 +229,7 @@ static int cpuraster_ct_register_face(const char* key, const char* path, const c
         if (named_url)
             CFRelease(named_url);
     }
-    CFArrayRef descriptors = selected ? NULL : CTFontManagerCreateFontDescriptorsFromURL(url);
+    CFArrayRef descriptors = selected ? NULL : cpuraster_ct_copy_file_descriptors(url, path);
     CFRelease(url);
     if (!selected && descriptors) {
         CFIndex n = CFArrayGetCount(descriptors);
@@ -204,12 +285,8 @@ static int cpuraster_ct_register_face(const char* key, const char* path, const c
 static void cpuraster_ct_face_flags(CTFontRef font, int* flags) {
     if (CTFontGetSymbolicTraits(font) & kCTFontColorGlyphsTrait)
         *flags |= 1;
-    CFArrayRef axes = CTFontCopyVariationAxes(font);
-    if (axes) {
-        if (CFArrayGetCount(axes) > 0)
-            *flags |= 2;
-        CFRelease(axes);
-    }
+    if (cpuraster_ct_has_variation_axes(font))
+        *flags |= 2;
 }
 
 // The typeface for a retained run's face: a registered key (as
@@ -529,3 +606,4 @@ static int cpuraster_ct_glyph_path(void* font_ref, uint16_t glyph_id, double con
     *elements = sink.values;
     return sink.count;
 }
+#endif

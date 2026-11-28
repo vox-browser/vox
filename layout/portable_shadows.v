@@ -5,6 +5,7 @@ module layout
 
 import css
 import math
+import painting
 import platform
 import cpuraster
 
@@ -34,6 +35,19 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 }
 
 pub fn rasterize_portable_shadow_with_coverage(command PaintCommand, pixel_scale f64, chromium bool) !PortableShadowBitmap {
+	return rasterize_portable_shadow_in_bounds(command, pixel_scale, chromium, none)
+}
+
+// viewport is in device pixels in the transformed document coordinate space.
+pub fn rasterize_portable_text(command PaintCommand, pixel_scale f64, viewport painting.IntRect) !PortableShadowBitmap {
+	return rasterize_portable_shadow_in_bounds(PaintCommand{
+		...command
+		kind: 'draw_text_shadow'
+		blur: 0
+	}, pixel_scale, false, viewport)
+}
+
+fn rasterize_portable_shadow_in_bounds(command PaintCommand, pixel_scale f64, chromium bool, viewport ?painting.IntRect) !PortableShadowBitmap {
 	if command.kind !in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'draw_text_shadow'] {
 		return error('Unsupported shadow command')
 	}
@@ -72,6 +86,15 @@ pub fn rasterize_portable_shadow_with_coverage(command PaintCommand, pixel_scale
 	top = math.floor(top)
 	right = math.ceil(right)
 	bottom = math.ceil(bottom)
+	if visible := viewport {
+		left = math.max(left, f64(visible.x))
+		top = math.max(top, f64(visible.y))
+		right = math.min(right, f64(visible.right()))
+		bottom = math.min(bottom, f64(visible.bottom()))
+		if right <= left || bottom <= top {
+			return PortableShadowBitmap{}
+		}
+	}
 	width := int(right - left)
 	height := int(bottom - top)
 	if width <= 0 || height <= 0 { return error('Empty shadow bounds') }

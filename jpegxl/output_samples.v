@@ -3,7 +3,19 @@
 module jpegxl
 
 // The original 32x32 blue-noise ranks are attributed in DITHER_NOTICE.md.
-const output_dither_ranks = $embed_file('data/dither_32x32.bin')
+const output_dither_ranks = load_output_dither_ranks()
+
+// Development builds lazily load embedded bytes into the first reader's
+// allocation scope. Quantization can run in a disposable decode arena, so
+// retain the small immutable table by value for the lifetime of the module.
+fn load_output_dither_ranks() [1024]u8 {
+	file := $embed_file('data/dither_32x32.bin')
+	data := file.data()
+	if file.len != 1024 { panic('Invalid JPEG XL output dither table') }
+	mut ranks := [1024]u8{}
+	for i in 0 .. ranks.len { ranks[i] = unsafe { data[i] } }
+	return ranks
+}
 
 @[direct_array_access]
 pub fn modular_integer_row_to_f32(input []i32, bits u32, storage ModularStorage) ![]f32 {
@@ -65,12 +77,11 @@ fn quantize_output_row_into(input []f32, x u32, y u32, channel u32, bits u32, mu
 		return error('Invalid JPEG XL quantized output row')
 	}
 	maximum := f32((u32(1) << bits) - 1)
-	ranks := output_dither_ranks.data()
 	row := int((u64(y) + u64(channel) * 13) % 32) * 32
 	first := int((u64(x) + u64(channel) * 23) % 32)
 	for i in 0 .. input.len {
 		column := (first + i) & 31
-		dither := (f32(2) * f32(unsafe { ranks[row + column] }) - f32(255)) / f32(512)
+		dither := (f32(2) * f32(output_dither_ranks[row + column]) - f32(255)) / f32(512)
 		scaled := input[i] * maximum
 		dithered := scaled + dither
 		rounded := C.rintf(dithered)

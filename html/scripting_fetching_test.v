@@ -594,6 +594,14 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert fetch_destination_from_module_type(.worker, 'javascript-or-wasm') == .worker
 }
 
+fn run_modulepreload_networking_task(settings &EnvironmentSettingsObject) {
+	mut queue := settings.responsible_event_loop().task_queue()
+	task := queue.take_first_runnable_matching(fn (task &Task) bool {
+		return task.source() == .networking
+	}) or { panic('missing queued modulepreload completion') }
+	task.execute()
+}
+
 fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
 	fixture := scripting_fetching_fixture()!
 	scripting_fetching_request_urls = []
@@ -610,6 +618,9 @@ fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
 	root_url := dom.URL{ value: 'https://example.test/app/root.js' }
 	assert fetch_modulepreload_module_script_graph(fixture.realm, root_url, .script,
 		fixture.settings, options, modulepreload_fetching_complete)
+	assert scripting_fetching_completed_script == unsafe { nil }
+	assert scripting_fetching_request_urls == ['https://example.test/app/root.js']
+	run_modulepreload_networking_task(fixture.settings)
 	assert scripting_fetching_completed_script != unsafe { nil }
 	assert scripting_fetching_completion_request_count == 1
 	assert scripting_fetching_completion_nonce == 'module-nonce'
@@ -630,8 +641,10 @@ fn test_modulepreload_fetches_graph_reuses_modules_and_retries_failures() {
 	assert !fetch_modulepreload_module_script_graph(fixture.realm, retry_url, .script,
 		fixture.settings, default_script_fetch_options(), modulepreload_fetching_complete)
 	assert fixture.settings.module_map().get(retry_url, 'javascript-or-wasm') == none
+	run_modulepreload_networking_task(fixture.settings)
 	assert fetch_modulepreload_module_script_graph(fixture.realm, retry_url, .script,
 		fixture.settings, default_script_fetch_options(), modulepreload_fetching_complete)
+	run_modulepreload_networking_task(fixture.settings)
 	assert scripting_fetching_retry_count == 2
 }
 
@@ -658,6 +671,7 @@ fn test_modulepreload_populates_typed_module_map_entries() {
 	text_url := dom.URL{ value: 'https://example.test/app/module.txt' }
 	assert fetch_modulepreload_module_script_graph(fixture.realm, text_url, .text,
 		fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	run_modulepreload_networking_task(fixture.settings)
 	text_entry := fixture.settings.module_map().get(text_url, 'text')?.module_script?
 	assert text_entry.kind == .text
 	assert text_entry.synthetic_source == 'module text'
@@ -668,6 +682,7 @@ fn test_modulepreload_populates_typed_module_map_entries() {
 	style_url := dom.URL{ value: 'https://example.test/app/module.css' }
 	assert fetch_modulepreload_module_script_graph(fixture.realm, style_url, .style,
 		fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	run_modulepreload_networking_task(fixture.settings)
 	style_entry := fixture.settings.module_map().get(style_url, 'css')?.module_script?
 	assert style_entry.kind == .css
 	assert style_entry.synthetic_source == ':root { color: green; }'
@@ -676,6 +691,7 @@ fn test_modulepreload_populates_typed_module_map_entries() {
 	json_url := dom.URL{ value: 'https://example.test/app/module.json' }
 	assert fetch_modulepreload_module_script_graph(fixture.realm, json_url, .json,
 		fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	run_modulepreload_networking_task(fixture.settings)
 	json_entry := fixture.settings.module_map().get(json_url, 'json')?.module_script?
 	assert json_entry.kind == .json
 	assert json_entry.synthetic_source == '{"answer":42}'
@@ -699,6 +715,8 @@ fn test_link_modulepreload_dispatches_events_and_preserves_fetch_options() {
 	mut html_element := unsafe { &dom.HTMLElement(element) }
 	html_element.set_cryptographic_nonce('link-nonce')
 	model.fetch_and_process_linked_resource()
+	assert model.event_count('load') == 0
+	run_modulepreload_networking_task(fixture.settings)
 	assert model.event_count('load') == 1
 	assert model.event_count('error') == 0
 	assert scripting_fetching_request_urls == ['https://example.test/app/module.txt']
@@ -723,6 +741,14 @@ fn test_link_modulepreload_dispatches_events_and_preserves_fetch_options() {
 	invalid.set_href('/app/image.png')
 	invalid.set_as('image')
 	invalid.fetch_and_process_linked_resource()
+	assert invalid.event_count('error') == 0
+	run_modulepreload_networking_task(fixture.settings)
 	assert invalid.event_count('error') == 1
 	assert scripting_fetching_request_urls.len == 1
+
+	invalid.fetch_and_process_linked_resource()
+	invalid.set_href('')
+	invalid.fetch_and_process_linked_resource()
+	run_modulepreload_networking_task(fixture.settings)
+	assert invalid.event_count('error') == 1
 }

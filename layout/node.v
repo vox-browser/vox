@@ -21,6 +21,9 @@ pub mut:
 	parent_          ?&Node
 	index_in_parent_ int = -1
 	children_        []&Node
+	// The root of the last committed tree this box was part of
+	// (clean_subtree_reuse.v).
+	tree_root_ voidptr
 	// Layout::Node members (Layout/Node.h).
 	document_                          &dom.Document = unsafe { nil }
 	dom_node_                          ?&dom.Node

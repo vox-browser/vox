@@ -183,3 +183,99 @@ fn test_native_errors_preserve_the_throwing_program_counter_during_unwind_jobs()
 		vm.pop_execution_context()
 	}
 }
+
+fn test_native_primitive_lowering_handles_number_edges_and_utf16_order() {
+	cache := native_test_cache()
+	defer { os.rmdir_all(cache) or {} }
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	vm.profile_native_code()!
+	defer { vm.close_native_code() or {} }
+	native_test_run(mut vm, 'function calc(a,b=0){return [a%b,a**b,~a,a&b,a|b,a^b,a<<b,a>>b,a>>>b]} function compare(a,b){return [a<b,a<=b,a>b,a>=b]} calc(1,2);compare("x","y")')!
+	vm.compile_native_code(cache, '/usr/bin/clang', 1)!
+	for source in [
+		'calc(-4294967297.75,33).slice(2).join() === "0,33,-1,-34,-2,-1,2147483647"',
+		'calc(Infinity,Infinity).slice(2).join() === "-1,0,0,0,0,0,0"',
+		'calc(4294967295,-32).slice(2).join() === "0,-32,-1,31,-1,-1,4294967295"',
+		'Object.is(calc(-6,3)[0],-0) && Object.is(calc(-0,7)[0],-0) && calc(7,Infinity)[0] === 7',
+		'Number.isNaN(calc(1,NaN)[1]) && Number.isNaN(calc(-1,Infinity)[1]) && calc(NaN)[1] === 1',
+		'Object.is(calc(-0,3)[1],-0) && calc(-0,-3)[1] === -Infinity && calc(-Infinity,0.5)[1] === Infinity',
+		r'compare("\uD800\uDC00","\uE000").join() === "true,true,false,false"',
+		r'compare("\u00FF","\u0100").join() === "true,true,false,false"',
+		r'compare("\uD800","\uD800x").join() === "true,true,false,false"',
+		'compare("", "").join() === "false,true,false,true"',
+		'compare(NaN,1).join() === "false,false,false,false" && compare("12",2)[2]',
+	] {
+		for enabled in [false, true] {
+			vm.use_native_code(enabled)!
+			assert native_test_run(mut vm, source)!.to_boolean(), source
+		}
+	}
+}
+
+fn test_native_primitive_lowering_reuses_binary_and_keeps_dynamic_hooks() {
+	cache := native_test_cache()
+	defer { os.rmdir_all(cache) or {} }
+	source := r'function calc(a=2,b=3){return a%b + (a<<b)} function key(k){return {[k]:`${k}`}} function spread({n}){return n} function flip(a){return ~a} calc();key("x");spread({n:1});flip(1)'
+	for reopened in [false, true] {
+		mut vm := VM.create()
+		create_simple_execution_context(mut vm)
+		vm.enable_native_code_cache(cache, if reopened { '/usr/bin/false' } else { '/usr/bin/clang' })!
+		native_test_run(mut vm, source)!
+		stats := vm.flush_native_code_cache()!
+		if reopened {
+			assert stats.cache_hits == 5 && stats.cache_misses == 0 && stats.compiler_invocations == 0
+			assert stats.compiled_instructions == 0 && stats.fast_instructions == 0
+		} else {
+			assert stats.fast_instructions > 0 && stats.compiled_instructions > stats.fast_instructions
+		}
+		vm.diagnose_native_code(true)!
+		for source_check in [
+			'calc()===18 && calc(9)===72 && calc(9,undefined)===72 && calc(7,2,99)===29',
+			'var log="",a={valueOf(){log+="a";return 7}},b={valueOf(){log+="b";return 2}};calc(a,b)===29&&log==="abab"',
+			'var log="",k={toString(){log+="k";return "x"}};key(k).x==="x"&&log==="kk"',
+			'flip(2n)===-3n && (function(){try{calc(2n,1)}catch(e){return e instanceof TypeError}})()',
+			'(function(){try{spread(null)}catch(e){return e instanceof TypeError}})()',
+		] { assert native_test_run(mut vm, source_check)!.to_boolean(), source_check }
+		activity := vm.diagnose_native_code(false)!
+		assert activity.entries > 0 && activity.fast_steps > 0 && activity.slow_steps > 0
+		vm.close_native_code()!
+	}
+}
+
+fn test_native_argument_load_uses_the_live_frame_layout_and_budget() {
+	cache := native_test_cache()
+	defer { os.rmdir_all(cache) or {} }
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	vm.profile_native_code()!
+	defer { vm.close_native_code() or {} }
+	executable := &Executable{
+		registers_and_locals_count: 6
+		constants: [Value.from_i32(17), Value.from_i32(18)]
+		instructions: [
+			Instruction{op: .get_argument, dst: Operand.register(5), identifier: 1},
+			Instruction{op: .end, lhs: Operand.register(5)},
+		]
+		bytecode_length: 2
+	}
+	for native in [false, true] {
+		if native {
+			stats := vm.compile_native_code(cache, '/usr/bin/clang', 1)!
+			assert stats.fast_instructions == 2
+			vm.diagnose_native_code(true)!
+		}
+		for count in 0 .. 4 {
+			mut frame := ExecutionContext.create(6, executable.constants, u32(count))
+			frame.realm = vm.realm()
+			for index in 0 .. count { frame.set_argument(u32(index), Value.from_i32(i32(index + 40))) }
+			vm.push_execution_context_checked(mut frame)!
+			value := vm.run_executable(mut frame, executable, 0, ExecutionLimits{max_instructions: 2})!
+			expected := if count < 2 { js_undefined() } else { Value.from_i32(41) }
+			assert same_value(value, expected)
+			vm.pop_execution_context()
+		}
+	}
+	activity := vm.diagnose_native_code(false)!
+	assert activity.entries == 4 && activity.fast_steps == 8 && activity.slow_steps == 0
+}

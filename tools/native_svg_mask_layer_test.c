@@ -1,17 +1,93 @@
 #include "native/include/native_svg_mask_layer_darwin.h"
+#include "native/include/native_svg_mask_cache_key.h"
+#include "native/include/native_svg_mask_image_darwin.h"
+#include "native/include/native_svg_mask_path_darwin.h"
+#include "native/include/native_svg_mask_raster_cache_darwin.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static CGContextRef bitmap(void)
+static CGContextRef bitmap_in_space(CFStringRef profile)
 {
-    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(profile);
     CGContextRef context = CGBitmapContextCreate(NULL, 96, 80, 8, 96 * 4, space,
         kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);
     assert(context != NULL);
     return context;
+}
+
+static CGContextRef bitmap(void)
+{
+    return bitmap_in_space(kCGColorSpaceSRGB);
+}
+
+static const NativeSVGMaskRasterCacheEntry *scan_mask_raster_cache(
+    const NativeSVGMaskRasterCache *cache)
+{
+    const NativeSVGMaskRasterCacheEntry *oldest = &cache->entries[0];
+    for (int index = 1; index < NATIVE_SVG_MASK_RASTER_CACHE_SIZE; ++index) {
+        const NativeSVGMaskRasterCacheEntry *entry = &cache->entries[index];
+        if (entry->image == NULL || entry->last_use < oldest->last_use) {
+            oldest = entry;
+        }
+    }
+    return oldest;
+}
+
+static void check_mask_raster_replacement(void)
+{
+    NativeSVGMaskRasterCache cache = {0};
+    CGContextRef context = bitmap();
+    CGImageRef image = CGBitmapContextCreateImage(context);
+    assert(image != NULL);
+    for (int index = NATIVE_SVG_MASK_RASTER_CACHE_SIZE - 1; index >= 0; --index) {
+        assert(native_svg_mask_raster_can_admit(&cache, UINT64_MAX));
+        assert(cache.replacement == &cache.entries[index]);
+        assert(native_svg_mask_raster_store(&cache,
+            (NativeSVGMaskRasterCacheEntry){index + 1, image, UINT64_MAX, UINT64_MAX}) == NULL);
+    }
+
+    // Equal timestamps retain the first slot. Its admission age is checked
+    // anew even across frame rollover while the cached slot stays valid.
+    assert(!native_svg_mask_raster_can_admit(&cache, UINT64_MAX));
+    assert(!native_svg_mask_raster_can_admit(&cache, 0));
+    assert(native_svg_mask_raster_can_admit(&cache, 1));
+    assert(cache.replacement == &cache.entries[0]);
+    native_svg_mask_raster_touch(&cache, &cache.entries[0], UINT64_MAX, 1);
+    assert(cache.replacement == &cache.entries[0]);
+    assert(!native_svg_mask_raster_can_admit(&cache, 1));
+    native_svg_mask_raster_touch(&cache, &cache.entries[1], 0, 1);
+    assert(cache.replacement == NULL);
+    native_svg_mask_raster_touch(&cache, &cache.entries[2], 1, 1);
+    assert(native_svg_mask_raster_replacement(&cache) == &cache.entries[1]);
+    native_svg_mask_raster_touch(&cache, &cache.entries[2], 2, 1);
+    assert(cache.replacement == &cache.entries[1]);
+    native_svg_mask_raster_touch(&cache, &cache.entries[1], 3, 1);
+    assert(cache.replacement == NULL);
+    assert(native_svg_mask_raster_replacement(&cache) == &cache.entries[2]);
+
+    // Compare hits, capacity misses and stores against the original full scan.
+    uint32_t sequence = 1;
+    for (uint64_t step = 0; step < 4096; ++step) {
+        uint64_t frame = 1 + step / 19;
+        sequence = sequence * 1664525u + 1013904223u;
+        int slot = (sequence >> 16) % NATIVE_SVG_MASK_RASTER_CACHE_SIZE;
+        if (sequence % 3 != 0) {
+            native_svg_mask_raster_touch(&cache, &cache.entries[slot], 4 + step, frame);
+        }
+        const NativeSVGMaskRasterCacheEntry *expected = scan_mask_raster_cache(&cache);
+        assert(native_svg_mask_raster_can_admit(&cache, frame) == (frame - expected->frame > 1));
+        assert(cache.replacement == expected);
+        if (frame - expected->frame > 1) {
+            assert(native_svg_mask_raster_store(&cache,
+                (NativeSVGMaskRasterCacheEntry){100 + step, image, 4 + step, frame}) == image);
+            assert(expected->key == 100 + step);
+        }
+    }
+    CGImageRelease(image);
+    CGContextRelease(context);
 }
 
 static void begin_layer(CGContextRef context, CGRect rect, int optimized)
@@ -83,8 +159,155 @@ static CGContextRef scene(int optimized, int nested, int transformed, CGFloat ph
     return context;
 }
 
+static CGContextRef coverage_scene(int reuse, int clip, int full, int luminance, CFStringRef profile)
+{
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    size_t width = full ? 32 : 21;
+    size_t height = full ? 24 : 17;
+    CGContextRef mask = CGBitmapContextCreate(NULL, width, height, 8, width * 4, space,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space);
+    assert(mask != NULL);
+    uint8_t *pixels = CGBitmapContextGetData(mask);
+    for (size_t y = 0; y < height; ++y) {
+        for (size_t x = 0; x < width; ++x) {
+            size_t source = full ? y * 32 + x : (y + 3) * 32 + x + 5;
+            uint8_t alpha = (uint8_t)(source * 37);
+            uint8_t *pixel = pixels + (y * width + x) * 4;
+            pixel[0] = alpha / 3;
+            pixel[1] = alpha / 2;
+            pixel[2] = alpha * 7 / 8;
+            pixel[3] = alpha;
+        }
+    }
+    CGImageRef image = reuse ? native_snapshot_svg_rgba_mask_bitmap(mask, luminance)
+        : native_copy_svg_mask_bitmap(mask, 1, luminance);
+    assert(image != NULL);
+    if (reuse && !luminance) {
+        const uint8_t alpha = (uint8_t)((full ? 1 : 3 * 32 + 6) * 37);
+        const uint8_t expected[] = {alpha / 3, alpha / 2, alpha * 7 / 8, alpha};
+        assert(memcmp(pixels + 4, expected, sizeof(expected)) == 0);
+    }
+    CGContextRelease(mask);
+    if (full) {
+        CGImageRef cropped = CGImageCreateWithImageInRect(image, CGRectMake(5, 3, 21, 17));
+        CGImageRelease(image);
+        assert(cropped != NULL);
+        image = cropped;
+    }
+
+    CGContextRef canvas = bitmap_in_space(profile);
+    CGRect rect = CGRectMake(7.25, 8.5, 67.5, 53.25);
+    if (clip) {
+        CGContextClipToMask(canvas, rect, image);
+    }
+    CGContextSetRGBFillColor(canvas, .25, .5, .75, .8);
+    CGContextFillRect(canvas, rect);
+    if (!clip) {
+        CGContextSetBlendMode(canvas, kCGBlendModeDestinationIn);
+        CGContextDrawImage(canvas, rect, image);
+    }
+    CGImageRelease(image);
+    return canvas;
+}
+
+static void check_large_alpha_mask_publication(void)
+{
+    CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    CGContextRef mask = CGBitmapContextCreate(NULL, 512, 257, 8, 512 * 4, space,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space);
+    assert(mask != NULL);
+    uint8_t *pixels = CGBitmapContextGetData(mask);
+    const uint8_t color[] = {11, 29, 67, 91};
+    memcpy(pixels, color, sizeof(color));
+    CGImageRef image = native_snapshot_svg_rgba_mask_bitmap(mask, 0);
+    const uint8_t coverage[] = {91, 91, 91, 91};
+    assert(image != NULL && memcmp(pixels, coverage, sizeof(coverage)) == 0);
+    CGImageRelease(image);
+    CGContextRelease(mask);
+}
+
+static int staged_width, staged_height;
+
+static int raster_rectangle(uint8_t *pixels, int width, int height, int pitch,
+    int backdrop, VoxGraphitePath *path)
+{
+    assert(!backdrop && pitch == width * 4);
+    staged_width = width;
+    staged_height = height;
+    const float *matrix = path->matrix;
+    const float *rect = path->segments;
+    CGRect bounds = CGRectApplyAffineTransform(CGRectMake(rect[0], rect[1], rect[2], rect[3]),
+        CGAffineTransformMake(matrix[0], matrix[3], matrix[1], matrix[4], matrix[2], matrix[5]));
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            if (!CGRectContainsPoint(bounds, CGPointMake(x + .5, y + .5))) continue;
+            uint8_t *pixel = pixels + y * pitch + x * 4;
+            pixel[0] = 96;
+            pixel[1] = 33;
+            pixel[2] = 64;
+            pixel[3] = 128;
+        }
+    }
+    return 1;
+}
+
+static CGContextRef raster_mask_rectangle(CGAffineTransform transform, int force_full)
+{
+    CGContextRef context = bitmap();
+    CGContextSetRGBFillColor(context, .1, .5, .2, .9);
+    CGContextFillRect(context, CGRectMake(0, 0, 96, 80));
+    CGContextClipToRect(context, CGRectMake(8.25, 12.5, 60, 42));
+    CGContextSetAlpha(context, .7);
+    CGContextConcatCTM(context, transform);
+
+    float rect[4] = {21, 16, 22, 14};
+    CGPathRef outline = CGPathCreateWithRect(CGRectMake(rect[0], rect[1], rect[2], rect[3]), NULL);
+    // The stub always fills. The stroke flag makes the reference stage the
+    // full bitmap without changing the synthetic coverage.
+    VoxGraphitePath path = {.segments = rect, .stroke = force_full};
+    assert(native_raster_svg_mask_path(context, &path, outline, raster_rectangle));
+    CGPathRelease(outline);
+    return context;
+}
+
+static void check_mask_path_raster_bounds(void)
+{
+    const struct {
+        CGAffineTransform transform;
+        int width, height;
+    } cases[] = {
+        {CGAffineTransformIdentity, 24, 16},
+        {CGAffineTransformMake(2, 0, 0, -2, 4, 66), 46, 30},
+        {CGAffineTransformMake(-1, 0, 0, 1, 86, 0), 24, 16},
+        {CGAffineTransformMakeTranslation(.25, 0), 96, 80},
+        {CGAffineTransformMake(1, .25, 0, 1, 0, 0), 96, 80},
+        {CGAffineTransformMakeTranslation(-32, 0), 96, 80},
+    };
+    for (size_t index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        CGContextRef reference = raster_mask_rectangle(cases[index].transform, 1);
+        assert(staged_width == 96 && staged_height == 80);
+        CGContextRef actual = raster_mask_rectangle(cases[index].transform, 0);
+        assert(staged_width == cases[index].width && staged_height == cases[index].height);
+        assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(actual),
+            CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
+        CGContextRelease(reference);
+        CGContextRelease(actual);
+    }
+}
+
 int main(void)
 {
+    check_mask_raster_replacement();
+    check_mask_path_raster_bounds();
+    check_large_alpha_mask_publication();
+    for (int content = 0; content < 2; ++content) {
+        uint64_t standard = native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1);
+        assert(standard == native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1));
+        assert(standard != native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 2));
+        assert(standard != native_svg_mask_cache_key(17, content, 1024, 640, 0, 64, 0, 1.5));
+    }
     int cases = 0;
     for (int nested = 0; nested < 2; ++nested) {
         for (int transformed = 0; transformed < 2; ++transformed) {
@@ -116,6 +339,21 @@ int main(void)
     CGContextRestoreGState(context);
     assert(CGRectEqualToRect(before, CGContextGetClipBoundingBox(context)));
     CGContextRelease(context);
-    printf("SVG mask layers: %d pixel-exact scenes, empty/disjoint bounds and clip restoration passed\n", cases);
+    const CFStringRef profiles[] = {kCGColorSpaceSRGB, kCGColorSpaceDisplayP3};
+    for (int profile = 0; profile < 2; ++profile) {
+        for (int luminance = 0; luminance < 2; ++luminance) {
+            for (int clip = 0; clip < 2; ++clip) {
+                CGContextRef reference = coverage_scene(0, clip, 0, luminance, profiles[profile]);
+                for (int crop = 0; crop < 2; ++crop) {
+                    CGContextRef actual = coverage_scene(1, clip, crop, luminance, profiles[profile]);
+                    assert(memcmp(CGBitmapContextGetData(reference), CGBitmapContextGetData(actual),
+                        CGBitmapContextGetBytesPerRow(reference) * 80) == 0);
+                    CGContextRelease(actual);
+                }
+                CGContextRelease(reference);
+            }
+        }
+    }
+    printf("SVG mask layers: %d exact scenes, 16 publications, six path placements, clip and cache passed\n", cases);
     return 0;
 }

@@ -133,7 +133,7 @@ fn test_number_construction_converts_before_prototype_lookup_and_preserves_bound
 	prototype := Object.create(local, none)
 	constructor := Value.from_object(number_constructor_test_record(mut vm, local, prototype))
 	result := construct(mut vm, constructor, []Value{}, none)!
-	assert result.number_object?.value == 0 && result.class_name == 'NumberObject'
+	assert result.slots.number_object?.value == 0 && result.class_name == 'NumberObject'
 	assert voidptr(result.prototype?) == voidptr(prototype)
 	mut log := &NumberConstructorLog{}
 	mut argument := Object.create(local, none)
@@ -152,14 +152,14 @@ fn test_number_construction_converts_before_prototype_lookup_and_preserves_bound
 		return Value.from_object(foreign_prototype)
 	}, unsafe { nil }, attribute_configurable, foreign.function_prototype)
 	result_with_target := construct(mut vm, constructor, [Value.from_object(argument)], target)!
-	assert same_value(Value.from_f64(result_with_target.number_object?.value), Value.from_f64(-0.0))
+	assert same_value(Value.from_f64(result_with_target.slots.number_object?.value), Value.from_f64(-0.0))
 	assert voidptr(result_with_target.prototype?) == voidptr(foreign_prototype)
 	assert log.events == ['convert', 'prototype']
 	log.events.clear()
 	bound := BoundFunction.create(local, constructor.as_object(), js_null(), [
 		Value.from_i32(42),
 	])
-	assert construct(mut vm, Value.from_object(bound.object), []Value{}, none)!.number_object?.value == 42
+	assert construct(mut vm, Value.from_object(bound.object), []Value{}, none)!.slots.number_object?.value == 42
 	thrower := NativeFunction.create(mut vm, local, local.function_prototype, fn (mut vm VM) !Value {
 		return throw_completion(Value.from_i32(77))
 	}, 1, PropertyName.from_str('thrower'), none)

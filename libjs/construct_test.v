@@ -4,6 +4,37 @@ fn construction_test_call(mut vm VM) !Value {
 	return vm.argument(0)
 }
 
+@[heap]
+struct RetainedConstructorFrame {
+mut:
+	context ?&ExecutionContext
+}
+
+fn test_native_constructor_reuse_preserves_retained_frame_arguments() {
+	mut vm := VM.create()
+	base := create_simple_execution_context(mut vm)
+	realm := vm.realm()
+	mut retained := &RetainedConstructorFrame{}
+	constructor := NativeFunction.create_constructor(mut vm, realm, realm.function_prototype,
+		construction_test_call, fn [mut retained] (mut vm VM, target &Object) !&Object {
+			assert vm.argument_count() == 1
+			if vm.argument(0).number == 11 {
+				retained.context = vm.running_execution_context()
+			}
+			return Object.create(vm.realm(), none)
+		}, 1, PropertyName.from_str('Retain'))
+	value := Value.from_object(constructor.object)
+	diagnose_context_reuse_for_testing(true)
+	for argument in [11, 22, 33] {
+		construct(mut vm, value, [Value.from_f64(f64(argument))], none)!
+	}
+	activity := diagnose_context_reuse_for_testing(false)
+	previous := retained.context or { panic('Missing exposed constructor frame') }
+	assert activity.exposed == 1 && activity.reused >= 1
+	assert previous.argument(0).number == 11
+	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
+}
+
 fn test_native_construction_uses_callee_realm_arguments_and_uninitialized_this() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)

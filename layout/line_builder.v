@@ -1201,7 +1201,7 @@ fn layout_inline_font_metrics(node &Node, font &platform.Font) platform.FontPixe
 	// still contributes a zero strut and baseline to inline layout.
 	if node.computed_values().font_size().raw_value()==0 { return platform.FontPixelMetrics{} }
 	document := node.document()
-	metrics := font.inline_metrics_at_scale(document.display_device_pixel_ratio() / document.layout_coordinate_scale())
+	metrics := font.inline_metrics_at_scale(document.rendering_device_pixel_ratio() / document.layout_coordinate_scale())
 	if document.font_rendering_policy() == .libweb {
 		return libweb_layout_font_metrics(metrics)
 	}

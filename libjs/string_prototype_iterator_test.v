@@ -32,7 +32,7 @@ fn test_string_prototype_iterator_coerces_once_then_allocates_in_native_callee_r
 		assert step.get(mut vm, PropertyName.from_str('done'))!.as_bool()
 		assert step.get(mut vm, PropertyName.from_str('value'))!.is_undefined()
 	}
-	assert second.string_iterator?.index == 0
+	assert second.slots.string_iterator?.index == 0
 	for receiver in [js_null(), js_undefined(), Value.from_symbol(Symbol.create(none, .unique))] {
 		if _ := call(mut vm, function, receiver, []Value{}) {
 			assert false

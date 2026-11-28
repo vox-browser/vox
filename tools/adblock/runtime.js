@@ -103,6 +103,9 @@ globalThis.voxAdblockCheck = details => {
     const result = snfe.matchRequest(fctx);
     const log = result === 0 ? undefined : snfe.toLogData();
     const decision = { blocked: result === 1, exception: result === 2, rule: log?.raw || '', redirect_url: '', error: '' };
+    // The response stage (checkResponseHeaders) evaluates this same request
+    // with its headers; without a headers-realm candidate it allows any.
+    decision.no_header_filters = type === 'main_frame' || !snfe.mayMatchHeaders(fctx);
     if (result === 1) {
         snfe.redirectRequest(redirectEngine, fctx);
     } else {

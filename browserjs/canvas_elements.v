@@ -2,6 +2,7 @@
 module browserjs
 
 import dom
+import os
 import platform
 
 pub type CanvasElementProvider = fn () map[string]&dom.Element
@@ -35,7 +36,75 @@ struct CanvasElementBindingProvider {
 // DOM identity is the native address. V's equality for &Element compares the
 // complete record and can allocate copies of its maps on every candidate.
 // Preserve every alias in map order so registry precedence remains unchanged.
-fn native_canvas_element_identity_keys(elements map[string]&dom.Element, element &dom.Element) []string {
+// Same-binary control: scan each host's element map for every lookup.
+const retain_identity_key_scans = os.getenv('VOX_RETAIN_IDENTITY_KEY_SCANS') != ''
+
+// Reverse index of one host's element map. Hosts register every element of
+// the document when they are created (~2,700 on GitHub), so scanning five
+// such maps made each element's first bridge key lookup cost ~200K
+// instructions. The index owns its keys and is rebuilt when the map changes
+// size; each candidate is checked against the map before it is returned.
+struct ElementKeyIndex {
+mut:
+	length int = -1
+	keys   map[u64][]string
+}
+
+__global element_key_indexes map[u64]&ElementKeyIndex
+
+// Every write to an indexed host map calls this, so that the next lookup
+// indexes the map again.
+fn invalidate_element_key_index(owner voidptr) {
+	if mut index := element_key_indexes[u64(owner)] {
+		index.length = -1
+	}
+}
+
+// After `elements[key] = element` on an indexed map whose new size is
+// `length`: index the key incrementally. A key that moved keeps its old entry,
+// which the lookup's check against the map drops.
+fn note_element_key_write(owner voidptr, key string, element &dom.Element, length int) {
+	mut index := element_key_indexes[u64(owner)] or { return }
+	if index.length < 0 { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	element_id := u64(voidptr(element))
+	if mut keys := index.keys[element_id] {
+		if key !in keys { keys << key.clone() }
+		index.keys[element_id] = keys
+	} else {
+		index.keys[element_id] = [key.clone()]
+	}
+	index.length = length
+}
+
+fn native_canvas_element_identity_keys(owner voidptr, elements map[string]&dom.Element, element &dom.Element) []string {
+	if retain_identity_key_scans { return native_canvas_element_identity_keys_by_scan(elements, element) }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut index := element_key_indexes[u64(owner)] or {
+		created := &ElementKeyIndex{}
+		element_key_indexes[u64(owner)] = created
+		created
+	}
+	if index.length != elements.len {
+		index.keys = map[u64][]string{}
+		for key, candidate in elements {
+			index.keys[u64(voidptr(candidate))] << key.clone()
+		}
+		index.length = elements.len
+	}
+	candidates := index.keys[u64(voidptr(element))] or { return []string{} }
+	mut keys := []string{}
+	for key in candidates {
+		if found := elements[key] {
+			if voidptr(found) == voidptr(element) { keys << key }
+		}
+	}
+	return keys
+}
+
+fn native_canvas_element_identity_keys_by_scan(elements map[string]&dom.Element, element &dom.Element) []string {
 	// The old compiler clones every named string key in a map loop, even on
 	// a miss. Inspect values first so unrelated native hosts allocate nothing.
 	mut found := false
@@ -126,6 +195,23 @@ pub fn (runtime &Runtime) canvas_element_key_for_binding(element &dom.Element) ?
 		}
 	}
 	return none
+}
+
+// Every distinct key a provider maps to `element`, in provider order.
+pub fn (runtime &Runtime) canvas_element_keys_for_binding(element &dom.Element) []string {
+	mut keys := []string{}
+	for provider in runtime.canvas_element_providers_ {
+		if provider.identity != unsafe { nil } {
+			for key in provider.identity(element) {
+				if key !in keys { keys << key }
+			}
+		} else {
+			for key, candidate in provider.snapshot() {
+				if voidptr(candidate) == voidptr(element) && key !in keys { keys << key }
+			}
+		}
+	}
+	return keys
 }
 
 pub fn (runtime &Runtime) canvas_elements_for_binding() map[string]&dom.Element {

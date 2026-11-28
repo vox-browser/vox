@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Uniform PNG scales preserve elliptical clips</title>
+<style>
+html,body { margin:0; background:#fefefe; }
+img { position:absolute; display:block; border-radius:50%; transform-origin:0 0; }
+.half { left:20px; width:18px; height:40px; transform:scale(.5); }
+.small { left:50px; width:9px; height:20px; }
+.double { left:100px; width:9px; height:20px; transform:scale(2); }
+.large { left:150px; width:18px; height:40px; }
+.top { top:20px; }
+.lower { top:320px; }
+</style>
+<img class="half top" src="../resources/shadowed-avatar.png">
+<img class="small top" src="../resources/shadowed-avatar.png">
+<img class="double top" src="../resources/shadowed-avatar.png">
+<img class="large top" src="../resources/shadowed-avatar.png">
+<img class="half lower" src="../resources/shadowed-avatar.png">
+<img class="small lower" src="../resources/shadowed-avatar.png">
+<img class="double lower" src="../resources/shadowed-avatar.png">
+<img class="large lower" src="../resources/shadowed-avatar.png">
+<svg style="position:absolute;left:950px;top:20px" width="30" height="30">
+  <path d="M0 0 C30 0 0 30 30 30 Z" fill="#b35"/>
+</svg>

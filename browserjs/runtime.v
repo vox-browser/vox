@@ -59,13 +59,17 @@ fn prepare_script_with_options(source ScriptSource, options libjs.ParseOptions) 
 	}
 	owned := ScriptSource{...source, code: source.code.clone(), url: source.url.clone()}
 	parsed := libjs.parse_source_with_options(owned.code, owned.source_type, options)
+	return finish_script_preparation(owned, parsed)
+}
+
+fn finish_script_preparation(source ScriptSource, parsed &libjs.ParsedSource) !&PreparedScript {
 	if parsed.has_errors() && !parsed.reached_recursion_limit {
 		diagnostic := parsed.diagnostics[0]
 		filename := if source.url == '' { '<script>' } else { source.url }
 		line := u64(source.starting_line) + diagnostic.line - 1
 		return error('SyntaxError: ${filename}:${line}:${diagnostic.column + 1}: ${diagnostic.message}')
 	}
-	return &PreparedScript{owned, parsed}
+	return &PreparedScript{source, parsed}
 }
 
 // JavaScriptCore preserves the complete browser host while LibJS execution is
@@ -78,6 +82,8 @@ pub struct Runtime {
 pub:
 	engine Engine
 mut:
+	site_native_warmup_ ?&SiteNativeWarmup
+	libjs_compilation_base_ ?u64
 	worker_module_global bool
 	context                   voidptr
 	closed                    bool
@@ -126,6 +132,16 @@ mut:
 	libjs_callback_settings_ []?&html.EnvironmentSettingsObject
 	libjs_modules_ map[string]&libjs.SourceTextModule
 	next_libjs_inline_module_ u64
+	libjs_native_cache_enabled_ bool
+	libjs_native_cache_pending_ bool
+	libjs_native_cache_timer_ &platform.Timer = unsafe { nil }
+	libjs_native_template_jobs_ []&NativeModulePreparationJob
+	libjs_native_template_seen_ map[voidptr]bool
+	libjs_native_template_audit_ NativeModulePreparationAudit
+	libjs_native_cache_failed_ bool
+	libjs_native_cache_partition_ string
+	libjs_frontend_cache_hits_ u64
+	libjs_frontend_cache_misses_ u64
 }
 
 pub fn Runtime.create() &Runtime {
@@ -163,6 +179,11 @@ fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut agent_vm := libjs.VM.create()
+	if engine == .libjs {
+		// Author code cannot mutate the compiler's internal executable records.
+		// Embedding diagnostics that edit them must disable this ownership mode.
+		agent_vm.use_immutable_compiler_executables(true) or { panic(err) }
+	}
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
 	$if darwin || linux || windows {
@@ -177,6 +198,7 @@ fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
 		realm_context: realm_context
 		context:  context
 	}
+	runtime.configure_replay_date_clock()
 	$if darwin || linux || windows {
 		if engine == .javascriptcore && context != unsafe { nil } {
 			runtime.initialize_javascript_value_intrinsics() or { panic(err) }
@@ -218,6 +240,7 @@ pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.Environme
 	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 	event_loop.attach_embedding_vm(vm)
 	runtime.scripting_settings_ = settings
+	if runtime.engine == .libjs { runtime.install_libjs_promise_jobs(settings) }
 	runtime.install_source_location_provider(realm)
 	runtime.install_inline_script_evaluator(realm)
 	runtime.install_string_compilation_policy(realm)
@@ -235,6 +258,7 @@ fn (runtime &Runtime) clean_up_html_script() {
 		mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
 		html.clean_up_after_running_script(mut realm)
 	}
+	runtime.schedule_document_native_cache()
 }
 
 fn (runtime &Runtime) callback_settings() ?&html.EnvironmentSettingsObject {
@@ -296,8 +320,7 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 		}
 	}
 	if runtime.engine == .libjs {
-		return runtime.execute_prepared(prepare_script_with_options(source,
-			libjs.ParseOptions{max_recursion_depth:256})!, stringify_result)
+		return runtime.execute_prepared(runtime.prepare_libjs_script(source)!, stringify_result)
 	}
 	record := libjs.Script.create_external(source.code, runtime.realm, source.url,
 		u32(source.starting_line), voidptr(runtime))!
@@ -329,7 +352,7 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 			parsed:         script.frontend
 			is_strict_mode: script.frontend.is_strict_mode
 		}
-		value := vm.run_with_limits(mut record, libjs.ExecutionLimits{ max_instructions: 1000000 }) or {
+		value := vm.run_with_limits(mut record, runtime.libjs_execution_limits()) or {
 			return error(libjs_exception_message(err))
 		}
 		if !stringify_result { return '' }
@@ -387,7 +410,7 @@ fn libjs_exception_message(err IError) string {
 		object := value.as_object()
 		if kind := object.error_kind() {
 			message := object.error_message() or { '' }
-			trace := if data := object.error_data { data.stack_string(false) } else { '' }
+			trace := if data := object.slots.error_data { data.stack_string(false) } else { '' }
 			return '${kind.name()}: ${message}' + if trace == '' {
 				''
 			} else {
@@ -422,6 +445,9 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 		return
 	}
 	for source in sources {
+		if runtime.site_native_warmup_ != none {
+			runtime.collect_site_root_script(source)
+		}
 		runtime.execute_source(source, false) or {
 			mut owner := unsafe { &Runtime(runtime) }
 			owner.report_event_callback_exception(err)
@@ -445,8 +471,18 @@ pub fn (mut runtime Runtime) close() {
 	if runtime.closed {
 		return
 	}
+	if mut warmup := runtime.site_native_warmup_ { warmup.release_compilation() }
+	runtime.site_native_warmup_ = none
+	runtime.stop_document_native_cache_timer()
+	runtime.flush_document_native_cache()
+	runtime.write_final_native_cache_audit()
+	runtime.agent_vm.close_native_code() or {
+		eprintln('LibJS native cache close deferred: ${err.msg()}')
+	}
 	runtime.closed = true
 	runtime.libjs_modules_.clear()
+	runtime.libjs_native_template_jobs_.clear()
+	runtime.libjs_native_template_seen_.clear()
 	if wakeup := runtime.document_state_wakeup_ {
 		runtime.document_state_wakeup_ = none
 		platform.release_closure(voidptr(wakeup))
@@ -471,6 +507,7 @@ pub fn (mut runtime Runtime) close() {
 	}
 	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
 	vm.clear_execution_context_stack()
+	vm.clear_kept_objects()
 	// Binding callbacks are closures written at their definitions. The
 	// runtime that owns them can no longer call them, and they would otherwise
 	// keep their hosts, and through them the document, alive.

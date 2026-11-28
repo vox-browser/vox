@@ -41,6 +41,16 @@ fn test_fingerprints_detect_changed_and_deleted_inputs() ! {
 	assert rejected
 }
 
+fn test_atomic_write_replaces_the_existing_file() ! {
+	root := temporary(os.temp_dir(), 'vox-atomic-write-test-')!
+	defer { remove(root) or {} }
+	path := join(root, 'staged file.v')
+	write_changed(path, 'upstream source')!
+	write_changed(path, 'patched source')!
+	assert read(path)! == 'patched source'
+	assert listing(root)! == [path]
+}
+
 fn test_compiler_manifest_rejects_conflicts_and_unverified_buffers() ! {
 	root := temporary(os.temp_dir(), 'vox-manifest-test-')!
 	defer { remove(root) or {} }
@@ -256,6 +266,138 @@ fn test_frozen_clang_compilation_uses_sealed_sources_and_headers() ! {
 	}
 }
 
+fn test_frozen_preprocessing_failure_releases_partial_outputs() ! {
+	$if macos {
+		root := fixture_repository()!
+		defer { remove(root) or {} }
+		stage := join(root, 'Build/stage')
+		receipt := join(root, 'Build/receipt')
+		write_changed(join(stage, 'Vox.app/Contents/Resources/resource'), 'resource')!
+		write_changed(join(root, 'packaging/Vox.entitlements.plist'), 'entitlements')!
+		write_changed(join(root, 'tools/localize_bundle_rpaths.vsh'), '// packaging helper')!
+		source := join(receipt, 'main.c')
+		extra := join(receipt, 'extra.c')
+		flags := join(receipt, 'flags')
+		write_changed(source, 'int main(void) { return 0; }\n')!
+		write_changed(extra, '#error deliberate preprocessing failure\n')!
+		write_changed(flags, shell_join(['-x', 'c', extra, '-x', 'none']))!
+		write_json(join(receipt, 'inputs-before.json'), json.Any(repository_state(root)!))!
+		a := arguments(['--root', root, '--stage', stage, '--receipt', receipt, '--source', source,
+			'--flags', flags, '--output', join(stage, 'probe')], []string{})!
+		mut failure := ''
+		prepare_frozen(a) or { failure = err.msg() }
+		assert failure.contains('Command failed') && failure.contains('1-extra.c.i')
+		assert read(join(receipt, 'preprocess-commands.json'))!.contains('0-main.c.i')
+		assert !exists(join(receipt, 'frozen-compile.json'))
+		assert !exists(join(receipt, 'frozen-compiler-inputs'))
+		assert exists(source)
+
+		write_changed(extra, 'int extra_value(void) { return 1; }\n')!
+		prepare_frozen(a)!
+		assert exists(join(receipt, 'frozen-compiler-inputs/0-main.c.i'))
+		assert exists(join(receipt, 'frozen-compiler-inputs/1-extra.c.i'))
+		validate_frozen(receipt, repository_state(root)!, false)!
+	}
+}
+
+fn test_compact_frozen_inputs_leave_the_receipt_unchanged_on_compression_failure() ! {
+	$if macos {
+		root := temporary(os.temp_dir(), 'vox-compact-input-failure-')!
+		defer { remove(root) or {} }
+		source := join(root, 'large.c')
+		destination := join(root, 'retained.c')
+		write_changed(source, 'x'.repeat(8 * 1024 * 1024))!
+		write_changed(destination, 'previous input')!
+		mut rejected := false
+		retain_compact_file('/usr/bin/true', source, destination) or {
+			rejected = err.msg().contains('did not compress')
+		}
+		assert rejected
+		assert read(destination)! == 'previous input'
+	}
+}
+
+fn test_compact_frozen_compilation_retains_the_original_paths_and_hashes() ! {
+	$if macos {
+		compressor := os.getenv_opt('VOX_TEST_BUILD_INPUT_COMPRESSOR') or { return }
+		root := fixture_repository()!
+		defer { remove(root) or {} }
+		stage := join(root, 'Build/stage')
+		receipt := join(root, 'Build/receipt')
+		scratch := join(root, 'Build/scratch')
+		write_changed(join(stage, 'Vox.app/Contents/Resources/resource'), 'resource')!
+		write_changed(join(root, 'packaging/Vox.entitlements.plist'), 'entitlements')!
+		write_changed(join(root, 'tools/localize_bundle_rpaths.vsh'), '// packaging helper')!
+		source := join(receipt, 'main.c')
+		raw := join(scratch, 'main.c')
+		write_changed(raw, 'static const char data[] = "' + 'x'.repeat(8 * 1024 * 1024)
+			+ '";\nint main(void) { return data[0] != 120; }\n')!
+		expected := digest(raw)!
+		flags := join(receipt, 'flags')
+		write_changed(flags, '-O1')!
+		before := repository_state(root)!
+		write_json(join(receipt, 'inputs-before.json'), json.Any(before))!
+		output := join(stage, 'probe')
+		assert freeze_command(['--root', root, '--stage', stage, '--receipt', receipt, '--source',
+			source, '--flags', flags, '--output', output, '--input-scratch', scratch,
+			'--input-compressor', compressor])! == 0
+		checked([output])!
+		remove(scratch)!
+		data := validate_frozen(receipt, before, true)!
+		inputs := string_map(data['sealed_inputs'] or { json.Null{} })
+		assert inputs[source] == expected
+		preprocessed := join(receipt, 'frozen-compiler-inputs/0-main.c.i')
+		assert inputs[preprocessed] == digest(preprocessed)!
+		assert strings(data['compiler_command'] or { json.Null{} }).contains(preprocessed)
+		assert inputs.keys().all(!it.starts_with(scratch + '/'))
+	}
+}
+
+fn test_stage_compact_browser_preserves_bundle_signature_and_entitlements() ! {
+	$if macos {
+		compressor := os.getenv_opt('VOX_TEST_BUILD_INPUT_COMPRESSOR') or { '/usr/bin/false' }
+		compact := compressor != '/usr/bin/false'
+		root := temporary(os.temp_dir(), 'vox-compact-browser-')!
+		defer { remove(root) or {} }
+		scratch := temporary(os.getenv_opt('VOX_TEST_BUILD_INPUT_SCRATCH') or { os.temp_dir() },
+			'vox-compact-browser-signing-')!
+		defer { remove(scratch) or {} }
+		bundle := join(root, 'Vox.app')
+		resource := join(bundle, 'Contents/Resources/test.txt')
+		write_changed(resource, 'sealed resource')!
+		checked(['/usr/bin/ditto', join(root_dir(), 'packaging/Info.plist'),
+			join(bundle, 'Contents/Info.plist')])!
+		binary_dir := join(bundle, 'Contents/MacOS')
+		mkdir(binary_dir)!
+		helper := join(binary_dir, 'VoxAdblockWorker')
+		write_changed(join(scratch, 'helper.c'), 'int main(void) { return 0; }\n')!
+		checked(['clang', join(scratch, 'helper.c'), '-o', helper])!
+		checked(['/usr/bin/codesign', '--force', '--sign', '-', helper])!
+		helper_digest := digest(helper)!
+		source := join(scratch, 'main.c')
+		payload_size := if compact { '8388608' } else { '1' }
+		write_changed(source, 'static const volatile unsigned char payload[${payload_size}] = { 90 };\n'
+			+ 'int main(void) { return payload[0] != 90; }\n')!
+		executable := join(scratch, 'Vox')
+		checked(['clang', source, '-o', executable])!
+		stage_compact_browser(arguments(['--executable', executable, '--bundle', bundle,
+			'--entitlements', join(root_dir(), 'packaging/Vox.entitlements.plist'),
+			'--input-compressor', compressor], []string{})!)!
+		remove(scratch)!
+		staged := join(binary_dir, 'Vox')
+		assert digest(helper)! == helper_digest
+		assert capture(['/usr/bin/codesign', '--display', '--entitlements', '-', staged])!.contains('com.apple.security.cs.allow-jit')
+		checked(['/usr/bin/codesign', '--verify', '--deep', '--strict', bundle])!
+		checked([staged])!
+		if compact {
+			assert os.file_size(staged) > 8 * 1024 * 1024
+			assert capture(['/usr/bin/stat', '-f', '%b', staged])!.trim_space().u64() * 512 < os.file_size(staged)
+		}
+		write_changed(resource, 'changed resource')!
+		assert execute(['/usr/bin/codesign', '--verify', '--strict', bundle]) != 0
+	}
+}
+
 fn test_process_identity_preserves_ps_date_spacing() {
 	assert process_start_identity('  31  20  31  1024 S  Thu Nov  5 12:34:56 2026') == 'Thu Nov  5 12:34:56 2026'
 }
@@ -285,13 +427,36 @@ fn test_pruning_preserves_published_and_newest_payloads_and_retention() ! {
 		write_changed(join(receipt, 'generated/source.c'), 'generated fixture')!
 	}
 	write_changed(join(state, 'latest.json'), '101')!
-	prune_receipts(build, false)!
+	mut report := PruneReport{}
+	prune_receipts_report(build, []string{}, mut report)!
 	assert !exists(join(state, 'receipts/100'))
 	assert exists(join(state, 'receipts/101/generated/source.c'))
 	assert !exists(join(state, 'receipts/102'))
 	assert exists(join(state, 'receipts/103/result.json'))
 	assert !exists(join(state, 'receipts/103/generated'))
 	assert exists(join(state, 'receipts/122/generated/source.c'))
+}
+
+fn test_pruning_protects_payloads_of_an_older_build_with_an_open_log() ! {
+	root := real(temporary(os.temp_dir(), 'vox-prune-active-test-')!)
+	defer { remove(root) or {} }
+	build := join(root, 'Build')
+	receipts := join(build, 'production-build', 'receipts')
+	for i in 100 .. 123 {
+		write_changed(join(receipts, i.str(), 'frozen-compiler-inputs', '0-Vox.c.i'), 'input')!
+	}
+	active := join(receipts, '100')
+	mut log := os.create(join(active, 'build.log'))!
+	prune_receipts(build, false) or {
+		log.close()
+		return err
+	}
+	log.close()
+	sealed := join(active, 'frozen-compiler-inputs', '0-Vox.c.i')
+	assert exists(sealed)
+	assert !exists(join(receipts, '101'))
+	prune_receipts(build, false)!
+	assert !exists(active)
 }
 
 fn test_pruning_does_not_follow_symlinks() ! {
@@ -302,6 +467,26 @@ fn test_pruning_does_not_follow_symlinks() ! {
 	retire(join(root, 'discard'), false)!
 	assert read(join(root, 'keep/input'))! == 'preserved'
 	assert !exists(join(root, 'discard'))
+}
+
+fn test_pruning_removes_siblings_when_one_file_cannot_be_removed() ! {
+	$if macos {
+		root := temporary(os.temp_dir(), 'vox-prune-blocked-test-')!
+		blocked := join(root, 'a-blocked')
+		removable := join(root, 'z-removable')
+		defer {
+			checked(['chflags', 'nouchg', blocked]) or {}
+			remove(root) or {}
+		}
+		write_changed(blocked, 'protected')!
+		write_changed(removable, 'disposable')!
+		checked(['chflags', 'uchg', blocked])!
+		mut failure := ''
+		prune_remove(root) or { failure = err.msg() }
+		assert failure.contains(blocked)
+		assert exists(blocked)
+		assert !exists(removable)
+	}
 }
 
 fn test_build_lock_is_not_inherited_by_executed_children() ! {
@@ -339,4 +524,25 @@ fn test_windows_mesa_rejects_corrupt_cached_archives() ! {
     prepare_windows_mesa(root) or { failure = err.msg() }
     assert failure.starts_with('Mesa archive checksum mismatch:')
     assert !os.exists(join(root, 'mesa/lib/pkgconfig/vox-mesa-egl.pc'))
+}
+
+// The staged response decoder uses the V Brotli module, which has no
+// streaming entry point: the adapter collects its output and hands it to the
+// same bounded sink. Other streaming Brotli call shapes fail closed.
+fn test_response_adapter_replaces_the_streaming_brotli_decoder() ! {
+	prefix := 'module http\n\nimport compress.brotli\nimport compress.gzip\n\nfn decode() {\n\t\tmatch encoding {\n\t\t\t\'br\' {\n\t\t\t\t'
+	suffix := '\n\t\t\t}\n\t\t}\n}\n'
+	patched := patch_response(prefix + streamed_brotli_response + suffix)!
+	assert patched.contains('import x.compress.brotli\n') && !patched.contains('import compress.brotli\n')
+	assert patched.contains(collected_brotli_response)
+	assert !patched.contains('decompress_with_callback')
+	// Staging an already staged file changes nothing.
+	assert patch_response(patched)! == patched
+	// A source that decodes at once only needs the import.
+	plain := patch_response(prefix + 'body = brotli.decompress(decoded)!' + suffix)!
+	assert plain.contains('import x.compress.brotli\n') && plain.contains('brotli.decompress(decoded)!')
+	// An unknown streaming call is not staged silently.
+	if _ := patch_response(prefix + 'brotli.decompress_with_callback(decoded, other, sink)!' + suffix) {
+		assert false
+	}
 }

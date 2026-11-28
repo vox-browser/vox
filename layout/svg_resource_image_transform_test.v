@@ -56,3 +56,29 @@ fn test_pattern_raster_coordinates_are_normalized_once_after_the_image_transform
 	assert operations.len == 1
 	assert operations[0].transform.map_rect(operations[0].image_rect) == painting.Rect{27, 49, 60, 40}
 }
+
+fn test_user_space_pattern_stays_in_tile_coordinates_on_device_layout() {
+	for scale in [f64(1), 2] {
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}</style>
+			<svg width="90" height="60" viewBox="0 0 120 80"><defs>
+			<pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse">
+			<path d="M0 20H40" fill="none" stroke="green" stroke-width="6"
+				vector-effect="non-scaling-stroke"/></pattern></defs>
+			<rect width="120" height="80" fill="url(#tile)"/></svg>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		document.set_display_device_pixel_ratio(scale)
+		document.set_layout_coordinate_scale(scale)
+		root := layout_document_typed_in_viewport(document, 240, 160)
+		paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+		assert paths.len == 1
+		pattern := paths[0].svg().fill_pattern or { panic('pattern') }
+		operations := (pattern.tile_display_list or { panic('tile') }).operations
+		assert operations.len == 1
+		operation := operations[0]
+		assert operation.non_scaling_stroke
+		assert operation.path.segments.len == 2
+		assert operation.transform.map_point(operation.path.segments[0].point) == painting.Point{0, 20}
+		assert operation.transform.map_point(operation.path.segments[1].point) == painting.Point{40, 20}
+	}
+}

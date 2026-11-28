@@ -2,27 +2,25 @@
 #define VOX_NATIVE_BITMAP_SNAPSHOT_DARWIN_H
 
 #include <CoreGraphics/CoreGraphics.h>
+#include <dispatch/dispatch.h>
 #include <stdint.h>
+#include <stdlib.h>
 #if defined(__aarch64__)
 #include <arm_neon.h>
 #endif
 
-static CGBitmapInfo native_bitmap_match_destination(uint8_t *pixels, size_t width,
-    size_t height, size_t pitch, CGBitmapInfo info, CGContextRef destination)
-{
-    if (destination == NULL
-        || (info & kCGBitmapAlphaInfoMask) != kCGImageAlphaPremultipliedLast
-        || (info & kCGBitmapByteOrderMask) != kCGBitmapByteOrder32Big
-        || CGBitmapContextGetBitsPerComponent(destination) != 8
-        || CGBitmapContextGetBitsPerPixel(destination) != 32
-        || CGBitmapContextGetAlphaInfo(destination) != kCGImageAlphaPremultipliedFirst
-        || (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) != kCGBitmapByteOrder32Little)
-        return info;
+typedef struct {
+    uint8_t *pixels;
+    size_t width, height, pitch, lanes;
+} VoxBitmapSwizzle;
+
+static inline void native_bitmap_swizzle_rows(uint8_t *pixels, size_t width,
+    size_t pitch, size_t first, size_t end) {
 #if defined(__aarch64__)
     const uint8_t indices[] = {2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15};
     uint8x16_t order = vld1q_u8(indices);
 #endif
-    for (size_t y = 0; y < height; ++y) {
+    for (size_t y = first; y < end; ++y) {
         uint8_t *row = pixels + y * pitch;
         size_t x = 0;
 #if defined(__aarch64__)
@@ -35,6 +33,38 @@ static CGBitmapInfo native_bitmap_match_destination(uint8_t *pixels, size_t widt
             row[x * 4 + 2] = red;
         }
     }
+}
+
+static void native_bitmap_swizzle_band(void *context, size_t lane) {
+    const VoxBitmapSwizzle *job = (const VoxBitmapSwizzle *)context;
+    size_t rows = job->height / job->lanes;
+    size_t extra = job->height % job->lanes;
+    size_t first = rows * lane + (lane < extra ? lane : extra);
+    native_bitmap_swizzle_rows(job->pixels, job->width, job->pitch,
+        first, first + rows + (lane < extra));
+}
+
+static CGBitmapInfo native_bitmap_match_destination(uint8_t *pixels, size_t width,
+    size_t height, size_t pitch, CGBitmapInfo info, CGContextRef destination)
+{
+    if (destination == NULL
+        || (info & kCGBitmapAlphaInfoMask) != kCGImageAlphaPremultipliedLast
+        || (info & kCGBitmapByteOrderMask) != kCGBitmapByteOrder32Big
+        || CGBitmapContextGetBitsPerComponent(destination) != 8
+        || CGBitmapContextGetBitsPerPixel(destination) != 32
+        || CGBitmapContextGetAlphaInfo(destination) != kCGImageAlphaPremultipliedFirst
+        || (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) != kCGBitmapByteOrder32Little)
+        return info;
+    // The consuming context owns the pixels exclusively until provider creation.
+    // Workers touch disjoint rows and finish before Quartz can retain the bytes.
+    size_t lanes = width * height / (512u * 1024u);
+    if (lanes > height) lanes = height;
+    if (lanes > 4) lanes = 4;
+    if (lanes > 1 && !getenv("VOX_SERIAL_BITMAP_SWIZZLE")) {
+        VoxBitmapSwizzle job = {pixels, width, height, pitch, lanes};
+        dispatch_apply_f(lanes, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
+            &job, native_bitmap_swizzle_band);
+    } else native_bitmap_swizzle_rows(pixels, width, pitch, 0, height);
     return (info & ~(kCGBitmapAlphaInfoMask | kCGBitmapByteOrderMask))
         | kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little;
 }

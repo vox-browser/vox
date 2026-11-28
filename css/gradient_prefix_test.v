@@ -5,6 +5,16 @@ fn test_conic_gradient_omits_default_zero_angle() {
 	assert value.serialize(.normal) == 'conic-gradient(red, blue)'
 }
 
+fn test_linear_gradient_absolutizes_angles_and_preserves_side_directions() {
+	for source in ['linear-gradient(to right, red, blue)', 'linear-gradient(calc(45deg * 2), red, blue)'] {
+		value := parse_css_value_logic(.background_image, source) or { panic('linear gradient') }
+		images := value as StyleValueList
+		gradient := images.value_at(0, false) as LinearGradientStyleValue
+		computed := gradient.absolutized(ComputationContext{})
+		assert computed.angle_degrees(CSSPixelSize{}) == 90
+	}
+}
+
 // Validates parsing + serialization of radial/conic gradient prefixes
 // (`[<shape> || <size>]? [at <position>]?` for radial, `[from <angle>]? [at
 // <position>]?` for conic) and that the serialized css_text re-parses to the

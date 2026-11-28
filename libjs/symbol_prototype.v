@@ -34,7 +34,7 @@ pub fn SymbolPrototype.create(mut vm VM, realm &Realm, object_prototype ?&Object
 fn this_symbol_value(mut vm VM, value Value) !&Symbol {
 	if value.is_symbol() { return value.as_symbol() }
 	if value.is_object() {
-		if wrapper := value.as_object().symbol_object { return wrapper.symbol }
+		if wrapper := value.as_object().slots.symbol_object { return wrapper.symbol }
 	}
 	return vm.throw_error_type(.type_error, .not_an_object_of_type, 'Symbol')
 }

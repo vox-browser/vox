@@ -1,0 +1,227 @@
+module main
+
+import cpuraster
+import layout
+import math
+import painting
+
+struct PortableSVGMaskTileBudget {
+mut:
+	pixels      int = portable_svg_group_max_pixels
+	depth       int
+	recent_slot int
+	tiles       [2]PortableSVGMaskTileReuse // Both entries borrow pixels from this replay.
+}
+
+struct PortableSVGMaskTileReuse {
+	style      &painting.SVGPatternPaintStyle = unsafe { nil }
+	pattern    cpuraster.CanvasPattern
+	metric     PortableSVGTileStrokeSpace
+	pixel_cost int
+	depth      int
+	luminance  bool
+}
+
+fn (entry &PortableSVGMaskTileReuse) matches_style(style &painting.SVGPatternPaintStyle) bool {
+	previous := entry.style
+	if voidptr(previous) == voidptr(style) { return true }
+	if previous == unsafe { nil } || style.cache_key == 0 || style.cache_key != previous.cache_key
+		|| style.native_bounds_key != previous.native_bounds_key
+		|| style.has_non_scaling_stroke != previous.has_non_scaling_stroke
+		|| style.tile_display_list_id == '' || style.tile_display_list_id != previous.tile_display_list_id {
+		return false
+	}
+	// Different retained paints can resolve the same vector tile. Image replay
+	// also depends on the paint's image placement record and decoded resource.
+	info := style.shared_tile_info() or { return false }
+	return !info.has_images
+}
+
+fn (entry &PortableSVGMaskTileReuse) matches(style &painting.SVGPatternPaintStyle,
+	bounds painting.IntRect, depth int, luminance bool, metric PortableSVGTileStrokeSpace) bool {
+	return entry.pattern.width == bounds.width && entry.pattern.height == bounds.height
+		&& entry.depth == depth && entry.luminance == luminance && entry.metric == metric
+		&& entry.matches_style(style)
+}
+
+fn (budget &PortableSVGMaskTileBudget) cached_tile(style &painting.SVGPatternPaintStyle,
+	bounds painting.IntRect, luminance bool, metric PortableSVGTileStrokeSpace) ?int {
+	if budget.tiles[budget.recent_slot].matches(style, bounds, budget.depth, luminance, metric) {
+		return budget.recent_slot
+	}
+	older := 1 - budget.recent_slot
+	if budget.tiles[older].matches(style, bounds, budget.depth, luminance, metric) {
+		return older
+	}
+	return none
+}
+
+struct PortableSVGMaskPattern {
+	pattern   cpuraster.CanvasPattern
+	cacheable bool
+}
+
+struct PortableSVGTileStrokeSpace {
+	to_device [6]f32
+	to_tile   [6]f32
+}
+
+fn portable_svg_tile_stroke_space(device [6]f64, sx f64, sy f64) ?PortableSVGTileStrokeSpace {
+	// Only the linear part matters. Every copy of the tile uses the same
+	// stroke metric, regardless of its placement or the current scroll.
+	transform := painting.Affine{
+		a: device[0] / sx
+		b: device[1] / sx
+		c: device[2] / sy
+		d: device[3] / sy
+	}
+	inverse := transform.inverse()?
+	to_device := [f32(transform.a), f32(transform.b), f32(transform.c), f32(transform.d), 0, 0]!
+	to_tile := [f32(inverse.a), f32(inverse.b), f32(inverse.c), f32(inverse.d), 0, 0]!
+	if !to_device.all(math.is_finite(f64(it))) || !to_tile.all(math.is_finite(f64(it))) {
+		return none
+	}
+	return PortableSVGTileStrokeSpace{to_device, to_tile}
+}
+
+fn portable_svg_mask_pattern_supported(style &painting.SVGPatternPaintStyle) bool {
+	return style.shared_tile_info() != none
+}
+
+fn svg_pattern_filter_crop(filter &layout.PaintSVGMaskFilter, width int, height int) ?painting.IntRect {
+	full := painting.IntRect{0, 0, width, height}
+	if rect := filter.bounds {
+		if ![rect.x, rect.y, rect.right(), rect.bottom()]!.all(math.is_finite(it)) { return none }
+		crop := rect.intersection(painting.Rect{0, 0, f64(width), f64(height)})
+		// The native filter uses the source extent when no nonempty
+		// bounds overlap the tile.
+		if !crop.is_empty() {
+			if ![crop.x, crop.y, crop.right(), crop.bottom()]!.all(math.floor(it) == it) { return none }
+			return painting.IntRect{int(crop.x), int(crop.y), int(crop.width), int(crop.height)}
+		}
+		if filter.effect == none { return painting.IntRect{} }
+	}
+	return full
+}
+
+fn apply_svg_pattern_color_filter(mut layer PortableSVGMaskLayer, pitch int, clip cpuraster.IRect,
+	effect painting.SVGSourceColorFilter) bool {
+	start := clip.top * pitch + clip.left * 4
+	mut pixels := layer.pixels[start..]
+	width := clip.right - clip.left
+	height := clip.bottom - clip.top
+	return match effect {
+		painting.SVGSourceColorMatrix {
+			cpuraster.apply_canvas_color_matrices_in_place(mut pixels, width, height,
+				effect.stages, effect.linear_rgb, pitch: pitch)
+		}
+		painting.SVGSourceColorTable {
+			cpuraster.apply_canvas_color_tables_in_place(mut pixels, width, height,
+				effect.stages, effect.linear_rgb, pitch: pitch)
+		}
+		painting.SVGSourceColorChain {
+			stages := effect.stages.map(cpuraster.CanvasColorStage{it.matrix, it.channels, it.is_table, it.linear_rgb})
+			cpuraster.apply_canvas_color_chain_in_place(mut pixels, width, height, stages,
+				pitch: pitch)
+		}
+	}
+}
+
+fn (mut app BrowserApp) raster_svg_mask_pattern(style &painting.SVGPatternPaintStyle,
+	matrix [6]f32, luminance bool, parent_space &PortableSVGTileStrokeSpace,
+	mut budget PortableSVGMaskTileBudget) ?PortableSVGMaskPattern {
+	if budget.depth >= painting.svg_pattern_tile_max_depth { return none }
+	list := style.tile_display_list?
+	tile := style.tile_rect
+	pattern_transform := painting_affine_array(style.pattern_transform or { painting.Affine{} })
+	raster := multiply_paint_transforms([f64(matrix[0]), f64(matrix[1]), f64(matrix[2]),
+		f64(matrix[3]), f64(matrix[4]), f64(matrix[5])]!, pattern_transform)
+	width := math.ceil(tile.width * math.max(1.0, math.hypot(raster[0], raster[1])))
+	height := math.ceil(tile.height * math.max(1.0, math.hypot(raster[2], raster[3])))
+	if !(width > 0 && width <= 8191 && height > 0 && height <= 8191
+		&& width * height <= f64(budget.pixels)) {
+		return none
+	}
+	sx := width / tile.width
+	sy := height / tile.height
+	if !math.is_finite(f64(f32(sx))) || !math.is_finite(f64(f32(sy))) { return none }
+	metric := if style.has_non_scaling_stroke {
+		// Child samples land in the parent bitmap. Stroke widths use the
+		// physical device metric reached through the parent's linear map.
+		device := if parent_space == unsafe { nil } {
+			raster
+		} else {
+			parent := parent_space.to_device
+			multiply_paint_transforms([f64(parent[0]), f64(parent[1]), f64(parent[2]),
+				f64(parent[3]), 0.0, 0.0]!, raster)
+		}
+		portable_svg_tile_stroke_space(device, sx, sy)?
+	} else {
+		PortableSVGTileStrokeSpace{}
+	}
+	bounds := painting.IntRect{0, 0, int(width), int(height)}
+	if slot := budget.cached_tile(style, bounds, luminance, metric) {
+		entry := &budget.tiles[slot]
+		// Charge the original subtree cost, including child tiles.
+		if entry.pixel_cost > budget.pixels { return none }
+		budget.pixels -= entry.pixel_cost
+		budget.recent_slot = slot
+		if portable_svg_raster_diagnostics {
+			eprintln('VOX_SVG_TILE_RASTER reuse=hit depth=${budget.depth} tile=${bounds.width}x${bounds.height}')
+		}
+		return PortableSVGMaskPattern{pattern: entry.pattern, cacheable: true}
+	}
+	// Tile operations are already normalized into the cell's coordinate
+	// system. The shader maps the raster back to the exact SVG cell period.
+	operations := layout.compatibility_lower_svg_mask_operations(list.operations,
+		[sx, 0.0, 0.0, sy, 0.0, 0.0]!, painting.Rect{0, 0, width, height})?
+	// A filter can read RGB to compute alpha. Keep the source colors,
+	// including nested paint, even when the destination samples alpha alone.
+	retain_color := luminance || operations.any(it.filter != unsafe { nil }
+		&& it.filter.needs_source_color())
+	mask := layout.PaintClip{mask_operations: operations, mask_luminance: retain_color}
+	if !portable_svg_content_mask_supported(&mask, true) { return none }
+	local := multiply_paint_transforms(pattern_transform, [1 / sx, 0.0, 0.0, 1 / sy, tile.x, tile.y]!)
+	matrix32 := [f32(local[0]), f32(local[1]), f32(local[2]), f32(local[3]), f32(local[4]), f32(local[5])]!
+	if !matrix32.all(math.is_finite(f64(it))) { return none }
+	stroke_space := if style.has_non_scaling_stroke {
+		&metric
+	} else {
+		unsafe { nil }
+	}
+	pixels_before := budget.pixels
+	budget.pixels -= bounds.width * bounds.height
+	budget.depth++
+	mut pixels := []u8{len: bounds.width * bounds.height * 4}
+	result := app.raster_svg_mask_layers(mut pixels, bounds.width * 4, bounds, &mask,
+		0, 0, 1, stroke_space, mut budget)
+	budget.depth--
+	cacheable := result?
+	if portable_svg_raster_diagnostics {
+		eprintln('VOX_SVG_TILE_RASTER reuse=miss depth=${budget.depth} tile=${bounds.width}x${bounds.height} complete=${cacheable}')
+	}
+	pattern := cpuraster.CanvasPattern{
+		pixels: pixels
+		width: bounds.width
+		height: bounds.height
+		pitch: bounds.width * 4
+		premultiplied: true
+		nearest: true
+		transform: matrix32
+	}
+	if cacheable && !disable_portable_svg_raster_cache {
+		// Resource responses are published between replays. A pending image
+		// anywhere in the rendered subtree leaves cacheable false.
+		budget.recent_slot = 1 - budget.recent_slot
+		budget.tiles[budget.recent_slot] = PortableSVGMaskTileReuse{
+			// The caller retains every paint style for the life of this replay.
+			style: unsafe { style }
+			pattern: pattern
+			metric: metric
+			pixel_cost: pixels_before - budget.pixels
+			depth: budget.depth
+			luminance: luminance
+		}
+	}
+	return PortableSVGMaskPattern{pattern: pattern, cacheable: cacheable}
+}

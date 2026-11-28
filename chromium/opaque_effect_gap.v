@@ -3,7 +3,6 @@ module main
 import css
 import layout
 import math
-import os
 
 // A bounded saveLayer does not create a compositor surface. An opaque prefix
 // can remain the parent of disjoint later paint across this native replay gap.
@@ -97,7 +96,7 @@ fn chromium_opaque_compositor_effect_gap(commands []layout.PaintCommand,
 	}
 	if !has_resumed { return false }
 	coverage := layout.LayoutRect{resumed.x - 3, resumed.y - 3, resumed.width + 6, resumed.height + 6}
-	if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+	if chromium_paint_layer_diagnostics {
 		eprintln('VOX_OPAQUE_CONTINUATION layer=${parent} gap=${start}:${end} coverage=${coverage.x},${coverage.y},${coverage.width},${coverage.height}')
 	}
 	for index in plan.layers[parent].command_indices {
@@ -118,7 +117,7 @@ fn chromium_opaque_compositor_effect_gap(commands []layout.PaintCommand,
 			radii = layout.BoxRadii{r, r, r, r}
 		}
 		if !chromium_opaque_round_rect_contains(layout.LayoutRect{command.x, command.y, command.width, command.height}, radii, command.transform, coverage) {
-			if os.getenv('VOX_DIAGNOSTIC_PAINT_LAYER') != '' {
+			if chromium_paint_layer_diagnostics {
 				eprintln('VOX_OPAQUE_PREFIX_OUTSIDE command=${index} rect=${command.x},${command.y},${command.width},${command.height} transform=${command.transform}')
 			}
 			continue

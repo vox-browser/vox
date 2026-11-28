@@ -10,6 +10,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <limits.h>
+#include <stdio.h>
+#include <windows.h>
+#endif
 
 typedef struct {
     FT_Library library;
@@ -19,16 +24,57 @@ typedef struct {
     FT_Matrix matrix;
     float scalar[4];
     float size_x, size_y;
+#ifdef _WIN32
+    FT_StreamRec stream;
+#endif
 } CPURasterFTFont;
 
 static void cpuraster_ft_release(void* reference) {
     CPURasterFTFont* f = (CPURasterFTFont*)reference;
     if (!f) return;
     if (f->face) FT_Done_Face(f->face);
+#ifdef _WIN32
+    if (f->stream.descriptor.pointer) fclose(f->stream.descriptor.pointer);
+#endif
     if (f->library) FT_Done_FreeType(f->library);
     free(f->path);
     free(f);
 }
+
+#ifdef _WIN32
+static unsigned long cpuraster_ft_read(FT_Stream stream, unsigned long offset,
+                                      unsigned char* buffer, unsigned long count) {
+    FILE* file = stream->descriptor.pointer;
+    if (offset > stream->size || _fseeki64(file, offset, SEEK_SET)) return count == 0;
+    return count ? fread(buffer, 1, count, file) : 0;
+}
+
+static FT_Error cpuraster_ft_open_face(CPURasterFTFont* f, const char* path, int index) {
+    int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+    if (length <= 0) return FT_Err_Cannot_Open_Resource;
+    wchar_t* wide = malloc((size_t)length * sizeof(*wide));
+    if (!wide) return FT_Err_Out_Of_Memory;
+    FILE* file = NULL;
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, length))
+        file = _wfopen(wide, L"rb");
+    free(wide);
+    if (!file) return FT_Err_Cannot_Open_Resource;
+    f->stream.descriptor.pointer = file;
+    if (_fseeki64(file, 0, SEEK_END)) return FT_Err_Cannot_Open_Resource;
+    long long size = _ftelli64(file);
+    if (size < 0 || size > ULONG_MAX) return FT_Err_Cannot_Open_Resource;
+    f->stream.size = (unsigned long)size;
+    f->stream.read = cpuraster_ft_read;
+    FT_Open_Args args = {0};
+    args.flags = FT_OPEN_STREAM;
+    args.stream = &f->stream;
+    return FT_Open_Face(f->library, &args, index, &f->face);
+}
+#else
+static inline FT_Error cpuraster_ft_open_face(CPURasterFTFont* f, const char* path, int index) {
+    return FT_New_Face(f->library, path, index, &f->face);
+}
+#endif
 
 static void* cpuraster_ft_open(const char* path, int index, int* flags) {
     CPURasterFTFont* f = (CPURasterFTFont*)calloc(1, sizeof(*f));
@@ -36,7 +82,7 @@ static void* cpuraster_ft_open(const char* path, int index, int* flags) {
     f->path = strdup(path);
     f->index = index;
     if (!f->path || FT_Init_FreeType(&f->library)
-        || FT_New_Face(f->library, path, index, &f->face)) {
+        || cpuraster_ft_open_face(f, path, index)) {
         cpuraster_ft_release(f);
         return NULL;
     }

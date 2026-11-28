@@ -65,7 +65,10 @@ fn test_chromium_webp_paint_truncates_alpha_without_changing_decoder_pixels() {
 			'Tests/Browser/Brave/input/decode-alpha-tagged.webp'))!
 		tagged_image := app.create_image_from_resource_bytes('https://webp.test/tagged.webp',
 			tagged)!
-		// ICC-tagged WebP decodes straight before its color transform.
-		assert tagged_image.nr_channels == 6
+		// The ICC's matrix and curves canonicalize to sRGB, so libwebp's
+		// original straight rows can use the same truncated paint conversion.
+		assert tagged_image.nr_channels == 7
+		assert browser_decode_raster_image_bytes(tagged)!.data[..4] == [u8(254), 128, 1, 128]
+		assert unsafe { (&u8(tagged_image.data)).vbytes(4) } == [u8(127), 64, 0, 128]
 	}
 }

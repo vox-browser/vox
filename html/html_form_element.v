@@ -106,8 +106,12 @@ pub fn (mut form HTMLFormElementModel) add_associated_element(mut control FormAs
 
 pub fn (mut form HTMLFormElementModel) remove_associated_element(control &FormAssociatedElement) {
 	form.remove_control(control)
+	form.forget_past_names_for_element(control.element)
+}
+
+fn (mut form HTMLFormElementModel) forget_past_names_for_element(target &dom.Element) {
 	for name, element in form.past_names_map_.clone() {
-		if voidptr(element) == voidptr(control.element) {
+		if voidptr(element) == voidptr(target) {
 			form.past_names_map_.delete(name)
 			form.past_names_age_.delete(name)
 		}
@@ -139,7 +143,11 @@ pub fn (mut form HTMLFormElementModel) elements() &HTMLFormControlsCollection {
 	if collection := form.elements_ {
 		return collection
 	}
-	collection := HTMLFormControlsCollection.create_for_form(&form)
+	root := html_form_element_root(&form)
+	mut collection := HTMLFormControlsCollection.create(unsafe { &dom.ParentNode(root) }, .descendants, fn [form] (element &dom.Element) bool {
+		return html_form_element_is_form_control(form, element)
+	})
+	collection.form_owner_ = &form
 	form.elements_ = collection
 	return collection
 }
@@ -617,10 +625,11 @@ pub fn (mut form HTMLFormElementModel) named_item_value(name string) HTMLFormCon
 		return result
 	}
 	root := html_form_element_root(&form)
-	images := RadioNodeList.create(root, .descendants, fn [form, name] (node &dom.Node) bool {
+	mut images := RadioNodeList.create(root, .descendants, fn [form, name] (node &dom.Node) bool {
 		element := node.as_element() or { return false }
 		return element.local_name() == 'img' && html_form_element_is_associated(form, element) && (element.id() or { '' } == name || element.get_attribute('name') or { '' } == name)
 	})
+	images.form_owner_ = &form
 	if images.length() > 1 {
 		return HTMLFormControlsCollectionRadioNodeList{ list: images }
 	}

@@ -16,7 +16,7 @@ fn active_svg_view_box(element &dom.Element) ?svg.ViewBox {
 				fragment := svg.decode_fragment_identifier(encoded)
 				if specification := svg.parse_view_specification(fragment) {
 					if box := specification.view_box { return box }
-				} else if view := document.get_element_by_id(fragment) {
+				} else if view := document.rendering_element_by_id(fragment) {
 					if view.is_svg_element() && view.local_name() == 'view' {
 						if box := svg.parse_viewbox(view.get_attribute_value('viewBox')) { return box }
 					}

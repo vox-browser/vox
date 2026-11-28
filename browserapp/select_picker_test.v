@@ -6,10 +6,22 @@ import html
 import page
 import browserui
 
+$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+	import platform
+	import ui2
+}
+
 $if macos {
 	#include "@VMODROOT/native/include/native_address_bar_test_darwin.h"
 	fn C.native_test_address_window() voidptr
+	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)
+}
+
+$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+	#include "@VMODROOT/native/include/native_popup_test_darwin.h"
+	fn C.native_test_popup_keys(window voidptr, choose bool) voidptr
+	fn C.native_test_popup_keys_cleanup(timer voidptr)
 }
 
 fn select_picker_test_app(markup string) &BrowserApp {
@@ -174,6 +186,41 @@ fn test_select_menu_preserves_groups_disabled_options_separators_and_zoom_geomet
 		select_picker_test_drain(app)
 		assert html.html_select_element_selected_index(unsafe { &dom.HTMLSelectElement(control) }) == 3
 		assert app.js_runtime.evaluate_host('document.getElementById("sort").value')! == 'date'
+	}
+}
+
+fn test_mounted_select_commits_native_choice_and_cancels_before_navigation() {
+	$if macos && vox_ui2 ? && !ui2_custom_rendering ? {
+		window := select_ui_test_begin()
+		defer { select_ui_test_end(window) }
+		mut app := select_picker_test_app('<select id="sort"><option>A</option><option>B</option></select>')
+		defer { app.dispose_browser_tab() }
+		app.mount_ui2_chrome(C.native_test_address_parent(window), 800, 600)!
+		defer { app.unmount_address_bar() }
+		select_ui_test_choose(-2)
+		select_picker_test_click(mut app, 'sort')
+		state := app.browser_ui()
+		assert state.popup != none
+		assert state.select_popup_timer != unsafe { nil }
+		assert state.select_popup_timer.is_active()
+		assert ui2.embedded_browser_control('browser-menu-list') == unsafe { nil }
+		keys := C.native_test_popup_keys(window, true)
+		platform.pump_native_events(0.3)
+		C.native_test_popup_keys_cleanup(keys)
+		assert state.popup == none
+		control := app.document.get_element_by_id('sort')?
+		assert html.html_select_element_value(unsafe { &dom.HTMLSelectElement(control) }) == 'B'
+		select_picker_test_click(mut app, 'sort')
+		assert state.select_popup_timer != unsafe { nil }
+		app.install_loaded_page(LoadedPage{
+			url:          'https://boards.4chan.org/pol/catalog'
+			content_type: 'text/html'
+			markup:       '<p>replacement</p>'
+		}, true)
+		platform.pump_native_events(0)
+		assert state.popup == none
+		assert state.select_popup_timer == unsafe { nil }
+		assert state.select_node == unsafe { nil }
 	}
 }
 

@@ -75,6 +75,11 @@ mut:
 	closed             bool
 	worker_entry       ?&WorkerModuleEntryResult
 	libjs_draining bool
+	// Module syntax parsed on a worker before its fetch resumes, by module key.
+	libjs_preparsed map[string]&libjs.ParsedSource
+	// Document script keys with a worker parse in flight.
+	libjs_preparsing map[string]bool
+	libjs_background_parses u64
 }
 
 pub fn ModuleHost.create(settings &html.EnvironmentSettingsObject, transport &fetch.FetchHost) &ModuleHost {

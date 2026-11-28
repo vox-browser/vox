@@ -15,6 +15,16 @@ __global (
 	computed_longhand_constant_reported bool
 )
 
+// The longhand loop reads the element only through its computation context
+// (the parent's font metrics and the subject's query containers, which the
+// value snapshots already guard), so SVG elements reuse longhands as HTML ones
+// do. Their presentation attributes reach the loop as ordinary cascaded inputs.
+const longhand_reuse_html_only = os.getenv('VOX_LONGHAND_REUSE_HTML_ONLY') != ''
+
+fn longhand_reuse_covers_namespace(element &dom.Element) bool {
+	return element.is_html_element() || (!longhand_reuse_html_only && element.is_svg_element())
+}
+
 fn computed_longhand_constants_enabled() bool {
 	if computed_longhand_constant_mode == 0 {
 		computed_longhand_constant_mode = if os.getenv('VOX_DISABLE_CONSTANT_LONGHAND_REUSE') == '' { 1 } else { 2 }
@@ -536,7 +546,7 @@ fn computed_longhand_cascade_key(cascaded &CascadedProperties, parent &ComputedP
 fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	cascaded &CascadedProperties, inherited ?&ComputedProperties, recascaded_font bool) ?ComputedLonghandReuseKey {
 	if s.computed_property_page_batch_depth_ == 0 || recascaded_font
-		|| element.pseudo_element() != none || !element.element().is_html_element()
+		|| element.pseudo_element() != none || !longhand_reuse_covers_namespace(element.element())
 		|| element.element().local_name() == 'html' || is_quirks_table(element) {
 		return none
 	}

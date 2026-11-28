@@ -1,6 +1,8 @@
 module main
 
+import adblock
 import html
+import net
 import os
 import time
 
@@ -55,6 +57,127 @@ fn test_resource_fetch_workers_deliver_every_result_once() {
 		assert resource.request_type == 'stylesheet'
 	}
 	assert received['file://${directory}/missing.js'].error != ''
+}
+
+fn test_background_discovery_batches_unique_uncached_urls() {
+	directory := os.join_path(os.temp_dir(), 'vox-background-batch-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory) or { panic(err) }
+	defer { os.rmdir_all(directory) or {} }
+	count := max_concurrent_resource_fetches + 3
+	source := 'file://${directory}/index.html'
+	mut app := BrowserApp{
+		address: source
+		background_resource_results: chan PreloadedResource{cap: count}
+	}
+	cached_url := 'file://${directory}/cached.png'
+	app.resource_cache[cached_url] = PreloadedResource{url: cached_url, body: 'cached'}
+	mut jobs := []ResourceFetchJob{}
+	mut expected := map[string]string{}
+	for index in 0 .. count {
+		path := os.join_path(directory, '${index}.png')
+		body := 'image ${index}'
+		os.write_file(path, body) or { panic(err) }
+		address := 'file://${path}'
+		expected[address] = body
+		app.enqueue_background_resource(address, mut jobs)
+		app.enqueue_background_resource(address, mut jobs)
+	}
+	app.enqueue_background_resource(cached_url, mut jobs)
+	assert jobs.len == count
+	assert app.background_resource_pending.len == count
+	assert app.background_resource_jobs == 0
+	assert app.background_resource_results.len == 0
+	app.start_background_resource_batch(jobs)
+	defer {
+		if scope := app.background_resource_scope { scope.release() }
+	}
+	assert app.background_resource_jobs == count
+	for _ in 0 .. count {
+		resource := <-app.background_resource_results
+		assert resource.url in expected
+		assert resource.body == expected[resource.url]
+		assert resource.error == ''
+		assert resource.source_url == source
+		assert resource.request_type == 'image'
+		expected.delete(resource.url)
+	}
+	assert expected.len == 0
+}
+
+fn test_resource_fetch_workers_reuse_retained_cache_payloads() {
+	filtering := adblock.is_enabled()
+	adblock.set_enabled(false)
+	defer { adblock.set_enabled(filtering) }
+	address := 'https://example.com/retained.png'
+	source := 'https://example.com/index.html'
+	entry := PreloadedResource{
+		url: address
+		body: 'cache payload with binary NUL: \x00end'.clone()
+		source_url: source
+		final_url: address
+		request_type: 'image'
+		response_headers: [adblock.ResponseHeader{
+			name: 'Content-Type'.clone()
+			value: 'image/png'.clone()
+		}]
+	}
+	retained := persistent_preloaded_resource(entry)
+	results := chan PreloadedResource{cap: 1}
+	for cached in [entry, retained] {
+		spawn_resource_fetch_workers([ResourceFetchJob{
+			url: address
+			request_type: 'image'
+			cached: [cached]
+		}], source, false, results)
+		resource := <-results
+		assert resource.body == cached.body
+		assert resource.response_headers == cached.response_headers
+		assert resource.error == ''
+		$if prealloc {
+			assert resource.retained_for_process
+			assert (voidptr(resource.body.str) == voidptr(cached.body.str)) == cached.retained_for_process
+			assert (resource.response_headers.data == cached.response_headers.data) == cached.retained_for_process
+		}
+	}
+}
+
+fn serve_resource_fetch_result(mut listener net.TcpListener) {
+	mut socket := listener.accept() or { panic(err) }
+	defer { socket.close() or {} }
+	socket.set_read_timeout(3 * time.second)
+	mut request := []u8{len: 8192}
+	socket.read(mut request) or { panic(err) }
+	socket.write_string('HTTP/1.1 200 OK\r\nCache-Control: no-store\r\nX-Resource: first\r\nX-Resource: second\r\nContent-Length: 3\r\nConnection: close\r\n\r\na\x00b') or { panic(err) }
+}
+
+fn test_background_resource_result_survives_request_and_worker_exit() {
+	filtering := adblock.is_enabled()
+	adblock.set_enabled(false)
+	defer { adblock.set_enabled(filtering) }
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0') or { panic(err) }
+	defer { listener.close() or {} }
+	listener.set_accept_timeout(5 * time.second)
+	host := listener.addr() or { panic(err) }
+	origin := 'http://${host}'
+	address := origin + '/resource'
+	source := origin + '/document'
+	server := spawn serve_resource_fetch_result(mut listener)
+	results := chan PreloadedResource{cap: 1}
+	worker := spawn fetch_resource_in_background(address, source, 'image', results)
+	worker.wait()
+	server.wait()
+	assert results.len == 1
+	resource := <-results
+	assert resource.error == ''
+	assert resource.url == address
+	assert resource.source_url == source
+	assert resource.final_url == address
+	assert resource.request_type == 'image'
+	assert resource.status_code == 200
+	assert resource.body == 'a\x00b'
+	tags := resource.response_headers.filter(it.name.to_lower() == 'x-resource')
+	assert tags.map(it.value) == ['first', 'second']
+	assert resource.response_time >= resource.request_time
 }
 
 fn test_document_preloads_every_stylesheet_and_bounds_images() {

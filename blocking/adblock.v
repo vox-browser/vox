@@ -121,32 +121,35 @@ fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, m
 
 fn refresh_browser_adblock_with_tokens(document &dom.Document, runtime &browserjs.Runtime,
 	mut messages []string, mut tokens BrowserAdblockTokenCache) {
-	mut procedural_css := ''
+	mut procedural := browserjs.TemporaryText{}
+	defer { procedural.finish() }
 	if runtime != unsafe { nil } && adblock.is_enabled() {
 		// Upstream primes action styles before evaluating selectors. Publish them
 		// before a :matches-css query can synchronously flush style and layout.
-		primed_css := runtime.evaluate_host('typeof __voxAdblockProceduralCSS==="function"?__voxAdblockProceduralCSS():""') or {
+		primed := runtime.evaluate_host_temporary_text('typeof __voxAdblockProceduralCSS==="function"?__voxAdblockProceduralCSS():""') or {
 			messages << 'Adblock procedural filters: ${err.msg()}'
-			''
+			browserjs.TemporaryText{}
 		}
-		if primed_css != '' {
-			install_browser_adblock_styles_with_tokens(document, primed_css, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
+		if primed.value != '' {
+			install_browser_adblock_styles_with_tokens(document, primed.value, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
 		}
-		procedural_css = runtime.evaluate_host('typeof __voxAdblockApplyProcedural==="function"?__voxAdblockApplyProcedural():""') or {
+		primed.finish()
+		procedural = runtime.evaluate_host_temporary_text('typeof __voxAdblockApplyProcedural==="function"?__voxAdblockApplyProcedural():""') or {
 			messages << 'Adblock procedural filters: ${err.msg()}'
-			''
+			browserjs.TemporaryText{}
 		}
 		// Procedural actions use the same live compact DOM mutation replay as
 		// author scripts, including attribute edits and node removals.
-		if procedural_css != '' {
-			state := runtime.evaluate_host('__ladybirdFinalize()') or { '' }
-			if state != '' {
-				apply_javascript_runtime_state(document, state, runtime, mut messages)
+		if procedural.value != '' {
+			state := runtime.evaluate_host_temporary_text('__ladybirdFinalize()') or { browserjs.TemporaryText{} }
+			if state.value != '' {
+				apply_javascript_runtime_state(document, state.value, runtime, mut messages)
 			}
+			state.finish()
 		}
 	}
 	// Consent widgets can arrive in delayed callbacks or be shown again by
 	// scripts. Apply the independent cookie policy after replay, before layout.
 	tokens.cookie_survey.apply(document)
-	install_browser_adblock_styles_with_tokens(document, procedural_css, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
+	install_browser_adblock_styles_with_tokens(document, procedural.value, mut tokens) or { messages << 'Adblock styles: ${err.msg()}' }
 }

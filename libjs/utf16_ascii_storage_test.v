@@ -63,3 +63,15 @@ fn test_source_unchecked_ascii_stale_internal_units_cannot_reuse_raw_bytes() {
 		assert false
 	}
 }
+
+fn test_ascii_payload_clone_stays_independent_when_a_shallow_copy_changes_units() {
+	mut original := utf16_string_from_ascii_without_validation([u8(255), 0])
+	shallow := original
+	cloned := original.clone()
+	original.data[0] = u16(`A`)
+	assert shallow.str() == 'A\x00'
+	assert cloned.str().bytes() == [u8(255), 0]
+	assert cloned.code_units() == [u16(char(u8(255))), 0]
+	assert utf16_string_from_ascii_without_validation([]u8{}).str() == ''
+	assert sizeof(Utf16String) <= sizeof([]u16) + sizeof(voidptr)
+}

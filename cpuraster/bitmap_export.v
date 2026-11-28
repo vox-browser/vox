@@ -305,16 +305,50 @@ fn export_pixels(bitmap BitmapSource, pitch int, format BitmapExportFormat, prem
 	} else {
 		[]int{len: width, init: horizontal.source(index)}
 	}
-	for y in 0 .. height {
-		source_row := if legacy { legacy_sampling.row(y) } else { vertical.source(y) } * pitch
-		destination_row := y * row_bytes
-		for x in 0 .. width {
-			source := source_row + columns[x] * 4
-			pipeline.store(bitmap.pixels[source], bitmap.pixels[source + 1], bitmap.pixels[source +
-				2], bitmap.pixels[source + 3], mut output, destination_row + x * bytes_per_pixel)
+	scan := BitmapExportScan{
+		pixels:          bitmap.pixels
+		output:          output
+		pitch:           pitch
+		row_bytes:       row_bytes
+		bytes_per_pixel: bytes_per_pixel
+		pipeline:        pipeline
+		legacy:          legacy
+		sampling:        legacy_sampling
+		columns:         columns
+	}
+	run_raster_scans(&scan, height, width, scan_bitmap_export_rows)
+	return true
+}
+
+struct BitmapExportScan {
+	pixels          []u8
+	output          []u8
+	pitch           int
+	row_bytes       int
+	bytes_per_pixel int
+	pipeline        ExportPipeline
+	legacy          bool
+	sampling        LegacySampling
+	columns         []int
+}
+
+fn scan_bitmap_export_rows(context voidptr, first i32, end i32) {
+	scan := unsafe { &BitmapExportScan(context) }
+	mut output := unsafe { scan.output }
+	for y in int(first) .. int(end) {
+		source_y := if scan.legacy {
+			scan.sampling.row(y)
+		} else {
+			scan.sampling.vertical.source(y)
+		}
+		source_row := source_y * scan.pitch
+		destination_row := y * scan.row_bytes
+		for x, source_x in scan.columns {
+			source := source_row + source_x * 4
+			scan.pipeline.store(scan.pixels[source], scan.pixels[source + 1], scan.pixels[source +
+				2], scan.pixels[source + 3], mut output, destination_row + x * scan.bytes_per_pixel)
 		}
 	}
-	return true
 }
 
 fn (pipeline ExportPipeline) store(byte0 u8, byte1 u8, byte2 u8, byte3 u8, mut output []u8, offset int) {

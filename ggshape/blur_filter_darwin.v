@@ -1,5 +1,6 @@
 module ggshape
 
+import cpuraster
 import gg.canvas
 import math
 
@@ -12,6 +13,12 @@ struct ShadowMask {
 	pixels []u8
 	width  int
 	height int
+}
+
+struct ShadowFilterLayer {
+	mask ShadowMask
+	origin canvas.Point
+	scale canvas.Point = canvas.Point{1, 1}
 }
 
 struct ShadowBounds {
@@ -168,9 +175,8 @@ fn shadow_filter_scale(shape &C.VoxGraphiteShape) ?f32 {
 	return scale
 }
 
-fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
+fn rounded_shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 	if affine_shadow_supported(shape) {
-		if patch := rounded_shadow_nine_patch(shape, width, height) { return patch }
 		if shape.rect[4..12].any(it > 0) {
 			return shadow_filter_mask(shape, width, height, none, canvas.Point{})
 		}
@@ -183,6 +189,18 @@ fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
 
 fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	source_path ?canvas.Path, source_offset canvas.Point) ![]u8 {
+	return shadow_filter_layer(shape, width, height, source_path, source_offset, none)!.mask.pixels
+}
+
+fn shadow_filter_layer(shape &C.VoxGraphiteShape, width int, height int,
+	source_path ?canvas.Path, source_offset canvas.Point, desired_output ?ShadowBounds) !ShadowFilterLayer {
+	return shadow_filter_layer_with_path_matrix(shape, width, height, source_path, source_offset,
+		desired_output, [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!, false)
+}
+
+fn shadow_filter_layer_with_path_matrix(shape &C.VoxGraphiteShape, width int, height int,
+	source_path ?canvas.Path, source_offset canvas.Point, desired_output ?ShadowBounds,
+	path_matrix [9]f32, image_filter bool) !ShadowFilterLayer {
 	scale_factor := shadow_filter_scale(shape) or { return error('Unsupported shadow filter transform') }
 	m := shape.matrix
 	sigma := shape.thickness * f32(0.5) * scale_factor
@@ -191,17 +209,24 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	for i in 0 .. 4 {
 		x := shape.rect[0] + if i & 1 != 0 { shape.rect[2] } else { f32(0) }
 		y := shape.rect[1] + if i & 2 != 0 { shape.rect[3] } else { f32(0) }
-		dx, dy := x*m[0] + y*m[1] + m[2], x*m[3] + y*m[4] + m[5]
-		x0, y0 = math.min(x0,dx), math.min(y0,dy)
-		x1, y1 = math.max(x1,dx), math.max(y1,dy)
+		dx, dy := x * m[0] + y * m[1] + m[2], x * m[3] + y * m[4] + m[5]
+		x0, y0 = math.min(x0, dx), math.min(y0, dy)
+		x1, y1 = math.max(x1, dx), math.max(y1, dy)
 	}
-	mut left, mut top := f32(math.floor(f64(x0))), f32(math.floor(f64(y0)))
-	mut right, mut bottom := f32(math.ceil(f64(x1))), f32(math.ceil(f64(y1)))
+	// Image-filter bounds use near-integer rounding before source allocation.
+	epsilon := if image_filter { f32(.001) } else { f32(0) }
+	mut left, mut top := f32(math.floor(f64(x0+epsilon))), f32(math.floor(f64(y0+epsilon)))
+	mut right, mut bottom := f32(math.ceil(f64(x1-epsilon))), f32(math.ceil(f64(y1-epsilon)))
 	if affine_shadow_supported(shape) {
 		// The filter layer needs only the tile's input footprint. Keeping the
 		// whole offscreen box changes the centered downsampling grid. Rotated
 		// filter layers need their own layer-space bounds and retain replay.
-		pad := f32(math.ceil(f64(f32(3) * sigma)))
+		// The image-filter offset uses linear sampling, including integer offsets.
+		pad := f32(math.ceil(f64(f32(3) * sigma))) + if image_filter {
+			f32(1)
+		} else {
+			f32(0)
+		}
 		left, top = math.max(left, -pad), math.max(top, -pad)
 		right, bottom = math.min(right, f32(width) + pad), math.min(bottom, f32(height) + pad)
 	}
@@ -223,14 +248,16 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	source.set_matrix(canvas.Matrix.values(source_matrix))
 	white := canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: shape.anti_alias != 0 }
 	if path := source_path {
+		if path_matrix != [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]! {
+			source.concat(canvas.Matrix.values(path_matrix))
+		}
 		source.draw_path(path, white)!
 	} else {
 		source.draw_rrect(rounded_rect(shape.rect), white)!
 	}
 	mut rgba := []u8{len: source_width * source_height * 4}
 	source.read_pixels(rgba.data, source_width * 4)!
-	mut alpha := []u8{len: source_width * source_height}
-	for i in 0 .. alpha.len { alpha[i] = rgba[i * 4 + 3] }
+	alpha := cpuraster.copy_rgba_alpha(rgba)
 	mut image := ShadowMask{alpha, source_width, source_height}
 	mut bounds := original
 	mut pixels := original
@@ -283,17 +310,35 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	pixels = ShadowBounds{pixels.left - radius, pixels.top - radius, pixels.right + radius, pixels.bottom + radius}
 	sx := (bounds.right - bounds.left) / (original.right - original.left)
 	sy := (bounds.bottom - bounds.top) / (original.bottom - original.top)
+	if image_filter {
+		ix := (original.right - original.left) / (bounds.right - bounds.left)
+		iy := (original.bottom - original.top) / (bounds.bottom - bounds.top)
+		tx := original.left - bounds.left * ix
+		ty := original.top - bounds.top * iy
+		return ShadowFilterLayer{image, canvas.Point{f32(f64(pixels.left) * f64(ix) + f64(tx)), f32(f64(pixels.top) * f64(iy) + f64(ty))}, canvas.Point{ix, iy}}
+	}
 	// Resolve back to an A8 image before the paint color is applied. Fusing
 	// upscale and color multiplication skips this required quantization.
-	resolved := shadow_mask_pass(image, width, height, [sx, sy,
-		bounds.left - original.left * sx - pixels.left, bounds.top - original.top * sy - pixels.top]!, [56]f32{}, 0, 0)!
-	return resolved.pixels
+	mut output := ShadowBounds{0, 0, f32(width), f32(height)}
+	if desired := desired_output {
+		// Downsampling rounds the low-resolution image out to whole texels.
+		// Its blurred support can therefore exceed the nominal 3-sigma bounds.
+		// Resolve that support against the original desired output before rotating.
+		output = ShadowBounds{math.max(desired.left, f32(math.floor(f64((pixels.left - bounds.left) / sx + original.left + f32(.001))))), math.max(desired.top, f32(math.floor(f64((pixels.top - bounds.top) / sy + original.top + f32(.001))))), math.min(desired.right, f32(math.ceil(f64((pixels.right - bounds.left) / sx + original.left - f32(.001))))), math.min(desired.bottom, f32(math.ceil(f64((pixels.bottom - bounds.top) / sy + original.top - f32(.001)))))}
+	}
+	resolved := shadow_mask_pass(image, int(output.right - output.left), int(output.bottom - output.top), [
+		sx,
+		sy,
+		bounds.left + (output.left - original.left) * sx - pixels.left,
+		bounds.top + (output.top - original.top) * sy - pixels.top,
+	]!, [56]f32{}, 0, 0)!
+	return ShadowFilterLayer{resolved, canvas.Point{output.left, output.top}, canvas.Point{1, 1}}
 }
 
 // Graphite AnalyticBlurMask::MakeRRect: blur a small rounded rectangle, then
 // sample its nine-patch with nearest filtering. Keep the A8 sample intact until
 // draw_alpha_mask multiplies it by the floating-point paint color.
-fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, width int, height int) ?[]u8 {
+fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, region SurfaceRegion) ?[]u8 {
 	m := shape.matrix
 	sigma := shape.thickness * f32(.5) * m[0]
 	radius := shape.rect[4] * m[0]
@@ -320,29 +365,61 @@ fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, width int, height int) ?
 	center_x := (shape.rect[2] * m[0] + 2 * blur_radius) * f32(.5)
 	center_y := (shape.rect[3] * m[4] + 2 * blur_radius) * f32(.5)
 	edge := 2 * blur_radius + radius + f32(.5)
-	mut output := []u8{len: width * height}
-	for y in 0 .. height {
-		dy := f32(y) + f32(.5) - top - center_y
-		py := f32(math.max(0, f64(math.abs(dy) - (center_y - edge)))) * (if dy < 0 {
-			f32(-1)
-		} else if dy > 0 {
-			f32(1)
-		} else {
-			f32(0)
-		}) + edge
-		iy := int(contour_clamp(f32(math.floor(f64(py / (2 * edge) * f32(dimension)))), 0, f32(dimension - 1)))
-		for x in 0 .. width {
-			dx := f32(x) + f32(.5) - left - center_x
-			px := f32(math.max(0, f64(math.abs(dx) - (center_x - edge)))) * (if dx < 0 {
-				f32(-1)
-			} else if dx > 0 {
-				f32(1)
-			} else {
-				f32(0)
-			}) + edge
-			ix := int(contour_clamp(f32(math.floor(f64(px / (2 * edge) * f32(dimension)))), 0, f32(dimension - 1)))
-			output[y * width + x] = patch[iy * dimension + ix]
+	return expand_rounded_shadow_patch(patch, dimension, region, left, top, center_x,
+		center_y, edge)
+}
+
+@[inline]
+fn shadow_patch_coordinate(pixel int, origin f32, center f32, edge f32, dimension int) int {
+	distance := f32(pixel) + f32(.5) - origin - center
+	position := f32(math.max(0, f64(math.abs(distance) - (center - edge)))) * (if distance < 0 {
+		f32(-1)
+	} else if distance > 0 {
+		f32(1)
+	} else {
+		f32(0)
+	}) + edge
+	return int(contour_clamp(f32(math.floor(f64(position / (2 * edge) * f32(dimension)))),
+		0, f32(dimension - 1)))
+}
+
+fn expand_rounded_shadow_patch(patch []u8, dimension int, region SurfaceRegion, left f32, top f32, center_x f32, center_y f32, edge f32) []u8 {
+	columns := []int{len: region.width, init: shadow_patch_coordinate(index + region.x, left, center_x, edge, dimension)}
+	output := []u8{len: region.width * region.height}
+	scan := RoundedShadowPatchScan{
+		patch:     patch
+		output:    output
+		columns:   columns
+		dimension: dimension
+		first_row: region.y
+		top:       top
+		center_y:  center_y
+		edge:      edge
+	}
+	cpuraster.run_raster_scans(&scan, region.height, region.width, scan_rounded_shadow_patch)
+	return output
+}
+
+struct RoundedShadowPatchScan {
+	patch     []u8
+	output    []u8
+	columns   []int
+	dimension int
+	first_row int
+	top       f32
+	center_y  f32
+	edge      f32
+}
+
+@[direct_array_access]
+fn scan_rounded_shadow_patch(context voidptr, first i32, end i32) {
+	scan := unsafe { &RoundedShadowPatchScan(context) }
+	mut output := unsafe { scan.output }
+	for y in int(first) .. int(end) {
+		source := shadow_patch_coordinate(y + scan.first_row, scan.top, scan.center_y, scan.edge, scan.dimension) * scan.dimension
+		target := y * scan.columns.len
+		for x, column in scan.columns {
+			output[target + x] = scan.patch[source + column]
 		}
 	}
-	return output
 }

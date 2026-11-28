@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // Runtime/ArrayBuffer.{h,cpp}: buffer records and storage/detach operations.
 // The VM's existing ArrayBuffer interface names its host-resize contract, so
 // the concrete translated record uses ArrayBufferObject. Host-created buffers
@@ -37,6 +39,8 @@ pub fn ArrayBufferObject.create_from_host_buffer(realm &Realm, storage &ByteBuff
 }
 
 pub fn ArrayBufferObject.create_with_data_block(realm &Realm, block DataBlock, prototype &Object) &ArrayBufferObject {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut object := Object.create(realm, prototype)
 	object.class_name = 'ArrayBuffer'
 	buffer := &ArrayBufferObject{object: object, block: block}

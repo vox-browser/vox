@@ -464,6 +464,12 @@ fn decode_script_body(bytes []u8, encoding_label string) !string {
 	return decoder.decode(bytes, encoding.TextDecodeOptions{})!
 }
 
+// The source text a module script fetch decodes from its body (always UTF-8),
+// so an embedder can prepare the same text before the fetch completes.
+pub fn decode_module_script_source(bytes []u8) !string {
+	return decode_script_body(bytes, 'utf-8')
+}
+
 fn script_pointer(script &ClassicScript) &Script {
 	return &script.Script
 }
@@ -882,9 +888,8 @@ fn fetch_modulepreload_graph(realm &ScriptingRealm, url dom.URL, destination fet
 					settings_object, destination, none, ignore_modulepreload_descendants_complete)
 			}
 		}
-		owned_closures := if owns_completion { [voidptr(on_complete)] } else { []voidptr{} }
-		task := Task.create_with_owned_steps(.networking, completion_document,
-			steps, owned_closures)
+		mut task := Task.create_owned(.networking, completion_document, steps)
+		if owns_completion { task.owned_completion_ = voidptr(on_complete) }
 		enqueue_owned_task(settings_object.responsible_event_loop(), task)
 	}
 	mut module_map := unsafe { &ModuleMap(module_map_of_realm(settings_object.realm())) }

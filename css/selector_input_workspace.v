@@ -7,6 +7,12 @@ $if prealloc {
 // A selector retains its serialized source and parsed graph, never the
 // component vectors or escaping buffers used to construct that source.
 fn (mut parser RuleSelectorParser) consume_selector_source(mut tokens ParserTokenStream) string {
+	if !disable_borrowed_selector_spans {
+		// A borrowed span allocates nothing; a direct copy needs no scratch.
+		parts := parser.consume_selector_component_span(mut tokens)
+		if text := direct_selector_prelude_text(parts) { return text }
+		return owned_selector_prelude_text(parts)
+	}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('selector input')
 		parts := parser.consume_selector_component_span(mut tokens)
@@ -17,6 +23,18 @@ fn (mut parser RuleSelectorParser) consume_selector_source(mut tokens ParserToke
 		return owned
 	}
 	parts := parser.consume_selector_component_span(mut tokens)
+	return parser_selector_prelude_to_string(parts).trim_space()
+}
+
+fn owned_selector_prelude_text(parts []ComponentValue) string {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('selector input')
+		text := parser_selector_prelude_to_string(parts).trim_space()
+		scratch.leave()
+		owned := text.clone()
+		scratch.finish()
+		return owned
+	}
 	return parser_selector_prelude_to_string(parts).trim_space()
 }
 

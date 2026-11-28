@@ -68,7 +68,7 @@ fn test_bound_native_failure_and_stack_exhaustion_restore_the_callers_state() {
 	} else {
 		error_object := thrown_value(err).as_object()
 		assert error_object.error_message()? == 'Bound target failure'
-		assert error_object.error_data?.stack_string(false).contains('target')
+		assert error_object.slots.error_data?.stack_string(false).contains('target')
 	}
 	assert vm.running_execution_context() == base && vm.interpreter_stack().depth() == 0
 	mut stack := vm.interpreter_stack()

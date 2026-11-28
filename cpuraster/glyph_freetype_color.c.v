@@ -1,6 +1,6 @@
 module cpuraster
 
-$if linux || cpuraster_freetype ? {
+$if linux || windows || cpuraster_freetype ? {
 	struct FreeTypeColorLayer {
 		path  Path
 		color u32

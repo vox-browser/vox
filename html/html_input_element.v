@@ -288,6 +288,8 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 	// algorithms walk the live DOM tree, and creating a sibling model may query
 	// this element again while that sibling is initialized.
 	attach_html_input_element_model(element, model)
+	model.text_control.value_owner_ = TextControlValueOwner(model)
+	model.control.constraint_validation_owner_ = ConstraintValidationOwner(model)
 	model.control.reset_form_owner()
 	model.value_ = model.sanitize_value(dom_element.get_attribute_value('value'))
 	model.text_control.did_edit_target_ = voidptr(model)
@@ -445,9 +447,14 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 	// Input states select different concrete layout-node classes (for example,
 	// TextInputBox versus ImageBox). The shadow-root transition below dirties a
 	// subtree when either state materializes one, but states without a shadow
-	// root still require the host node itself to be replaced.
-	mut document := unsafe { &dom.Document(element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	// root still require the host node itself to be replaced. A disconnected
+	// input has no box: inserting it flags it like any other new node, so
+	// parsing or scripting `<input type=hidden>` into a fragment requests
+	// nothing of the document's layout tree.
+	mut host := element.as_node()
+	if host.is_connected() {
+		host.set_needs_layout_tree_update(true, .element_set_shadow_root)
+	}
 	if old_mode == .value && model.value_ != '' && new_mode in [.default_, .default_on] {
 		element.set_attribute_value('value', model.value_)
 	} else if old_mode != .value && new_mode == .value {
@@ -579,12 +586,7 @@ pub fn (model &HTMLInputElementModel) value_sanitization_algorithm(value string)
 pub fn (model &HTMLInputElementModel) value() string {
 	return match model.type_state_ {
 		.checkbox, .radio_button {
-			value := input_element(model).get_attribute_value('value')
-			if value == '' {
-				'on'
-			} else {
-				value
-			}
+			input_element(model).get_attribute('value') or { 'on' }
 		}
 		.file_upload {
 			if files := model.selected_files_ {
@@ -652,12 +654,12 @@ pub fn (model &HTMLInputElementModel) checked() bool {
 }
 
 fn same_radio_group(a &HTMLInputElementModel, b &HTMLInputElementModel) bool {
-	if a == b || a.type_state_ != .radio_button || b.type_state_ != .radio_button {
+	if voidptr(a) == voidptr(b) || a.type_state_ != .radio_button || b.type_state_ != .radio_button {
 		return false
 	}
 	a_element := input_element(a)
 	b_element := input_element(b)
-	if a_element.as_node().root() != b_element.as_node().root() {
+	if voidptr(a_element.as_node().root()) != voidptr(b_element.as_node().root()) {
 		return false
 	}
 	a_form := a.control.form()
@@ -902,7 +904,7 @@ fn (mut model HTMLInputElementModel) create_image_button_alt_text_shadow_tree() 
 	shadow_node.append_child(wrapper.as_node()) or { return }
 	model.image_button_alt_text_node_ = text
 	mut document := unsafe { &dom.Document(element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	document.request_full_layout_tree_update('image-input-alt-text')
 }
 
 fn (mut model HTMLInputElementModel) remove_image_button_alt_text_shadow_tree() {
@@ -913,7 +915,7 @@ fn (mut model HTMLInputElementModel) remove_image_button_alt_text_shadow_tree() 
 	element.set_shadow_root(none)
 	model.image_button_alt_text_node_ = none
 	mut document := unsafe { &dom.Document(element.document()) }
-	document.set_needs_full_layout_tree_update(true)
+	document.request_full_layout_tree_update('image-input-alt-text')
 }
 
 pub fn (mut model HTMLInputElementModel) update_image_button_alt_text_shadow_tree() {
@@ -935,7 +937,7 @@ pub fn (mut model HTMLInputElementModel) update_image_button_alt_text_shadow_tre
 		mut node := input_element(&model).as_node()
 		node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
 		mut document := unsafe { &dom.Document(input_element(&model).document()) }
-		document.set_needs_full_layout_tree_update(true)
+		document.request_full_layout_tree_update('image-input-alt-text')
 	}
 }
 

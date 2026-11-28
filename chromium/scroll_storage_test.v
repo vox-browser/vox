@@ -82,3 +82,29 @@ fn test_scroll_image_decode_preparation_does_not_heap_copy_paint_commands() {
 		assert growth == 0, '${growth} bytes retained by repeated image decode preparation'
 	}
 }
+
+fn test_fixed_layer_metadata_is_reused_across_paint_recordings() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0;height:1200px}
+		header{position:fixed;inset:0 0 auto;background:white}
+	</style><header><p>Fixed header</p></header><p>Document content</p>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 320, 200)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing recording') })
+	viewport := layout.LayoutRect{0, 0, 320, 200}
+	mut plan := layout.ChromiumRasterLayerPlan{}
+	for _ in 0 .. 3 {
+		layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 1, viewport, mut plan)
+	}
+	assert plan.has_paint_metadata
+	layer_count := plan.layers.len
+	assert layer_count > 1
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 128 {
+		layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 1, viewport, mut plan)
+		assert plan.has_paint_metadata
+		assert plan.layers.len == layer_count
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
+}

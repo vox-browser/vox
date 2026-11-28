@@ -1,0 +1,53 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG pattern offset with a viewport-relative filter region</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="600" height="150" viewBox="0 0 400 100" style="position:absolute;left:-600px">
+  <defs>
+    <filter id="region" filterUnits="userSpaceOnUse" x="2%" y="8%" width="6%" height="20%">
+      <feOffset dx="8" dy="4"/>
+    </filter>
+    <pattern id="tile" width="40" height="40" patternUnits="userSpaceOnUse"
+             viewBox="0 0 40 40" patternTransform="scale(.5)">
+      <path d="M10 10h20v10H10Z" fill="red" filter="url(#region)"/>
+      <path d="M0 36h40v4H0Z" fill="lime"/>
+    </pattern>
+  </defs>
+</svg>
+<svg width="800" height="200" viewBox="0 0 800 200">
+  <defs>
+    <mask id="alpha" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="100">
+      <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+    </mask>
+  </defs>
+  <g transform="scale(2)">
+    <path d="M0 0h120v100H0Z" fill="url(#tile)"/>
+    <path d="M0 50H120" fill="none" stroke="url(#tile)" stroke-width="100"
+          transform="translate(128)"/>
+    <g transform="translate(256)">
+      <path d="M0 0h120v100H0Z" fill="black" mask="url(#alpha)"/>
+    </g>
+  </g>
+</svg>
+<script>
+let frame = 0;
+function editRegion() {
+    if (++frame === 12) {
+        const filter = document.getElementById('region');
+        filter.setAttribute('x', '3%');
+        filter.setAttribute('y', '10%');
+        filter.setAttribute('width', '4%');
+        filter.setAttribute('height', '12%');
+    }
+    if (frame === 24)
+        document.body.setAttribute('data-offset-ready', '');
+    else
+        requestAnimationFrame(editRegion);
+}
+requestAnimationFrame(editRegion);
+</script>

@@ -1,6 +1,6 @@
 name: Windows build and native WebGL
 
-# Windows runs native Mesa WebGL checks with a sparse checkout that omits
+# Windows runs native WebGL and GG checks with a sparse checkout that omits
 # archived fixture names unsupported by NTFS. Linux checks the build drivers.
 on:
   push:
@@ -11,7 +11,14 @@ on:
       - tools/build_windows_browser.vsh
       - tools/buildtools/**
       - tools/*windows*
+      - tools/ui2/**
       - tools/native_gles_test.c
+      - native/graphics_windows.c.v
+      - native/paint.v
+      - native/include/native_browser_windows_graphics.h
+      - native/include/native_graphite_bridge.h
+      - ggshape/**
+      - cpuraster/**
       - webgl/**
       - tools/run_v_tool.sh
       - libregex/**
@@ -28,7 +35,14 @@ on:
       - tools/build_windows_browser.vsh
       - tools/buildtools/**
       - tools/*windows*
+      - tools/ui2/**
       - tools/native_gles_test.c
+      - native/graphics_windows.c.v
+      - native/paint.v
+      - native/include/native_browser_windows_graphics.h
+      - native/include/native_graphite_bridge.h
+      - ggshape/**
+      - cpuraster/**
       - webgl/**
       - tools/run_v_tool.sh
       - libregex/**
@@ -46,7 +60,7 @@ permissions:
 jobs:
   native-webgl:
     runs-on: windows-2025
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -59,8 +73,13 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf mingw-w64-x86_64-curl mingw-w64-x86_64-openssl mingw-w64-x86_64-python make git
+          install: >-
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf mingw-w64-x86_64-curl
+            mingw-w64-x86_64-openssl mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-python mingw-w64-x86_64-python-pillow
+            make git
       - name: Build V for the shared shader validator
+        id: windows_v
         shell: msys2 {0}
         run: |
           set -euo pipefail
@@ -75,6 +94,7 @@ jobs:
           cat Build/windows-webgl/v-build.out Build/windows-webgl/v-build.err
           echo "V_BIN=$(cygpath -m "$vox_v_toolchain/v.exe")" >> "$GITHUB_ENV"
       - name: Prepare verified native Mesa EGL/GLES
+        id: windows_mesa
         shell: pwsh
         run: ./tools/prepare_windows_mesa.ps1
       - name: Execute bounded GLES context, shader, storage and transfer checks
@@ -122,7 +142,7 @@ jobs:
           export PKG_CONFIG_PATH="$PWD/Build/deps/windows/mesa/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
           Build/windows-webgl/guard.exe 300000 12288 \
             Build/windows-webgl/compile.out Build/windows-webgl/compile.err \
-            "$V_BIN" -new-compiler -b c -memory-limit 10G -subsystem console \
+            "$V_BIN" -b c -memory-limit 10G -subsystem console \
             -o Build/windows-webgl/native-gles.exe tools/native_gles_driver.v \
             | tee Build/windows-webgl/compile.json
           cat Build/windows-webgl/compile.out Build/windows-webgl/compile.err
@@ -135,6 +155,44 @@ jobs:
             | tee Build/windows-webgl/guard.json
           cat Build/windows-webgl/native.out
           cat Build/windows-webgl/native.err
+      - name: Check GG rendering on D3D11 and Mesa OpenGL
+        if: ${{ !cancelled() && steps.windows_v.outcome == 'success' && steps.windows_mesa.outcome == 'success' }}
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          vox_ui2_dir="$(cygpath -u "$RUNNER_TEMP")/ui2"
+          git clone --depth 1 https://github.com/vlang/ui2.git "$vox_ui2_dir"
+          export UI2_SOURCE_DIR="$(cygpath -m "$vox_ui2_dir")"
+          vox_modules=$(sh tools/run_v_tool.sh prepare_ui2 "$V_BIN")
+          vox_repo=$(cygpath -m "$PWD")
+          vox_mesa="$vox_repo/Build/deps/windows/mesa/release-mingw/x64"
+          export PATH="$MINGW_PREFIX/bin:$PATH"
+          export GALLIUM_DRIVER=llvmpipe
+
+          for backend in d3d11 opengl; do
+            vox_output="$vox_repo/Build/windows-webgl/graphics/$backend"
+            mkdir -p "$vox_output"
+            if [[ "$backend" == d3d11 ]]; then
+              set -- -d sokol_d3d11
+            else
+              set --
+              # Load Mesa's WGL driver from beside the OpenGL executable.
+              cp "$vox_mesa/opengl32.dll" "$vox_mesa/libgallium_wgl.dll" "$vox_output/"
+            fi
+            Build/windows-webgl/guard.exe 300000 12288 \
+              "$vox_output/compile.out" "$vox_output/compile.err" \
+              "$V_BIN" -b c -memory-limit 10G -prod -no-prod-options \
+              -enable-globals -gc none -os windows -arch amd64 -cc gcc -subsystem console \
+              -path "$vox_repo|$vox_modules|@vmodules|@vlib" "$@" \
+              -file-list native/graphics_windows.c.v,native/paint.v \
+              -o "$vox_output/graphics.exe" tools/windows_graphics_smoke.v \
+              | tee "$vox_output/compile.json"
+            Build/windows-webgl/guard.exe 240000 3072 \
+              "$vox_output/render.out" "$vox_output/render.err" \
+              "$vox_output/graphics.exe" "$vox_output/render.png" \
+              | tee "$vox_output/render.json"
+            python tools/check_windows_graphics_smoke.py "$vox_output/render.png" | tee "$vox_output/pixels.out"
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -143,6 +201,10 @@ jobs:
             Build/windows-webgl/*.json
             Build/windows-webgl/*.out
             Build/windows-webgl/*.err
+            Build/windows-webgl/graphics/*/*.json
+            Build/windows-webgl/graphics/*/*.out
+            Build/windows-webgl/graphics/*/*.err
+            Build/windows-webgl/graphics/*/*.png
 
   scaffolding:
     runs-on: ubuntu-24.04
@@ -165,4 +227,4 @@ jobs:
         run: '"$RUNNER_TEMP/v/v" -b c -memory-limit 10G run tools/build_windows_browser.vsh --help'
 
       - name: Show x.imp build flows
-        run: '"$RUNNER_TEMP/v/v" run build_browser.vsh --help'
+        run: '"$RUNNER_TEMP/v/v" -b c -memory-limit 10G run build_browser.vsh --help'

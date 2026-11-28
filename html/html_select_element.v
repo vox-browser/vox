@@ -89,13 +89,24 @@ pub fn HTMLSelectElementModel.create(element &dom.HTMLSelectElement) &HTMLSelect
 	if element.select_element_model_ != unsafe { nil } {
 		return unsafe { &HTMLSelectElementModel(element.select_element_model_) }
 	}
-	model := &HTMLSelectElementModel{
+	mut model := &HTMLSelectElementModel{
 		element: element
 		control: FormAssociatedElement.create(select_dom_element(element))
 	}
 	mut mutable_element := unsafe { &dom.HTMLSelectElement(element) }
 	mutable_element.select_element_model_ = voidptr(model)
+	mut control := model.control
+	control.constraint_validation_owner_ = ConstraintValidationOwner(model)
+	// Concrete owners are lazy; insertion has conceptually established initial
+	// selectedness before an IDL getter or submission can observe this model.
+	// Do this only on creation so later explicit no-selection states survive.
+	html_select_element_update_selectedness(element)
 	return model
+}
+
+pub fn (mut model HTMLSelectElementModel) update_validity() {
+	mut control := model.control
+	control.missing_ = html_select_element_suffering_from_being_missing(model.element)
 }
 
 pub fn (mut model HTMLSelectElementModel) set_picker_hook(hook ?SelectPickerHook) {
@@ -414,21 +425,23 @@ pub fn (mut model HTMLSelectElementModel) computed_properties_changed(appearance
 		&& html_select_element_uses_chromium_menu_list(select_dom_element(model.element))
 	if chevron := model.chevron_icon_element_ {
 		mut element := unsafe { &dom.Element(chevron) }
-		element.set_attribute_value('style', if appearance_is_none || chromium_theme {
+		style := if appearance_is_none || chromium_theme {
 			'display:none;position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;'
 		} else {
 			'display:block;position:absolute;inset-inline-end:0;top:calc(50% - 8px);width:16px;height:16px;'
-		})
+		}
+		if element.get_attribute_value('style') != style { element.set_attribute_value('style', style) }
 	}
 	if inner_text := model.inner_text_element_ {
 		mut element := unsafe { &dom.Element(inner_text) }
-		element.set_attribute_value('style', if chromium_theme {
+		style := if chromium_theme {
 			chromium_select_label_style()
 		} else if appearance_is_none {
 			'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:0;'
 		} else {
 			'flex:1;min-width:0;overflow:clip;text-overflow:inherit;margin-inline-end:20px;'
-		})
+		}
+		if element.get_attribute_value('style') != style { element.set_attribute_value('style', style) }
 	}
 }
 

@@ -20,6 +20,7 @@ mut:
 	process_timer           &platform.Timer      = unsafe { nil }
 	process_visible         bool
 	process_initializing    bool
+	process_focus_retry_at  i64
 	profile_refresh_at      i64
 	hold_window_until       i64
 	polling_process         bool
@@ -144,6 +145,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 				ctx:                            current.ctx
 				page_model:                     owner
 				js_engine:                      current.js_engine
+				warm_libjs:                     current.warm_libjs
 				script_policy:                  current.script_policy
 				use_document_font:              current.use_document_font
 				paint_canvas_culling_disabled:  current.paint_canvas_culling_disabled
@@ -281,6 +283,8 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	$if linux || ui2_custom_rendering ? { app.stop_browser_memory_chrome() }
 	app.dismiss_browser_popup()
 	app.release_native_replay_scratch()
+	unsafe { free(app.portable_web_font_scroll_textures) }
+	app.portable_web_font_scroll_textures = unsafe { nil }
 	app.NavigationController.cancel_pending_navigation()
 	app.deferred_page_input = []DeferredPageInput{}
 	app.deferred_navigation_input = none
@@ -344,6 +348,13 @@ fn (mut app BrowserApp) poll_background_browser_tab() {
 
 fn (mut app BrowserApp) cleanup_browser_tabs() {
 	defer { app.application.close() }
+	release_portable_nearest_sampler()
+	$if vox_gg_svg ? {
+		if portable_svg_gpu_enabled && app.ctx != unsafe { nil } {
+			mut gpu := unsafe { portable_svg_gpu }
+			gpu.release(app.ctx.r)
+		}
+	}
 	if app.process_tabs() {
 		if app.tabs.process_timer != unsafe { nil } { app.tabs.process_timer.stop() }
 		if app.tabs.closing_process {

@@ -110,7 +110,7 @@ fn (mut p Parser) parse_declaration() Statement {
 		}
 		else {
 			if p.match_token(.identifier)
-				&& utf16_equals(p.token_value(p.current_token), utf16('using')) {
+				&& utf16_equals_ascii(p.token_value(p.current_token), 'using') {
 				if !p.scope_collector.can_have_using_declaration() {
 					p.syntax_error("'using' not allowed outside of block, for loop or function")
 				}
@@ -158,20 +158,19 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 
 		target := if p.match_identifier() {
 			token := p.consume()
-			value := p.token_value(token).clone()
+			name := p.names.intern(p.token_value(token))
+			value := name.text.data
 			p.check_identifier_name_for_assignment_validity(value, false)
-			if kind != .var_kind && utf16_equals(value, utf16('let')) {
+			if kind != .var_kind && utf16_equals_ascii(value, 'let') {
 				p.syntax_error("Lexical binding may not be called 'let'")
 			}
-			id := p.make_identifier(declaration_start, Utf16String.from_slice(value.clone()))
+			id := p.make_identifier(declaration_start, name.text)
 
 			if kind == .var_kind {
-				p.scope_collector.add_var_declaration(value.clone(), id, declaration_line,
-					declaration_column, true)
+				p.scope_collector.add_var_declaration(name, id, declaration_line, declaration_column)
 			} else {
-				p.scope_collector.add_lexical_declaration(value.clone(), declaration_line,
-					declaration_column)
-				p.scope_collector.register_identifier(id, value, int(kind))
+				p.scope_collector.add_lexical_declaration(name, declaration_line, declaration_column)
+				p.scope_collector.register_identifier_key(id, name.key, int(kind))
 			}
 
 			VariableDeclaratorTarget(IdentifierVarTarget{
@@ -184,7 +183,7 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 
 			for bn in bound_names {
 				p.check_identifier_name_for_assignment_validity(bn.name.data, false)
-				if kind != .var_kind && utf16_equals(bn.name.data, utf16('let')) {
+				if kind != .var_kind && utf16_equals_ascii(bn.name.data, 'let') {
 					p.syntax_error("Lexical binding may not be called 'let'")
 				}
 			}
@@ -203,14 +202,15 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			// Register bound names with scope collector.
 			if kind == .var_kind {
 				for bn in bound_names {
-					p.scope_collector.add_var_declaration(bn.name.data.clone(), bn.identifier,
-						declaration_line, declaration_column, true)
+					name := p.names.intern(bn.name.data)
+					p.scope_collector.add_var_declaration(name, bn.identifier, declaration_line,
+						declaration_column)
 				}
 			} else {
 				for bn in bound_names {
-					p.scope_collector.add_lexical_declaration(bn.name.data.clone(),
-						declaration_line, declaration_column)
-					p.scope_collector.register_identifier(bn.identifier, bn.name.data, int(kind))
+					name := p.names.intern(bn.name.data)
+					p.scope_collector.add_lexical_declaration(name, declaration_line, declaration_column)
+					p.scope_collector.register_identifier_key(bn.identifier, name.key, int(kind))
 				}
 			}
 
@@ -231,7 +231,7 @@ fn (mut p Parser) parse_variable_declaration(is_for_loop bool) Statement {
 			p.consume()
 			any_init = true
 			forbidden := if is_for_loop {
-				ForbiddenTokens.with_in()
+				forbidden_in
 			} else {
 				ForbiddenTokens{}
 			}
@@ -284,24 +284,24 @@ fn (mut p Parser) parse_using_declaration(is_for_loop bool) Statement {
 			break
 		}
 		token := p.consume()
-		name := p.token_value(token).clone()
+		binding_name := p.names.intern(p.token_value(token))
+		name := binding_name.text.data
 
 		p.check_identifier_name_for_assignment_validity(name, false)
-		if utf16_equals(name, utf16('let')) {
+		if utf16_equals_ascii(name, 'let') {
 			p.syntax_error("Lexical binding may not be called 'let'")
 		}
 
-		id := p.make_identifier(declaration_start, Utf16String.from_slice(name.clone()))
+		id := p.make_identifier(declaration_start, binding_name.text)
 
-		p.scope_collector.add_lexical_declaration(name.clone(), declaration_line,
-			declaration_column)
-		p.scope_collector.register_identifier(id, name, none)
+		p.scope_collector.add_lexical_declaration(binding_name, declaration_line, declaration_column)
+		p.scope_collector.register_identifier_key(id, binding_name.key, none)
 
 		mut init := ?Expression(none)
 		if p.match_token(.equals) {
 			p.consume()
 			if is_for_loop {
-				init = p.parse_expression(precedence_assignment, .right, ForbiddenTokens.with_in())
+				init = p.parse_expression(precedence_assignment, .right, forbidden_in)
 			} else {
 				init = p.parse_assignment_expression()
 			}
@@ -424,7 +424,7 @@ fn (mut p Parser) parse_function_expression() Expression {
 	}
 
 	// Register the function expression name in the outer scope.
-	if kind == .generator && utf16_equals(fn_name_value.data, utf16('yield')) {
+	if kind == .generator && utf16_equals_ascii(fn_name_value.data, 'yield') {
 		p.syntax_error("'yield' is not allowed as a generator function expression name")
 	}
 
@@ -453,13 +453,13 @@ fn (mut p Parser) parse_function_expression() Expression {
 fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, kind FunctionKind, is_async bool, is_generator bool, start Position, saved_might_need_arguments bool) JsFunctionData {
 	// Validate name against async generator and class static init restrictions.
 	if name != none {
-		if kind == .async_generator && (utf16_equals(fn_name.data, utf16('await'))
-			|| utf16_equals(fn_name.data, utf16('yield'))) {
+		if kind == .async_generator && (utf16_equals_ascii(fn_name.data, 'await')
+			|| utf16_equals_ascii(fn_name.data, 'yield')) {
 			name_str := string_from_utf16_lossy(fn_name.data)
 			p.syntax_error("async generator function is not allowed to be called '${name_str}'")
 		}
 		if p.flags.in_class_static_init_block && is_async
-			&& utf16_equals(fn_name.data, utf16('await')) {
+			&& utf16_equals_ascii(fn_name.data, 'await') {
 			p.syntax_error("'await' is a reserved word")
 		}
 	}
@@ -483,7 +483,7 @@ fn (mut p Parser) parse_function_common(name ?&Identifier, fn_name Utf16String, 
 	p.pattern_bound_names = []BoundName{}
 
 	parsed := p.parse_formal_parameters()
-	p.register_function_parameters_with_scope(parsed.parameters, parsed.parameter_info)
+	p.scope_collector.set_function_parameters(parsed.parameters, parsed.parameter_info)
 
 	p.flags.in_generator_function_context = in_generator_before
 	p.flags.await_expression_is_valid = await_before
@@ -563,7 +563,7 @@ fn (mut p Parser) parse_class_expression(expect_name bool) Expression {
 
 	if name_id != none {
 		p.check_identifier_name_for_assignment_validity(name_value.data, true)
-		if p.flags.in_class_static_init_block && utf16_equals(name_value.data, utf16('await')) {
+		if p.flags.in_class_static_init_block && utf16_equals_ascii(name_value.data, 'await') {
 			p.syntax_error("Identifier must not be a reserved word in modules ('await')")
 		}
 	}
@@ -640,13 +640,15 @@ fn (mut p Parser) parse_class_expression(expect_name bool) Expression {
 
 	return p.expression(start, ExpressionKind{
 		tag:        .class_expr
-		class_data: &ClassData{
-			name:              name_id
-			source_text_start: start.offset
-			source_text_end:   p.source_text_end_offset()
-			constructor:       constructor
-			super_class:       super_class
-			elements:          elements
+		lists: &ExpressionLists{
+			class_data: &ClassData{
+				name:              name_id
+				source_text_start: start.offset
+				source_text_end:   p.source_text_end_offset()
+				constructor:       constructor
+				super_class:       super_class
+				elements:          elements
+			}
 		}
 	})
 }
@@ -656,11 +658,11 @@ fn (mut p Parser) parse_class_declaration() Statement {
 	class_expression := p.parse_class_expression(true)
 	// Convert the class expression into a class declaration.
 	if class_expression.kind.tag == .class_expr {
-		if cd := class_expression.kind.class_data {
+		if cd := class_expression.kind.class_data() {
 			if name_ident := cd.name {
-				p.scope_collector.add_lexical_declaration(name_ident.name.data.clone(), start.line,
-					start.column)
-				p.scope_collector.register_identifier(name_ident, name_ident.name.data, none)
+				name := p.names.intern(name_ident.name.data)
+				p.scope_collector.add_lexical_declaration(name, start.line, start.column)
+				p.scope_collector.register_identifier_key(name_ident, name.key, none)
 			}
 			return p.statement(start, StatementKind{
 				tag:        .class_declaration
@@ -685,14 +687,16 @@ fn (mut p Parser) synthesize_default_constructor(start Position, class_name Utf1
 
 		super_call := p.expression(start, ExpressionKind{
 			tag:             .super_call
-			super_call_data: &SuperCallData{
-				arguments:    [
-					CallArgument{
-						value:     arguments_expression
-						is_spread: true
-					},
-				]
-				is_synthetic: true
+			lists: &ExpressionLists{
+				super_call_data: &SuperCallData{
+					arguments:    [
+						CallArgument{
+							value:     arguments_expression
+							is_spread: true
+						},
+					]
+					is_synthetic: true
+				}
 			}
 		})
 		mut return_stmt := p.statement(start, StatementKind{
@@ -771,7 +775,7 @@ mut:
 fn (mut p Parser) parse_class_element(class_start Position, mut found_private_names map[string]FoundPrivateName) (?ClassElementNode, ?Expression) {
 	// Check for static keyword.
 	mut is_static := if p.match_identifier()
-		&& utf16_equals(p.token_original_value(p.current_token), utf16('static')) {
+		&& utf16_equals_ascii(p.token_original_value(p.current_token), 'static') {
 		p.consume()
 		// ClassStaticBlock : `static` `{` ClassStaticBlockBody `}`
 		if p.match_token(.curly_open) {
@@ -791,7 +795,8 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 			// A static block's patterns must not consume an enclosing pattern's names.
 			saved_pattern_bound_names := p.pattern_bound_names.clone()
 			p.pattern_bound_names = []BoundName{}
-			children := p.parse_statement_list(false)
+			mut children := []Statement{}
+			p.parse_statement_list(mut children, false)
 			p.pattern_bound_names = saved_pattern_bound_names
 			p.flags = saved_flags
 			p.consume_token(.curly_close)
@@ -824,13 +829,13 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 	// Check modifiers.
 	if p.match_identifier_name() {
 		value := p.token_original_value(p.current_token).clone()
-		if utf16_equals(value, utf16('get')) && p.match_property_key_ahead() {
+		if utf16_equals_ascii(value, 'get') && p.match_property_key_ahead() {
 			is_getter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('set')) && p.match_property_key_ahead() {
+		} else if utf16_equals_ascii(value, 'set') && p.match_property_key_ahead() {
 			is_setter = true
 			p.consume()
-		} else if utf16_equals(value, utf16('async')) {
+		} else if utf16_equals_ascii(value, 'async') {
 			next := p.next_token()
 			if !next.trivia_has_line_terminator && next.token_type != .paren_open
 				&& next.token_type != .colon && next.token_type != .comma
@@ -868,7 +873,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 		}
 		key_expression := p.expression(class_start, ExpressionKind{
 			tag:          .string_literal
-			string_value: Utf16String.from_slice(modifier_name)
+			string_value: ast_text(Utf16String.from_slice(modifier_name))
 		})
 		key = PropertyKey{
 			expression:    key_expression
@@ -884,7 +889,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 	// Static prototype check.
 	if is_static {
 		if kn := key.name {
-			if utf16_equals(kn.data, utf16('prototype')) {
+			if utf16_equals_ascii(kn.data, 'prototype') {
 				p.syntax_error("Classes may not have a static property named 'prototype'")
 			}
 		}
@@ -987,7 +992,7 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 
 	// Field definition: constructor name check.
 	if kn := key.name {
-		if utf16_equals(kn.data, utf16('constructor')) {
+		if utf16_equals_ascii(kn.data, 'constructor') {
 			p.syntax_error("Class cannot have field named 'constructor'")
 		}
 	}
@@ -1047,7 +1052,7 @@ fn (mut p Parser) parse_function_body(is_async bool, is_generator bool, is_simpl
 		}
 	}
 
-	children << p.parse_statement_list(true)
+	p.parse_statement_list(mut children, true)
 
 	p.flags.strict_mode = strict_before
 	p.flags.in_function_context = in_function_before
@@ -1129,12 +1134,12 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 				p.syntax_error("'yield' is not allowed as an identifier in this context")
 			}
 			token := p.consume()
-			value := Utf16String.from_slice(p.token_value(token))
-			p.check_identifier_name_for_assignment_validity(value.data, false)
+			name := p.names.intern(p.token_value(token))
+			p.check_identifier_name_for_assignment_validity(name.text.data, false)
 
-			id := Identifier.new(p.range_from(formal_parameters_start), value.clone())
+			id := Identifier.new(p.range_from(formal_parameters_start), name.text)
 			parameter_info << ParamInfo{
-				name:            value
+				name:            name
 				is_rest:         rest
 				is_from_pattern: false
 				identifier:      id
@@ -1146,7 +1151,7 @@ fn (mut p Parser) parse_formal_parameters_impl(is_arrow bool) ParsedParameters {
 			pat := p.parse_binding_pattern()
 			for bn in p.pattern_bound_names {
 				parameter_info << ParamInfo{
-					name:            bn.name.clone()
+					name:            p.names.intern(bn.name.data)
 					is_rest:         rest
 					is_from_pattern: true
 					identifier:      bn.identifier
@@ -1257,9 +1262,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 
 		if is_object {
 			if p.allow_member_expressions && is_rest {
-				expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
-					TokenType.equals,
-				]))
+				expression := p.parse_expression(precedence_assignment, .right, forbidden_equals)
 				if is_member_expression(expression) {
 					entry_alias = BindingEntryAlias{
 						kind:       .member_expression_kind
@@ -1344,9 +1347,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 					p.consume()
 					if p.allow_member_expressions {
 						expression_start := p.position()
-						expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
-							TokenType.equals,
-						]))
+						expression := p.parse_expression(precedence_assignment, .right, forbidden_equals)
 						if is_parenthesized_object_or_array_expression(expression, expression_start) {
 							p.syntax_error('Invalid destructuring assignment target')
 							break
@@ -1416,9 +1417,7 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 			}
 		} else if p.allow_member_expressions {
 			expression_start := p.position()
-			expression := p.parse_expression(precedence_assignment, .right, ForbiddenTokens{}.forbid([
-				TokenType.equals,
-			]))
+			expression := p.parse_expression(precedence_assignment, .right, forbidden_equals)
 			if is_parenthesized_object_or_array_expression(expression, expression_start) {
 				p.syntax_error('Invalid destructuring assignment target')
 				break
@@ -1537,7 +1536,7 @@ fn (mut p Parser) parse_import_statement() Statement {
 		p.consume_or_insert_semicolon()
 		return p.statement(start, StatementKind{
 			tag:         .import_stmt
-			import_data: ImportStatementData{
+			import_data: &ImportStatementData{
 				module_request: ModuleRequest{
 					module_specifier: module_specifier
 					attributes:       attributes
@@ -1664,7 +1663,7 @@ fn (mut p Parser) parse_import_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:         .import_stmt
-		import_data: ImportStatementData{
+		import_data: &ImportStatementData{
 			module_request: ModuleRequest{
 				module_specifier: module_specifier
 				attributes:       attributes
@@ -1879,7 +1878,7 @@ fn (mut p Parser) parse_export_statement() Statement {
 
 	return p.statement(start, StatementKind{
 		tag:         .export_stmt
-		export_data: ExportStatementData{
+		export_data: &ExportStatementData{
 			statement:         export_statement
 			entries:           entries
 			is_default_export: is_default
@@ -1894,12 +1893,12 @@ fn (p &Parser) match_imported_binding() bool {
 
 fn (p &Parser) match_as() bool {
 	return p.match_token(.identifier)
-		&& utf16_equals(p.token_original_value(p.current_token), utf16('as'))
+		&& utf16_equals_ascii(p.token_original_value(p.current_token), 'as')
 }
 
 fn (p &Parser) match_from() bool {
 	return p.match_token(.identifier)
-		&& utf16_equals(p.token_original_value(p.current_token), utf16('from'))
+		&& utf16_equals_ascii(p.token_original_value(p.current_token), 'from')
 }
 
 fn (mut p Parser) consume_module_specifier() Utf16String {

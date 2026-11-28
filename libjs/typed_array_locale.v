@@ -11,6 +11,7 @@ pub fn typed_array_prototype_to_locale_string(mut vm VM, prototypes PrimitiveObj
 	mut builder := []u16{}
 	mut result_length := uint(0)
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		if k > 0 {
 			result_length = checked_js_string_length_sum(mut vm, result_length, 1,
 				.string_size_must_not_overflow)!

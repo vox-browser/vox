@@ -73,8 +73,10 @@ fn (c &RegexBytecodeCompiler) simple_ranges(items []RegexCharacterClassRange, ne
 			}
 			RegexCharRange { ranges << item }
 			RegexBuiltinCharacterClass {
-				complex = true
-				matchers << item
+				if !c.append_legacy_builtin_ranges(item, negated, mut ranges) {
+					complex = true
+					matchers << item
+				}
 			}
 			RegexUnicodeProperty {
 				complex = true

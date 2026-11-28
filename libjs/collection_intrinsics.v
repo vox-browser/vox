@@ -15,9 +15,29 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'pop': array_prototype_pop
 		'unshift': array_prototype_unshift
 		'slice': array_prototype_slice
+		'concat': array_prototype_concat
+		'fill': array_prototype_fill
 		'splice': array_prototype_splice
 		'forEach': array_prototype_for_each
-	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name == 'pop' { 0 } else { 1 }, behaviour) }
+		'map': array_prototype_map
+		'findIndex': array_prototype_find_index
+		'findLast': array_prototype_find_last
+		'findLastIndex': array_prototype_find_last_index
+		'at': array_prototype_at
+		'sort': array_prototype_sort
+		'toSorted': array_prototype_to_sorted
+		'reverse': array_prototype_reverse
+		'shift': array_prototype_shift
+		'includes': array_prototype_includes
+		'every': array_prototype_every
+		'filter': array_prototype_filter
+		'flatMap': array_prototype_flat_map
+		'flat': array_prototype_flat
+		'find': array_prototype_find
+		'some': array_prototype_some
+		'reduce': array_prototype_reduce
+		'reduceRight': array_prototype_reduce_right
+	} { install_intrinsic_method(mut vm, &realm, mut array, name, if name in ['slice','splice'] { 2 } else if name in ['pop','shift','reverse','flat'] { 0 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut array, 'toString', 0, fn (mut vm VM) !Value {
 		object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
 		join := object.get(mut vm, PropertyName.from_str('join'))!
@@ -25,12 +45,14 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		return object_prototype_to_string(mut vm, realm_primitive_prototypes())
 	})
 	constructor := NativeFunction.create_constructor(mut vm, &realm, realm.function_prototype,
-		array_constructor_call, fn (mut vm VM, _ &Object) !&Object {
-			return array_constructor_call(mut vm)!.as_object()
+		array_constructor_call, fn (mut vm VM, new_target &Object) !&Object {
+			parent := get_prototype_from_constructor(mut vm, new_target, fn (realm &Realm) &Object { return realm.array_prototype_record() })!
+			return array_constructor_with_prototype(mut vm, parent)!.as_object()
 		}, 1, PropertyName.from_str('Array'))
 	mut array_constructor := constructor.object
 	array_constructor.define_direct_property(PropertyName.from_str('prototype'), Value.from_object(array), 0)
 	array.define_direct_property(PropertyName.from_str('constructor'), Value.from_object(array_constructor), attribute_writable | attribute_configurable)
+	install_intrinsic_method(mut vm, &realm, mut array_constructor, 'from', 1, array_constructor_from)
 	install_intrinsic_method(mut vm, &realm, mut array_constructor, 'isArray', 1, fn (mut vm VM) !Value {
 		return Value.from_bool(vm.argument(0).is_array(mut vm)!)
 	})
@@ -45,14 +67,21 @@ fn initialize_collection_intrinsics(mut vm VM, mut realm Realm) ! {
 		'charCodeAt': string_prototype_char_code_at
 		'indexOf': string_prototype_index_of
 		'lastIndexOf': string_prototype_last_index_of
+		'includes': string_prototype_includes
+		'startsWith': string_prototype_starts_with
+		'endsWith': string_prototype_ends_with
 		'slice': string_prototype_slice
 		'substring': string_prototype_substring
 		'substr': string_prototype_substr
 		'toLowerCase': string_prototype_to_lowercase
 		'toUpperCase': string_prototype_to_uppercase
+		'toLocaleLowerCase': string_prototype_to_locale_lowercase
+		'toLocaleUpperCase': string_prototype_to_locale_uppercase
+		'localeCompare': string_prototype_locale_compare
 		'replace': string_prototype_replace
-	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
+	} { install_intrinsic_method(mut vm, &realm, mut text, name, if name in ['toString','valueOf','toLowerCase','toUpperCase','toLocaleLowerCase','toLocaleUpperCase'] { 0 } else if name in ['slice','substring','substr','replace'] { 2 } else { 1 }, behaviour) }
 	install_intrinsic_method(mut vm, &realm, mut text, 'split', 2, fn (mut vm VM) !Value { return string_prototype_split(mut vm, vm.realm().array_prototype_record()) })
+	initialize_string_text_methods(mut vm, &realm, mut text)
 	string_constructor := StringConstructor.create(mut vm, &realm, StringConstructorDependencies{
 		prototype: text
 		prototype_getter: fn (realm &Realm) &Object { return realm.string_prototype or { panic('String prototype absent') } }
@@ -69,26 +98,28 @@ fn install_intrinsic_method(mut vm VM, realm &Realm, mut object Object, name str
 fn realm_primitive_prototypes() PrimitiveObjectPrototypes {
 	return PrimitiveObjectPrototypes{
 		string: fn (realm &Realm) &Object { return realm.string_prototype or { panic('String prototype absent') } }
-		number: fn (realm &Realm) &Object { return realm.object_prototype_record() }
-		bigint: fn (realm &Realm) &Object { return realm.object_prototype_record() }
+		number: fn (realm &Realm) &Object { return realm.number_prototype or { realm.object_prototype_record() } }
+		bigint: fn (realm &Realm) &Object { return realm.bigint_prototype or { panic('BigInt prototype absent') } }
 	}
 }
 
 fn array_constructor_call(mut vm VM) !Value {
+	return array_constructor_with_prototype(mut vm, vm.realm().array_prototype_record())
+}
+
+fn array_constructor_with_prototype(mut vm VM, prototype &Object) !Value {
 	realm := vm.realm()
 	if vm.argument_count() == 1 && vm.argument(0).is_number() {
 		length := vm.argument(0).number
 		if length < 0 || length > 0xffffffff || math.trunc(length) != length || math.is_nan(length) {
 			return vm.throw_error_type(.range_error, .invalid_length, 'array')
 		}
-		return Value.from_object(ArrayObject.create(mut vm, realm, u64(length), realm.array_prototype_record())!.object)
+		return Value.from_object(ArrayObject.create(mut vm, realm, u64(length), prototype)!.object)
 	}
 	mut values := []Value{}
 	for index in 0 .. vm.argument_count() { values << vm.argument(index) }
-	return Value.from_object(ArrayObject.create_from(mut vm, realm, values, realm.array_prototype_record())!.object)
+	return Value.from_object(ArrayObject.create_from(mut vm, realm, values, prototype)!.object)
 }
-
-fn array_index_key(index u64) PropertyName { return PropertyName.from_str(index.str()) }
 
 fn array_receiver(mut vm VM) !(&Object, u64) {
 	object := vm.this_value().to_object_with_prototypes(mut vm, realm_primitive_prototypes())!
@@ -109,8 +140,8 @@ fn array_prototype_index_of(mut vm VM) !Value {
 	search := vm.argument(0)
 	for index < length {
 		vm.consume_execution_budget()!
-		key := array_index_key(index)
-		if object.internal_has_property(key) && is_strictly_equal(search, object.get(mut vm, key)!) { return Value.from_f64(f64(index)) }
+		value, present := object.read_present_array_index(mut vm, array_index_key(index))!
+		if present && is_strictly_equal(search, value) { return Value.from_f64(f64(index)) }
 		index++
 	}
 	return Value.from_i32(-1)
@@ -130,7 +161,7 @@ fn array_prototype_join(mut vm VM) !Value {
 		value := object.get(mut vm, array_index_key(index))!
 		if !value.is_nullish() { parts << value.to_primitive_string(mut vm)!.utf16 }
 	}
-	return Value.from_string(vm.create_string(utf16_concat(parts)))
+	return Value.from_string(vm.create_generated_join(parts))
 }
 
 fn array_prototype_for_each(mut vm VM) !Value {
@@ -140,8 +171,10 @@ fn array_prototype_for_each(mut vm VM) !Value {
 	this_argument := vm.argument(1)
 	for index := u64(0); index < length; index++ {
 		vm.consume_execution_budget()!
-		key := array_index_key(index)
-		if object.internal_has_property(key) { call(mut vm, callback, this_argument, [object.get(mut vm, key)!, Value.from_f64(f64(index)), Value.from_object(object)])! }
+		value, present := object.read_present_array_index(mut vm, array_index_key(index))!
+		if present {
+			call(mut vm, callback, this_argument, [value, Value.from_f64(f64(index)), Value.from_object(object)])!
+		}
 	}
 	return js_undefined()
 }
@@ -151,18 +184,45 @@ fn array_prototype_push(mut vm VM) !Value {
 	count := u64(vm.argument_count())
 	if length + count > 9007199254740991 { return vm.throw_error(.type_error, 'Array-like length exceeds maximum safe integer') }
 	for index in 0 .. vm.argument_count() { object.set(mut vm, array_index_key(length + index), vm.argument(index), .yes)! }
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length + count)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length + count)), .yes)!
 	return Value.from_f64(f64(length + count))
 }
 
 fn array_prototype_pop(mut vm VM) !Value {
 	mut object, length := array_receiver(mut vm)!
-	if length == 0 { object.set(mut vm, PropertyName.from_str('length'), Value.from_i32(0), .yes)!; return js_undefined() }
+	if value := object.pop_dense_array_element(length) { return value }
+	if length == 0 { object.set(mut vm, vm.length_key(), Value.from_i32(0), .yes)!; return js_undefined() }
 	key := array_index_key(length - 1)
 	value := object.get(mut vm, key)!
 	object.delete_property_or_throw(mut vm, key)!
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length - 1)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length - 1)), .yes)!
 	return value
+}
+
+// Array.prototype.pop on an array whose own keys are exactly 0 .. length-1
+// (no other keys, as many properties as the length) and whose last element
+// is a configurable data property, with a writable length: Get reads it,
+// DeletePropertyOrThrow removes it, and ArraySetLength then has nothing above
+// the new length to remove. Each step's observable result is unchanged;
+// the general path rescans every property on every pop.
+fn (mut object Object) pop_dense_array_element(length u64) ?Value {
+	mut array := object.array_object or { return none }
+	if length == 0 || length != u64(array.length) || !array.length_writable || array.named_properties != 0
+		|| u64(object.properties.len) != length || object.indexed_properties != none {
+		return none
+	}
+	last := object.properties.len - 1
+	property := object.properties[last]
+	if !property.key.is_number() || u64(property.key.number) != length - 1 || !property.configurable
+		|| property.value.is_accessor() {
+		return none
+	}
+	object.properties[last] = OwnProperty{}
+	unsafe {
+		object.properties.len = last
+	}
+	array.length = u32(last)
+	return property.value
 }
 
 fn array_prototype_unshift(mut vm VM) !Value {
@@ -174,25 +234,34 @@ fn array_prototype_unshift(mut vm VM) !Value {
 			vm.consume_execution_budget()!
 			from := array_index_key(index - 1)
 			to := array_index_key(index + count - 1)
-			if object.internal_has_property(from) { object.set(mut vm, to, object.get(mut vm, from)!, .yes)! } else { object.delete_property_or_throw(mut vm, to)! }
+			if object.has_property_checked(mut vm, from)! { object.set(mut vm, to, object.get(mut vm, from)!, .yes)! } else { object.delete_property_or_throw(mut vm, to)! }
 		}
 		for index in 0 .. vm.argument_count() { object.set(mut vm, array_index_key(index), vm.argument(index), .yes)! }
 	}
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length + count)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length + count)), .yes)!
 	return Value.from_f64(f64(length + count))
 }
 
-fn array_species_create(mut vm VM, original &Object, length u64) !&Object {
+fn array_species_constructor(mut vm VM, original &Object) !Value {
 	mut constructor := js_undefined()
-	if original.array_object != none {
+	if Value.from_object(original).is_array(mut vm)! {
 		constructor = original.get(mut vm, PropertyName.from_str('constructor'))!
 		if constructor.is_object() {
 			constructor = constructor.as_object().get(mut vm, PropertyName.from_symbol(vm.well_known_symbol_species()))!
 			if constructor.is_null() { constructor = js_undefined() }
 		}
 	}
+	return constructor
+}
+
+fn array_create_with_species_constructor(mut vm VM, constructor Value, length u64) !&Object {
 	if constructor.is_undefined() { return ArrayObject.create(mut vm, vm.realm(), length, vm.realm().array_prototype_record())!.object }
 	return construct(mut vm, constructor, [Value.from_f64(f64(length))], none)
+}
+
+fn array_species_create(mut vm VM, original &Object, length u64) !&Object {
+	constructor := array_species_constructor(mut vm, original)!
+	return array_create_with_species_constructor(mut vm, constructor, length)
 }
 
 fn array_prototype_slice(mut vm VM) !Value {
@@ -204,9 +273,9 @@ fn array_prototype_slice(mut vm VM) !Value {
 	for index := u64(0); index < count; index++ {
 		vm.consume_execution_budget()!
 		from := array_index_key(start + index)
-		if object.internal_has_property(from) { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
+		if object.has_property_checked(mut vm, from)! { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
 	}
-	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(count)), .yes)!
+	result.set(mut vm, vm.length_key(), Value.from_f64(f64(count)), .yes)!
 	return Value.from_object(result)
 }
 
@@ -220,9 +289,9 @@ fn array_prototype_splice(mut vm VM) !Value {
 	for index := u64(0); index < deleted; index++ {
 		vm.consume_execution_budget()!
 		from := array_index_key(start + index)
-		if object.internal_has_property(from) { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
+		if object.has_property_checked(mut vm, from)! { result.create_data_property_or_throw(mut vm, array_index_key(index), object.get(mut vm, from)!)! }
 	}
-	result.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(deleted)), .yes)!
+	result.set(mut vm, vm.length_key(), Value.from_f64(f64(deleted)), .yes)!
 	if insert_count < deleted {
 		for index := start; index < length - deleted; index++ { move_array_property(mut vm, mut object, index + deleted, index + insert_count)! }
 		for index := length; index > length - deleted + insert_count; index-- { object.delete_property_or_throw(mut vm, array_index_key(index - 1))! }
@@ -230,12 +299,12 @@ fn array_prototype_splice(mut vm VM) !Value {
 		for index := length - deleted; index > start; index-- { move_array_property(mut vm, mut object, index + deleted - 1, index + insert_count - 1)! }
 	}
 	for index := u64(0); index < insert_count; index++ { object.set(mut vm, array_index_key(start + index), vm.argument(u32(index + 2)), .yes)! }
-	object.set(mut vm, PropertyName.from_str('length'), Value.from_f64(f64(length - deleted + insert_count)), .yes)!
+	object.set(mut vm, vm.length_key(), Value.from_f64(f64(length - deleted + insert_count)), .yes)!
 	return Value.from_object(result)
 }
 
 fn move_array_property(mut vm VM, mut object Object, from u64, to u64) ! {
 	vm.consume_execution_budget()!
 	key := array_index_key(from)
-	if object.internal_has_property(key) { object.set(mut vm, array_index_key(to), object.get(mut vm, key)!, .yes)! } else { object.delete_property_or_throw(mut vm, array_index_key(to))! }
+	if object.has_property_checked(mut vm, key)! { object.set(mut vm, array_index_key(to), object.get(mut vm, key)!, .yes)! } else { object.delete_property_or_throw(mut vm, array_index_key(to))! }
 }

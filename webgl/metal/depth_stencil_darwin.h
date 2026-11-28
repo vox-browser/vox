@@ -9,6 +9,7 @@ typedef struct {
     unsigned has_depth,has_stencil;
 } VoxMetalDepthStencil;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static void vox_metal_depth_stencil_pass(MTLRenderPassDescriptor* pass,VoxMetalDepthStencil* storage,int clear,double depth,uint32_t stencil)
 {
     if(storage->has_depth) {
@@ -104,4 +105,5 @@ static void* vox_metal_depth_stencil_view(void* handle,int stencil,uint32_t* for
     result->storage.plane=stencil?source->stencil_plane:source->depth_plane;
     return result;
 }
+#endif
 #endif

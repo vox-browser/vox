@@ -1,5 +1,7 @@
 module dom
 
+import platform
+
 fn create_replacement_browsing_context(_ voidptr, _ &NavigationParams, _ &BrowsingContext) &BrowsingContext {
 	return &BrowsingContext{
 		is_top_level_: true
@@ -81,7 +83,7 @@ fn test_respond_to_base_url_changes_only_invalidates_links_whose_local_state_fli
 	mut document := Document.create(URL{ value: 'https://example.test/page#old' })
 	document.style_computer = &StyleComputer{
 		css_handle: voidptr(document)
-		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope) InvalidationPlan {
+		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope, _ &platform.Arena) InvalidationPlan {
 			return InvalidationPlan{
 				invalidate_self: properties.any(it.type_ == .pseudo_class
 					&& it.pseudo_class_name == 'local-link')
@@ -128,7 +130,7 @@ fn test_respond_to_base_url_changes_skips_documents_without_local_link_selectors
 	mut document := Document.create(URL{ value: 'https://example.test/page#old' })
 	document.style_computer = &StyleComputer{
 		css_handle: voidptr(document)
-		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope) InvalidationPlan {
+		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope, _ &platform.Arena) InvalidationPlan {
 			return InvalidationPlan{
 				invalidate_self: properties.any(it.type_ == .pseudo_class
 					&& it.pseudo_class_name == 'local-link')
@@ -155,7 +157,7 @@ fn test_respond_to_base_url_changes_observes_local_link_selectors_in_shadow_scop
 	mut document := Document.create(URL{ value: 'https://example.test/page#old' })
 	document.style_computer = &StyleComputer{
 		css_handle: voidptr(document)
-		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope) InvalidationPlan {
+		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope, _ &platform.Arena) InvalidationPlan {
 			return InvalidationPlan{
 				invalidate_self: properties.any(it.type_ == .pseudo_class
 					&& it.pseudo_class_name == 'local-link')

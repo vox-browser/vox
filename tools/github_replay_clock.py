@@ -42,7 +42,12 @@ Object.defineProperty(ReplayDate.prototype,'constructor',{
 });
 globalThis.Date=ReplayDate;
 Object.defineProperty(globalThis,'__voxBenchmarkDateEpoch',{value:epoch,configurable:true});
-document.documentElement.setAttribute('data-vox-benchmark-clock',String(epoch));
+const markClock=()=>{
+ const root=document.documentElement;
+ if(root)root.setAttribute('data-vox-benchmark-clock',String(epoch));
+};
+if(document.documentElement)markClock();
+else document.addEventListener('DOMContentLoaded',markClock,{once:true});
 })();
 '''.replace('EPOCH_MS', str(epoch_ms))
 

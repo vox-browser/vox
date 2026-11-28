@@ -19,6 +19,48 @@ fn (m &Mask) index(x int, y int) int {
 	return m.offset + (y - m.bounds.top) * m.row_bytes + x - m.bounds.left
 }
 
+struct MaskRowOffsets {
+	source int
+	target int
+}
+
+// Validate clipped spans for a nonempty, multirow mask before sharing them
+// with workers. A zero source stride repeats the same read-only coverage.
+fn disjoint_mask_row_offsets(mask &Mask, clip IRect, pixels []u8, target_pitch int, target int) ?MaskRowOffsets {
+	width, height := clip.width(), clip.height()
+	if width > pixels.len / 4 || target_pitch < width * 4 {
+		return none
+	}
+	source := mask.index(clip.left, clip.top)
+	source_span := raster_row_span(mask.image.len, source, mask.row_bytes, width, height) or { return none }
+	target_span := raster_row_span(pixels.len, target, target_pitch, width * 4, height) or { return none }
+	source_address := u64(uint(mask.image.data)) + u64(source)
+	target_address := u64(uint(pixels.data)) + u64(target)
+	// Keep serial order if coverage reads can observe writes to the target.
+	if raster_spans_overlap(source_address, source_span, target_address, target_span) {
+		return none
+	}
+	return MaskRowOffsets{source, target}
+}
+
+// The enclosing span of a nonempty, multirow rectangle. Check before
+// multiplying the pitch so the span stays within the backing array.
+fn raster_row_span(length int, offset int, pitch int, row_bytes int, rows int) ?int {
+	if offset < 0 || offset > length - row_bytes || pitch < 0
+		|| pitch > (length - offset - row_bytes) / (rows - 1) {
+		return none
+	}
+	return (rows - 1) * pitch + row_bytes
+}
+
+fn raster_spans_overlap(source u64, source_span int, target u64, target_span int) bool {
+	return if source <= target {
+		target - source < u64(source_span)
+	} else {
+		source - target < u64(target_span)
+	}
+}
+
 // Anti-aliased runs pass their alpha and run-length arrays as slices that
 // share the caller's storage, so wrappers can break runs in place (SkAlphaRuns).
 interface Blitter {
@@ -304,10 +346,11 @@ fn (mut c RectClipBlitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {
 
 // SkA8_Blitter with the src-over procs for a solid alpha source.
 pub struct A8Blitter {
-	width     int
-	height    int
-	row_bytes int
-	src       u8
+	width         int
+	height        int
+	row_bytes     int
+	src           u8
+	legacy_opaque bool
 mut:
 	pixels []u8
 }
@@ -322,14 +365,38 @@ fn a8_srcover(src u8, dst u8) u8 {
 	return src + a8_div255(u32(255 - src) * u32(dst))
 }
 
+// The alpha lane of the legacy opaque SolidBlitter. Its two-pixel helpers
+// interpolate before rounding, while its spans and masks add scaled bytes.
+@[inline]
+fn a8_legacy_opaque_over(coverage u8, dst u8) u8 {
+	return coverage + u8(((256 - u32(coverage)) * u32(dst)) >> 8)
+}
+
+@[inline]
+fn a8_legacy_opaque_interp(coverage u8, dst u8) u8 {
+	scale := u32(coverage) + u32(coverage >> 7)
+	return u8((255 * scale + (256 - scale) * u32(dst)) >> 8)
+}
+
 fn (mut b A8Blitter) row_bw(offset int, count int) {
+	if b.src == 255 && count > 0 {
+		unsafe { vmemset(&u8(b.pixels.data) + offset, 255, count) }
+		return
+	}
 	for i in 0 .. count {
 		b.pixels[offset + i] = a8_srcover(b.src, b.pixels[offset + i])
 	}
 }
 
 // A8_row_aa() with canFoldAA for src-over.
+@[direct_array_access]
 fn (mut b A8Blitter) row_aa(offset int, count int, aa u8) {
+	if b.legacy_opaque {
+		for i in 0 .. count {
+			b.pixels[offset + i] = a8_legacy_opaque_over(aa, b.pixels[offset + i])
+		}
+		return
+	}
 	src := a8_div255(u32(b.src) * u32(aa))
 	for i in 0 .. count {
 		b.pixels[offset + i] = a8_srcover(src, b.pixels[offset + i])
@@ -381,6 +448,10 @@ fn (mut b A8Blitter) blit_anti_rect(x int, y int, width int, height int, left_al
 }
 
 fn (mut b A8Blitter) blit_mask(mask &Mask, clip IRect) {
+	if b.src == 255 {
+		b.blit_opaque_mask(mask, clip)
+		return
+	}
 	for row in 0 .. clip.height() {
 		dst := (clip.top + row) * b.row_bytes + clip.left
 		src := mask.index(clip.left, clip.top + row)
@@ -393,10 +464,40 @@ fn (mut b A8Blitter) blit_mask(mask &Mask, clip IRect) {
 	}
 }
 
+@[direct_array_access]
+fn (mut b A8Blitter) blit_opaque_mask(mask &Mask, clip IRect) {
+	width := clip.width()
+	for row in 0 .. clip.height() {
+		dst := (clip.top + row) * b.row_bytes + clip.left
+		src := mask.index(clip.left, clip.top + row)
+		if b.legacy_opaque {
+			for i in 0 .. width {
+				b.pixels[dst + i] = a8_legacy_opaque_over(mask.image[src + i], b.pixels[dst + i])
+			}
+		} else {
+			for i in 0 .. width {
+				b.pixels[dst + i] = a8_srcover(mask.image[src + i], b.pixels[dst + i])
+			}
+		}
+	}
+}
+
 fn (mut b A8Blitter) blit_anti_h2(x int, y int, a0 u8, a1 u8) {
+	if b.legacy_opaque {
+		offset := y * b.row_bytes + x
+		b.pixels[offset] = a8_legacy_opaque_interp(a0, b.pixels[offset])
+		b.pixels[offset + 1] = a8_legacy_opaque_interp(a1, b.pixels[offset + 1])
+		return
+	}
 	default_blit_anti_h2(mut b, x, y, a0, a1)
 }
 
 fn (mut b A8Blitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {
+	if b.legacy_opaque {
+		offset := y * b.row_bytes + x
+		b.pixels[offset] = a8_legacy_opaque_interp(a0, b.pixels[offset])
+		b.pixels[offset + b.row_bytes] = a8_legacy_opaque_interp(a1, b.pixels[offset + b.row_bytes])
+		return
+	}
 	default_blit_anti_v2(mut b, x, y, a0, a1)
 }

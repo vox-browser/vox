@@ -50,7 +50,7 @@ fn png_stream_natural_size(bytes []u8) ?(int, int) {
 // stb decodes on first use. Most of a page's images are laid out and recorded
 // but never drawn before the next navigation (README screenshots far below the
 // viewport, hidden menu previews), and a drawn one decodes the same pixels.
-fn browser_deferred_png_bitmap(bytes []u8) ?&dom.Bitmap_ {
+fn browser_deferred_png_bitmap(bytes []u8, share_encoded_bytes bool) ?&dom.Bitmap_ {
 	if disable_deferred_png_decode {
 		return none
 	}
@@ -59,7 +59,9 @@ fn browser_deferred_png_bitmap(bytes []u8) ?&dom.Bitmap_ {
 	// as they would have if decoded now, not to whichever scratch or frame
 	// workspace is entered when they are first drawn.
 	storage := platform.current_retained_arena()
-	encoded := bytes.clone()
+	// A caller with a retained immutable response can share its existing bytes
+	// with the eventual pixel decoder. Other callers pass temporary input.
+	encoded := if share_encoded_bytes { bytes } else { bytes.clone() }
 	mut bitmap := dom.Bitmap_.create_deferred(width, height, fn [encoded, storage] (mut target dom.Bitmap_) {
 		mut owner := storage
 		persistent := platform.enter_persistent_if(owner == unsafe { nil })

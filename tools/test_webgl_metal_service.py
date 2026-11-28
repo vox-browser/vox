@@ -108,7 +108,7 @@ def main():
         stem = ('combined-webgl' + (f'-{group_index}' if len(groups)>1 else '')) if args.batch else test.stem
         for gc in modes:
             binary = output / (stem + '-' + gc)
-            command = [str(compiler), '-w', '-new-compiler', '-skip-running', '-b', args.backend,
+            command = [str(compiler), '-w', '-skip-running', '-b', args.backend,
                        '-cc', 'clang', '-cflags', '-O0 -ObjC' if args.backend == 'fastc' else '-O0', '-memory-limit', '10G', '-enable-globals',
                        *(['-file-list', ','.join(str(path) for path in group[1:])] if len(group)>1 and args.backend == 'c' else []),
                        *(['-gc', 'none'] if gc == 'none' else []),

@@ -16,6 +16,7 @@ typedef struct {
 typedef struct { void* buffer; uint32_t stage, binding; uint64_t offset; } VoxMetalUniformBinding;
 typedef struct { void* texture; uint32_t stage, binding, sampler_binding, sampled; void* sampler; } VoxMetalTextureBinding;
 
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 /* All GL validation/state is owned by V. This boundary only encodes a checked
  * draw description and reports Metal compilation/submission errors. */
 static int vox_metal_draw_configured(void* target_handle, void* program_handle,
@@ -213,4 +214,5 @@ static int vox_metal_draw(void* target, void* program,
     return vox_metal_draw_textured(target, program, streams, stream_count, uniforms, uniform_count,
         NULL, 0, primitive, first, count, instances, log, capacity);
 }
+#endif
 #endif

@@ -3,7 +3,6 @@ module layout
 import css
 import dom
 import os
-import platform
 
 const disable_grid_measurement_reuse = os.getenv('VOX_DISABLE_GRID_MEASUREMENT_REUSE') != ''
 const grid_measurement_diagnostics = os.getenv('VOX_GRID_MEASUREMENT_DIAGNOSTICS') != ''
@@ -225,7 +224,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			|| cached.style_environment != style_environment { continue }
 		if !grid_measurement_inputs_are_current(cached.inputs) {
 			if cached.opacity_measurement || cached.absolute_measurement {
-				mut retained := platform.enter_retained_allocations()
+				mut retained := pool.enter_measurement_cache()
 				pool.grid_measurement_rejections_[node_key] = true
 				retained.finish()
 				return run_uncached_grid_formatting_context_internal(mut state, container,
@@ -239,10 +238,11 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		used.set_grid_template_rows(cached.rows)
 		used.set_grid_line_names(cached.column_names, cached.row_names)
 		used.set_grid_subgridded_axes(false, false)
+		publish := committed && pool.measurement_cache_arena_ != unsafe { nil }
 		for index in 0 .. cached.values.len {
 			entry := unsafe { &cached.values[index] }
 			containing := if parent := entry.containing { state.get(parent) } else { none }
-			_ = state.restore_retained_values(entry.node, &entry.values, containing)
+			state.restore_measurement_values(entry.node, &entry.values, containing, publish)
 		}
 		if grid_measurement_diagnostics && !grid_measurement_reuse_reported {
 			grid_measurement_reuse_reported = true
@@ -266,7 +266,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		return run_uncached_grid_formatting_context_internal(mut state, container, mut used,
 			mode, space, width_only)
 	}
-	mut retained_inputs := platform.enter_retained_allocations()
+	mut retained_inputs := pool.enter_measurement_cache()
 	mut inputs := []RetainedInlineInput{}
 	mut eligible := collect_grid_measurement_inputs(container, mut inputs, mut pool.grid_measurement_rejections_)
 	if !eligible { pool.grid_measurement_rejections_[node_key] = true }
@@ -285,13 +285,13 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		|| style_environment != container.document().style_environment_version() { return result }
 	if !grid_measurement_inputs_are_current(owned_inputs) {
 		if absolute_measurement {
-			mut retained := platform.enter_retained_allocations()
+			mut retained := pool.enter_measurement_cache()
 			pool.grid_measurement_rejections_[node_key] = true
 			retained.finish()
 		}
 		return result
 	}
-	mut retained := platform.enter_retained_allocations()
+	mut retained := pool.enter_measurement_cache()
 	defer { retained.finish() }
 	mut snapshots := []RetainedBlockValues{cap: owned_inputs.len - 1}
 	for input in owned_inputs[1..] {

@@ -60,7 +60,21 @@ timeline; non-null detail cloning, measures and observers remain incomplete.
 The namespace read adapter uses accessor descriptors; full namespace data
 descriptor and freeze semantics remain incomplete.
 
-Remaining work includes dynamic imports, top-level
+Object declaration bindings now handle aliases, nested defaults and enumerable
+rest. `Object` construction/static methods, UTF-16 `JSON.parse` with revivers,
+and native Error constructors/prototypes are installed. Object literals support
+prototype setters and inferred property-function names. Source-buffer reuse and
+parser allocation fixes have focused ownership checks. Optional chains and
+for-in loops execute, including short-circuit/delete semantics and fresh lexical
+iteration bindings. Date clocks, construction, UTC/local calendar methods, ISO/native strings and
+JSON conversion are installed, with DST overlap/gap checks. Intl/Temporal and
+other legacy Date parsing remain absent. GitHub remains incomplete.
+
+Array/String iterators, synchronous for-of cleanup and nested array binding
+declarations (including defaults, holes and rest) now execute in LibJS.
+
+Remaining work includes parameter/assignment/catch destructuring, object
+accessors/spread, for-await-of, JSON serialization, dynamic imports, top-level
 await, async/generators, eval/Function, non-simple
 parameters, complete arguments objects, class execution, `finally`,
 the remaining intrinsic graph and most Web APIs. The parser retains its 32-call

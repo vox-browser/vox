@@ -491,6 +491,8 @@ pub mut:
 
 	needs_layout_tree_update                           bool
 	child_needs_layout_tree_update                     bool
+	// One bit per SetNeedsLayoutTreeUpdateReason given while the flag is set.
+	layout_tree_update_reasons                         u32
 	needs_style_update_                                bool
 	child_needs_style_update_                          bool
 	entire_subtree_needs_style_update_                 bool
@@ -1781,7 +1783,9 @@ pub:
 
 pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
 
-pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+// A supplied arena may hold plan payloads until the DOM invalidator drains
+// them. Cached style rules and other scope state keep their original owner.
+pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope, &platform.Arena) InvalidationPlan
 
 // (css handle, element, attribute name, old present, old value, new present, new value, scope)
 pub type StyleComputerAttributeChangeKeepsSelectorsCallback = fn (voidptr, &Element, string, bool, string, bool, string, &StyleScope) bool
@@ -2674,7 +2678,6 @@ pub mut:
 	scope                   HTMLCollectionScope = .descendants
 	filter                  fn (&Element) bool = always_accept_element
 	sort                    fn (&Element, &Element) bool = never_sort_elements
-	collect_elements_       ?fn () []&Element
 	cached_elements         []&Element
 	cached_dom_tree_version u64
 	cached_attribute_version u64
@@ -2812,6 +2815,8 @@ pub mut:
 @[heap]
 pub struct Attr {
 	Node
+mut:
+	attribute_record_ ?&Attr_
 pub mut:
 	name_          string
 	value_         string
@@ -2932,6 +2937,8 @@ pub struct StyleInvalidator {
 pub mut:
 	pending_invalidations           map[UniqueNodeID][]PendingDescendantInvalidation
 	active_descendant_invalidations []PendingDescendantInvalidation
+mut:
+	pending_plan_arena &platform.Arena = unsafe { nil }
 }
 
 pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
@@ -3694,7 +3701,9 @@ pub fn (w &Window) dispatch_popstate_event(state JSValue) {
 		state: state
 	})
 	event.set_is_trusted(true)
-	event_target_dispatch_event(unsafe { &EventTarget(w) }, unsafe { &Event(event) })
+	// History traversal targets the relevant global object without the legacy
+	// document target override used by the window load event.
+	EventDispatcher.dispatch(unsafe { &EventTarget(w) }, unsafe { &Event(event) }, false)
 }
 
 pub fn (w &Window) current_event() ?&Event {
@@ -5360,12 +5369,22 @@ pub mut:
 
 	// Version tracking
 	dom_tree_version                         u64
+	// A native copy of dom_tree_version that scripts read without a host
+	// call (compact facade navigation caches). Never freed: a script context
+	// may outlive the document.
+	dom_tree_version_cell_                   &u64 = unsafe { nil }
 	light_dom_id_class_attribute_version_     u64
 	light_dom_element_version_                u64
 	attribute_version_                       u64
 	// Local names are immutable. Keep a conservative history without retaining
 	// elements, so an absent tag can rule out document-wide selector walks.
 	seen_element_local_names_                map[string]u64
+	// Advances whenever seen_element_local_names_ gains a name. A name absent
+	// from the history stays absent while this is unchanged; the cell gives
+	// scripts the same number without a host call (never freed, like
+	// dom_tree_version_cell_).
+	seen_element_local_name_generation_      u64
+	seen_element_local_name_generation_cell_ &u64 = unsafe { nil }
 	seen_element_classes_ map[string]bool
 	seen_element_classes_unknown_ bool
 	seen_element_class_bytes_ int
@@ -5384,6 +5403,7 @@ pub mut:
 	layout_coordinate_scale_ f64
 	svg_use_resource_hook_ ?DocumentSVGUseResourceHook
 	display_device_pixel_ratio_ f64
+	rendering_device_pixel_ratio_ f64
 	embedder_window_inactive_ bool
 
 	// Encoding
@@ -5469,6 +5489,8 @@ pub mut:
 	layout_pass_generation             u64
 	// VOX_DOCUMENT_LAYOUT_DIAGNOSTICS: what dirtied layout since the last pass.
 	layout_dirty_reasons_              map[string]int
+	// Ids that layout or paint resolved from a URL fragment (rendering_element_by_id).
+	rendering_referenced_ids_          map[string]bool
 	paint_scene_generation             u64
 	oldest_live_paint_scene_generation u64
 	// Native shell snapshots retain/release their contiguous paint-tree slots.
@@ -5629,6 +5651,10 @@ pub mut:
 	// Visibility
 	visibility_state VisibilityState = .hidden
 	initial_visibility_state_entry_pending_ bool
+
+	// Title setters replace children in several mutations; publish only the result.
+	title_change_report_batch_depth_ int
+	title_change_report_pending_ bool
 
 	// Last modified
 	last_modified_ ?string
@@ -6168,6 +6194,21 @@ pub fn (d &Document) dom_tree_version() u64 {
 
 pub fn (mut d Document) bump_dom_tree_version() {
 	d.dom_tree_version++
+	if d.dom_tree_version_cell_ != unsafe { nil } {
+		unsafe { *d.dom_tree_version_cell_ = d.dom_tree_version }
+	}
+}
+
+// The document's tree version cell, created on first use and current from
+// then on. Every script context of the document reads the same cell.
+pub fn (mut d Document) dom_tree_version_cell() &u64 {
+	if d.dom_tree_version_cell_ == unsafe { nil } {
+		cell := unsafe { &u64(C.calloc(1, sizeof(u64))) }
+		if cell == unsafe { nil } { panic('Tree version cell allocation failed') }
+		d.dom_tree_version_cell_ = cell
+	}
+	unsafe { *d.dom_tree_version_cell_ = d.dom_tree_version }
+	return d.dom_tree_version_cell_
 }
 
 // Attribute edits do not change tree structure. Consumers caching discoveries
@@ -6201,7 +6242,30 @@ pub fn (mut d Document) bump_attribute_version() {
 }
 
 pub fn (mut d Document) note_element_local_name(local_name string) {
-	d.seen_element_local_names_[local_name] |= u64(1)
+	d.note_seen_element_local_name(local_name, u64(1))
+}
+
+fn (mut d Document) note_seen_element_local_name(key string, bits u64) {
+	previous := d.seen_element_local_names_[key]
+	d.seen_element_local_names_[key] = previous | bits
+	if previous == 0 {
+		d.seen_element_local_name_generation_++
+		if d.seen_element_local_name_generation_cell_ != unsafe { nil } {
+			unsafe { *d.seen_element_local_name_generation_cell_ = d.seen_element_local_name_generation_ }
+		}
+	}
+}
+
+// The local name history's generation cell, created on first use and current
+// from then on, like dom_tree_version_cell().
+pub fn (mut d Document) seen_element_local_name_generation_cell() &u64 {
+	if d.seen_element_local_name_generation_cell_ == unsafe { nil } {
+		cell := unsafe { &u64(C.calloc(1, sizeof(u64))) }
+		if cell == unsafe { nil } { panic('Local name generation cell allocation failed') }
+		d.seen_element_local_name_generation_cell_ = cell
+	}
+	unsafe { *d.seen_element_local_name_generation_cell_ = d.seen_element_local_name_generation_ }
+	return d.seen_element_local_name_generation_cell_
 }
 
 // Removal may leave a positive entry; only a negative result is a proof.
@@ -6226,7 +6290,7 @@ fn tag_attribute_history_mask(attribute_name string) u64 {
 
 pub fn (mut d Document) note_element_attribute_name(local_name string, attribute_name string) {
 	key := local_name.to_lower()
-	d.seen_element_local_names_[key] |= u64(1) | tag_attribute_history_mask(attribute_name)
+	d.note_seen_element_local_name(key, u64(1) | tag_attribute_history_mask(attribute_name))
 }
 
 pub fn (d &Document) may_have_tag_attribute(local_name string, attribute_name string) bool {
@@ -6537,6 +6601,11 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 		else {}
 	}
 
+	// SVG use forward references must exist before DOMContentLoaded, and
+	// resources discovered by their clones must still be able to delay load.
+	if readiness_value == .interactive {
+		d.refresh_svg_use_shadow_trees()
+	}
 	d.notify_each_document_observer_readiness()
 
 	// Fire a readystatechange event at the document.
@@ -6767,6 +6836,29 @@ pub fn (mut d Document) set_body(new_body &HTMLElement) ! {
 	document_element_node.append_child(new_body_node)!
 }
 
+fn (mut d Document) begin_title_change_report_batch() {
+	d.title_change_report_batch_depth_++
+}
+
+fn (mut d Document) end_title_change_report_batch() {
+	assert d.title_change_report_batch_depth_ > 0
+	d.title_change_report_batch_depth_--
+	if d.title_change_report_batch_depth_ != 0 || !d.title_change_report_pending_ { return }
+	d.title_change_report_pending_ = false
+	d.report_title_change_to_page()
+}
+
+fn (mut d Document) report_title_change_to_page() {
+	navigable := d.navigable() or { return }
+	if !navigable.is_traversable() || d.page() == unsafe { nil } { return }
+	if d.title_change_report_batch_depth_ > 0 {
+		d.title_change_report_pending_ = true
+		return
+	}
+	mut page := unsafe { &Page(d.page()) }
+	page.client_page_did_change_title(d.title())
+}
+
 // https://html.spec.whatwg.org/multipage/dom.html#document.title
 pub fn (d &Document) title() string {
 	mut value := ''
@@ -6805,6 +6897,10 @@ pub fn (mut d Document) set_title(value string) ! {
 	// Sets the document title by creating/updating the title element.
 	// Different behavior for HTML vs SVG documents.
 	document_element := d.document_element() or { return }
+	// Include inserting a new title in the batch, so its empty initial value
+	// cannot be reported before the assigned text.
+	d.begin_title_change_report_batch()
+	defer { d.end_title_change_report_batch() }
 	if document_element.namespace_uri() or { '' } == namespace_svg_uri && document_element.local_name() == 'svg' {
 		mut title_target := ?&Element(none)
 		for child in document_element.as_node().children {
@@ -6823,8 +6919,8 @@ pub fn (mut d Document) set_title(value string) ! {
 			document_element_node.pre_insert(new_title.as_node(), document_element.as_node().first_child())!
 			unsafe { &Element(new_title) }
 		}
-		mut target_node := unsafe { &Node(target.as_node()) }
-		target_node.string_replace_all(value)
+		mut title_element := unsafe { &Element(target) }
+		title_element.set_title_text(value)
 		return
 	}
 
@@ -6844,8 +6940,8 @@ pub fn (mut d Document) set_title(value string) ! {
 			head_node.append_child(new_title.as_node())!
 			unsafe { &Element(new_title) }
 		}
-		mut target_node := unsafe { &Node(target.as_node()) }
-		target_node.string_replace_all(value)
+		mut title_element := unsafe { &Element(target) }
+		title_element.set_title_text(value)
 	}
 }
 
@@ -9203,8 +9299,6 @@ pub fn (mut d Document) completely_finish_loading() {
 	// 1. Assert: document's browsing context is non-null.
 	// 2. The completely loaded time was recorded above even when activation was
 	// deferred.
-	d.refresh_svg_use_shadow_trees()
-
 	// NOTE: Start the active refresh timer if set.
 	if d.active_refresh_timer != unsafe { nil } {
 		d.active_refresh_timer.start()
@@ -10256,6 +10350,7 @@ pub fn (mut d Document) destroy() {
 		d.scripts_ = unsafe { nil }
 		d.all_ = unsafe { nil }
 		d.parser = unsafe { nil }
+		d.release_pending_style_invalidation_storage()
 		d.style_invalidator_ = unsafe { nil }
 		d.adopted_style_sheets = []
 		d.media_query_lists = []
@@ -11300,7 +11395,8 @@ pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 	if new_id := element.id() {
 		d.add_element_by_id(new_id, element)
 	}
-	d.note_svg_paint_resources_changed()
+	d.note_rendering_id_changed(old_id)
+	d.note_rendering_id_changed(element.id())
 }
 
 pub fn (mut d Document) element_with_id_was_added(element &Element) {
@@ -11312,7 +11408,7 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	}
 	if id := element.id() {
 		d.add_element_by_id(id, element)
-		d.note_svg_paint_resources_changed()
+		d.note_rendering_id_changed(id)
 	}
 }
 
@@ -11325,7 +11421,7 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 	}
 	if id := element.id() {
 		d.remove_element_by_id(id, element)
-		d.note_svg_paint_resources_changed()
+		d.note_rendering_id_changed(id)
 	}
 }
 
@@ -12728,6 +12824,10 @@ pub fn (mut d Document) restore_the_history_object_state(entry &SessionHistoryEn
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application
 pub fn (mut d Document) update_for_history_step_application(entry &SessionHistoryEntry, do_not_reactivate bool, script_history_length int, script_history_index int, navigation_type ?NavigationType) {
+	d.apply_history_step(entry, do_not_reactivate, script_history_length, script_history_index, navigation_type, none)
+}
+
+pub fn (mut d Document) apply_history_step(entry &SessionHistoryEntry, do_not_reactivate bool, script_history_length int, script_history_index int, navigation_type ?NavigationType, before_popstate ?fn ()) {
 	// 1. Let documentIsNew be true if document's latest entry is null; otherwise false.
 	document_is_new := d.latest_entry == unsafe { nil }
 
@@ -12751,11 +12851,13 @@ pub fn (mut d Document) update_for_history_step_application(entry &SessionHistor
 		// 4. If documentIsNew is false:
 		if !document_is_new {
 			// Update document URL
-			d.url = entry.url
+			d.set_url(entry.url)
+			state := d.history().state
+			if update := before_popstate { update() }
 
 			// Fire popstate event at document's relevant global object
 			if d.window != unsafe { nil } {
-				d.window.dispatch_popstate_event(d.history().state)
+				d.window.dispatch_popstate_event(state)
 			}
 
 			// 5. If oldURL's fragment differs from entry's URL's fragment, fire hashchange event.
@@ -14419,6 +14521,36 @@ pub fn (p &Page) title_change_count() int {
 
 pub fn (d &Document) get_element_by_id(id string) ?&Element {
 	return d.element_by_id(id)
+}
+
+// Layout and paint resolve URL fragments (url(#id), href="#id") through this
+// lookup. It records the id: an element entering, leaving or renaming that id
+// can change what the reference resolves to, while any other id change leaves
+// rendering alone. The set only grows, so a stale entry costs a rebuild and
+// never a missed one.
+pub fn (d &Document) rendering_element_by_id(id string) ?&Element {
+	mut document := unsafe { &Document(d) }
+	document.rendering_referenced_ids_[id] = true
+	return d.element_by_id(id)
+}
+
+// The shadow-root form of rendering_element_by_id: ids are recorded on the
+// node document, whose id hooks see shadow-tree elements too.
+pub fn (p &ParentNode) rendering_element_by_id(id string) ?&Element {
+	mut document := unsafe { &Document(p.as_node().document()) }
+	document.rendering_referenced_ids_[id] = true
+	return p.get_element_by_id(id)
+}
+
+pub fn (d &Document) rendering_references_id(id string) bool {
+	return id in d.rendering_referenced_ids_
+}
+
+fn (mut d Document) note_rendering_id_changed(id ?string) {
+	value := id or { return }
+	if rebuild_layout_for_every_id_change || value in d.rendering_referenced_ids_ {
+		d.note_svg_paint_resources_changed()
+	}
 }
 
 fn url_percent_decode(s string) string {

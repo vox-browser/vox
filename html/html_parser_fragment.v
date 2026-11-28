@@ -187,6 +187,8 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 	context_document := context_element.document()
 	mut allocations := context_document.enter_native_storage()
 	defer { allocations.finish() }
+	if nodes := plain_fragment_text(context_element, markup) { return nodes }
+	$if test { if fragment_text_diagnostic { fragment_text_fallback++ } }
 	// 1. Let document be a Document node whose type is "html".
 	mut temp_document := dom.Document.create_for_fragment_parsing()
 	temp_document.borrow_native_storage(context_document)

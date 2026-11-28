@@ -16,8 +16,7 @@ fn begin_browser_history_swipe(owner voidptr, delta i32, x f64, y f64,
 	client := page.PixelPoint{x, y - app.page_top()}
 	if delta !in [-1, 1] || app.navigation_work_depth > 0 || app.document == unsafe { nil }
 		|| client.x < 0 || client.y < 0 || client.x >= app.viewport_width
-		|| client.y >= app.viewport_height || app.history_index + delta < 0
-		|| app.history_index + delta >= app.history.len {
+		|| client.y >= app.viewport_height || !app.can_traverse_history(int(delta)) {
 		return 0 // Leave ordinary input with Sokol.
 	}
 	document := voidptr(app.document)

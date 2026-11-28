@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8"><title>Reddit title and unbroken domain wrapping</title>
+<style>
+html,body{margin:0;background:white;color:black;font:12px Verdana,Arial,Helvetica,sans-serif}
+.entry{margin:12px;width:178px;border-bottom:1px solid #ddd;padding-bottom:6px}
+p{margin:0;font:14px Arial,Helvetica,sans-serif;overflow-wrap:break-word}
+a.title{color:#00f;text-decoration:none}
+.domain{color:#888;font-size:x-small;white-space:nowrap}
+.domain a{color:#888;text-decoration:none}
+.wide{width:252px}
+.tight{width:122px}
+</style>
+<div class="entry"><p><a class="title" href="#">Compilers and runtimes</a> <span class="domain">(<a href="#">youtube.com</a>)</span></p></div>
+<div class="entry wide"><p><a class="title" href="#">A short presentation about compilers and runtimes</a> <span class="domain">(<a href="#">youtube.com</a>)</span></p></div>
+<div class="entry tight"><p><a class="title" href="#">Compiler optimizations explained</a> <span class="domain">(<a href="#">example.com</a>)</span></p></div>
+<div class="entry"><p><a class="title" href="#">Compilers and runtimes</a> <span class="domain">(youtube.com)</span></p></div>
+<div class="entry"><p><a class="title" href="#">Compilers and runtimes</a> <span class="domain"><span>(</span><a href="#">youtube.com</a><span>)</span></span></p></div>
+<div class="entry"><p><a class="title" href="#">Compilers and runtimes</a> <span class="domain">(<a href="#">a-long-domain.example</a>)</span></p></div>

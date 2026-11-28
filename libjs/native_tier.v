@@ -1,16 +1,12 @@
 module libjs
 
-import crypto.sha256
 import dl
-import os
 import strings
-import time
-import rand
 
 // An experimental baseline compiler, explicitly driven by the embedder after
 // warmup. Cache entries contain code/layout only, never realm pointers or values.
 // Dynamic operations retain the interpreter's semantics and exception machinery.
-type NativeEntry = fn (voidptr, voidptr, &u64, u8, &u32, fn (voidptr, u32) u32, &u64)
+type NativeEntry = fn (voidptr, voidptr, &u64, u8, &u32, fn (voidptr, u32) u32, &u64, u32)
 
 @[heap]
 struct NativeTier {
@@ -21,10 +17,18 @@ mut:
 	indices     map[voidptr]int
 	calls       []u64
 	entries     map[voidptr]NativeEntry
+	entry_cache []NativeEntryCacheSlot
 	handle      voidptr
 	stats       NativeCodeStats
 	diagnostics bool
 	activity    NativeCodeActivity
+	persistent ?&NativeCodeCache
+}
+
+struct NativeCompiledLibrary {
+	handle voidptr
+	entries []NativeEntry
+	stats NativeCodeStats
 }
 
 pub struct NativeCodeActivity {
@@ -32,6 +36,45 @@ pub mut:
 	entries    u64
 	fast_steps u64
 	slow_steps u64
+	function_environments_reused u64
+	generated_string_hits u64
+	argument_workspace_calls u64
+	function_environments_allocated u64
+	forwarded_call_slices u64
+	direct_array_search_reads u64
+	empty_binding_environments_skipped u64
+	direct_accessor_gets u64
+	direct_accessor_sets u64
+	own_global_binding_reads u64
+	compact_reference_reads u64
+	direct_slow_steps u64
+	global_binding_hint_hits u64
+	entry_cache_hits u64
+	specialized_property_steps u64
+	specialized_object_property_steps u64
+	native_length_steps u64
+	native_index_steps u64
+	binding_lookup_cache_hits u64
+	binding_lookup_cache_misses u64
+	regexp_flag_getter_reads u64
+	direct_declarative_binding_reads u64
+	regex_suffix_searches u64
+	regex_suffix_skipped_positions u64
+	regex_suffix_rejections u64
+	small_property_hint_hits u64
+	indexed_property_hits u64
+	indexed_property_misses u64
+	string_key_scans u64
+	direct_frame_clears u64
+	direct_call_bindings u64
+	regexp_test_results u64
+	empty_regexp_replacements u64
+	validation_arity_hits u64
+	compiler_validation_hits u64
+	indexed_prototype_lookup_hits u64
+	register_call_metadata_reads u64
+	native_binding_steps u64
+	regexp_replace_results u64
 }
 
 pub struct NativeCodeStats {
@@ -50,6 +93,11 @@ pub mut:
 struct NativeInvocation {
 	vm         &VM
 	executable &Executable
+	primitive_type_names voidptr
+	property_read_step voidptr
+	property_length_step voidptr
+	property_index_step voidptr
+	binding_read_step voidptr
 mut:
 	failure ?IError
 	ended   bool
@@ -62,7 +110,27 @@ pub fn (mut vm VM) diagnose_native_code(enabled bool) !NativeCodeActivity {
 	}
 	mut tier := vm.native_tier or { return error('Native tier is not initialized') }
 	tier.diagnostics = enabled
-	previous := tier.activity
+	mut previous := tier.activity
+	$if test {
+		bindings := diagnose_binding_lookup_for_testing(enabled)
+		previous.binding_lookup_cache_hits = bindings.hits
+		previous.binding_lookup_cache_misses = bindings.misses
+		suffix := diagnose_regex_suffix_starts_for_testing(enabled)
+		previous.regex_suffix_searches = suffix.searches
+		previous.regex_suffix_skipped_positions = suffix.skipped_positions
+		previous.regex_suffix_rejections = suffix.rejections
+		previous.small_property_hint_hits = diagnose_small_property_hints_for_testing(enabled)
+		indexed := diagnose_indexed_properties_for_testing(enabled)
+		previous.indexed_property_hits = indexed.hits
+		previous.indexed_property_misses = indexed.misses
+		previous.string_key_scans = diagnose_string_key_scans_for_testing(enabled)
+		previous.direct_frame_clears = diagnose_direct_frame_clears_for_testing(enabled)
+		previous.direct_call_bindings = diagnose_direct_call_bindings_for_testing(enabled)
+		previous.regexp_test_results = diagnose_regexp_test_results_for_testing(enabled)
+		previous.empty_regexp_replacements = diagnose_empty_regexp_replacements_for_testing(enabled)
+		previous.validation_arity_hits = diagnose_validation_arity_for_testing(enabled)
+		previous.register_call_metadata_reads = diagnose_register_call_metadata_for_testing(enabled)
+	}
 	tier.activity = NativeCodeActivity{}
 	return previous
 }
@@ -73,6 +141,7 @@ pub fn (mut vm VM) profile_native_code() ! {
 		return error('Native profiling must begin outside JavaScript execution')
 	}
 	if vm.native_tier != none { return error('Native tier already initialized') }
+	vm.ensure_native_type_names()
 	vm.native_tier = &NativeTier{}
 }
 
@@ -105,65 +174,48 @@ pub fn (mut vm VM) compile_native_code(directory string, compiler string, minimu
 		}
 	}
 	if selected.len == 0 { return error('No warmed executables meet the native threshold') }
-	source, fast_count := native_source(selected)!
-	// The generated ABI, opcodes, target and optimization flags are part of the
-	// key. No function pointer or process-specific payload is embedded in the file.
-	key := sha256.hexhash('libjs-native-v1:${os.user_os()}:${os.uname().machine}:O2:no-strict-aliasing:' + source)
-	os.mkdir_all(directory)!
-	library := os.join_path(os.real_path(directory), key + dl.dl_ext)
-	mut stats := NativeCodeStats{
-		observed_executables: tier.observed.len
-		compiled_executables: selected.len
-		fast_instructions:    fast_count
-		cache_hit:            os.is_file(library)
-		library:              library
-	}
-	for executable in selected { stats.compiled_instructions += executable.instructions.len }
-	if !stats.cache_hit {
-		started := time.sys_mono_now()
-		// Generate outside Build/; only the final binary survives compilation.
-		job := os.join_path(os.real_path(directory), '.compile-' + rand.uuid_v4())
-		os.mkdir(job)!
-		defer { os.rmdir_all(job) or {} }
-		input := os.join_path(job, 'code.c')
-		output := os.join_path(job, 'code' + dl.dl_ext)
-		os.write_file(input, source)!
-		mut process := os.new_process(compiler)
-		mut args := ['-O2', '-std=c11', '-fno-strict-aliasing']
-		$if macos {
-			args << '-dynamiclib'
-		} $else {
-			args << ['-shared', '-fPIC']
-		}
-		args << [input, '-o', output]
-		process.set_args(args)
-		process.set_redirect_stdio()
-		process.run()
-		diagnostic := process.stderr_slurp()
-		process.wait()
-		code := process.code
-		process.close()
-		if code != 0 { return error('Native compiler exited ${code}: ${diagnostic}') }
-		os.mv(output, library)!
-		stats.compile_ms = f64(time.sys_mono_now() - started) / 1e6
-	}
-	started := time.sys_mono_now()
-	handle := dl.open_opt(library, dl.rtld_now | dl.rtld_local)!
+	compiled := native_compile_library(selected, directory, compiler)!
 	mut entries := map[voidptr]NativeEntry{}
-	for index, executable in selected {
-		symbol := dl.sym_opt(handle, 'vox_native_${index}') or {
-			dl.close(handle)
-			return err
-		}
-		entries[voidptr(executable)] = unsafe { NativeEntry(symbol) }
-	}
-	stats.load_ms = f64(time.sys_mono_now() - started) / 1e6
-	stats.library_sha256 = sha256.hexhash(os.read_file(library)!)
+	for index, executable in selected { entries[voidptr(executable)] = compiled.entries[index] }
 	tier.entries = entries.move()
-	tier.handle = handle
-	tier.stats = stats
+	tier.entry_cache = []NativeEntryCacheSlot{}
+	tier.handle = compiled.handle
+	tier.stats = NativeCodeStats{...compiled.stats, observed_executables: tier.observed.len}
 	tier.enabled = true
-	return stats
+	return tier.stats
+}
+
+fn native_compile_library(selected []&Executable, directory string, compiler string) !NativeCompiledLibrary {
+	$if prealloc {
+		// Source builders, compiler diagnostics and library-hash input are batch
+		// work, not VM state. Nothing in this synchronous operation mutates an
+		// executable or retains V data outside its returned library record.
+		scope := unsafe { prealloc_scope_begin() }
+		defer { unsafe { prealloc_scope_free_after(scope) } }
+		compiled := native_compile_library_in_workspace(selected, directory, compiler) or {
+			unsafe { prealloc_scope_leave(scope) }
+			message := err.msg().clone()
+			return error_with_code(message, err.code())
+		}
+		// Keep the workspace alive while copying the small retained result into
+		// the caller's arena. dlopen owns the machine code independently.
+		unsafe { prealloc_scope_leave(scope) }
+		return NativeCompiledLibrary{
+			handle: compiled.handle
+			entries: compiled.entries.clone()
+			stats: NativeCodeStats{...compiled.stats,
+				library: compiled.stats.library.clone()
+				library_sha256: compiled.stats.library_sha256.clone()
+			}
+		}
+	}
+	return native_compile_library_in_workspace(selected, directory, compiler)
+}
+
+fn native_compile_library_in_workspace(selected []&Executable, directory string, compiler string) !NativeCompiledLibrary {
+	build := prepare_native_library(selected, directory, compiler)!
+	compile_ms := build.compile()!
+	return build.load(compile_ms)
 }
 
 // Switch the same warmed VM between control and candidate without profiling or
@@ -173,7 +225,7 @@ pub fn (mut vm VM) use_native_code(enabled bool) ! {
 		return error('Cannot switch native code during JavaScript execution')
 	}
 	mut tier := vm.native_tier or { return error('Native tier is not initialized') }
-	if enabled && tier.handle == unsafe { nil } { return error('No native code loaded') }
+	if enabled && tier.handle == unsafe { nil } && tier.persistent == none { return error('No native code loaded') }
 	tier.enabled = enabled
 }
 
@@ -184,6 +236,10 @@ pub fn (mut vm VM) close_native_code() ! {
 	if mut tier := vm.native_tier {
 		tier.enabled = false
 		if tier.handle != unsafe { nil } { dl.close(tier.handle) }
+		if mut cache := tier.persistent {
+			cache.release_background_batch()
+			for _, library in cache.libraries { dl.close(library.handle) }
+		}
 	}
 	vm.native_tier = none
 }
@@ -194,14 +250,19 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 	if mut tier := vm.native_tier {
 		if tier.diagnostics { tier.activity.slow_steps++ }
 	}
-	mut frame := vm.running_execution_context()
+	mut frame := vm.current_context()
 	frame.program_counter = pc
 	vm.consume_execution_budget() or {
 		invocation.failure = err
 		return 0xffffffff
 	}
-	instruction := invocation.executable.instructions[pc]
-	next := vm.execute_instruction(instruction, invocation.executable) or {
+	instruction := &invocation.executable.instructions[pc]
+	direct := use_native_dynamic_dispatch() && instruction.op in [.call, .construct, .super_construct, .get_property, .get_binding, .typeof_binding, .get_callee_and_this]
+	if direct {
+		if mut tier := vm.native_tier { if tier.diagnostics { tier.activity.direct_slow_steps++ } }
+	}
+	next := (if direct { vm.execute_native_dynamic(instruction, invocation.executable) }
+		else { vm.execute_instruction(instruction, invocation.executable) }) or {
 		if is_throw_completion(err) && vm.handle_exception(pc, thrown_value(err)) == .continue_in_this_executable {
 			return frame.program_counter
 		}
@@ -209,34 +270,81 @@ fn native_slow_step(opaque voidptr, pc u32) u32 {
 		return 0xffffffff
 	}
 	frame.program_counter = next
-	if instruction.op == .end { invocation.ended = true }
+	if instruction.op in [.end, .await_value, .generator_start, .yield_value, .yield_iterator_result] {
+		// These instructions return control to the caller even when their saved
+		// resume PC is inside the executable. Returning that PC to generated C
+		// would continue past await/yield before the VM has resumed the frame.
+		invocation.ended = true
+		return 0xffffffff
+	}
 	return next
 }
 
 fn native_slot(operand Operand, executable &Executable) !u32 {
-	// Argument-count-dependent streams stay interpreted. Generated function
-	// bodies access parameters through their environments in this VM.
+	// Only GetArgument has a runtime bounds check for the argument area.
 	return operand.slot(executable, 0, false)
+}
+
+const native_fast_budget_check = 'if(limited) --*budget; if(fast_steps) ++*fast_steps;'
+
+// Copy template spans directly into the translation unit. Both substitutions
+// used to allocate intermediate copies of the entire instruction.
+fn write_native_fast_step(mut output strings.Builder, template string, offset int) {
+	mut cursor := 0
+	mut slow := template.index_('SLOW')
+	mut budget := template.index_('BUDGET')
+	for slow >= 0 || budget >= 0 {
+		replace_slow := slow >= 0 && (budget < 0 || slow < budget)
+		marker := if replace_slow { slow } else { budget }
+		unsafe { output.write_ptr(template.str + cursor, marker - cursor) }
+		if replace_slow {
+			output.write_byte(`S`)
+			output.write_decimal(offset)
+			cursor = slow + 'SLOW'.len
+			slow = template.index_after_('SLOW', cursor)
+		} else {
+			output.write_string(native_fast_budget_check)
+			cursor = budget + 'BUDGET'.len
+			budget = template.index_after_('BUDGET', cursor)
+		}
+	}
+	unsafe { output.write_ptr(template.str + cursor, template.len - cursor) }
+	output.write_byte(`\n`)
 }
 
 fn native_source(executables []&Executable) !(string, int) {
 	mut source := strings.new_builder(16384)
 	sample := Value{}
+	tag_offset := uint(&sample.tag) - uint(&sample)
 	number_offset := uint(&sample.number) - uint(&sample)
 	cell_offset := uint(&sample.cell) - uint(&sample)
 	source.writeln('#include <stdint.h>\n#include <stddef.h>\n#include <math.h>')
-	source.writeln('typedef struct { uint8_t tag; double number; void *cell; } NV;')
+	source.writeln('typedef struct { union { double number; void *cell; }; uint8_t tag; } NV;')
 	source.writeln('_Static_assert(sizeof(NV)==${sizeof(Value)}, "Value size");')
-	source.writeln('_Static_assert(offsetof(NV,number)==${number_offset} && offsetof(NV,cell)==${cell_offset}, "Value offsets");')
+	source.writeln('_Static_assert(offsetof(NV,tag)==${tag_offset} && offsetof(NV,number)==${number_offset} && offsetof(NV,cell)==${cell_offset}, "Value offsets");')
 	source.writeln('typedef uint32_t (*Slow)(void*,uint32_t);')
 	source.writeln('static int number(NV v) { return v.tag==${int(ValueTag.int32)} || v.tag==${int(ValueTag.double)}; }')
-	source.writeln('static NV num(double x) { NV v={${int(ValueTag.double)},x,0}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
-	source.writeln('static NV boolean(int x) { NV v={${int(ValueTag.boolean)},!!x,0}; return v; }')
+	source.writeln('static NV num(double x) { NV v={.number=x,.tag=${int(ValueTag.double)}}; if(x>=-2147483648.0 && x<=2147483647.0 && x==(int32_t)x && !(x==0 && signbit(x))) v.tag=${int(ValueTag.int32)}; return v; }')
+	source.writeln('static NV boolean(int x) { NV v={.number=!!x,.tag=${int(ValueTag.boolean)}}; return v; }')
+	source.writeln(native_number_helpers)
+	source.writeln(native_primitive_helpers())
+	source.writeln(native_property_helpers())
+	source.writeln(native_length_helpers())
+	source.writeln(native_index_helpers())
+	source.writeln(native_binding_helpers())
 	mut fast_count := 0
 	for index, executable in executables {
-		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps) { uint32_t next=*pc; goto dispatch;')
+		mut has_properties := false
 		for offset, instruction in executable.instructions {
-			fast := native_fast_instruction(instruction, executable)!
+			if _ := native_property_plan(instruction, executable, u32(offset)) { has_properties = true; break }
+		}
+		property_reader := if has_properties { 'PropertyRead property=property_reader(state);' } else { '' }
+		source.writeln('void vox_native_${index}(void *state,NV *v,uint64_t *budget,uint8_t limited,uint32_t *pc,Slow slow,uint64_t *fast_steps,uint32_t argc) { uint32_t next=*pc; ${property_reader} goto dispatch;')
+		for offset, instruction in executable.instructions {
+			length_fast := native_length_instruction(instruction, executable, u32(offset))
+			index_fast := native_index_instruction(instruction, executable, u32(offset))
+			binding_fast := native_binding_instruction(instruction, executable, u32(offset))
+			fast := if length_fast != '' { length_fast } else if index_fast != '' { index_fast } else if binding_fast != '' { binding_fast } else { native_fast_instruction(instruction, executable)! }
 			source.writeln('L${offset}:;')
 			if fast != '' {
 				fast_count++
@@ -244,7 +352,7 @@ fn native_source(executables []&Executable) !(string, int) {
 				// reported by the ordinary VM path at precisely this instruction.
 				source.writeln('if(limited && !*budget) goto S${offset};')
 				// Guards precede decrement so a slow exit consumes exactly once.
-				source.writeln(fast.replace('SLOW', 'S${offset}').replace('BUDGET', 'if(limited) --*budget; if(fast_steps) ++*fast_steps;'))
+				write_native_fast_step(mut source, fast, offset)
 				if instruction.op == .jump {
 					source.writeln('goto L${instruction.target};')
 				} else if instruction.op == .end {
@@ -253,7 +361,11 @@ fn native_source(executables []&Executable) !(string, int) {
 					source.writeln('goto L${offset + 1};')
 				}
 			}
-			source.writeln('S${offset}: *pc=${offset}; next=slow(state,${offset});')
+			source.writeln('S${offset}:;')
+			if plan := native_property_plan(instruction, executable, u32(offset)) {
+				source.writeln('if(property) { static const uint32_t plan[]={${plan}}; *pc=${offset}; next=property(state,(void*)plan); if(next==${offset + 1}) goto L${offset + 1}; goto dispatch; }')
+			}
+			source.writeln('*pc=${offset}; next=slow(state,${offset});')
 			source.writeln('if(next==${offset + 1}) goto L${offset + 1}; goto dispatch;')
 		}
 		source.writeln('L${executable.bytecode_length}: *pc=${executable.bytecode_length}; return;')
@@ -269,48 +381,86 @@ fn native_source(executables []&Executable) !(string, int) {
 }
 
 fn native_fast_instruction(instruction Instruction, executable &Executable) !string {
-	if instruction.op == .jump { return 'BUDGET' }
+	if instruction.op in [.jump, .nop] { return 'BUDGET' }
+	if instruction.op == .get_argument {
+		dst := native_slot(instruction.dst, executable)!
+		argument := u64(executable.registers_and_locals_count) + u64(executable.constants.len) + instruction.identifier
+		return 'BUDGET v[${dst}]=argc>${instruction.identifier}u ? v[${argument}] : (NV){.tag=${int(ValueTag.undefined)}};'
+	}
 	if instruction.op !in [.mov, .end, .jump_if_true, .jump_if_false, .jump_if_nullish, .add, .sub,
-		.mul, .div, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
-		.strict_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op] {
+		.mul, .div, .mod_, .exp, .less_than, .less_than_equals, .greater_than, .greater_than_equals, .strict_equals,
+		.strict_inequals, .loose_equals, .loose_inequals, .increment, .decrement, .to_numeric, .unary_plus, .unary_minus, .not_op, .typeof_op,
+		.bitwise_not, .bitwise_and, .bitwise_or, .bitwise_xor, .left_shift, .right_shift, .unsigned_right_shift,
+		.require_object_coercible, .to_string, .to_property_key] {
 		return ''
 	}
+	if instruction.op == .typeof_op && !use_native_primitive_ops() { return '' }
 	lhs := native_slot(instruction.lhs, executable)!
 	left := 'v[${lhs}]'
 	mut code := 'if(${left}.tag==${int(ValueTag.empty)}) goto SLOW;\n'
+	if instruction.op == .typeof_op {
+		return code + '{ void *type_name=primitive_typeof(state,${left}); if(!type_name) goto SLOW; BUDGET v[${native_slot(instruction.dst, executable)!}]=(NV){.cell=type_name,.tag=${int(ValueTag.string)}}; }'
+	}
 	if instruction.op == .end {
-		return code + 'BUDGET v[${register_return_value}]=${left}; v[${register_exception}]=(NV){${int(ValueTag.empty)},0,0};'
+		return code + 'BUDGET v[${register_return_value}]=${left}; v[${register_exception}]=(NV){.tag=${int(ValueTag.empty)}};'
 	}
 	if instruction.op == .mov {
 		return code + 'BUDGET v[${native_slot(instruction.dst, executable)!}]=${left};'
 	}
-	if instruction.op == .jump_if_nullish {
-		return code + 'BUDGET if(${left}.tag==${int(ValueTag.undefined)} || ${left}.tag==${int(ValueTag.null)}) goto L${instruction.target};'
+	if instruction.op in [.jump_if_nullish, .require_object_coercible] {
+		nullish := '(${left}.tag==${int(ValueTag.undefined)} || ${left}.tag==${int(ValueTag.null)})'
+		return if instruction.op == .jump_if_nullish { code + 'BUDGET if${nullish} goto L${instruction.target};' }
+			else { code + 'if${nullish} goto SLOW; BUDGET' }
+	}
+	if instruction.op in [.to_string, .to_property_key, .to_numeric] {
+		guard := match instruction.op {
+			.to_string { '${left}.tag==${int(ValueTag.string)}' }
+			.to_property_key { '${left}.tag==${int(ValueTag.string)} || ${left}.tag==${int(ValueTag.symbol)}' }
+			else { 'number(${left}) || ${left}.tag==${int(ValueTag.bigint)}' }
+		}
+		return code + 'if(!(${guard})) goto SLOW; BUDGET v[${native_slot(instruction.dst, executable)!}]=${left};'
 	}
 	if instruction.op in [.jump_if_true, .jump_if_false, .not_op] {
-		// Strings and BigInts need their existing truthiness implementation.
-		code += 'if(${left}.tag==${int(ValueTag.string)} || ${left}.tag==${int(ValueTag.bigint)}) goto SLOW;\n'
-		truth := '(${left}.tag==${int(ValueTag.object)} || ${left}.tag==${int(ValueTag.symbol)} || ${left}.tag==${int(ValueTag.accessor)} || ((${left}.tag==${int(ValueTag.boolean)} || number(${left})) && ${left}.number!=0 && ${left}.number==${left}.number))'
+		if use_native_primitive_ops() {
+			code += 'if(${left}.tag==${int(ValueTag.bigint)}) goto SLOW;\n'
+		} else {
+			code += 'if(${left}.tag==${int(ValueTag.string)} || ${left}.tag==${int(ValueTag.bigint)}) goto SLOW;\n'
+		}
+		string_truth := if use_native_primitive_ops() { '(${left}.tag==${int(ValueTag.string)} && string_length(${left})!=0) || ' } else { '' }
+		truth := '(${string_truth}${left}.tag==${int(ValueTag.object)} || ${left}.tag==${int(ValueTag.symbol)} || ${left}.tag==${int(ValueTag.accessor)} || ((${left}.tag==${int(ValueTag.boolean)} || number(${left})) && ${left}.number!=0 && ${left}.number==${left}.number))'
 		if instruction.op == .not_op {
 			return code + 'BUDGET v[${native_slot(instruction.dst, executable)!}]=boolean(!${truth});'
 		}
 		return code + 'BUDGET if(${if instruction.op == .jump_if_false { '!' } else { '' }}${truth}) goto L${instruction.target};'
 	}
+	if instruction.op in [.strict_equals, .strict_inequals, .loose_equals, .loose_inequals] {
+		if use_native_primitive_ops() { return code + native_primitive_equality(instruction, executable, left)! }
+		if instruction.op in [.loose_equals, .loose_inequals] { return '' }
+	}
 	dst := native_slot(instruction.dst, executable)!
-	code += 'if(!number(${left})) goto SLOW;\n'
-	if instruction.op in [.increment, .decrement, .to_numeric, .unary_plus, .unary_minus] {
+	if instruction.op in [.increment, .decrement, .unary_plus, .unary_minus, .bitwise_not] {
+		code += 'if(!number(${left})) goto SLOW;\n'
 		value := match instruction.op {
 			.increment { '${left}.number+1' }
 			.decrement { '${left}.number-1' }
 			.unary_minus { '-${left}.number' }
+			.bitwise_not { 'signed_bits(~uint32_bits(${left}.number))' }
 			else { '${left}.number' }
 		}
 		return code + 'BUDGET v[${dst}]=num(${value});'
 	}
 	rhs := native_slot(instruction.rhs, executable)!
 	right := 'v[${rhs}]'
-	code += 'if(!number(${right})) goto SLOW;\n'
-	op := match instruction.op {
+	if use_native_primitive_ops() && instruction.op in [.less_than, .less_than_equals, .greater_than, .greater_than_equals] {
+		op := native_number_operator(instruction.op)
+		return code + '{ int strings=${left}.tag==${int(ValueTag.string)} && ${right}.tag==${int(ValueTag.string)}; if(!strings && (!number(${left}) || !number(${right}))) goto SLOW; BUDGET v[${dst}]=boolean(strings ? string_order(${left},${right}) ${op} 0 : ${left}.number ${op} ${right}.number); }'
+	}
+	code += 'if(!number(${left}) || !number(${right})) goto SLOW;\n'
+	return code + 'BUDGET v[${dst}]=${native_number_binary(instruction.op, left + '.number', right + '.number')};'
+}
+
+fn native_number_operator(op OpCode) string {
+	return match op {
 		.add { '+' }
 		.sub { '-' }
 		.mul { '*' }
@@ -322,6 +472,4 @@ fn native_fast_instruction(instruction Instruction, executable &Executable) !str
 		.strict_equals { '==' }
 		else { '!=' }
 	}
-	wrap := if instruction.op in [.add, .sub, .mul, .div] { 'num' } else { 'boolean' }
-	return code + 'BUDGET v[${dst}]=${wrap}(${left}.number ${op} ${right}.number);'
 }

@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import os
 import dom
 import platform
 
@@ -13,6 +14,22 @@ fn flush_compact_dom_mutations(document &dom.Document, runtime &browserjs.Runtim
 	defer { state.finish() }
 	mut messages := []string{}
 	apply_javascript_runtime_state(document, state.value, runtime, mut messages)
+	if messages.len != 0 { return error(messages.join('\n')) }
+}
+
+// Native attribute writes that only settled reactions, because the facade
+// had nothing to publish (tests and diagnostics).
+__global compact_settled_attribute_writes u64
+
+// flush_compact_dom_mutations() when the facade has nothing pending: its
+// snapshot would be empty, so only the reactions it settles remain.
+fn settle_compact_dom_mutation_reactions(document &dom.Document, runtime &browserjs.Runtime) ! {
+	if runtime.engine == .libjs { return }
+	compact_settled_attribute_writes++
+	mut messages := []string{}
+	settle_compact_dom_reactions(document, runtime, mut messages) or {
+		messages << 'JavaScript DOM synchronization: ${err.msg()}'
+	}
 	if messages.len != 0 { return error(messages.join('\n')) }
 }
 
@@ -41,7 +58,8 @@ fn settle_compact_dom_reactions(document &dom.Document, runtime &browserjs.Runti
 			state.finish()
 			return
 		}
-		replay_compact_dom_snapshot(document, state.value, runtime, mut messages)
+		result := replay_compact_dom_snapshot(document, state.value, runtime, mut messages)
+		result.workspace.finish()
 		state.finish()
 	}
 }
@@ -57,6 +75,10 @@ struct CompactDOMTaskOutput {
 
 // Observe task output after reactions settle: a reentrant navigation supersedes
 // the earlier request, and its logs must be collected before the realm retires.
+// VOX_CONSOLE_DIAGNOSTICS=1: print page console messages as each task's
+// output is committed (they are otherwise only shown by the smoke check).
+const compact_console_diagnostics = os.getenv('VOX_CONSOLE_DIAGNOSTICS') != ''
+
 fn apply_compact_dom_task(document &dom.Document, encoded string, runtime &browserjs.Runtime,
 	mut messages []string) !CompactDOMTaskCommit {
 	// Diagnostics and navigation outlive the caller's frame scratch, just as
@@ -71,6 +93,12 @@ fn apply_compact_dom_task(document &dom.Document, encoded string, runtime &brows
 	defer {
 		platform.leave_persistent(persistent)
 		scope.finish()
+	}
+	first_message := messages.len
+	defer {
+		if compact_console_diagnostics {
+			for entry in messages[first_message..] { eprintln('VOX_CONSOLE ${entry.limit(2000)}') }
+		}
 	}
 	apply_javascript_runtime_state(document, encoded, runtime, mut messages)
 	state := runtime.evaluate_host_temporary_text('__ladybirdTakeTaskOutput()')!

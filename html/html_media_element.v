@@ -209,6 +209,7 @@ mut:
 	// The initial resource selection can run before load_element().
 	first_data_load_event_since_load_start_ bool = true
 	seeking_                    bool
+	prevent_next_loop_while_paused_ bool
 	current_playback_position_  f64
 	official_playback_position_ f64
 	official_playback_position_task_generation_ u64
@@ -251,7 +252,6 @@ mut:
 	video_frame_source_         ?&painting.VideoFrameSource
 	accepts_byte_ranges_        bool
 	last_fetch_offset_          u64
-	loop_was_specified_at_end_  bool
 	running_time_update_event_  bool
 	last_time_update_event_time_ ?i64
 	last_known_current_playback_position_ ?f64
@@ -440,6 +440,13 @@ fn html_media_element_resource_attribute_changed(element &dom.Element) {
 	// resource selection which already belongs to this actual owner can resume.
 	if model_pointer == unsafe { nil } { return }
 	mut media := unsafe { &HTMLMediaElement(model_pointer) }
+	// Raw DOM loop mutations use the same owner callback as preload/autoplay.
+	// Only a changed loop state updates ended synchronously.
+	current_loop := media.loop()
+	if media.loop_ != current_loop {
+		media.loop_ = current_loop
+		media.update_ended_attribute()
+	}
 	media.resource_attribute_changed()
 }
 
@@ -960,6 +967,7 @@ pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 			dom_element.remove_attribute_ns(none, 'loop')
 		}
 	}
+	element.update_ended_attribute()
 }
 
 pub fn (element &HTMLMediaElement) autoplay() bool {
@@ -1504,8 +1512,21 @@ pub fn (mut element HTMLMediaElement) restart_fetch_at_offset(offset u64) ! {
 	if element.current_src_ == '' {
 		return
 	}
-	response := hook(dom.URL{ value: element.current_src_ }, offset)!
+	// This generation identifies the selected resource; range fetches do not
+	// advance it. A synchronous host callback may replace the resource.
+	generation := element.fetch_generation_
+	response := hook(dom.URL{ value: element.current_src_ }, offset) or {
+		if generation != element.fetch_generation_ { return }
+		if element.ready_state_ != .have_nothing {
+			element.queue_interrupted_fetch_steps()
+		}
+		return err
+	}
+	if generation != element.fetch_generation_ { return }
 	if failure := element.verify_response_or_get_failure_reason(response, false) {
+		if element.ready_state_ != .have_nothing {
+			element.queue_interrupted_fetch_steps()
+		}
 		return error(failure)
 	}
 	// A server may ignore Range and return the entire resource instead.
@@ -1792,6 +1813,9 @@ pub fn (element &HTMLMediaElement) current_playback_position() f64 {
 pub fn (mut element HTMLMediaElement) set_official_playback_position(position f64) {
 	element.official_playback_position_ = position
 	element.official_playback_position_task_generation_ = main_thread_event_loop().task_generation()
+	// Keep synchronous currentTime and ended reads in agreement after a seek
+	// or load, without waiting for the next event-loop step-1 boundary.
+	element.update_ended_attribute()
 }
 
 pub fn (mut element HTMLMediaElement) set_current_time(value f64) {
@@ -1806,7 +1830,14 @@ pub fn (mut element HTMLMediaElement) fast_seek(value f64) {
 	element.seek_element(value, .approximate_for_speed)
 }
 
+pub fn (mut element HTMLMediaElement) seek_from_media_controls(value f64) {
+	element.set_current_time(value)
+	// Keep a paused scrub at the endpoint without changing the loop attribute.
+	element.prevent_next_loop_while_paused_ = true
+}
+
 pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode) {
+	element.prevent_next_loop_while_paused_ = false
 	element.set_show_poster(false)
 	if element.ready_state_ == .have_nothing {
 		return
@@ -1861,8 +1892,9 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 			media.finish_seeking_element()
 		})
 	}
-	// Source's ad-hoc seek commit samples the clock after requesting the seek.
-	element.set_official_playback_position(element.current_playback_position())
+	// The manager seeks to the clamped target, while currentTime immediately
+	// reflects the value requested by currentTime/fastSeek in this task.
+	element.set_official_playback_position(value)
 }
 
 pub fn (mut element HTMLMediaElement) finish_seeking_element() {
@@ -1972,7 +2004,8 @@ pub fn (mut element HTMLMediaElement) play_element() {
 	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ {
 		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
 	}
-	if element.has_ended_playback() && element.direction_of_playback() == .forwards {
+	// Replay from the beginning even if loop was added after playback ended.
+	if element.has_ended_playback_internal(true) && element.direction_of_playback() == .forwards {
 		element.seek_element(0, .accurate)
 	}
 	if element.paused_ {
@@ -1994,9 +2027,6 @@ pub fn (mut element HTMLMediaElement) play_element() {
 			})
 		} else {
 			element.notify_about_playing()
-			if !element.seeking_ && element.official_playback_position_ == element.duration_ {
-				element.reached_end_of_media_playback()
-			}
 		}
 	} else if int(element.ready_state_) >= int(MediaReadyState.have_future_data) {
 		promises := element.take_pending_play_promises()
@@ -2261,6 +2291,10 @@ pub fn (element &HTMLMediaElement) direction_of_playback() MediaPlaybackDirectio
 }
 
 pub fn (element &HTMLMediaElement) has_ended_playback() bool {
+	return element.has_ended_playback_internal(false)
+}
+
+fn (element &HTMLMediaElement) has_ended_playback_internal(ignore_loop_attribute bool) bool {
 	if int(element.ready_state_) < int(MediaReadyState.have_metadata) {
 		return false
 	}
@@ -2272,7 +2306,8 @@ pub fn (element &HTMLMediaElement) has_ended_playback() bool {
 	} else {
 		element.current_playback_position_ == element.duration_
 	}
-	if reached_end && element.direction_of_playback() == .forwards && !element.loop_was_specified_at_end_ {
+	if reached_end && element.direction_of_playback() == .forwards
+		&& (ignore_loop_attribute || !element.loop()) {
 		return true
 	}
 	return element.current_playback_position_ == 0 && element.direction_of_playback() == .backwards
@@ -2283,29 +2318,46 @@ pub fn (mut element HTMLMediaElement) upon_has_ended_playback_possibly_changed()
 	run_when_event_loop_reaches_step_1(fn [element_pointer] () {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		// The cached attribute reflects the live owner at the last step-1 boundary.
-		media.set_ended(media.has_ended_playback() && media.direction_of_playback() == .forwards)
+		media.update_ended_attribute()
 	})
 }
 
+pub fn (mut element HTMLMediaElement) update_ended_attribute() {
+	// Resource teardown releases the manager before readyState is reset.
+	if !element.playback_manager_ready_ {
+		element.set_ended(false)
+		return
+	}
+	element.set_ended(element.has_ended_playback() && element.direction_of_playback() == .forwards)
+}
+
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
-	element.loop_was_specified_at_end_ = element.loop()
 	element.upon_has_ended_playback_possibly_changed()
-	if element.loop_was_specified_at_end_ {
-		if !element.paused_ {
-			element.seek_element(0, .accurate)
+	if element.loop() {
+		if element.prevent_next_loop_while_paused_ {
+			if element.paused_ { return }
+			element.prevent_next_loop_while_paused_ = false
 		}
+		element.seek_element(0, .accurate)
 		return
 	}
 	element_pointer := voidptr(&element)
 	element.queue_a_media_element_task(fn [element_pointer] () {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.dispatch_time_update_event()
+	})
+	// A load started by timeupdate or pause cancels the remaining media tasks.
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		if media.has_ended_playback() && media.direction_of_playback() == .forwards && !media.paused_ {
 			media.set_paused(true)
-			media.fire_event('pause')
 			promises := media.take_pending_play_promises()
+			media.fire_event('pause')
 			media.reject_pending_play_promises_with_abort_error(promises, 'Media playback has ended')
 		}
+	})
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.fire_event('ended')
 	})
 }
@@ -2420,7 +2472,7 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 	}
 }
 
-fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, track TrackEventTrack) {
+pub fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, track TrackEventTrack) {
 	event := TrackEvent.create('addtrack', TrackEventInit{track: track})
 	mut base_event := unsafe { &dom.Event(event) }
 	if document := element.document() {
@@ -2433,6 +2485,15 @@ fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, tra
 }
 
 pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMetadata) &AudioTrack {
+	return element.add_audio_track(metadata, true)
+}
+
+// MSE queues notifications after adding this same track to both track lists.
+pub fn (mut element HTMLMediaElement) on_audio_track_added_for_source_buffer(metadata MediaTrackMetadata) &AudioTrack {
+	return element.add_audio_track(metadata, false)
+}
+
+fn (mut element HTMLMediaElement) add_audio_track(metadata MediaTrackMetadata, fire_addtrack_event bool) &AudioTrack {
 	element_pointer := voidptr(&element)
 	track := AudioTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track &AudioTrack, enabled bool) {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
@@ -2454,20 +2515,39 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 			list.dispatch_event(event)
 		})
 	}
+	enable := !element.audio_tracks_.tracks().any(it.enabled)
+	if !fire_addtrack_event {
+		// MSE initializes activation before inserting the track, so it does not
+		// queue an initial change event ahead of the queued addtrack events.
+		mutable_track.enabled = enable
+	}
 	element.audio_tracks_.add_track(track)
-	enable := !element.audio_tracks_.tracks().any(voidptr(it) != voidptr(track) && it.enabled)
 	if enable {
-		mutable_track.set_enabled(true)
+		if fire_addtrack_event {
+			mutable_track.set_enabled(true)
+		} else {
+			element.set_audio_track_enabled(track, true)
+		}
 	}
 	if metadata.kind == none {
 		mutable_track.base.kind = if enable { 'main' } else { 'translation' }
 	}
-	element.fire_track_add_event(&element.audio_tracks_.EventTarget, TrackEventTrack.from_audio(track))
+	if fire_addtrack_event {
+		element.fire_track_add_event(&element.audio_tracks_.EventTarget, TrackEventTrack.from_audio(track))
+	}
 	element.request_paint_command_rebuild()
 	return track
 }
 
 pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMetadata) &VideoTrack {
+	return element.add_video_track(metadata, true)
+}
+
+pub fn (mut element HTMLMediaElement) on_video_track_added_for_source_buffer(metadata MediaTrackMetadata) &VideoTrack {
+	return element.add_video_track(metadata, false)
+}
+
+fn (mut element HTMLMediaElement) add_video_track(metadata MediaTrackMetadata, fire_addtrack_event bool) &VideoTrack {
 	element_pointer := voidptr(&element)
 	track := VideoTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track ?&VideoTrack) {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
@@ -2489,15 +2569,22 @@ pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMe
 			list.dispatch_event(event)
 		})
 	}
-	element.video_tracks_.add_track(track)
 	should_select := element.video_tracks_.selected_index() == -1
+	if !fire_addtrack_event { mutable_track.selected = should_select }
+	element.video_tracks_.add_track(track)
 	if should_select {
-		mutable_track.set_selected(true)
+		if fire_addtrack_event {
+			mutable_track.set_selected(true)
+		} else {
+			element.set_selected_video_track(track)
+		}
 	}
 	if metadata.kind == none {
 		mutable_track.base.kind = if should_select { 'main' } else { 'translation' }
 	}
-	element.fire_track_add_event(&element.video_tracks_.EventTarget, TrackEventTrack.from_video(track))
+	if fire_addtrack_event {
+		element.fire_track_add_event(&element.video_tracks_.EventTarget, TrackEventTrack.from_video(track))
+	}
 	return track
 }
 
@@ -2546,6 +2633,16 @@ pub fn (mut element HTMLMediaElement) set_up_playback_manager() {
 	element.update_playback_rate()
 }
 
+fn (element &HTMLMediaElement) queue_interrupted_fetch_steps() {
+	resource_generation := element.fetch_generation_
+	element_pointer := voidptr(element)
+	element.queue_a_media_element_task(fn [element_pointer, resource_generation] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		if media.fetch_generation_ != resource_generation || media.error_ != none { return }
+		media.process_media_data(.interrupted)
+	})
+}
+
 pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingStatus) {
 	match status {
 		.complete {
@@ -2562,6 +2659,7 @@ pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingSta
 			element_pointer := voidptr(&element)
 			element.queue_a_media_element_task(fn [element_pointer] () {
 				mut element := unsafe { &HTMLMediaElement(element_pointer) }
+				if element.error_ != none { return }
 				element.network_state_ = .loading
 			})
 			now_ms := time.sys_mono_now() / 1_000_000
@@ -2627,13 +2725,20 @@ pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 }
 
 pub fn (mut element HTMLMediaElement) on_playback_manager_state_change(buffering bool) {
+	// Publish readiness before the seeking/ended events this transition queues,
+	// while keeping durationchange and loadedmetadata ahead of that publication.
+	element.playback_has_future_data_ = !buffering
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		if int(media.ready_state_) >= int(MediaReadyState.have_metadata) {
+			media.update_ready_state()
+		}
+	})
 	if element.seeking_ && !buffering {
 		element.finish_seeking_element()
 	}
-	element.playback_has_future_data_ = !buffering
-	if int(element.ready_state_) >= int(MediaReadyState.have_metadata) {
-		element.update_ready_state()
-	}
+	element.upon_has_ended_playback_possibly_changed()
 }
 
 pub fn (mut element HTMLMediaElement) add_text_track(kind TextTrackKind, label string, language string) &TextTrack {

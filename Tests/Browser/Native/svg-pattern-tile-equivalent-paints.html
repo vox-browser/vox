@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Separate SVG paints reuse equivalent pattern tiles</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="144" height="64">
+  <defs>
+    <pattern id="stripes" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0H8V16H0Z" fill="red"/>
+      <path d="M8 0H16V16H8Z" fill="lime"/>
+    </pattern>
+    <pattern id="blue" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0H16V16H0Z" fill="blue"/>
+    </pattern>
+    <pattern id="tile" width="64" height="48" patternUnits="userSpaceOnUse">
+      <path d="M0 0H64V12H0Z" fill="url(#stripes)"/>
+      <path d="M0 16H64V28H0Z" fill="url(#stripes)"/>
+      <path d="M0 32H64V44H0Z" fill="url(#blue)"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H144V64H0Z" fill="url(#tile)"/>
+</svg>

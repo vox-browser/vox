@@ -18,7 +18,7 @@ pub mut:
 }
 
 fn (object &Object) private_element_index(name PrivateName) int {
-	for index, element in object.private_elements {
+	for index, element in object.slots.private_elements {
 		if element.key == name { return index }
 	}
 	return -1
@@ -27,7 +27,7 @@ fn (object &Object) private_element_index(name PrivateName) int {
 pub fn (object &Object) private_element_find(name PrivateName) ?PrivateElement {
 	index := object.private_element_index(name)
 	if index < 0 { return none }
-	return object.private_elements[index]
+	return object.slots.private_elements[index]
 }
 
 pub fn (mut object Object) private_field_add(mut vm VM, name PrivateName, value Value) ! {
@@ -35,7 +35,7 @@ pub fn (mut object Object) private_field_add(mut vm VM, name PrivateName, value 
 	if object.private_element_index(name) >= 0 {
 		return vm.throw_error_type(.type_error, .private_field_already_declared, name.description.str())
 	}
-	object.private_elements << PrivateElement{ key: name, kind: .field, value: value }
+	object.mut_slots().private_elements << PrivateElement{ key: name, kind: .field, value: value }
 }
 
 pub fn (mut object Object) private_method_or_accessor_add(mut vm VM, element PrivateElement) ! {
@@ -44,7 +44,7 @@ pub fn (mut object Object) private_method_or_accessor_add(mut vm VM, element Pri
 	if object.private_element_index(element.key) >= 0 {
 		return vm.throw_error_type(.type_error, .private_field_already_declared, element.key.description.str())
 	}
-	object.private_elements << element
+	object.mut_slots().private_elements << element
 }
 
 pub fn (object &Object) private_get(mut vm VM, name PrivateName) !Value {
@@ -63,9 +63,9 @@ pub fn (mut object Object) private_set(mut vm VM, name PrivateName, value Value)
 	if index < 0 {
 		return vm.throw_error_type(.type_error, .private_field_does_not_exist_on_object, name.description.str())
 	}
-	entry := object.private_elements[index]
+	entry := object.slots.private_elements[index]
 	if entry.kind == .field {
-		object.private_elements[index].value = value
+		object.mut_slots().private_elements[index].value = value
 		return
 	}
 	if entry.kind == .method {

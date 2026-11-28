@@ -9,13 +9,16 @@ import math
 // with the composite operation's blender, and readPixels() returns the
 // premultiplied surface.
 
+const canvas_path_segment_stride = 12
+
 // Segments use PackedPath's encoding: 12 floats per segment, kind (0 move,
 // 1 line, 2 quad, 3 cubic, 4 SVG arc, 5 close), point, two control points,
-// radii, x-axis rotation in radians, large-arc and sweep flags.
+// radii, x-axis rotation in radians, large-arc and sweep flags. Kind 6
+// carries the left, top, right, and bottom coordinates of a whole ellipse.
 pub fn canvas_path(segments []f32, even_odd bool) Path {
 	mut b := PathBuilder{}
-	for i := 0; i + 11 < segments.len; i += 12 {
-		s := segments[i..i + 12]
+	for i := 0; i + canvas_path_segment_stride <= segments.len; i += canvas_path_segment_stride {
+		s := segments[i..i + canvas_path_segment_stride]
 		match int(s[0]) {
 			0 { b.move_to(s[1], s[2]) }
 			1 { b.line_to(s[1], s[2]) }
@@ -26,6 +29,12 @@ pub fn canvas_path(segments []f32, even_odd bool) Path {
 					s[11] != 0, s[1], s[2])
 			}
 			5 { b.close() }
+			6 {
+				if is_finite_f32(s[1]) && is_finite_f32(s[2]) && is_finite_f32(s[3])
+					&& is_finite_f32(s[4]) && s[3] > s[1] && s[4] > s[2] {
+					b.add_oval_dir(Rect{s[1], s[2], s[3], s[4]}, true, 1)
+				}
+			}
 			else {}
 		}
 	}
@@ -492,18 +501,4 @@ fn canvas_paint_alpha(color u32, global_alpha f32) f32 {
 	product := v * global_alpha
 	pinned := if product < 1 { product } else { f32(1) }
 	return if f32(0) < pinned { pinned } else { f32(0) }
-}
-
-// SkConvertPixels' RGBA_to_rgbA(): (c * a + 127) / 255.
-fn premultiply_rows(mut pixels []u8, width int, height int, pitch int) {
-	for y in 0 .. height {
-		row := y * pitch
-		for x in 0 .. width {
-			o := row + x * 4
-			a := u32(pixels[o + 3])
-			for c in 0 .. 3 {
-				pixels[o + c] = u8((u32(pixels[o + c]) * a + 127) / 255)
-			}
-		}
-	}
 }

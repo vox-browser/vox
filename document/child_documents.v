@@ -162,6 +162,7 @@ fn (host &BrowserChildDocumentHost) prepare_document(child &BrowserChildDocument
 	install_browser_document_font_policies(mut owner)
 	install_browser_document_cookie_client(mut owner)
 	owner.set_display_device_pixel_ratio(host.root.display_device_pixel_ratio())
+	owner.set_rendering_device_pixel_ratio(host.root.rendering_device_pixel_ratio())
 	owner.set_scripting_enabled_by_embedder(host.scripting)
 	owner.enable_native_storage()
 	layout.enable_native_paint_tree_storage(document)

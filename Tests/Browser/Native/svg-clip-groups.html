@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SVG clip groups</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="640" height="1840" viewBox="0 0 640 1840">
+  <defs>
+    <clipPath id="crop"><path d="M12 14h92v57H12Z"/></clipPath>
+    <clipPath id="curves">
+      <circle cx="160" cy="50" r="32"/>
+      <path clip-rule="evenodd" d="M220 16h70v68h-70Z M242 38h28v24h-28Z"/>
+    </clipPath>
+    <clipPath id="fraction"><path d="M320.5 14.25h50v60h-50Z"/></clipPath>
+  </defs>
+  <g id="sample">
+    <g clip-path="url(#crop)">
+      <path fill="#f00" d="M0 0H610V180H0Z"/>
+      <path fill="#00f" d="M56 0H620V180H56Z"/>
+    </g>
+    <g clip-path="url(#curves)">
+      <path fill="#f00" d="M115 0H610V180H115Z"/>
+      <path fill="#00f" d="M206 0H620V180H206Z"/>
+    </g>
+    <path clip-path="url(#fraction)" fill="#0a0" d="M300 0H620V180H300Z"/>
+    <path fill="#f80" d="M410 27h40v40h-40Z"/>
+  </g>
+  <use href="#sample" y="180"/><use href="#sample" y="360"/>
+  <use href="#sample" y="540"/><use href="#sample" y="720"/>
+  <use href="#sample" y="900"/><use href="#sample" y="1080"/>
+  <use href="#sample" y="1260"/><use href="#sample" y="1440"/>
+  <use href="#sample" y="1620"/>
+</svg>

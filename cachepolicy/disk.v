@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module cachepolicy
 
-import crypto.sha256
+import fastsha256
 import json2
 import os
 import strconv
@@ -39,8 +39,8 @@ fn init() {
 fn disk_integrity(final_url string, status string, encoded_headers string, body string) string {
 	// Fixed-length digests make the field boundaries unambiguous without
 	// constructing another complete copy of a potentially large image body.
-	return sha256.hexhash(final_url) + sha256.hexhash(status) +
-		sha256.hexhash(encoded_headers) + sha256.hexhash(body)
+	return fastsha256.hexhash(final_url) + fastsha256.hexhash(status) +
+		fastsha256.hexhash(encoded_headers) + fastsha256.hexhash(body)
 }
 
 fn read_disk_part(path string, limit int) ?string {

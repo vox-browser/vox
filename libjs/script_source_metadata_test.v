@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 fn test_script_source_metadata_finds_only_exact_directives_in_the_prologue() {
 	for source in [
 		'"use strict";',
@@ -140,5 +142,24 @@ fn test_comment_prefixed_programs_do_not_copy_the_whole_program_for_metadata() {
 		assert allocated < uint(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a comment-prefixed program'
 	} $else {
 		assert !script_source_is_strict(source)
+	}
+}
+
+fn test_script_strictness_prefixes_leave_no_utf16_buffers_in_the_caller() {
+	$if prealloc {
+		license := '/*! ' + 'license text '.repeat(20000) + '*/\n'
+		strict_source := license + '"use strict"; var first=1;'
+		sloppy_source := license + '"use strict"\n+ 1;'
+		mut caller := platform.new_arena('script strictness test caller')
+		defer { caller.release() }
+		entry := caller.enter()
+		before := caller.usage().used
+		strict := script_source_is_strict(strict_source)
+		sloppy := script_source_is_strict(sloppy_source)
+		retained := caller.usage().used - before
+		caller.leave(entry)
+		assert strict
+		assert !sloppy
+		assert retained == 0
 	}
 }

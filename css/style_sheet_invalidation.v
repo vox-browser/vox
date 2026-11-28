@@ -542,6 +542,7 @@ fn invalidate_root_for_style_sheet_change(root &dom.Node, result &StyleSheetInva
 }
 
 fn invalidate_owners_for_inserted_style_rule(mut style_sheet CSSStyleSheet, style_rule &CSSRule, reason dom.StyleInvalidationReason) {
+	note_style_sheet_content_mutation(style_sheet, .style_sheet_insert_rule)
 	style_sheet.did_match = none
 	mut invalidation := &StyleSheetInvalidationSet{}
 	extend_style_sheet_invalidation_set_with_style_rule(mut invalidation, style_rule)
@@ -820,6 +821,7 @@ fn determine_shadow_root_style_sheet_effects_for_style_sheet(style_sheet &CSSSty
 }
 
 fn invalidate_owners_for_inserted_keyframes_rule(mut style_sheet CSSStyleSheet, keyframes_rule &CSSRule) {
+	note_style_sheet_content_mutation(style_sheet, .style_sheet_insert_rule)
 	style_sheet.did_match = none
 	for owner in style_sheet.owning_documents_or_shadow_roots {
 		mut scope := css_style_scope_for_node(owner)

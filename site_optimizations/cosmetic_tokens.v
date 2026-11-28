@@ -17,10 +17,12 @@ struct SiteCosmeticTokenAttributeStamp {
 // The cosmetic survey reads raw IDs/classes; procedural filters and CSS
 // matching still observe every live attribute. Keep tree invalidation intact.
 fn site_cosmetic_token_attribute_stamp(document &dom.Document) SiteCosmeticTokenAttributeStamp {
-	address := document.url.serialize()
-	chatgpt := address == 'https://chatgpt.com' || address.starts_with('https://chatgpt.com/')
-	if (!disable_github_cosmetic_token_reuse && site_batches_image_completion_layout(address))
-		|| (!disable_chatgpt_cosmetic_token_reuse && chatgpt) {
+	mut scoped := !disable_github_cosmetic_token_reuse && site_is_github_http_url(document.url)
+	if !scoped && !disable_chatgpt_cosmetic_token_reuse && document.url.serialized_host() == 'chatgpt.com' {
+		address := document.url.serialize()
+		scoped = address == 'https://chatgpt.com' || address.starts_with('https://chatgpt.com/')
+	}
+	if scoped {
 		return SiteCosmeticTokenAttributeStamp{document.light_dom_id_class_attribute_version(), document.light_dom_element_version(), true}
 	}
 	return SiteCosmeticTokenAttributeStamp{document.attribute_version(), document.dom_tree_version(), false}

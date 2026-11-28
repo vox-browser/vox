@@ -92,7 +92,7 @@ fn test_typed_array_set_bit_encoding_equivalence_and_different_kind_numeric_conv
 	assert target.viewed_buffer.read_bytes(0, 2) == [u8(0), 255]
 }
 
-fn test_typed_array_set_preserves_pinned_original_view_read_after_conversion_path_clone() {
+fn test_typed_array_set_converts_from_an_aliased_snapshot_with_nonzero_source_offset() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	parent := Object.create(vm.realm(), none)
@@ -105,9 +105,7 @@ fn test_typed_array_set_preserves_pinned_original_view_read_after_conversion_pat
 	initialize_typed_array_from_array_buffer(mut vm, mut target, buffer, Value.from_i32(4),
 		Value.from_i32(2))!
 	typed_set_call(mut vm, target, [Value.from_object(source.object)], parent)!
-	// The pinned C++ body resets the clone index to zero but reads the original
-	// view in this path. Keep that behavior visible rather than claiming parity.
-	assert buffer.read_bytes(0, 8) == [u8(10), 0, 20, 0, 10, 20, 40, 0]
+	assert buffer.read_bytes(0, 8) == [u8(10), 0, 20, 0, 20, 30, 40, 0]
 }
 
 fn test_typed_array_set_array_like_getters_convert_after_resize_and_stop_on_conversion_error() {
@@ -215,4 +213,21 @@ fn test_typed_array_set_range_bounds_and_array_like_length_error_order_and_strin
 			}
 		}
 	}
+}
+
+fn test_typed_array_set_converts_shared_views_without_overwriting_unread_values() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	parent := Object.create(vm.realm(), none)
+	mut storage := &ByteBufferStorage{ bytes: [u8(0), 0, 10, 0, 44, 1, 0, 0] }
+	source_buffer := ArrayBufferObject.create_from_host_buffer(vm.realm(), storage, true, parent)
+	target_buffer := ArrayBufferObject.create_from_host_buffer(vm.realm(), storage, true, parent)
+	mut source := TypedArray.create(vm.realm(), .int16, 0, source_buffer, parent)
+	mut target := TypedArray.create(vm.realm(), .uint8_clamped, 0, target_buffer, parent)
+	initialize_typed_array_from_array_buffer(mut vm, mut source, source_buffer, Value.from_i32(2),
+		Value.from_i32(2))!
+	initialize_typed_array_from_array_buffer(mut vm, mut target, target_buffer, Value.from_i32(4),
+		Value.from_i32(2))!
+	typed_set_call(mut vm, target, [Value.from_object(source.object)], parent)!
+	assert target_buffer.read_bytes(0, 8) == [u8(0), 0, 10, 0, 10, 255, 0, 0]
 }

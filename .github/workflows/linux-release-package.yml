@@ -1,0 +1,98 @@
+name: Linux Debian release packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to build
+        required: true
+        default: '0.1.4'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-amd64-release-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: tooling
+          persist-credentials: false
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.release_tag }}
+          path: source
+          persist-credentials: false
+
+      - name: Add swap within the existing process memory budget
+        run: |
+          sudo fallocate -l 8G "$RUNNER_TEMP/vox-release.swap"
+          sudo chmod 600 "$RUNNER_TEMP/vox-release.swap"
+          sudo mkswap "$RUNNER_TEMP/vox-release.swap"
+          sudo swapon "$RUNNER_TEMP/vox-release.swap"
+
+      - name: Build and validate in native Debian 12
+        run: |
+          release_commit=$(git -C source rev-parse HEAD)
+          docker run --rm --memory=12g --memory-swap=20g \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --env RELEASE_COMMIT="$release_commit" \
+            --env RELEASE_ARCHITECTURE='${{ matrix.architecture }}' debian:12-slim sh -eu -c '
+              apt-get update -qq
+              apt-get install -y --no-install-recommends \
+                build-essential clang-19 lld-19 pkg-config git ca-certificates python3 dpkg-dev procps \
+                libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev \
+                libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
+                libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
+                libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
+                libwebp-dev libpng-dev libjpeg-dev fonts-dejavu-core \
+                xvfb xauth xdotool scrot openssl \
+                libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+                gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav glib-networking
+              printf "%s\n" "#!/bin/sh" "exec /usr/bin/clang-19 -fuse-ld=/usr/bin/ld.lld-19 \"\$@\"" > /usr/local/bin/vox-release-cc
+              chmod +x /usr/local/bin/vox-release-cc
+              export CC=/usr/local/bin/vox-release-cc
+              python3 -u /workspace/tooling/tools/build_linux_release_ci.py \
+                --source /workspace/source --toolchain /opt/vox-release-toolchain \
+                --expected-commit "$RELEASE_COMMIT" --architecture "$RELEASE_ARCHITECTURE"
+            '
+
+      - name: Prepare container-owned validation evidence
+        if: ${{ always() }}
+        run: |
+          if [ -d source/Build ]; then
+            sudo chown -R "$(id -u):$(id -g)" source/Build
+            find source/Build -type f -name '*.lock' -delete
+          fi
+
+      - name: Show failed production build logs
+        if: ${{ failure() }}
+        run: find source/Build/linux/production-build/receipts -name build.log -print -exec tail -n 180 {} \;
+
+      - name: Preserve package and validation evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: vox-${{ matrix.architecture }}-debian-${{ inputs.release_tag }}
+          path: |
+            source/Build/deploy/
+            source/Build/linux/production-build/
+            source/Build/linux/vox
+            source/Build/linux/libVoxAVIF.so
+          if-no-files-found: error
+          retention-days: 14

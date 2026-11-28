@@ -17,6 +17,9 @@ import os
 // name's plan is not applied.
 const retain_attribute_name_invalidation = os.getenv('VOX_RETAIN_ATTRIBUTE_NAME_INVALIDATION') != ''
 const attribute_value_invalidation_diagnostics = os.getenv('VOX_ATTRIBUTE_VALUE_INVALIDATION_DIAGNOSTICS') != ''
+// Same-binary control: a changed test that only the styled element's own
+// compound uses still applies the name's plan.
+const retain_subject_attribute_invalidation = os.getenv('VOX_RETAIN_SUBJECT_ATTRIBUTE_INVALIDATION') != ''
 
 // Distinct value tests kept for one attribute name. A name with more keeps
 // the name's plan for every change.
@@ -41,34 +44,44 @@ pub fn report_attribute_value_invalidation() {
 pub struct AttributeValueTests {
 pub mut:
 	tests []SelectorAttribute
+	// Per test: every selector using it tests the styled element itself (the
+	// subject compound, outside :has()).
+	subject_only []bool
 	// A selector in a named namespace, or more tests than the limit.
 	imprecise bool
 }
 
-fn (mut insights SelectorInsights) record_attribute_value_test(attribute SelectorAttribute) {
+fn (mut insights SelectorInsights) record_attribute_value_test(attribute SelectorAttribute, subject bool) {
 	name := attribute.qualified_name.name.lowercase_name
 	mut entry := insights.attribute_value_tests[name] or { AttributeValueTests{} }
 	if entry.imprecise { return }
 	if attribute.qualified_name.namespace_type == .named {
 		entry.imprecise = true
 		entry.tests = []SelectorAttribute{}
+		entry.subject_only = []bool{}
 		insights.attribute_value_tests[name.clone()] = entry
 		return
 	}
-	for existing in entry.tests {
+	for index, existing in entry.tests {
 		if existing.match_type == attribute.match_type && existing.case_type == attribute.case_type
 			&& existing.value == attribute.value
 			&& existing.qualified_name.namespace_type == attribute.qualified_name.namespace_type
 			&& existing.qualified_name.name.name == attribute.qualified_name.name.name {
+			if !subject && entry.subject_only[index] {
+				entry.subject_only[index] = false
+				insights.attribute_value_tests[name.clone()] = entry
+			}
 			return
 		}
 	}
 	if entry.tests.len >= attribute_value_test_limit {
 		entry.imprecise = true
 		entry.tests = []SelectorAttribute{}
+		entry.subject_only = []bool{}
 		insights.attribute_value_tests[name.clone()] = entry
 		return
 	}
+	entry.subject_only << subject
 	// The selector belongs to its style sheet; the rule cache can outlive it.
 	entry.tests << SelectorAttribute{
 		match_type:     attribute.match_type
@@ -95,10 +108,16 @@ pub fn (scope &StyleScope) attribute_change_keeps_selector_matches(element &dom.
 		insights := scope.selector_insights or { return false }
 		entry := insights.attribute_value_tests[name] or { return true }
 		if entry.imprecise { return false }
-		for test in entry.tests {
+		mut subject_changed := false
+		for index, test in entry.tests {
 			sensitivity := selector_attribute_case_sensitivity(test, element)
 			before := old_present && selector_attribute_matches_value(test, old_value, sensitivity)
 			after := new_present && selector_attribute_matches_value(test, new_value, sensitivity)
+			if before != after && !retain_subject_attribute_invalidation && entry.subject_only[index] {
+				// Only the element's own matches change: restyle it alone.
+				subject_changed = true
+				continue
+			}
 			if before != after {
 				if attribute_value_invalidation_diagnostics
 					&& os.getenv('VOX_ATTRIBUTE_VALUE_INVALIDATION_DIAGNOSTICS') == 'reasons' {
@@ -106,6 +125,10 @@ pub fn (scope &StyleScope) attribute_change_keeps_selector_matches(element &dom.
 				}
 				return false
 			}
+		}
+		if subject_changed {
+			mut node := unsafe { &dom.Node(element.as_node()) }
+			node.set_needs_style_update(true)
 		}
 		return true
 	}

@@ -42,6 +42,7 @@ pub fn typed_array_prototype_copy_within(mut vm VM, prototypes PrimitiveObjectPr
 		if count_bytes > maximum - from_byte_index { return Value.from_object(array.object) }
 		from_plus_count := from_byte_index + count_bytes
 		if !buffer.is_shared_array_buffer() {
+			typed_array_charge_byte_work(mut vm, count_bytes)!
 			buffer.move_data(to_byte_index, from_byte_index, count_bytes)
 			return Value.from_object(array.object)
 		}
@@ -53,6 +54,7 @@ pub fn typed_array_prototype_copy_within(mut vm VM, prototypes PrimitiveObjectPr
 			to_byte_index += count_bytes - 1
 		}
 		for count_bytes > 0 {
+			vm.consume_execution_budget()!
 			value := buffer.get_value(mut vm, from_byte_index, .uint8, true, .unordered, true)
 			buffer.set_value(mut vm, to_byte_index, .uint8, value, true, .unordered, true)
 			// Unsigned subtraction preserves the source's final unused wraparound.

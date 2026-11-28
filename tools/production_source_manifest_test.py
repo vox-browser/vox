@@ -9,6 +9,64 @@ import production_source_manifest as manifest
 
 
 class ProductionSourceManifestTests(unittest.TestCase):
+    def test_package_witnesses_include_staged_and_vlib_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = [root / 'Build/modules/gg/canvas/gpu_gradient.v',
+                     root / 'compiler/vlib/gg/canvas/gpu_path.v',
+                     root / 'other/gg_extra/ignored.v', root / 'libjs/vm.v']
+            for path in paths:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('module canvas\n')
+            frozen = dict(exact_source_manifest=manifest.fingerprint(paths))
+            witnesses = manifest.compiled_package_witnesses(frozen, 'gg')
+            self.assertEqual(set(witnesses), {str(path.resolve()) for path in paths[:2]})
+            # Unrelated concurrent work does not invalidate the scoped check.
+            paths[-1].write_text('changed\n')
+            self.assertEqual(manifest.compiled_package_witnesses(frozen, 'gg'), witnesses)
+            # A gradient absent from an old manual feature list must invalidate it.
+            for path in paths[:2]:
+                with self.subTest(path=path):
+                    path.write_text('experimental colorizer\n')
+                    with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                        manifest.compiled_package_witnesses(frozen, 'gg')
+                    path.write_text('module canvas\n')
+
+    def test_package_witnesses_preserve_compiler_paths_through_symlinks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / 'patched.v'
+            target.write_text('module canvas\n')
+            link = root / 'modules/gg/canvas/gradient.v'
+            link.parent.mkdir(parents=True)
+            link.symlink_to(target)
+            digest = hashlib.sha256(target.read_bytes()).hexdigest()
+            frozen = dict(exact_source_manifest={str(link): digest})
+            self.assertEqual(manifest.compiled_package_witnesses(frozen, 'gg'), {
+                str(link): dict(current=digest, compiled=digest)})
+            link.unlink()
+            target.write_text('replacement\n')
+            link.symlink_to(target)
+            with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                manifest.compiled_package_witnesses(frozen, 'gg')
+
+    def test_package_witnesses_reject_missing_empty_or_invalid_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'gg/canvas/gradient.v'
+            path.parent.mkdir(parents=True)
+            path.write_text('module canvas\n')
+            frozen = dict(exact_source_manifest=manifest.fingerprint([path]))
+            path.unlink()
+            with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                manifest.compiled_package_witnesses(frozen, 'gg')
+            for value in [{}, dict(exact_source_manifest={}),
+                          dict(exact_source_manifest={'relative/gg/file.v': '0' * 64}),
+                          dict(exact_source_manifest={str(path): 'invalid'})]:
+                with self.subTest(value=value), self.assertRaises(RuntimeError):
+                    manifest.compiled_package_witnesses(value, 'gg')
+            with self.assertRaises(ValueError):
+                manifest.compiled_package_witnesses(frozen, '../gg')
+
     def fixture(self, root):
         subprocess.run(['git', 'init', '-q', '-b', 'master', str(root)], check=True)
         (root / 'browser.v').write_text('module main\n')

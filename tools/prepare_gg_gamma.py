@@ -9,6 +9,7 @@ def prepare(canvas):
     layer_path = canvas / 'gpu_layer.v'
     layer = layer_path.read_text()
     if 'color_transform' in layer:
+        prepare_srgb_gamut(canvas)
         return
     field = '\tmask_color Color4f = Color4f{1, 1, 1, 1}\n'
     uniform = '\tmask_color     Color4f = Color4f{1, 1, 1, 1}\n'
@@ -35,7 +36,7 @@ if (_11_gamma > 0.0f) {
                          _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;
     float3 _14_abs = abs(_13_linear);
     float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),
-                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < as_type<float>(0x3b4d2e31u));
+                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < float3(as_type<float>(0x3b4d2e31u)));
     _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);
 }
 ''')
@@ -43,3 +44,27 @@ if (_11_gamma > 0.0f) {
         if path.is_symlink():
             path.unlink()
         write_if_changed(path, text)
+    prepare_srgb_gamut(canvas)
+
+
+def prepare_srgb_gamut(canvas):
+    """A negative gamma selects the standard piecewise sRGB source curve."""
+    path = Path(canvas) / 'shaders/paint_snippets.metal'
+    source = path.read_text()
+    if '_11_gamma < 0.0f' in source:
+        return
+    source = replace_once(source, 'if (_11_gamma > 0.0f) {',
+                          'if (_11_gamma != 0.0f) {')
+    source = replace_once(source,
+        '    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));',
+        '''    float3 _13_linear;
+    if (_11_gamma < 0.0f) {
+        float3 encoded = max(_12_rgb, 0.0f);
+        _13_linear = select(powr(encoded * (1.0f / 1.055f) + (0.055f / 1.055f), float3(2.4f)),
+                            encoded * (1.0f / 12.92f), encoded < float3(0.04045f));
+    } else {
+        _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));
+    }''')
+    if path.is_symlink():
+        path.unlink()
+    write_if_changed(path, source)

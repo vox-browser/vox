@@ -3,14 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 
+// Variation axes are read from each face's 'fvar' table. expected_flags()
+// below still asks CTFontCopyVariationAxes(), so the flags must agree.
 static atomic_int axes_queries;
-static CFArrayRef counted_variation_axes(CTFontRef font) {
-    atomic_fetch_add(&axes_queries, 1);
-    return CTFontCopyVariationAxes(font);
+static CFDataRef counted_font_table(CTFontRef font, CTFontTableTag tag, CTFontTableOptions options) {
+    if (tag == 'fvar')
+        atomic_fetch_add(&axes_queries, 1);
+    return CTFontCopyTable(font, tag, options);
 }
-#define CTFontCopyVariationAxes counted_variation_axes
+#define CTFontCopyTable counted_font_table
 #include "../glyph_coretext.h"
-#undef CTFontCopyVariationAxes
+#undef CTFontCopyTable
 
 #define CHECK(test) do { if (!(test)) { fprintf(stderr, "line %d: %s\n", __LINE__, #test); return 1; } } while (0)
 

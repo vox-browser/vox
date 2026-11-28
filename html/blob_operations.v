@@ -16,13 +16,20 @@ pub fn (settings &EnvironmentSettingsObject) get_blob_stream(blob &fileapi.Blob)
 // Native bindings pass the actual relevant JS Realm's allocation/data hooks.
 // Its Promise jobs still belong to these real Window/Worker settings.
 pub fn (settings &EnvironmentSettingsObject) get_blob_stream_in_realm(blob &fileapi.Blob, realm streams.StreamRealm) &streams.ReadableStream {
+	stream, _ := settings.get_blob_stream_in_realm_with_task(blob, realm)
+	return stream
+}
+
+// An embedding which retires a VM before its Document can also discard this
+// exact delivery task. Normal Window/Worker callers let the task queue own it.
+pub fn (settings &EnvironmentSettingsObject) get_blob_stream_in_realm_with_task(blob &fileapi.Blob, realm streams.StreamRealm) (&streams.ReadableStream, &Task) {
 	assert realm.id == u64(voidptr(settings.realm())), 'Source Blob relevant Realm must belong to its settings'
 	mut stream := streams.ReadableStream.create_for_internal()
 	stream.set_up_with_byte_reading_support_in_realm(realm, none, none, 0)
 	// Source currently queues one copied whole-buffer chunk, including empty
 	// blobs. The copy belongs to the task before any read or callback runs.
 	bytes := blob.raw_bytes()
-	queue_a_task(.file_reading, settings.responsible_event_loop(), settings.responsible_document(), fn [settings, mut stream, bytes] () {
+	task := Task.create_owned(.file_reading, settings.responsible_document(), fn [settings, mut stream, bytes] () {
 		mut realm := unsafe { &ScriptingRealm(settings.realm()) }
 		mut context := TemporaryExecutionContext.create(mut realm, .yes)
 		defer { context.close() }
@@ -34,7 +41,9 @@ pub fn (settings &EnvironmentSettingsObject) get_blob_stream_in_realm(blob &file
 		}
 		stream.close()
 	})
-	return stream
+	mut queue := settings.responsible_event_loop().task_queue()
+	queue.enqueue(task)
+	return stream, task
 }
 
 pub fn (settings &EnvironmentSettingsObject) read_all_blob_bytes(blob &fileapi.Blob) &webidl.Promise {

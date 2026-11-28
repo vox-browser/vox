@@ -2,6 +2,7 @@ module css
 
 import dom
 import strconv
+import os
 import strings
 
 // This file ports the LibWeb/CSS selector data model and selector-engine logic.
@@ -694,9 +695,16 @@ pub mut:
 }
 
 pub fn SelectorName.new(name string) SelectorName {
+	mut lowercase_name := name
+	for byte in name {
+		if byte >= 0x80 || (byte >= `A` && byte <= `Z`) {
+			lowercase_name = name.to_lower()
+			break
+		}
+	}
 	return SelectorName{
 		name: name
-		lowercase_name: name.to_lower()
+		lowercase_name: lowercase_name
 	}
 }
 
@@ -978,6 +986,8 @@ pub mut:
 	contains_part_pseudo_element  bool
 	contained_pseudo_classes      PseudoClassBitmap
 	ancestor_hashes               [8]u32
+mut:
+	invalidation_projection_ &SelectorInvalidationProjection = unsafe { nil }
 }
 
 // Kept as traversal entry points for the declared-value fallback cache. Parsed
@@ -2338,37 +2348,20 @@ fn parse_complex_selector(source string) []CompoundSelector {
 		return []
 	}
 
+	// Short selectors publish exact-sized lists. A longer selector grows a
+	// dynamic buffer only after filling the stack entries.
+	mut initial := [4]CompoundSelector{}
 	mut compounds := []CompoundSelector{}
-	mut current := []SimpleSelector{}
+	mut count := 0
 	mut combinator := Combinator.no_combinator
 	mut i := 0
 	for i < text.len {
-		mut saw_whitespace := false
-		for i < text.len && is_ascii_whitespace_byte(text[i]) {
-			saw_whitespace = true
+		if is_ascii_whitespace_byte(text[i]) {
 			i++
-		}
-		if i >= text.len {
-			break
-		}
-
-		if saw_whitespace && current.len != 0 && !is_combinator_start(text, i) {
-			compounds << CompoundSelector{
-				combinator: combinator
-				simple_selectors: current
-			}
-			current = []
-			combinator = .descendant
+			continue
 		}
 
 		if is_combinator_start(text, i) {
-			if current.len != 0 {
-				compounds << CompoundSelector{
-					combinator: combinator
-					simple_selectors: current
-				}
-				current = []
-			}
 			if text[i] == `>` {
 				combinator = .immediate_child
 				i++
@@ -2378,31 +2371,57 @@ fn parse_complex_selector(source string) []CompoundSelector {
 			} else if text[i] == `~` {
 				combinator = .subsequent_sibling
 				i++
-			} else if text[i] == `|` && i + 1 < text.len && text[i + 1] == `|` {
+			} else {
 				combinator = .column
 				i += 2
 			}
 			continue
 		}
 
-		parsed := parse_simple_selector(text, i)
-		if parsed.next <= i {
-			current << SimpleSelector.with_invalid_text(.invalid, text[i..i + 1])
-			i++
+		simple_selectors, next := parse_selector_compound(text, i)
+		compound := CompoundSelector{ combinator: combinator, simple_selectors: simple_selectors }
+		if count < initial.len {
+			initial[count] = compound
 		} else {
-			current << parsed.selector
-			i = parsed.next
+			if count == initial.len {
+				compounds = copy_selector_entries(initial, count, 2 * count)
+			}
+			compounds << compound
+		}
+		count++
+		combinator = .descendant
+		i = next
+	}
+	return if count <= initial.len { copy_selector_entries(initial, count, count) } else { compounds }
+}
+
+fn parse_selector_compound(text string, start int) ([]SimpleSelector, int) {
+	mut initial := [4]SimpleSelector{}
+	mut members := []SimpleSelector{}
+	mut count := 0
+	mut i := start
+	for {
+		parsed := parse_simple_selector(text, i)
+		member := if parsed.next <= i {
+			SimpleSelector.with_invalid_text(.invalid, text[i..i + 1])
+		} else {
+			parsed.selector
+		}
+		if count < initial.len {
+			initial[count] = member
+		} else {
+			if count == initial.len {
+				members = copy_selector_entries(initial, count, 2 * count)
+			}
+			members << member
+		}
+		count++
+		i = if parsed.next <= i { i + 1 } else { parsed.next }
+		if i >= text.len || is_ascii_whitespace_byte(text[i]) || is_combinator_start(text, i) {
+			break
 		}
 	}
-
-	if current.len != 0 {
-		compounds << CompoundSelector{
-			combinator: combinator
-			simple_selectors: current
-		}
-	}
-
-	return compounds
+	return if count <= initial.len { copy_selector_entries(initial, count, count) } else { members }, i
 }
 
 struct ParsedSimpleSelector {
@@ -3007,12 +3026,27 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 	return false
 }
 
+// Bytes that are neither quotes, brackets, escapes, combinators nor white
+// space. Outside a string each of them only continues a compound selector.
+const selector_plain_bytes = selector_plain_byte_table()
+const disable_selector_plain_byte_runs = os.getenv('VOX_DISABLE_SELECTOR_PLAIN_BYTE_RUNS') != ''
+
+fn selector_plain_byte_table() [256]bool {
+	mut table := [256]bool{}
+	for index in 0 .. 256 {
+		table[index] = u8(index) !in [u8(`"`), `'`, `(`, `)`, `[`, `]`, `\\`, `>`, `+`, `~`, `|`,
+			` `, `\t`, `\n`, `\r`, `\f`]
+	}
+	return table
+}
+
 fn selector_text_has_bad_top_level_combinators(text string, relative bool) bool {
 	mut quote := u8(0)
 	mut parens := 0
 	mut squares := 0
 	mut saw_compound_token := false
 	mut expecting_compound_after_combinator := false
+	plain_runs := !disable_selector_plain_byte_runs
 	mut i := 0
 	for i < text.len {
 		ch := text[i]
@@ -3025,6 +3059,14 @@ fn selector_text_has_bad_top_level_combinators(text string, relative bool) bool 
 				quote = 0
 			}
 			i++
+			continue
+		}
+		if plain_runs && selector_plain_bytes[ch] {
+			// Names, classes, ids, pseudo-classes and attribute operators.
+			i++
+			for i < text.len && selector_plain_bytes[text[i]] { i++ }
+			saw_compound_token = true
+			expecting_compound_after_combinator = false
 			continue
 		}
 		match ch {
@@ -3303,10 +3345,56 @@ fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hash
 					return result
 				}
 			}
+			.pseudo_class {
+				result = append_hashes_from_is_where_argument(simple_selector, result, fold_id_and_class_name_case)
+				if result.is_full {
+					return result
+				}
+			}
 			else {}
 		}
 	}
 	return result
+}
+
+// A single :is() or :where() argument in an ancestor compound holds for that
+// ancestor: its subject compound describes the ancestor itself, and the
+// compounds it reaches through descendant or child combinators are further
+// ancestors, as if the argument were written inline (`:is(.a .b) > *` is
+// `.a .b > *`). Sibling compounds are skipped as at the top level.
+fn append_hashes_from_is_where_argument(simple_selector SimpleSelector, result AppendHashResult, fold_id_and_class_name_case bool) AppendHashResult {
+	if disable_is_where_ancestor_hashes {
+		return result
+	}
+	pseudo_class := simple_selector.pseudo_class()
+	if pseudo_class.type_ !in [.is_, .where] || pseudo_class.argument_selector_list.selectors.len != 1 {
+		return result
+	}
+	compounds := pseudo_class.argument_selector_list.selectors[0].compound_selectors()
+	if compounds.len == 0 {
+		return result
+	}
+	mut current := append_hashes_from_compound(compounds[compounds.len - 1], result.ancestor_hashes, result.next_hash_index, fold_id_and_class_name_case)
+	if current.is_full {
+		return current
+	}
+	mut combinator_to_right := compounds[compounds.len - 1].combinator
+	for i := compounds.len - 2; i >= 0; i-- {
+		match combinator_to_right {
+			.descendant, .immediate_child {
+				current = append_hashes_from_compound(compounds[i], current.ancestor_hashes, current.next_hash_index, fold_id_and_class_name_case)
+				if current.is_full {
+					return current
+				}
+			}
+			.next_sibling, .subsequent_sibling {}
+			.column, .no_combinator {
+				return current
+			}
+		}
+		combinator_to_right = compounds[i].combinator
+	}
+	return current
 }
 
 fn append_unique_hash(hash u32, ancestor_hashes [8]u32, next_hash_index int) AppendHashResult {
@@ -4132,7 +4220,14 @@ fn skip_selector_escaped_code_point(text string, start int) int {
 
 fn parse_identifier(text string, start int) (string, int) {
 	mut i := start
-	mut builder := strings.new_builder(16)
+	for i < text.len && is_ident_byte(text[i]) { i++ }
+	if i >= text.len || text[i] != `\\` || i + 1 >= text.len {
+		// A name without an escape is one span of the selector text.
+		name := if i > start { text[start..i] } else { '' }
+		return name, i
+	}
+	mut builder := strings.new_builder(i - start + 16)
+	unsafe { builder.write_ptr(text.str + start, i - start) }
 	for i < text.len {
 		ch := text[i]
 		if is_ident_byte(ch) {

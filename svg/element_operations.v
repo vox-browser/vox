@@ -542,6 +542,87 @@ pub fn (element &Element) primitive_units() Units {
 	return parse_units(element.attributes['primitiveUnits'] or { '' }) or { Units.user_space_on_use }
 }
 
+pub fn (element &Element) numeric_filter_offset(primitive &Element, object_bounds ?Rect) ?Point {
+	dx := parse_single_number(primitive.attributes['dx'] or { '0' })?
+	dy := parse_single_number(primitive.attributes['dy'] or { '0' })?
+	offset := if element.primitive_units() == .object_bounding_box {
+		bounds := object_bounds?
+		if !(bounds.width > 0 && bounds.height > 0) { return none }
+		Point{dx * bounds.width, dy * bounds.height}
+	} else {
+		Point{dx, dy}
+	}
+	if !math.is_finite(offset.x) || !math.is_finite(offset.y) { return none }
+	return offset
+}
+
+// Resolve filter coordinates expressed as numbers or percentages.
+pub fn (element &Element) numeric_filter_region(object_bounds ?Rect, viewport_size ?Point) ?Rect {
+	object_units := element.filter_units() == .object_bounding_box
+	mut target := Rect{}
+	if object_units {
+		target = object_bounds?
+		if !(target.width > 0 && target.height > 0) { return none }
+	}
+	mut values := [4]f64{}
+	for index, name in ['x', 'y', 'width', 'height'] {
+		fallback := if index < 2 { '-10%' } else { '120%' }
+		number := parse_number_percentage(element.attributes[name] or { fallback })?
+		if number.is_percentage && !object_units {
+			size := viewport_size?
+			length := if index % 2 == 0 { size.x } else { size.y }
+			if !(length > 0) { return none }
+			values[index] = number.resolve_relative_to(length)
+		} else {
+			values[index] = number.value
+		}
+	}
+	region := if object_units {
+		Rect{
+			x: target.x + values[0] * target.width
+			y: target.y + values[1] * target.height
+			width: values[2] * target.width
+			height: values[3] * target.height
+		}
+	} else {
+		Rect{values[0], values[1], values[2], values[3]}
+	}
+	if region.width <= 0 || region.height <= 0
+		|| ![region.x, region.y, region.width, region.height]!.all(math.is_finite(it)) {
+		return none
+	}
+	return region
+}
+
+// For a primitive with SourceGraphic as its input, unspecified coordinates
+// inherit the corresponding coordinates of the filter region.
+pub fn (element &Element) numeric_source_filter_subregion(primitive &Element, region Rect,
+	object_bounds ?Rect, viewport_size ?Point) ?Rect {
+	object_units := element.primitive_units() == .object_bounding_box
+	target := if object_units { object_bounds? } else { Rect{} }
+	if object_units && !(target.width > 0 && target.height > 0) { return none }
+	mut values := [region.x, region.y, region.width, region.height]!
+	for index, name in ['x', 'y', 'width', 'height'] {
+		value := primitive.attributes[name] or { continue }
+		number := parse_number_percentage(value)?
+		horizontal := index % 2 == 0
+		if object_units {
+			length := if horizontal { target.width } else { target.height }
+			origin := if index < 2 { if horizontal { target.x } else { target.y } } else { 0.0 }
+			values[index] = origin + number.value * length
+		} else if number.is_percentage {
+			size := viewport_size?
+			length := if horizontal { size.x } else { size.y }
+			if !(length > 0) { return none }
+			values[index] = number.resolve_relative_to(length)
+		} else {
+			values[index] = number.value
+		}
+	}
+	if !values.all(math.is_finite(it)) { return none }
+	return Rect{values[0], values[1], values[2], values[3]}
+}
+
 fn filter_interpolation_color_space(value string, inherited InterpolationColorSpace) InterpolationColorSpace {
 	return match value.to_lower() {
 		'linearrgb' { .linear_rgb }

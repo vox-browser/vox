@@ -25,6 +25,7 @@ pub fn typed_array_prototype_includes(mut vm VM, prototypes PrimitiveObjectProto
 		k = u32(math.max(f64(length) + n, 0.0))
 	}
 	for k < length {
+		vm.consume_execution_budget()!
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		if same_value_zero(search, value) { return Value.from_bool(true) }
 		k++
@@ -55,6 +56,7 @@ pub fn typed_array_prototype_index_of(mut vm VM, prototypes PrimitiveObjectProto
 		k = u32(math.max(f64(length) + n, 0.0))
 	}
 	for k < length {
+		vm.consume_execution_budget()!
 		key := PropertyName.from_number(k)
 		if array.object.has_property(key) {
 			value := array.object.get(mut vm, key)!
@@ -89,6 +91,7 @@ pub fn typed_array_prototype_last_index_of(mut vm VM, prototypes PrimitiveObject
 	}
 	mut end := k + 1
 	for end > 0 {
+		vm.consume_execution_budget()!
 		end--
 		key := PropertyName.from_number(end)
 		if array.object.has_property(key) {

@@ -205,19 +205,23 @@ fn (mut headers Headers) remove_privileged_no_cors_request_headers() {
 }
 
 pub fn (headers &Headers) sorted_and_combined() []HeaderPair {
-	mut names := []string{}
+	mut grouped := map[string][]string{}
 	for header in headers.header_list_.headers() {
 		name := ascii_lowercase(header.name)
-		if name !in names {
-			names << name
-		}
+		grouped[name] << header.value
 	}
+	mut names := grouped.keys()
 	names.sort()
 	mut pairs := []HeaderPair{cap: names.len}
 	for name in names {
+		// Fetch's sort-and-combine algorithm preserves each Set-Cookie value.
+		if name == 'set-cookie' {
+			for value in grouped[name] { pairs << HeaderPair{name: name, value: value} }
+			continue
+		}
 		pairs << HeaderPair{
 			name:  name
-			value: headers.header_list_.get(name) or { '' }
+			value: grouped[name].join(', ')
 		}
 	}
 	return pairs

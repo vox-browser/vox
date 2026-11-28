@@ -2,6 +2,7 @@
 #define VOX_METAL_TEXTURE_STORAGE_H
 /* Included after VoxMetalTexture. Format numbers mirror TextureFormat in V. */
 #include "depth_transfer_darwin.h"
+#if !defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER)
 static MTLPixelFormat vox_metal_texture_format(unsigned format)
 {
     switch (format) {
@@ -250,4 +251,5 @@ static int vox_metal_texture_mipmaps(void* handle)
         return command.status==MTLCommandBufferStatusCompleted;
     }
 }
+#endif
 #endif

@@ -4,6 +4,7 @@ import dom
 import fetch
 import html
 import http
+import os
 import time
 
 @[heap]
@@ -46,6 +47,38 @@ fn module_test_until(host &ModuleHost, runtime &Runtime, expression string) {
 		return runtime.evaluate_host(expression) or { 'false' } == 'true' || time.sys_mono_now() >= deadline
 	})
 	assert runtime.evaluate_host(expression) or { 'false' } == 'true', expression
+}
+
+fn test_libjs_module_fetch_delivers_namespace_and_rejects_missing_response() {
+	previous_cache := os.getenv_opt('VOX_LIBJS_NATIVE_CACHE')
+	os.setenv('VOX_LIBJS_NATIVE_CACHE', '0', true)
+	defer {
+		if previous := previous_cache { os.setenv('VOX_LIBJS_NATIVE_CACHE', previous, true) }
+		else { os.unsetenv('VOX_LIBJS_NATIVE_CACHE') }
+	}
+	url := dom.URL{ value: 'https://libjs-module-response.test/page' }
+	mut document := html.create_navigation_document(url, url.origin(), none)!
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	runtime.bind_scripting_environment(settings)!
+	runtime.install_libjs_document(document)!
+	seen := &ModuleTestRequests{}
+	mut host := ModuleHost.create(settings, module_test_transport({
+		'https://libjs-module-response.test/value.mjs': 'export const answer = 42;'
+	}, seen))
+	host.install(mut runtime)!
+	assert runtime.run_document_scripts_collect_errors([ScriptSource{
+		url: url.serialize()
+		code: 'Promise.allSettled([import("./value.mjs"), import("./missing.mjs")]).then(results => { globalThis.moduleResponses = results; });'
+	}]) == []
+	module_test_until(host, runtime, 'typeof moduleResponses !== "undefined"')
+	assert runtime.evaluate_host('moduleResponses[0].status === "fulfilled" && moduleResponses[0].value.answer === 42')! == 'true'
+	assert runtime.evaluate_host('moduleResponses[1].status === "rejected" && moduleResponses[1].reason instanceof TypeError && moduleResponses[1].reason.message === "Failed to fetch JavaScript module https://libjs-module-response.test/missing.mjs"')! == 'true'
+	assert seen.urls.len == 2
 }
 
 fn test_agent_module_cache_keeps_identical_source_and_uses_each_realms_import_map() {

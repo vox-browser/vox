@@ -5,9 +5,11 @@ import html
 
 // These cases exercise the validated salvage of retained_flow_subtrees.v, which
 // the builder consults below a flagged ancestor. Their unflagged branches would
-// otherwise keep their boxes through clean_subtree_reuse.v first.
+// otherwise keep their boxes through clean_subtree_reuse.v first, and their
+// updates would not reach the builder at all through in_place_tree_update.v.
 fn testsuite_begin() {
 	clean_subtree_reuse_suspended = true
+	in_place_tree_update_suspended = true
 }
 
 fn flow_image_tree_document(markup string) &dom.Document {

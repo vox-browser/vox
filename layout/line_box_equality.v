@@ -114,9 +114,8 @@ fn published_line_boxes_equal(a []LineBox, b []LineBox) bool {
 }
 
 // The same box's lines from the previous document layout pass, if any.
-fn previous_pass_line_boxes(state &LayoutState, containing_block &BlockContainer) ?[]LineBox {
+fn previous_pass_line_boxes(state &LayoutState, styled &NodeWithStyle) ?[]LineBox {
 	if isnil(state.previous_state_) || state.subtree_root != none { return none }
-	styled := unsafe { &Node(containing_block) }.as_node_with_style() or { return none }
 	for index in [styled.layout_index(), styled.previous_layout_index_] {
 		previous := state.previous_state_.used_values_store.get(index) or { continue }
 		if voidptr(previous.node_) != voidptr(styled) { continue }

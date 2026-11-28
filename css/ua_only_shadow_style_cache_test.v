@@ -128,7 +128,7 @@ fn test_ua_only_shadow_cache_tracks_environment_and_ua_rule_mutation_against_fre
 	changed := ua_cache_for(one)
 	assert voidptr(changed) != voidptr(resized)
 	assert voidptr(ua_cache_for(two)) == voidptr(changed)
-	mut sheet := unsafe { &CSSStyleSheet(user_agent_default_stylesheet) }
+	mut sheet := unsafe { &CSSStyleSheet(default_user_agent_stylesheet()) }
 	index := u32(sheet.rules.length())
 	sheet.insert_rule('.ua-cache-probe {color:rgb(71 72 73)}', index)!
 	defer { sheet.delete_rule(index) or { panic(err) } }
@@ -207,7 +207,7 @@ fn test_ua_only_shadow_cache_tracks_nested_media_supports_and_layer_mutation() {
 	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
 	_, one, target := ua_cache_shadow(document, 'span')
 	_, two, _ := ua_cache_shadow(document, 'span')
-	mut sheet := unsafe { &CSSStyleSheet(user_agent_default_stylesheet) }
+	mut sheet := unsafe { &CSSStyleSheet(default_user_agent_stylesheet()) }
 	index := u32(sheet.rules.length())
 	sheet.insert_rule('@media (min-width: 700px) { @supports (display: block) { .ua-cache-probe { color: rgb(101 102 103) } @layer ua-test-layer { .ua-layer-target {color:blue} } } }', index)!
 	defer { sheet.delete_rule(index) or { panic(err) } }
@@ -257,7 +257,7 @@ fn test_ua_only_shadow_cache_tracks_import_loading_replacement_and_nested_revisi
 	defer { document.finalize() }
 	_, one, target := ua_cache_shadow(document, 'span')
 	_, two, _ := ua_cache_shadow(document, 'span')
-	mut sheet := unsafe { &CSSStyleSheet(user_agent_default_stylesheet) }
+	mut sheet := unsafe { &CSSStyleSheet(default_user_agent_stylesheet()) }
 	sheet.insert_rule('@import url(ua-cache-probe.css);', 0)!
 	defer { sheet.delete_rule(0) or { panic(err) } }
 	mut import_rule := sheet.rules.item(0) or { panic('import') }

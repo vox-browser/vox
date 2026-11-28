@@ -26,10 +26,14 @@ jobs:
       matrix:
         gc: [boehm, prealloc]
     env:
-      # FastC must support JSON enum attributes and dynamic-array decoding.
-      # XML allocation fixes: https://github.com/vlang/v/pull/32104
-      V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
+      # Combine the FastC fixes and the XML string parser until both land in V.
+      # https://github.com/vlang/v/pull/32996
+      # https://github.com/vlang/v/pull/32998
+      V_REVISION: e56410795a17252decb76e8f253ff5b1431569d6
+      # Bootstrap generated from V d0940cc240fda395317af1bdb9e54235521ab61b.
+      VC_REVISION: 35748fb7a452583e69efef0f86e60d0ba1618acf
       JOBS: '2'
+      VJOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
     steps:
@@ -50,6 +54,8 @@ jobs:
       - name: Check the Linux build entrypoint
         run: |
           python3 tools/build_linux_browser_test.py
+          python3 tools/deploy_linux_test.py
+          python3 tools/release_macos_test.py
           python3 tools/rebuild_browser_test.py
           python3 tools/prepare_http_compat_test.py
           python3 tools/prepare_ui2_test.py
@@ -61,8 +67,11 @@ jobs:
         id: system_dependencies
         if: ${{ !cancelled() && steps.reviewed_checkout.outcome == 'success' }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          # These packages come from Ubuntu. Hosted images also include
+          # unrelated vendor feeds whose availability need not block this job.
+          apt_sources=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+          sudo apt-get "${apt_sources[@]}" update
+          sudo apt-get "${apt_sources[@]}" install -y --no-install-recommends \
             build-essential clang ninja-build generate-ninja pkg-config \
             python3 git curl ca-certificates nodejs openssl libjavascriptcoregtk-4.1-dev \
             libglib2.0-dev libharfbuzz-dev \
@@ -70,10 +79,11 @@ jobs:
             libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
             libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
             libwebp-dev libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core \
-            xvfb xauth xdotool scrot
+            xvfb xauth xdotool scrot libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav glib-networking
           pkg-config --modversion javascriptcoregtk-4.1
 
-      - name: Check tab process exit diagnostics
+      - name: Check tab process exit diagnostics and X11 focus
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 2
         run: |
@@ -82,6 +92,22 @@ jobs:
             --lock "$RUNNER_TEMP/vox-tab-process.lock" \
             --report "$RUNNER_TEMP/vox-tab-process.json" --limit-gib 3 --timeout 60 -- \
             python3 tools/test_tab_process_lifecycle.py
+          cc -Wall -Wextra -Werror -Wno-unused-function -I. \
+            tools/native_browser_tab_focus_linux_test.c -lX11 -o "$RUNNER_TEMP/vox-tab-focus"
+          PYTHONPATH=tools python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-tab-focus.lock" \
+            --report "$RUNNER_TEMP/vox-tab-focus.json" --limit-gib 3 --timeout 30 -- \
+            python3 -c 'import sys; from test_linux_browser import run_windowed; run_windowed(sys.argv[1:])' \
+            "$RUNNER_TEMP/vox-tab-focus"
+
+      - name: Check portable binary16 conversions
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 2
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-float16.lock" \
+            --report "$RUNNER_TEMP/vox-float16.json" --limit-gib 3 --timeout 90 -- \
+            python3 libjs/float16_test.py
 
       - name: Add swap for the C compilation
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' }}
@@ -102,20 +128,36 @@ jobs:
           git -C "$RUNNER_TEMP/v" remote add origin https://github.com/vlang/v.git
           git -C "$RUNNER_TEMP/v" fetch --depth 1 origin "$V_REVISION"
           git -C "$RUNNER_TEMP/v" checkout --detach FETCH_HEAD
+          git init "$RUNNER_TEMP/v/vc"
+          git -C "$RUNNER_TEMP/v/vc" remote add origin https://github.com/vlang/vc.git
+          git -C "$RUNNER_TEMP/v/vc" fetch --depth 1 origin "$VC_REVISION"
+          git -C "$RUNNER_TEMP/v/vc" checkout --detach FETCH_HEAD
+          git -C "$RUNNER_TEMP/v" rev-parse HEAD > "$RUNNER_TEMP/vox-v-revision.txt"
+          git -C "$RUNNER_TEMP/v/vc" rev-parse HEAD > "$RUNNER_TEMP/vox-vc-revision.txt"
+          # Keep the bundled toolchain libraries while preventing make from replacing vc.
+          make -C "$RUNNER_TEMP/v" latest_tcc
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
-            make -C "$RUNNER_TEMP/v" -j2 VFLAGS='-memory-limit 10G'
-          "$RUNNER_TEMP/v/v" version
+            make -C "$RUNNER_TEMP/v" -j2 local=1 CC=clang VEXE=./v 'VFLAGS=-cc clang -memory-limit 10G'
+          # The compiler's default arena can retain a large imported graph. Build
+          # a collected compiler with FastC included so both backends use this binary.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-v-collector.lock" \
+            --report "$RUNNER_TEMP/vox-v-collector.json" --timeout 300 -- \
+            "$RUNNER_TEMP/v/v" -b c -all-backends -no-prealloc -memory-limit 10G \
+              -nocache -gc boehm -d dynamic_boehm -cc clang \
+              -o "$RUNNER_TEMP/v/v-collector" "$RUNNER_TEMP/v/cmd/v"
+          ldd "$RUNNER_TEMP/v/v-collector" | grep 'libgc\.so'
+          "$RUNNER_TEMP/v/v-collector" version
           git init "$RUNNER_TEMP/ui2"
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
           git -C "$RUNNER_TEMP/ui2" fetch --depth 1 origin HEAD
           git -C "$RUNNER_TEMP/ui2" checkout --detach FETCH_HEAD
           # UI2 intentionally follows upstream HEAD; preserve the exact inputs
           # alongside the results so this run can be reproduced.
-          git -C "$RUNNER_TEMP/v" rev-parse HEAD > "$RUNNER_TEMP/vox-v-revision.txt"
           git -C "$RUNNER_TEMP/ui2" rev-parse HEAD > "$RUNNER_TEMP/vox-ui2-revision.txt"
-          printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
+          printf 'V_BIN=%s/v-collector\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
       - name: Check native GLES without ANGLE
@@ -206,6 +248,7 @@ jobs:
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" cpuraster/shadow_command_test.v
 
       - name: Check structured storage integer codecs
+        id: structured_storage
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 25
         run: |
@@ -215,10 +258,18 @@ jobs:
             --lock "$RUNNER_TEMP/vox-structured-codec-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-structured-codec-$LADYBIRD_V_GC.json" --timeout 1440 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
-              html/structured_leb128_test.v \
-              html/structured_serialize_storage_codec_test.v \
-              html/structured_fileapi_codec_test.v \
-              html/structured_crypto_key_codec_test.v
+              html/structured_codec_tests/structured_codec_test.v
+
+      - name: Preserve structured storage check evidence
+        if: ${{ !cancelled() && steps.structured_storage.outcome == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-structured-storage-receipts-${{ matrix.gc }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/vox-structured-codec-${{ matrix.gc }}.json
+            Build/linux/tests/${{ matrix.gc }}/run-*/structured_codec_test.log
 
       - name: Compare XML parser CPU and retained memory
         id: xml_performance
@@ -263,6 +314,17 @@ jobs:
           sh build-prod-browser.sh
           test -x Build/linux/vox
 
+      - name: Preserve production build and smoke evidence
+        if: ${{ always() && !cancelled() && (steps.production_build.outcome == 'success' || steps.production_build.outcome == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-production-receipts-${{ matrix.gc }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            Build/linux/production-build/receipts/*/*.log
+            Build/linux/production-build/receipts/*/*.json
+
       - name: Check the native window and tab lifecycle
         if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
         timeout-minutes: 12
@@ -275,6 +337,16 @@ jobs:
             --report "$RUNNER_TEMP/vox-window-$LADYBIRD_V_GC.json" \
             --limit-gib 3 --timeout 600 -- \
             python3 tools/test_linux_browser.py Build/linux/vox
+
+      - name: Check native Linux video playback
+        if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
+        timeout-minutes: 2
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-media-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-media-$LADYBIRD_V_GC.json" \
+            --limit-gib 3 --timeout 90 -- \
+            python3 tools/test_linux_browser.py --media-only Build/linux/vox --output "$RUNNER_TEMP/vox-media"
 
       # Focused C-backend suites depend on prepared native libraries, not on
       # the FastC browser build or on preceding test results. Keep collecting
@@ -349,6 +421,7 @@ jobs:
               platform/closure_metadata_arena_test.v \
               platform/retained_arena_test.v \
               platform/retained_arena_lifetime_test.v \
+              platform/arena_page_retirement_test.v \
               dom/native_adoption_storage_test.v \
               html/native_document_storage_test.v \
               layout/hosted_scene_storage_test.v \
@@ -381,6 +454,7 @@ jobs:
             --lock "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.json" --timeout 1200 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              dom/svg_use_lifecycle_test.v \
               compact/native_attributes_test.v \
               compact/mutation_boundary_test.v \
               compact/pending_iteration_test.v \

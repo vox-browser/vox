@@ -44,6 +44,8 @@ fn (mut app BrowserApp) unmount_address_bar() {
 	}
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
+		mut tab := app.active_browser_tab()
+		tab.dismiss_browser_popup()
 		close_browser_settings()
 		ui2.remove_embedded_panel('settings')
 		$if macos { browserwindow.restore_chrome_window() }

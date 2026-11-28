@@ -1,12 +1,13 @@
 module main
 
-import crypto.sha256
+import fastsha256
 import gg
 import ggshape
 import imageraster
 import layout
 import painting
 import platform
+import os
 
 fn C.native_draw_sampled_png(&u8, i32, i32, i32, i32, i32, f32, f32, f32, f32, &f32, f32, f32, f32, f32, f32) i32
 
@@ -30,14 +31,33 @@ fn png_sampling_bytes_supported(bytes []u8) bool {
 
 fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f64, height f64) ?SampledPNGUpload {
 	if image.path != '' || image.nr_channels != 6 || image.data == unsafe { nil } { return none }
-	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
-	bytes := app.background_image_bytes(url) or { return none }
+	raster_extent := [width, height]!
+	decode_extent := sampled_png_decode_extent(raster_extent, app.document.rendering_device_pixel_ratio(),
+		C.native_raster_device_pixel_ratio()) or { return none }
+	dw, dh := sampled_png_decode_size(image.width, image.height, raster_extent, decode_extent) or {
+		return none
+	}
+	bytes := app.background_image_decode_bytes(url) or { return none }
 	profile := imageraster.png_sampling_profile(bytes) or { return none }
-	key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
+	mut gpu_mips := profile.gamma > 0
+	if os.getenv('VOX_DIAGNOSTIC_PNG_GPU_MIPS') == '1' { gpu_mips = true }
+	mut key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${fastsha256.sum(bytes).hex()}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
 		if previous.ok && previous.width >= dw && previous.height >= dh {
-			return SampledPNGUpload{ image: previous, gpu_mips: profile.gamma > 0 }
+			return SampledPNGUpload{ image: previous, gpu_mips: gpu_mips }
+		}
+		// A larger request must not replace the first usable decoded frame.
+		// Later small draws retain that frame instead of selecting different
+		// GPU mip levels from the enlarged upload.
+		if previous.ok {
+			key += ':${dw}x${dh}'
+			if upgrade_id := app.background_image_ids[key] {
+				upgrade := app.ctx.get_cached_image_by_idx(upgrade_id)
+				if upgrade.ok && upgrade.width >= dw && upgrade.height >= dh {
+					return SampledPNGUpload{ image: upgrade, gpu_mips: gpu_mips }
+				}
+			}
 		}
 	}
 	mut scratch := platform.begin_thread_scratch('PNG upload resize and color conversion')
@@ -54,7 +74,7 @@ fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f6
 	mut result := gg.Image{ width: data.width, height: data.height, nr_channels: 5, ok: true, data: retained.data }
 	result.id = app.ctx.cache_image(result)
 	app.background_image_ids[key.clone()] = result.id
-	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: profile.gamma > 0 }
+	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: gpu_mips }
 }
 
 fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg.Image, url string,
@@ -62,20 +82,23 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 	page_x f32, page_y f32, scroll_y f64, nearest bool) bool {
 	if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
 		|| command.apply_force_dark_to_image || nearest || command.opacity != 1
-		|| matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1
 		|| source != [f32(0), 0, f32(image.width), f32(image.height)]! {
 		return false
 	}
-	upload := app.sampled_png_decode(url, image, f64(destination.width),
-		f64(destination.height)) or { return false }
+	geometry := sampled_png_paint_geometry(destination, clip, matrix) or { return false }
+	upload := app.sampled_png_decode(url, image, f64(geometry.width), f64(geometry.height)) or {
+		return false
+	}
 	decoded := upload.image
-	mut translated_clip := clip
-	translated_clip[0] += f32(matrix[4])
-	translated_clip[1] += f32(matrix[5])
-	return C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
-		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]),
-		f32(destination.width), f32(destination.height), &translated_clip[0], page_x, page_y, f32(scroll_y),
+	previous_color_scope := select_document_png_color_space()
+	defer { document_png_p3_scope = previous_color_scope }
+	drawn := C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
+		geometry.x, geometry.y, geometry.width, geometry.height, &geometry.clip[0], page_x, page_y, f32(scroll_y),
 		f32(app.ctx.width), f32(app.ctx.height)) != 0
+	if drawn && os.getenv('VOX_DIAGNOSTIC_SCALED_PNG') == '1' {
+		eprintln('VOX_SCALED_PNG scale=${matrix[0]} source=${image.width}x${image.height} decode=${decoded.width}x${decoded.height} gpu_mips=${upload.gpu_mips} p3=${document_png_space_is_p3()} destination=${geometry.x},${geometry.y},${geometry.width},${geometry.height}')
+	}
+	return drawn
 }
 
 @[export:'vox_document_sampled_png_pixels']
@@ -84,18 +107,70 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	x f32, y f32, destination_width f32, destination_height f32, clip &f32) i32 {
 	if source == unsafe { nil } || source_width <= 0 || source_height <= 0
 		|| source_width > 4096 || source_height > 4096
+		|| natural_width <= 0 || natural_height <= 0
+		|| natural_width > 4096 || natural_height > 4096
 		|| int(source_width) * int(source_height) > 4 * 1024 * 1024 {
 		return 0
 	}
 	samples := document_image_sample_count(int(first_x), int(first_y), int(width), int(height))
-	if samples == 0 { return 0 }
+	if samples == 0 && gpu_mips !in [3, 4, 5, 6] { return 0 }
 	if clip == unsafe { nil } { return 0 }
 	mut clipping := [12]f32{}
 	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
-		unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
-		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0)
+	// Flags 3/4 select limited YUV444 without/with GPU mips; 5 selects a
+	// YUV420 atlas, and 6 full-range JPEG planes with CPU mips.
+	mut result := i32(0)
+	if gpu_mips in [3, 4, 5, 6] {
+        packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+        // CPU-resized 4:4:4 uploads have a decoded image frame. Fold the
+        // natural-to-decode scale before constructing the GPU image matrix.
+        frame_width := if gpu_mips == 3 { int(source_width) } else { int(natural_width) }
+        frame_height := if gpu_mips == 3 { int(source_height) } else { int(natural_height) }
+        // Native-size near-half uploads build byte mips before transfer.
+        // Stronger atlas minification retains the existing GPU plane mips.
+        atlas_cpu_mips := gpu_mips == 5 && destination_width * 2 > source_width
+            && destination_height * 2 > source_height
+        plane_gpu_mips := gpu_mips == 4 || (gpu_mips == 5 && !atlas_cpu_mips)
+        // Tile dimensions affect interpolation even when sample counts agree.
+        result = draw_document_sampled_yuv_tiles(pixels, width, height, pitch, backdrop,
+            int(first_x), int(first_y), packed, int(source_width), int(source_height),
+            x, y, destination_width, destination_height, frame_width, frame_height, clipping, plane_gpu_mips, gpu_mips == 5, gpu_mips == 6)
+        if result == 0 && samples != 0 && gpu_mips == 5 {
+            result = ggshape.draw_sampled_yuv_atlas_with_mips_clipped(pixels, width, height, pitch, backdrop,
+                packed, source_width, source_height, x, y, destination_width, destination_height,
+                int(samples), frame_width, frame_height, clipping, plane_gpu_mips)
+        } else if result == 0 && samples != 0 && gpu_mips != 6 {
+            result = ggshape.draw_sampled_yuv_with_mips_clipped(pixels, width, height, pitch, backdrop,
+                packed, source_width, source_height, x, y, destination_width, destination_height,
+                int(samples), frame_width, frame_height, clipping, gpu_mips == 4)
+        }
+    } else if gpu_mips == 2 {
+		mut values := []f32{len: int(source_width) * int(source_height) * 4}
+		unsafe { vmemcpy(values.data, source, values.len * int(sizeof(f32))) }
+		result = ggshape.draw_sampled_colors_clipped(pixels, width, height, pitch, backdrop, values, source_width, source_height, x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping)
+	} else {
+		packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+		// Rounded RGBA draws retain the owning tile's interpolation space.
+		// Plain rectangles and mixed samples keep their existing fallback.
+		p3 := gpu_mips in [0, 1] && document_png_space_is_p3() != 0
+		if gpu_mips in [0, 1] && clipping[4..12].any(it > 0) {
+			result = draw_document_sampled_image_tiles(pixels, width, height, pitch, backdrop,
+				int(first_x), int(first_y), packed, int(source_width), int(source_height),
+				x, y, destination_width, destination_height, int(natural_width), int(natural_height),
+				clipping, if p3 { .rgba_p3 } else { .rgba }, gpu_mips != 0)
+		}
+		if result == 0 && p3 {
+			result = ggshape.draw_sampled_srgb_gamut_clipped(pixels, width, height, pitch, backdrop,
+				packed, source_width, source_height, x, y, destination_width, destination_height,
+				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0,
+				document_srgb_to_p3_gamut)
+		} else if result == 0 {
+			result = ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
+				packed, source_width, source_height, x, y, destination_width, destination_height,
+				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0)
+		}
+	}
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }
@@ -115,9 +190,25 @@ fn document_shadowed_png_pixels(pixels &u8, width i32, height i32, pitch i32, ba
 	mut clipping := [12]f32{}
 	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := ggshape.draw_sampled_rgba_with_shadow(pixels, width, height, pitch, backdrop,
-		unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
-		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0, shadow)
+	packed := unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }
+	mut result := i32(0)
+	if shadow != unsafe { nil } && document_png_space_is_p3() != 0 {
+		draw := document_p3_shape(*shadow)
+		result = draw_document_sampled_image_tiles_with_decoration(pixels, width, height, pitch, backdrop,
+			int(first_x), int(first_y), packed, int(source_width), int(source_height), x, y,
+			destination_width, destination_height, int(natural_width), int(natural_height), clipping,
+			.rgba_p3_shadow, gpu_mips != 0, DocumentBitmapDecoration{shadow: draw})
+		if result == 0 {
+			result = ggshape.draw_sampled_srgb_gamut_with_shadow(pixels, width, height, pitch, backdrop,
+				packed, source_width, source_height, x, y, destination_width, destination_height,
+				int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0,
+				document_srgb_to_p3_gamut, &draw)
+		}
+	} else {
+		result = ggshape.draw_sampled_rgba_with_shadow(pixels, width, height, pitch, backdrop,
+			packed, source_width, source_height, x, y, destination_width, destination_height,
+			int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0, shadow)
+	}
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }

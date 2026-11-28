@@ -56,10 +56,10 @@ fn test_clean_branches_keep_their_boxes_across_rebuilds_elsewhere() {
 	}
 }
 
-// Removing a child flags its parent: every box below that parent is rebuilt
-// unless the separate validated salvage accepts it, which it does not for a
-// button.
-fn test_branches_below_a_flagged_parent_are_not_kept_on_the_flags_alone() {
+// Removing a child flags its parent, without saying which child changed:
+// each direct child of that parent is built again. Their own children were
+// never touched and keep their boxes (below_flagged_subtree_reuse_test.v).
+fn test_direct_children_of_a_flagged_parent_are_rebuilt_and_their_children_kept() {
 	mut document := html.parse_document('<!doctype html><body><main id="parent"><div id="removed">gone</div><section id="stable"><button id="inner" type="button">Press</button></section></main></body>')
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
@@ -70,7 +70,7 @@ fn test_branches_below_a_flagged_parent_are_not_kept_on_the_flags_alone() {
 	removed_node.remove(false)
 	document.update_layout(.debugging)
 	assert clean_subtree_handle(document, 'stable') != stable
-	assert clean_subtree_handle(document, 'inner') != inner
+	assert (clean_subtree_handle(document, 'inner') == inner) == !disable_below_flagged_reuse
 	clean_subtree_check_full_rebuild(mut document)
 }
 

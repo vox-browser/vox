@@ -9,23 +9,55 @@ fn (mut host Host) wrap_node(node &dom.Node) libjs.Value {
 	if wrapper := host.wrappers[node.unique_id()] { return libjs.Value.from_object(wrapper) }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	is_html := if element := node.as_element() { element.is_html_element() } else { false }
+	interface_name := if is_html {
+		element := node.as_element() or { panic('Missing native HTML element') }
+		host.html_element_tags[element.local_name()] or { if dom.is_unknown_html_element(element.local_name()) { 'HTMLUnknownElement' } else { 'HTMLElement' } }
+	} else { '' }
 	prototype := if node.is_element() {
-		host.element_prototype
+		if is_html { host.html_element_prototypes[interface_name] or { host.html_element_prototype } } else { host.element_prototype }
 	} else if node.is_document() {
 		host.document_prototype
+	} else if node.is_attribute() {
+		host.attribute_prototype
+	} else if node.is_shadow_root() {
+		host.shadow_root_prototype
+	} else if node.is_document_fragment() {
+		host.fragment_prototype
+	} else if node.is_character_data() {
+		match node.node_type_value() {
+			3 { host.text_prototype }
+			4 { host.cdata_prototype }
+			8 { host.comment_prototype }
+			else { host.character_data_prototype }
+		}
 	} else {
 		host.node_prototype
 	}
 	mut object := libjs.Object.create(host.realm, prototype)
 	object.class_name = if node.is_element() {
-		'Element'
+		if is_html { interface_name } else { 'Element' }
 	} else if node.is_document() {
 		'Document'
+	} else if node.is_attribute() {
+		'Attr'
+	} else if node.is_shadow_root() {
+		'ShadowRoot'
+	} else if node.is_document_fragment() {
+		'DocumentFragment'
+	} else if node.is_character_data() {
+		match node.node_type_value() { 3 { 'Text' } 4 { 'CDATASection' } 8 { 'Comment' } else { 'CharacterData' } }
 	} else {
 		'Node'
 	}
 	host.wrappers[node.unique_id()] = object
 	host.nodes[voidptr(object)] = node
+	if is_html {
+		if element := node.as_element() {
+			if element.local_name() == 'select' { host.attach_select_indices(mut object, element) }
+			if element.local_name() == 'form' { host.attach_form_properties(mut object, element) }
+		}
+	}
 	return libjs.Value.from_object(object)
 }
 
@@ -43,20 +75,35 @@ fn (host &Host) element(mut vm libjs.VM) !&dom.Element {
 }
 
 fn (mut host Host) install_nodes() ! {
-	mut node := libjs.Object.create(host.realm, host.realm.object_prototype)
+	host.install_event_target_interface()
+	mut node := libjs.Object.create(host.realm, host.event_target_prototype)
 	host.node_prototype = node
 	mut element := libjs.Object.create(host.realm, node)
 	host.element_prototype = element
 	mut document := libjs.Object.create(host.realm, node)
 	host.document_prototype = document
+	mut fragment := libjs.Object.create(host.realm, node)
+	host.fragment_prototype = fragment
+	host.method(mut fragment, 'getElementById', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
+		actual := host.node(mut vm)!
+		if !actual.is_document_fragment() { return vm.throw_error(.type_error, 'getElementById requires a document fragment') }
+		if vm.argument_count() < 1 { return vm.throw_error(.type_error, 'getElementById requires an id') }
+		key := vm.argument(0).to_primitive_string(mut vm)!.str()
+		parent := unsafe { &dom.ParentNode(actual) }
+		mut owner := unsafe { &Host(host) }
+		return if found := parent.get_element_by_id(key) { owner.wrap_node(found.as_node()) } else { libjs.js_null() }
+	})
 	mut collection_prototype := libjs.Object.create(host.realm, host.realm.object_prototype)
 	host.collection_prototype = collection_prototype
 	host.accessor(mut collection_prototype, 'length', fn [host] (mut vm libjs.VM) !libjs.Value {
+		persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 		return libjs.Value.from_f64(f64(host.collection_receiver(mut vm)!.length()))
 	}, unsafe { nil })
 	for name in ['item', 'namedItem'] {
-		host.method(mut collection_prototype, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
+		host.method_attributes(mut collection_prototype, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			collection := host.collection_receiver(mut vm)!
+			if vm.argument_count() == 0 { return vm.throw_error(.type_error, 'HTMLCollection.${name} requires an argument') }
+			persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 			mut owner := unsafe { &Host(host) }
 			mut element := ?&dom.Element(none)
 			if name == 'item' {
@@ -65,9 +112,9 @@ fn (mut host Host) install_nodes() ! {
 				element = collection.named_item(vm.argument(0).to_primitive_string(mut vm)!.str())
 			}
 			return if found := element { owner.wrap_node(found.as_node()) } else { libjs.js_null() }
-		})
+		}, libjs.attribute_writable | libjs.attribute_enumerable | libjs.attribute_configurable)
 	}
-	for name in ['parentNode', 'parentElement', 'nextSibling', 'nextElementSibling',
+	for name in ['parentNode', 'parentElement', 'firstChild', 'lastChild', 'previousSibling', 'nextSibling', 'nextElementSibling',
 		'previousElementSibling', 'ownerDocument', 'nodeName', 'nodeType', 'textContent'] {
 		getter := fn [host, name] (mut vm libjs.VM) !libjs.Value {
 			mut owner := unsafe { &Host(host) }
@@ -95,6 +142,15 @@ fn (mut host Host) install_nodes() ! {
 				'nextSibling' {
 					if sibling := actual.next_sibling() { return owner.wrap_node(sibling) }
 				}
+				'previousSibling' {
+					if sibling := actual.previous_sibling() { return owner.wrap_node(sibling) }
+				}
+				'firstChild' {
+					if child := actual.first_child() { return owner.wrap_node(child) }
+				}
+				'lastChild' {
+					if child := actual.last_child() { return owner.wrap_node(child) }
+				}
 				'nextElementSibling' {
 					if sibling := actual.next_element_sibling() {
 						return owner.wrap_node(sibling.as_node())
@@ -106,7 +162,7 @@ fn (mut host Host) install_nodes() ! {
 					}
 				}
 				'ownerDocument' {
-					if !actual.is_document() { return owner.wrap_node(actual.document().as_node()) }
+					if document := actual.owner_document() { return owner.wrap_node(document.as_node()) }
 				}
 				else {}
 			}
@@ -123,6 +179,7 @@ fn (mut host Host) install_nodes() ! {
 				}
 				actual.set_text_content(text)!
 				mut owner := unsafe { &Host(host) }
+				owner.drain_custom_elements()
 				owner.changed()
 				return libjs.js_undefined()
 			})
@@ -165,6 +222,7 @@ fn (mut host Host) install_nodes() ! {
 					}
 				}
 				mut owner := unsafe { &Host(host) }
+				owner.drain_custom_elements()
 				owner.changed()
 				return libjs.js_undefined()
 			})
@@ -190,12 +248,14 @@ fn (mut host Host) install_nodes() ! {
 				actual.remove_attribute(key)
 			}
 			mut owner := unsafe { &Host(host) }
+			owner.drain_custom_elements()
 			owner.changed()
 			return libjs.js_undefined()
 		})
 	}
 	for name in ['getElementsByClassName', 'getElementsByTagName', 'querySelector'] {
 		mut prototypes := [element, document]
+		if name == 'querySelector' { prototypes << fragment }
 		for mut prototype in prototypes {
 			host.method(mut prototype, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
 				actual := host.node(mut vm)!
@@ -205,6 +265,12 @@ fn (mut host Host) install_nodes() ! {
 				key := vm.argument(0).to_primitive_string(mut vm)!.str()
 				mut owner := unsafe { &Host(host) }
 				if name == 'querySelector' {
+					if actual.is_document_fragment() {
+						css.install_document_selector_query_hook(actual.document())
+						parent := unsafe { &dom.ParentNode(actual) }
+						list := parent.query_selector_all(key) or { return owner.dom_error(mut vm, err) }
+						return if found := list.item(0) { owner.wrap_node(found) } else { libjs.js_null() }
+					}
 					return if found := css.query_selector(actual, key) {
 						owner.wrap_node(found.as_node())
 					} else {
@@ -214,7 +280,7 @@ fn (mut host Host) install_nodes() ! {
 
 				mut parent := unsafe { &dom.ParentNode(actual) }
 				collection := if name == 'getElementsByClassName' {
-					parent.get_elements_by_class_name(key)
+					owner.class_collection(actual, key)
 				} else {
 					parent.get_elements_by_tag_name(key)
 				}
@@ -235,14 +301,13 @@ fn (mut host Host) install_nodes() ! {
 			libjs.js_null()
 		}
 	})
-	host.method(mut document, 'createElement', 1, fn [host] (mut vm libjs.VM) !libjs.Value {
+	host.method(mut document, 'createDocumentFragment', 0, fn [host] (mut vm libjs.VM) !libjs.Value {
 		actual := host.node(mut vm)!
-		if !actual.is_document() {
-			return vm.throw_error(.type_error, 'createElement requires a document')
-		}
-		element := actual.document().create_element(vm.argument(0).to_primitive_string(mut vm)!.str())!
+		if !actual.is_document() { return vm.throw_error(.type_error, 'createDocumentFragment requires a document') }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		mut owner := unsafe { &Host(host) }
-		return owner.wrap_node(element.as_node())
+		return owner.wrap_node(unsafe { &dom.Node(actual.document().create_document_fragment()) })
 	})
 	for name in ['body', 'head', 'currentScript', 'documentElement', 'URL', 'readyState'] {
 		host.accessor(mut document, name, fn [host, name] (mut vm libjs.VM) !libjs.Value {
@@ -271,33 +336,35 @@ fn (mut host Host) install_nodes() ! {
 			return libjs.js_null()
 		}, unsafe { nil })
 	}
-	for name in ['appendChild', 'removeChild'] {
-		host.method(mut node, name, 1, fn [host, name] (mut vm libjs.VM) !libjs.Value {
-			mut actual := unsafe { &dom.Node(host.node(mut vm)!) }
-			value := vm.argument(0)
-			if !value.is_object() { return vm.throw_error(.type_error, 'Node argument required') }
-			child := host.nodes[voidptr(value.as_object())] or { return vm.throw_error(.type_error, 'Node argument required') }
-			if name == 'appendChild' {
-				actual.append_child(child)!
-			} else {
-				actual.remove_child(child)!
-			}
-			mut owner := unsafe { &Host(host) }
-			owner.changed()
-			return value
-		})
-	}
+	host.install_tree_mutations(mut node)
 	host.install_events(mut node)!
+	host.install_parent_node_mutations()
+	host.install_element_factories()
 }
 
 @[heap]
 struct Collection {
 	host       &Host
-	collection &dom.HTMLCollection
+	collection NativeHTMLCollectionView
+	object &libjs.Object
+}
+
+interface NativeHTMLCollectionView {
+	length() int
+	item(int) ?&dom.Element
+	named_item(string) ?&dom.Element
+	supported_property_names() []string
+}
+
+fn (collection &Collection) is_supported_property_index(index u32) bool {
+	if collection.host.closed { return false }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	return u64(index) < u64(collection.collection.length())
 }
 
 fn (collection &Collection) get_own_property(key libjs.PropertyName) ?libjs.PropertyDescriptor {
 	if collection.host.closed { return none }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	mut host := unsafe { &Host(collection.host) }
 	if key.is_number() {
 		if element := collection.collection.item(int(key.number)) {
@@ -309,17 +376,31 @@ fn (collection &Collection) get_own_property(key libjs.PropertyName) ?libjs.Prop
 
 fn (collection &Collection) own_property_keys() []libjs.PropertyName {
 	if collection.host.closed { return [] }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
 	return []libjs.PropertyName{len: collection.collection.length(), init: libjs.PropertyName.from_number(u32(index))}
 }
 
 fn (mut host Host) wrap_collection(collection &dom.HTMLCollection) libjs.Value {
-	mut object := libjs.Object.create(host.realm, host.collection_prototype)
-	object.class_name = 'HTMLCollection'
-	object.host_properties = libjs.HostProperties(&Collection{ host: host, collection: collection })
+	return host.wrap_collection_with_prototype(collection, host.collection_prototype, 'HTMLCollection')
+}
+
+fn (mut host Host) wrap_collection_with_prototype(collection &dom.HTMLCollection, prototype &libjs.Object, class_name string) libjs.Value {
+	return host.wrap_collection_view(voidptr(collection), NativeHTMLCollectionView(collection), prototype, class_name)
+}
+
+fn (mut host Host) wrap_collection_view(identity voidptr, collection NativeHTMLCollectionView, prototype &libjs.Object, class_name string) libjs.Value {
+	if object := host.collection_wrappers[identity] { return libjs.Value.from_object(object) }
+	persistent := platform.enter_persistent(); defer { platform.leave_persistent(persistent) }
+	mut object := libjs.Object.create(host.realm, prototype)
+	object.class_name = class_name
+	provider := &Collection{host: host, collection: collection, object: object}
+	object.host_properties = libjs.HostProperties(provider)
+	object.legacy_platform_object = &libjs.LegacyPlatformObject{indexed_properties: libjs.LegacyIndexedProperties(provider), named_properties: libjs.LegacyNamedProperties(provider), legacy_unenumerable_named_properties: true}
+	host.collection_wrappers[identity] = object
 	return libjs.Value.from_object(object)
 }
 
-fn (host &Host) collection_receiver(mut vm libjs.VM) !&dom.HTMLCollection {
+fn (host &Host) collection_receiver(mut vm libjs.VM) !NativeHTMLCollectionView {
 	host.require_open(mut vm)!
 	if vm.this_value().is_object() {
 		if provider := vm.this_value().as_object().host_properties {

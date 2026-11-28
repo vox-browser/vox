@@ -16,6 +16,7 @@ $if macos {
 	#include "@VMODROOT/native/include/native_browser_tab_process_linux.h"
 	fn C.vox_tab_x11_frame(voidptr, uint, &f64)
 	fn C.vox_tab_x11_show(voidptr, uint, i32, f64, f64, f64, f64)
+	fn C.vox_tab_x11_focus(voidptr, uint) i32
 }
 
 // A process started by Session.open joins its group as a hidden tab.
@@ -57,12 +58,29 @@ fn process_tab_window_frame() browsertabs.Frame {
 	return browsertabs.Frame{ x: values[0], y: values[1], width: values[2], height: values[3] }
 }
 
-fn process_tab_window_show(visible bool, frame browsertabs.Frame) {
+fn (mut app BrowserApp) update_process_tab_window(visible bool, frame browsertabs.Frame) bool {
 	$if macos {
 		browserwindow.show_tab_window(sapp.macos_get_window(), visible, browserwindow.Frame{ x: frame.x, y: frame.y, width: frame.width, height: frame.height })
 	} $else $if linux {
-		C.vox_tab_x11_show(sapp.x11_get_display(), uint(sapp.x11_get_window()), i32(visible), frame.x, frame.y, frame.width, frame.height)
+		display := sapp.x11_get_display()
+		window := uint(sapp.x11_get_window())
+		retry_at := app.tabs.process_focus_retry_at
+		if !visible || retry_at == 0 {
+			C.vox_tab_x11_show(display, window, i32(visible), frame.x, frame.y, frame.width,
+				frame.height)
+		}
+		if visible {
+			now := time.sys_mono_now()
+			if now < retry_at { return false }
+			if C.vox_tab_x11_focus(display, window) == 0 {
+				// Keep the previous tab up until the window manager completes the map.
+				app.tabs.process_focus_retry_at = now + 25 * time.millisecond
+				return false
+			}
+		}
+		app.tabs.process_focus_retry_at = 0
 	}
+	return true
 }
 
 fn (mut app BrowserApp) start_process_tabs() {
@@ -154,6 +172,7 @@ fn (mut app BrowserApp) quit_process_tab() {
 fn (mut app BrowserApp) open_process_tab(address string, background bool) {
 	mut call_arguments := ['--window-width=${app.viewport_width}',
 		'--window-height=${app.viewport_height + app.chrome_height()}', '--js-engine=${app.js_engine}']
+	if app.warm_libjs { call_arguments << '--warm-libjs' }
 	if app.script_policy == .enabled { call_arguments << '--enable-javascript' }
 	if app.script_policy == .disabled { call_arguments << '--disable-javascript' }
 	if app.auto_open_devtools { call_arguments << '--auto-open-devtools-for-tabs' }
@@ -280,11 +299,12 @@ fn (mut app BrowserApp) poll_process_tabs() {
 		return
 	}
 	visible := session.visible() || app.holds_replaced_tab_window()
-	if visible != app.tabs.process_visible || (app.tabs.process_initializing && app.initial_window_frame_presented) {
+	if (visible != app.tabs.process_visible || app.tabs.process_focus_retry_at != 0
+		|| (app.tabs.process_initializing && app.initial_window_frame_presented))
+		&& app.update_process_tab_window(visible, session.state.frame) {
 		app.tabs.process_initializing = false
 		app.tabs.process_visible = visible
 		if !visible { app.blur_address_bar() }
-		process_tab_window_show(visible, session.state.frame)
 		if visible {
 			session.mark_shown() or { eprintln('Vox: ${err}') }
 		}

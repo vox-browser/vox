@@ -132,9 +132,7 @@ pub fn static_svg_background_commands_for_viewport(resource &StaticSVGBackground
 	width f64, height f64) ?[]PaintCommand {
 	if !(width > 0 && height > 0) || width > 32768 || height > 32768 { return none }
 	mut mutable_resource := unsafe { &StaticSVGBackgroundResource(resource) }
-	for scene in resource.scenes {
-		if scene.width == width && scene.height == height { return scene.commands }
-	}
+	if commands := retained_static_svg_background_commands(resource, width, height) { return commands }
 	if document := resource.fallback_document {
 		return static_svg_document_commands(document, width, height)
 	}
@@ -164,6 +162,16 @@ pub fn static_svg_background_commands_for_viewport(resource &StaticSVGBackground
 	}
 	mutable_resource.fallback_document = document
 	return commands
+}
+
+// These scenes belong to the resource and survive subsequent viewport requests.
+// Display lists produced by its fallback document can be replaced on relayout.
+pub fn retained_static_svg_background_commands(resource &StaticSVGBackgroundResource,
+	width f64, height f64) ?[]PaintCommand {
+	for scene in resource.scenes {
+		if scene.width == width && scene.height == height { return scene.commands }
+	}
+	return none
 }
 
 fn static_svg_document_commands(document &dom.Document, width f64, height f64) ?[]PaintCommand {

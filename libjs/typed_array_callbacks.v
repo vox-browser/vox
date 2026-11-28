@@ -21,6 +21,7 @@ pub fn typed_array_prototype_every(mut vm VM, prototypes PrimitiveObjectPrototyp
 	length := typed_array_length(record)
 	callback := typed_array_callback_from_args(mut vm, 'every')!
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		result := call(mut vm, Value.from_object(callback), this_arg, [value, Value.from_f64(f64(k)),
 			Value.from_object(array.object)])!
@@ -36,6 +37,7 @@ pub fn typed_array_prototype_some(mut vm VM, prototypes PrimitiveObjectPrototype
 	length := typed_array_length(record)
 	callback := typed_array_callback_from_args(mut vm, 'some')!
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		result := call(mut vm, Value.from_object(callback), this_arg, [value, Value.from_f64(f64(k)),
 			Value.from_object(array.object)])!
@@ -51,6 +53,7 @@ pub fn typed_array_prototype_for_each(mut vm VM, prototypes PrimitiveObjectProto
 	length := typed_array_length(record)
 	callback := typed_array_callback_from_args(mut vm, 'forEach')!
 	for k := u32(0); k < length; k++ {
+		vm.consume_execution_budget()!
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		call(mut vm, Value.from_object(callback), this_arg, [value, Value.from_f64(f64(k)),
 			Value.from_object(array.object)])!

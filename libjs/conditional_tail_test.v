@@ -44,12 +44,26 @@ fn test_conditional_tail_retains_right_associative_ast_and_operator_positions() 
 	root := program.scope.children[0].kind.expression?
 	assert root.kind.tag == .conditional
 	assert root.range.start.offset == 2
-	assert root.kind.test?.kind.identifier?.name.str() == 'a'
-	assert root.kind.consequent?.kind.identifier?.name.str() == 'b'
-	other := root.kind.alternate_expr?
+	first := root.kind.conditional_data?
+	assert first.test.kind.identifier?.name.str() == 'a'
+	assert first.consequent.kind.identifier?.name.str() == 'b'
+	other := first.alternate
 	assert other.kind.tag == .conditional
 	assert other.range.start.offset == 10
-	assert other.kind.test?.kind.identifier?.name.str() == 'c'
-	assert other.kind.consequent?.kind.identifier?.name.str() == 'd'
-	assert other.kind.alternate_expr?.kind.identifier?.name.str() == 'e'
+	second := other.kind.conditional_data?
+	assert second.test.kind.identifier?.name.str() == 'c'
+	assert second.consequent.kind.identifier?.name.str() == 'd'
+	assert second.alternate.kind.identifier?.name.str() == 'e'
+}
+
+fn test_retained_conditional_branches_preserve_their_nested_functions() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	mut script := Script.parse('function keep(){return function(x){return (()=>x>0)()?(()=>x+30)():(()=>x-1)()}};keep()', vm.realm(), 'conditional-owners.js', unsafe { nil })!
+	closure := vm.run(mut script)!
+	for _ in 0 .. 20 {
+		assert !parse_source('function unrelated(){return false?1:true?2:3}', .script).has_errors()
+	}
+	assert call(mut vm, closure, js_undefined(), [Value.from_i32(12)])!.number == 42
+	assert call(mut vm, closure, js_undefined(), [Value.from_i32(-2)])!.number == -3
 }

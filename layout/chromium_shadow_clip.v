@@ -12,7 +12,7 @@ fn chromium_inset_opaque_shadow_clips(mut commands []PaintCommand, start int,
 		document.layout_coordinate_scale() / if retain_logical_paint_snapping {
 			1.0
 		} else {
-			document.display_device_pixel_ratio()
+			document.rendering_device_pixel_ratio()
 		}
 	}
 	for index := start; index < commands.len; index++ {

@@ -1,9 +1,49 @@
 # LibJS V translation status
 
+## Compilation coverage guidance — 2026-11-26
+
+The goal is to compile and correctly execute as much JavaScript as possible.
+See [the compilation coverage review](../docs/LIBJS_COMPILATION_REVIEW.md) for
+the pipeline at audited revision `3170240316e66be0b8d97c4c6e5a56d1f299a61c`,
+source-backed findings, a prioritized implementation plan, and validation gates.
+The review is static analysis, not a new runtime or conformance result.
+
+Bytecode generation, interpretation, native RegExp execution, synchronous module
+graphs, dynamic imports, ordinary async functions, synchronous generators, and
+the persistent native C tier already exist. Top-level await, async iteration,
+async-generator execution, eval, and some dynamic constructor semantics still
+need work at that revision. Native compilation progress and complete template
+enumeration also have concrete gaps. Recheck each finding against current code
+before implementation.
+
+The frontend review additionally identifies incorrect directive-prologue
+recognition that rejects valid sloppy code, and missing parse-time RegExp early
+errors. These correctness fixes belong alongside coverage expansion.
+
+The entries below retain historical checkpoints and their original verification
+limits. Earlier statements that these implemented subsystems are wholly absent
+are not a current feature inventory; historical pass counts are not new results.
+
+## Historical translation and runtime checkpoints
+
 Audited: 2026-10-02.
 
 The opt-in browser backend and its 2026-11-14 validation are documented in
 [`docs/LIBJS_ENGINE.md`](../docs/LIBJS_ENGINE.md). JavaScriptCore remains the default.
+
+The [November 17 Old Reddit fixes](../docs/LIBJS_OLD_REDDIT.md) add Annex B block
+functions, independent `for (let)` iteration bindings, native inline handlers and
+`HTMLElement.click()`, owning-Window geometry and LibJS `javascript:` completions.
+Original Reddit scripts now pass the representative comment/menu probe, including
+a compiler-disabled native-cache reopen. Focused regressions pass with default
+GC and `-gc none`, and the exact upstream AST corpus passes all 100 cases.
+Updated production-browser native-input validation remains pending; broad-suite
+resource/test failures and unverified site behavior are recorded in that report.
+
+Sloppy-mode `with` statements now execute in object environments, including in
+dynamic `Function` bodies. The production worldnews probe executes Reddit's
+generated template and verifies the page's main script handlers. See the
+[worldnews comparison](../docs/OLD_REDDIT_WORLDNEWS_LIBJS.md).
 
 The [GitHub continuation](../docs/LIBJS_GITHUB.md) adds bounded deeper browser
 parsing, iterative conditional alternatives and synchronous module graphs.
@@ -13,7 +53,7 @@ The browser uses native Fetch/import maps without a JavaScriptCore context.
 Namespace reads have stable identity and sorted live exports, but their accessor
 descriptor adapter does not implement full namespace data-descriptor/freeze
 semantics. `import.meta` bytecode and synchronous `try/catch` also execute;
-`finally`, dynamic imports, top-level await, remaining language/builtin/Web APIs,
+Dynamic imports, top-level await, remaining language/builtin/Web APIs,
 React hydration and pixel-perfect GitHub rendering remain open.
 The ten-fix checkpoint has 261-file default-GC coverage (184 retained plus 77
 recovered after a host restart), a full 261/261 GC-disabled pass and 100/100 exact
@@ -27,6 +67,355 @@ runtime guards; dynamic operations keep interpreter helpers and shared budgets.
 Three seven-pair HN native-DOM cohorts show cache reuse and correct collapse/restore,
 but no reliable callback speedup. This tier is not enabled by browser settings
 and does not establish a browser load/rendering improvement or additional parity.
+
+The [HN optimization continuation](../docs/HACKER_NEWS_LIBJS_4X.md) adds bounded
+split/join string reuse, per-depth synchronous argument buffers, a bounded
+tier-owned native-entry table, live global own-data position hints, direct primitive property keys and native UTF-16
+truthiness/equality/primitive `typeof`. Type names are rooted per VM and supplied
+through invocation state; compiler-free fresh-VM reuse is covered. The HTML
+text-fragment shortcut retains parser fallback and document ownership. Native
+cache record/digest ownership regressions cover scratch reuse after a real reopen
+crash; cache identity now includes compiler string-layout facts. HN-focused
+checks pass with current V in normal, GC-disabled and preallocated modes; they
+do not change the separate GitHub verification hold or establish language/DOM
+parity. Both compiled modes pass the 50%-of-V8 peak-RAM gate; the strict 4×
+callback gate remains open despite a 4.70× matching-current median. The exact
+gates and retained failing cohorts are in the linked report.
+
+The [native property-read continuation](../docs/HACKER_NEWS_NATIVE_PROPERTY_READS.md)
+adds resolved operand plans and guarded native own-indexed-data reads. Exact
+budgets, live values, holes/accessors/exotics, fresh-VM reuse and allocation guards
+pass in all three ownership modes. HN diagnostics replace 13,026 generic slow
+steps without changing total work; a separate longer matched cohort records 2.7%
+lower median calling-thread CPU time with one regressing pair. Native `.length`
+lowering is covered by focused tests but remains ineligible on this HN collapse
+path. The latest RAM gate passes at 48.7152% of V8; the conservative 4× wall-time
+gate remains open. These results do not establish general engine throughput or
+additional language/DOM parity.
+
+The [call-frame continuation](../docs/HACKER_NEWS_FRAME_INITIALIZATION.md) uses
+bounded typed stores and bulk constant copies to initialize reused contexts,
+preserving alias order, exposure barriers, pool limits and exact budgets.
+Forty-seven focused tests pass in all three ownership modes. A longer matched
+HN diagnostic records 2.42% lower median calling-thread CPU time, with all seven
+pairs improving and identical instruction/reuse counts. The numeric-key trial
+was reverted after mixed controls. RAM passes at 48.7291% of V8; the conservative
+4× wall-time gate remains open at 3.2703×. The separate verification hold and
+language/DOM parity limits are unchanged.
+
+The [call-argument copy continuation](../docs/HACKER_NEWS_ARGUMENT_COPIES.md)
+replaces per-argument setters during private ECMAScript/native call setup with
+bounded typed copies and bulk copying, preserving overlapping-input order,
+public views, exposure barriers and exact budgets. Fifty-seven focused tests
+pass in all three ownership modes. The preceding-build diagnostic records 1.27%
+lower median calling-thread CPU with six improving pairs and one retained large
+regression; the short same-binary result remains mixed. RAM passes at 48.7143%
+of V8; the conservative restarted-warm speed ratio is 3.8310×, leaving the strict
+4× gate open. The separate verification hold and parity limits are unchanged.
+
+The [V profiler investigation](../docs/HACKER_NEWS_V_PROFILE.md) verifies native
+HN execution and identifies UTF-16 equality, property scans and context reuse as
+leads. Both subsequent runtime trials are removed after mixed/regressing matched
+results; each passed 67 focused tests in three ownership modes and an exact
+100-case AST corpus. Host load later exceeds 140 on 18 cores, preventing a new
+wall-time acceptance claim. Profiling build/summary/evidence checks pass; the
+optional old-compiler check rejects the required memory-limit option before
+compilation. No additional runtime gain or 4× completion is claimed.
+
+## GitHub runtime checkpoint — 2026-11-15
+
+**Current verification hold:** automated suites remain off until the GitHub
+compiled-JavaScript parity implementation is complete. The earlier sweep stopped
+after 103 passing files. Original-page browser/runtime diagnostics and non-test
+builds have resumed; later focused regression sources remain uncompiled and
+unrun. See the [resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16)
+for current observations and their limits.
+
+The native compiler was introduced in `5ed3e8155`; persistent reuse on a new
+visit followed in `7ec82b601`, and browser parsed-source reuse in `07902ae2d`.
+LibJS documents now enable that persistent cache automatically; the earlier
+manual HN experiment above is historical, not the current document-cache policy.
+
+The function compiler maps parser-proven uncaptured parameters and function `var`
+bindings to bytecode local slots for ordinary, simple-parameter functions with
+unobservable arguments, including arrow and async functions and functions with
+nested declarations. Functions with complex parameters or observable arguments
+keep their parameters and vars in the environment, but their own uncaptured
+`let`/`const` bindings use slots too. A hoisted function declaration or Annex B block function keeps its
+name in the environment. Uncaptured `let`/`const` bindings declared in blocks,
+loop heads and the function body also use local slots (`lexical_registers.v`);
+blocks and loops whose lexical bindings are all slots allocate no environment
+and copy no per-iteration bindings. Upstream checks the TDZ at run time with an
+empty local and `ThrowIfTDZ`; this port instead proves in emission order that
+every read follows the initialization. A read or write before it, or a `const`
+assignment, recompiles the function with that binding in its environment, which
+raises the ReferenceError/TypeError. Case-block declarations, class and function
+declarations, catch parameters and generators keep their environment paths;
+await copies an async function's initialized frame, local slots included. Reads copy into temporaries to preserve evaluation order; the
+native tier lowers these accesses to direct slot moves. Captures, eval/with,
+complex parameters and observable arguments retain their environment paths.
+Focused tests cover assignments, destructuring, shadowing, TDZ and const errors,
+budgets and compiler-free native-cache revisits in both GC modes. This is a
+runtime optimization, not additional language or DOM parity.
+
+Array length comparisons now check the ASCII spelling without constructing a
+UTF-16 key, and array algorithms reuse a VM-owned immutable length key. Actual
+property operations still dispatch through getters, setters and exotic hooks;
+focused tests exercise these behaviors with both allocation paths and GC modes.
+
+Execution-context value arrays now reserve their exact fixed layout. The old
+size-class rounding had no free list to reuse those extra slots. Value layout,
+copies, stack accounting, budgets and async/generator suspension are exercised
+in both GC modes; upstream contiguous/bump frame allocation remains separate.
+
+Primitive Reference reads check string characters/length first, then query the
+current realm prototype with the original receiver. This avoids an unused box
+for method/property lookup; explicit receiver overrides and internal values keep
+the general path. Strict/sloppy getters, prototype proxies, foreign realms and
+compiler-free native-cache revisits have focused coverage in both GC modes.
+
+Hot executable validation uses bounded exact snapshots of the instruction stream,
+nested argument operands, handlers and layout. Mutable bytecode is compared on
+every reuse; mutations fall back to full validation. Invalidation and the 64 KiB
+snapshot bound have focused coverage; no immutable-bytecode contract is assumed.
+
+Blocks without lexical/class declarations, direct eval or Annex B names avoid
+empty environment allocation. Budgeted no-ops retain ordinary boundary ticks;
+the native tier executes them directly. Catch/finally unwinding, retained lexical
+scopes, closures and loop budget cleanup have focused coverage in both GC modes.
+
+Array algorithms and iterators construct numeric property keys directly below
+2^32-1, avoiding decimal/UTF-16 round trips. The boundary and larger array-like
+indices retain complete string keys; proxy/getter ordering and large-index
+regressions pass in both GC modes.
+
+Private synchronous calls now reuse cleared execution-context records and exact
+value buffers in a pool bounded to 64 frames and 1 MiB. Public allocations,
+returned frames/value views, stack traces and saved stacks preserve their old
+lifetimes; async/generator suspension and inline-linked frames keep fresh storage.
+Every reuse resets values/metadata, assigns a new frame ID and retains stack
+limits. Lifecycle, callbacks, errors, closures and suspensions have 257 focused
+functions passing with default GC and GC disabled. The [HN comparison](../docs/HACKER_NEWS_JS_ENGINES.md)
+records matched compiled-cache controls and separately measured cold/warm runs;
+this establishes neither full engine parity nor browser rendering performance.
+
+Small ordinary ECMAScript/native calls can borrow bounded stack argument
+storage because those concrete callees copy values into owned frames. Custom
+callables, constructors, large calls and suspending functions keep owning slices.
+Tests cover retained custom arguments/native views, nested calls, arguments
+objects, exceptions and the stack view’s actual storage identity.
+
+Short UTF-8 creation caches at most 128 inputs of up to 64 bytes per VM, owning
+both input keys and resulting UTF-16 storage and reporting cached strings as
+heap roots. Ordinary data-property reads avoid constructing full descriptors;
+hosts, strings, typed/mapped arrays, proxies and accessors retain their existing
+semantics. The HN comparison includes system JavaScriptCore via a separately
+linked executable; measured targets and remaining limits are recorded in the
+[performance report](../docs/HACKER_NEWS_JSC_COMPARISON.md).
+
+Fresh unpublished arrays initialize dense own data elements directly; String
+split retains conversion/limit order and UTF-16 boundaries. Array elements stay
+numeric keys in the ordinary property vector, but lookups use the array
+invariants (`array_element_lookup.v`): an index at or above the length is absent,
+element i is found at position i when it is stored there, and an array without
+appended non-index keys answers name and symbol misses without scanning. Push,
+index reads and method reads on large arrays are no longer linear in the length.
+Unlike ordinary objects, whose hints tolerate direct edits of the public property
+vector, an array's vector must change through the object methods (as for
+`IndexedProperties` owners). String storage keeps
+rare unchecked-byte/IPC metadata in an owned optional payload, reducing the
+current 64-bit UTF16 record from 112 to 48 bytes without changing code units,
+raw bytes, IPC storage form or independent clone ownership. Native calls,
+property reads, binding reads and callee resolution share semantic helpers with
+the interpreter;
+budgets and exception dispatch remain at the native bridge boundary. Immediately
+consumed object/environment reads avoid retained Reference records while
+preserving with/proxy ordering, receiver identity and TDZ errors. These
+changes have a 294-function aggregate passing with default GC and GC disabled,
+plus 100/100 exact upstream AST fixtures. This is focused coverage, not a green
+full-package result.
+
+The direct DOM host reuses at most 256 live class collections per document,
+validating root, exact query and quirks mode; DOM mutation invalidation still
+refreshes membership. Collection traversal avoids an extra capturing adapter
+for both native JS backends and LibJS. The report retains all timing cohorts,
+including failing 3× targets and discarded experiments.
+
+The [HN speed/RAM follow-up](../docs/HACKER_NEWS_LIBJS_RAM.md) records compact
+16-byte Value/property-key records, bounded binding-name reuse, live ordinary
+global/accessor dispatch, copying-callee argument forwarding, combined own-data
+array searches and dynamically guarded empty function-environment reuse.
+Environment records count toward the existing 1 MiB frame pool; escaping
+closures, exposed environments/frames, root inspection and child scopes protect
+their lifetime. Focused coverage passes 134 functions with default GC and GC
+disabled, plus 100 exact upstream AST fixtures. RAM is collected separately
+from timing as root-process peak RSS; the full runtime aggregate is not green.
+
+Set/Map operations and live iterators, WeakMap weak keys, ordinary arguments
+objects, default/rest/destructured function parameters, class inheritance,
+super construction (including explicit iterator-based argument spread),
+public field initializers, private fields/methods/accessors,
+lexical brands, object literal accessors/methods,
+Array.from, Array concat/fill/map/find/some/reduce/filter/every/includes,
+shift/reverse/sort, directional searches, indexed access and literal spread, object literal
+spread, ordinary/tagged template literals and native element CSSOM bindings
+are implemented. Native Promise construction, resolving functions, then/catch,
+resolve/reject, generic species capabilities and FIFO reactions execute. Window
+listeners use the associated native Window. Headers uses actual native Fetch
+records with ByteString conversion and live iteration. Fetch now uses the module loader's
+actual native transport, Request/Response records, stream body consumption and
+Promise settlement. Abortable Fetch, ReadableStream exposure, remaining body variants
+and interface factories remain pending. Native DOM
+Event construction preserves subclass prototypes and actual native event records.
+String includes/startsWith/endsWith and WeakSet are installed. Generator and
+async-generator functions can be created with their prototype graph, but cannot
+yet execute. Ordinary async functions return intrinsic Promises and suspend at
+await, preserving lexical/private scopes and resuming through internal Promise
+reactions, including persisted native entries. Labelled blocks and loop control
+close crossed iterators in order; Annex B labelled functions remain pending.
+Promise finally, all/allSettled/race and withResolvers now have committed native
+implementations, with their later runtime checks held. Ordinary/new/optional
+spread calls compile through ordered iterator bytecode. Try/finally completion
+routing, switch dispatch, destructured catch parameters, super property
+references and class static blocks now have committed implementations; their
+runtime regressions remain held. Promise.any, generator execution, dynamic
+imports, top-level await, destructuring assignment, anonymous class assignment/field-name
+inference, Set algebra, Map extensions and remaining weak-reference APIs remain
+incomplete. Node/Element/HTMLElement/Document/DocumentFragment and native HTML tag
+interfaces share native wrapper prototypes. Custom-element definitions, HTML constructors,
+upgrades, lifecycle callbacks, whenDefined promises and DOMException records are
+bound, including registered customized built-ins. Named HTML constructors,
+specialized interface members, cross-realm wrapper worlds and a complete
+CEReactions stack remain separate work. CSSOM constructor ancestry
+remains incomplete. Navigator ID, language preferences and system-state getters
+use the actual owning Window's Navigator; optional capability placeholders are
+not exposed as functional APIs.
+Native static/live NodeList collections, variadic ParentNode mutations and
+MutationObserver records/delivery are bound. Observer jobs share the VM FIFO with
+Promise reactions and native HTML microtasks bridge writes outside JavaScript.
+EventTarget construction and dispatch, DOMRectReadOnly geometry,
+layout-backed IntersectionObserver and ResizeObserver delivery, live classList
+token lists, namespace-aware element factories and HTMLTemplateElement.content
+use actual native records. Template content retains fragment identity, inert
+ownership and native cross-document adoption. Animation-frame callbacks use the
+owning native Window driver, including cancellation during a batch, native
+timestamps, bounded callback entry and persistent retirement storage. Native
+matchMedia/MediaQueryList and typed change events are bound. AbortController and
+AbortSignal use native dependencies, arbitrary reason identity, timeouts and
+abortable event listeners; Fetch RequestInit.signal remains explicitly unsupported.
+Window timers now use actual native clocks/tasks and ClassicScript source
+evaluation, bounded callbacks, cancellation and exception roots that survive
+temporary arenas. Nine focused cases pass in both GC modes and sanitizer.
+LibJS Window exposes MessageChannel, MessagePort and MessageEvent through the
+native HTML posted-message queue. The bindings preserve FIFO delivery, port
+ownership and transfer, structured references to transferred ports, and the
+existing ordinary-object clone support. Worker realms and additional structured
+clone families remain open.
+URLSearchParams now wraps the native parser/serializer and live iterators,
+including URL.searchParams identity and bidirectional href/search synchronization.
+Their focused cases cover both GC modes and persisted execution without a compiler.
+
+The latest source-stable complete dual-mode core checkpoint passes 300/300 package files in each GC mode,
+with 796 unchanged source/fixture/compiler inputs, using four workers within the
+unchanged 12 GiB guard. Earlier resource failures and obsolete-fixture failures
+are retained in the continuation report. The unchanged canonical AST
+driver previously passed all 100 upstream cases exactly; the subsequent runtime
+changes do not change parsing. Public field initializers also pass AddressSanitizer
+with stack-use-after-return detection and GC disabled. The later Promise slice has nine focused cases plus five VM/realm/module
+neighbors passing in both modes and an AddressSanitizer pass, followed by the
+300-file checkpoint. Headers has six focused cases passing in both modes, plus
+five native-model cases per mode. Native Event's three cases and the four original Hacker News
+DOM/event cases pass in both modes. Cache checks load native code in fresh VMs
+with the compiler disabled. Later sweeps pass all 304 core files in each GC mode;
+the combined attempt times out after completing the default sweep, and the
+separate no-GC input audit flags another session's Float16 header change. Clang
+emits identical old/new helper IR; affected numeric tests pass again in both
+modes and all 100 upstream AST cases match exactly. This does not replace the
+source-stable checkpoint with a clean dual-mode receipt. A later source-stable
+default-GC sweep passes 305/305 files with 806 unchanged inputs. The newer
+308-file checkpoint has 812 stable inputs: all 308 no-GC files pass; the default
+sweep passes 306 and fails two links on disk exhaustion, then those two files
+pass separately with the same inputs. This is a source-stable functional union,
+not a clean single default sweep. All 100 canonical AST cases match exactly. Async/await has nine focused cases in both modes
+and sanitizer; an additional native case awaits a real Window frame before
+inserting template contents, including compiler-disabled cache reuse. Array
+find/some and labelled execution each have six cases in both modes and sanitizer.
+Array.from has eight focused cases and tagged templates have six, all in both GC
+modes and sanitizer; the latter preserves realm/site identity, frozen raw/cooked
+arrays, uncoerced substitutions and await operands. The new 310-file no-GC
+selection times out after 164 passes and 87 pre-runtime failures amid disk-full
+diagnostics, leaving 59 files unresolved; default GC never starts. All 816 inputs
+remain stable and a fresh canonical AST run passes 100/100 exactly. The earlier
+25-file interrupted attempt also remains incomplete.
+The tagged-template-stage original GitHub scripts reuse 615 native entries and
+51 parsed sources on the second opening with zero compiler calls, then fail at
+missing Array.reduce;
+33 directory rows remain and no commit links hydrate. These counts come from initialization diagnostics without layout
+or paint, and do not establish completed-page speedup.
+A full native LibJS browser capture completes under the default 12 GiB guard,
+retaining module errors and placeholders; the earlier 3 GiB failures are focused
+small-budget diagnostics. The diagnostic image differs from Brave. Pixel equality,
+live-site behavior and completed-page speedup acceptance remain open. Commits,
+deviations, retained failures, identities and scopes are in the
+[runtime continuation report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md).
+
+## Synchronous iteration and array declarations — 2026-11-15
+
+Each realm installs Array keys/values/entries and String Unicode iterators on
+the translated iterator prototype graph. Value acquisition keeps primitive
+receivers. For-of supports lexical/var/member targets, fresh iteration bindings,
+TDZ RHS environments, break/continue, and nested return/throw cleanup. Close
+errors reach surrounding handlers; iterator step failures retain the done state.
+Array binding declarations handle elisions without value access, undefined-only
+defaults, named default functions, nested patterns, and rest collection. Both
+normal and abrupt destructuring paths close unfinished iterators as required.
+
+Focused selections pass in both GC modes: four iterator files; eight for-of
+cases plus for-in/catch/script neighbors; five array-binding cases plus object
+bindings/for-of/script neighbors (and Set integration in the no-GC selection).
+Async iteration, assignment/parameter/catch patterns and Iterator helpers remain
+separate work. Native GitHub hydration and pixel acceptance remain open.
+
+## Date core runtime — 2026-11-15
+
+Date's clock, timestamp/copy/component construction, clipped millisecond slot,
+Gregorian arithmetic, UTC/local getters and setters, ISO/native string parsing,
+stringification, primitive conversion and generic `toJSON` are installed in each
+realm. Host timezone offsets retain historical DST and select compatible gap/
+overlap instants. Seven focused cases and realm/Object-prototype neighbors pass
+in both GC modes in New York; seven Date cases also pass in UTC. A pinned Node
+comparison passes 500 deterministic constructor/setter cases. Intl locale
+formatting, Temporal and additional legacy parsing remain incomplete. The
+unchanged GitHub module probe next lacks Set; browser hydration remains open.
+
+## GitHub runtime prerequisites — 2026-11-14
+
+Object binding declarations support aliases, nested defaults and enumerable rest
+copies. `Object` and 21 static methods, strict UTF-16 `JSON.parse` with revivers
+and source context, and native Error constructors/prototypes are installed.
+Object literals execute prototype setters and infer anonymous property-function
+names; computed keys convert before values. Function creation reuses decoded
+source, ordinary expressions skip unnecessary template-tail copies, expression
+temporaries use value storage, and reserved-word checks avoid repeated decoding.
+Focused checks pass with and without GC, with additional stack-use-after-return
+sanitizer coverage for retained expressions. These complete the next ten-slice
+batch including native Performance. Its source-pinned checkpoint passes all
+271 package files in each GC mode and all 100 upstream AST fixtures exactly.
+The retained screenshot smoke has eight passes under existing limits and three
+failures; it does not close visual acceptance.
+
+Optional chains now preserve receivers and skip nullish keys/arguments/tails;
+delete chains skip terminal getters. For-in executes ordered own/prototype
+string-key snapshots, non-enumerable shadowing, deletion checks, TDZ RHS
+environments, and fresh lexical bindings per iteration. Focused checks pass in
+both GC modes. These two language slices postdate the 271-file checkpoint.
+
+Parameter/assignment/catch destructuring, object accessors/spread,
+for-await-of, `Object.fromEntries/groupBy`, JSON serialization/raw objects/modules,
+AggregateError and Number/BigInt prototype graphs remain incomplete. Original
+GitHub bytes still do not hydrate with LibJS. Native diagnostics and the pending
+production memory/visual checks are recorded in
+[`docs/LIBJS_GITHUB.md`](../docs/LIBJS_GITHUB.md).
 
 ## Ordinary ECMAScript calls — 2026-11-14
 
@@ -394,8 +783,9 @@ includes comments and blank lines. This package is counted separately from the
 `Script.parse()` retains its frontend tree and original source. `Script.compile()`
 generates and caches an `Executable`; `VM.run()` executes it through the V loop,
 with no JavaScriptCore dependency. `VM.run_with_limits()` and `run_executable()`
-accept an optional instruction budget (zero is unlimited). Browser execution and
-the standalone runner use a one-million-instruction limit.
+accept an optional instruction budget (zero is unlimited). Bare Runtime entries
+use a one-million-instruction limit; document script/module/callback entries use
+a bounded ten-million-instruction policy, recorded in native capture audits.
 
 Supported programs include primitive and BigInt literals, identifiers, `this`, numeric and
 bitwise operators, comparisons, primitive string concatenation, unary operators,
@@ -2481,3 +2871,496 @@ system-ICU probes. Their references remain unchanged, and no full-suite pass
 or additional VM/runtime parity is claimed. See the
 [encoding evidence](../docs/performance/chatgpt-utf16-prefix-20261104.json)
 for exact counts, retained failures and production-validation limits.
+
+
+The host Promise checkpoint follow-up adds four focused VM cases and one browser
+case passing in both GC modes; unsupported jobs now reach document diagnostics.
+Native Fetch has eight cases passing in both modes and AddressSanitizer, including
+fresh-VM cached callbacks with the compiler disabled. Node/Element/Document
+interface objects and standalone XML document construction have two focused cases
+passing in both modes, including the subsequent typed HTMLElement wrappers.
+Six custom-element cases pass in both GC modes and AddressSanitizer; two native
+DOMException, three Navigator and three DocumentFragment cases pass in both modes.
+The Navigator-stage source pair next lacks DocumentFragment and reuses 191
+native entries; a later fragment query fix installs the actual CSS matching hook.
+The later core checkpoint passes all 300 package files in both GC modes with 796
+stable inputs. Array/object spread each have five cases passing in both modes
+and sanitizer. Native variadic mutations and NodeLists each have three cases in
+both modes; MutationObserver has six in both modes and sanitizer. The newest
+original-script pairs subsequently exercise String predicates, WeakSet, generator
+creation, Array.map, EventTarget, IntersectionObserver, ResizeObserver, classList
+namespace-aware element factories, template contents, animation frames,
+async/await, Array.find/some, matchMedia, AbortSignal, URLSearchParams, Array.from
+and tagged templates. Their warm native-entry counts rise from
+230 to 615, with 51 cached frontend sources and zero compiler calls; hydration
+still fails. A fresh ClassList-stage production browser has the same 33 rows and
+zero commit links; its first compiler diagnostic is explicit spread super calls.
+Full-repository coverage, validation of later bindings in a current production build and
+pixel acceptance remain open.
+
+The later implementation-only continuation adds destructuring assignment,
+dynamic-import promise continuations, Object.fromEntries, Array.flatMap/flat/
+toSorted and WeakRef. Native browser bindings also expose CSS escaping/support
+queries and schedule LibJS reactions on the actual HTML microtask queue. WeakRef
+reuses the collector's disappearing links with an explicit job-lifetime kept
+list; non-collecting builds retain target identity without simulating GC.
+Compiler-only checking of the browser diagnostic import graph succeeds with
+default GC and GC-none. The user's test hold keeps all new runtime, ownership,
+cached-revisit and browser regressions unexecuted. Proxy exotics, generator
+execution, top-level await, Intl, remaining RegExp/Web APIs and full GitHub
+hydration/rendering parity remain incomplete. See the
+[continuation record](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#assignment-dynamic-loading-and-native-api-continuation)
+for commits, exact evidence boundaries and the unchanged Brave reference.
+
+The subsequent generator/regexp implementation adds synchronous generator
+execution and yield delegation, including return/throw cleanup during suspended
+destructuring and for-of initialization. Completed frames release their creating
+function's scope. RegExp construction now honors IsRegExp, call identity,
+NewTarget and species ordering; lazy matchAll, replaceAll, search and native
+regex splitting are installed. History cloning rejects generator and regexp
+iterator records. Default-GC and production/preallocation GC-none compiler-only
+checks of the browser import graph succeed; all new runtime, ownership,
+native-cache and page comparisons remain unexecuted under the user's hold.
+Proxy, Intl, async generators, top-level await and browser parity remain open.
+The [generator/regexp continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#generator-and-regexp-execution-continuation)
+records exact commits, the retained/corrected checker failure and production
+source mismatch boundaries.
+
+
+The subsequent Proxy/JSON/scheduling implementation adds all thirteen Proxy
+internal operations, revocation, checked script-visible object reflection,
+proxied-array species selection and lazy for-in traversal. Native JSON.stringify
+now implements replacers, toJSON, primitive wrappers, UTF-16 quoting and resource
+bounds. The native DOM host binds Window queueMicrotask and idle callbacks to
+HTML scheduling, with owned one-shot Task cleanup and IdleDeadline objects.
+Forty-one new regression functions are prepared but unexecuted under the user's
+hold; normal and production/preallocation GC-none compiler-only import checks
+pass. These checks do not compile the new test files or establish runtime/cache,
+HTML callback, rendering or speed parity. Intl, async generators, top-level await,
+remaining Web APIs and the strict GitHub/Brave pixel goal remain open. The
+[Proxy/JSON/scheduling continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#proxy-json-serialization-and-scheduling-continuation)
+records commits, both corrected checker failures, unchanged fixtures and the
+latest production bundle's sealed-source gaps.
+
+
+The native Intl continuation adds pinned CLDR JSON 48.2.0 data, lazy per-realm
+locale records, Unicode language-tag canonicalization and Intl.Locale. Gregorian/
+ISO DateTimeFormat now exposes bound format, parts, resolved/supported locales,
+styles/fields, numbering digits and TZif time zones. Bound format is a traced
+FunctionObject rather than an escaping captured formatter closure. ListFormat
+uses CLDR patterns and an iterative UTF-16 partition; History cloning rejects all
+three native Intl object records before author getters. Thirty-four new regression
+functions remain uncompiled and unexecuted under the user's hold. Normal and
+production/preallocation GC-none compiler-only import checks pass after three
+retained/corrected failures; no linking, runtime, cache, ownership or browser pass
+is claimed. NumberFormat, RelativeTimeFormat, non-Gregorian calendars, date ranges,
+additional Locale metadata and other Intl constructors remain open. Best-fit
+currently shares BasicFormatMatcher behavior; no ICU or full Intl parity is
+claimed. See [native Intl design](../docs/LIBJS_INTL.md) and the
+[Intl continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-intl-locale-date-and-list-continuation).
+The compiled-JS GitHub/Brave pixel goal remains incomplete.
+
+The following native Intl slice installs NumberFormat with exact decimal
+mathematical values/rounding, CLDR symbols/grouping/compact forms/currencies/units,
+bound format, parts and resolved/supported locales. Number.toLocaleString uses
+the retained intrinsic. RelativeTimeFormat adds CLDR numeric-auto literals,
+past/future patterns, plural categories, signed zero and unit-bearing parts.
+String.toLocaleLowerCase/toLocaleUpperCase now use checked first-locale selection
+and the existing V Unicode contextual mappings. History rejects both new Intl
+records before author getters. Twenty-seven new regression functions, including
+native-cache revisits and temporary-arena ownership cases, remain uncompiled and
+unexecuted under the user's hold. Normal and production/preallocation GC-none
+compiler-only import checks pass after three retained/corrected failures.
+These are partial implementations: Collator/String.localeCompare, public
+PluralRules, BigInt's production intrinsic graph, ranges and remaining Intl/Web
+behavior are still open. Six localeCompare calls in four archived GitHub bodies
+are a static missing binding, not a measured first runtime failure. No new
+GitHub hydration, native-cache performance or Brave pixel result is claimed.
+See the [number/relative-time continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-number-relative-time-and-locale-case-continuation).
+
+The following collation slice implements a native Unicode 17/CLDR root trie,
+NFD normalization, contiguous/discontiguous contractions, expansions, implicit
+weights, numeric digit runs, shifted punctuation and sensitivity/case levels.
+Intl.Collator and String.localeCompare now bind that engine, with traced bound
+compare functions, retained/default intrinsic caching, checked coercion/options,
+resolved/supported locales and History rejection. Collator advertises the
+implemented English locale set; other languages negotiate to a supported
+default. Language/search tailorings and full ICU/Brave conformance remain open.
+The DOM bridge also binds URL.canParse/parse, native URL component prototypes,
+string/JSON serialization, lazy live searchParams, subclass prototypes and owned
+URL wrapper caches released on Host.close. Twenty-eight new regression functions
+remain uncompiled and unexecuted, including cache revisits, budget/arena cases and
+History rejection. Two older pending Intl cases had their JavaScript surrogate
+escapes corrected in source. Normal and production/preallocation GC-none
+compiler-only checks pass after a retained/corrected pointer-map access failure.
+No new runtime, hydration, speed or pixel result is claimed under the user's
+test hold. Static source also exposes the pending production typed-array and
+BigInt constructor graphs (24 Uint8Array call matches in five original bodies,
+three Float64Array matches in two and 18 BigInt matches in two); these are not
+measured first failures. See the
+[collation/URL continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-collation-and-url-continuation).
+
+The next native-realm slice installs BigInt's actual global/prototype graph,
+primitive boxing and locale formatting through the retained NumberFormat
+intrinsic. BigInt cells copy their arbitrary-precision magnitude into persistent
+storage. All twelve concrete typed-array constructors now inherit the shared
+TypedArray constructor/prototype and native algorithms, including species,
+iterators, copying methods and Uint8Array encoding helpers. Concrete constructor
+records trace their creator realm and kind without escaping V captures.
+Typed-array/view-buffer/iterator and backing-owner records outlive temporary
+arenas; synchronous species/sort closures are released. Lengths are checked
+before narrowing, native loops/copies/dense own keys charge execution limits,
+and conversion errors propagate. The existing 32-bit buffer representation and
+byte-size policy remain; this is not full buffer/agent/heap parity.
+
+The DOM host now binds the existing native TextEncoder/TextDecoder algorithms
+to real BufferSource windows and typed-array results, with fixed-length WebIDL
+checks, shared byte access, streaming decoder state, owned wrapper maps and
+teardown. It also exposes atob/btoa through the HTML codecs, preserving binary
+strings, forgiving validation and native DOM exceptions. Forty-two new focused
+regression functions are prepared across these slices, including History
+rejection and compiler-disabled cached revisits. None were compiled or run.
+Fourteen compiler-only normal-program import attempts are retained; twelve
+succeeded, with both final compiler modes passing after two corrected failures.
+These checks do not execute JavaScript or establish cache, ownership, browser or
+pixel results. The latest inspected production receipt contains none of the
+41 selected current implementation inputs. Blob/object URLs, remaining Fetch/
+Web/Intl behavior, async generators, top-level await and full GitHub hydration/
+Brave pixel equality remain open. See the
+[native binary-runtime continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-bigint-typed-array-and-text-encoding-continuation).
+
+The next DOM-host slice installs native Blob parts, owned byte storage, slicing,
+metadata and asynchronous file-reading Promise methods. Object URLs use the
+existing native store and real document settings for origin, partition and
+unload lifetime. Fetch accepts Blob/DataView/URLSearchParams bodies and produces
+intrinsic bytes()/blob() results. Buffer snapshots follow later dictionary and
+NewTarget prototype getters. Request.signal wraps the native dependent signal,
+including explicit-null independence; Fetch preserves arbitrary abort reasons,
+stops native controllers, errors unread response bodies after network delivery,
+and retires signal callbacks outside their active native stack. Synchronous
+Fetch settlement callbacks release their trampoline capture after return.
+
+Thirty-six regression functions are prepared, including native-cache revisits,
+task/arena lifetime, body snapshots, MIME handling, original abort-value identity
+and close cleanup. None were compiled or run under the user's hold. All ten
+normal-program compiler-only import checks passed, including final normal and
+production/preallocation GC-none checks. This does not establish execution,
+cache speed or browser pixels. Blob.stream/Fetch body-stream bindings, FormData,
+foreign-realm WebIDL behavior, complete native ownership/collection and the
+remaining JS/Web/Intl/rendering work are still open. The latest inspected
+production bundle lacks all eleven selected changed implementation inputs.
+The GitHub/Brave compiled-JS parity goal remains incomplete; see the
+[Blob/Fetch continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-blob-object-url-and-fetch-continuation).
+
+The next native stream slice adds traced/detachable WebIDL Promise settlement
+observers, native default-reader ReadRequest records, stable native-to-JS
+Promise projection, locked/cancel/tee operations and reader closed/release
+behavior. Read results use actual Uint8Array storage and preserve native error
+records or original author reasons. Native settlement uses the bounded VM entry
+without flushing reaction jobs during an enqueue/close task. Blob.stream now
+returns the native HTML byte stream with an owned FileReading task; Request/
+Response.body getters and readable-stream body inputs use the actual Fetch
+records. Host close discards delivery tasks, detaches observers, releases reader
+locks, errors retained streams and clears the bridge's roots.
+
+Twenty-four focused regression functions remain uncompiled and unexecuted.
+Eight compiler-only attempts are retained: the initial observer normal and
+production checks rejected an immutable local sink array, corrected before its
+commit; the remaining six passed. All final checks cover the normal import
+graph and exclude tests, C linking and execution. Public ReadableStream/source/
+controller construction, BYOB/pipe/async iteration, other stream classes,
+FormData, foreign-realm semantics and complete native ownership remain open.
+The latest inspected production manifest matches none of thirteen selected
+changed inputs. No new cache speed, full GitHub execution or Brave pixel
+result is claimed. See the
+[stream continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-default-readers-and-blob-fetch-stream-continuation).
+
+The 2026-11-16 authored-source slice adds capability-free internal Promise
+observation, traced source/size callback records, public ReadableStream
+construction and default/byte controller bindings. Start/pull/cancel returns
+use fresh intrinsic Promise resolution, including the public then getter,
+before internal observation. Native reactions join the owning VM/HTML Promise
+queue; an existing JS settlement reaction consumes its immediate native
+reaction without inserting another turn. Controller operations preserve actual
+chunks/reasons and transfer byte enqueue buffers. Native Fetch aggregation can
+consume authored Uint8Array chunks through the owning realm's witness.
+
+Thirty-two focused functions are prepared but uncompiled and unexecuted.
+Ten compiler-only attempts are retained, including two corrected failures;
+the final normal and production/preallocation GC-none import checks pass.
+These checks exclude tests, C linking and runtime execution. BYOB request/view
+wrappers and buffer metadata, pipe/async iteration, other stream classes,
+foreign-realm rules, FormData and remaining JS/Web/rendering behavior remain
+open. The latest inspected production manifest matches none of 17 selected
+changed inputs. Full GitHub execution, compiled revisit speed and Brave pixel
+parity remain unverified; see the
+[authored-source continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-readable-source-and-controller-continuation).
+
+The next slice adds native File construction/Blob inheritance, FormData
+methods/live iteration/form construction, FormDataEvent and shared native
+entry-list mutation. Request/Response accept native FormData bodies after
+later argument getters, serialize native multipart data and expose formData
+results with actual File values. Text decoding stays outside uploaded file
+bytes. Signed WebIDL integer conversion now avoids losing small negative
+lastModified values in an unsigned-double round trip.
+
+Twenty-nine focused functions are prepared but uncompiled and unexecuted.
+Eleven compiler-only attempts are retained, including one corrected production
+pointer-map failure; final normal and production/preallocation import checks
+pass. These do not establish execution or performance. The frozen original
+GitHub bodies contain 63 textual FormData references in 11 bodies, with no
+reachability claim. Full form-control IDL, FileReader, native XMLHttpRequest,
+foreign-realm rules, collection and remaining JS/Web/Intl/rendering behavior
+remain open. The latest inspected production manifest matches none of 12
+selected changed inputs. GitHub/Brave compiled-JS parity remains incomplete;
+see the [File/FormData continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-file-formdata-and-fetch-continuation).
+
+The next native LibJS slice exposes input/textarea live and default values,
+checkedness, indeterminate state, select/option selection, button values/types,
+common reflected attributes and native form owners. Script writes reach the
+HTML models used by rendering and FormData. Empty checkbox/radio values now
+remain empty in both getters and submission; lazy select owners establish
+initial selection once and preserve explicit later no-selection states.
+
+Form action/method/encoding properties, submitter overrides, reset/validation
+methods and SubmitEvent are bound to native owners. A traced embedding service
+routes completed submissions to the browser's existing GET/POST/target
+navigation path. Temporary hooks preserve existing native hooks and are
+released after each call. Targets are read after submit/formdata handlers;
+form noValidate applies to requestSubmit without a button. relList forwarding
+uses ordinary JS property access.
+
+Thirty-five focused functions remain uncompiled and unexecuted under the
+user's hold. Fourteen compiler-only attempts, including one corrected parser
+failure, are retained. Import and whole-browser checks pass in normal and
+production/preallocation modes; the final import pair also covers subsequent
+submitter-tag rejection. This establishes typing, not runtime or pixel parity.
+Full collections/named properties, control validation/selection/FileList
+bindings, remaining IDL and broader JS/Web/rendering behavior remain open.
+The latest inspected production manifest matches ten of twelve selected
+implementation inputs and lacks the final forms/provider revisions. See the
+[control/form-action continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-control-state-and-form-action-continuation).
+
+The text-control follow-up binds selectionStart/End/Direction, select,
+setSelectionRange and setRangeText to concrete native owners. Range writes
+preserve live values and dirty state; textarea raw text is separate from its
+newline-normalized selection value. Constraint reads refresh input/textarea/
+select owners, and live ValidityState plus control validation methods retain
+native invalid-event dispatch. Custom messages normalize to LF and invalidate
+the affected native style owners. Thirty-six additional functions are prepared
+but remain uncompiled and unexecuted under the user's hold. Fifteen
+compiler-only attempts retain both corrected failures; final import and whole
+browser checks pass in normal and production/preallocation modes. The inspected
+production manifest matches only five of fourteen selected current inputs;
+the bundle was not launched. Full control IDL, FileList, collections/named
+properties, reporting UI and broader JS/Web/rendering behavior remain open.
+GitHub execution, compiled-revisit speed and Brave pixel parity remain
+unverified; see the
+[selection/validation continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-text-selection-and-constraint-validation-continuation).
+
+Native form collections and RadioNodeList now expose live length/item/namedItem,
+iteration, value and native identity. Select options/selectedOptions expose
+native option lookups and explicit add/remove/length/selectedIndex mutations;
+selected views query current selectedness without requiring attribute changes.
+Collection reads keep native cache allocations persistent. The native form
+count and radio-group owner bugs are corrected. Twenty-three focused functions
+remain uncompiled and unexecuted under the user's hold. Nine compiler-only
+checks pass, including final whole-browser normal and production/preallocation
+checks. The inspected production receipt matches three of ten selected inputs
+and lacks these collection revisions. Legacy named/indexed property semantics,
+form-move collection roots, broader IDL and JS/Web/rendering behavior remain
+open; full GitHub execution, compiled-revisit speed and Brave pixel parity are
+unverified. See the
+[collection continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-form-and-select-collection-continuation).
+
+
+The named-property continuation adds checked readonly WebIDL visibility to
+GetOwnProperty/HasProperty, definitions, deletion and key enumeration. Engine
+names retain UTF-16 identity; native collection/form/option records supply live
+values, builtin override/unenumerability flags and radio-list results. Prototype
+Proxy traps and native mutations retain their observable ordering. Native form
+past names are cleared on owner changes, and saved collections/radio views track
+root moves. Twenty-six focused functions, including a compiler-disabled native
+cache revisit, remain uncompiled and unexecuted under the user's hold. Final
+normal and production/preallocation import and browser compiler checks pass;
+one concurrent-source compiler failure is retained with all eleven attempts.
+Fourteen selected committed feature inputs match the inspected production
+manifest, but the bundle was not launched. Global named objects, named setters/
+deleters, foreign realms and broader JS/Web/rendering conformance remain open.
+GitHub full execution, compiled-revisit speed and Brave pixel parity remain
+unverified. See the
+[named-property continuation](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#native-named-property-continuation).
+
+
+November 16 runtime continuation: cached native execution stops at await/yield
+suspensions, exhausted entries preserve their first error/trace, and strict block
+functions initialize in their actual lexical environment. Sloppy Annex B block
+functions were explicitly unsupported at this checkpoint; the November 17
+continuation above implements them. Native shadow attachment, User Timing
+measures/ordinary detail cloning, Crypto random UUID/integer views and CustomEvent
+bindings are partial API slices. Native ParentNode collections, HTMLElement
+datasets with WebIDL named setters/deleters, Document.getElementsByName, the
+Function intrinsic/dynamic constructor, Date locale strings and Window scrolling
+now let an optimized diagnostic browser reach the original 33 rows, 56 commit
+links, latest commit and README with an exact content-audit match and no reported
+JavaScript errors. JSC stays uninitialized. Realm-local function bytecode reuse
+avoids recompiling sibling closures; instance-specific field initializers remain
+separate. An early incomplete first capture leaves 255 warm misses. Compilation
+now waits for quiet module/fetch work and returns to the event loop between
+bounded batches. An earlier fresh reopen has 4,250 native hits and zero misses, with full content
+and exact additional headless Brave pixels. A later same-binary pair exposes
+mutable development cache ABI inputs; development caches now use executable
+identity, while production retains embedded source identity. Initial content
+remains correct. Native composed paths, UI/mouse/keyboard events and Selection
+bindings advance controls to native TreeWalker focus traversal. Native computed
+styles, element geometry and focus/blur bindings reach synchronous scrolling
+layout. CSSOM and anchor-position fallback allocation ownership fixes now let
+Code/master expand without script errors. Independent frontend-only caching
+records 34 hits and 83 misses with native execution disabled, but initially still
+exceeds the guard. Borrowed bytecode dispatch, document Escape routing, nearest
+focus reveal and temporary native raster callback workspaces now let the full
+60-second interpreter input sequence complete under the 12 GiB guard (11.49 GiB
+sampled peak). It observes native filter value ma, closes both menus, preserves
+all content and reports no errors. This is not compiled-control acceptance or
+a long-duration memory bound. An earlier first/reopen pair compiles 8,351 executables and reuses 4,245
+entries with zero misses, but injected native input exposes dyld image-zero
+identity confusion. The macOS cache now uses the actual executable path, and
+all loaded modules queue uncalled templates. Temporary compiler workspaces let
+a fresh all-module first opening finish with 23,669 executables, 81 completed
+module preparations and zero pending entries under the 12 GiB guard. Its fresh
+reopen has 4,245 hits and zero misses/compiler invocations, with exact content
+and identical output. Native input executes 849,296 native entries but exposes
+two omitted synthetic class-field bodies and hits the memory guard before
+completion. Recursive initializer/static-block preparation and the corrected
+decoder boundary now complete a fresh 23,778-entry first opening, a
+compiler-disabled 4,245-hit/zero-miss reopen, and the full 60-second native
+mouse/keyboard sequence. That sequence has 4,690 hits, zero misses or compiler
+requests, and 868,401 native entries; it preserves exact content and closes both
+menus under the unchanged 12 GiB guard (11.78 GiB peak). Native callback records
+reuse storage by active depth. No live or matched performance acceptance is
+claimed. Font-strike rounding gives the same 156-pixel Go to
+file input as Brave. The unchanged
+windowed pixel gate is 25,176 pixels (maximum 23) after default SVG, PNG
+capture-scale, shared rectangle/clip and finite compositor-footprint corrections;
+a border resampling regression is removed. A guarded Display P3 document-space
+experiment initially reaches 343 differing pixels; guarded PNG decode density,
+mipmaps, thin-rectangle rasterization and destination-space blending now reach
+15 differing pixels against the unchanged original reference, after preserving
+fractional percentage transform origins, shared scaled PNG/shadow samples and
+GPU-owned containing rectangle clips;
+it is not pixel-perfect acceptance. Covered MSAA samples now quantize before
+resolving coverage, with regression sources held uncompiled/unrun.
+The 862d ABI also completes a separate empty-cache first opening and fresh
+compiler-disabled reopen/controls, with exact content and no misses or compiler
+calls. The later af0a ABI also completes 23,778 native executables and 81 module
+preparations, a compiler-disabled 4,245-hit/zero-miss reopen, and the complete
+native control sequence with 4,690 hits and no misses or compiler calls. A fresh
+live GitHub screenshot executes LibJS and cached native code. Its first opening
+compiles 23,077 new executables and prepares all 77 modules; GitHub then changes
+13 module URLs, so the fresh compiler-disabled live reopen has 1,095 misses and
+does not pass the compiled-cache gate. Compiling the changed resource graph adds
+7,655 executables; the next fresh direct-live, compiler-disabled screenshot then
+passes with 4,300 hits, zero misses/compiler calls/pending entries, 348,912 native
+entries and all 77 loaded modules evaluated, with complete content and no errors.
+The b72b ABI also completes an empty-cache 23,778-executable/81-module opening,
+a compiler-disabled 4,245-hit/zero-miss reopen with unchanged scalar-P3 pixels,
+and all six original-page native control actions with 4,691 hits and no misses
+or compiler calls. The 0130 ABI then completes its own 23,778-executable/81-module preparation,
+a compatible compiler-disabled 4,245-hit/zero-miss reopen whose output equals
+the 48-pixel candidate, and all six native control actions with 4,690 hits and
+no misses or compiler calls. This is not full-site, live-site, historical pixel or performance acceptance. Automated suites remain held. See [the resumed diagnostic report](../docs/LIBJS_GITHUB_RUNTIME_20261115.md#browser-diagnostics-resumed-2026-11-16).
+
+The 25-pixel frozen capture uses the compatible 0130 ABI with 4,244 hits,
+474,023 native entries and zero misses/compiler calls. A trimmed rendering
+rebuild repeats its pixels but has a newer ecad ABI; its incompatible-cache
+attempts execute bytecode and are not compiled acceptance. The new ABI is
+being prepared through an actual first opening. Safe arithmetic and shared
+button underlays change no pixels; centroid interpolation and a current-upstream
+mesh counterfactual regress and are rejected. No reference or tolerance changes.
+
+The rectangle-clip correction reaches 24 differing pixels, maximum 10, with
+4,245 native hits/482,836 entries and zero misses/compiler calls on the 0130
+ABI. Its off control reproduces 25 pixels exactly. The ecad preparation also
+finishes after retained interrupted/ENOSPC attempts; a fresh compiler-disabled
+reopen has 4,244 hits/474,379 native entries, zero misses/compiler calls and
+the unchanged 25-pixel output. Canonical ABI sources independently revert to
+0130. Test suites remain held and pixel-perfect parity is still incomplete.
+
+
+Fractional thin-fill geometry and transfer of all containing rectangle ancestors
+further improve the guarded original-page capture from 24 to 22 to 21 pixels,
+maximum 10. The accepted 21-pixel build has 4,245 hits/482,927 native entries and
+zero misses/compiler calls/pending/invalid entries on its compatible 0130 ABI.
+Its full-transfer off control reproduces 25 pixels exactly. GPU button inputs
+match Brave's recorded geometry/colors; a combined mesh/depth counterfactual
+regresses to 66 pixels and is rejected. Defaults, reference and tolerance remain
+unchanged; automated tests remain held and full parity remains incomplete.
+
+
+`05c41f8bf` makes the explicit raster runtime opt-ins available in ordinary
+production builds without custom compiler defines. Its compiler-disabled
+GitHub capture repeats the 21-pixel image exactly, with 4,243 native hits/
+481,057 entries and zero misses/compiler calls; off matches the preceding
+shared bundle's 25,171-pixel off-path image. A profile-bridge regression source
+is committed but remains uncompiled/unrun. Additional mesh/depth variants fail
+to improve the complete reference; repeated fractional glyph clipping is under
+investigation. Defaults, original reference and tolerance remain unchanged.
+
+
+`26b30df0b` coalesces identical finite ordinary rectangular clips in guarded
+Chromium native replay. It fixes the repeated half-pixel file-name clip and
+improves the complete original reference from 21 to 20 pixels with no regression.
+Both on/off captures have 4,244 native hits and zero misses/compiler calls;
+off exactly repeats 21 pixels. The new ordinary production build parses zero
+tests. The original reference/tolerance stay fixed; regression sources and
+all automated suites remain held, and pixel-perfect parity remains incomplete.
+
+
+`86324739d` handles fractional ordinary text-clip boundaries through GG's mask
+blend while preserving fully covered glyph pixels. The guarded complete GitHub
+comparison improves 20→15 pixels with five exact corrections and no regressions;
+off repeats 20 exactly. Both have 4,245 native hits, zero misses/compiler calls,
+exact content and zero exits. The ordinary production build consumes zero tests.
+Earlier CPU and whole-glyph GG variants introduce new differences and are rejected.
+The latest completed shared bundle separately confirms the preceding 20-pixel
+mode; 15 is validated by its pinned private production executable. Regression
+sources remain uncompiled/unrun, and full parity/performance acceptance stay open.
+
+
+An experimental `NativeCodeCacheOptions.generated_code_identity` hashes each
+executable's exact canonical generated C, including helper definitions, slots
+and property plans. It shares matching machine code across source URLs and
+edits while the current invocation supplies constants, environments and slow
+operations. The existing source-bound mode remains the default; modes use
+separate ABI partitions and retain library digest/symbol verification. The
+browser opts in with `VOX_LIBJS_NATIVE_GENERATED_CODE_CACHE=1`; diagnostic captures
+use `--generated-code-cache` and verify the reported identity kind.
+
+A sealed single-C `-prod` manual HN diagnostic exercises the actual browser
+Runtime/document bridge and 101-comment collapse/expand callbacks. Changed
+URLs and an appended comment retain 26 hits, zero misses/compiler invocations
+and 747 native entries in the new mode; source-bound controls miss all 27
+entries. Adding an operation correctly misses the changed body and retains
+25 hits. Regression sources cover current constants/closures/errors, changed
+fast code, corruption and temporary storage; they remain uncompiled/unrun
+under the test hold. This establishes functional reuse on that workload, with
+no browser-speed, full GitHub, rendering-parity or full LibJS acceptance.
+
+The completed shared production bundle also passes 18 windowed HN captures
+with exact original Brave pixels. Both cache modes reopen with six native hits
+and no misses/compiler calls. Seven alternating pairs show no instruction saving
+for generated-code identity (+0.0577% by medians). See the
+[generated-code cache report](../docs/LIBJS_NATIVE_GENERATED_CACHE.md).
+
+A direct live GitHub generated-cache cohort also passes the strict native-reuse
+gate: 2,987 hits, zero misses/compiler invocations and 711,946 native entries,
+with complete content and an uninitialized JavaScriptCore context. Preparation
+costs about 35 minutes. Both visits use the same 78-module graph; deployment
+churn, frozen parity and a measured speed gain remain open for this mode.
+
+The browser diagnostic now isolates HTTP resources as well as its profile and
+disables imported cookies. Its corrected live check retains 2,987 native hits
+with zero misses/compiler calls. A matched-policy frozen replay also relocates
+all 81 module URLs with 2,944 hits, zero misses/compiler calls and identical
+pixels between captures, using a separate private `-O0` native cache. Actual
+vendor changes, two-pixel Brave parity and speed acceptance remain open.

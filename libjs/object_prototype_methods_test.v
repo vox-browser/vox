@@ -149,16 +149,16 @@ fn test_object_value_of_boxes_all_primitives_with_current_realm_prototypes_and_p
 		two := object_method_call(mut vm, 'valueOf', value, []Value{}, prototypes)!.as_object()
 		assert (voidptr(one) == voidptr(two)) == value.is_object()
 		if value.is_number() {
-			assert one.number_object?.value == 42 && voidptr(one.prototype?) == voidptr(parent)
+			assert one.slots.number_object?.value == 42 && voidptr(one.prototype?) == voidptr(parent)
 		} else if value.is_bigint() {
-			assert voidptr(one.bigint_object?.bigint) == voidptr(value.as_bigint())
+			assert voidptr(one.slots.bigint_object?.bigint) == voidptr(value.as_bigint())
 		} else if value.is_string() {
 			assert voidptr(one.string_object?.value) == voidptr(value.as_string())
 		} else if value.is_boolean() {
-			assert one.boolean_object?.value
+			assert one.slots.boolean_object?.value
 				&& voidptr(one.prototype?) == voidptr(vm.realm().boolean_prototype_record())
 		} else if value.is_symbol() {
-			assert voidptr(one.symbol_object?.symbol) == voidptr(value.as_symbol())
+			assert voidptr(one.slots.symbol_object?.symbol) == voidptr(value.as_symbol())
 		} else {
 			assert voidptr(one) == voidptr(parent)
 		}

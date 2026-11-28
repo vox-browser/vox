@@ -1,5 +1,7 @@
 module libjs
 
+import platform
+
 // TypedArrayPrototype.cpp::slice. Species creation precedes the second bounds
 // witness; matching kinds preserve bytes, including NaN payloads and -0.
 pub fn typed_array_prototype_slice(mut vm VM, prototypes PrimitiveObjectPrototypes, constructor_getter TypedArrayIntrinsicConstructorGetter, prototype_getter TypedArrayIntrinsicPrototypeGetter) !Value {
@@ -21,6 +23,7 @@ pub fn typed_array_prototype_slice(mut vm VM, prototypes PrimitiveObjectPrototyp
 	factory := fn [source, realm, count, prototype_getter] (mut vm VM) !&TypedArray {
 		return source.create_default(mut vm, realm, count, prototype_getter)
 	}
+	defer { platform.release_closure(voidptr(factory)) }
 	array := typed_array_species_create(mut vm, source, factory, [
 		Value.from_f64(f64(count)),
 	], constructor_getter)!
@@ -49,11 +52,13 @@ pub fn typed_array_prototype_slice(mut vm VM, prototypes PrimitiveObjectPrototyp
 			if !target_buffer.is_detached() && !target_buffer.is_shared_array_buffer()
 				&& !source_buffer.is_detached() && !source_buffer.is_shared_array_buffer()
 				&& !target_buffer.shares_storage_with(source_buffer) {
+				typed_array_charge_byte_work(mut vm, limit - target_index)!
 				source_buffer.copy_data_to(mut target_buffer, source_index, target_index,
 					limit - target_index)
 			} else {
 				// Aliased storage follows the upstream forward byte loop, not memmove.
 				for target_index < limit {
+					vm.consume_execution_budget()!
 					value := source_buffer.get_value(mut vm, source_index, .uint8, true,
 						.unordered, true)
 					target_buffer.set_value(mut vm, target_index, .uint8, value, true, .unordered,
@@ -66,8 +71,9 @@ pub fn typed_array_prototype_slice(mut vm VM, prototypes PrimitiveObjectPrototyp
 			mut n := u32(0)
 			mut object := array.object
 			for k < final {
+				vm.consume_execution_budget()!
 				value := source.object.get(mut vm, PropertyName.from_number(k))!
-				object.set(mut vm, PropertyName.from_number(n), value, .yes) or { panic(err) }
+				object.set(mut vm, PropertyName.from_number(n), value, .yes)!
 				k++
 				n++
 			}

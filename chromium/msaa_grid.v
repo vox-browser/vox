@@ -16,6 +16,23 @@ mut:
 	active_cells map[int]bool
 }
 
+// A lower-density capture still lays out on the finer document grid. Its
+// single root tile must project into the capture's pixel width, rather than
+// retaining the wider layout viewport. Keep tile rows and MSAA ownership.
+fn chromium_root_capture_grid(grid ChromiumRasterGrid, viewport_width int,
+	capture_scale f64, layout_scale f64, enabled bool) ChromiumRasterGrid {
+	if !enabled || grid.columns != 1 || viewport_width <= 0
+		|| !math.is_finite(capture_scale) || !math.is_finite(layout_scale)
+		|| capture_scale <= 0 || layout_scale <= capture_scale {
+		return grid
+	}
+	width := math.ceil(f64(viewport_width) * capture_scale)
+	if !math.is_finite(width) || width < 4 || width >= grid.tile_width {
+		return grid
+	}
+	return ChromiumRasterGrid{ ...grid, tile_width: int(width) }
+}
+
 // cc/layers/tile_size_calculator.cc. The raster scale and the device viewport
 // are separate inputs: content larger than that viewport uses half-width tiles.
 fn chromium_raster_tile_size(viewport_width int, viewport_height int,

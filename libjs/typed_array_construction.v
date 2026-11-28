@@ -55,7 +55,7 @@ pub fn construct_typed_array(mut vm VM, kind BufferElementType, new_target &Obje
 		}
 		return err
 	}
-	validate_typed_array_length(mut vm, uint(length), kind.size())!
+	validate_typed_array_length(mut vm, length, kind.size())!
 	return create_typed_array_from_constructor(mut vm, kind, u32(length), new_target,
 		intrinsic_prototype)
 }

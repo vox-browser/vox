@@ -1,0 +1,33 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Interleaved SVG paints reuse recent pattern tiles</title>
+<style>
+body { margin: 0; background: white; }
+header { width: 8px; height: 8px; background: #34b786; }
+svg { display: block; }
+</style>
+<header></header>
+<svg width="144" height="108">
+  <defs>
+    <pattern id="stripes" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0H8V16H0Z" fill="red"/>
+      <path d="M8 0H16V16H8Z" fill="lime"/>
+    </pattern>
+    <pattern id="blue" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0H16V16H0Z" fill="blue"/>
+    </pattern>
+    <pattern id="yellow" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0H16V16H0Z" fill="yellow"/>
+    </pattern>
+    <pattern id="tile" width="64" height="104" patternUnits="userSpaceOnUse">
+      <path d="M0 0H64V12H0Z" fill="url(#stripes)"/>
+      <path d="M0 16H64V28H0Z" fill="url(#blue)"/>
+      <path d="M0 32H64V44H0Z" fill="url(#stripes)"/>
+      <path d="M0 48H64V60H0Z" fill="url(#yellow)"/>
+      <path d="M0 64H64V76H0Z" fill="url(#blue)"/>
+      <path d="M0 80H64V92H0Z" fill="url(#yellow)"/>
+      <path d="M0 96H64V104H0Z" fill="url(#stripes)"/>
+    </pattern>
+  </defs>
+  <path d="M0 0H144V108H0Z" fill="url(#tile)"/>
+</svg>

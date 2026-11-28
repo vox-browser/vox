@@ -128,19 +128,45 @@ fn test_parse_numeric_literal() {
 	assert expr.kind.numeric_value == 42.0
 }
 
+fn test_parse_decimal_integers_and_other_numeric_spellings() {
+	for spelling, expected in {
+		'0': 0.0
+		'9': 9.0
+		'105': 105.0
+		'999999999999999': 999999999999999.0
+		'9007199254740993': 9007199254740992.0
+		'010': 8.0
+		'09': 9.0
+		'0b1010': 10.0
+		'0o77': 63.0
+		'0xFF': 255.0
+		'10_002': 10002.0
+		'1.25e2': 125.0
+	} {
+		parsed := parse_source(spelling, .script)
+		assert !parsed.has_errors(), spelling
+		expression := parsed.program.kind.program_data?.scope.children[0].kind.expression?
+		assert expression.kind.tag == .numeric_literal
+		assert expression.kind.numeric_value == expected, spelling
+	}
+}
+
 fn test_parse_string_literal() {
-	program, _ := parse_script('"hello";')
-
-	pd := program.kind.program_data or { panic('no program_data') }
-	children := pd.scope.children
-	assert children.len == 1
-
-	stmt := children[0]
-	assert stmt.kind.tag == .expression_stmt
-
-	expr := stmt.kind.expression or { panic('no expression') }
-	assert expr.kind.tag == .string_literal
-	assert expr.kind.string_value.str() == 'hello'
+	for spelling, expected in {
+		'"hello"': 'hello'
+		'""': ''
+		'"World News includes λ and 🙂"': 'World News includes λ and 🙂'
+		'"one\u2028two"': 'one\u2028two'
+		r'"prefix \"quoted\" and \x41"': 'prefix "quoted" and A'
+		r'"abc\101def"': 'abcAdef'
+		'"part\\\r\ntwo"': 'parttwo'
+	} {
+		parsed := parse_source(spelling, .script)
+		assert !parsed.has_errors(), spelling
+		expr := parsed.program.kind.program_data?.scope.children[0].kind.expression?
+		assert expr.kind.tag == .string_literal
+		assert expr.kind.literal_string().str() == expected, spelling
+	}
 }
 
 fn test_parse_boolean_true() {
@@ -240,6 +266,28 @@ fn test_parse_function_declaration() {
 	func_data := parser.function_table.get(stmt.kind.function_id)
 	assert func_data.parameters.len == 2
 	assert func_data.is_arrow_function == false
+}
+
+fn test_statement_lists_keep_directives_and_function_bodies_in_source_order() {
+	parsed := parse_source('"script directive"; function outer() { "use strict"; let value = 42; return value; }',
+		.script)
+	assert !parsed.has_errors()
+	program := parsed.program.kind.program_data or { panic('missing program') }
+	assert program.scope.children.map(it.kind.tag) == [.expression_stmt, .function_declaration]
+
+	body := parsed.function_table.get(program.scope.children[1].kind.function_id).body
+	assert body.kind.in_strict_mode
+	scope := body.kind.scope or { panic('missing function body scope') }
+	assert scope.children.map(it.kind.tag) == [.expression_stmt, .variable_declaration, .return_stmt]
+}
+
+fn test_module_statement_list_keeps_source_order_across_import_and_export() {
+	parsed := parse_source('let first = 1; import value from "dep"; first; export { first }; value;',
+		.module)
+	assert !parsed.has_errors()
+	program := parsed.program.kind.program_data or { panic('missing program') }
+	assert program.scope.children.map(it.kind.tag) == [.variable_declaration, .import_stmt,
+		.expression_stmt, .export_stmt, .expression_stmt]
 }
 
 fn test_parse_arrow_function() {

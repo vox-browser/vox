@@ -75,9 +75,12 @@ fn test_incremental_read_waits_for_future_stream_chunks() {
 	assert recorder.chunks.len == 0
 	assert !recorder.ended
 	assert recorder.error_ == ''
+	request_id := reader.read_requests()[0].read_request_identity()
+	assert request_id != unsafe { nil }
 
 	mut stream := body.stream()
 	stream.enqueue(streams.bytes_value('first'.bytes()))!
+	assert reader.read_requests()[0].read_request_identity() == request_id
 	stream.enqueue(streams.bytes_value('second'.bytes()))!
 	assert recorder.chunks == ['first', 'second']
 	assert !recorder.ended
@@ -86,6 +89,45 @@ fn test_incremental_read_waits_for_future_stream_chunks() {
 	assert recorder.ended
 	assert recorder.error_ == ''
 	reader.release_lock()!
+}
+
+fn test_native_body_read_reports_stream_errors_and_releases_pending_request() {
+	mut body := Body.streaming()
+	mut recorder := &IncrementalReadRecorder{}
+	mut reader := body.incrementally_read(ignore_body_chunk, fn [mut recorder] () {
+		recorder.ended = true
+	}, fn [mut recorder] (reason string) {
+		recorder.error_ = reason
+	})
+	mut stream := body.stream()
+	stream.error('network failed')
+	assert recorder.error_ == 'network failed'
+	assert !recorder.ended
+	assert reader.read_requests().len == 0
+	reader.release_lock()!
+}
+
+fn test_internal_body_reader_borrows_native_chunks_and_public_reader_copies_them() {
+	for borrow in [false, true] {
+		mut body := Body.streaming()
+		chunk := 'response bytes'.bytes()
+		mut recorder := &IncrementalReadRecorder{}
+		on_chunk := fn [mut recorder, chunk, borrow] (bytes []u8) {
+			assert (bytes.data == chunk.data) == borrow
+			recorder.chunks << bytes.bytestr()
+		}
+		mut reader := if borrow {
+			body.read_chunks(on_chunk, ignore_body_end, ignore_body_error, true)
+		} else {
+			body.incrementally_read(on_chunk, ignore_body_end, ignore_body_error)
+		}
+		mut stream := body.stream()
+		mut controller := stream.byte_controller() or { panic('missing byte controller') }
+		streams.readable_byte_stream_controller_enqueue_native_bytes(mut controller, chunk)!
+		stream.close()
+		assert recorder.chunks == ['response bytes']
+		reader.release_lock()!
+	}
 }
 
 fn test_multipart_form_data_parser() {

@@ -33,10 +33,12 @@ mut:
 	line_number                 u32
 	line_column                 u32
 	current_token_type          TokenType
-	regex_is_in_character_class bool
 	allow_html_comments         bool
 	template_states             []TemplateState
 	saved_states                []SavedLexerState
+	has_lookahead               bool
+	lookahead                   Token
+	lookahead_state             SavedLexerState
 }
 
 // Unicode constants
@@ -149,138 +151,138 @@ fn is_identifier_continue_cp(cp u32) bool {
 fn keyword_from_str(s []u16) ?TokenType {
 	match s.len {
 		2 {
-			if utf16_equals(s, utf16('do')) {
+			if utf16_equals_ascii(s, 'do') {
 				return .do_kw
 			}
-			if utf16_equals(s, utf16('if')) {
+			if utf16_equals_ascii(s, 'if') {
 				return .if_kw
 			}
-			if utf16_equals(s, utf16('in')) {
+			if utf16_equals_ascii(s, 'in') {
 				return .in_kw
 			}
 		}
 		3 {
-			if utf16_equals(s, utf16('for')) {
+			if utf16_equals_ascii(s, 'for') {
 				return .for_kw
 			}
-			if utf16_equals(s, utf16('let')) {
+			if utf16_equals_ascii(s, 'let') {
 				return .let_kw
 			}
-			if utf16_equals(s, utf16('new')) {
+			if utf16_equals_ascii(s, 'new') {
 				return .new_kw
 			}
-			if utf16_equals(s, utf16('try')) {
+			if utf16_equals_ascii(s, 'try') {
 				return .try_kw
 			}
-			if utf16_equals(s, utf16('var')) {
+			if utf16_equals_ascii(s, 'var') {
 				return .var_kw
 			}
 		}
 		4 {
-			if utf16_equals(s, utf16('case')) {
+			if utf16_equals_ascii(s, 'case') {
 				return .case_kw
 			}
-			if utf16_equals(s, utf16('else')) {
+			if utf16_equals_ascii(s, 'else') {
 				return .else_kw
 			}
-			if utf16_equals(s, utf16('enum')) {
+			if utf16_equals_ascii(s, 'enum') {
 				return .enum_kw
 			}
-			if utf16_equals(s, utf16('null')) {
+			if utf16_equals_ascii(s, 'null') {
 				return .null_literal
 			}
-			if utf16_equals(s, utf16('this')) {
+			if utf16_equals_ascii(s, 'this') {
 				return .this_kw
 			}
-			if utf16_equals(s, utf16('true')) {
+			if utf16_equals_ascii(s, 'true') {
 				return .bool_literal
 			}
-			if utf16_equals(s, utf16('void')) {
+			if utf16_equals_ascii(s, 'void') {
 				return .void_kw
 			}
-			if utf16_equals(s, utf16('with')) {
+			if utf16_equals_ascii(s, 'with') {
 				return .with_kw
 			}
 		}
 		5 {
-			if utf16_equals(s, utf16('async')) {
+			if utf16_equals_ascii(s, 'async') {
 				return .async
 			}
-			if utf16_equals(s, utf16('await')) {
+			if utf16_equals_ascii(s, 'await') {
 				return .await_kw
 			}
-			if utf16_equals(s, utf16('break')) {
+			if utf16_equals_ascii(s, 'break') {
 				return .break_kw
 			}
-			if utf16_equals(s, utf16('catch')) {
+			if utf16_equals_ascii(s, 'catch') {
 				return .catch_kw
 			}
-			if utf16_equals(s, utf16('class')) {
+			if utf16_equals_ascii(s, 'class') {
 				return .class_kw
 			}
-			if utf16_equals(s, utf16('const')) {
+			if utf16_equals_ascii(s, 'const') {
 				return .const_kw
 			}
-			if utf16_equals(s, utf16('false')) {
+			if utf16_equals_ascii(s, 'false') {
 				return .bool_literal
 			}
-			if utf16_equals(s, utf16('super')) {
+			if utf16_equals_ascii(s, 'super') {
 				return .super_kw
 			}
-			if utf16_equals(s, utf16('throw')) {
+			if utf16_equals_ascii(s, 'throw') {
 				return .throw_kw
 			}
-			if utf16_equals(s, utf16('while')) {
+			if utf16_equals_ascii(s, 'while') {
 				return .while_kw
 			}
-			if utf16_equals(s, utf16('yield')) {
+			if utf16_equals_ascii(s, 'yield') {
 				return .yield_kw
 			}
 		}
 		6 {
-			if utf16_equals(s, utf16('delete')) {
+			if utf16_equals_ascii(s, 'delete') {
 				return .delete_kw
 			}
-			if utf16_equals(s, utf16('export')) {
+			if utf16_equals_ascii(s, 'export') {
 				return .export_kw
 			}
-			if utf16_equals(s, utf16('import')) {
+			if utf16_equals_ascii(s, 'import') {
 				return .import_kw
 			}
-			if utf16_equals(s, utf16('return')) {
+			if utf16_equals_ascii(s, 'return') {
 				return .return_kw
 			}
-			if utf16_equals(s, utf16('switch')) {
+			if utf16_equals_ascii(s, 'switch') {
 				return .switch_kw
 			}
-			if utf16_equals(s, utf16('typeof')) {
+			if utf16_equals_ascii(s, 'typeof') {
 				return .typeof_kw
 			}
 		}
 		7 {
-			if utf16_equals(s, utf16('default')) {
+			if utf16_equals_ascii(s, 'default') {
 				return .default_kw
 			}
-			if utf16_equals(s, utf16('extends')) {
+			if utf16_equals_ascii(s, 'extends') {
 				return .extends_kw
 			}
-			if utf16_equals(s, utf16('finally')) {
+			if utf16_equals_ascii(s, 'finally') {
 				return .finally_kw
 			}
 		}
 		8 {
-			if utf16_equals(s, utf16('continue')) {
+			if utf16_equals_ascii(s, 'continue') {
 				return .continue_kw
 			}
-			if utf16_equals(s, utf16('debugger')) {
+			if utf16_equals_ascii(s, 'debugger') {
 				return .debugger
 			}
-			if utf16_equals(s, utf16('function')) {
+			if utf16_equals_ascii(s, 'function') {
 				return .function_kw
 			}
 		}
 		10 {
-			if utf16_equals(s, utf16('instanceof')) {
+			if utf16_equals_ascii(s, 'instanceof') {
 				return .instanceof_kw
 			}
 		}
@@ -322,119 +324,65 @@ fn single_char_token(c u16) TokenType {
 	}
 }
 
+// Dispatch on the first code unit, so a punctuator compares only the
+// candidates that start with it instead of every two- or three-unit form.
 fn parse_two_char_token(ch0 u16, ch1 u16) TokenType {
 	if ch0 >= 128 || ch1 >= 128 {
 		return .invalid
 	}
-	c0 := u8(ch0)
 	c1 := u8(ch1)
-	if c0 == `=` && c1 == `>` {
-		return .arrow
+	return match u8(ch0) {
+		`=` { if c1 == `>` { TokenType.arrow } else if c1 == `=` { TokenType.equals_equals } else { TokenType.invalid } }
+		`+` { if c1 == `=` { TokenType.plus_equals } else if c1 == `+` { TokenType.plus_plus } else { TokenType.invalid } }
+		`-` { if c1 == `=` { TokenType.minus_equals } else if c1 == `-` { TokenType.minus_minus } else { TokenType.invalid } }
+		`*` { if c1 == `=` { TokenType.asterisk_equals } else if c1 == `*` { TokenType.double_asterisk } else { TokenType.invalid } }
+		`/` { if c1 == `=` { TokenType.slash_equals } else { TokenType.invalid } }
+		`%` { if c1 == `=` { TokenType.percent_equals } else { TokenType.invalid } }
+		`&` { if c1 == `=` { TokenType.ampersand_equals } else if c1 == `&` { TokenType.double_ampersand } else { TokenType.invalid } }
+		`|` { if c1 == `=` { TokenType.pipe_equals } else if c1 == `|` { TokenType.double_pipe } else { TokenType.invalid } }
+		`^` { if c1 == `=` { TokenType.caret_equals } else { TokenType.invalid } }
+		`<` { if c1 == `=` { TokenType.less_than_equals } else if c1 == `<` { TokenType.shift_left } else { TokenType.invalid } }
+		`>` { if c1 == `=` { TokenType.greater_than_equals } else if c1 == `>` { TokenType.shift_right } else { TokenType.invalid } }
+		`?` { if c1 == `?` { TokenType.double_question_mark } else if c1 == `.` { TokenType.question_mark_period } else { TokenType.invalid } }
+		`!` { if c1 == `=` { TokenType.exclamation_mark_equals } else { TokenType.invalid } }
+		else { TokenType.invalid }
 	}
-	if c0 == `=` && c1 == `=` {
-		return .equals_equals
-	}
-	if c0 == `+` && c1 == `=` {
-		return .plus_equals
-	}
-	if c0 == `+` && c1 == `+` {
-		return .plus_plus
-	}
-	if c0 == `-` && c1 == `=` {
-		return .minus_equals
-	}
-	if c0 == `-` && c1 == `-` {
-		return .minus_minus
-	}
-	if c0 == `*` && c1 == `=` {
-		return .asterisk_equals
-	}
-	if c0 == `*` && c1 == `*` {
-		return .double_asterisk
-	}
-	if c0 == `/` && c1 == `=` {
-		return .slash_equals
-	}
-	if c0 == `%` && c1 == `=` {
-		return .percent_equals
-	}
-	if c0 == `&` && c1 == `=` {
-		return .ampersand_equals
-	}
-	if c0 == `&` && c1 == `&` {
-		return .double_ampersand
-	}
-	if c0 == `|` && c1 == `=` {
-		return .pipe_equals
-	}
-	if c0 == `|` && c1 == `|` {
-		return .double_pipe
-	}
-	if c0 == `^` && c1 == `=` {
-		return .caret_equals
-	}
-	if c0 == `<` && c1 == `=` {
-		return .less_than_equals
-	}
-	if c0 == `<` && c1 == `<` {
-		return .shift_left
-	}
-	if c0 == `>` && c1 == `=` {
-		return .greater_than_equals
-	}
-	if c0 == `>` && c1 == `>` {
-		return .shift_right
-	}
-	if c0 == `?` && c1 == `?` {
-		return .double_question_mark
-	}
-	if c0 == `?` && c1 == `.` {
-		return .question_mark_period
-	}
-	if c0 == `!` && c1 == `=` {
-		return .exclamation_mark_equals
-	}
-	return .invalid
 }
 
 fn parse_three_char_token(ch0 u16, ch1 u16, ch2 u16) TokenType {
 	if ch0 >= 128 || ch1 >= 128 || ch2 >= 128 {
 		return .invalid
 	}
-	c0 := u8(ch0)
 	c1 := u8(ch1)
 	c2 := u8(ch2)
-	if c0 == `<` && c1 == `<` && c2 == `=` {
-		return .shift_left_equals
+	return match u8(ch0) {
+		`<` { if c1 == `<` && c2 == `=` { TokenType.shift_left_equals } else { TokenType.invalid } }
+		`>` {
+			if c1 == `>` && c2 == `=` {
+				TokenType.shift_right_equals
+			} else if c1 == `>` && c2 == `>` {
+				TokenType.unsigned_shift_right
+			} else {
+				TokenType.invalid
+			}
+		}
+		`=` { if c1 == `=` && c2 == `=` { TokenType.equals_equals_equals } else { TokenType.invalid } }
+		`!` { if c1 == `=` && c2 == `=` { TokenType.exclamation_mark_equals_equals } else { TokenType.invalid } }
+		`.` { if c1 == `.` && c2 == `.` { TokenType.triple_dot } else { TokenType.invalid } }
+		`*` { if c1 == `*` && c2 == `=` { TokenType.double_asterisk_equals } else { TokenType.invalid } }
+		`&` { if c1 == `&` && c2 == `=` { TokenType.double_ampersand_equals } else { TokenType.invalid } }
+		`|` { if c1 == `|` && c2 == `=` { TokenType.double_pipe_equals } else { TokenType.invalid } }
+		`?` { if c1 == `?` && c2 == `=` { TokenType.double_question_mark_equals } else { TokenType.invalid } }
+		else { TokenType.invalid }
 	}
-	if c0 == `>` && c1 == `>` && c2 == `=` {
-		return .shift_right_equals
-	}
-	if c0 == `>` && c1 == `>` && c2 == `>` {
-		return .unsigned_shift_right
-	}
-	if c0 == `=` && c1 == `=` && c2 == `=` {
-		return .equals_equals_equals
-	}
-	if c0 == `!` && c1 == `=` && c2 == `=` {
-		return .exclamation_mark_equals_equals
-	}
-	if c0 == `.` && c1 == `.` && c2 == `.` {
-		return .triple_dot
-	}
-	if c0 == `*` && c1 == `*` && c2 == `=` {
-		return .double_asterisk_equals
-	}
-	if c0 == `&` && c1 == `&` && c2 == `=` {
-		return .double_ampersand_equals
-	}
-	if c0 == `|` && c1 == `|` && c2 == `=` {
-		return .double_pipe_equals
-	}
-	if c0 == `?` && c1 == `?` && c2 == `=` {
-		return .double_question_mark_equals
-	}
-	return .invalid
+}
+
+// Punctuators that never begin a longer one (parentheses, braces, brackets,
+// comma, semicolon, colon, tilde) are most punctuators in real code.
+@[inline]
+fn lex_single_only_punctuator(c u16) bool {
+	return c == u16(`(`) || c == u16(`)`) || c == u16(`,`) || c == u16(`;`) || c == u16(`{`)
+		|| c == u16(`}`) || c == u16(`[`) || c == u16(`]`) || c == u16(`:`) || c == u16(`~`)
 }
 
 // === Lexer constructor and methods ===
@@ -473,6 +421,7 @@ fn (l &Lexer) current_template_state() &TemplateState {
 
 fn (mut l Lexer) disallow_html_comments() {
 	l.allow_html_comments = false
+	l.has_lookahead = false
 }
 
 fn (l &Lexer) source_len() int {
@@ -517,6 +466,36 @@ fn (mut l Lexer) consume() {
 
 	l.current_code_unit = l.source[l.position]
 	l.position += 1
+}
+
+// The caller has identified a span of ASCII code units without line breaks.
+// Advance the column and position together.
+@[inline]
+@[direct_array_access]
+fn (mut l Lexer) consume_ascii_code_units(width int) {
+	next := l.position + width - 1
+	l.line_column += u32(width)
+	l.position = next + 1
+	if next == l.source.len {
+		l.eof = true
+		l.current_code_unit = 0
+	} else {
+		l.current_code_unit = l.source[next]
+	}
+}
+
+// The current code unit is already known to be ordinary ASCII string text.
+@[direct_array_access]
+fn (mut l Lexer) consume_ascii_string_run(quote u16) {
+	mut end := l.position
+	for end < l.source.len {
+		unit := l.source[end]
+		if unit >= 128 || unit == quote || unit == u16(`\\`) || unit == u16(`\r`) || unit == u16(`\n`) {
+			break
+		}
+		end++
+	}
+	l.consume_ascii_code_units(end - l.position + 1)
 }
 
 fn (l &Lexer) current_code_point() u32 {
@@ -614,16 +593,50 @@ fn (l &Lexer) is_surrogate_pair(len int) bool {
 	return len == 2
 }
 
+// ASCII identifier characters advance by one column and cannot end a line.
+// Leave the first other code unit to the Unicode and escape checks.
+@[direct_array_access]
+fn (mut l Lexer) consume_ascii_identifier_tail() {
+	start := l.position - 1
+	mut end := start
+	for end < l.source.len {
+		unit := l.source[end]
+		letter := unit | 0x20
+		if !((letter >= u16(`a`) && letter <= u16(`z`)) || lex_is_ascii_digit(unit)
+			|| unit == u16(`_`) || unit == u16(`$`)) {
+			break
+		}
+		end++
+	}
+	if end == start { return }
+	l.line_column += u32(end - start)
+	l.position = end + 1
+	if end == l.source.len {
+		l.eof = true
+		l.current_code_unit = 0
+	} else {
+		l.current_code_unit = l.source[end]
+	}
+}
+
 // Scan an identifier body. Returns true if it contains escape sequences.
 fn (mut l Lexer) scan_identifier_body(initial_len int) bool {
 	mut has_escape := false
 	mut ident_len := initial_len
 	for {
-		is_pair := l.is_surrogate_pair(ident_len)
-		has_escape = has_escape || (ident_len > 1 && !is_pair)
-		consume_count := if is_pair { 1 } else { ident_len }
-		for _ in 0 .. consume_count {
-			l.consume()
+		// A validated ASCII start fits in the same run as its tail.
+		if ident_len != 1 || l.current_code_unit >= 128 {
+			is_pair := l.is_surrogate_pair(ident_len)
+			has_escape = has_escape || (ident_len > 1 && !is_pair)
+			consume_count := if is_pair { 1 } else { ident_len }
+			for _ in 0 .. consume_count {
+				l.consume()
+			}
+		}
+		l.consume_ascii_identifier_tail()
+		// The run stops at a delimiter, a Unicode unit, an escape or EOF.
+		if l.current_code_unit < 128 && l.current_code_unit != u16(`\\`) {
+			break
 		}
 		next_cp, next_len := l.is_identifier_middle()
 		if next_cp >= 0 {
@@ -677,26 +690,23 @@ fn (l &Lexer) build_identifier_value(scan_start int) Utf16String {
 	}
 }
 
-// Check if current position starts an identifier start character.
-// Returns (code_point, len) or (-1, 0).
-fn (l &Lexer) is_identifier_start() (i64, int) {
-	cp := l.current_code_point()
-	if cp == u32(`\\`) {
+// Number of source code units in a valid identifier start, or zero.
+fn (l &Lexer) identifier_start_length() int {
+	unit := u32(l.current_code_unit)
+	if unit < 128 && unit != u32(`\\`) {
+		return if is_identifier_start_cp(unit) { 1 } else { 0 }
+	}
+	if unit == u32(`\\`) {
 		esc_cp, esc_len := l.is_identifier_unicode_escape()
-		if esc_cp >= 0 {
-			if is_identifier_start_cp(u32(esc_cp)) {
-				return esc_cp, esc_len
-			}
-		}
-		return -1, 0
+		return if esc_cp >= 0 && is_identifier_start_cp(u32(esc_cp)) { esc_len } else { 0 }
 	}
 
+	cp := l.current_code_point()
 	if is_identifier_start_cp(cp) {
-		len := if cp > 0xFFFF { 2 } else { 1 }
-		return i64(cp), len
+		return if cp > 0xFFFF { 2 } else { 1 }
 	}
 
-	return -1, 0
+	return 0
 }
 
 // Check if current position continues an identifier.
@@ -848,22 +858,22 @@ fn (mut l Lexer) consume_binary_number() bool {
 }
 
 fn (mut l Lexer) consume_regex_literal() TokenType {
-	l.regex_is_in_character_class = false
+	mut in_character_class := false
 	for !l.is_eof() {
 		if l.is_line_terminator()
-			|| (!l.regex_is_in_character_class && l.current_code_unit == ch(u8(`/`))) {
+			|| (!in_character_class && l.current_code_unit == ch(u8(`/`))) {
 			break
 		}
 
 		if l.current_code_unit == ch(u8(`[`)) {
-			l.regex_is_in_character_class = true
+			in_character_class = true
 		} else if l.current_code_unit == ch(u8(`]`)) {
-			l.regex_is_in_character_class = false
+			in_character_class = false
 		}
 
 		if l.match2(ch(u8(`\\`)), ch(u8(`/`))) || l.match2(ch(u8(`\\`)), ch(u8(`[`)))
 			|| l.match2(ch(u8(`\\`)), ch(u8(`\\`)))
-			|| (l.regex_is_in_character_class && l.match2(ch(u8(`\\`)), ch(u8(`]`)))) {
+			|| (in_character_class && l.match2(ch(u8(`\\`)), ch(u8(`]`)))) {
 			l.consume()
 		}
 		l.consume()
@@ -878,15 +888,45 @@ fn (mut l Lexer) consume_regex_literal() TokenType {
 
 // === Main tokenization ===
 
+@[inline]
+fn lex_may_start_trivia(unit u16) bool {
+	return unit <= 0x20 || unit >= 0x80 || unit in [u16(`/`), u16(`<`), u16(`-`), u16(`#`)]
+}
+
 fn (mut l Lexer) next() Token {
+	if l.has_lookahead {
+		l.has_lookahead = false
+		l.restore_state(l.lookahead_state)
+		return l.lookahead
+	}
+	return l.lex_token()
+}
+
+fn (mut l Lexer) peek() Token {
+	if l.has_lookahead {
+		return l.lookahead
+	}
+	before := l.snapshot()
+	token := l.lex_token()
+	// Template tokens mutate a stack. Keep those peeks on the snapshot path.
+	if before.template_states.len == 0 && l.template_states.len == 0 {
+		l.lookahead = token
+		l.lookahead_state = l.snapshot()
+		l.has_lookahead = true
+	}
+	l.restore_state(before)
+	return token
+}
+
+fn (mut l Lexer) lex_token() Token {
 	trivia_start := l.position
 	in_template := l.template_states.len > 0
 	mut line_has_token_yet := l.line_column > 1
 	mut unterminated_comment := false
-	mut token_message := ?string(none)
+	mut token_message := unsafe { &TokenMessage(nil) }
 
 	if !in_template || l.template_states[l.template_states.len - 1].in_expression {
-		for {
+		for lex_may_start_trivia(l.current_code_unit) {
 			if l.is_line_terminator() {
 				line_has_token_yet = false
 				for {
@@ -947,7 +987,7 @@ fn (mut l Lexer) next() Token {
 	mut token_type := TokenType.invalid
 	did_consume_whitespace_or_comments := trivia_start != value_start
 
-	mut identifier_value := ?Utf16String(none)
+	mut identifier_value := unsafe { &Utf16String(nil) }
 
 	if l.current_token_type == .regex_literal && !l.is_eof()
 		&& (l.current_code_unit < 128 && lex_is_ascii_alpha(u32(l.current_code_unit)))
@@ -1006,20 +1046,20 @@ fn (mut l Lexer) next() Token {
 		}
 	} else if l.current_code_unit == ch(u8(`#`)) {
 		l.consume()
-		start_cp, start_len := l.is_identifier_start()
-		if start_cp >= 0 {
+		start_len := l.identifier_start_length()
+		if start_len > 0 {
 			has_escape := l.scan_identifier_body(start_len)
 			if has_escape {
-				identifier_value = l.build_identifier_value(value_start)
+				identifier_value = ast_text(l.build_identifier_value(value_start))
 			}
 			token_type = .private_identifier
 		} else {
 			token_type = .invalid
-			token_message = "Start of private name '#' but not followed by valid identifier"
+			token_message = &TokenMessage{text: "Start of private name '#' but not followed by valid identifier"}
 		}
 	} else {
-		start_cp, start_len := l.is_identifier_start()
-		if start_cp >= 0 {
+		start_len := l.identifier_start_length()
+		if start_len > 0 {
 			has_escape := l.scan_identifier_body(start_len)
 
 			if has_escape {
@@ -1029,10 +1069,12 @@ fn (mut l Lexer) next() Token {
 				} else {
 					token_type = .identifier
 				}
-				identifier_value = decoded
+				identifier_value = ast_text(decoded)
+			} else if l.position - value_start == 1 {
+				// Every keyword has at least two code units.
+				token_type = .identifier
 			} else {
-				source_slice := l.source[value_start - 1..l.position - 1].clone()
-				if kw := keyword_from_str(source_slice) {
+				if kw := keyword_from_str(l.source[value_start - 1..l.position - 1]) {
 					token_type = kw
 				} else {
 					token_type = .identifier
@@ -1100,26 +1142,29 @@ fn (mut l Lexer) next() Token {
 			}
 			if is_invalid {
 				token_type = .invalid
-				token_message = 'Invalid numeric literal'
+				token_message = &TokenMessage{text: 'Invalid numeric literal'}
 			}
 		} else if l.current_code_unit == ch(u8(`"`)) || l.current_code_unit == ch(u8(`'`)) {
 			stop_char := l.current_code_unit
-			l.consume()
+			l.consume_ascii_code_units(1)
 			for l.current_code_unit != stop_char && l.current_code_unit != ch(u8(`\r`))
 				&& l.current_code_unit != ch(u8(`\n`)) && !l.is_eof() {
 				if l.current_code_unit == ch(u8(`\\`)) {
-					l.consume()
+					l.consume_ascii_code_units(1)
 					if l.current_code_unit == ch(u8(`\r`)) && l.position < l.source_len()
 						&& l.source[l.position] == ch(u8(`\n`)) {
 						l.consume()
 					}
+				} else if l.current_code_unit < 128 {
+					l.consume_ascii_string_run(stop_char)
+					continue
 				}
 				l.consume()
 			}
 			if l.current_code_unit != stop_char {
 				token_type = .unterminated_string_literal
 			} else {
-				l.consume()
+				l.consume_ascii_code_units(1)
 				token_type = .string_literal
 			}
 		} else if l.current_code_unit == ch(u8(`/`)) && !l.slash_means_division() {
@@ -1128,20 +1173,23 @@ fn (mut l Lexer) next() Token {
 		} else if l.eof {
 			if unterminated_comment {
 				token_type = .invalid
-				token_message = 'Unterminated multi-line comment'
+				token_message = &TokenMessage{text: 'Unterminated multi-line comment'}
 			} else {
 				token_type = .eof
 			}
 		} else {
 			mut found_token := false
 
-			if l.match4(ch(u8(`>`)), ch(u8(`>`)), ch(u8(`>`)), ch(u8(`=`))) {
+			if lex_single_only_punctuator(l.current_code_unit) {
+				found_token = true
+				token_type = single_char_token(l.current_code_unit)
+				l.consume_ascii_code_units(1)
+			}
+
+			if !found_token && l.match4(ch(u8(`>`)), ch(u8(`>`)), ch(u8(`>`)), ch(u8(`=`))) {
 				found_token = true
 				token_type = .unsigned_shift_right_equals
-				l.consume()
-				l.consume()
-				l.consume()
-				l.consume()
+				l.consume_ascii_code_units(4)
 			}
 
 			if !found_token && l.position + 1 < l.source_len() {
@@ -1152,9 +1200,7 @@ fn (mut l Lexer) next() Token {
 				if tt != .invalid {
 					found_token = true
 					token_type = tt
-					l.consume()
-					l.consume()
-					l.consume()
+					l.consume_ascii_code_units(3)
 				}
 			}
 
@@ -1167,8 +1213,7 @@ fn (mut l Lexer) next() Token {
 						&& lex_is_ascii_digit(l.source[l.position + 1])) {
 						found_token = true
 						token_type = tt
-						l.consume()
-						l.consume()
+						l.consume_ascii_code_units(2)
 					}
 				}
 			}
@@ -1178,7 +1223,7 @@ fn (mut l Lexer) next() Token {
 				if tt != .invalid {
 					found_token = true
 					token_type = tt
-					l.consume()
+					l.consume_ascii_code_units(1)
 				}
 			}
 
@@ -1227,7 +1272,6 @@ fn (mut l Lexer) next() Token {
 		value_len:                  u32(l.position - value_start)
 		line_number:                value_start_line_number
 		line_column:                value_start_column_number
-		offset:                     vs
 		trivia_has_line_terminator: trivia_has_line_terminator
 		identifier_value:           identifier_value
 		message:                    token_message
@@ -1236,23 +1280,32 @@ fn (mut l Lexer) next() Token {
 
 // === State save/restore ===
 
-fn (mut l Lexer) save_state() {
-	l.saved_states << SavedLexerState{
+fn (l &Lexer) snapshot() SavedLexerState {
+	return SavedLexerState{
 		position:           l.position
 		current_code_unit:  l.current_code_unit
 		eof:                l.eof
 		line_number:        l.line_number
 		line_column:        l.line_column
 		current_token_type: l.current_token_type
-		template_states:    l.template_states.clone()
+		// Only an active template has entries to protect from in-place updates.
+		template_states:    if l.template_states.len == 0 { []TemplateState{} } else { l.template_states.clone() }
 	}
+}
+
+fn (mut l Lexer) save_state() {
+	l.saved_states << l.snapshot()
 }
 
 fn (mut l Lexer) load_state() {
 	if l.saved_states.len == 0 {
 		panic('No saved lexer state')
 	}
-	state := l.saved_states.pop()
+	l.has_lookahead = false
+	l.restore_state(l.saved_states.pop())
+}
+
+fn (mut l Lexer) restore_state(state SavedLexerState) {
 	l.position = state.position
 	l.current_code_unit = state.current_code_unit
 	l.eof = state.eof
@@ -1268,6 +1321,7 @@ fn (mut l Lexer) discard_saved_state() {
 
 // Re-lex the current Slash or SlashEquals token as a regex literal.
 fn (mut l Lexer) force_slash_as_regex() Token {
+	l.has_lookahead = false
 	has_equals := l.current_token_type == .slash_equals
 
 	mut value_start := l.position - 1
@@ -1295,7 +1349,6 @@ fn (mut l Lexer) force_slash_as_regex() Token {
 		value_len:                  u32(l.position - value_start)
 		line_number:                token_line_number
 		line_column:                token_line_column
-		offset:                     vs
 		trivia_has_line_terminator: false
 	}
 }

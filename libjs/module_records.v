@@ -175,9 +175,10 @@ pub:
 	kind                ImportedModulePayloadKind
 	graph_loading_state ?&GraphLoadingState
 	promise_capability  ?&PromiseCapability
+	js_promise_capability ?&JSPromiseCapability
 	// Receives the FinishLoadingImportedModule result. Upstream continues into
-	// ContinueModuleLoading or ContinueDynamicImport, which are part of the
-	// pending CyclicModule translation.
+	// ContinueModuleLoading or ContinueDynamicImport. Native module bookkeeping
+	// and JavaScript-visible promise capabilities retain their distinct records.
 	on_finished fn (result ModuleLoadResult) = unsafe { nil }
 }
 
@@ -195,6 +196,10 @@ pub fn ImportedModulePayload.for_promise_capability(capability &PromiseCapabilit
 		promise_capability: capability
 		on_finished:        on_finished
 	}
+}
+
+pub fn ImportedModulePayload.for_js_promise_capability(capability &JSPromiseCapability, on_finished fn (result ModuleLoadResult)) ImportedModulePayload {
+	return ImportedModulePayload{kind: .promise_capability, js_promise_capability: capability, on_finished: on_finished}
 }
 
 // 16.2.1.9 FinishLoadingImportedModule ( referrer, moduleRequest, payload, result ), https://tc39.es/ecma262/#sec-FinishLoadingImportedModule

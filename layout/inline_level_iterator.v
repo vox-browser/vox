@@ -853,6 +853,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		iterator.skip_to_next()
 		return item
 	}
+	// Not reached: every path through the loop returns or continues. The
+	// tab-stop scan's inner `break` makes the compiler treat the loop as one
+	// that can end.
 	return none
 }
 

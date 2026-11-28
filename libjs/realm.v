@@ -23,23 +23,84 @@ pub mut:
 	object_prototype               ?&Object
 	object_constructor             ?&Object
 	math_object                    ?&Object
+	reflect_object                 ?&Object
+	proxy_constructor              ?&Object
+	intl_object ?&Object
+	intl_locale_prototype ?&Object
+	intl_locale_constructor ?&Object
+	intl_date_time_format_prototype ?&Object
+	intl_date_time_format_constructor ?&Object
+	intl_list_format_prototype ?&Object
+	intl_list_format_constructor ?&Object
+	intl_number_format_prototype ?&Object
+	intl_number_format_constructor ?&Object
+	intl_relative_time_format_prototype ?&Object
+	intl_relative_time_format_constructor ?&Object
+	intl_collator_prototype ?&Object
+	intl_collator_constructor ?&Object
+	intl_default_collator ?&IntlCollator
+	intl_default_collator_locale string
+	intl_default_locale string = 'en-US'
+	intl_core_data ?&IntlCoreData
+	intl_date_locales map[string]&IntlDateLocaleData
 	json_object                    ?&Object
+	date_prototype                 ?&Object
+	date_constructor               ?&Object
 	error_prototypes               map[ErrorKind]&Object
 	error_constructors             map[ErrorKind]&Object
 	function_prototype             ?&Object                 // %Function.prototype%
+	function_constructor           ?&Object
+	function_executable_cache map[voidptr][]FunctionExecutableCacheEntry
+	function_compilation_activity FunctionCompilationActivity
+	async_function_prototype ?&Object
+	generator_function_prototype ?&Object
+	generator_prototype ?&Object
+	async_generator_function_prototype ?&Object
+	async_generator_prototype ?&Object
+	async_iterator_prototype ?&Object
 	array_prototype ?&Object
+	array_prototype_values Value // Intrinsic identity, independent of user mutations.
 	array_constructor ?&Object
+	template_objects map[string]&TemplateObjectEntry
+	map_prototype ?&Object
+	map_constructor ?&Object
+	map_iterator_prototype ?&Object
+	weak_map_prototype ?&Object
+	weak_map_constructor ?&Object
+	weak_set_prototype ?&Object
+	weak_set_constructor ?&Object
+	weak_ref_prototype ?&Object
+	weak_ref_constructor ?&Object
+	promise_prototype ?&Object
+	promise_constructor ?&Object
+	set_prototype ?&Object
+	set_constructor ?&Object
+	set_iterator_prototype ?&Object
+	iterator_prototype ?&Object
+	array_iterator_prototype ?&Object
+	string_iterator_prototype ?&Object
 	string_prototype ?&Object
 	string_constructor ?&Object
 	regexp_prototype ?&Object
 	regexp_constructor ?&Object
+	regexp_string_iterator_prototype ?&Object
 	throw_type_error_function      ?&Object
 	boolean_prototype              ?&Object
 	boolean_constructor            ?&Object
+	number_prototype               ?&Object
+	number_constructor             ?&Object
+	bigint_prototype               ?&Object
+	bigint_constructor             ?&Object
+	parse_int_function             ?&Object
+	parse_float_function           ?&Object
 	symbol_prototype               ?&Object
 	symbol_constructor             ?&Object
 	array_buffer_prototype         ?&Object
 	array_buffer_constructor       ?&Object
+	typed_array_prototype          ?&Object
+	typed_array_constructor        ?&Object
+	typed_array_prototypes         map[BufferElementType]&Object
+	typed_array_constructors       map[BufferElementType]&Object
 	data_view_prototype            ?&Object
 	data_view_constructor          ?&Object
 	shared_array_buffer_prototype  ?&Object
@@ -64,6 +125,10 @@ pub fn (realm &Realm) object_prototype_record() &Object {
 
 pub fn (realm &Realm) object_constructor_record() &Object {
 	return realm.object_constructor or { panic('Realm has no Object constructor yet') }
+}
+
+pub fn (realm &Realm) promise_constructor_record() &Object {
+	return realm.promise_constructor or { panic('Realm has no Promise constructor yet') }
 }
 
 pub fn (realm &Realm) math_object_record() &Object {
@@ -137,6 +202,14 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	realm.object_prototype = object_prototype.object
 	function_prototype := FunctionPrototype.create(mut vm, realm, object_prototype.object)
 	realm.function_prototype = function_prototype.object
+	realm.function_constructor = FunctionConstructor.create(mut vm, realm).object
+	mut function_prototype_object := function_prototype.object
+	function_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
+		Value.from_object(realm.function_constructor or { panic('Missing Function constructor') }), attribute_writable | attribute_configurable)
+	mut async_function_prototype := Object.create(realm, realm.function_prototype)
+	async_function_prototype.define_direct_property(PropertyName.from_symbol(vm.well_known_symbol_to_string_tag()),
+		Value.from_string(vm.create_string_from_str('AsyncFunction')), attribute_configurable)
+	realm.async_function_prototype = async_function_prototype
 	object_prototype.initialize(mut vm, realm, realm_primitive_prototypes())
 	realm.object_constructor = ObjectConstructor.create(mut vm, realm).object
 	initialize_error_intrinsics(mut vm, mut realm)
@@ -184,8 +257,36 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	shared_array_buffer_prototype_object.define_direct_property(PropertyName.from_str('constructor'),
 		Value.from_object(shared_array_buffer_constructor.object), attribute_writable | attribute_configurable)
 	initialize_collection_intrinsics(mut vm, mut realm)!
+	initialize_number_intrinsics(mut vm, mut realm)
+	initialize_bigint_intrinsics(mut vm, mut realm)
+	realm.reflect_object = ReflectObject.create(mut vm, realm, realm.object_prototype_record(), realm.array_prototype_record()).object
+	initialize_iterator_intrinsics(mut vm, mut realm)
+	initialize_typed_array_intrinsics(mut vm, mut realm)
+	initialize_generator_creation_intrinsics(mut vm, mut realm)
+	initialize_set_intrinsics(mut vm, mut realm)
+	initialize_map_intrinsics(mut vm, mut realm)
+	initialize_weak_map_intrinsics(mut vm, mut realm)
+	initialize_weak_set_intrinsics(mut vm, mut realm)
+	initialize_weak_ref_intrinsics(mut vm, mut realm)
+	initialize_proxy_intrinsics(mut vm, mut realm)
+	initialize_intl_intrinsics(mut vm, mut realm)
+	initialize_intl_date_time_format(mut vm, mut realm)
+	initialize_intl_list_format(mut vm, mut realm)
+	initialize_intl_number_format(mut vm, mut realm)
+	initialize_intl_relative_time_format(mut vm, mut realm)
+	initialize_intl_collator(mut vm, mut realm)
 	initialize_regexp_intrinsics(mut vm, mut realm)
 	realm.json_object = create_json_object(mut vm, realm)
+	initialize_date_intrinsics(mut vm, mut realm)
+	initialize_promise_intrinsics(mut vm, mut realm)
+	// Prototype chains end in these records, so every inherited miss and every
+	// added property (whose [[Set]] looks for inherited setters) reaches them.
+	// Their complete key index proves absence without scanning every key.
+	// (Array.prototype is an Array exotic object, which keeps its own lookup.)
+	for prototype in [realm.object_prototype_record(), realm.function_prototype_record()] {
+		mut record := unsafe { &Object(prototype) }
+		record.enable_indexed_properties()
+	}
 	// 4. Set realm.[[GlobalObject]] to undefined.
 	// 5. Set realm.[[GlobalEnv]] to undefined.
 	// 7. Let newContext be a new execution context.
@@ -225,6 +326,8 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	set_default_global_value_bindings(realm)
 	// GlobalObject.cpp installs intrinsic constructor properties after values.
 	// Eager materialization replaces the engine-private intrinsic accessor map.
+	global.define_direct_property(PropertyName.from_str('Function'),
+		Value.from_object(realm.function_constructor or { panic('Missing Function constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Array'),
 		Value.from_object(realm.array_constructor or { panic('Missing Array constructor') }),
 		attribute_writable | attribute_configurable)
@@ -234,20 +337,29 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 	global.define_direct_property(PropertyName.from_str('Boolean'),
 		Value.from_object(realm.boolean_constructor_record()),
 		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('BigInt'),
+		Value.from_object(realm.bigint_constructor or { panic('Missing BigInt constructor') }), attribute_writable | attribute_configurable)
+	for kind, constructor in realm.typed_array_constructors { global.define_direct_property(PropertyName.from_str(kind.typed_array_name()), Value.from_object(constructor), attribute_writable | attribute_configurable) }
 	global.define_direct_property(PropertyName.from_str('DataView'),
 		Value.from_object(realm.data_view_constructor_record()),
 		attribute_writable | attribute_configurable)
 	for kind in [ErrorKind.error, .eval_error, .internal_error] {
 		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
 	}
+	global.define_direct_property(PropertyName.from_str('Map'),
+		Value.from_object(realm.map_constructor or { panic('Missing Map constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Object'),
 		Value.from_object(realm.object_constructor_record()), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Number'),
+		Value.from_object(realm.number_constructor or { panic('Missing Number constructor') }), attribute_writable | attribute_configurable)
 	for kind in [ErrorKind.range_error, .reference_error] {
 		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
 	}
 	global.define_direct_property(PropertyName.from_str('RegExp'),
 		Value.from_object(realm.regexp_constructor or { panic('Missing RegExp constructor') }),
 		attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Set'),
+		Value.from_object(realm.set_constructor or { panic('Missing Set constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('SharedArrayBuffer'),
 		Value.from_object(realm.shared_array_buffer_constructor_record()), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('String'),
@@ -260,10 +372,25 @@ pub fn initialize_host_defined_realm(mut vm VM, hooks RealmGlobalHooks) !&Execut
 		global.define_direct_property(PropertyName.from_str(kind.name()), Value.from_object(realm.error_constructors[kind] or { panic('Missing error constructor') }), attribute_writable | attribute_configurable)
 	}
 	// Other intrinsic properties follow constructors in GlobalObject.cpp.
+	global.define_direct_property(PropertyName.from_str('WeakMap'),
+		Value.from_object(realm.weak_map_constructor or { panic('Missing WeakMap constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('WeakSet'),
+		Value.from_object(realm.weak_set_constructor or { panic('Missing WeakSet constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('WeakRef'),
+		Value.from_object(realm.weak_ref_constructor or { panic('Missing WeakRef constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Date'),
+		Value.from_object(realm.date_constructor or { panic('Missing Date constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Promise'),
+		Value.from_object(realm.promise_constructor or { panic('Missing Promise constructor') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('JSON'),
 		Value.from_object(realm.json_object or { panic('Missing JSON object') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Intl'), Value.from_object(realm.intl_object or { panic('Missing Intl namespace') }), attribute_writable | attribute_configurable)
 	global.define_direct_property(PropertyName.from_str('Math'),
 		Value.from_object(realm.math_object_record()), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Proxy'),
+		Value.from_object(realm.proxy_constructor or { panic('Missing Proxy constructor') }), attribute_writable | attribute_configurable)
+	global.define_direct_property(PropertyName.from_str('Reflect'),
+		Value.from_object(realm.reflect_object or { panic('Missing Reflect object') }), attribute_writable | attribute_configurable)
 	set_default_global_legacy_functions(mut vm, realm)
 	// 19. Create any host-defined global object properties on global.
 	// 20. Return unused.

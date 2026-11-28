@@ -11,14 +11,27 @@ fn needs_match_fix(source string) bool {
 
 fn patch_match_compiler(source string) !(string, bool) {
 	mut matches := []string{}
+	mut starts := []int{}
 	for prefix in ['transform__Transformer', 'v__transform__Transformer'] {
 		signature := 'void ${prefix}__lower_remaining_matches_in_used_fns('
-		if source.contains(signature) { matches << prefix }
+		mut offset := 0
+		for {
+			start := source.index_after(signature, offset) or { break }
+			offset = start + signature.len
+			// Generated C includes forward declarations before the implementation.
+			// Only a definition's header ends with the opening brace.
+			header_end := source.index_after('\n', offset) or { source.len }
+			if source[start..header_end].ends_with(') {') {
+				matches << prefix
+				starts << start
+			}
+		}
 	}
 	if matches.len == 0 { return source, false }
 	if matches.len != 1 { return error('Ambiguous V late-match implementation') }
 	prefix := matches[0]
-	start, end := function_span(source, 'void ${prefix}__lower_remaining_matches_in_used_fns(')!
+	start := starts[0]
+	end := (source.index_after('\n}', start) or { return error('Missing V late-match function end') }) + 2
 	mut body := source[start..end]
 	if body.contains('vox_outer_match_locals') { return source, true }
 	body = replace_once(body, 'string old_file = t->cur_file;', 'string old_file = t->cur_file;\n    string vox_outer_match_fn = t->cur_fn_name;\n    __typeof__(t->cur_fn_ret_type) vox_outer_match_ret = t->cur_fn_ret_type;\n    __auto_type vox_outer_match_locals = ${prefix}__detach_function_local_state(t);')!
@@ -77,8 +90,9 @@ fn prepare_match(selected string) !string {
 	env['VOX_MATCH_SCOPE_RECEIPT'] = join(root, 'patched.txt')
 	scratch := temporary(root, 'build-')!
 	defer { remove(scratch) or {} }
+	// Keep the bootstrap optimized without requiring Clang's LLVMgold linker plugin.
 	mut command := [resolved, '-b', 'c', '-nocache', '-memory-limit', '10G', '-cc', wrapper, '-prod',
-		'-o', join(scratch, 'v')]
+		'-no-prod-options', '-cflags', '-O2', '-o', join(scratch, 'v')]
 	for backend in ['fastc', 'x64', 'amd64', 'arm64', 'ssa', 'eval', 'wasm'] {
 		command << ['-d', 'skip_' + backend]
 	}

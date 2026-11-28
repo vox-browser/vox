@@ -1,4 +1,7 @@
 #pragma once
+#include "../../platform/native_state.h"
+// This helper shares the browser's document color bridge in the same C unit.
+#define VOX_DOCUMENT_COLOR_BRIDGE 1
 #include "native_layer_presentation_darwin.h"
 // Exported by navigation/work.v.
 int32_t vox_service_navigation_ui(void);

@@ -41,3 +41,21 @@ fn test_chromium_svg_text_keeps_outlines_when_glyphs_cannot_match() {
 	stroked := svg_text_glyph_commands('<svg width="400" height="100"><text x="40" y="50" stroke="red">OO</text></svg>')
 	assert stroked.filter(it.kind == 'draw_text').len == 0
 }
+
+fn test_chromium_svg_text_keeps_gradient_stroke_outlines() {
+	definitions := '<linearGradient id="ink" gradientUnits="userSpaceOnUse" x2="100"><stop stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>'
+	for width in [0, 4] {
+		commands := svg_text_glyph_commands('<svg width="400" height="100">${definitions}' +
+			'<text x="40" y="50" stroke="url(#ink)" stroke-width="${width}">OO</text></svg>')
+		paths := commands.filter(it.kind == 'draw_svg_path')
+		if width == 0 {
+			assert paths.len == 0
+			assert commands.filter(it.kind == 'draw_text').len == 1
+		} else {
+			assert commands.filter(it.kind == 'draw_text').len == 0
+			assert paths.len == 1
+			assert paths[0].stroke_width == width
+			assert paths[0].stroke_linear_gradient() != none
+		}
+	}
+}

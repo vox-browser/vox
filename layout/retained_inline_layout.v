@@ -2,6 +2,14 @@ module layout
 
 import css
 import dom
+import os
+
+// Same-binary control: generated content keeps every inline context it is in
+// on the uncached path.
+const disable_generated_inline_reuse = os.getenv('VOX_DISABLE_GENERATED_INLINE_REUSE') != ''
+// Same-binary control: list-item, marker and table-cell roots lay their
+// committed lines out on the uncached path.
+const disable_committed_list_and_cell_inline_reuse = os.getenv('VOX_DISABLE_COMMITTED_LIST_AND_CELL_INLINE_REUSE') != ''
 
 struct RetainedInlineInput {
 	node           &Node
@@ -59,6 +67,27 @@ mut:
 // Reusing line layout requires a closed inline context: no floats, atomic
 // children, shifted positioned content, first-letter splits or clamp effects.
 // Other contexts continue through the ordinary formatting algorithm.
+// Whether the inline formatting context rooted at `box` can keep retained
+// lines between and within passes (tests and diagnostics).
+pub fn inline_context_inputs_are_retainable(box &Node) bool {
+	mut inputs := []RetainedInlineInput{}
+	return collect_committed_inline_inputs(box, mut inputs)
+}
+
+// The inputs of a committed inline context. A list item or table cell lays
+// its principal lines out like a paragraph, as measurements already treat it
+// (measurement_inline_roots.v): an outside marker has its own formatting run,
+// whose one text child is revalidated like any text, and the table algorithm
+// sizes and aligns the cell around its lines.
+fn collect_committed_inline_inputs(root &Node, mut inputs []RetainedInlineInput) bool {
+	extended := !disable_committed_list_and_cell_inline_reuse
+		&& !disable_extended_inline_measurement_roots
+		&& (root.is_list_item_box() || root.display().is_table_cell()
+		|| root.is_list_item_marker_box())
+		&& measurement_inline_workspace_is_closed(root)
+	return collect_inline_inputs_with_measurement_roots(root, true, extended, mut inputs)
+}
+
 fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedInlineInput) bool {
 	return collect_inline_inputs_with_measurement_roots(node, root, false, mut inputs)
 }
@@ -84,7 +113,12 @@ fn collect_inline_inputs_with_measurement_policy(node &Node, root bool,
 	if extended_roots && !root && inline_measurement_marker_is_external(node) { return true }
 	if marker_root && !root && !node.is_text_node() { return false }
 	computed := node.computed_values()
-	if ((node.is_generated_for_pseudo_element() || node.is_generated_text_node()) && !marker_root)
+	// Generated boxes and text from authored strings are validated like any
+	// other input: their text, style and place. Counters, quotes, attributes
+	// and images come from state outside the context.
+	generated := node.is_generated_for_pseudo_element() || node.is_generated_text_node()
+	if (generated && !marker_root && (disable_generated_inline_reuse
+		|| generated_content_uses_document_state(node)))
 		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box() || node.is_replaced_box()
 		|| node.is_floating() || !retained_layout_position_is_unshifted(node)
 		|| (node.is_list_item_box() && !(root && extended_roots))
@@ -254,6 +288,17 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	defer { retained.finish() }
 	root := unsafe { &Node(containing_block) }
 	mut eligible := mode == .normal && state.subtree_root == none && space.width.is_definite()
+	if incremental_layout_diagnostics {
+		note_inline_layout_outcome(if mode != .normal {
+			0
+		} else if state.subtree_root != none {
+			1
+		} else if !space.width.is_definite() {
+			2
+		} else {
+			-1
+		})
+	}
 	if bfc := context {
 		eligible = eligible && bfc.floating_boxes.len == 0 && !bfc.has_line_clamp()
 			&& !bfc.laying_out_invisible_clamped_content
@@ -261,6 +306,10 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				|| bfc.margin_state.current_collapsed_margin() == 0)
 	}
 	if !eligible {
+		if incremental_layout_diagnostics && mode == .normal && state.subtree_root == none
+			&& space.width.is_definite() {
+			note_inline_layout_outcome(3)
+		}
 		return run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
 			space, context)
 	}
@@ -276,6 +325,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				&& cached.style_environment == root.document().style_environment_version()
 				&& same_pass_inline_inputs_are_current(cached.inputs) {
 				report_same_pass_inline_reuse()
+				if incremental_layout_diagnostics { note_inline_layout_outcome(4) }
 				return restore_retained_inline_layout(mut state, containing_block, mut used,
 					context, key, cached)
 			}
@@ -295,9 +345,21 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			if cached.font_generation != font_generation && retained_font_generation_diagnostics {
 				eprintln('Vox retained inline font generation: ${cached.font_generation} -> ${font_generation}, ${cached.inputs.len} inputs')
 			}
+			if incremental_layout_diagnostics { note_inline_layout_outcome(5) }
 			return restore_retained_inline_layout(mut state, containing_block, mut used,
 				context, key, cached)
 		}
+		if incremental_layout_diagnostics {
+			note_inline_layout_outcome(if cached.space != space || cached.content_width != used.content_width() {
+				6
+			} else if !retained_inline_inputs_are_current(cached.inputs) {
+				7
+			} else {
+				8
+			})
+		}
+	} else if incremental_layout_diagnostics {
+		note_inline_layout_outcome(if state.previous_inline_layouts_.len == 0 { 9 } else { 10 })
 	}
 	// Contexts whose inputs keep being rejected skip collecting them for a
 	// growing number of passes (retained_block_layout.v); a reusable snapshot
@@ -305,7 +367,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	mut collect := true
 	if collecting_key := backoff_key { collect = backoff.allows_collecting(collecting_key) }
 	mut inputs := []RetainedInlineInput{}
-	if !collect || !collect_retained_inline_inputs(root, true, mut inputs) {
+	if !collect || !collect_committed_inline_inputs(root, mut inputs) {
+		if incremental_layout_diagnostics { note_inline_layout_outcome(if collect { 11 } else { 12 }) }
 		if collect {
 			if rejected_key := backoff_key { backoff.escalate(rejected_key) }
 		}
@@ -342,4 +405,18 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		same_pass_key:     same_pass_key
 	}
 	return result
+}
+
+// VOX_INCREMENTAL_LAYOUT_DIAGNOSTICS: how each inline formatting context of
+// the process was answered.
+__global inline_layout_outcome_counts [13]u64
+
+fn note_inline_layout_outcome(outcome int) {
+	if outcome >= 0 { inline_layout_outcome_counts[outcome]++ }
+}
+
+fn report_inline_layout_outcomes() {
+	if !incremental_layout_diagnostics { return }
+	c := inline_layout_outcome_counts
+	eprintln('VOX_INLINE_LAYOUT intrinsic=${c[0]} measurement=${c[1]} indefinite=${c[2]} ineligible=${c[3]} same_pass=${c[4]} restored=${c[5]} resized=${c[6]} changed_inputs=${c[7]} other_miss=${c[8]} first_pass=${c[9]} new_box=${c[10]} open=${c[11]} backoff=${c[12]}')
 }

@@ -131,8 +131,13 @@ fn (mut session DocumentSession) activate(document &dom.Document) {
 	assert session.state == .active && session.document == unsafe { nil }
 	session.document = document
 	session.BrowserMediaOwner.media_document = document
+	force_dark := browsersettings.current().force_dark_enabled
+	if force_dark && document.navigable() == none {
+		// The first compact document gets its navigable before style can be queried.
+		_ = ensure_compact_browser_navigable(document)
+	}
 	if navigable := document.navigable() {
-		session.apply_browser_force_dark(navigable, browsersettings.current().force_dark_enabled)
+		session.apply_browser_force_dark(navigable, force_dark)
 	}
 }
 

@@ -1,8 +1,8 @@
-#!/usr/bin/env -S v run
+#!/usr/bin/env -S v -b c -memory-limit 10G run
 
 // Unified Vox build entrypoint.
 //
-// `v run build_browser.vsh` builds the browser for the current host through x.imp
+// `v -b c -memory-limit 10G run build_browser.vsh` builds the browser through x.imp
 // flows. macOS and Linux delegate to their existing shell builders; the
 // Windows `browser` flow reports that the native build is not supported
 // yet. See docs/WINDOWS.md for the release plan.
