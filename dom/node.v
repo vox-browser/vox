@@ -2448,6 +2448,13 @@ fn collect_nodes_for_post_connection(node &Node, mut nodes []&Node) {
 }
 
 fn run_post_connection_steps(nodes []&Node) {
+	mut has_connected_root := false
+	for node in nodes {
+		if node.is_connected() { has_connected_root = true; break }
+	}
+	if !has_connected_root { return }
+	// Collect every root if any is connected: a callback can connect a root
+	// that was initially detached before its own post-connection step.
 	// Snapshot before invoking any step; callbacks can change the tree. Only
 	// that local pointer vector uses temporary storage, never callback writes.
 	scratch := platform.begin_thread_scratch('post-connection snapshot')
@@ -2951,7 +2958,13 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		n.invalidate_style(.node_insert_before)
 	}
 	if n.is_connected() && !new_parent.insertion_cannot_create_boxes() {
+		moved_subtree_already_needs_layout_tree_update := n.needs_layout_tree_update
+			|| n.child_needs_layout_tree_update
+		n.set_needs_layout_tree_update(true, .node_insert_before)
 		new_parent.set_needs_layout_tree_update(true, .node_insert_before)
+		if moved_subtree_already_needs_layout_tree_update {
+			new_parent.set_child_needs_layout_tree_update(true)
+		}
 	}
 	moved_node := &n
 	n.visit_shadow_including_inclusive_descendants(fn [old_parent, moved_node] (inclusive_descendant &Node) TraversalDecision {
@@ -3360,13 +3373,31 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 	if n.needs_layout_tree_update {
 		mut document := unsafe { &Document(n.document()) }
 		document.mark_needs_repaint(.no)
+		has_top_layer_elements := document.top_layer_elements.len > 0
+		mut update_is_inside_top_layer_member := false
+		if has_top_layer_elements {
+			if element := n.as_element() {
+				update_is_inside_top_layer_member = element.rendered_in_top_layer()
+			}
+		}
 		for ancestor := n.flat_tree_parent(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
+			if has_top_layer_elements && !update_is_inside_top_layer_member {
+				if element := current.as_element() {
+					update_is_inside_top_layer_member = element.rendered_in_top_layer()
+				}
+			}
 			if current.child_needs_layout_tree_update {
 				break
 			}
 			current.child_needs_layout_tree_update = true
 			ancestor = current.flat_tree_parent()
+		}
+		// Top-layer boxes are viewport children even when their DOM position has
+		// no flat-tree path to the document. Schedule their viewport build too.
+		if update_is_inside_top_layer_member {
+			mut document_node := unsafe { &Node(document) }
+			document_node.set_child_needs_layout_tree_update(true)
 		}
 		// SVG resource boxes live below their referencers, so changes inside a
 		// mask, clipPath or pattern must also rebuild those layout subtrees.
@@ -4494,6 +4525,9 @@ pub fn (n &Node) unsafe_paintable_box() ?&PaintableBox {
 pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?string, attribute_namespace ?string, old_value ?string, added_nodes []&Node, removed_nodes []&Node, previous_sibling &Node, next_sibling &Node) {
 	target := unsafe { &Node(&n) }
 	mut document := unsafe { &Document(target.document()) }
+	if document != unsafe { nil } && !document.has_mutation_observers_of_type(type_) {
+		return
+	}
 
 	// 1. Let interestedObservers be an empty map.
 	// mutationObserver -> mappedOldValue
@@ -5037,6 +5071,10 @@ pub fn (mut n Node) add_registered_observer(registered_observer &RegisteredObser
 	state.registered_observers = state.registered_observers.clone()
 	state.registered_observers << registered_observer
 	n.cold_data_ = state
+	mut document := n.document()
+	if document != unsafe { nil } {
+		document.add_mutation_observer_types(registered_observer.options())
+	}
 }
 
 pub fn (n &Node) has_inclusive_ancestor_with_display_none_ignoring_animations() bool {

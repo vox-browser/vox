@@ -73,6 +73,10 @@ fn test_ui2_settings_save_automatically_and_keep_the_last_valid_proxy() {
 		assert ui2.text('settings-heading') == 'Advanced'
 		assert ui2.control_checked('settings-gpu-canvas')
 		assert !ui2.control_checked('settings-libjs')
+		assert !ui2.control_checked('settings-force-dark')
+		C.native_test_chrome_click(ui2.embedded_browser_control('settings-force-dark'))
+		assert ui2.control_checked('settings-force-dark')
+		assert browsersettings.current().force_dark_enabled
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-gpu-canvas'))
 		assert browsersettings.current().disable_gpu_canvas
 		C.native_test_chrome_click(ui2.embedded_browser_control('settings-libjs'))
@@ -114,6 +118,7 @@ fn test_ui2_settings_save_automatically_and_keep_the_last_valid_proxy() {
 		assert browsersettings.current().javascript_engine == 'javascriptcore'
 		assert browsersettings.current().enable_custom_tab_titles
 		assert browsersettings.current().disable_gpu_canvas
+		assert browsersettings.current().force_dark_enabled
 
 		show_browser_settings()
 		click_settings_section(.proxy)
