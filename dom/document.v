@@ -9236,6 +9236,7 @@ pub fn (d &Document) get_location() ?&Location {
 
 // --- Loading ---
 pub fn (d &Document) anything_is_delaying_the_load_event() bool {
+	if d.has_been_destroyed { return false }
 	if d.number_of_things_delaying_the_load_event > 0 {
 		return true
 	}
@@ -9262,7 +9263,8 @@ pub fn (d &Document) anything_is_delaying_the_load_event() bool {
 }
 
 pub fn (d &Document) has_pending_style_sheet_requests() bool {
-	return d.number_of_pending_style_sheet_requests > 0 || d.pending_css_import_rules.len > 0
+	return !d.has_been_destroyed
+		&& (d.number_of_pending_style_sheet_requests > 0 || d.pending_css_import_rules.len > 0)
 }
 
 pub fn (mut d Document) increment_number_of_pending_style_sheet_requests() {

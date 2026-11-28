@@ -46,3 +46,17 @@ fn test_repeated_load_delay_checks_retire_descendant_traversal_storage() {
 	container_node.set_load_event_delay_hook(none)
 	assert !document.anything_is_delaying_the_load_event()
 }
+
+fn test_destroyed_document_stops_reporting_retired_load_delays() {
+	mut document := Document.create(url_about_blank())
+	defer { document.finalize() }
+	mut delay := DocumentLoadEventDelayer.new_with_reason(mut document, .style_sheet_request)
+	assert document.anything_is_delaying_the_load_event()
+	assert document.has_pending_style_sheet_requests()
+	document.destroy()
+	assert document.has_been_destroyed()
+	assert !document.anything_is_delaying_the_load_event()
+	assert !document.has_pending_style_sheet_requests()
+	delay.finish()
+	assert !document.anything_is_delaying_the_load_event()
+}
